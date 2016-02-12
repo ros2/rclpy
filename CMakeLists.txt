@@ -181,6 +181,13 @@ else()
   endif()
 endif()
 
+if(WIN32)
+  set(PYTHON_EXTENSION_EXTENSION ".pyd")
+else()
+# Also use .so for OSX, not dylib
+  set(PYTHON_EXTENSION_EXTENSION ".so")
+endif()
+
 macro(target)
   if(NOT "${target_suffix} " STREQUAL " ")
     get_rcl_information("${rmw_implementation}" "rcl${target_suffix}")
@@ -204,22 +211,42 @@ macro(target)
     SHARED src/rclpy/_rclpy${target_suffix}.c
   )
 
-#  get_rmw_typesupport(_typesupport_impls ${rmw_implementation})
-
-if(WIN32)
-  set(PYTHON_EXTENSION_EXTENSION ".pyd")
-else()
-# Also use .so for OSX, not dylib
-  set(PYTHON_EXTENSION_EXTENSION ".so")
-endif()
+  set_target_properties(${PROJECT_NAME}${target_suffix} PROPERTIES
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    OUTPUT_NAME "_${PROJECT_NAME}${target_suffix}${PYTHON_EXTENSION_SUFFIX}"
+    SUFFIX "${PYTHON_EXTENSION_EXTENSION}")
 
   set_target_properties(${PROJECT_NAME}${target_suffix} PROPERTIES
     PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
     OUTPUT_NAME "_${PROJECT_NAME}${target_suffix}${PYTHON_EXTENSION_SUFFIX}"
-    SUFFIX "${PYTHON_EXTENSION_EXTENSION}"
-  )
+    SUFFIX "${PYTHON_EXTENSION_EXTENSION}")
 
-    target_link_libraries(
+  set_target_properties(${PROJECT_NAME}${target_suffix} PROPERTIES
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    OUTPUT_NAME "_${PROJECT_NAME}${target_suffix}${PYTHON_EXTENSION_SUFFIX}"
+    SUFFIX "${PYTHON_EXTENSION_EXTENSION}")
+
+  set_target_properties(${PROJECT_NAME}${target_suffix} PROPERTIES
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    OUTPUT_NAME "_${PROJECT_NAME}${target_suffix}${PYTHON_EXTENSION_SUFFIX}"
+    SUFFIX "${PYTHON_EXTENSION_EXTENSION}")
+
+  set_target_properties(${PROJECT_NAME}${target_suffix} PROPERTIES
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    OUTPUT_NAME "_${PROJECT_NAME}${target_suffix}${PYTHON_EXTENSION_SUFFIX}"
+    SUFFIX "${PYTHON_EXTENSION_EXTENSION}")
+
+  target_link_libraries(
     ${PROJECT_NAME}${target_suffix}
       ${PYTHON_LIBRARIES}
     )
@@ -232,11 +259,6 @@ endif()
     PUBLIC
     ${PYTHON_INCLUDE_DIRS}
   )
-
-  install(
-    TARGETS ${PROJECT_NAME}${target_suffix}
-    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
-  )
 endmacro()
 
 call_for_each_rmw_implementation(target)
@@ -246,6 +268,11 @@ if(AMENT_ENABLE_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_python_install_package(${PROJECT_NAME})
+  file(
+    COPY "${PROJECT_NAME}"
+    DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+  )
+
+ament_python_install_package(${PROJECT_NAME} PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}")
 
 ament_package()
