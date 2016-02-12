@@ -6,7 +6,7 @@
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 static PyObject *
-rclpy_init(PyObject *self, PyObject *args)
+rclpy_init(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
 {
   /* TODO(esteve): parse args */
   rcl_ret_t ret = rcl_init(0, NULL, rcl_get_default_allocator());
@@ -15,7 +15,7 @@ rclpy_init(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_create_node(PyObject *self, PyObject *args)
+rclpy_create_node(PyObject *Py_UNUSED(self), PyObject *args)
 {
   const char *node_name;
 
@@ -34,7 +34,7 @@ rclpy_create_node(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_create_publisher(PyObject *self, PyObject *args)
+rclpy_create_publisher(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pynode;
   PyObject *pymsg_type;
@@ -53,7 +53,7 @@ rclpy_create_publisher(PyObject *self, PyObject *args)
 
   PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyts = PyObject_GetAttrString(pymsg_type, "_TYPE_SUPPORT");
+  PyObject *pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
 
   rosidl_message_type_support_t * ts = PyCapsule_GetPointer(pyts, NULL);
 
@@ -67,7 +67,7 @@ rclpy_create_publisher(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_publish(PyObject *self, PyObject *args)
+rclpy_publish(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pypublisher;
   PyObject *pymsg;
@@ -83,7 +83,7 @@ rclpy_publish(PyObject *self, PyObject *args)
 
   PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyconvert_from_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_FROM_PY");
+  PyObject *pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
   void *(*convert_from_py)(PyObject *) = PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
@@ -95,7 +95,7 @@ rclpy_publish(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_create_subscription(PyObject *self, PyObject *args)
+rclpy_create_subscription(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pynode;
   PyObject *pymsg_type;
@@ -114,7 +114,7 @@ rclpy_create_subscription(PyObject *self, PyObject *args)
 
   PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyts = PyObject_GetAttrString(pymsg_type, "_TYPE_SUPPORT");
+  PyObject *pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
 
   rosidl_message_type_support_t * ts = PyCapsule_GetPointer(pyts, NULL);
 
@@ -128,7 +128,7 @@ rclpy_create_subscription(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_get_implementation_identifier(PyObject *self, PyObject *args)
+rclpy_get_implementation_identifier(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
 {
   const char * rmw_implementation_identifier = rmw_get_implementation_identifier();
 
@@ -139,7 +139,7 @@ rclpy_get_implementation_identifier(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_get_zero_initialized_wait_set(PyObject *self, PyObject *args)
+rclpy_get_zero_initialized_wait_set(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
 {
   rcl_wait_set_t *wait_set = PyMem_Malloc(sizeof(rcl_wait_set_t));
   wait_set->subscriptions = NULL;
@@ -154,7 +154,7 @@ rclpy_get_zero_initialized_wait_set(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_wait_set_init(PyObject *self, PyObject *args)
+rclpy_wait_set_init(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pywait_set;
   unsigned PY_LONG_LONG number_of_subscriptions;
@@ -177,7 +177,7 @@ rclpy_wait_set_init(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_wait_set_clear_subscriptions(PyObject *self, PyObject *args)
+rclpy_wait_set_clear_subscriptions(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pywait_set;
 
@@ -192,7 +192,7 @@ rclpy_wait_set_clear_subscriptions(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_wait_set_add_subscription(PyObject *self, PyObject *args)
+rclpy_wait_set_add_subscription(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pywait_set;
   PyObject *pysubscription;
@@ -209,7 +209,7 @@ rclpy_wait_set_add_subscription(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_wait(PyObject *self, PyObject *args)
+rclpy_wait(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pywait_set;
 
@@ -224,7 +224,7 @@ rclpy_wait(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-rclpy_take(PyObject *self, PyObject *args)
+rclpy_take(PyObject *Py_UNUSED(self), PyObject *args)
 {
   PyObject *pysubscription;
   PyObject *pymsg_type;
@@ -238,7 +238,7 @@ rclpy_take(PyObject *self, PyObject *args)
 
   PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyconvert_from_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_FROM_PY");
+  PyObject *pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
   void *(*convert_from_py)(PyObject *) = PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
@@ -305,7 +305,11 @@ static struct PyModuleDef _rclpymodule = {
    "_rclpy",
    "_rclpy_doc",
    -1,  /* -1 means that the module keeps state in global variables */
-   rclpy_methods
+   rclpy_methods,
+   NULL,
+   NULL,
+   NULL,
+   NULL
 };
 
 PyMODINIT_FUNC
