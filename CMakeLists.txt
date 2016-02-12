@@ -53,7 +53,7 @@ if(APPLE)
       "The paths to the Python include directories.")
   message(STATUS "Using PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
 
-#  if(NOT DEFINED PYTHON_LIBRARIES)
+  if(NOT DEFINED PYTHON_LIBRARIES)
     execute_process(
       COMMAND
       "${PYTHON_CONFIG_EXECUTABLE}"
@@ -99,7 +99,7 @@ if(APPLE)
       ${_library_paths}
       NO_SYSTEM_ENVIRONMENT_PATH
     )
- # endif()
+  endif()
 
   set(PYTHON_LIBRARIES "${PYTHON_LIBRARY}")
   message(STATUS "Using PYTHON_LIBRARIES: ${PYTHON_LIBRARIES}")
@@ -246,10 +246,9 @@ macro(target)
     OUTPUT_NAME "_${PROJECT_NAME}${target_suffix}${PYTHON_EXTENSION_SUFFIX}"
     SUFFIX "${PYTHON_EXTENSION_EXTENSION}")
 
-  target_link_libraries(
-    ${PROJECT_NAME}${target_suffix}
-      ${PYTHON_LIBRARIES}
-    )
+  target_link_libraries(${PROJECT_NAME}${target_suffix}
+    ${PYTHON_LIBRARIES}
+  )
 
   ament_target_dependencies(${PROJECT_NAME}${target_suffix}
     "rcl${target_suffix}"
