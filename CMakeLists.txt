@@ -159,14 +159,14 @@ if(NOT DEFINED PYTHON_MULTIARCH)
     "The MULTIARCH suffix for Python native extensions. See PEP-3149: https://www.python.org/dev/peps/pep-3149/.")
 endif()
 
-if("${PYTHON_SOABI} " STREQUAL " ")
+if("${PYTHON_SOABI} " STREQUAL " " OR "${PYTHON_SOABI} " STREQUAL "None ")
   set(PYTHON_EXTENSION_SUFFIX
     ""
     CACHE INTERNAL
     "The full suffix for Python native extensions. See PEP-3149: https://www.python.org/dev/peps/pep-3149/."
   )
 else()
-  if("${PYTHON_MULTIARCH} " STREQUAL " ")
+  if("${PYTHON_MULTIARCH} " STREQUAL " " OR "${PYTHON_SOABI} " STREQUAL "None ")
     set(PYTHON_EXTENSION_SUFFIX
       ".${PYTHON_SOABI}"
       CACHE INTERNAL
