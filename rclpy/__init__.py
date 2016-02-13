@@ -31,7 +31,7 @@ def spin(node):
 
     _rclpy.rclpy_wait_set_init(wait_set, len(node.subscriptions), 0, 0)
 
-    while True:
+    while ok():
         _rclpy.rclpy_wait_set_clear_subscriptions(wait_set)
         for subscription in node.subscriptions:
             _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
@@ -41,3 +41,11 @@ def spin(node):
 
             if msg:
                 subscription.callback(msg)
+
+
+def ok():
+    return _rclpy.rclpy_ok()
+
+
+def shutdown():
+    return _rclpy.rclpy_shutdown()

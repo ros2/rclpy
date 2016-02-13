@@ -265,6 +265,26 @@ rclpy_take(PyObject *Py_UNUSED(self), PyObject *args)
   Py_RETURN_NONE;
 }
 
+static PyObject *
+rclpy_ok(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+{
+  bool ok = rcl_ok();
+  if(ok)
+  {
+    Py_RETURN_TRUE;
+  } else
+  {
+    Py_RETURN_FALSE;
+  }
+}
+
+static PyObject *
+rclpy_shutdown(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+{
+  rcl_shutdown();
+  Py_RETURN_NONE;
+}
+
 static PyMethodDef rclpy_methods[] = {
   {"rclpy_init",  rclpy_init, METH_VARARGS,
    "Initialize RCL."},
@@ -294,6 +314,12 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_take", rclpy_take, METH_VARARGS,
    "rclpy_take."},
+
+  {"rclpy_ok", rclpy_ok, METH_NOARGS,
+   "rclpy_ok."},
+
+  {"rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
+   "rclpy_shutdown."},
 
   {"rclpy_get_implementation_identifier", rclpy_get_implementation_identifier,
    METH_NOARGS, "Retrieve the identifier for the active RMW implementation."},

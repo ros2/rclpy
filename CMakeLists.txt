@@ -277,6 +277,10 @@ ament_python_install_package(${PROJECT_NAME} PACKAGE_DIR "${CMAKE_CURRENT_BINARY
 if(AMENT_ENABLE_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  ament_add_nose_test(rclpytests test
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+  )
 endif()
 
 ament_package()
