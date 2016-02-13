@@ -16,11 +16,11 @@ from functools import partial
 from multiprocessing import Process
 from time import sleep
 
-import rclpy
-from rclpy.qos import qos_profile_default
-
 
 def talker():
+    import rclpy
+    from rclpy.qos import qos_profile_default
+
     from std_msgs.msg import String
     assert String.__class__._TYPE_SUPPORT is not None
     rclpy.init([])
@@ -47,6 +47,9 @@ def listener_callback(msg, talker_process):
 def test_rclpy_talker_listener():
     talker_process = Process(target=talker)
     talker_process.start()
+
+    import rclpy
+    from rclpy.qos import qos_profile_default
 
     rclpy.init([])
 
