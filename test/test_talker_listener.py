@@ -18,10 +18,11 @@ from time import sleep
 
 import rclpy
 from rclpy.qos import qos_profile_default
-from std_msgs.msg import String
 
 
 def talker():
+    from std_msgs.msg import String
+    assert String.__class__._TYPE_SUPPORT is not None
     rclpy.init([])
 
     node = rclpy.create_node('talker')
@@ -32,10 +33,10 @@ def talker():
 
     i = 1
     while True:
-      msg.data = 'Hello World: {0}'.format(i)
-      i += 1
-      chatter_pub.publish(msg)
-      sleep(1)
+        msg.data = 'Hello World: {0}'.format(i)
+        i += 1
+        chatter_pub.publish(msg)
+        sleep(1)
 
 
 def listener_callback(msg, talker_process):
@@ -53,7 +54,10 @@ def test_rclpy_talker_listener():
 
     chatter_callback = partial(listener_callback, talker_process=talker_process)
 
-    sub = node.create_subscription(String, 'chatter', chatter_callback, qos_profile_default)
+    from std_msgs.msg import String
+    assert String.__class__._TYPE_SUPPORT is not None
+
+    node.create_subscription(String, 'chatter', chatter_callback, qos_profile_default)
 
     rclpy.spin(node)
 
