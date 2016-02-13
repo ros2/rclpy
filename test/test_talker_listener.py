@@ -39,9 +39,10 @@ def talker():
         sleep(1)
 
 
-def listener_callback(msg, talker_process):
+def listener_callback(msg, talker_process, received_messages):
     import rclpy
     talker_process.terminate()
+    received_messages.append(msg)
     rclpy.shutdown()
 
 
@@ -56,7 +57,10 @@ def test_rclpy_talker_listener():
 
     node = rclpy.create_node('listener')
 
-    chatter_callback = partial(listener_callback, talker_process=talker_process)
+    received_messages = []
+
+    chatter_callback = partial(
+        listener_callback, talker_process=talker_process, received_messages=received_messages)
 
     from std_msgs.msg import String
     assert String.__class__._TYPE_SUPPORT is not None
@@ -66,3 +70,5 @@ def test_rclpy_talker_listener():
     rclpy.spin(node)
 
     talker_process.join()
+
+    assert len(received_messages) > 0, "Should have received a message from talker"
