@@ -19,12 +19,12 @@ endif()
 set(Python_ADDITIONAL_VERSIONS 3.4)
 find_package(PythonInterp 3.4 REQUIRED)
 
-find_program(PYTHON_CONFIG_EXECUTABLE NAMES "python3-config")
-if(NOT DEFINED PYTHON_CONFIG_EXECUTABLE)
-  message(FATAL_ERROR "Cannot find python3-config executable")
-endif()
-
 if(APPLE)
+  find_program(PYTHON_CONFIG_EXECUTABLE NAMES "python3-config")
+  if(NOT DEFINED PYTHON_CONFIG_EXECUTABLE)
+    message(FATAL_ERROR "Cannot find python3-config executable")
+  endif()
+
   if(NOT DEFINED PYTHON_INCLUDE_DIRS)
     execute_process(
       COMMAND
