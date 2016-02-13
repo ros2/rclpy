@@ -40,6 +40,7 @@ def talker():
 
 
 def listener_callback(msg, talker_process):
+    import rclpy
     talker_process.terminate()
     rclpy.shutdown()
 
