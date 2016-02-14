@@ -411,7 +411,6 @@ static struct PyModuleDef _rclpymodule = {
 #define MAKE_FN_NAME(x) PyInit__rclpy ## x
 #define FUNCTION_NAME(suffix) MAKE_FN_NAME(suffix)
 
-PyMODINIT_FUNC FUNCTION_NAME(RMW_IMPLEMENTATION_SUFFIX)(void)
-{
+PyMODINIT_FUNC FUNCTION_NAME(RMW_IMPLEMENTATION_SUFFIX)(void) {
   return PyModule_Create(&_rclpymodule);
 }
