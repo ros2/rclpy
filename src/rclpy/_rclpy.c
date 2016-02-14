@@ -5,6 +5,10 @@
 #include <rcl/node.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
+#ifndef RMW_IMPLEMENTATION_SUFFIX
+#error "RMW_IMPLEMENTATION_SUFFIX is required to be set for _rclpy.c"
+#endif
+
 static PyObject *
 rclpy_init(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
 {
@@ -338,8 +342,10 @@ static struct PyModuleDef _rclpymodule = {
    NULL
 };
 
-PyMODINIT_FUNC
-PyInit__rclpy@target_suffix@(void)
+#define MAKE_FN_NAME(x) PyInit__rclpy ## x
+#define FUNCTION_NAME(suffix) MAKE_FN_NAME(suffix)
+
+PyMODINIT_FUNC FUNCTION_NAME(RMW_IMPLEMENTATION_SUFFIX)(void)
 {
   return PyModule_Create(&_rclpymodule);
 }

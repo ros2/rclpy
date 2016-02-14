@@ -198,15 +198,12 @@ macro(target)
     return()
   endif()
 
-  configure_file(
-    src/rclpy/_rclpy.c.in
-    src/rclpy/_rclpy${target_suffix}.c
-  )
-
   add_library(
     ${PROJECT_NAME}${target_suffix}
-    SHARED src/rclpy/_rclpy${target_suffix}.c
+    SHARED src/rclpy/_rclpy.c
   )
+  target_compile_definitions(${PROJECT_NAME}${target_suffix}
+    PRIVATE "RMW_IMPLEMENTATION_SUFFIX=${target_suffix}")
 
   set_target_properties(${PROJECT_NAME}${target_suffix} PROPERTIES
     PREFIX ""
