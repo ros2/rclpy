@@ -261,12 +261,18 @@ if(AMENT_ENABLE_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+# Copy the Python code to the folder where the C extensions will be generated.
+# This creates a folder in ${CMAKE_CURRENT_BINARY_DIR}/rclpy which has all the
+# necessary Python code and C Python extensions for running tests.
+# This folder is also ready to be installed directly as a Python package.
 file(
   COPY "${PROJECT_NAME}"
   DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
-ament_python_install_package(${PROJECT_NAME} PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}")
+ament_python_install_package(${PROJECT_NAME}
+  PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+)
 
 if(AMENT_ENABLE_TESTING)
   find_package(ament_lint_auto REQUIRED)
