@@ -24,21 +24,20 @@
 #endif
 
 static PyObject *
-rclpy_init(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  /* TODO(esteve): parse args */
+  // TODO(esteve): parse args
   rcl_ret_t ret = rcl_init(0, NULL, rcl_get_default_allocator());
   (void)ret;
   Py_RETURN_NONE;
 }
 
 static PyObject *
-rclpy_create_node(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  const char *node_name;
+  const char * node_name;
 
-  if (!PyArg_ParseTuple(args, "s", &node_name))
-  {
+  if (!PyArg_ParseTuple(args, "s", &node_name)) {
     return NULL;
   }
 
@@ -47,31 +46,30 @@ rclpy_create_node(PyObject *Py_UNUSED(self), PyObject *args)
   rcl_node_options_t default_options = rcl_node_get_default_options();
   rcl_ret_t ret = rcl_node_init(node, node_name, &default_options);
   (void)ret;
-  PyObject *pynode = PyCapsule_New(node, NULL, NULL);
+  PyObject * pynode = PyCapsule_New(node, NULL, NULL);
   return pynode;
 }
 
 static PyObject *
-rclpy_create_publisher(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pynode;
-  PyObject *pymsg_type;
-  PyObject *pytopic;
+  PyObject * pynode;
+  PyObject * pymsg_type;
+  PyObject * pytopic;
 
-  if (!PyArg_ParseTuple(args, "OOO", &pynode, &pymsg_type, &pytopic))
-  {
+  if (!PyArg_ParseTuple(args, "OOO", &pynode, &pymsg_type, &pytopic)) {
     return NULL;
   }
 
   assert(PyUnicode_Check(pytopic));
 
-  char *topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
+  char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
   rcl_node_t *node = PyCapsule_GetPointer(pynode, NULL);
 
-  PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
+  PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
 
   rosidl_message_type_support_t * ts = PyCapsule_GetPointer(pyts, NULL);
 
@@ -80,32 +78,31 @@ rclpy_create_publisher(PyObject *Py_UNUSED(self), PyObject *args)
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
   (void)ret;
-  PyObject *pypublisher = PyCapsule_New(publisher, NULL, NULL);
+  PyObject * pypublisher = PyCapsule_New(publisher, NULL, NULL);
   return pypublisher;
 }
 
 static PyObject *
-rclpy_publish(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pypublisher;
-  PyObject *pymsg;
+  PyObject * pypublisher;
+  PyObject * pymsg;
 
-  if (!PyArg_ParseTuple(args, "OO", &pypublisher, &pymsg))
-  {
+  if (!PyArg_ParseTuple(args, "OO", &pypublisher, &pymsg)) {
     return NULL;
   }
 
   rcl_publisher_t *publisher = PyCapsule_GetPointer(pypublisher, NULL);
 
-  PyObject *pymsg_type = PyObject_GetAttrString(pymsg, "__class__");
+  PyObject * pymsg_type = PyObject_GetAttrString(pymsg, "__class__");
 
-  PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
+  PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
+  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
   void *(*convert_from_py)(PyObject *) = PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
-  void *raw_ros_message = convert_from_py(pymsg);
+  void * raw_ros_message = convert_from_py(pymsg);
 
   rcl_publish(publisher, raw_ros_message);
 
@@ -113,14 +110,13 @@ rclpy_publish(PyObject *Py_UNUSED(self), PyObject *args)
 }
 
 static PyObject *
-rclpy_create_subscription(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pynode;
-  PyObject *pymsg_type;
-  PyObject *pytopic;
+  PyObject * pynode;
+  PyObject * pymsg_type;
+  PyObject * pytopic;
 
-  if (!PyArg_ParseTuple(args, "OOO", &pynode, &pymsg_type, &pytopic))
-  {
+  if (!PyArg_ParseTuple(args, "OOO", &pynode, &pymsg_type, &pytopic)) {
     return NULL;
   }
 
@@ -130,9 +126,9 @@ rclpy_create_subscription(PyObject *Py_UNUSED(self), PyObject *args)
 
   rcl_node_t *node = PyCapsule_GetPointer(pynode, NULL);
 
-  PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
+  PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
 
   rosidl_message_type_support_t * ts = PyCapsule_GetPointer(pyts, NULL);
 
@@ -141,23 +137,23 @@ rclpy_create_subscription(PyObject *Py_UNUSED(self), PyObject *args)
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
   (void)ret;
-  PyObject *pysubscription = PyCapsule_New(subscription, NULL, NULL);
+  PyObject * pysubscription = PyCapsule_New(subscription, NULL, NULL);
   return pysubscription;
 }
 
 static PyObject *
-rclpy_get_implementation_identifier(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+rclpy_get_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   const char * rmw_implementation_identifier = rmw_get_implementation_identifier();
 
-  PyObject * pyrmw_implementation_identifier =  Py_BuildValue(
+  PyObject * pyrmw_implementation_identifier = Py_BuildValue(
     "s", rmw_implementation_identifier);
 
   return pyrmw_implementation_identifier;
 }
 
 static PyObject *
-rclpy_get_zero_initialized_wait_set(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcl_wait_set_t *wait_set = PyMem_Malloc(sizeof(rcl_wait_set_t));
   wait_set->subscriptions = NULL;
@@ -167,21 +163,21 @@ rclpy_get_zero_initialized_wait_set(PyObject *Py_UNUSED(self), PyObject *Py_UNUS
   wait_set->timers = NULL;
   wait_set->size_of_timers = 0;
   wait_set->impl = NULL;
-  PyObject *pywait_set = PyCapsule_New(wait_set, NULL, NULL);
+  PyObject * pywait_set = PyCapsule_New(wait_set, NULL, NULL);
   return pywait_set;
 }
 
 static PyObject *
-rclpy_wait_set_init(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pywait_set;
+  PyObject * pywait_set;
   unsigned PY_LONG_LONG number_of_subscriptions;
   unsigned PY_LONG_LONG number_of_guard_conditions;
   unsigned PY_LONG_LONG number_of_timers;
 
   if (!PyArg_ParseTuple(
-    args, "OKKK", &pywait_set, &number_of_subscriptions,
-    &number_of_guard_conditions, &number_of_timers))
+      args, "OKKK", &pywait_set, &number_of_subscriptions,
+      &number_of_guard_conditions, &number_of_timers))
   {
     return NULL;
   }
@@ -195,12 +191,11 @@ rclpy_wait_set_init(PyObject *Py_UNUSED(self), PyObject *args)
 }
 
 static PyObject *
-rclpy_wait_set_clear_subscriptions(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_wait_set_clear_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pywait_set;
+  PyObject * pywait_set;
 
-  if (!PyArg_ParseTuple(args, "O", &pywait_set))
-  {
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
     return NULL;
   }
 
@@ -210,13 +205,12 @@ rclpy_wait_set_clear_subscriptions(PyObject *Py_UNUSED(self), PyObject *args)
 }
 
 static PyObject *
-rclpy_wait_set_add_subscription(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pywait_set;
-  PyObject *pysubscription;
+  PyObject * pywait_set;
+  PyObject * pysubscription;
 
-  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pysubscription))
-  {
+  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pysubscription)) {
     return NULL;
   }
 
@@ -227,12 +221,11 @@ rclpy_wait_set_add_subscription(PyObject *Py_UNUSED(self), PyObject *args)
 }
 
 static PyObject *
-rclpy_wait(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pywait_set;
+  PyObject * pywait_set;
 
-  if (!PyArg_ParseTuple(args, "O", &pywait_set))
-  {
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
     return NULL;
   }
 
@@ -242,39 +235,37 @@ rclpy_wait(PyObject *Py_UNUSED(self), PyObject *args)
 }
 
 static PyObject *
-rclpy_take(PyObject *Py_UNUSED(self), PyObject *args)
+rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject *pysubscription;
-  PyObject *pymsg_type;
+  PyObject * pysubscription;
+  PyObject * pymsg_type;
 
-  if (!PyArg_ParseTuple(args, "OO", &pysubscription, &pymsg_type))
-  {
+  if (!PyArg_ParseTuple(args, "OO", &pysubscription, &pymsg_type)) {
     return NULL;
   }
 
   rcl_subscription_t *subscription = PyCapsule_GetPointer(pysubscription, NULL);
 
-  PyObject *pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
+  PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  PyObject *pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
+  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
   void *(*convert_from_py)(PyObject *) = PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
-  PyObject *pymsg = PyObject_CallObject(pymsg_type, NULL);
+  PyObject * pymsg = PyObject_CallObject(pymsg_type, NULL);
 
-  void *taken_msg = convert_from_py(pymsg);
+  void * taken_msg = convert_from_py(pymsg);
 
   bool taken = false;
 
   rcl_take(subscription, taken_msg, &taken, NULL);
 
-  if (taken)
-  {
-    PyObject *pyconvert_to_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_TO_PY");
+  if (taken) {
+    PyObject * pyconvert_to_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_TO_PY");
 
     PyObject *(*convert_to_py)(void *) = PyCapsule_GetPointer(pyconvert_to_py, NULL);
 
-    PyObject *pytaken_msg = convert_to_py(taken_msg);
+    PyObject * pytaken_msg = convert_to_py(taken_msg);
 
     Py_INCREF(pytaken_msg);
 
@@ -284,27 +275,25 @@ rclpy_take(PyObject *Py_UNUSED(self), PyObject *args)
 }
 
 static PyObject *
-rclpy_ok(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   bool ok = rcl_ok();
-  if(ok)
-  {
+  if (ok) {
     Py_RETURN_TRUE;
-  } else
-  {
+  } else {
     Py_RETURN_FALSE;
   }
 }
 
 static PyObject *
-rclpy_shutdown(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcl_shutdown();
   Py_RETURN_NONE;
 }
 
 static PyMethodDef rclpy_methods[] = {
-  {"rclpy_init",  rclpy_init, METH_VARARGS,
+  {"rclpy_init", rclpy_init, METH_VARARGS,
    "Initialize RCL."},
   {"rclpy_create_node", rclpy_create_node, METH_VARARGS,
    "Create a Node."},
@@ -345,15 +334,15 @@ static PyMethodDef rclpy_methods[] = {
 };
 
 static struct PyModuleDef _rclpymodule = {
-   PyModuleDef_HEAD_INIT,
-   "_rclpy",
-   "_rclpy_doc",
-   -1,  /* -1 means that the module keeps state in global variables */
-   rclpy_methods,
-   NULL,
-   NULL,
-   NULL,
-   NULL
+  PyModuleDef_HEAD_INIT,
+  "_rclpy",
+  "_rclpy_doc",
+  -1,   /* -1 means that the module keeps state in global variables */
+  rclpy_methods,
+  NULL,
+  NULL,
+  NULL,
+  NULL
 };
 
 #define MAKE_FN_NAME(x) PyInit__rclpy ## x
