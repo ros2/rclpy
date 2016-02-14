@@ -15,6 +15,7 @@
 #include <Python.h>
 
 #include <rmw/rmw.h>
+#include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <rcl/node.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
@@ -28,7 +29,11 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   // TODO(esteve): parse args
   rcl_ret_t ret = rcl_init(0, NULL, rcl_get_default_allocator());
-  (void)ret;
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to init: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -45,7 +50,11 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   node->impl = NULL;
   rcl_node_options_t default_options = rcl_node_get_default_options();
   rcl_ret_t ret = rcl_node_init(node, node_name, &default_options);
-  (void)ret;
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create node: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   PyObject * pynode = PyCapsule_New(node, NULL, NULL);
   return pynode;
 }
@@ -78,7 +87,11 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   publisher->impl = NULL;
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
-  (void)ret;
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create publisher: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   PyObject * pypublisher = PyCapsule_New(publisher, NULL, NULL);
   return pypublisher;
 }
@@ -107,7 +120,12 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 
   void * raw_ros_message = convert_from_py(pymsg);
 
-  rcl_publish(publisher, raw_ros_message);
+  rcl_ret_t ret = rcl_publish(publisher, raw_ros_message);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to publish: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
 
   Py_RETURN_NONE;
 }
@@ -141,7 +159,11 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   subscription->impl = NULL;
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
-  (void)ret;
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create subscriptions: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   PyObject * pysubscription = PyCapsule_New(subscription, NULL, NULL);
   return pysubscription;
 }
@@ -189,9 +211,14 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
 
-  rcl_wait_set_init(
+  rcl_ret_t ret = rcl_wait_set_init(
     wait_set, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
     rcl_get_default_allocator());
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to initialize wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -206,6 +233,11 @@ rclpy_wait_set_clear_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
   rcl_ret_t ret = rcl_wait_set_clear_subscriptions(wait_set);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to clear subscriptions from wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -223,6 +255,11 @@ rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_subscription_t * subscription =
     (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, NULL);
   rcl_ret_t ret = rcl_wait_set_add_subscription(wait_set, subscription);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to add subscription to wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -237,6 +274,11 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
   rcl_ret_t ret = rcl_wait(wait_set, RCL_S_TO_NS(1));
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to wait on wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -267,7 +309,12 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
   bool taken = false;
 
-  rcl_take(subscription, taken_msg, &taken, NULL);
+  rcl_ret_t ret = rcl_take(subscription, taken_msg, &taken, NULL);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to take from a subscription: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
 
   if (taken) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_TO_PY");
@@ -299,7 +346,12 @@ rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 static PyObject *
 rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  rcl_shutdown();
+  rcl_ret_t ret = rcl_shutdown();
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to shutdown: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
