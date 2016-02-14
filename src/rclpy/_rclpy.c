@@ -41,7 +41,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_node_t *node = PyMem_Malloc(sizeof(rcl_node_t));
+  rcl_node_t * node = (rcl_node_t *)PyMem_Malloc(sizeof(rcl_node_t));
   node->impl = NULL;
   rcl_node_options_t default_options = rcl_node_get_default_options();
   rcl_ret_t ret = rcl_node_init(node, node_name, &default_options);
@@ -65,15 +65,16 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 
   char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
-  rcl_node_t *node = PyCapsule_GetPointer(pynode, NULL);
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
 
-  rosidl_message_type_support_t * ts = PyCapsule_GetPointer(pyts, NULL);
+  rosidl_message_type_support_t * ts =
+    (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
 
-  rcl_publisher_t *publisher = PyMem_Malloc(sizeof(rcl_publisher_t));
+  rcl_publisher_t * publisher = (rcl_publisher_t *)PyMem_Malloc(sizeof(rcl_publisher_t));
   publisher->impl = NULL;
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
@@ -92,7 +93,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_publisher_t *publisher = PyCapsule_GetPointer(pypublisher, NULL);
+  rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(pypublisher, NULL);
 
   PyObject * pymsg_type = PyObject_GetAttrString(pymsg, "__class__");
 
@@ -100,7 +101,9 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
-  void *(*convert_from_py)(PyObject *) = PyCapsule_GetPointer(pyconvert_from_py, NULL);
+  typedef void * (* convert_from_py_signature)(PyObject *);
+  convert_from_py_signature convert_from_py =
+    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
   void * raw_ros_message = convert_from_py(pymsg);
 
@@ -122,17 +125,19 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 
   assert(PyUnicode_Check(pytopic));
 
-  char *topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
+  char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
-  rcl_node_t *node = PyCapsule_GetPointer(pynode, NULL);
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
 
-  rosidl_message_type_support_t * ts = PyCapsule_GetPointer(pyts, NULL);
+  rosidl_message_type_support_t * ts =
+    (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
 
-  rcl_subscription_t *subscription = PyMem_Malloc(sizeof(rcl_subscription_t));
+  rcl_subscription_t * subscription =
+    (rcl_subscription_t *)PyMem_Malloc(sizeof(rcl_subscription_t));
   subscription->impl = NULL;
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
@@ -155,7 +160,7 @@ rclpy_get_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UN
 static PyObject *
 rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  rcl_wait_set_t *wait_set = PyMem_Malloc(sizeof(rcl_wait_set_t));
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyMem_Malloc(sizeof(rcl_wait_set_t));
   wait_set->subscriptions = NULL;
   wait_set->size_of_subscriptions = 0;
   wait_set->guard_conditions = NULL;
@@ -182,7 +187,7 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_wait_set_t *wait_set = PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
 
   rcl_wait_set_init(
     wait_set, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
@@ -199,8 +204,8 @@ rclpy_wait_set_clear_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_wait_set_t *wait_set = PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_wait_set_clear_subscriptions(wait_set); 
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_ret_t ret = rcl_wait_set_clear_subscriptions(wait_set);
   Py_RETURN_NONE;
 }
 
@@ -214,9 +219,10 @@ rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_wait_set_t *wait_set = PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_subscription_t *subscription = PyCapsule_GetPointer(pysubscription, NULL);
-  rcl_wait_set_add_subscription(wait_set, subscription); 
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_subscription_t * subscription =
+    (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, NULL);
+  rcl_ret_t ret = rcl_wait_set_add_subscription(wait_set, subscription);
   Py_RETURN_NONE;
 }
 
@@ -229,8 +235,8 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_wait_set_t *wait_set = PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_wait(wait_set, RCL_S_TO_NS(1));
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_ret_t ret = rcl_wait(wait_set, RCL_S_TO_NS(1));
   Py_RETURN_NONE;
 }
 
@@ -244,13 +250,16 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_subscription_t *subscription = PyCapsule_GetPointer(pysubscription, NULL);
+  rcl_subscription_t * subscription =
+    (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, NULL);
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
   PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
-  void *(*convert_from_py)(PyObject *) = PyCapsule_GetPointer(pyconvert_from_py, NULL);
+  typedef void *(* convert_from_py_signature)(PyObject *);
+  convert_from_py_signature convert_from_py =
+    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
   PyObject * pymsg = PyObject_CallObject(pymsg_type, NULL);
 
@@ -263,7 +272,9 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   if (taken) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_TO_PY");
 
-    PyObject *(*convert_to_py)(void *) = PyCapsule_GetPointer(pyconvert_to_py, NULL);
+    typedef PyObject *(* convert_to_py_signature)(void *);
+    convert_to_py_signature convert_to_py =
+      (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
 
     PyObject * pytaken_msg = convert_to_py(taken_msg);
 
