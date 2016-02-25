@@ -19,11 +19,12 @@ from time import sleep
 
 def talker():
     import rclpy
+    rclpy.init([])
+
     from rclpy.qos import qos_profile_default
 
     from std_msgs.msg import String
     assert String.__class__._TYPE_SUPPORT is not None
-    rclpy.init([])
 
     node = rclpy.create_node('talker')
 
@@ -51,9 +52,9 @@ def test_rclpy_talker_listener():
     talker_process.start()
 
     import rclpy
-    from rclpy.qos import qos_profile_default
-
     rclpy.init([])
+
+    from rclpy.qos import qos_profile_default
 
     node = rclpy.create_node('listener')
 

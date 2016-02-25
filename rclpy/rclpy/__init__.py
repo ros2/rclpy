@@ -12,12 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy._rclpy__rmw_opensplice_cpp as _rclpy
+import os
 
+from rclpy import selector
 from rclpy.node import Node
+
+_rclpy = None
 
 
 def init(args):
+    global _rclpy
+    rclpy_rmw_env = os.getenv('RCLPY_IMPLEMENTATION')
+    if rclpy_rmw_env:
+        selector.select(rclpy_rmw_env)
+    _rclpy = selector.import_rmw_implementation()
+
+    assert _rclpy is not None, 'Could not load any RMW implementation'
     return _rclpy.rclpy_init(args)
 
 
@@ -49,3 +59,10 @@ def ok():
 
 def shutdown():
     return _rclpy.rclpy_shutdown()
+
+
+def get_implementation_identifier():
+    if _rclpy:
+        return _rclpy.rclpy_get_implementation_identifier()
+    else:
+        return None
