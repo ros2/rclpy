@@ -41,11 +41,11 @@ macro(target)
     get_rcl_information("${rmw_implementation}" "rcl${target_suffix}")
   endif()
   if("${rmw_implementation} " STREQUAL "rmw_connext_dynamic_cpp ")
-    message(STATUS "Skipping tests for '${rmw_implementation}'")
+    message(STATUS "Skipping rclpy for '${rmw_implementation}'")
     return()
   endif()
   if("${rmw_implementation} " STREQUAL "rmw_fastrtps_cpp ")
-    message(STATUS "Skipping tests for '${rmw_implementation}'")
+    message(STATUS "Skipping rclpy for '${rmw_implementation}'")
     return()
   endif()
 
@@ -87,9 +87,12 @@ if(AMENT_ENABLE_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
-  ament_add_nose_test(rclpytests test
-    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  )
+  rosidl_generator_py_get_typesupports(_typesupport_impls)
+  if(NOT "${_typesupport_impls} " STREQUAL " ")
+    ament_add_nose_test(rclpytests test
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    )
+  endif()
 endif()
 
 ament_package()
