@@ -189,6 +189,10 @@ rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UN
   wait_set->size_of_guard_conditions = 0;
   wait_set->timers = NULL;
   wait_set->size_of_timers = 0;
+  wait_set->clients = NULL;
+  wait_set->size_of_clients = 0;
+  wait_set->services = NULL;
+  wait_set->size_of_services = 0;
   wait_set->impl = NULL;
   PyObject * pywait_set = PyCapsule_New(wait_set, NULL, NULL);
   return pywait_set;
@@ -201,6 +205,8 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG number_of_subscriptions;
   unsigned PY_LONG_LONG number_of_guard_conditions;
   unsigned PY_LONG_LONG number_of_timers;
+  const unsigned PY_LONG_LONG number_of_clients = 0;
+  const unsigned PY_LONG_LONG number_of_services = 0;
 
   if (!PyArg_ParseTuple(
       args, "OKKK", &pywait_set, &number_of_subscriptions,
@@ -211,9 +217,10 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
 
+  // TODO(jacquelinekay) Services.
   rcl_ret_t ret = rcl_wait_set_init(
     wait_set, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
-    rcl_get_default_allocator());
+    number_of_clients, number_of_services, rcl_get_default_allocator());
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to initialize wait set: %s", rcl_get_error_string_safe());
