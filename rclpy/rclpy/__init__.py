@@ -50,6 +50,8 @@ def init(args=None):
     # Now we can use _rclpy to call the implementation specific rclpy_init().
     return _rclpy.rclpy_init(args if args is not None else sys.argv)
 
+def get_node_names():
+    return _rclpy.rclpy_get_node_names()
 
 def create_node(node_name):
     node_handle = _rclpy.rclpy_create_node(node_name)
