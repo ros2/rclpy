@@ -20,6 +20,8 @@ from rclpy.node import Node
 def init(args):
     return _rclpy.rclpy_init(args)
 
+def get_node_names():
+    return _rclpy.rclpy_get_node_names()
 
 def create_node(node_name):
     node_handle = _rclpy.rclpy_create_node(node_name)
