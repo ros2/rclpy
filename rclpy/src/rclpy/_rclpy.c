@@ -314,16 +314,15 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
   void * taken_msg = convert_from_py(pymsg);
 
-  bool taken = false;
+  rcl_ret_t ret = rcl_take(subscription, taken_msg, NULL);
 
-  rcl_ret_t ret = rcl_take(subscription, taken_msg, &taken, NULL);
-  if (ret != RCL_RET_OK) {
+  if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to take from a subscription: %s", rcl_get_error_string_safe());
     return NULL;
   }
 
-  if (taken) {
+  if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_TO_PY");
 
     typedef PyObject *(* convert_to_py_signature)(void *);
@@ -336,6 +335,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
     return pytaken_msg;
   }
+  // if take failed, just do nothing
   Py_RETURN_NONE;
 }
 
