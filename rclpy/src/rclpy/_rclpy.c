@@ -185,6 +185,8 @@ rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UN
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyMem_Malloc(sizeof(rcl_wait_set_t));
   wait_set->subscriptions = NULL;
   wait_set->size_of_subscriptions = 0;
+  wait_set->fixed_guard_conditions = NULL;
+  wait_set->size_of_fixed_guard_conditions = 0;
   wait_set->guard_conditions = NULL;
   wait_set->size_of_guard_conditions = 0;
   wait_set->timers = NULL;
@@ -211,8 +213,9 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
 
+  // TODO(jacquelinekay) add fixed guard conditions
   rcl_ret_t ret = rcl_wait_set_init(
-    wait_set, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
+    wait_set, NULL, 0, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
     rcl_get_default_allocator());
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
