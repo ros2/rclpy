@@ -12,64 +12,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
-from multiprocessing import Process
-from time import sleep
+import functools
+import os
+import sys
+
+from launch import LaunchDescriptor
+from launch.launcher import AsynchronousLauncher
+from launch.launcher import DefaultLauncher
+
+this_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 
 
-def talker():
+def listener_callback(msg, received_messages):
+    print('received: ' + msg.data)
+    received_messages.append(msg)
+
+
+def test_talker_listener():
+    launch_desc = LaunchDescriptor()
+    launch_desc.add_process(
+        cmd=[sys.executable, os.path.join(this_dir, 'talker.py')],
+        name='test_talker_listener__talker'
+    )
+    launcher = DefaultLauncher()
+    launcher.add_launch_descriptor(launch_desc)
+    async_launcher = AsynchronousLauncher(launcher)
+    async_launcher.start()
+
     import rclpy
+
     rclpy.init([])
 
     from rclpy.qos import qos_profile_default
 
     from std_msgs.msg import String
     assert String.__class__._TYPE_SUPPORT is not None
-
-    node = rclpy.create_node('talker')
-
-    chatter_pub = node.create_publisher(String, 'chatter', qos_profile_default)
-
-    msg = String()
-
-    i = 1
-    while True:
-        msg.data = 'Hello World: {0}'.format(i)
-        i += 1
-        chatter_pub.publish(msg)
-        sleep(1)
-
-
-def listener_callback(msg, talker_process, received_messages):
-    import rclpy
-    talker_process.terminate()
-    received_messages.append(msg)
-    rclpy.shutdown()
-
-
-def test_rclpy_talker_listener():
-    talker_process = Process(target=talker)
-    talker_process.start()
-
-    import rclpy
-    rclpy.init([])
-
-    from rclpy.qos import qos_profile_default
 
     node = rclpy.create_node('listener')
 
     received_messages = []
 
-    chatter_callback = partial(
-        listener_callback, talker_process=talker_process, received_messages=received_messages)
-
-    from std_msgs.msg import String
-    assert String.__class__._TYPE_SUPPORT is not None
-
+    chatter_callback = functools.partial(
+        listener_callback, received_messages=received_messages)
+    # TODO(wjwwood): should the subscription object hang around?
     node.create_subscription(String, 'chatter', chatter_callback, qos_profile_default)
 
-    rclpy.spin(node)
+    spin_count = 0
+    while len(received_messages) == 0 and spin_count < 10 and launcher.is_launch_running():
+        rclpy.spin_once(node)  # This will wait 1 second or until something has been done.
+        spin_count += 1
 
-    talker_process.join()
+    async_launcher.terminate()
+    async_launcher.join()
 
     assert len(received_messages) > 0, "Should have received a message from talker"
