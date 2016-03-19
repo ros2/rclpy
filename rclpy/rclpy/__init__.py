@@ -57,7 +57,6 @@ def create_node(node_name):
     node_handle = _rclpy.rclpy_create_node(node_name)
     return Node(node_handle)
 
-
 def spin_once(node):
     wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
 
