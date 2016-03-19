@@ -154,6 +154,7 @@ def _rostopic_cmd_echo(argv):
                                  offset_time=options.offset_time, count=msg_count,
                                  field_filter_fn=field_filter_fn, fixed_numeric_width=fixed_numeric_width)
     try:
+        # TODO FIXME, hardcoded to a function that solely supports simple string messages    
         #_rostopic_echo(topic, callback_echo, bag_file=options.bag)
         _rostopic_echo_test(topic)
     except socket.error:
