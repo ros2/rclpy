@@ -25,22 +25,27 @@ from optparse import OptionParser
 
 NAME='rosnode'
 
+# TODO implement
 def _rosnode_cmd_ping(argv):
     print("NOT IMPLEMENTED\n")
     sys.exit(0)
 
+# TODO implement
 def _rosnode_cmd_info(argv):
     print("NOT IMPLEMENTED\n")
     sys.exit(0)
 
+# TODO implement
 def _rosnode_cmd_machine(argv):
     print("NOT IMPLEMENTED\n")
     sys.exit(0)
 
+# TODO implement
 def _rosnode_cmd_cleanup(argv):
     print("NOT IMPLEMENTED\n")
     sys.exit(0)
 
+# TODO implement
 def _rosnode_cmd_kill(argv):
     print("NOT IMPLEMENTED\n")
     sys.exit(0)
