@@ -20,7 +20,7 @@ import time
 import os
 import errno
 import sys
-
+import socket
 from optparse import OptionParser
 
 NAME='rostopic'
