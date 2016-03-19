@@ -64,7 +64,8 @@ def _rosnode_cmd_list(argv):
     if len(args) > 1:
         parser.error("invalid args: you may only specify one namespace")
     elif len(args) == 1:
-        namespace = rosgraph.names.script_resolve_name('rostopic', args[0])
+        #namespace = rosgraph.names.script_resolve_name('rostopic', args[0])
+        pass
 
     # In ROS 1, the rosnode list invocation was performed using:
     #    rosnode_listnodes(namespace=namespace, list_uri=options.list_uri, list_all=options.list_all)
