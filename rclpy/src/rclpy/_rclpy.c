@@ -61,6 +61,12 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 }
 
 static PyObject *
+rclpy_get_remote_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  return NULL;
+}
+
+static PyObject *
 rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 {
   const char * node_name;
@@ -389,7 +395,9 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_init", rclpy_init, METH_VARARGS,
    "Initialize RCL."},
   {"rclpy_get_node_names", rclpy_get_node_names, METH_VARARGS,
-   "Get ROS node names."},   
+   "Get ROS node names."},
+  {"rclpy_get_remote_topic_names_and_types", rclpy_get_remote_topic_names_and_types, METH_VARARGS,
+   "Get ROS topic names and types."},
   {"rclpy_create_node", rclpy_create_node, METH_VARARGS,
    "Create a Node."},
   {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,

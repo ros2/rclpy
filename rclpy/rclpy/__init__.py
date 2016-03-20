@@ -23,6 +23,9 @@ def init(args):
 def get_node_names():
     return _rclpy.rclpy_get_node_names()
 
+def get_remote_topic_names_and_types():
+    return _rclpy.rclpy_get_remote_topic_names_and_types()
+
 def create_node(node_name):
     node_handle = _rclpy.rclpy_create_node(node_name)
     return Node(node_handle)
