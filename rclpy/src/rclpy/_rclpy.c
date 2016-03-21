@@ -63,7 +63,23 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 static PyObject *
 rclpy_get_remote_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  return NULL;
+  rcl_strings_t topic_names_string = rcl_get_zero_initialized_strings();
+  rcl_strings_t type_names_string = rcl_get_zero_initialized_strings();
+  rcl_ret_t topic_ret = rcl_get_remote_topic_names_and_types(&topic_names_string, &type_names_string);
+
+  if(topic_ret != RCL_RET_OK){
+    return NULL;
+  }
+
+  PyObject* list = PyList_New(topic_names_string.count);
+  int i;
+  for(i = 0; i < topic_names_string.count; i++)
+      PyList_SetItem(list, i, Py_BuildValue("s", topic_names_string.data[i]));
+
+  rcl_strings_fini(&topic_names_string);
+  rcl_strings_fini(&type_names_string);
+
+  return list;
 }
 
 static PyObject *
