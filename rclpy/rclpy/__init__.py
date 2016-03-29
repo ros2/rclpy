@@ -20,11 +20,15 @@ from rclpy.node import Node
 def init(args):
     return _rclpy.rclpy_init(args)
 
+def get_node_names():
+    return _rclpy.rclpy_get_node_names()
+
+def get_remote_topic_names_and_types():
+    return _rclpy.rclpy_get_remote_topic_names_and_types()
 
 def create_node(node_name):
     node_handle = _rclpy.rclpy_create_node(node_name)
     return Node(node_handle)
-
 
 def spin(node):
     wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
