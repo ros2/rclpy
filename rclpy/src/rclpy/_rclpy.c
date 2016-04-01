@@ -169,7 +169,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
-rclpy_get_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   const char * rmw_implementation_identifier = rmw_get_implementation_identifier();
 
@@ -398,7 +398,7 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
    "rclpy_shutdown."},
 
-  {"rclpy_get_implementation_identifier", rclpy_get_implementation_identifier,
+  {"rclpy_get_rmw_implementation_identifier", rclpy_get_rmw_implementation_identifier,
    METH_NOARGS, "Retrieve the identifier for the active RMW implementation."},
   {NULL, NULL, 0, NULL}  /* sentinel */
 };

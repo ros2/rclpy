@@ -27,7 +27,9 @@ del source_path
 
 for __execfile in __execfiles:
     with open(__execfile, 'r') as __fh:
-        exec(__fh.read())
+        __code_object = compile(__fh.read(), __execfile, 'exec')
+        exec(__code_object)
+        del __code_object
     del __fh
     del __execfile
 del __execfiles
