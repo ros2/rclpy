@@ -19,12 +19,14 @@ import ament_index_python
 
 from rclpy.exceptions import ImplementationAlreadyImportedException
 from rclpy.exceptions import InvalidRCLPYImplementation
+from rclpy.impl.excepthook import add_unhandled_exception_addendum
 
 __rmw_implementations = None
 __selected_rmw_implementation = None
 __rmw_implementation_module = None
 
 AMENT_INDEX_NAME = 'rmw_python_extension'
+RCLPY_IMPLEMENTATION_ENV_NAME = 'RCLPY_IMPLEMENTATION'
 
 
 def reload_rmw_implementations():
@@ -76,13 +78,32 @@ def import_rmw_implementation():
     global __rmw_implementation_module
     if __rmw_implementation_module is not None:
         return __rmw_implementation_module
+    available_implementations = get_rmw_implementations()
     if __selected_rmw_implementation is None:
         logger = logging.getLogger('rclpy')
-        select_rmw_implementation(get_rmw_implementations()[0])  # select the first one
+        select_rmw_implementation(available_implementations[0])  # select the first one
         logger.debug("Implicitly selecting the '{0}' rmw implementation."
                      .format(__selected_rmw_implementation))
     module_name = '._rclpy__{rmw_implementation}'.format(
         rmw_implementation=__selected_rmw_implementation,
     )
-    __rmw_implementation_module = importlib.import_module(module_name, package='rclpy')
+    try:
+        __rmw_implementation_module = importlib.import_module(module_name, package='rclpy')
+    except ImportError as exc:
+        if "No module named 'rclpy._rclpy__" in str(exc):
+            log_args = [
+                __selected_rmw_implementation,
+                RCLPY_IMPLEMENTATION_ENV_NAME,
+                '\n'.join(['  - {0}'.format(x) for x in available_implementations]),
+            ]
+            # This message will only be printed if this exception goes unhandled.
+            add_unhandled_exception_addendum(
+                exc,
+                "\n"
+                "Failed to import the Python extension for the '{0}' rmw implementation.\n"
+                "A different rmw implementation can be selected using the '{1}' env variable.\n"
+                "These are the available rmw implementations:\n"
+                "{2}\n".format(*log_args)
+            )
+        raise
     return __rmw_implementation_module
