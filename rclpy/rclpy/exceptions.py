@@ -13,13 +13,6 @@
 # limitations under the License.
 
 
-class NotInitializedException(Exception):
-    """Raised when the rclpy implementation is accessed before rclpy.init()."""
-
-    def __init__(self, *args):
-        Exception.__init__(self, 'rclpy.init() has not been called', *args)
-
-
 class ImplementationAlreadyImportedException(Exception):
     """Raised on select_rmw_implemenation() after import_rmw_implementation() has been called."""
 
@@ -32,3 +25,17 @@ class InvalidRCLPYImplementation(Exception):
 
     def __init__(self, *args):
         Exception.__init__(self, 'requested invalid rmw implementation', *args)
+
+
+class NotInitializedException(Exception):
+    """Raised when the rclpy implementation is accessed before rclpy.init()."""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'rclpy.init() has not been called', *args)
+
+
+class NoImplementationAvailableException(Exception):
+    """Raised when there is no rmw implementation with a Python extension available."""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'no rmw implementation with a Python extension available')
