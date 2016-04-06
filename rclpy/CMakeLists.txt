@@ -77,6 +77,14 @@ macro(target)
     ${PythonExtra_INCLUDE_DIRS}
   )
 
+  # make an entry in the ament index for each rmw implementation for which
+  # a rclpy Python extension is built
+  # this is used in the Python code to avoid trying to import a Python
+  # extension for rmw implementations which do not have one
+  ament_index_register_resource("rmw_implementation_python_extension"
+    PACKAGE_NAME ${rmw_implementation}
+  )
+
   install(TARGETS ${PROJECT_NAME}${target_suffix}
     DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}")
 endmacro()

@@ -43,18 +43,7 @@ def func_import_each_available_rmw_implementation(rmw_implementation):
     assert(rmw_implementation in rmw_implementations)
 
     select_rmw_implementation(rmw_implementation)
-    try:
-        rclpy.init([])
-    except ImportError as exc:
-        if "No module named 'rclpy._rclpy__" in '{0}'.format(exc):
-            # Not all rmw implementations generate a Python implementation.
-            # TODO(wjwwood): prune get_rmw_implementations by
-            #   implementations that have generated a Python implementation
-            #   (probably use a separate ament index entry).
-            print("Failed to import rmw implementation '{0}', ignoring."
-                  .format(rmw_implementation), file=sys.stderr)
-            return ctypes.c_bool(True)
-        raise
+    rclpy.init([])
 
     set_rmw = rclpy.get_rmw_implementation_identifier()
 
@@ -93,18 +82,7 @@ def func_select_rmw_implementation_by_environment(rmw_implementation):
     rmw_implementations = get_rmw_implementations()
     assert(os.environ['RCLPY_IMPLEMENTATION'] in rmw_implementations)
 
-    try:
-        rclpy.init([])
-    except ImportError as exc:
-        if "No module named 'rclpy._rclpy__" in '{0}'.format(exc):
-            # Not all rmw implementations generate a Python implementation.
-            # TODO(wjwwood): prune get_rmw_implementations by
-            #   implementations that have generated a Python implementation
-            #   (probably use a separate ament index entry).
-            return ctypes.c_bool(True)
-            print("Failed to import rmw implementation '{0}', ignoring."
-                  .format(rmw_implementation), file=sys.stderr)
-        raise
+    rclpy.init([])
 
     set_rmw = rclpy.get_rmw_implementation_identifier()
 
