@@ -81,7 +81,7 @@ macro(target)
   # a rclpy Python extension is built
   # this is used in the Python code to avoid trying to import a Python
   # extension for rmw implementations which do not have one
-  ament_index_register_resource("rmw_implementation_python_extension"
+  ament_index_register_resource("rmw_python_extension"
     PACKAGE_NAME ${rmw_implementation}
   )
 
@@ -96,9 +96,12 @@ if(AMENT_ENABLE_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   rosidl_generator_py_get_typesupports(_typesupport_impls)
+  ament_index_get_preinstall_prefix(preinstall_ament_prefix)
   if(NOT "${_typesupport_impls} " STREQUAL " ")
     ament_add_nose_test(rclpytests test
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      # Append the "mock" ament index in the build space for the tests.
+      APPEND_ENV AMENT_PREFIX_PATH=${preinstall_ament_prefix}
     )
   endif()
 endif()

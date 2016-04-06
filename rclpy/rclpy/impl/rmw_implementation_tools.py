@@ -24,7 +24,8 @@ __rmw_implementations = None
 __selected_rmw_implementation = None
 __rmw_implementation_module = None
 
-AMENT_INDEX_NAME = 'rmw_implementation_python_extension'
+AMENT_INDEX_NAME = 'rmw_python_extension'
+
 
 
 def reload_rmw_implementations():
