@@ -29,6 +29,9 @@ def reload_rmw_implementations():
     """(Re)Load the available rmw implementations by inspecting the ament index."""
     global __rmw_implementations
     __rmw_implementations = sorted(ament_index_python.get_resources('rmw_implementation').keys())
+
+    # Remove implementations that are being filtered for in the rclp CMakeLists so they cannot be selected
+    __rmw_implementations = [rmw_impl for rmw_impl in __rmw_implementations if rmw_impl not in ['rmw_connext_dynamic_cpp', 'rmw_fastrtps_cpp']]
     return __rmw_implementations
 
 
