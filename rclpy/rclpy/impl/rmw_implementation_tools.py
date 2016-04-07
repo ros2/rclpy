@@ -27,7 +27,6 @@ __rmw_implementation_module = None
 AMENT_INDEX_NAME = 'rmw_python_extension'
 
 
-
 def reload_rmw_implementations():
     """(Re)Load the available rmw implementations by inspecting the ament index."""
     global __rmw_implementations

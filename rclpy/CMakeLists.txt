@@ -96,12 +96,16 @@ if(AMENT_ENABLE_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   rosidl_generator_py_get_typesupports(_typesupport_impls)
-  ament_index_get_preinstall_prefix(preinstall_ament_prefix)
+  ament_index_get_prefix_path(ament_prefix_path_list)
+  # Do this even on Windows, because the Python run_test.py will handle the : vs ; issues.
+  string(REPLACE ";" ":" ament_prefix_path "${ament_prefix_path_list}")
+  if(WIN32)
+    string(REPLACE "\\" "/" ament_prefix_path "${ament_prefix_path}")
+  endif()
   if(NOT "${_typesupport_impls} " STREQUAL " ")
     ament_add_nose_test(rclpytests test
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-      # Append the "mock" ament index in the build space for the tests.
-      APPEND_ENV AMENT_PREFIX_PATH=${preinstall_ament_prefix}
+      ENV AMENT_PREFIX_PATH=${ament_prefix_path}
     )
   endif()
 endif()
