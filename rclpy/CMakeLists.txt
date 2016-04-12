@@ -77,6 +77,14 @@ macro(target)
     ${PythonExtra_INCLUDE_DIRS}
   )
 
+  # make an entry in the ament index for each rmw implementation for which
+  # a rclpy Python extension is built
+  # this is used in the Python code to avoid trying to import a Python
+  # extension for rmw implementations which do not have one
+  ament_index_register_resource("rmw_python_extension"
+    PACKAGE_NAME ${rmw_implementation}
+  )
+
   install(TARGETS ${PROJECT_NAME}${target_suffix}
     DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}")
 endmacro()
@@ -88,9 +96,17 @@ if(AMENT_ENABLE_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   rosidl_generator_py_get_typesupports(_typesupport_impls)
+  ament_index_get_prefix_path(ament_index_build_path SKIP_AMENT_PREFIX_PATH)
+  # Get the first item (it will be the build space version of the build path).
+  list(GET ament_index_build_path 0 ament_index_build_path)
+  if(WIN32)
+    # On Windows prevent CMake errors and prevent it being evaluated as a list.
+    string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
+  endif()
   if(NOT "${_typesupport_impls} " STREQUAL " ")
     ament_add_nose_test(rclpytests test
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
     )
   endif()
 endif()
