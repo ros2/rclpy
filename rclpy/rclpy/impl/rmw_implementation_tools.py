@@ -97,7 +97,7 @@ def import_rmw_implementation():
     try:
         __rmw_implementation_module = importlib.import_module(module_name, package='rclpy')
     except ImportError as exc:
-        if "No module named 'rclpy._rclpy__" in str(exc):
+        if "No module named 'rclpy.{0}".format(module_name) in str(exc):
             if available_implementations:
                 rmw_implementations_msg = '\n'.join(
                     ['  - {0}'.format(x) for x in available_implementations]
