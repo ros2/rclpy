@@ -20,7 +20,7 @@ __unhandled_exception_addendums = {}
 
 
 def rclpy_excepthook(exc_type, value, traceback):
-    """rclpy's custom except hook for unhandled exceptions.
+    """The rclpy custom except hook for unhandled exceptions.
 
     This excepthook will check for any unhandled exception addendum's,
     log them if they exist, and then call the original excepthook.
