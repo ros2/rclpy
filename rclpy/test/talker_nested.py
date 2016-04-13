@@ -20,7 +20,7 @@ import time
 sys.path.insert(0, os.getcwd())
 
 
-def talker():
+def talker_nested():
     import rclpy
     from rclpy.qos import qos_profile_default
 
@@ -28,26 +28,32 @@ def talker():
 
     # TODO(wjwwood) move this import back to the module level when
     # it is possible to import the messages before rclpy.init().
-    from std_msgs.msg import String
+    from geometry_msgs.msg import TransformStamped
 
-    node = rclpy.create_node('talker')
+    node = rclpy.create_node('talker_nested')
 
-    chatter_pub = node.create_publisher(String, 'chatter', qos_profile_default)
+    chatter_nested_pub = node.create_publisher(
+        TransformStamped, 'chatter_nested',
+        qos_profile_default)
 
-    msg = String()
-
+    msg = TransformStamped()
     i = 1
     print('talker: beginning loop')
     while True:
-        msg.data = 'Hello World: {0}'.format(i)
-        i += 1
-        print('talker sending: ' + msg.data)
-        chatter_pub.publish(msg)
+        msg.header.frame_id = str('blabla{}'.format(i))
+        msg.child_frame_id = str('blablabla{}'.format(i + 1))
+        msg.transform.translation.x = float(i + 2)
+        msg.transform.rotation.x = float(i + 3)
+        print('talker sending: frame_id: {}, child_frame: {}, translationx: {}, rotationx: {}'
+              .format(msg.header.frame_id, msg.child_frame_id, msg.transform.translation.x,
+                      msg.transform.rotation.x))
+        chatter_nested_pub.publish(msg)
+        i += 4
         time.sleep(1)
 
 if __name__ == '__main__':
     try:
-        talker()
+        talker_nested()
     except KeyboardInterrupt:
         print('talker stopped cleanly')
     except BaseException:
