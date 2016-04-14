@@ -23,8 +23,6 @@ import sys
 import socket
 from optparse import OptionParser
 from rclpy.qos import qos_profile_default
-from std_msgs.msg import String
-
 
 NAME='rostopic'
 
