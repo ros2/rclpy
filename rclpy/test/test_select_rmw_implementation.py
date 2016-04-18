@@ -18,12 +18,6 @@ import os
 import sys
 import traceback
 
-# TODO(wjwwood): remove this once we get all the identifiers consistent
-identifiers_map = {
-    'connext_static': 'rmw_connext_cpp',
-    'opensplice_static': 'rmw_opensplice_cpp'
-}
-
 
 def run_catch_report_raise(func, *args, **kwargs):
     try:
@@ -47,13 +41,9 @@ def func_import_each_available_rmw_implementation(rmw_implementation):
 
     set_rmw = rclpy.get_rmw_implementation_identifier()
 
-    assert set_rmw in identifiers_map, \
-        "expected identifier '{0}' to be in the map '{1}'".format(set_rmw, identifiers_map)
-
-    set_rmw_equivalent = identifiers_map[set_rmw]
-    assert set_rmw_equivalent == rmw_implementation, \
-        "expected '{0}' but got '{1}' (aka '{2}')".format(
-            rmw_implementation, set_rmw_equivalent, set_rmw)
+    assert set_rmw == rmw_implementation, \
+        "expected '{0}' but got '{1}'".format(
+            rmw_implementation, set_rmw)
     return ctypes.c_bool(True)
 
 
@@ -86,13 +76,9 @@ def func_select_rmw_implementation_by_environment(rmw_implementation):
 
     set_rmw = rclpy.get_rmw_implementation_identifier()
 
-    assert set_rmw in identifiers_map, \
-        "expected identifier '{0}' to be in the map '{1}'".format(set_rmw, identifiers_map)
-
-    set_rmw_equivalent = identifiers_map[set_rmw]
-    assert set_rmw_equivalent == rmw_implementation, \
-        "expected '{0}' but got '{1}' (aka '{2}')".format(
-            rmw_implementation, set_rmw_equivalent, set_rmw)
+    assert set_rmw == rmw_implementation, \
+        "expected '{0}' but got '{1}'".format(
+            rmw_implementation, set_rmw)
     return ctypes.c_bool(True)
 
 
