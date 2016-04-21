@@ -77,6 +77,24 @@ def spin_once(node):
         if msg:
             subscription.callback(msg)
 
+def wait_for_message(node, topic):
+    wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
+
+    _rclpy.rclpy_wait_set_init(wait_set, 1, 0, 0)
+
+    _rclpy.rclpy_wait_set_clear_subscriptions(wait_set)
+    for subscription in node.subscriptions:
+        if subscription.topic == topic:
+            _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
+
+    _rclpy.rclpy_wait(wait_set)
+
+    # TODO(wjwwood): properly implement this by checking the contents of the wait_set.
+    for subscription in node.subscriptions:
+        if subscription.topic == topic:
+            msg = _rclpy.rclpy_take(subscription.subscription_handle, subscription.msg_type)
+            if msg:
+                return msg
 
 def ok():
     return _rclpy.rclpy_ok()
