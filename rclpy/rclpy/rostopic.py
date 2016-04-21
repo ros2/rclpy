@@ -166,7 +166,8 @@ def _rostopic_echo_test(topic):
     # TODO FIXME no path resolving for topics yet implemented thereby the initial "/" is
     # omited.
     sub = node.create_subscription(String, topic[1:], chatter_callback, qos_profile_default)
-    rclpy.spin(node)
+    while rclpy.ok():
+       rclpy.spin_once(node)
 
 def chatter_callback(msg):
     print('%s' % msg.data)
