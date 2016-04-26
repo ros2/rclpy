@@ -19,13 +19,18 @@ import sys
 from rclpy.exceptions import InvalidRCLPYImplementation
 from rclpy.impl import implementation_singleton
 from rclpy.impl import rmw_implementation_tools
+from rclpy.impl.rmw_implementation_tools import RCLPY_IMPLEMENTATION_ENV_NAME
 from rclpy.node import Node
+from rclpy.impl import excepthook
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+# install the excepthook
+excepthook.install_rclpy_excepthook()
+
 
 def init(args=None):
-    rclpy_rmw_env = os.getenv('RCLPY_IMPLEMENTATION', None)
+    rclpy_rmw_env = os.getenv(RCLPY_IMPLEMENTATION_ENV_NAME, None)
     if rclpy_rmw_env is not None:
         available_rmw_implementations = rmw_implementation_tools.get_rmw_implementations()
         if rclpy_rmw_env not in available_rmw_implementations:
