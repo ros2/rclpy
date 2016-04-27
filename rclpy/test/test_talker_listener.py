@@ -23,39 +23,52 @@ from launch.launcher import DefaultLauncher
 this_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 
 
+def listener_nested_callback(msg, received_messages):
+    print('received: frame_id={}, child_frame={}, translationx={}, rotationx{}'
+          .format(msg.header.frame_id, msg.child_frame_id, msg.transform.translation.x,
+                  msg.transform.rotation.x))
+    received_messages.append(msg)
+
+
 def listener_callback(msg, received_messages):
     print('received: ' + msg.data)
     received_messages.append(msg)
 
 
-def test_talker_listener():
+def launch_talker_listener(test_file, message_pkg, message_name, callback):
+    import rclpy
+    from rclpy.qos import qos_profile_default
+    import importlib
+
     launch_desc = LaunchDescriptor()
     launch_desc.add_process(
-        cmd=[sys.executable, os.path.join(this_dir, 'talker.py')],
-        name='test_talker_listener__talker'
+        cmd=[sys.executable, os.path.join(this_dir, test_file)],
+        name='test_talker_listener__{}'.format(test_file)
     )
     launcher = DefaultLauncher()
     launcher.add_launch_descriptor(launch_desc)
     async_launcher = AsynchronousLauncher(launcher)
     async_launcher.start()
 
-    import rclpy
-
     rclpy.init([])
 
-    from rclpy.qos import qos_profile_default
+    module = importlib.import_module(message_pkg + '.msg')
+    msg_mod = getattr(module, message_name)
+    assert msg_mod.__class__._TYPE_SUPPORT is not None
 
-    from std_msgs.msg import String
-    assert String.__class__._TYPE_SUPPORT is not None
-
-    node = rclpy.create_node('listener')
+    node = rclpy.create_node(test_file[:test_file.rfind('.')])
 
     received_messages = []
 
     chatter_callback = functools.partial(
-        listener_callback, received_messages=received_messages)
+        callback, received_messages=received_messages)
+
     # TODO(wjwwood): should the subscription object hang around?
-    node.create_subscription(String, 'chatter', chatter_callback, qos_profile_default)
+    node.create_subscription(
+        msg_mod,
+        test_file[:test_file.rfind('.')].replace('talker', 'chatter'),
+        chatter_callback,
+        qos_profile_default)
 
     spin_count = 0
     while len(received_messages) == 0 and spin_count < 10 and launcher.is_launch_running():
@@ -64,5 +77,22 @@ def test_talker_listener():
 
     async_launcher.terminate()
     async_launcher.join()
+    rclpy.shutdown()
+    assert len(received_messages) > 0,\
+        'Should have received a {} message from talker'.format(message_name)
 
-    assert len(received_messages) > 0, "Should have received a message from talker"
+
+def test_talker_listener():
+    launch_talker_listener(
+        test_file='talker.py',
+        message_pkg='std_msgs',
+        message_name='String',
+        callback=listener_callback)
+
+
+def test_talker_listener_nested():
+    launch_talker_listener(
+        test_file='talker_nested.py',
+        message_pkg='geometry_msgs',
+        message_name='TransformStamped',
+        callback=listener_nested_callback)
