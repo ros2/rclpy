@@ -17,11 +17,11 @@ import os
 import sys
 
 from rclpy.exceptions import InvalidRCLPYImplementation
+from rclpy.impl import excepthook
 from rclpy.impl import implementation_singleton
 from rclpy.impl import rmw_implementation_tools
 from rclpy.impl.rmw_implementation_tools import RCLPY_IMPLEMENTATION_ENV_NAME
 from rclpy.node import Node
-from rclpy.impl import excepthook
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
