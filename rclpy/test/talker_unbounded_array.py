@@ -20,7 +20,7 @@ import time
 sys.path.insert(0, os.getcwd())
 
 
-def talker_nested():
+def talker_unbounded_array():
     import rclpy
     from rclpy.qos import qos_profile_default
 
@@ -28,33 +28,28 @@ def talker_nested():
 
     # TODO(wjwwood) move this import back to the module level when
     # it is possible to import the messages before rclpy.init().
-    from geometry_msgs.msg import TransformStamped
+    from sensor_msgs.msg import LaserScan
 
-    node = rclpy.create_node('talker_nested')
+    node = rclpy.create_node('talker_unbounded_array')
 
-    chatter_nested_pub = node.create_publisher(
-        TransformStamped, 'chatter_nested',
-        qos_profile_default)
+    chatter_pub = node.create_publisher(LaserScan, 'chatter_unbounded_array', qos_profile_default)
 
-    msg = TransformStamped()
+    msg = LaserScan()
+
     i = 1
-    print('talker: beginning loop')
+    print('talker_unbounded_array: beginning loop')
     while True:
         # TODO(mikael) remove header initialization once rclpy doesnt crash with empty strings
-        msg.header.frame_id = str('blabla{}'.format(i))
-        msg.child_frame_id = str('blablabla{}'.format(i + 1))
-        msg.transform.translation.x = float(i + 2)
-        msg.transform.rotation.x = float(i + 3)
-        print('talker sending: frame_id: {}, child_frame: {}, translationx: {}, rotationx: {}'
-              .format(msg.header.frame_id, msg.child_frame_id, msg.transform.translation.x,
-                      msg.transform.rotation.x))
-        chatter_nested_pub.publish(msg)
-        i += 4
+        msg.header.frame_id = "toto"
+        msg.intensities = [float(x) for x in range(0, i + 10)]
+        i += 1
+        print('talker_unbounded_array sending: ({})'.format(msg.intensities))
+        chatter_pub.publish(msg)
         time.sleep(1)
 
 if __name__ == '__main__':
     try:
-        talker_nested()
+        talker_unbounded_array()
     except KeyboardInterrupt:
         print('talker stopped cleanly')
     except BaseException:
