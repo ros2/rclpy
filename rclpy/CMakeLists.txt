@@ -40,12 +40,11 @@ macro(target)
   if(NOT "${target_suffix} " STREQUAL " ")
     get_rcl_information("${rmw_implementation}" "rcl${target_suffix}")
   endif()
-  if("${rmw_implementation} " STREQUAL "rmw_connext_dynamic_cpp ")
-    message(STATUS "Skipping rclpy for '${rmw_implementation}'")
-    return()
-  endif()
-  if("${rmw_implementation} " STREQUAL "rmw_fastrtps_cpp ")
-    message(STATUS "Skipping rclpy for '${rmw_implementation}'")
+  # Only build the library if a C typesupport exists for the rmw_implementation
+  get_rmw_typesupport(typesupport_impls "${rmw_implementation}" LANGUAGE "c")
+  if("${typesupport_impls} " STREQUAL " ")
+    message(STATUS "Skipping rclpy for '${rmw_implementation}' because no C "
+      "typesupport library was found.")
     return()
   endif()
 
