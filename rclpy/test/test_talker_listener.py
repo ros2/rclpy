@@ -46,7 +46,7 @@ def listener_unbounded_array_callback(msg, received_messages):
 
 
 def listener_nested_array_callback(msg, received_messages):
-    print('received: ({})'.format([msg.fields[x].name for x in range(len(msg.fields))]))
+    print('received: ({})'.format([f.name for f in msg.fields]))
     received_messages.append(msg)
 
 

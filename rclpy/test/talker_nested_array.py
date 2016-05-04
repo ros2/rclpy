@@ -49,7 +49,7 @@ def talker_nested_array():
             msg.fields.append(tmpfield)
         i += 1
         print('talker_nested_array sending: ({})'.format(
-            [msg.fields[x].name for x in range(len(msg.fields))]))
+            [f.name for f in msg.fields]))
         chatter_pub.publish(msg)
         time.sleep(1)
 
