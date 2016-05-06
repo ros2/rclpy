@@ -39,8 +39,6 @@ def talker_unbounded_array():
     i = 1
     print('talker_unbounded_array: beginning loop')
     while True:
-        # TODO(mikael) remove header initialization once rclpy doesnt crash with empty strings
-        msg.header.frame_id = "toto"
         msg.intensities = [float(x) for x in range(0, i + 10)]
         i += 1
         print('talker_unbounded_array sending: ({})'.format(msg.intensities))

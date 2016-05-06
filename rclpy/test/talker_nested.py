@@ -40,7 +40,6 @@ def talker_nested():
     i = 1
     print('talker: beginning loop')
     while True:
-        # TODO(mikael) remove header initialization once rclpy doesnt crash with empty strings
         msg.header.frame_id = str('blabla{}'.format(i))
         msg.child_frame_id = str('blablabla{}'.format(i + 1))
         msg.transform.translation.x = float(i + 2)
