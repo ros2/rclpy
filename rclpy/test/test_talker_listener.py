@@ -23,6 +23,11 @@ from launch.launcher import DefaultLauncher
 this_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 
 
+def listener_callback(msg, received_messages):
+    print('received: ' + msg.data)
+    received_messages.append(msg)
+
+
 def listener_nested_callback(msg, received_messages):
     print('received: frame_id={}, child_frame={}, translationx={}, rotationx{}'
           .format(msg.header.frame_id, msg.child_frame_id, msg.transform.translation.x,
@@ -30,8 +35,18 @@ def listener_nested_callback(msg, received_messages):
     received_messages.append(msg)
 
 
-def listener_callback(msg, received_messages):
-    print('received: ' + msg.data)
+def listener_fixed_array_callback(msg, received_messages):
+    print('received: ({})'.format(msg.angular_velocity_covariance))
+    received_messages.append(msg)
+
+
+def listener_unbounded_array_callback(msg, received_messages):
+    print('received: ({})'.format(msg.intensities))
+    received_messages.append(msg)
+
+
+def listener_nested_array_callback(msg, received_messages):
+    print('received: ({})'.format([f.name for f in msg.fields]))
     received_messages.append(msg)
 
 
@@ -96,3 +111,27 @@ def test_talker_listener_nested():
         message_pkg='geometry_msgs',
         message_name='TransformStamped',
         callback=listener_nested_callback)
+
+
+def test_talker_listener_fixed_array():
+    launch_talker_listener(
+        test_file='talker_fixed_array.py',
+        message_pkg='sensor_msgs',
+        message_name='Imu',
+        callback=listener_fixed_array_callback)
+
+
+def test_talker_listener_unbounded_array():
+    launch_talker_listener(
+        test_file='talker_unbounded_array.py',
+        message_pkg='sensor_msgs',
+        message_name='LaserScan',
+        callback=listener_unbounded_array_callback)
+
+
+def test_talker_listener_nested_array():
+    launch_talker_listener(
+        test_file='talker_nested_array.py',
+        message_pkg='sensor_msgs',
+        message_name='PointCloud2',
+        callback=listener_nested_array_callback)
