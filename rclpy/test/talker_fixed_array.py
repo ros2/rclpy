@@ -39,8 +39,6 @@ def talker_fixed_array():
     i = 1
     print('talker_fixed_array: beginning loop')
     while True:
-        # TODO(mikael) remove header initialization once rclpy doesnt crash with empty strings
-        msg.header.frame_id = "toto"
         msg.angular_velocity_covariance = [float(x) for x in range(i, i + 9)]
         i += 1
         print('talker_fixed_array sending: ({})'.format(msg.angular_velocity_covariance))

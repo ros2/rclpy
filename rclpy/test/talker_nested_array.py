@@ -40,8 +40,6 @@ def talker_nested_array():
     i = 3
     print('talker_nested_array: beginning loop')
     while True:
-        # TODO(mikael) remove header initialization once rclpy doesnt crash with empty strings
-        msg.header.frame_id = 'blablabla' + str(i)
         msg.fields = []
         for x in range(i):
             tmpfield = PointField()
