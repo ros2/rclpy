@@ -12,27 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import os
 import sys
-import time
 
 # this is needed to allow rclpy to be imported from the build folder
 sys.path.insert(0, os.getcwd())
 
 
-def fill_msg(msg, message_name, i):
+def listener_cb(msg, message_name, received_messages):
     if message_name == 'String':
-        msg.data = 'Hello World: {}'.format(i)
-        print('talker sending: {}'.format(msg.data))
+        print('received: {})'.format(msg.data))
     elif message_name == 'TransformStamped':
-        msg.transform.translation.x = float(i)
-        msg.transform.translation.y = float(i + 1)
-        msg.transform.translation.z = float(i + 2)
-        msg.transform.rotation.x = float(i + 3)
-        msg.transform.rotation.y = float(i + 4)
-        msg.transform.rotation.z = float(i + 5)
-        msg.transform.rotation.w = float(i + 6)
-        print('talker sending: translation({},{},{}), rotation({},{},{},{})'.format(
+        print('received: translation({},{},{})), rotation({},{},{},{})'.format(
             msg.transform.translation.x,
             msg.transform.translation.y,
             msg.transform.translation.z,
@@ -41,23 +33,16 @@ def fill_msg(msg, message_name, i):
             msg.transform.rotation.z,
             msg.transform.rotation.w))
     elif message_name == 'Imu':
-        msg.angular_velocity_covariance = [float(x) for x in range(i, i + 9)]
-        print('talker sending: ({})'.format(msg.angular_velocity_covariance))
+        print('received: ({})'.format(msg.angular_velocity_covariance))
     elif message_name == 'LaserScan':
-        msg.intensities = [float(x) for x in range(i + 10)]
-        print('talker sending: ({})'.format(msg.intensities))
+        print('received: ({})'.format(msg.intensities))
     elif message_name == 'PointCloud2':
-        from sensor_msgs.msg import PointField
-        msg.fields = []
-        for x in range(i + 2):
-            tmpfield = PointField()
-            tmpfield.name = 'toto' + str(x)
-            msg.fields.append(tmpfield)
-        print('talker sending: ({})'.format([f.name for f in msg.fields]))
-    return msg
+        print('received: ({})'.format([f.name for f in msg.fields]))
+
+    received_messages.append(msg)
 
 
-def talker(message_pkg, message_name, rmw_implementation, number_of_cycles=5):
+def listener(message_pkg, message_name, rmw_implemenatation, number_of_cycles=5):
     import rclpy
     from rclpy.qos import qos_profile_default
     import importlib
@@ -70,27 +55,35 @@ def talker(message_pkg, message_name, rmw_implementation, number_of_cycles=5):
     msg_mod = getattr(module, message_name)
     assert msg_mod.__class__._TYPE_SUPPORT is not None
 
-    node = rclpy.create_node('talker')
+    node = rclpy.create_node('listener')
 
-    chatter_pub = node.create_publisher(msg_mod, 'chatter', qos_profile_default)
+    received_messages = []
 
-    msg = msg_mod()
+    chatter_callback = functools.partial(
+        listener_cb, message_name=message_name, received_messages=received_messages)
 
-    msg_count = 1
+    node.create_subscription(
+        msg_mod,
+        'chatter',
+        chatter_callback,
+        qos_profile_default)
+
+    spin_count = 1
     print('talker: beginning loop')
-    while rclpy.ok() and msg_count < int(number_of_cycles):
-        msg = fill_msg(msg, message_name, msg_count)
-        msg_count += 1
-        chatter_pub.publish(msg)
-        time.sleep(1)
+    while rclpy.ok() and spin_count < int(number_of_cycles) and len(received_messages) == 0:
+        rclpy.spin_once(node)
+        spin_count += 1
     rclpy.shutdown()
+
+    assert len(received_messages) > 0,\
+        'Should have received a {} message from talker'.format(message_name)
 
 if __name__ == '__main__':
     try:
-        talker(
+        listener(
             message_pkg=sys.argv[1],
             message_name=sys.argv[2],
-            rmw_implementation=sys.argv[3],
+            rmw_implemenatation=sys.argv[3],
             number_of_cycles=sys.argv[4])
     except KeyboardInterrupt:
         print('talker stopped cleanly')
