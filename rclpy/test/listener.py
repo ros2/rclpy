@@ -27,10 +27,12 @@ def listener_cb(msg, message_name, received_messages):
     received_messages.append(msg)
 
 
-def listener(message_pkg, message_name, number_of_cycles):
+def listener(message_pkg, message_name, rmw_implementation, number_of_cycles):
     import rclpy
     from rclpy.qos import qos_profile_default
+    from rclpy.impl.rmw_implementation_tools import select_rmw_implementation
 
+    select_rmw_implementation(rmw_implementation)
     rclpy.init([])
 
     # TODO(wjwwood) move this import back to the module level when
@@ -48,7 +50,7 @@ def listener(message_pkg, message_name, number_of_cycles):
 
     node.create_subscription(
         msg_mod,
-        'chatter',
+        'chatter__{}__{}'.format(rmw_implementation, message_name),
         chatter_callback,
         qos_profile_default)
 
@@ -63,11 +65,16 @@ def listener(message_pkg, message_name, number_of_cycles):
         'Should have received a {} message from talker'.format(message_name)
 
 if __name__ == '__main__':
+    from rclpy.impl.rmw_implementation_tools import get_rmw_implementations
+    rmw_implementations = get_rmw_implementations()
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--message_pkg', default='std_msgs',
                         help='name of the message package')
     parser.add_argument('-m', '--message_name', default='String',
                         help='name of the ROS message')
+    parser.add_argument('-r', '--rmw_implementation', default=rmw_implementations[0],
+                        choices=rmw_implementations,
+                        help='rmw_implementation identifier')
     parser.add_argument('-n', '--number_of_cycles', type=int, default=5,
                         help='number of sending attempts')
     args = parser.parse_args()
@@ -75,6 +82,7 @@ if __name__ == '__main__':
         listener(
             message_pkg=args.message_pkg,
             message_name=args.message_name,
+            rmw_implementation=args.rmw_implementation,
             number_of_cycles=args.number_of_cycles)
     except KeyboardInterrupt:
         print('talker stopped cleanly')

@@ -23,7 +23,9 @@ from launch.exit_handler import primary_exit_handler, ignore_signal_exit_handler
 this_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 
 
-def launch_talker_listener(message_pkg, message_name, max_runtime_in_seconds=5):
+def launch_talker_listener(
+        message_pkg, message_name,
+        rmw_implementation, max_runtime_in_seconds=5):
     talker_file = 'talker.py'
     listener_file = 'listener.py'
 
@@ -33,8 +35,9 @@ def launch_talker_listener(message_pkg, message_name, max_runtime_in_seconds=5):
              os.path.join(this_dir, talker_file),
              '-p', message_pkg,
              '-m', message_name,
+             '-r', rmw_implementation,
              '-n', str(max_runtime_in_seconds)],
-        name='test_talker__{}'.format(message_name),
+        name='test_talker__{}__{}'.format(rmw_implementation, message_name),
         exit_handler=ignore_signal_exit_handler
     )
 
@@ -43,8 +46,9 @@ def launch_talker_listener(message_pkg, message_name, max_runtime_in_seconds=5):
              os.path.join(this_dir, listener_file),
              '-p', message_pkg,
              '-m', message_name,
+             '-r', rmw_implementation,
              '-n', str(max_runtime_in_seconds)],
-        name='test_listener__{}'.format(message_name),
+        name='test_listener__{}__{}'.format(rmw_implementation, message_name),
         exit_handler=primary_exit_handler
     )
     launcher = DefaultLauncher()
@@ -56,39 +60,67 @@ def launch_talker_listener(message_pkg, message_name, max_runtime_in_seconds=5):
         time.sleep(1)
         loop_cnt += 1
 
-    assert not rc, 'test_talker_listener__{} failed'.format(message_name)
+    return rc
+
+
+def launch_talker_listener_all_rmw(message_pkg, message_name, nbmessages=5):
+    from rclpy.impl.rmw_implementation_tools import get_rmw_implementations
+
+    rmw_implementations = get_rmw_implementations()
+    err_message = ''
+
+    for rmw_implementation in rmw_implementations:
+        rc = launch_talker_listener(
+            message_pkg=message_pkg,
+            message_name=message_name,
+            rmw_implementation=rmw_implementation
+        )
+        if rc:
+            err_message += 'test_talker_listener__{}__{} failed\n'.format(
+                rmw_implementation, message_name)
+    return err_message
 
 
 def test_talker():
-    launch_talker_listener(
+    err_message = launch_talker_listener_all_rmw(
         message_pkg='std_msgs',
         message_name='String'
     )
 
+    assert err_message == '', err_message
+
 
 def test_talker_listener_nested():
-    launch_talker_listener(
+    err_message = launch_talker_listener_all_rmw(
         message_pkg='geometry_msgs',
         message_name='TransformStamped'
     )
 
+    assert err_message == '', err_message
+
 
 def test_talker_listener_fixed_array():
-    launch_talker_listener(
+    err_message = launch_talker_listener_all_rmw(
         message_pkg='sensor_msgs',
         message_name='Imu'
     )
 
+    assert err_message == '', err_message
+
 
 def test_talker_listener_unbounded_array():
-    launch_talker_listener(
+    err_message = launch_talker_listener_all_rmw(
         message_pkg='sensor_msgs',
         message_name='LaserScan'
     )
 
+    assert err_message == '', err_message
+
 
 def test_talker_listener_nested_array():
-    launch_talker_listener(
+    err_message = launch_talker_listener_all_rmw(
         message_pkg='sensor_msgs',
         message_name='PointCloud2'
     )
+
+    assert err_message == '', err_message
