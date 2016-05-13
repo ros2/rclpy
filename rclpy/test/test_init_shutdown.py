@@ -26,18 +26,37 @@ def run_catch_report_raise(func, *args, **kwargs):
         raise
 
 
+def func_init():
+    import rclpy
+    try:
+        rclpy.init()
+    except RuntimeError:
+        return False
+
+    rclpy.shutdown()
+    return True
+
+
 def func_init_shutdown():
     import rclpy
-    rclpy.init()
-    return rclpy.shutdown() is None
+    try:
+        rclpy.init()
+        rclpy.shutdown()
+        return True
+    except RuntimeError:
+        return False
 
 
 def func_init_shutdown_sequence():
     import rclpy
     rclpy.init()
     rclpy.shutdown()
-    rclpy.init()
-    return rclpy.shutdown() is None
+    try:
+        rclpy.init()
+        rclpy.shutdown()
+        return True
+    except RuntimeError:
+        return False
 
 
 def func_double_init():
@@ -48,8 +67,8 @@ def func_double_init():
     except RuntimeError:
         rclpy.shutdown()
         return True
-
-    return rclpy.shutdown() is None
+    rclpy.shutdown()
+    return False
 
 
 def func_double_shutdown():
@@ -64,22 +83,61 @@ def func_double_shutdown():
     return False
 
 
+def test_init():
+    pool = multiprocessing.Pool(1)
+    result = pool.apply(
+        func=run_catch_report_raise,
+        args=(func_init,)
+    )
+
+    assert result, 'failed to initialize rclpy'
+    pool.close()
+    pool.join()
+
+
 def test_init_shutdown():
     pool = multiprocessing.Pool(1)
-    testlist = [
-        [func_init_shutdown, 'failed to shutdown rclpy'],
-        [func_init_shutdown_sequence, 'failed to initialize rclpy after shutdown'],
-        [func_double_init, 'Expected Runtime error when initializing rclpy twice'],
-        [func_double_shutdown, 'Expected Runtime error when shutting down rclpy twice']
-    ]
+    result = pool.apply(
+        func=run_catch_report_raise,
+        args=(func_init_shutdown,)
+    )
 
-    for fct in testlist:
-        result = pool.apply(
-            func=run_catch_report_raise,
-            args=(fct[0],)
-        )
+    assert result, 'failed to shutdown rclpy'
+    pool.close()
+    pool.join()
 
-        assert result, fct[1]
 
+def test_init_shutdown_sequence():
+    pool = multiprocessing.Pool(1)
+    result = pool.apply(
+        func=run_catch_report_raise,
+        args=(func_init_shutdown_sequence,)
+    )
+
+    assert result, 'failed to initialize rclpy after shutdown'
+    pool.close()
+    pool.join()
+
+
+def test_double_init():
+    pool = multiprocessing.Pool(1)
+    result = pool.apply(
+        func=run_catch_report_raise,
+        args=(func_double_init,)
+    )
+
+    assert result, 'Expected Runtime error when initializing rclpy twice'
+    pool.close()
+    pool.join()
+
+
+def test_double_shutdown():
+    result = pool = multiprocessing.Pool(1)
+    pool.apply(
+        func=run_catch_report_raise,
+        args=(func_double_shutdown,)
+    )
+
+    assert result, 'Expected Runtime error when shutting down rclpy twice'
     pool.close()
     pool.join()
