@@ -45,7 +45,6 @@ def fill_msg(msg, message_name, i):
             msg.fields.append(tmpfield)
     else:
         raise NotImplementedError('no test coverage for {}'.format(message_name))
-    print('talker sending: %r' % msg)
     return msg
 
 
@@ -74,6 +73,7 @@ def talker(message_pkg, message_name, rmw_implementation, number_of_cycles):
         msg = fill_msg(msg, message_name, msg_count)
         msg_count += 1
         chatter_pub.publish(msg)
+        print('talker sending: %r' % msg)
         time.sleep(1)
     rclpy.shutdown()
 
