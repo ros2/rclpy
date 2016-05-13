@@ -24,7 +24,6 @@ sys.path.insert(0, os.getcwd())
 def fill_msg(msg, message_name, i):
     if message_name == 'String':
         msg.data = 'Hello World: {}'.format(i)
-        print('talker sending: {}'.format(msg.data))
     elif message_name == 'TransformStamped':
         msg.transform.translation.x = float(i)
         msg.transform.translation.y = float(i + 1)
@@ -33,20 +32,10 @@ def fill_msg(msg, message_name, i):
         msg.transform.rotation.y = float(i + 4)
         msg.transform.rotation.z = float(i + 5)
         msg.transform.rotation.w = float(i + 6)
-        print('talker sending: translation({},{},{}), rotation({},{},{},{})'.format(
-            msg.transform.translation.x,
-            msg.transform.translation.y,
-            msg.transform.translation.z,
-            msg.transform.rotation.x,
-            msg.transform.rotation.y,
-            msg.transform.rotation.z,
-            msg.transform.rotation.w))
     elif message_name == 'Imu':
         msg.angular_velocity_covariance = [float(x) for x in range(i, i + 9)]
-        print('talker sending: ({})'.format(msg.angular_velocity_covariance))
     elif message_name == 'LaserScan':
         msg.intensities = [float(x) for x in range(i + 10)]
-        print('talker sending: ({})'.format(msg.intensities))
     elif message_name == 'PointCloud2':
         from sensor_msgs.msg import PointField
         msg.fields = []
@@ -54,9 +43,9 @@ def fill_msg(msg, message_name, i):
             tmpfield = PointField()
             tmpfield.name = 'toto' + str(x)
             msg.fields.append(tmpfield)
-        print('talker sending: ({})'.format([f.name for f in msg.fields]))
     else:
         raise NotImplementedError('no test coverage for {}'.format(message_name))
+    print('talker sending: %r' % msg)
     return msg
 
 
@@ -89,11 +78,15 @@ def talker(message_pkg, message_name, rmw_implementation, number_of_cycles):
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--message_pkg', default=None)
-    parser.add_argument('-m', '--message_name', default=None)
-    parser.add_argument('-r', '--rmw_implementation', default=None)
-    parser.add_argument('-n', '--number_of_cycles', default=5, type=int)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-p', '--message_pkg', default='std_msgs',
+                        help='name of the message package')
+    parser.add_argument('-m', '--message_name', default='String',
+                        help='name of the ROS message')
+    parser.add_argument('-r', '--rmw_implementation', default='rmw_opensplice_cpp',
+                        help='rmw implementation to test')
+    parser.add_argument('-n', '--number_of_cycles', type=int, default=5,
+                        help='number of sending attempts')
     args = parser.parse_args()
     try:
         talker(

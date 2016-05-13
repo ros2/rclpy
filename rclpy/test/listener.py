@@ -22,25 +22,7 @@ sys.path.insert(0, os.getcwd())
 
 
 def listener_cb(msg, message_name, received_messages):
-    if message_name == 'String':
-        print('received: {})'.format(msg.data))
-    elif message_name == 'TransformStamped':
-        print('received: translation({},{},{})), rotation({},{},{},{})'.format(
-            msg.transform.translation.x,
-            msg.transform.translation.y,
-            msg.transform.translation.z,
-            msg.transform.rotation.x,
-            msg.transform.rotation.y,
-            msg.transform.rotation.z,
-            msg.transform.rotation.w))
-    elif message_name == 'Imu':
-        print('received: ({})'.format(msg.angular_velocity_covariance))
-    elif message_name == 'LaserScan':
-        print('received: ({})'.format(msg.intensities))
-    elif message_name == 'PointCloud2':
-        print('received: ({})'.format([f.name for f in msg.fields]))
-    else:
-        raise NotImplementedError('no test coverage for {}'.format(message_name))
+    print('received: %r' % msg)
     received_messages.append(msg)
 
 
@@ -81,11 +63,15 @@ def listener(message_pkg, message_name, rmw_implementation, number_of_cycles):
         'Should have received a {} message from talker'.format(message_name)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--message_pkg', default=None)
-    parser.add_argument('-m', '--message_name', default=None)
-    parser.add_argument('-r', '--rmw_implementation', default=None)
-    parser.add_argument('-n', '--number_of_cycles', default=5, type=int)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-p', '--message_pkg', default='std_msgs',
+                        help='name of the message package')
+    parser.add_argument('-m', '--message_name', default='String',
+                        help='name of the ROS message')
+    parser.add_argument('-r', '--rmw_implementation', default='rmw_opensplice_cpp',
+                        help='rmw implementation to test')
+    parser.add_argument('-n', '--number_of_cycles', type=int, default=5,
+                        help='number of sending attempts')
     args = parser.parse_args()
     try:
         listener(
