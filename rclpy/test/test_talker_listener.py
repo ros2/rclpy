@@ -31,9 +31,9 @@ def launch_talker_listener(message_pkg, message_name, nbmessages=5):
     launch_desc.add_process(
         cmd=[sys.executable,
              os.path.join(this_dir, talker_file),
-             message_pkg, message_name,
-             'dummy',  # TODO(mikaelarguedas) pass rmw_implementation
-             str(nbmessages)],
+             '-p', message_pkg,
+             '-m', message_name,
+             '-n', str(nbmessages)],
         name='test_talker__{}'.format(message_name),
         exit_handler=ignore_signal_exit_handler
     )
@@ -41,9 +41,9 @@ def launch_talker_listener(message_pkg, message_name, nbmessages=5):
     launch_desc.add_process(
         cmd=[sys.executable,
              os.path.join(this_dir, listener_file),
-             message_pkg, message_name,
-             'dummy',  # TODO(mikaelarguedas) pass rmw_implementation
-             str(nbmessages)],
+             '-p', message_pkg,
+             '-m', message_name,
+             '-n', str(nbmessages)],
         name='test_listener__{}'.format(message_name),
         exit_handler=primary_exit_handler
     )

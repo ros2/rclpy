@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import sys
 import time
@@ -59,7 +60,7 @@ def fill_msg(msg, message_name, i):
     return msg
 
 
-def talker(message_pkg, message_name, rmw_implementation, number_of_cycles=5):
+def talker(message_pkg, message_name, rmw_implementation, number_of_cycles):
     import rclpy
     from rclpy.qos import qos_profile_default
     import importlib
@@ -80,7 +81,7 @@ def talker(message_pkg, message_name, rmw_implementation, number_of_cycles=5):
 
     msg_count = 1
     print('talker: beginning loop')
-    while rclpy.ok() and msg_count < int(number_of_cycles):
+    while rclpy.ok() and msg_count < number_of_cycles:
         msg = fill_msg(msg, message_name, msg_count)
         msg_count += 1
         chatter_pub.publish(msg)
@@ -88,12 +89,18 @@ def talker(message_pkg, message_name, rmw_implementation, number_of_cycles=5):
     rclpy.shutdown()
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--message_pkg', default=None)
+    parser.add_argument('-m', '--message_name', default=None)
+    parser.add_argument('-r', '--rmw_implementation', default=None)
+    parser.add_argument('-n', '--number_of_cycles', default=5, type=int)
+    args = parser.parse_args()
     try:
         talker(
-            message_pkg=sys.argv[1],
-            message_name=sys.argv[2],
-            rmw_implementation=sys.argv[3],
-            number_of_cycles=sys.argv[4])
+            message_pkg=args.message_pkg,
+            message_name=args.message_name,
+            rmw_implementation=args.rmw_implementation,
+            number_of_cycles=args.number_of_cycles)
     except KeyboardInterrupt:
         print('talker stopped cleanly')
     except BaseException:

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import functools
 import os
 import sys
@@ -43,7 +44,7 @@ def listener_cb(msg, message_name, received_messages):
     received_messages.append(msg)
 
 
-def listener(message_pkg, message_name, rmw_implemenatation, number_of_cycles=5):
+def listener(message_pkg, message_name, rmw_implementation, number_of_cycles):
     import rclpy
     from rclpy.qos import qos_profile_default
     import importlib
@@ -71,7 +72,7 @@ def listener(message_pkg, message_name, rmw_implemenatation, number_of_cycles=5)
 
     spin_count = 1
     print('talker: beginning loop')
-    while rclpy.ok() and spin_count < int(number_of_cycles) and len(received_messages) == 0:
+    while rclpy.ok() and spin_count < number_of_cycles and len(received_messages) == 0:
         rclpy.spin_once(node)
         spin_count += 1
     rclpy.shutdown()
@@ -80,12 +81,18 @@ def listener(message_pkg, message_name, rmw_implemenatation, number_of_cycles=5)
         'Should have received a {} message from talker'.format(message_name)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--message_pkg', default=None)
+    parser.add_argument('-m', '--message_name', default=None)
+    parser.add_argument('-r', '--rmw_implementation', default=None)
+    parser.add_argument('-n', '--number_of_cycles', default=5, type=int)
+    args = parser.parse_args()
     try:
         listener(
-            message_pkg=sys.argv[1],
-            message_name=sys.argv[2],
-            rmw_implemenatation=sys.argv[3],
-            number_of_cycles=sys.argv[4])
+            message_pkg=args.message_pkg,
+            message_name=args.message_name,
+            rmw_implementation=args.rmw_implementation,
+            number_of_cycles=args.number_of_cycles)
     except KeyboardInterrupt:
         print('talker stopped cleanly')
     except BaseException:
