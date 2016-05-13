@@ -38,7 +38,8 @@ def listener_cb(msg, message_name, received_messages):
         print('received: ({})'.format(msg.intensities))
     elif message_name == 'PointCloud2':
         print('received: ({})'.format([f.name for f in msg.fields]))
-
+    else:
+        raise NotImplementedError('no test coverage for {}'.format(message_name))
     received_messages.append(msg)
 
 

@@ -54,6 +54,8 @@ def fill_msg(msg, message_name, i):
             tmpfield.name = 'toto' + str(x)
             msg.fields.append(tmpfield)
         print('talker sending: ({})'.format([f.name for f in msg.fields]))
+    else:
+        raise NotImplementedError('no test coverage for {}'.format(message_name))
     return msg
 
 
