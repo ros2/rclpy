@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import importlib
 import os
 import sys
 import time
@@ -51,7 +52,6 @@ def fill_msg(msg, message_name, i):
 def talker(message_pkg, message_name, rmw_implementation, number_of_cycles):
     import rclpy
     from rclpy.qos import qos_profile_default
-    import importlib
 
     rclpy.init([])
 

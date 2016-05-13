@@ -14,6 +14,7 @@
 
 import argparse
 import functools
+import importlib
 import os
 import sys
 
@@ -29,7 +30,6 @@ def listener_cb(msg, message_name, received_messages):
 def listener(message_pkg, message_name, rmw_implementation, number_of_cycles):
     import rclpy
     from rclpy.qos import qos_profile_default
-    import importlib
 
     rclpy.init([])
 
