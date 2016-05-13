@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ctypes
 import multiprocessing
 import sys
 import traceback
@@ -30,7 +29,7 @@ def run_catch_report_raise(func, *args, **kwargs):
 def func_init_shutdown():
     import rclpy
     rclpy.init()
-    return ctypes.c_bool(rclpy.shutdown() is None)
+    return rclpy.shutdown() is None
 
 
 def func_init_shutdown_sequence():
@@ -38,7 +37,7 @@ def func_init_shutdown_sequence():
     rclpy.init()
     rclpy.shutdown()
     rclpy.init()
-    return ctypes.c_bool(rclpy.shutdown() is None)
+    return rclpy.shutdown() is None
 
 
 def func_double_init():
@@ -48,9 +47,9 @@ def func_double_init():
         rclpy.init()
     except RuntimeError:
         rclpy.shutdown()
-        return ctypes.c_bool(True)
+        return True
 
-    return ctypes.c_bool(rclpy.shutdown() is None)
+    return rclpy.shutdown() is None
 
 
 def func_double_shutdown():
@@ -60,9 +59,9 @@ def func_double_shutdown():
     try:
         rclpy.shutdown()
     except RuntimeError:
-        return ctypes.c_bool(True)
+        return True
 
-    return ctypes.c_bool(False)
+    return False
 
 
 def test_init_shutdown():
