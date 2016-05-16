@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ament_index_python
 import argparse
 import functools
 import importlib
@@ -63,12 +64,14 @@ def listener(message_pkg, message_name, rmw_implementation, number_of_cycles):
         'Should have received a {} message from talker'.format(message_name)
 
 if __name__ == '__main__':
+    rmw_implementations = sorted(ament_index_python.get_resources('rmw_python_extension').keys())
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--message_pkg', default='std_msgs',
                         help='name of the message package')
     parser.add_argument('-m', '--message_name', default='String',
                         help='name of the ROS message')
-    parser.add_argument('-r', '--rmw_implementation', default='rmw_opensplice_cpp',
+    # using the same logic as the default import_rmw_implementation()
+    parser.add_argument('-r', '--rmw_implementation', default=rmw_implementations[0],
                         help='rmw implementation to test')
     parser.add_argument('-n', '--number_of_cycles', type=int, default=5,
                         help='number of sending attempts')

@@ -23,7 +23,7 @@ from launch.exit_handler import primary_exit_handler, ignore_signal_exit_handler
 this_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 
 
-def launch_talker_listener(message_pkg, message_name, nbmessages=5):
+def launch_talker_listener(message_pkg, message_name, max_runtime_in_seconds=5):
     talker_file = 'talker.py'
     listener_file = 'listener.py'
 
@@ -33,7 +33,7 @@ def launch_talker_listener(message_pkg, message_name, nbmessages=5):
              os.path.join(this_dir, talker_file),
              '-p', message_pkg,
              '-m', message_name,
-             '-n', str(nbmessages)],
+             '-n', str(max_runtime_in_seconds)],
         name='test_talker__{}'.format(message_name),
         exit_handler=ignore_signal_exit_handler
     )
@@ -43,7 +43,7 @@ def launch_talker_listener(message_pkg, message_name, nbmessages=5):
              os.path.join(this_dir, listener_file),
              '-p', message_pkg,
              '-m', message_name,
-             '-n', str(nbmessages)],
+             '-n', str(max_runtime_in_seconds)],
         name='test_listener__{}'.format(message_name),
         exit_handler=primary_exit_handler
     )
@@ -51,10 +51,10 @@ def launch_talker_listener(message_pkg, message_name, nbmessages=5):
     launcher.add_launch_descriptor(launch_desc)
     rc = launcher.launch()
 
-    spin_count = 0
-    while spin_count < nbmessages and launcher.is_launch_running():
+    loop_cnt = 0
+    while loop_cnt < max_runtime_in_seconds and launcher.is_launch_running():
         time.sleep(1)
-        spin_count += 1
+        loop_cnt += 1
 
     assert not rc, 'test_talker_listener__{} failed'.format(message_name)
 
