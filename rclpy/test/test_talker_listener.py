@@ -12,126 +12,83 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import os
 import sys
+import time
 
 from launch import LaunchDescriptor
-from launch.launcher import AsynchronousLauncher
 from launch.launcher import DefaultLauncher
+from launch.exit_handler import primary_exit_handler, ignore_signal_exit_handler
 
 this_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 
 
-def listener_callback(msg, received_messages):
-    print('received: ' + msg.data)
-    received_messages.append(msg)
-
-
-def listener_nested_callback(msg, received_messages):
-    print('received: frame_id={}, child_frame={}, translationx={}, rotationx{}'
-          .format(msg.header.frame_id, msg.child_frame_id, msg.transform.translation.x,
-                  msg.transform.rotation.x))
-    received_messages.append(msg)
-
-
-def listener_fixed_array_callback(msg, received_messages):
-    print('received: ({})'.format(msg.angular_velocity_covariance))
-    received_messages.append(msg)
-
-
-def listener_unbounded_array_callback(msg, received_messages):
-    print('received: ({})'.format(msg.intensities))
-    received_messages.append(msg)
-
-
-def listener_nested_array_callback(msg, received_messages):
-    print('received: ({})'.format([f.name for f in msg.fields]))
-    received_messages.append(msg)
-
-
-def launch_talker_listener(test_file, message_pkg, message_name, callback):
-    import rclpy
-    from rclpy.qos import qos_profile_default
-    import importlib
+def launch_talker_listener(message_pkg, message_name, max_runtime_in_seconds=5):
+    talker_file = 'talker.py'
+    listener_file = 'listener.py'
 
     launch_desc = LaunchDescriptor()
     launch_desc.add_process(
-        cmd=[sys.executable, os.path.join(this_dir, test_file)],
-        name='test_talker_listener__{}'.format(test_file)
+        cmd=[sys.executable,
+             os.path.join(this_dir, talker_file),
+             '-p', message_pkg,
+             '-m', message_name,
+             '-n', str(max_runtime_in_seconds)],
+        name='test_talker__{}'.format(message_name),
+        exit_handler=ignore_signal_exit_handler
+    )
+
+    launch_desc.add_process(
+        cmd=[sys.executable,
+             os.path.join(this_dir, listener_file),
+             '-p', message_pkg,
+             '-m', message_name,
+             '-n', str(max_runtime_in_seconds)],
+        name='test_listener__{}'.format(message_name),
+        exit_handler=primary_exit_handler
     )
     launcher = DefaultLauncher()
     launcher.add_launch_descriptor(launch_desc)
-    async_launcher = AsynchronousLauncher(launcher)
-    async_launcher.start()
+    rc = launcher.launch()
 
-    rclpy.init([])
+    loop_cnt = 0
+    while loop_cnt < max_runtime_in_seconds and launcher.is_launch_running():
+        time.sleep(1)
+        loop_cnt += 1
 
-    module = importlib.import_module(message_pkg + '.msg')
-    msg_mod = getattr(module, message_name)
-    assert msg_mod.__class__._TYPE_SUPPORT is not None
-
-    node = rclpy.create_node(test_file[:test_file.rfind('.')])
-
-    received_messages = []
-
-    chatter_callback = functools.partial(
-        callback, received_messages=received_messages)
-
-    # TODO(wjwwood): should the subscription object hang around?
-    node.create_subscription(
-        msg_mod,
-        test_file[:test_file.rfind('.')].replace('talker', 'chatter'),
-        chatter_callback,
-        qos_profile_default)
-
-    spin_count = 0
-    while len(received_messages) == 0 and spin_count < 10 and launcher.is_launch_running():
-        rclpy.spin_once(node)  # This will wait 1 second or until something has been done.
-        spin_count += 1
-
-    async_launcher.terminate()
-    async_launcher.join()
-    rclpy.shutdown()
-    assert len(received_messages) > 0,\
-        'Should have received a {} message from talker'.format(message_name)
+    assert not rc, 'test_talker_listener__{} failed'.format(message_name)
 
 
-def test_talker_listener():
+def test_talker():
     launch_talker_listener(
-        test_file='talker.py',
         message_pkg='std_msgs',
-        message_name='String',
-        callback=listener_callback)
+        message_name='String'
+    )
 
 
 def test_talker_listener_nested():
     launch_talker_listener(
-        test_file='talker_nested.py',
         message_pkg='geometry_msgs',
-        message_name='TransformStamped',
-        callback=listener_nested_callback)
+        message_name='TransformStamped'
+    )
 
 
 def test_talker_listener_fixed_array():
     launch_talker_listener(
-        test_file='talker_fixed_array.py',
         message_pkg='sensor_msgs',
-        message_name='Imu',
-        callback=listener_fixed_array_callback)
+        message_name='Imu'
+    )
 
 
 def test_talker_listener_unbounded_array():
     launch_talker_listener(
-        test_file='talker_unbounded_array.py',
         message_pkg='sensor_msgs',
-        message_name='LaserScan',
-        callback=listener_unbounded_array_callback)
+        message_name='LaserScan'
+    )
 
 
 def test_talker_listener_nested_array():
     launch_talker_listener(
-        test_file='talker_nested_array.py',
         message_pkg='sensor_msgs',
-        message_name='PointCloud2',
-        callback=listener_nested_array_callback)
+        message_name='PointCloud2'
+    )
