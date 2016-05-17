@@ -13,49 +13,26 @@
 # limitations under the License.
 
 import argparse
+import functools
 import importlib
 import os
 import sys
-import time
 
 # this is needed to allow rclpy to be imported from the build folder
 sys.path.insert(0, os.getcwd())
 
 
-def fill_msg(msg, message_name, i):
-    if message_name == 'String':
-        msg.data = 'Hello World: {}'.format(i)
-    elif message_name == 'TransformStamped':
-        msg.transform.translation.x = float(i)
-        msg.transform.translation.y = float(i + 1)
-        msg.transform.translation.z = float(i + 2)
-        msg.transform.rotation.x = float(i + 3)
-        msg.transform.rotation.y = float(i + 4)
-        msg.transform.rotation.z = float(i + 5)
-        msg.transform.rotation.w = float(i + 6)
-    elif message_name == 'Imu':
-        msg.angular_velocity_covariance = [float(x) for x in range(i, i + 9)]
-    elif message_name == 'LaserScan':
-        msg.intensities = [float(x) for x in range(i + 10)]
-    elif message_name == 'PointCloud2':
-        from sensor_msgs.msg import PointField
-        msg.fields = []
-        for x in range(i + 2):
-            tmpfield = PointField()
-            tmpfield.name = 'toto' + str(x)
-            msg.fields.append(tmpfield)
-    else:
-        raise NotImplementedError('no test coverage for {}'.format(message_name))
-    return msg
+def listener_cb(msg, message_name, received_messages):
+    print('received: %r' % msg)
+    received_messages.append(msg)
 
 
-def talker(message_pkg, message_name, rmw_implementation, number_of_cycles):
+def listener(message_pkg, message_name, rmw_implementation, number_of_cycles):
     import rclpy
-    from rclpy.impl.rmw_implementation_tools import select_rmw_implementation
     from rclpy.qos import qos_profile_default
+    from rclpy.impl.rmw_implementation_tools import select_rmw_implementation
 
     select_rmw_implementation(rmw_implementation)
-
     rclpy.init([])
 
     # TODO(wjwwood) move this import back to the module level when
@@ -64,24 +41,28 @@ def talker(message_pkg, message_name, rmw_implementation, number_of_cycles):
     msg_mod = getattr(module, message_name)
     assert msg_mod.__class__._TYPE_SUPPORT is not None
 
-    node = rclpy.create_node('talker')
+    node = rclpy.create_node('listener')
 
-    chatter_pub = node.create_publisher(
+    received_messages = []
+
+    chatter_callback = functools.partial(
+        listener_cb, message_name=message_name, received_messages=received_messages)
+
+    node.create_subscription(
         msg_mod,
         'chatter__{}__{}'.format(rmw_implementation, message_name),
+        chatter_callback,
         qos_profile_default)
 
-    msg = msg_mod()
-
-    msg_count = 1
+    spin_count = 1
     print('talker: beginning loop')
-    while rclpy.ok() and msg_count < number_of_cycles:
-        msg = fill_msg(msg, message_name, msg_count)
-        msg_count += 1
-        chatter_pub.publish(msg)
-        print('talker sending: %r' % msg)
-        time.sleep(1)
+    while rclpy.ok() and spin_count < number_of_cycles and len(received_messages) == 0:
+        rclpy.spin_once(node)
+        spin_count += 1
     rclpy.shutdown()
+
+    assert len(received_messages) > 0,\
+        'Should have received a {} message from talker'.format(message_name)
 
 if __name__ == '__main__':
     from rclpy.impl.rmw_implementation_tools import get_rmw_implementations
@@ -98,7 +79,7 @@ if __name__ == '__main__':
                         help='number of sending attempts')
     args = parser.parse_args()
     try:
-        talker(
+        listener(
             message_pkg=args.message_pkg,
             message_name=args.message_name,
             rmw_implementation=args.rmw_implementation,
