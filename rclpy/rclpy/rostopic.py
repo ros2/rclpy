@@ -36,11 +36,10 @@ def _rostopic_cmd_type(argv):
     print("NOT IMPLEMENTED\n")
     sys.exit(0)
 
-# TODO implement
 def _rostopic_cmd_list(argv):
     result = rclpy.get_remote_topic_names_and_types()
-    for node in result:
-        print(node)
+    for topic in result:
+        print(topic)
     sys.exit(0)
 
 # TODO implement
