@@ -8,9 +8,7 @@ find_package(rcl REQUIRED)
 find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
-# NOTE(esteve): required for CMake-2.8 in Ubuntu 14.04
-set(Python_ADDITIONAL_VERSIONS 3.4)
-find_package(PythonInterp 3.4 REQUIRED)
+find_package(PythonInterp 3.5 REQUIRED)
 
 find_package(python_cmake_module REQUIRED)
 find_package(PythonExtra MODULE)
