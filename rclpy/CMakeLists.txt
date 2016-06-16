@@ -35,12 +35,12 @@ macro(set_properties _build_type)
 endmacro()
 
 macro(target)
-  if(NOT "${target_suffix} " STREQUAL " ")
+  if(NOT target_suffix STREQUAL "")
     get_rcl_information("${rmw_implementation}" "rcl${target_suffix}")
   endif()
   # Only build the library if a C typesupport exists for the rmw_implementation
   get_rmw_typesupport(typesupport_impls "${rmw_implementation}" LANGUAGE "c")
-  if("${typesupport_impls} " STREQUAL " ")
+  if(typesupport_impls STREQUAL "")
     message(STATUS "Skipping rclpy for '${rmw_implementation}' because no C "
       "typesupport library was found.")
     return()
@@ -100,7 +100,7 @@ if(BUILD_TESTING)
     # On Windows prevent CMake errors and prevent it being evaluated as a list.
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
-  if(NOT "${_typesupport_impls} " STREQUAL " ")
+  if(NOT _typesupport_impls STREQUAL "")
     ament_add_nose_test(rclpytests test
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
