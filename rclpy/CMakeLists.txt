@@ -104,7 +104,7 @@ if(BUILD_TESTING)
   if(NOT _typesupport_impls STREQUAL "")
     ament_add_nose_test(rclpytests test
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-      PYTHON_INTERPRETER "${PYTHON_EXECUTABLE}"
+      PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
     )
   endif()
