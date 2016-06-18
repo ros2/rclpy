@@ -15,7 +15,7 @@ set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 if(NOT WIN32)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  set(PYTHON_EXECUTABLE "${PYTHON_DBG_EXECUTABLE}")
+  set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
 # enables using the Python package from the source space
