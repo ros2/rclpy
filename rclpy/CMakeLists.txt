@@ -14,7 +14,7 @@ find_package(PythonExtra MODULE)
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 if(NOT WIN32)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
-elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
