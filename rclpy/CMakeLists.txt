@@ -8,13 +8,14 @@ find_package(rcl REQUIRED)
 find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
-find_package(PythonInterp 3.5 REQUIRED)
-
 find_package(python_cmake_module REQUIRED)
 find_package(PythonExtra MODULE)
 
+set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 if(NOT WIN32)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
 # enables using the Python package from the source space
@@ -103,9 +104,11 @@ if(BUILD_TESTING)
   if(NOT _typesupport_impls STREQUAL "")
     ament_add_nose_test(rclpytests test
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
     )
   endif()
 endif()
+set(PYTHON_EXECUTABLE "${_PYTHON_EXECUTABLE}")
 
 ament_package()
