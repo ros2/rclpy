@@ -25,11 +25,15 @@ class Node:
         self.subscriptions = []
 
     def create_publisher(self, msg_type, topic, qos_profile):
+        if msg_type.__class__._TYPE_SUPPORT is None:
+            msg_type.__class__.__import_type_support__()
         publisher_handle = rclpy._rclpy.rclpy_create_publisher(self.handle, msg_type, topic)
 
         return Publisher(publisher_handle, msg_type, topic, qos_profile)
 
     def create_subscription(self, msg_type, topic, callback, qos_profile):
+        if msg_type.__class__._TYPE_SUPPORT is None:
+            msg_type.__class__.__import_type_support__()
         subscription_handle = rclpy._rclpy.rclpy_create_subscription(self.handle, msg_type, topic)
 
         subscription = Subscription(subscription_handle, msg_type, topic, callback, qos_profile)
