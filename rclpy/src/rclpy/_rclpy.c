@@ -363,43 +363,33 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 }
 
 static PyMethodDef rclpy_methods[] = {
-  {"rclpy_init", rclpy_init, METH_VARARGS,
-   "Initialize RCL."},
-  {"rclpy_create_node", rclpy_create_node, METH_VARARGS,
-   "Create a Node."},
-  {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
-   "Create a Publisher."},
-  {"rclpy_publish", rclpy_publish, METH_VARARGS,
-   "Publish a message."},
-  {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
-   "Create a Subscription."},
+  {"rclpy_init", rclpy_init, METH_VARARGS, "Initialize RCL."},
+  {"rclpy_create_node", rclpy_create_node, METH_VARARGS, "Create a Node."},
+  {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS, "Create a Publisher."},
+  {"rclpy_publish", rclpy_publish, METH_VARARGS, "Publish a message."},
+  {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS, "Create a Subscription."},
 
   {"rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
-   "rclpy_get_zero_initialized_wait_set."},
+  "rclpy_get_zero_initialized_wait_set."},
 
-  {"rclpy_wait_set_init", rclpy_wait_set_init, METH_VARARGS,
-   "rclpy_wait_set_init."},
+  {"rclpy_wait_set_init", rclpy_wait_set_init, METH_VARARGS, "rclpy_wait_set_init."},
 
   {"rclpy_wait_set_clear_subscriptions", rclpy_wait_set_clear_subscriptions, METH_VARARGS,
-   "rclpy_wait_set_clear_subscriptions."},
+  "rclpy_wait_set_clear_subscriptions."},
 
   {"rclpy_wait_set_add_subscription", rclpy_wait_set_add_subscription, METH_VARARGS,
-   "rclpy_wait_set_add_subscription."},
+  "rclpy_wait_set_add_subscription."},
 
-  {"rclpy_wait", rclpy_wait, METH_VARARGS,
-   "rclpy_wait."},
+  {"rclpy_wait", rclpy_wait, METH_VARARGS, "rclpy_wait."},
 
-  {"rclpy_take", rclpy_take, METH_VARARGS,
-   "rclpy_take."},
+  {"rclpy_take", rclpy_take, METH_VARARGS, "rclpy_take."},
 
-  {"rclpy_ok", rclpy_ok, METH_NOARGS,
-   "rclpy_ok."},
+  {"rclpy_ok", rclpy_ok, METH_NOARGS, "rclpy_ok."},
 
-  {"rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
-   "rclpy_shutdown."},
+  {"rclpy_shutdown", rclpy_shutdown, METH_NOARGS, "rclpy_shutdown."},
 
   {"rclpy_get_rmw_implementation_identifier", rclpy_get_rmw_implementation_identifier,
-   METH_NOARGS, "Retrieve the identifier for the active RMW implementation."},
+  METH_NOARGS, "Retrieve the identifier for the active RMW implementation."},
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
