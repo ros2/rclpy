@@ -18,6 +18,7 @@
 #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <rcl/node.h>
+#include <rcl/graph.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #ifndef RMW_IMPLEMENTATION_SUFFIX
@@ -63,21 +64,41 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 static PyObject *
 rclpy_get_remote_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  rcl_strings_t topic_names_string = rcl_get_zero_initialized_strings();
-  rcl_strings_t type_names_string = rcl_get_zero_initialized_strings();
-  rcl_ret_t topic_ret = rcl_get_remote_topic_names_and_types(&topic_names_string, &type_names_string);
+
+  int argc = 1;
+  char** argv = {"node"};
+
+  rcl_ret_t ret1 = rcl_init(argc, argv, rcl_get_default_allocator());
+  rcl_node_t node_ptr;
+  node_ptr = rcl_get_zero_initialized_node();
+  rcl_node_options_t node_options = rcl_node_get_default_options();
+  rcl_ret_t ret = rcl_node_init(&node_ptr, "get_node_names", &node_options);
+  
+  rcl_strings_t node_names;
+
+  node_names = rcl_get_zero_initialized_strings();
+
+  rcl_ret_t ret3 = rcl_get_node_names(&node_names);
+
+  rcl_topic_names_and_types_t topic_names_and_types;
+  topic_names_and_types.topic_count = 0;
+  topic_names_and_types.topic_names = NULL;
+  topic_names_and_types.type_names = NULL;
+  rcl_ret_t topic_ret = rcl_get_topic_names_and_types(&node_ptr, &topic_names_and_types);
 
   if(topic_ret != RCL_RET_OK){
     return NULL;
   }
 
-  PyObject* list = PyList_New(topic_names_string.count);
-  int i;
-  for(i = 0; i < topic_names_string.count; i++)
-      PyList_SetItem(list, i, Py_BuildValue("s", topic_names_string.data[i]));
+  PyObject* list = PyList_New(topic_names_and_types.topic_count);
+  unsigned int i;
+  for( i = 0; i < topic_names_and_types.topic_count; i++){
+      PyList_SetItem(list, i, Py_BuildValue("s", topic_names_and_types.topic_names[i]));
+  }
 
-  rcl_strings_fini(&topic_names_string);
-  rcl_strings_fini(&type_names_string);
+  rcl_node_fini(&node_ptr);
+  rcl_destroy_topic_names_and_types(&topic_names_and_types);
+  rcl_strings_fini(&node_names);
 
   return list;
 }
