@@ -75,9 +75,7 @@ rclpy_get_remote_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * Py
   rcl_ret_t ret = rcl_node_init(&node_ptr, "get_node_names", &node_options);
   
   rcl_strings_t node_names;
-
   node_names = rcl_get_zero_initialized_strings();
-
   rcl_ret_t ret3 = rcl_get_node_names(&node_names);
 
   rcl_topic_names_and_types_t topic_names_and_types;
@@ -90,15 +88,22 @@ rclpy_get_remote_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * Py
     return NULL;
   }
 
-  PyObject* list = PyList_New(topic_names_and_types.topic_count);
+  PyObject* list_names = PyList_New(topic_names_and_types.topic_count);
+  PyObject* list_types = PyList_New(topic_names_and_types.topic_count);
   unsigned int i;
   for( i = 0; i < topic_names_and_types.topic_count; i++){
-      PyList_SetItem(list, i, Py_BuildValue("s", topic_names_and_types.topic_names[i]));
+      PyList_SetItem(list_names, i, Py_BuildValue("s", topic_names_and_types.topic_names[i]));
+      PyList_SetItem(list_types, i, Py_BuildValue("s", topic_names_and_types.type_names[i]));
   }
 
   rcl_node_fini(&node_ptr);
   rcl_destroy_topic_names_and_types(&topic_names_and_types);
   rcl_strings_fini(&node_names);
+
+  // Build a final list containing two inner lists (names and types)
+  PyObject* list = PyList_New(2);
+  PyList_SetItem(list, 0, list_names);
+  PyList_SetItem(list, 1, list_types);
 
   return list;
 }

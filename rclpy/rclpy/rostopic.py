@@ -38,8 +38,8 @@ def _rostopic_cmd_type(argv):
 
 def _rostopic_cmd_list(argv):
     result = rclpy.get_remote_topic_names_and_types()
-    for topic in result:
-        print(topic)
+    for topic_name, topic_type in result:
+        print(topic_name+" (type: "+topic_type+")")
     sys.exit(0)
 
 # TODO implement
