@@ -154,16 +154,17 @@ def _rostopic_cmd_echo(argv):
                                  field_filter_fn=field_filter_fn, fixed_numeric_width=fixed_numeric_width)
     try:
         # TODO FIXME, hardcoded to a function that solely supports simple string messages    
-        #_rostopic_echo(topic, callback_echo, bag_file=options.bag)
+        #_rostopic_echo(topic, callback_echo, bag_file=options.bag)        
         _rostopic_echo_test(topic)
     except socket.error:
         sys.stderr.write("Network communication failed.\n")
 
 def _rostopic_echo_test(topic):
-    rclpy.init(None)
+    #rclpy.init(None)
     node = rclpy.create_node('rostopic')
     # TODO FIXME no path resolving for topics yet implemented thereby the initial "/" is
     # omited.
+    from std_msgs.msg import String
     sub = node.create_subscription(String, topic[1:], chatter_callback, qos_profile_default)
     while rclpy.ok():
        rclpy.spin_once(node)
