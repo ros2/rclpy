@@ -33,14 +33,32 @@ def _rostopic_cmd_hz(argv):
 
 # TODO implement
 def _rostopic_cmd_type(argv):
-    print("NOT IMPLEMENTED\n")
+    args = argv[2:]
+    from optparse import OptionParser
+    parser = OptionParser(usage="usage: %prog type /topic", prog=NAME)
+    (options, args) = parser.parse_args(args)
+    if len(args) < 1:
+        parser.error("provide at least one topic")
+
+    target_topic = args[0]
+    target_type = ''
+    result = rclpy.get_remote_topic_names_and_types()
+    for i in range(len(result[0])):
+        topic_name = result[0][i]
+        topic_type = result[1][i]
+        if target_topic == topic_name:
+            target_type = topic_type
+    if target_type != '':
+        print(target_type)
     sys.exit(0)
 
 def _rostopic_cmd_list(argv):
     result = rclpy.get_remote_topic_names_and_types()
-    for topic_name, topic_type in result:
-        print(topic_name+" (type: "+topic_type+")")
-    sys.exit(0)
+    for i in range(len(result[0])):
+        topic_name = result[0][i]
+        topic_type = result[1][i]
+        print(topic_name)
+        #print(topic_name+" (type: "+topic_type+")")
 
 # TODO implement
 def _rostopic_cmd_info(argv):
