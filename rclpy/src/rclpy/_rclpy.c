@@ -101,10 +101,11 @@ rclpy_get_remote_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * Py
   rcl_strings_fini(&node_names);
 
   // Build a final list containing two inner lists (names and types)
-  PyObject* list = PyList_New(2);
-  PyList_SetItem(list, 0, list_names);
-  PyList_SetItem(list, 1, list_types);
-
+  PyObject* list = PyList_New(topic_names_and_types.topic_count);
+  if (topic_names_and_types.topic_count > 0){
+    PyList_SetItem(list, 0, list_names);
+    PyList_SetItem(list, 1, list_types);    
+  }
   return list;
 }
 
