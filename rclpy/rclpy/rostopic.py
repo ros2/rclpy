@@ -406,14 +406,14 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
 def _fullusage():
     print("""rostopic is a command-line tool for printing information about ROS Topics.
 Commands:
-\trostopic bw\tdisplay bandwidth used by topic
-\trostopic delay\tdisplay delay of topic from timestamp in header
+\trostopic bw\tdisplay bandwidth used by topic (NOT IMPLEMENTED)
+\trostopic delay\tdisplay delay of topic from timestamp in header (NOT IMPLEMENTED)
 \trostopic echo\tprint messages to screen
-\trostopic find\tfind topics by type
-\trostopic hz\tdisplay publishing rate of topic    
-\trostopic info\tprint information about active topic
+\trostopic find\tfind topics by type (NOT IMPLEMENTED)
+\trostopic hz\tdisplay publishing rate of topic (NOT IMPLEMENTED)
+\trostopic info\tprint information about active topic (NOT IMPLEMENTED)
 \trostopic list\tlist active topics
-\trostopic pub\tpublish data to topic
+\trostopic pub\tpublish data to topic (NOT IMPLEMENTED)
 \trostopic type\tprint topic type
 Type rostopic <command> -h for more detailed usage, e.g. 'rostopic echo -h'
 """)
