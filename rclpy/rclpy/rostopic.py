@@ -25,7 +25,7 @@ from optparse import OptionParser
 from rclpy.qos import qos_profile_default
 import itertools
 import importlib
-from rclpy.impl.rmw_implementation_tools import select_rmw_implementation
+from rclpy.impl.rmw_implementation_tools import select_rmw_implementation, reload_rmw_implementations
 
 NAME='rostopic'
 
@@ -254,15 +254,44 @@ def _rostopic_cmd_echo(argv):
     global module
     global class_
 
-    node = rclpy.create_node('rostopic_echo')
+    topic_name_sub = ""
 
-    # from args[1] import args[2]
-    module = importlib.import_module(argv[2])
+    if len(argv)==3:
+        topic_name_sub = argv[2]
+        select_rmw_implementation("rmw_fastrtps_cpp")
+        rclpy.init(argv)
+        node = rclpy.create_node('rostopic_echo')
+        target_topic = argv[2]
+        target_type = ''
+        result = rclpy.get_remote_topic_names_and_types()
+        for i in range(len(result[0])):
+            topic_name = result[0][i]
+            topic_type = result[1][i]
+            if target_topic == topic_name:
+                target_type = topic_type
+                
+        message_split = target_type.split('/')
+        module = importlib.import_module(message_split[0]+'.msg')
+        class_ = getattr(module, message_split[1])
+        rclpy.impl.rmw_implementation_tools.__rmw_implementation_module = None
+        rclpy.impl.rmw_implementation_tools.__rmw_implementations = None
+        rclpy.impl.rmw_implementation_tools.__selected_rmw_implementation = None
+        rclpy.shutdown();
 
-    class_ = getattr(module, argv[3])
+        select_rmw_implementation("rmw_opensplice_cpp")
+        rclpy.init(argv)
+        node = rclpy.create_node('rostopic_echo')
+    else:
+        topic_name_sub = argv[4]
+        # from args[1] import args[2]
+        module = importlib.import_module(argv[2])
+        class_ = getattr(module, argv[3])
+        select_rmw_implementation("rmw_opensplice_cpp")
+        rclpy.init(argv)
+        node = rclpy.create_node('rostopic_echo')
 
     sub = node.create_subscription(class_,
-                                argv[4],
+                                topic_name_sub,
                                 chatter_callback,
                                 qos_profile_default)
     assert sub  # prevent unused warning
@@ -301,12 +330,12 @@ def rostopicmain(argv=None):
     try:
         command = argv[1]
         if command == 'echo':
-            select_rmw_implementation("rmw_opensplice_cpp")
-            rclpy.init(argv)
             _rostopic_cmd_echo(argv)
         elif command == 'hz':
             _rostopic_cmd_hz(argv)
         elif command == 'type':
+            select_rmw_implementation("rmw_fastrtps_cpp")
+            rclpy.init(argv)
             _rostopic_cmd_type(argv)
         elif command == 'list':
             select_rmw_implementation("rmw_fastrtps_cpp")
