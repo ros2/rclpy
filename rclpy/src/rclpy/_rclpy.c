@@ -60,13 +60,35 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
+rclpy_create_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  unsigned PY_LONG_LONG pyqos_history;
+  unsigned PY_LONG_LONG pyqos_depth;
+  unsigned PY_LONG_LONG pyqos_reliability;
+  unsigned PY_LONG_LONG pyqos_durability;
+
+  if (!PyArg_ParseTuple(args, "KKKK", &pyqos_history, &pyqos_depth, &pyqos_reliability, &pyqos_durability)) {
+    return NULL;
+  }
+  
+  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyMem_Malloc(sizeof(rmw_qos_profile_t));
+  qos_profile->history     = pyqos_history    ;
+  qos_profile->depth       = pyqos_depth      ;
+  qos_profile->reliability = pyqos_reliability;
+  qos_profile->durability  = pyqos_durability ;
+  PyObject * pyqos_profile = PyCapsule_New(qos_profile, NULL, NULL);
+  return pyqos_profile;
+}
+
+static PyObject *
 rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode;
   PyObject * pymsg_type;
   PyObject * pytopic;
+  PyObject * pyqos_profile;
 
-  if (!PyArg_ParseTuple(args, "OOO", &pynode, &pymsg_type, &pytopic)) {
+  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pymsg_type, &pytopic, &pyqos_profile)) {
     return NULL;
   }
 
@@ -75,6 +97,8 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+
+  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyCapsule_GetPointer(pyqos_profile, NULL);
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
@@ -86,6 +110,9 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_publisher_t * publisher = (rcl_publisher_t *)PyMem_Malloc(sizeof(rcl_publisher_t));
   publisher->impl = NULL;
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
+
+  if (pyqos_profile)
+    publisher_ops.qos = *qos_profile;
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -136,8 +163,9 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pynode;
   PyObject * pymsg_type;
   PyObject * pytopic;
+  PyObject * pyqos_profile;
 
-  if (!PyArg_ParseTuple(args, "OOO", &pynode, &pymsg_type, &pytopic)) {
+  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pymsg_type, &pytopic, &pyqos_profile)) {
     return NULL;
   }
 
@@ -146,6 +174,8 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+
+  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyCapsule_GetPointer(pyqos_profile, NULL);
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
@@ -158,6 +188,10 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     (rcl_subscription_t *)PyMem_Malloc(sizeof(rcl_subscription_t));
   subscription->impl = NULL;
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
+
+  if (pyqos_profile)
+    subscription_ops.qos = *qos_profile;
+
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -373,6 +407,9 @@ static PyMethodDef rclpy_methods[] = {
    "Publish a message."},
   {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
    "Create a Subscription."},
+
+  {"rclpy_create_qos_policy", rclpy_create_qos_policy, METH_VARARGS,
+   "Create a QoS Policy."},
 
   {"rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
    "rclpy_get_zero_initialized_wait_set."},
