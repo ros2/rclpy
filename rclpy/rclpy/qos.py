@@ -108,18 +108,18 @@ qos_profile_default = QoSProfile(
     depth=10,
     reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
     # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
-).get_QoS_Profile()
+)
 
 qos_profile_reliable = QoSProfile(
     history=QoSHistoryPolicy.RMW_QOS_POLICY_KEEP_ALL_HISTORY,
     depth=1000,
     reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABLE
     # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_VOLATILE_DURABILITY
-).get_QoS_Profile()
+)
 
 qos_profile_best_effort = QoSProfile(
     history=QoSHistoryPolicy.RMW_QOS_POLICY_KEEP_LAST_HISTORY,
     depth=5,
     reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_BEST_EFFORT
     # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_TRANSIENT_LOCAL_DURABILITY
-).get_QoS_Profile()
+)
