@@ -28,7 +28,7 @@ class Node:
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
         publisher_handle = rclpy._rclpy.rclpy_create_publisher(
-            self.handle, msg_type, topic, qos_profile.get_QoS_Profile())
+            self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
 
         return Publisher(publisher_handle, msg_type, topic, qos_profile)
 
@@ -36,7 +36,7 @@ class Node:
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
         subscription_handle = rclpy._rclpy.rclpy_create_subscription(
-            self.handle, msg_type, topic, qos_profile.get_QoS_Profile())
+            self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
 
         subscription = Subscription(subscription_handle, msg_type, topic, callback, qos_profile)
         self.subscriptions.append(subscription)

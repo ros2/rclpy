@@ -80,7 +80,7 @@ class QoSProfile:
         assert isinstance(value, int)
         self._depth = value
 
-    def get_QoS_Profile(self):
+    def get_c_qos_profile(self):
         return rclpy._rclpy.rclpy_create_qos_policy(
             self.history, self.depth, self.reliability, self.durability)
 
