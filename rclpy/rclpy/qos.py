@@ -47,7 +47,7 @@ class QoSProfile:
 
     @history.setter
     def history(self, value):
-        assert isinstance(value, QoSHistoryPolicy)
+        assert isinstance(value, QoSHistoryPolicy) or isinstance(value, int)
         self._history = value
 
     @property
@@ -57,7 +57,7 @@ class QoSProfile:
 
     @reliability.setter
     def reliability(self, value):
-        assert isinstance(value, QoSReliabilityPolicy)
+        assert isinstance(value, QoSReliabilityPolicy) or isinstance(value, int)
         self._reliability = value
 
     @property
@@ -67,7 +67,7 @@ class QoSProfile:
 
     @durability.setter
     def durability(self, value):
-        assert isinstance(value, QoSDurabilityPolicy)
+        assert isinstance(value, QoSDurabilityPolicy) or isinstance(value, int)
         self._durability = value
 
     @property
@@ -81,7 +81,7 @@ class QoSProfile:
         self._depth = value
 
     def get_c_qos_profile(self):
-        return rclpy._rclpy.rclpy_create_qos_policy(
+        return rclpy._rclpy.rclpy_convert_from_py_qos_policy(
             self.history, self.depth, self.reliability, self.durability)
 
 
@@ -103,23 +103,13 @@ class QoSDurabilityPolicy(IntEnum):
     RMW_QOS_POLICY_VOLATILE_DURABILITY = 2
 
 
-qos_profile_default = QoSProfile(
-    history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT,
-    depth=10,
-    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
-    # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
-)
-
-qos_profile_reliable = QoSProfile(
-    history=QoSHistoryPolicy.RMW_QOS_POLICY_KEEP_ALL_HISTORY,
-    depth=1000,
-    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABLE
-    # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_VOLATILE_DURABILITY
-)
-
-qos_profile_best_effort = QoSProfile(
-    history=QoSHistoryPolicy.RMW_QOS_POLICY_KEEP_LAST_HISTORY,
-    depth=5,
-    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_BEST_EFFORT
-    # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_TRANSIENT_LOCAL_DURABILITY
-)
+qos_profile_default = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_default')
+qos_profile_system_default = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_system_default')
+# NOTE(mikaelarguedas) the following are defined but not used because services and parameters
+# are not implemented in Python yet
+qos_profile_sensor_data = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_sensor_data')
+qos_profile_parameters = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_parameters')
+qos_profile_services_default = rclpy._rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_services_default')
+qos_profile_parameter_events = rclpy._rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_parameter_events')
