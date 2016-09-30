@@ -17,7 +17,7 @@ import rclpy
 
 
 class QoSProfile:
-    """Class defining Quality of Service policies"""
+    """Class defining Quality of Service policies."""
 
     __slots__ = [
         '_history',
@@ -42,7 +42,7 @@ class QoSProfile:
 
     @property
     def history(self):
-        """QoSHistoryPolicy 'history'"""
+        """Get QoSHistoryPolicy 'history'."""
         return self._history
 
     @history.setter
@@ -52,7 +52,7 @@ class QoSProfile:
 
     @property
     def reliability(self):
-        """QoSReliabilityPolicy 'reliability'"""
+        """Get QoSReliabilityPolicy 'reliability'."""
         return self._reliability
 
     @reliability.setter
@@ -62,7 +62,7 @@ class QoSProfile:
 
     @property
     def durability(self):
-        """QoSDurabilityPolicy 'durability'"""
+        """Get QoSDurabilityPolicy 'durability'."""
         return self._durability
 
     @durability.setter
@@ -72,7 +72,7 @@ class QoSProfile:
 
     @property
     def depth(self):
-        """int 'depth'"""
+        """Get int 'depth'."""
         return self._depth
 
     @depth.setter
@@ -104,22 +104,22 @@ class QoSDurabilityPolicy(IntEnum):
 
 
 qos_profile_default = QoSProfile(
-     history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT,
-     depth=10,
-     reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT,
-     # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
-     ).get_QoS_Profile()
+    history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT,
+    depth=10,
+    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
+    # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
+).get_QoS_Profile()
 
 qos_profile_reliable = QoSProfile(
     history=QoSHistoryPolicy.RMW_QOS_POLICY_KEEP_ALL_HISTORY,
     depth=1000,
-    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABLE,
+    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABLE
     # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_VOLATILE_DURABILITY
-    ).get_QoS_Profile()
+).get_QoS_Profile()
 
 qos_profile_best_effort = QoSProfile(
     history=QoSHistoryPolicy.RMW_QOS_POLICY_KEEP_LAST_HISTORY,
     depth=5,
-    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_BEST_EFFORT,
+    reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_BEST_EFFORT
     # durability=QoSDurabilityPolicy.RMW_QOS_POLICY_TRANSIENT_LOCAL_DURABILITY
-    ).get_QoS_Profile()
+).get_QoS_Profile()
