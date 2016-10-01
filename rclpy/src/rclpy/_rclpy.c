@@ -423,32 +423,28 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
   assert(pynode != NULL);
   assert(node != NULL);
-  rcl_topic_names_and_types_t * topic_names_and_types; // = NULL;
-  rcl_ret_t ret = rcl_get_topic_names_and_types(node, topic_names_and_types);
+  rcl_topic_names_and_types_t topic_names_and_types;
+  rcl_ret_t ret = rcl_get_topic_names_and_types(node, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to get_topic_names_and_types: %s", rcl_get_error_string_safe());
     return NULL;
   }
-  fprintf(stderr, "1\n");
   PyObject * pynames_types_module = PyImport_ImportModule("rclpy.names_and_types");
   PyObject * pytopic_names_types_class = PyObject_GetAttrString(
     pynames_types_module, "TopicNamesAndTypes");
   PyObject * pytopic_names_types = NULL;
-  fprintf(stderr, "2\n");
   pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
 
-  fprintf(stderr, "3\n");
-  fprintf(stderr, "topic_count= %zd\n", topic_names_and_types->topic_count);
-  PyObject * pytopic_names = PyList_New(topic_names_and_types->topic_count);
-  PyObject * pytype_names = PyList_New(topic_names_and_types->topic_count);
+  fprintf(stderr, "topic_count= %zd\n", topic_names_and_types.topic_count);
+  PyObject * pytopic_names = PyList_New(topic_names_and_types.topic_count);
+  PyObject * pytype_names = PyList_New(topic_names_and_types.topic_count);
   size_t idx;
-  for (idx = 0; idx < topic_names_and_types->topic_count; ++idx) {
-    fprintf(stderr, "4[%zd]\n", idx);
+  for (idx = 0; idx < topic_names_and_types.topic_count; ++idx) {
     PyList_SetItem(
-      pytopic_names, idx, PyUnicode_FromString(topic_names_and_types->topic_names[idx]));
+      pytopic_names, idx, PyUnicode_FromString(topic_names_and_types.topic_names[idx]));
     PyList_SetItem(
-      pytype_names, idx, PyUnicode_FromString(topic_names_and_types->type_names[idx]));
+      pytype_names, idx, PyUnicode_FromString(topic_names_and_types.type_names[idx]));
   }
   assert(PySequence_Check(pytopic_names));
   assert(pytopic_names != NULL);
@@ -458,24 +454,21 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   assert(pytype_names != NULL);
   PyObject_SetAttrString(pytopic_names_types, "type_names", pytype_names);
   // Py_INCREF(pytype_names);
-  fprintf(stderr, "5\n");
   PyObject * pytopic_count = NULL;
-  pytopic_count = PyLong_FromUnsignedLong(topic_names_and_types->topic_count);
+  pytopic_count = PyLong_FromUnsignedLong(topic_names_and_types.topic_count);
   assert(pytopic_count != NULL);
   PyObject_SetAttrString(
     pytopic_names_types,
     "topic_count",
     pytopic_count);
   // Py_INCREF(pytopic_count);
-  fprintf(stderr, "6\n");
 
-  ret = rcl_destroy_topic_names_and_types(topic_names_and_types);
+  ret = rcl_destroy_topic_names_and_types(&topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to destroy topic_names_and_types: %s", rcl_get_error_string_safe());
     return NULL;
   }
-  fprintf(stderr, "7\n");
 
   assert(pytopic_names_types != NULL);
   return pytopic_names_types;
