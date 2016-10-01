@@ -14,6 +14,7 @@
 
 #include <Python.h>
 
+#include <rcl/graph.h>
 #include <rmw/rmw.h>
 
 
@@ -93,6 +94,53 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   return pyqos_profile;
 }
 
+static PyObject *
+rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  PyObject * pyrcl_topic_names_and_type;
+
+  if (!PyArg_ParseTuple(args, "OO", &pynode, &pyrcl_topic_names_and_type)) {
+    return NULL;
+  }
+
+  const rcl_node_t * node = (const rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  rcl_topic_names_and_types_t * topic_names_and_types = NULL;
+  rcl_ret_t ret = rcl_get_topic_names_and_types(node, topic_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get_topic_names_and_types: %s", "!!!TODO!!! NEED TO GET NAME FROM RMW_NODE_T");
+    return NULL;
+  }
+  PyObject * pynames_types_module = PyImport_ImportModule("rclpy.names_and_types");
+  PyObject * pytopic_names_types_class = PyObject_GetAttrString(
+    pynames_types_module, "TopicNamesAndTypes");
+  PyObject * pytopic_names_types = NULL;
+  pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
+
+  PyObject * pytopic_names = PyList_New(topic_names_and_types->topic_count);
+  PyObject * pytype_names = PyList_New(topic_names_and_types->topic_count);
+  size_t idx;
+  for (idx = 0; idx < topic_names_and_types->topic_count; idx++) {
+    PyList_SetItem(
+      pytopic_names, idx, PyUnicode_FromString(topic_names_and_types->topic_names[idx]));
+    PyList_SetItem(
+      pytype_names, idx, PyUnicode_FromString(topic_names_and_types->type_names[idx]));
+  }
+  assert(PySequence_Check(pytopic_names));
+  assert(pytopic_names != NULL);
+  assert(PySequence_Check(pytype_names));
+  assert(pytype_names != NULL);
+  PyObject_SetAttrString(pytopic_names_types, "topic_names", pytopic_names);
+  PyObject_SetAttrString(pytopic_names_types, "type_names", pytype_names);
+  PyObject_SetAttrString(
+    pytopic_names_types,
+    "topic_count",
+    PyLong_FromUnsignedLong(topic_names_and_types->topic_count));
+
+  assert(pytopic_names_types != NULL);
+  return pytopic_names_types;
+}
 
 static PyMethodDef _rclpy_implementation_rmw_agnostic_methods[] = {
   {"rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
@@ -100,6 +148,9 @@ static PyMethodDef _rclpy_implementation_rmw_agnostic_methods[] = {
 
   {"rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
    "Get QOS profile."},
+
+  {"rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,
+   "Get topic list from graph API."},
 
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
