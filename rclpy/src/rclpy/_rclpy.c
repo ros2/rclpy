@@ -60,80 +60,6 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
-rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  unsigned PY_LONG_LONG pyqos_history;
-  unsigned PY_LONG_LONG pyqos_depth;
-  unsigned PY_LONG_LONG pyqos_reliability;
-  unsigned PY_LONG_LONG pyqos_durability;
-
-  if (!PyArg_ParseTuple(
-      args, "KKKK", &pyqos_history, &pyqos_depth, &pyqos_reliability, &pyqos_durability))
-  {
-    return NULL;
-  }
-
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyMem_Malloc(sizeof(rmw_qos_profile_t));
-  qos_profile->history = pyqos_history;
-  qos_profile->depth = pyqos_depth;
-  qos_profile->reliability = pyqos_reliability;
-  qos_profile->durability = pyqos_durability;
-  PyObject * pyqos_profile = PyCapsule_New(qos_profile, NULL, NULL);
-  return pyqos_profile;
-}
-
-static PyObject *
-rclpy_convert_to_py_qos_policy(void * profile)
-{
-  PyObject * pyqos_module = PyImport_ImportModule("rclpy.qos");
-  PyObject * pyqos_policy_class = PyObject_GetAttrString(pyqos_module, "QoSProfile");
-  PyObject * pyqos_profile = NULL;
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)profile;
-  pyqos_profile = PyObject_CallObject(pyqos_policy_class, NULL);
-  assert(pyqos_profile != NULL);
-
-  PyObject_SetAttrString(pyqos_profile, "depth", PyLong_FromUnsignedLong(qos_profile->depth));
-  PyObject_SetAttrString(pyqos_profile, "history", PyLong_FromUnsignedLong(qos_profile->history));
-  PyObject_SetAttrString(pyqos_profile, "reliability", PyLong_FromUnsignedLong(qos_profile->reliability));
-  PyObject_SetAttrString(pyqos_profile, "durability", PyLong_FromUnsignedLong(qos_profile->durability));
-
-  assert(pyqos_profile != NULL);
-  return pyqos_profile;
-}
-
-static PyObject *
-rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  const char * pyrmw_profile;
-  if (!PyArg_ParseTuple(
-      args, "z", &pyrmw_profile))
-  {
-    return NULL;
-  }
-  PyObject * pyqos_profile = NULL;
-  if (0 == strcmp(pyrmw_profile, "qos_profile_sensor_data"))
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_sensor_data);
-  else if (0 == strcmp(pyrmw_profile, "qos_profile_default"))
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_default);
-  else if (0 == strcmp(pyrmw_profile, "qos_profile_system_default"))
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_system_default);
-  // NOTE(mikaelarguedas) the following are defined but not used because services and parameters
-  // are not implemented in Python yet
-  else if (0 == strcmp(pyrmw_profile, "qos_profile_parameters"))
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_parameters);
-  else if (0 == strcmp(pyrmw_profile, "qos_profile_services_default"))
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_services_default);
-  else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events"))
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_parameter_events);
-  else {
-    PyErr_Format(PyExc_RuntimeError,
-      "Requested unknown rmw_qos_profile: %s", pyrmw_profile);
-    return NULL;
-  }
-  return pyqos_profile;
-}
-
-static PyObject *
 rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode;
@@ -462,12 +388,6 @@ static PyMethodDef rclpy_methods[] = {
    "Publish a message."},
   {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
    "Create a Subscription."},
-
-  {"rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
-   "Convert a QoSPolicy python object into a rmw_qos_profile_t."},
-
-  {"rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
-   "Get QOS profile."},
 
   {"rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
    "rclpy_get_zero_initialized_wait_set."},

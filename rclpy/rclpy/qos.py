@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from enum import IntEnum
-import rclpy
+from rclpy import _rclpy_implementation_rmw_agnostic
 
 
 class QoSProfile:
@@ -81,7 +81,7 @@ class QoSProfile:
         self._depth = value
 
     def get_c_qos_profile(self):
-        return rclpy._rclpy.rclpy_convert_from_py_qos_policy(
+        return _rclpy_implementation_rmw_agnostic.rclpy_convert_from_py_qos_policy(
             self.history, self.depth, self.reliability, self.durability)
 
 
@@ -103,13 +103,17 @@ class QoSDurabilityPolicy(IntEnum):
     RMW_QOS_POLICY_VOLATILE_DURABILITY = 2
 
 
-qos_profile_default = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_default')
-qos_profile_system_default = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_system_default')
+qos_profile_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+    'qos_profile_default')
+qos_profile_system_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+    'qos_profile_system_default')
 # NOTE(mikaelarguedas) the following are defined but not used because services and parameters
 # are not implemented in Python yet
-qos_profile_sensor_data = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_sensor_data')
-qos_profile_parameters = rclpy._rclpy.rclpy_get_rmw_qos_profile('qos_profile_parameters')
-qos_profile_services_default = rclpy._rclpy.rclpy_get_rmw_qos_profile(
+qos_profile_sensor_data = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+    'qos_profile_sensor_data')
+qos_profile_parameters = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+    'qos_profile_parameters')
+qos_profile_services_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
     'qos_profile_services_default')
-qos_profile_parameter_events = rclpy._rclpy.rclpy_get_rmw_qos_profile(
+qos_profile_parameter_events = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events')
