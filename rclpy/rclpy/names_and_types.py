@@ -32,10 +32,10 @@ class TopicNamesAndTypes:
         self.type_names = kwargs.get('type_names', list())
 
     def __repr__(self):
-        s = ''
-        s += 'number of topics = ' + repr(self._topic_count) + '\n'
+        s = 'number of topics = ' + repr(self._topic_count) + '\n'
+        s += '[topic_name] : [ROS type name]\n'
         for i in range(self._topic_count):
-            s += '{}:{}\n'.format(
+            s += '{} : {}\n'.format(
                 self._topic_names[i], self._type_names[i])
         return s
 
