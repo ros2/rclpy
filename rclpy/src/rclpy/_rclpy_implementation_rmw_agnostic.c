@@ -118,6 +118,7 @@ static struct PyModuleDef _rclpy_rmw_agnosticmodule = {
   NULL
 };
 
-PyMODINIT_FUNC PyInit__rclpy_implementation_rmw_agnostic(void) {
+PyMODINIT_FUNC PyInit__rclpy_implementation_rmw_agnostic(void)
+{
   return PyModule_Create(&_rclpy_rmw_agnosticmodule);
 }
