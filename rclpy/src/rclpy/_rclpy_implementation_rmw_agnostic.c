@@ -14,6 +14,7 @@
 
 #include <Python.h>
 
+#include <rcl/error_handling.h>
 #include <rcl/graph.h>
 #include <rmw/rmw.h>
 
@@ -104,12 +105,15 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  const rcl_node_t * node = (const rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  assert(pynode != NULL);
+  assert(pyrcl_topic_names_and_type != NULL);
+  assert(node != NULL);
   rcl_topic_names_and_types_t * topic_names_and_types = NULL;
   rcl_ret_t ret = rcl_get_topic_names_and_types(node, topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to get_topic_names_and_types: %s", "!!!TODO!!! NEED TO GET NAME FROM RMW_NODE_T");
+      "Failed to get_topic_names_and_types: %s", rcl_get_error_string_safe());
     return NULL;
   }
   PyObject * pynames_types_module = PyImport_ImportModule("rclpy.names_and_types");

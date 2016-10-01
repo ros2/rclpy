@@ -63,7 +63,7 @@ class TopicNamesAndTypes:
 
     @property
     def type_names(self):
-        """Get list of topic names."""
+        """Get list of type names."""
         return self._type_names
 
     @type_names.setter
@@ -82,11 +82,13 @@ class TopicNamesAndTypes:
         self._type_names = value
 
     def __repr__(self):
-        for s in self.__slots__:
-            print(s)
+        s = ''
+        s += 'number of topics = ' + self.__slots__['_topic_count']
+        for i in range(self.__slots__['_topic_count']):
+            s += '{}:{}'.format(
+                self.__slots__['_topic_names'][i], self.__slots__['_topic_names'][i])
+        return s
 
-
-def get_names_and_types(node):
-    a = TopicNamesAndTypes()
-    a = _rclpy_implementation_rmw_agnostic.rclpy_get_topic_names_and_types(node, a)
-    return a
+    def get_names_and_types(self, node):
+        # a = TopicNamesAndTypes()
+        return _rclpy_implementation_rmw_agnostic.rclpy_get_topic_names_and_types(node, self)
