@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy import _rclpy_implementation_rmw_agnostic
+import rclpy
 
 
 class TopicNamesAndTypes:
@@ -30,6 +30,14 @@ class TopicNamesAndTypes:
         self.topic_count = kwargs.get('topic_count', int())
         self.topic_names = kwargs.get('topic_names', list())
         self.type_names = kwargs.get('type_names', list())
+
+    def __repr__(self):
+        s = ''
+        s += 'number of topics = ' + repr(self._topic_count) + '\n'
+        for i in range(self._topic_count):
+            s += '{}:{}\n'.format(
+                self._topic_names[i], self._type_names[i])
+        return s
 
     @property
     def topic_count(self):
@@ -80,15 +88,3 @@ class TopicNamesAndTypes:
              not isinstance(value, UserString) and
              all([isinstance(v, str) for v in value]))
         self._type_names = value
-
-    def __repr__(self):
-        s = ''
-        s += 'number of topics = ' + self.__slots__['_topic_count']
-        for i in range(self.__slots__['_topic_count']):
-            s += '{}:{}'.format(
-                self.__slots__['_topic_names'][i], self.__slots__['_topic_names'][i])
-        return s
-
-    def get_names_and_types(self, node):
-        # a = TopicNamesAndTypes()
-        return _rclpy_implementation_rmw_agnostic.rclpy_get_topic_names_and_types(node, self)
