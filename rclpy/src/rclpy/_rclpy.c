@@ -93,6 +93,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   if (pyqos_profile) {
     publisher_ops.qos = *qos_profile;
   }
+
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
