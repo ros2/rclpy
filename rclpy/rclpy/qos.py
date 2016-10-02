@@ -42,7 +42,11 @@ class QoSProfile:
 
     @property
     def history(self):
-        """Get QoSHistoryPolicy 'history'."""
+        """Get field 'history'.
+
+        :returns: history attribute
+        :rtype: QoSHistoryPolicy
+        """
         return self._history
 
     @history.setter
@@ -52,7 +56,11 @@ class QoSProfile:
 
     @property
     def reliability(self):
-        """Get QoSReliabilityPolicy 'reliability'."""
+        """Get field 'reliability'.
+
+        :returns: reliability attribute
+        :rtype: QoSReliabilityPolicy
+        """
         return self._reliability
 
     @reliability.setter
@@ -62,7 +70,11 @@ class QoSProfile:
 
     @property
     def durability(self):
-        """Get QoSDurabilityPolicy 'durability'."""
+        """Get field 'durability'.
+
+        :returns: durability attribute
+        :rtype: QoSDurabilityPolicy
+        """
         return self._durability
 
     @durability.setter
@@ -72,7 +84,11 @@ class QoSProfile:
 
     @property
     def depth(self):
-        """Get int 'depth'."""
+        """Get field 'depth'.
+
+        :returns: depth attribute
+        :rtype: int
+        """
         return self._depth
 
     @depth.setter
