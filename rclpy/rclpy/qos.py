@@ -48,7 +48,7 @@ class QoSProfile:
     @history.setter
     def history(self, value):
         assert isinstance(value, QoSHistoryPolicy) or isinstance(value, int)
-        self._history = value
+        self._history = QoSHistoryPolicy(value)
 
     @property
     def reliability(self):
@@ -58,7 +58,7 @@ class QoSProfile:
     @reliability.setter
     def reliability(self, value):
         assert isinstance(value, QoSReliabilityPolicy) or isinstance(value, int)
-        self._reliability = value
+        self._reliability = QoSReliabilityPolicy(value)
 
     @property
     def durability(self):
@@ -68,7 +68,7 @@ class QoSProfile:
     @durability.setter
     def durability(self, value):
         assert isinstance(value, QoSDurabilityPolicy) or isinstance(value, int)
-        self._durability = value
+        self._durability = QoSDurabilityPolicy(value)
 
     @property
     def depth(self):
