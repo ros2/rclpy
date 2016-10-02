@@ -84,7 +84,8 @@ macro(target)
   )
 
   install(TARGETS ${PROJECT_NAME}${target_suffix}
-    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}")
+    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+  )
 endmacro()
 
 call_for_each_rmw_implementation(target)
@@ -113,7 +114,8 @@ target_include_directories("${PROJECT_NAME}_implementation_rmw_agnostic"
 )
 
 install(TARGETS "${PROJECT_NAME}_implementation_rmw_agnostic"
-  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}")
+  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
