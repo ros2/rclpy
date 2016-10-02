@@ -392,6 +392,9 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   assert(pynode != NULL);
   assert(node != NULL);
   rcl_topic_names_and_types_t topic_names_and_types;
+  topic_names_and_types.topic_count = 0;
+  topic_names_and_types.topic_names = NULL;
+  topic_names_and_types.type_names = NULL;
   rcl_ret_t ret = rcl_get_topic_names_and_types(node, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -404,7 +407,6 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pytopic_names_types = NULL;
   pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
 
-  fprintf(stderr, "topic_count= %zd\n", topic_names_and_types.topic_count);
   PyObject * pytopic_names = PyList_New(topic_names_and_types.topic_count);
   PyObject * pytype_names = PyList_New(topic_names_and_types.topic_count);
   size_t idx;
