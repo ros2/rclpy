@@ -417,6 +417,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   assert(PySequence_Check(pytopic_names));
   assert(pytopic_names != NULL);
   PyObject_SetAttrString(pytopic_names_types, "topic_names", pytopic_names);
+  // FIXME is reference increment needed here ?
   // Py_INCREF(pytopic_names);
   assert(PySequence_Check(pytype_names));
   assert(pytype_names != NULL);
