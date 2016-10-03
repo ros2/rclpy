@@ -451,12 +451,9 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   assert(PySequence_Check(pytopic_names));
   assert(pytopic_names != NULL);
   PyObject_SetAttrString(pytopic_names_types, "topic_names", pytopic_names);
-  // FIXME is reference increment needed here ?
-  // Py_INCREF(pytopic_names);
   assert(PySequence_Check(pytype_names));
   assert(pytype_names != NULL);
   PyObject_SetAttrString(pytopic_names_types, "type_names", pytype_names);
-  // Py_INCREF(pytype_names);
   PyObject * pytopic_count = NULL;
   pytopic_count = PyLong_FromUnsignedLong(topic_names_and_types.topic_count);
   assert(pytopic_count != NULL);
@@ -464,7 +461,6 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
     pytopic_names_types,
     "topic_count",
     pytopic_count);
-  // Py_INCREF(pytopic_count);
 
   ret = rcl_destroy_topic_names_and_types(&topic_names_and_types);
   if (ret != RCL_RET_OK) {
