@@ -14,7 +14,7 @@
 
 
 class TopicNamesAndTypes:
-    """Class defining Quality of Service policies."""
+    """Class defining information gathered about advertised topics."""
 
     __slots__ = [
         '_topic_count',
@@ -39,7 +39,11 @@ class TopicNamesAndTypes:
 
     @property
     def topic_count(self):
-        """Get field topic_count."""
+        """Get field topic_count.
+
+        :returns: number of advertised topics
+        :rtype: int
+        """
         return self._topic_count
 
     @topic_count.setter
@@ -49,7 +53,11 @@ class TopicNamesAndTypes:
 
     @property
     def topic_names(self):
-        """Get list of topic names."""
+        """Get field topic_names.
+
+        :returns: name of advertised topics
+        :rtype: list
+        """
         return self._topic_names
 
     @topic_names.setter
@@ -69,7 +77,11 @@ class TopicNamesAndTypes:
 
     @property
     def type_names(self):
-        """Get list of type names."""
+        """Get field type_names.
+
+        :returns: message type of advertised topics
+        :rtype: list
+        """
         return self._type_names
 
     @type_names.setter
