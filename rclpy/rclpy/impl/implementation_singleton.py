@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provide singleton access to the rclpy implementation.
+"""
+Provide singleton access to the rclpy implementation.
 
 The singleton is called ``rclpy_implementation`` and is in this module.
 For example, you might use it like this:
@@ -36,7 +37,8 @@ from rclpy.impl.object_proxy import ObjectProxy
 
 
 class ImplementationPlaceholder:
-    """Placeholder for the rclpy implementation module.
+    """
+    Placeholder for the rclpy implementation module.
 
     This class will raise a :py:class:`NotInitializedException` when used.
     """
@@ -56,7 +58,8 @@ def set_rclpy_implementation(implementation):
 
 
 def rclpy_implementation_is_placeholder(implementation=None):
-    """Return True if the implementation is a placeholder, else False.
+    """
+    Return True if the implementation is a placeholder, else False.
 
     :param implementation: implementation to check, defaults to the singleton
     :returns: bool

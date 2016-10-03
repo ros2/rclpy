@@ -45,7 +45,8 @@ def get_rmw_implementations():
 
 
 def select_rmw_implementation(rmw_implementation):
-    """Set the rmw implementation to be imported by name.
+    """
+    Set the rmw implementation to be imported by name.
 
     Can be called multiple times, but only before calling :py:func:`rclpy.init`
     and/or :py:func:`import_rmw_implementation`.
@@ -67,7 +68,8 @@ def select_rmw_implementation(rmw_implementation):
 
 
 def import_rmw_implementation():
-    """Import and return the selected or default rmw implementation.
+    """
+    Import and return the selected or default rmw implementation.
 
     This function can be called multiple times, but the rmw implementation is
     only imported the first time.
