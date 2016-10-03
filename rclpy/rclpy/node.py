@@ -45,5 +45,5 @@ class Node:
         self.subscriptions.append(subscription)
         return subscription
 
-    def get_name_and_types(self):
+    def get_topic_names_and_types(self):
         return rclpy._rclpy.rclpy_get_topic_names_and_types(self.handle)
