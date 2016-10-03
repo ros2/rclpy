@@ -12,21 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import time
 
 import rclpy
-from rclpy.impl.rmw_implementation_tools import select_rmw_implementation
-from rclpy.impl.rmw_implementation_tools import get_rmw_implementations
 
+rclpy.init()
 
-rmw_implementations = get_rmw_implementations()
-if os.environ.get('RCLPY_IMPLEMENTATION', 'Not Set') in rmw_implementations:
-    select_rmw_implementation(os.environ['RCLPY_IMPLEMENTATION'])
-
-rclpy.init([])
-
-node = rclpy.create_node('rostopic')
+node = rclpy.create_node('rostopic_list')
 time.sleep(1)
 if(rclpy.ok()):
     a = node.get_name_and_types()
