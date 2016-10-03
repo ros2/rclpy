@@ -21,6 +21,6 @@ rclpy.init()
 node = rclpy.create_node('rostopic_list')
 time.sleep(1)
 if(rclpy.ok()):
-    a = node.get_name_and_types()
+    a = node.get_topic_names_and_types()
     print("\n%r\n" % a)
 rclpy.shutdown()
