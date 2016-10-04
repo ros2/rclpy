@@ -26,14 +26,14 @@ configure_file("__init__.py.in" "rclpy/__init__.py" @ONLY)
 
 ament_python_install_package(${PROJECT_NAME})
 
-macro(set_properties _build_type)
-  set_target_properties(${PROJECT_NAME}${target_suffix} PROPERTIES
+function(set_properties _targetname _build_type)
+  set_target_properties(${_targetname} PROPERTIES
     PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
     RUNTIME_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
-    OUTPUT_NAME "_${PROJECT_NAME}${target_suffix}${PythonExtra_EXTENSION_SUFFIX}"
+    OUTPUT_NAME "_${_targetname}${PythonExtra_EXTENSION_SUFFIX}"
     SUFFIX "${PythonExtra_EXTENSION_EXTENSION}")
-endmacro()
+endfunction()
 
 macro(target)
   if(NOT target_suffix STREQUAL "")
@@ -54,12 +54,12 @@ macro(target)
   target_compile_definitions(${PROJECT_NAME}${target_suffix}
     PRIVATE "RMW_IMPLEMENTATION_SUFFIX=${target_suffix}")
 
-  set_properties("")
+  set_properties(${PROJECT_NAME}${target_suffix} "")
   if(WIN32)
-    set_properties("_DEBUG")
-    set_properties("_MINSIZEREL")
-    set_properties("_RELEASE")
-    set_properties("_RELWITHDEBINFO")
+    set_properties(${PROJECT_NAME}${target_suffix} "_DEBUG")
+    set_properties(${PROJECT_NAME}${target_suffix} "_MINSIZEREL")
+    set_properties(${PROJECT_NAME}${target_suffix} "_RELEASE")
+    set_properties(${PROJECT_NAME}${target_suffix} "_RELWITHDEBINFO")
   endif()
 
   target_link_libraries(${PROJECT_NAME}${target_suffix}
@@ -84,10 +84,38 @@ macro(target)
   )
 
   install(TARGETS ${PROJECT_NAME}${target_suffix}
-    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}")
+    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+  )
 endmacro()
 
 call_for_each_rmw_implementation(target)
+
+
+add_library(
+  "${PROJECT_NAME}_implementation_rmw_agnostic"
+  SHARED src/rclpy/_rclpy_implementation_rmw_agnostic.c
+)
+set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "")
+if(WIN32)
+  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_DEBUG")
+  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_MINSIZEREL")
+  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_RELEASE")
+  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_RELWITHDEBINFO")
+endif()
+
+target_link_libraries("${PROJECT_NAME}_implementation_rmw_agnostic"
+  ${PythonExtra_LIBRARIES}
+)
+
+target_include_directories("${PROJECT_NAME}_implementation_rmw_agnostic"
+  PUBLIC
+  ${rmw_INCLUDE_DIRS}
+  ${PythonExtra_INCLUDE_DIRS}
+)
+
+install(TARGETS "${PROJECT_NAME}_implementation_rmw_agnostic"
+  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
