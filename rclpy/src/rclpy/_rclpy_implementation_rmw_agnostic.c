@@ -50,7 +50,7 @@ rclpy_convert_to_py_qos_policy(void * profile)
   pyqos_profile = PyObject_CallObject(pyqos_policy_class, NULL);
   assert(pyqos_profile != NULL);
 
-  PyObject_SetAttrString(pyqos_profile, "depth", PyLong_FromUnsignedLong(qos_profile->depth));
+  PyObject_SetAttrString(pyqos_profile, "depth", PyLong_FromSize_t(qos_profile->depth));
   PyObject_SetAttrString(pyqos_profile, "history", PyLong_FromUnsignedLong(qos_profile->history));
   PyObject_SetAttrString(pyqos_profile, "reliability",
     PyLong_FromUnsignedLong(qos_profile->reliability));
