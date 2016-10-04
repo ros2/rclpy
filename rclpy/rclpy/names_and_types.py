@@ -39,7 +39,8 @@ class TopicNamesAndTypes:
 
     @property
     def topic_count(self):
-        """Get field topic_count.
+        """
+        Get field topic_count.
 
         :returns: number of advertised topics
         :rtype: int
@@ -53,7 +54,8 @@ class TopicNamesAndTypes:
 
     @property
     def topic_names(self):
-        """Get field topic_names.
+        """
+        Get field topic_names.
 
         :returns: name of advertised topics
         :rtype: list
@@ -77,7 +79,8 @@ class TopicNamesAndTypes:
 
     @property
     def type_names(self):
-        """Get field type_names.
+        """
+        Get field type_names.
 
         :returns: message type of advertised topics
         :rtype: list
