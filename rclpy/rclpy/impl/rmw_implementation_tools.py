@@ -87,7 +87,13 @@ def import_rmw_implementation():
     available_implementations = get_rmw_implementations()
     if __selected_rmw_implementation is None:
         logger = logging.getLogger('rclpy')
-        if available_implementations:
+        # prefer FastRTPS, otherwise first in alphabetical order
+        # the same logic is implemented in
+        # rmw_implementation_cmake/cmake/get_default_rmw_implementation.cmake
+        default_impl = 'rmw_fastrtps_cpp'
+        if default_impl in available_implementations:
+            select_rmw_implementation(default_impl)
+        elif available_implementations:
             select_rmw_implementation(available_implementations[0])  # select the first one
         else:
             raise NoImplementationAvailableException()
