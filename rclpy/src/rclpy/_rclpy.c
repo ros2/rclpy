@@ -18,6 +18,7 @@
 #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <rcl/node.h>
+#include <rcl/graph.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #ifndef RMW_IMPLEMENTATION_SUFFIX
@@ -35,6 +36,77 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
     return NULL;
   }
   Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  rcl_strings_t str = rcl_get_zero_initialized_strings();
+  
+  rcl_ret_t ret = rcl_get_node_names(&str);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get node names: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  PyObject* list = PyList_New(str.count);
+  int i;
+  for(i = 0; i < str.count; i++)
+      PyList_SetItem(list, i, Py_BuildValue("s", str.data[i]));
+
+  //free memory
+  rcl_strings_fini(&str);
+
+  return list;
+}
+
+static PyObject *
+rclpy_get_remote_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+
+  int argc = 1;
+  char** argv = {"node"};
+
+  rcl_ret_t ret1 = rcl_init(argc, argv, rcl_get_default_allocator());
+  rcl_node_t node_ptr;
+  node_ptr = rcl_get_zero_initialized_node();
+  rcl_node_options_t node_options = rcl_node_get_default_options();
+  rcl_ret_t ret = rcl_node_init(&node_ptr, "get_node_names", &node_options);
+  
+  rcl_strings_t node_names;
+  node_names = rcl_get_zero_initialized_strings();
+  rcl_ret_t ret3 = rcl_get_node_names(&node_names);
+
+  rcl_topic_names_and_types_t topic_names_and_types;
+  topic_names_and_types.topic_count = 0;
+  topic_names_and_types.topic_names = NULL;
+  topic_names_and_types.type_names = NULL;
+  rcl_ret_t topic_ret = rcl_get_topic_names_and_types(&node_ptr, &topic_names_and_types);
+
+  if(topic_ret != RCL_RET_OK){
+    return NULL;
+  }
+
+  PyObject* list_names = PyList_New(topic_names_and_types.topic_count);
+  PyObject* list_types = PyList_New(topic_names_and_types.topic_count);
+  unsigned int i;
+  for( i = 0; i < topic_names_and_types.topic_count; i++){
+      PyList_SetItem(list_names, i, Py_BuildValue("s", topic_names_and_types.topic_names[i]));
+      PyList_SetItem(list_types, i, Py_BuildValue("s", topic_names_and_types.type_names[i]));
+  }
+
+  rcl_node_fini(&node_ptr);
+  rcl_destroy_topic_names_and_types(&topic_names_and_types);
+  rcl_strings_fini(&node_names);
+
+  // Build a final list containing two inner lists (names and types)
+  PyObject* list = PyList_New(topic_names_and_types.topic_count);
+  if (topic_names_and_types.topic_count > 0){
+    PyList_SetItem(list, 0, list_names);
+    PyList_SetItem(list, 1, list_types);    
+  }
+  return list;
 }
 
 static PyObject *
@@ -381,6 +453,10 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 static PyMethodDef rclpy_methods[] = {
   {"rclpy_init", rclpy_init, METH_VARARGS,
    "Initialize RCL."},
+  {"rclpy_get_node_names", rclpy_get_node_names, METH_VARARGS,
+   "Get ROS node names."},
+  {"rclpy_get_remote_topic_names_and_types", rclpy_get_remote_topic_names_and_types, METH_VARARGS,
+   "Get ROS topic names and types."},
   {"rclpy_create_node", rclpy_create_node, METH_VARARGS,
    "Create a Node."},
   {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
