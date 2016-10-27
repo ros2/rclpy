@@ -104,11 +104,13 @@ if(WIN32)
 endif()
 
 target_link_libraries("${PROJECT_NAME}_implementation_rmw_agnostic"
+  ${rcl_LIBRARIES}
   ${PythonExtra_LIBRARIES}
 )
 
 target_include_directories("${PROJECT_NAME}_implementation_rmw_agnostic"
   PUBLIC
+  ${rcl_INCLUDE_DIRS}
   ${rmw_INCLUDE_DIRS}
   ${PythonExtra_INCLUDE_DIRS}
 )
