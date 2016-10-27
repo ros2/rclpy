@@ -455,7 +455,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   assert(pytype_names != NULL);
   PyObject_SetAttrString(pytopic_names_types, "type_names", pytype_names);
   PyObject * pytopic_count = NULL;
-  pytopic_count = PyLong_FromUnsignedLong(topic_names_and_types.topic_count);
+  pytopic_count = PyLong_FromSize_t(topic_names_and_types.topic_count);
   assert(pytopic_count != NULL);
   PyObject_SetAttrString(
     pytopic_names_types,
