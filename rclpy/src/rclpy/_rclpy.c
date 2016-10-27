@@ -423,7 +423,8 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
   assert(pynode != NULL);
   assert(node != NULL);
-  rcl_topic_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_topic_names_and_types();
+  rcl_topic_names_and_types_t topic_names_and_types =
+    rcl_get_zero_initialized_topic_names_and_types();
   rcl_ret_t ret = rcl_get_topic_names_and_types(node, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
