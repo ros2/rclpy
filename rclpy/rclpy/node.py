@@ -26,6 +26,7 @@ class Node:
     def __init__(self, handle):
         self.clients = []
         self.handle = handle
+        self.publishers = []
         self.services = []
         self.subscriptions = []
 
@@ -35,8 +36,9 @@ class Node:
             msg_type.__class__.__import_type_support__()
         publisher_handle = rclpy._rclpy.rclpy_create_publisher(
             self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
-
-        return Publisher(publisher_handle, msg_type, topic, qos_profile)
+        publisher = Publisher(publisher_handle, msg_type, topic, qos_profile)
+        self.publishers.append(publisher)
+        return publisher
 
     def create_subscription(self, msg_type, topic, callback, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
@@ -71,9 +73,25 @@ class Node:
             srv_type,
             srv_name,
             qos_profile.get_c_qos_profile())
-        service = Service(service_handle, service_pointer, srv_type, srv_name, callback, qos_profile)
+        service = Service(
+            service_handle, service_pointer, srv_type, srv_name, callback, qos_profile)
         self.services.append(service)
         return service
 
     def get_topic_names_and_types(self):
         return rclpy._rclpy.rclpy_get_topic_names_and_types(self.handle)
+
+    def __del__(self):
+        for sub in self.subscriptions:
+            rclpy._rclpy.rclpy_destroy_entity(
+                'subscription', sub.subscription_handle, self.handle)
+        for pub in self.publishers:
+            rclpy._rclpy.rclpy_destroy_entity(
+                'publisher', pub.publisher_handle, self.handle)
+        for cli in self.clients:
+            rclpy._rclpy.rclpy_destroy_entity(
+                'client', cli.client_handle, self.handle)
+        for srv in self.services:
+            rclpy._rclpy.rclpy_destroy_entity(
+                'service', srv.service_handle, self.handle)
+        rclpy._rclpy.rclpy_destroy_node(self.handle)

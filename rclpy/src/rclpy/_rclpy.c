@@ -374,6 +374,68 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
+rclpy_destroy_node(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+
+  rcl_ret_t ret = rcl_node_fini(node);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to fini node: %s", rcl_get_error_string_safe());
+    Py_RETURN_FALSE;
+  }
+  Py_RETURN_TRUE;
+}
+
+static PyObject *
+rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * entity_type;
+  PyObject * pyentity;
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pyentity, &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  rcl_ret_t ret;
+  if (0 == strcmp(entity_type, "subscription")) {
+    rcl_subscription_t * subscription = (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_subscription_fini(subscription, node);
+  }
+  else if (0 == strcmp(entity_type, "publisher")) {
+    rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_publisher_fini(publisher, node);
+  }
+  else if (0 == strcmp(entity_type, "client")) {
+    rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_client_fini(client, node);
+  }
+  else if (0 == strcmp(entity_type, "service")) {
+    rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_service_fini(service, node);
+  }
+  else {
+    PyErr_Format(PyExc_RuntimeError,
+      "%s is not a known entity", entity_type);
+    Py_RETURN_FALSE;
+  }
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to fini %s: %s", entity_type, rcl_get_error_string_safe());
+    Py_RETURN_FALSE;
+  }
+  Py_RETURN_TRUE;
+}
+
+static PyObject *
 rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   const char * rmw_implementation_identifier = rmw_get_implementation_identifier();
@@ -967,6 +1029,10 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_create_service", rclpy_create_service, METH_VARARGS,
    "Create a Service."},
 
+  {"rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
+   "Destroy a Node entity."},
+  {"rclpy_destroy_node", rclpy_destroy_node, METH_VARARGS,
+   "Destroy a Node."},
 
   {"rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
    "rclpy_get_zero_initialized_wait_set."},
