@@ -61,11 +61,18 @@ def create_node(node_name):
 def spin_once(node, timeout_sec=None):
     wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
 
-    _rclpy.rclpy_wait_set_init(wait_set, len(node.subscriptions), 0, 0)
+    _rclpy.rclpy_wait_set_init(
+        wait_set,
+        len(node.subscriptions), 0, 0,
+        len(node.clients),
+        len(node.services))
 
     _rclpy.rclpy_wait_set_clear_subscriptions(wait_set)
     for subscription in node.subscriptions:
         _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
+    _rclpy.rclpy_wait_set_clear_clients(wait_set)
+    for client in node.clients:
+        _rclpy.rclpy_wait_set_add_client(wait_set, client.client_handle)
 
     if timeout_sec is None:
         timeout = -1
@@ -80,6 +87,12 @@ def spin_once(node, timeout_sec=None):
         msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
         if msg:
             sub.callback(msg)
+    client_ready_list = _rclpy.rclpy_get_ready_clients(wait_set)
+    print(client_ready_list)
+    if client_ready_list != [] and client_ready_list is not None:
+        print(client_ready_list)
+    for cli in [c for c in node.clients if c.client_pointer in client_ready_list]:
+        print('client: %s is ready' % cli.srv_name)
 
 
 def ok():

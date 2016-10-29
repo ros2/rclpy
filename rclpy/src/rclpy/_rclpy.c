@@ -236,6 +236,144 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
  * \return string containing the identifier of the current rmw_implementation
  */
 static PyObject *
+rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  PyObject * pysrv_type;
+  PyObject * pyservice_name;
+  PyObject * pyqos_profile;
+
+  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pysrv_type, &pyservice_name, &pyqos_profile)) {
+    return NULL;
+  }
+
+  assert(PyUnicode_Check(pyservice_name));
+
+  char * service_name = (char *)PyUnicode_1BYTE_DATA(pyservice_name);
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+
+  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyCapsule_GetPointer(pyqos_profile, NULL);
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+
+  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+
+  rosidl_service_type_support_t * ts =
+    (rosidl_service_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
+
+  rcl_client_t * client =
+    (rcl_client_t *)PyMem_Malloc(sizeof(rcl_client_t));
+  *client = rcl_get_zero_initialized_client();
+  rcl_client_options_t client_ops = rcl_client_get_default_options();
+
+  if (qos_profile) {
+    client_ops.qos = *qos_profile;
+  }
+
+  rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create client: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  PyObject * pyclient = PyCapsule_New(client, NULL, NULL);
+  PyObject * pylist = PyList_New(0);
+  PyList_Append(pylist, pyclient);
+  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&client->impl));
+
+  return pylist;
+}
+
+static PyObject *
+rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclient;
+  PyObject * pyrequest;
+
+  if (!PyArg_ParseTuple(args, "OO", &pyclient, &pyrequest)) {
+    return NULL;
+  }
+  rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
+  assert(client != NULL);
+
+  PyObject * pyrequest_type = PyObject_GetAttrString(pyrequest, "__class__");
+  assert(pyrequest_type != NULL);
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__");
+  assert(pymetaclass != NULL);
+
+  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
+
+  assert(pyconvert_from_py != NULL);
+  typedef void * (* convert_from_py_signature)(PyObject *);
+  convert_from_py_signature convert_from_py =
+    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
+
+  assert(convert_from_py != NULL);
+  void * raw_ros_request = convert_from_py(pyrequest);
+  int64_t sequence_number;
+  rcl_ret_t ret = rcl_send_request(client, raw_ros_request, &sequence_number);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to send request: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  return PyLong_FromLongLong(sequence_number);
+}
+
+static PyObject *
+rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  PyObject * pysrv_type;
+  PyObject * pyservice_name;
+  PyObject * pyqos_profile;
+
+  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pysrv_type, &pyservice_name, &pyqos_profile)) {
+    return NULL;
+  }
+
+  assert(PyUnicode_Check(pyservice_name));
+
+  char * service_name = (char *)PyUnicode_1BYTE_DATA(pyservice_name);
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+
+  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyCapsule_GetPointer(pyqos_profile, NULL);
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+
+  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+
+  rosidl_service_type_support_t * ts =
+    (rosidl_service_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
+
+  rcl_service_t * service =
+    (rcl_service_t *)PyMem_Malloc(sizeof(rcl_service_t));
+  *service = rcl_get_zero_initialized_service();
+  rcl_service_options_t service_ops = rcl_service_get_default_options();
+
+  if (qos_profile) {
+    service_ops.qos = *qos_profile;
+  }
+
+  rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create service: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  PyObject * pyservice = PyCapsule_New(service, NULL, NULL);
+  PyObject * pylist = PyList_New(0);
+  PyList_Append(pylist, pyservice);
+  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&service->impl));
+
+  return pylist;
+}
+
+static PyObject *
 rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   const char * rmw_implementation_identifier = rmw_get_implementation_identifier();
@@ -275,12 +413,13 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG number_of_subscriptions;
   unsigned PY_LONG_LONG number_of_guard_conditions;
   unsigned PY_LONG_LONG number_of_timers;
-  const unsigned PY_LONG_LONG number_of_clients = 0;
-  const unsigned PY_LONG_LONG number_of_services = 0;
+  unsigned PY_LONG_LONG number_of_clients;
+  unsigned PY_LONG_LONG number_of_services;
 
   if (!PyArg_ParseTuple(
-      args, "OKKK", &pywait_set, &number_of_subscriptions,
-      &number_of_guard_conditions, &number_of_timers))
+      args, "OKKKKK", &pywait_set, &number_of_subscriptions,
+      &number_of_guard_conditions, &number_of_timers,
+      &number_of_clients, &number_of_services))
   {
     return NULL;
   }
@@ -357,6 +496,88 @@ rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
  * \return List of subscription pointers ready for take
  */
 static PyObject *
+rclpy_wait_set_clear_clients(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_ret_t ret = rcl_wait_set_clear_clients(wait_set);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to clear clients from wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_wait_set_add_client(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+  PyObject * pyclient;
+
+  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pyclient)) {
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_client_t * client =
+    (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
+  rcl_ret_t ret = rcl_wait_set_add_client(wait_set, client);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to add client to wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_wait_set_clear_services(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_ret_t ret = rcl_wait_set_clear_services(wait_set);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to clear services from wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_wait_set_add_service(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+  PyObject * pyservice;
+
+  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pyservice)) {
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  rcl_service_t * service =
+    (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
+  rcl_ret_t ret = rcl_wait_set_add_service(wait_set, service);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to add service to wait set: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+static PyObject *
 rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pywait_set;
@@ -391,6 +612,33 @@ rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] timeout optional time to wait before waking up (in nanoseconds)
  * \return NULL
  */
+static PyObject *
+rclpy_get_ready_clients(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  if (!wait_set) {
+    PyErr_Format(PyExc_RuntimeError, "waiset is null");
+    return NULL;
+  }
+
+  size_t client_idx;
+  PyObject * client_ready_list = PyList_New(0);
+  for (client_idx = 0; client_idx < wait_set->size_of_clients; client_idx++) {
+    if (wait_set->clients[client_idx]) {
+      PyList_Append(
+        client_ready_list,
+        PyLong_FromUnsignedLongLong((uint64_t)&wait_set->clients[client_idx]->impl));
+    }
+  }
+
+  return client_ready_list;
+}
+
 static PyObject *
 rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -470,6 +718,58 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 /*
  * \return True if rcl is running properly, False otherwise
  */
+static PyObject *
+rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclient;
+  PyObject * pysrv_type;
+  PY_LONG_LONG pysequence_number;
+
+  if (!PyArg_ParseTuple(args, "OOK", &pyclient, &pysrv_type, &pysequence_number)) {
+    return NULL;
+  }
+
+  rcl_client_t * client =
+    (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+
+  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
+
+  typedef void *(* convert_from_py_signature)(PyObject *);
+  convert_from_py_signature convert_from_py =
+    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
+
+  PyObject * pysrv = PyObject_CallObject(pysrv_type, NULL);
+
+  void * taken_response = convert_from_py(pysrv);
+  rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
+  header->sequence_number = pysequence_number;
+  rcl_ret_t ret = rcl_take_response(client, header, taken_response);
+
+  if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to take from a service: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
+    PyObject * pyconvert_to_py = PyObject_GetAttrString(pysrv_type, "_CONVERT_TO_PY");
+
+    typedef PyObject *(* convert_to_py_signature)(void *);
+    convert_to_py_signature convert_to_py =
+      (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
+
+    PyObject * pytaken_response = convert_to_py(taken_response);
+
+    Py_INCREF(pytaken_response);
+
+    return pytaken_response;
+  }
+  // if take failed, just do nothing
+  Py_RETURN_NONE;
+}
+
 static PyObject *
 rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
@@ -574,6 +874,13 @@ static PyMethodDef rclpy_methods[] = {
    "Publish a message."},
   {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
    "Create a Subscription."},
+  {"rclpy_create_client", rclpy_create_client, METH_VARARGS,
+   "Create a Client."},
+  {"rclpy_send_request", rclpy_send_request, METH_VARARGS,
+   "Send a request."},
+  {"rclpy_create_service", rclpy_create_service, METH_VARARGS,
+   "Create a Service."},
+
 
   {"rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
    "rclpy_get_zero_initialized_wait_set."},
@@ -590,11 +897,29 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_get_ready_subscriptions", rclpy_get_ready_subscriptions, METH_VARARGS,
    "List non null subscriptions in waitset."},
 
+  {"rclpy_wait_set_clear_clients", rclpy_wait_set_clear_clients, METH_VARARGS,
+   "rclpy_wait_set_clear_clients"},
+
+  {"rclpy_wait_set_add_client", rclpy_wait_set_add_client, METH_VARARGS,
+   "rclpy_wait_set_add_client."},
+
+  {"rclpy_wait_set_clear_services", rclpy_wait_set_clear_services, METH_VARARGS,
+   "rclpy_wait_set_clear_services"},
+
+  {"rclpy_wait_set_add_service", rclpy_wait_set_add_service, METH_VARARGS,
+   "rclpy_wait_set_add_service."},
+
+  {"rclpy_get_ready_clients", rclpy_get_ready_clients, METH_VARARGS,
+   "List non null clients in waitset."},
+
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},
 
   {"rclpy_take", rclpy_take, METH_VARARGS,
    "rclpy_take."},
+
+  {"rclpy_take_response", rclpy_take_response, METH_VARARGS,
+   "rclpy_take_response."},
 
   {"rclpy_ok", rclpy_ok, METH_NOARGS,
    "rclpy_ok."},

@@ -14,15 +14,19 @@
 
 import rclpy
 
+from rclpy.client import Client
 from rclpy.publisher import Publisher
-from rclpy.subscription import Subscription
 from rclpy.qos import qos_profile_default
+from rclpy.service import Service
+from rclpy.subscription import Subscription
 
 
 class Node:
 
     def __init__(self, handle):
+        self.clients = []
         self.handle = handle
+        self.services = []
         self.subscriptions = []
 
     def create_publisher(self, msg_type, topic, qos_profile=qos_profile_default):
@@ -46,6 +50,30 @@ class Node:
             topic, callback, qos_profile)
         self.subscriptions.append(subscription)
         return subscription
+
+    def create_client(self, srv_type, srv_name, qos_profile=qos_profile_default):
+        if srv_type.__class__._TYPE_SUPPORT is None:
+            srv_type.__class__.__import_type_support__()
+        [client_handle, client_pointer] = rclpy._rclpy.rclpy_create_client(
+            self.handle,
+            srv_type,
+            srv_name,
+            qos_profile.get_c_qos_profile())
+        client = Client(client_handle, client_pointer, srv_type, srv_name, qos_profile)
+        self.clients.append(client)
+        return client
+
+    def create_service(self, srv_type, srv_name, qos_profile=qos_profile_default):
+        if srv_type.__class__._TYPE_SUPPORT is None:
+            srv_type.__class__.__import_type_support__()
+        [service_handle, service_pointer] = rclpy._rclpy.rclpy_create_service(
+            self.handle,
+            srv_type,
+            srv_name,
+            qos_profile.get_c_qos_profile())
+        service = Service(service_handle, service_pointer, srv_type, srv_name, qos_profile)
+        self.services.append(service)
+        return service
 
     def get_topic_names_and_types(self):
         return rclpy._rclpy.rclpy_get_topic_names_and_types(self.handle)
