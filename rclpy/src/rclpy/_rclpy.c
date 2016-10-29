@@ -182,6 +182,133 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
  *            second element: an integer representing the memory address of the created rcl_subscription_t
  */
 static PyObject *
+rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  unsigned PY_LONG_LONG period_nsec;
+
+  if (!PyArg_ParseTuple(args, "K", &period_nsec)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *) PyMem_Malloc(sizeof(rcl_timer_t));
+  *timer = rcl_get_zero_initialized_timer();
+
+  rcl_ret_t ret = rcl_timer_init(timer, period_nsec, NULL, rcl_get_default_allocator());
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create subscriptions: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  PyObject * pytimer = PyCapsule_New(timer, NULL, NULL);
+  PyObject * pylist = PyList_New(0);
+  PyList_Append(pylist, pytimer);
+  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
+
+  return pylist;
+}
+
+static PyObject *
+rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  uint64_t timer_period;
+  rcl_ret_t ret = rcl_timer_get_period(timer, &timer_period);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to reset timer: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  return PyLong_FromUnsignedLongLong(timer_period);
+}
+
+static PyObject *
+rclpy_reset_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  rcl_ret_t ret = rcl_timer_reset(timer);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to reset timer: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_is_timer_ready(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  bool is_ready;
+  rcl_ret_t ret = rcl_timer_is_ready(timer, &is_ready);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to check timer ready: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  if (is_ready) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
+}
+
+static PyObject *
+rclpy_call_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  rcl_ret_t ret = rcl_timer_call(timer);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to call timer: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  unsigned PY_LONG_LONG period_nsec;
+  if (!PyArg_ParseTuple(args, "OK", &pytimer, &period_nsec)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  uint64_t old_period;
+  rcl_ret_t ret = rcl_timer_exchange_period(timer, period_nsec, &old_period);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to exchange timer period: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *
 rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode;
@@ -625,6 +752,10 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_wait_set_clear_clients(wait_set);
   } else if (0 == strcmp(entity_type, "service")) {
     ret = rcl_wait_set_clear_services(wait_set);
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    ret = rcl_wait_set_clear_guard_conditions(wait_set);
+  } else if (0 == strcmp(entity_type, "timer")) {
+    ret = rcl_wait_set_clear_timers(wait_set);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -669,14 +800,22 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_wait_set_add_service(wait_set, service);
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    rcl_guard_condition_t * guard_condition =
+      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
+  } else if (0 == strcmp(entity_type, "timer")) {
+    rcl_timer_t * timer =
+      (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_timer(wait_set, timer);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
-    return NULL;
+    Py_RETURN_FALSE;
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to add '%s' to wait set: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to add %s to wait set: %s", entity_type, rcl_get_error_string_safe());
     return NULL;
   }
   Py_RETURN_NONE;
@@ -723,6 +862,8 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     GET_LIST_READY_ENTITIES(client)
   } else if (0 == strcmp(entity_type, "service")) {
     GET_LIST_READY_ENTITIES(service)
+  } else if (0 == strcmp(entity_type, "timer")) {
+    GET_LIST_READY_ENTITIES(timer)
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -1048,6 +1189,8 @@ static PyMethodDef rclpy_methods[] = {
    "Create a Service."},
   {"rclpy_create_client", rclpy_create_client, METH_VARARGS,
    "Create a Client."},
+  {"rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
+   "Create a Timer."},
 
   {"rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
    "Destroy a Node entity."},
@@ -1075,6 +1218,21 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
    "List non null subscriptions in waitset."},
+
+  {"rclpy_reset_timer", rclpy_reset_timer, METH_VARARGS,
+   "Reset a timer."},
+
+  {"rclpy_call_timer", rclpy_call_timer, METH_VARARGS,
+   "Reset a timer."},
+
+  {"rclpy_change_timer_period", rclpy_change_timer_period, METH_VARARGS,
+   "Set period of a timer."},
+
+  {"rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
+   "Check if a timer as reached period."},
+
+  {"rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
+   "Get period of a timer."},
 
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},
