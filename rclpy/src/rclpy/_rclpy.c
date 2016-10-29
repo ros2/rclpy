@@ -211,6 +211,7 @@ rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UN
   wait_set->size_of_services = 0;
   wait_set->impl = NULL;
   PyObject * pywait_set = PyCapsule_New(wait_set, NULL, NULL);
+
   return pywait_set;
 }
 
@@ -284,6 +285,27 @@ rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+
+  size_t sub_idx;
+  PyObject * sub_ready_list = PyList_New(0);
+  for (sub_idx = 0; sub_idx < wait_set->size_of_subscriptions; sub_idx++) {
+      if (wait_set->subscriptions[sub_idx]) {
+          PyList_Append(sub_ready_list, PyLong_FromSize_t(sub_idx));
+      }
+  }
+
+  return sub_ready_list;
 }
 
 static PyObject *
@@ -401,6 +423,10 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_wait_set_add_subscription", rclpy_wait_set_add_subscription, METH_VARARGS,
    "rclpy_wait_set_add_subscription."},
+
+  {"rclpy_get_ready_subscriptions", rclpy_get_ready_subscriptions, METH_VARARGS,
+   "List non null subscriptions in waitset."},
+
 
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},

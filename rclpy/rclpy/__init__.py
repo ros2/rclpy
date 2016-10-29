@@ -73,11 +73,12 @@ def spin_once(node, timeout_sec=None):
 
     _rclpy.rclpy_wait(wait_set, timeout)
 
-    # TODO(wjwwood): properly implement this by checking the contents of the wait_set.
-    for subscription in node.subscriptions:
-        msg = _rclpy.rclpy_take(subscription.subscription_handle, subscription.msg_type)
+    sub_ready_list = _rclpy.rclpy_get_ready_subscriptions(wait_set)
+    for sub_idx in sub_ready_list:
+        sub_ready = node.subscriptions[sub_idx]
+        msg = _rclpy.rclpy_take(sub_ready.subscription_handle, sub_ready.msg_type)
         if msg:
-            subscription.callback(msg)
+            sub_ready.callback(msg)
 
 
 def ok():
