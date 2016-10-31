@@ -56,7 +56,7 @@ def create_node(node_name):
     return Node(node_handle)
 
 
-def spin_once(node):
+def spin_once(node, timeout_sec=1.0):
     wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
 
     _rclpy.rclpy_wait_set_init(wait_set, len(node.subscriptions), 0, 0)
@@ -65,7 +65,7 @@ def spin_once(node):
     for subscription in node.subscriptions:
         _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
 
-    _rclpy.rclpy_wait(wait_set)
+    _rclpy.rclpy_wait(wait_set, timeout_sec)
 
     # TODO(wjwwood): properly implement this by checking the contents of the wait_set.
     for subscription in node.subscriptions:
