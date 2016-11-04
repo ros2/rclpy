@@ -69,7 +69,7 @@ def spin_once(node, timeout_sec=None):
     if timeout_sec is None:
         timeout = -1
     else:
-        timeout = int(timeout_sec * S_TO_NS)
+        timeout = int(timeout_sec) * S_TO_NS
 
     _rclpy.rclpy_wait(wait_set, timeout)
 
