@@ -437,7 +437,6 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_get_ready_subscriptions", rclpy_get_ready_subscriptions, METH_VARARGS,
    "List non null subscriptions in waitset."},
 
-
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},
 
