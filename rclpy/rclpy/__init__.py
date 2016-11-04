@@ -25,6 +25,8 @@ from rclpy.node import Node
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+S_TO_NS = 1000 * 1000 * 1000
+
 # install the excepthook
 excepthook.install_rclpy_excepthook()
 
@@ -56,7 +58,7 @@ def create_node(node_name):
     return Node(node_handle)
 
 
-def spin_once(node, timeout_sec=1.0):
+def spin_once(node, timeout_sec=None):
     wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
 
     _rclpy.rclpy_wait_set_init(wait_set, len(node.subscriptions), 0, 0)
@@ -64,8 +66,12 @@ def spin_once(node, timeout_sec=1.0):
     _rclpy.rclpy_wait_set_clear_subscriptions(wait_set)
     for subscription in node.subscriptions:
         _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
+    if timeout_sec is None:
+        timeout = -1
+    else:
+        timeout = int(timeout_sec * S_TO_NS)
 
-    _rclpy.rclpy_wait(wait_set, int(timeout_sec * 1000 * 1000 * 1000))
+    _rclpy.rclpy_wait(wait_set, timeout)
 
     # TODO(wjwwood): properly implement this by checking the contents of the wait_set.
     for subscription in node.subscriptions:
