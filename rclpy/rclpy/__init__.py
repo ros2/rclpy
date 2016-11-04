@@ -66,6 +66,7 @@ def spin_once(node, timeout_sec=None):
     _rclpy.rclpy_wait_set_clear_subscriptions(wait_set)
     for subscription in node.subscriptions:
         _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
+
     if timeout_sec is None:
         timeout = -1
     else:
