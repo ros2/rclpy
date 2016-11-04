@@ -65,7 +65,7 @@ def spin_once(node, timeout_sec=1.0):
     for subscription in node.subscriptions:
         _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
 
-    _rclpy.rclpy_wait(wait_set, timeout_sec)
+    _rclpy.rclpy_wait(wait_set, int(timeout_sec * 1000 * 1000 * 1000))
 
     # TODO(wjwwood): properly implement this by checking the contents of the wait_set.
     for subscription in node.subscriptions:

@@ -290,13 +290,13 @@ static PyObject *
 rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pywait_set;
-  float timeout = 1.0f;
+  PY_LONG_LONG timeout = -1;
 
-  if (!PyArg_ParseTuple(args, "O|f", &pywait_set, &timeout)) {
+  if (!PyArg_ParseTuple(args, "O|K", &pywait_set, &timeout)) {
     return NULL;
   }
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_ret_t ret = rcl_wait(wait_set, RCL_S_TO_NS((int64_t)timeout));
+  rcl_ret_t ret = rcl_wait(wait_set, timeout);
   if (ret != RCL_RET_OK && ret != RCL_RET_TIMEOUT) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to wait on wait set: %s", rcl_get_error_string_safe());
