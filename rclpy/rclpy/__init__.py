@@ -75,13 +75,11 @@ def spin_once(node, timeout_sec=None):
 
     sub_ready_list = _rclpy.rclpy_get_ready_subscriptions(wait_set)
 
-    for sub_ptr in sub_ready_list:
-        for sub in node.subscriptions:
-            if sub_ptr == sub.subscription_pointer:
-                msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
-                if msg:
-                    sub.callback(msg)
-                break
+    for sub in [s for s in node.subscriptions if s.subscription_pointer in sub_ready_list]:
+        msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
+        if msg:
+            sub.callback(msg)
+        break
 
 
 def ok():
