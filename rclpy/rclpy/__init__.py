@@ -79,7 +79,6 @@ def spin_once(node, timeout_sec=None):
         msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
         if msg:
             sub.callback(msg)
-        break
 
 
 def ok():
