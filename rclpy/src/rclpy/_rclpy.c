@@ -181,7 +181,11 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * pysubscription = PyCapsule_New(subscription, NULL, NULL);
-  return pysubscription;
+  PyObject * pylist = PyList_New(0);
+  PyList_Append(pylist, pysubscription);
+  PyList_Append(pylist, PyLong_FromUnsignedLong((uint64_t)&subscription->impl));
+
+  return pylist;
 }
 
 static PyObject *
@@ -296,13 +300,19 @@ rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  if (!wait_set) {
+    PyErr_Format(PyExc_RuntimeError, "waiset is null");
+    return NULL;
+  }
 
   size_t sub_idx;
   PyObject * sub_ready_list = PyList_New(0);
   for (sub_idx = 0; sub_idx < wait_set->size_of_subscriptions; sub_idx++) {
-      if (wait_set->subscriptions[sub_idx]) {
-          PyList_Append(sub_ready_list, PyLong_FromSize_t(sub_idx));
-      }
+    if (wait_set->subscriptions[sub_idx]) {
+      PyList_Append(
+        sub_ready_list,
+        PyLong_FromUnsignedLong((uint64_t)&wait_set->subscriptions[sub_idx]->impl));
+    }
   }
 
   return sub_ready_list;
