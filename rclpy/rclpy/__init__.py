@@ -58,7 +58,7 @@ def create_node(node_name):
     return Node(node_handle)
 
 
-def spin_once(node, timeout_sec=None):
+def spin_once(node, timeout_sec=-1):
     wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
 
     _rclpy.rclpy_wait_set_init(wait_set, len(node.subscriptions), 0, 0)
@@ -66,10 +66,11 @@ def spin_once(node, timeout_sec=None):
     _rclpy.rclpy_wait_set_clear_subscriptions(wait_set)
     for subscription in node.subscriptions:
         _rclpy.rclpy_wait_set_add_subscription(wait_set, subscription.subscription_handle)
-    if timeout_sec is None:
-        timeout = -1
-    else:
+    if isinstance(timeout_sec, float) or isinstance(timeout_sec, int):
         timeout = int(float(timeout_sec) * S_TO_NS)
+    else:
+        raise TypeError('timeout_sec argument should be a number')
+
 
     _rclpy.rclpy_wait(wait_set, timeout)
 
