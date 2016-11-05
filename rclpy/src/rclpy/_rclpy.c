@@ -183,7 +183,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pysubscription = PyCapsule_New(subscription, NULL, NULL);
   PyObject * pylist = PyList_New(0);
   PyList_Append(pylist, pysubscription);
-  PyList_Append(pylist, PyLong_FromUnsignedLong((uint64_t)&subscription->impl));
+  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl));
 
   return pylist;
 }
@@ -311,7 +311,7 @@ rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
     if (wait_set->subscriptions[sub_idx]) {
       PyList_Append(
         sub_ready_list,
-        PyLong_FromUnsignedLong((uint64_t)&wait_set->subscriptions[sub_idx]->impl));
+        PyLong_FromUnsignedLongLong((uint64_t)&wait_set->subscriptions[sub_idx]->impl));
     }
   }
 
