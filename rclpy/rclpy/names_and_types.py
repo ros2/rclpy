@@ -68,7 +68,7 @@ class TopicNamesAndTypes:
         from collections import Set
         from collections import UserList
         from collections import UserString
-        assert isinstance(value, type(None)) or \
+        assert \
             ((isinstance(value, Sequence) or
               isinstance(value, Set) or
               isinstance(value, UserList)) and
@@ -93,7 +93,7 @@ class TopicNamesAndTypes:
         from collections import Set
         from collections import UserList
         from collections import UserString
-        assert isinstance(value, type(None)) or \
+        assert \
             ((isinstance(value, Sequence) or
               isinstance(value, Set) or
               isinstance(value, UserList)) and
