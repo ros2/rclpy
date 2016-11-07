@@ -93,6 +93,7 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   return pyqos_profile;
 }
 
+
 static PyMethodDef _rclpy_implementation_rmw_agnostic_methods[] = {
   {"rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
    "Convert a QoSPolicy python object into a rmw_qos_profile_t."},
