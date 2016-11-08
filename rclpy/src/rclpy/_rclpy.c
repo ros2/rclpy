@@ -48,7 +48,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyMem_Malloc(sizeof(rcl_node_t));
-  node->impl = NULL;
+  *node = rcl_get_zero_initialized_node();
   rcl_node_options_t default_options = rcl_node_get_default_options();
   rcl_ret_t ret = rcl_node_init(node, node_name, &default_options);
   if (ret != RCL_RET_OK) {
@@ -88,7 +88,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
 
   rcl_publisher_t * publisher = (rcl_publisher_t *)PyMem_Malloc(sizeof(rcl_publisher_t));
-  publisher->impl = NULL;
+  *publisher = rcl_get_zero_initialized_publisher();
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
 
   if (pyqos_profile) {
@@ -168,7 +168,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_subscription_t * subscription =
     (rcl_subscription_t *)PyMem_Malloc(sizeof(rcl_subscription_t));
-  subscription->impl = NULL;
+  *subscription = rcl_get_zero_initialized_subscription();
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
   if (pyqos_profile) {
@@ -204,17 +204,7 @@ static PyObject *
 rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyMem_Malloc(sizeof(rcl_wait_set_t));
-  wait_set->subscriptions = NULL;
-  wait_set->size_of_subscriptions = 0;
-  wait_set->guard_conditions = NULL;
-  wait_set->size_of_guard_conditions = 0;
-  wait_set->timers = NULL;
-  wait_set->size_of_timers = 0;
-  wait_set->clients = NULL;
-  wait_set->size_of_clients = 0;
-  wait_set->services = NULL;
-  wait_set->size_of_services = 0;
-  wait_set->impl = NULL;
+  *wait_set = rcl_get_zero_initialized_wait_set();
   PyObject * pywait_set = PyCapsule_New(wait_set, NULL, NULL);
 
   return pywait_set;
