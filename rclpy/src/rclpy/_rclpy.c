@@ -386,11 +386,10 @@ rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Wait until timeout is reached or event happened
 /*
+ * This function will wait for an event to happen or for the timeout to expire.
+ * A negative timeout means wait forever, a timeout of 0 means no wait
  * \param[in] pywait_set Capsule pointing to the waitset structure
- * \param[in] timeout optional, time to wait in nanoseconds
- *                negative value means wait forever
- *                zero means no wait
- *                positive value: time to wait in nanoseconds
+ * \param[in] timeout optional time to wait before waking up (in nanoseconds)
  * \return NULL
  */
 static PyObject *
