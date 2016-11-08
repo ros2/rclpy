@@ -106,18 +106,36 @@ class QoSProfile:
 
 
 class QoSHistoryPolicy(IntEnum):
+    """
+    Class defining enums for QoS History settings.
+
+    These enums match the ones defined in rmw/types.h
+    """
+
     RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT = 0
     RMW_QOS_POLICY_KEEP_LAST_HISTORY = 1
     RMW_QOS_POLICY_KEEP_ALL_HISTORY = 2
 
 
 class QoSReliabilityPolicy(IntEnum):
+    """
+    Class defining enums for QoS Reliability settings.
+
+    These enums match the ones defined in rmw/types.h
+    """
+
     RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT = 0
     RMW_QOS_POLICY_RELIABLE = 1
     RMW_QOS_POLICY_BEST_EFFORT = 2
 
 
 class QoSDurabilityPolicy(IntEnum):
+    """
+    Class defining enums for QoS Durability settings.
+
+    These enums match the ones defined in rmw/types.h
+    """
+
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
     RMW_QOS_POLICY_TRANSIENT_LOCAL_DURABILITY = 1
     RMW_QOS_POLICY_VOLATILE_DURABILITY = 2
