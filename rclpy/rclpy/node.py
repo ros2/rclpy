@@ -44,3 +44,6 @@ class Node:
             topic, callback, qos_profile)
         self.subscriptions.append(subscription)
         return subscription
+
+    def get_topic_names_and_types(self):
+        return rclpy._rclpy.rclpy_get_topic_names_and_types(self.handle)

@@ -16,8 +16,9 @@
 
 #include <rmw/rmw.h>
 #include <rcl/error_handling.h>
-#include <rcl/rcl.h>
+#include <rcl/graph.h>
 #include <rcl/node.h>
+#include <rcl/rcl.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #ifndef RMW_IMPLEMENTATION_SUFFIX
@@ -410,6 +411,66 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   Py_RETURN_NONE;
 }
 
+static PyObject *
+rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  assert(pynode != NULL);
+  assert(node != NULL);
+  rcl_topic_names_and_types_t topic_names_and_types =
+    rcl_get_zero_initialized_topic_names_and_types();
+  rcl_ret_t ret = rcl_get_topic_names_and_types(node, &topic_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get_topic_names_and_types: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  PyObject * pynames_types_module = PyImport_ImportModule("rclpy.names_and_types");
+  PyObject * pytopic_names_types_class = PyObject_GetAttrString(
+    pynames_types_module, "TopicNamesAndTypes");
+  PyObject * pytopic_names_types = NULL;
+  pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
+
+  PyObject * pytopic_names = PyList_New(topic_names_and_types.topic_count);
+  PyObject * pytype_names = PyList_New(topic_names_and_types.topic_count);
+  size_t idx;
+  for (idx = 0; idx < topic_names_and_types.topic_count; ++idx) {
+    PyList_SetItem(
+      pytopic_names, idx, PyUnicode_FromString(topic_names_and_types.topic_names[idx]));
+    PyList_SetItem(
+      pytype_names, idx, PyUnicode_FromString(topic_names_and_types.type_names[idx]));
+  }
+  assert(PySequence_Check(pytopic_names));
+  assert(pytopic_names != NULL);
+  PyObject_SetAttrString(pytopic_names_types, "topic_names", pytopic_names);
+  assert(PySequence_Check(pytype_names));
+  assert(pytype_names != NULL);
+  PyObject_SetAttrString(pytopic_names_types, "type_names", pytype_names);
+  PyObject * pytopic_count = NULL;
+  pytopic_count = PyLong_FromSize_t(topic_names_and_types.topic_count);
+  assert(pytopic_count != NULL);
+  PyObject_SetAttrString(
+    pytopic_names_types,
+    "topic_count",
+    pytopic_count);
+
+  ret = rcl_destroy_topic_names_and_types(&topic_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to destroy topic_names_and_types: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  assert(pytopic_names_types != NULL);
+  return pytopic_names_types;
+}
+
 static PyMethodDef rclpy_methods[] = {
   {"rclpy_init", rclpy_init, METH_VARARGS,
    "Initialize RCL."},
@@ -448,6 +509,9 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
    "rclpy_shutdown."},
+
+  {"rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,
+   "Get topic list from graph API."},
 
   {"rclpy_get_rmw_implementation_identifier", rclpy_get_rmw_implementation_identifier,
    METH_NOARGS, "Retrieve the identifier for the active RMW implementation."},
