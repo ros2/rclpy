@@ -43,7 +43,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 /*
  * \param[in] node_name string name of the node to be created
  * \return NULL on failure
- *         Capsule pointing to the pointer of the created rcl_node_t * structure on success
+ *         Capsule pointing to the pointer of the created rcl_node_t * structure otherwise
  */
 static PyObject *
 rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
@@ -69,13 +69,17 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create a publisher
 /*
+ * This function will create a publisher and attach it to the topic provided
+ * This publisher will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages over the wire.
  *
  * \param[in] pynode Capsule pointing to the node to add the publisher to
  * \param[in] pymsg_type Message type associated with the publisher
- * \param[in] pytopic Python object containing the name of the topic to attach the publisher to
+ * \param[in] pytopic Python object containing the name of the topic
+ * to attach the publisher to
  * \param[in] pyqos_profile QoSProfile object with the profile of this publisher
  * \return NULL on failure
- *         Capsule pointing to the pointer of the created rcl_publisher_t * structure on success
+ *         Capsule pointing to the pointer of the created rcl_publisher_t * structure otherwise
  */
 static PyObject *
 rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
@@ -164,8 +168,12 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create a subscription
 /*
+ * This function will create a subscription and attach it to the topic provided
+ * This subscription will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages over the wire.
+ *
  * \param[in] pynode Capsule pointing to the node to add the subscriber to
- * \param[in] pymsg_type Message type associated with the subscriber
+ * \param[in] pymsg_type Message module associated with the subscriber
  * \param[in] pytopic Python object containing the name of the topic to attach the subscription to
  * \param[in] pyqos_profile QoSProfile Python object with the profile of this subscriber
  * \return NULL on failure
