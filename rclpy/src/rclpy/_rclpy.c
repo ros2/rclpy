@@ -69,8 +69,9 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create a publisher
 /*
+ *
  * \param[in] pynode Capsule pointing to the node to add the publisher to
- * \param[in] pymsg_type ROS 2 type of the message this publisher will send
+ * \param[in] pymsg_type Message type associated with the publisher
  * \param[in] pytopic Python object containing the name of the topic to attach the publisher to
  * \param[in] pyqos_profile QoSProfile object with the profile of this publisher
  * \return NULL on failure
@@ -163,10 +164,10 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create a subscription
 /*
- * \param[in] pynode Capsule pointing to the node to add the publisher to
- * \param[in] pymsg_type ROS 2 type of the message this subscription will receive
+ * \param[in] pynode Capsule pointing to the node to add the subscriber to
+ * \param[in] pymsg_type Message type associated with the subscriber
  * \param[in] pytopic Python object containing the name of the topic to attach the subscription to
- * \param[in] pyqos_profile QoSProfile Python object with the profile of this publisher
+ * \param[in] pyqos_profile QoSProfile Python object with the profile of this subscriber
  * \return NULL on failure
  *         List with 2 elements:
  *            first element: a Capsule pointing to the pointer of the created rcl_subscription_t * structure
