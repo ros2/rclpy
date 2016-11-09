@@ -69,7 +69,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create a publisher
 /*
- * This function will create a publisher and attach it to the topic provided
+ * This function will create a publisher and attach it to the provided topic name
  * This publisher will use the typesupport defined in the message module
  * provided as pymsg_type to send messages over the wire.
  *
@@ -168,7 +168,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create a subscription
 /*
- * This function will create a subscription and attach it to the topic provided
+ * This function will create a subscription and attach it to the provided topic name
  * This subscription will use the typesupport defined in the message module
  * provided as pymsg_type to send messages over the wire.
  *
