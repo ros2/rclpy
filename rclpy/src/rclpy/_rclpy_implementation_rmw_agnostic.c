@@ -124,7 +124,7 @@ static PyMethodDef _rclpy_implementation_rmw_agnostic_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
-/// Define the python module
+/// Define the Python module
 static struct PyModuleDef _rclpy_implementation_rmw_agnosticmodule = {
   PyModuleDef_HEAD_INIT,
   "_rclpy_implementation_rmw_agnostic",
