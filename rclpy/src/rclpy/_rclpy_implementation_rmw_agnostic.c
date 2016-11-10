@@ -17,6 +17,15 @@
 #include <rmw/rmw.h>
 
 
+/// Return a Python QoSProfile object
+/* This function creates a QoSProfile object from the QoS Policies provided
+ * \param[in] pyqos_history enum of type QoSHistoryPolicy
+ * \param[in] pyqos_depth int size of the DDS message queue
+ * \param[in] pyqos_reliability enum of type QoSReliabilityPolicy
+ * \param[in] pyqos_durability enum of type QoSDurabilityPolicy
+ * \return NULL on failure
+ *         Capsule to a rmw_qos_profile_t object
+ */
 static PyObject *
 rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -40,6 +49,11 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   return pyqos_profile;
 }
 
+/// Convert a C rmw_qos_profile_t into a Python QoSProfile object
+/*
+ * \param[in] void pointer to a rmw_qos_profile_t structure
+ * \return QoSProfile object
+ */
 static PyObject *
 rclpy_convert_to_py_qos_policy(void * profile)
 {
@@ -61,6 +75,11 @@ rclpy_convert_to_py_qos_policy(void * profile)
   return pyqos_profile;
 }
 
+/// Fetch a predefined qos_profile from rmw and convert it to a Python QoSProfile Object
+/* This function takes a string defining a rmw_qos_profile_t and return the corresponding Python QoSProfile object
+ * \param[in] string with the name of the profile to load
+ * \return QoSProfile object
+ */
 static PyObject *
 rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -94,6 +113,7 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 
+/// Define the public methods of this module
 static PyMethodDef _rclpy_implementation_rmw_agnostic_methods[] = {
   {"rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
    "Convert a QoSPolicy python object into a rmw_qos_profile_t."},
@@ -104,6 +124,7 @@ static PyMethodDef _rclpy_implementation_rmw_agnostic_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
+/// Define the Python module
 static struct PyModuleDef _rclpy_implementation_rmw_agnosticmodule = {
   PyModuleDef_HEAD_INIT,
   "_rclpy_implementation_rmw_agnostic",
@@ -116,6 +137,7 @@ static struct PyModuleDef _rclpy_implementation_rmw_agnosticmodule = {
   NULL
 };
 
+/// Init function of this module
 PyMODINIT_FUNC PyInit__rclpy_implementation_rmw_agnostic(void)
 {
   return PyModule_Create(&_rclpy_implementation_rmw_agnosticmodule);

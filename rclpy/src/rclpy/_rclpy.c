@@ -14,17 +14,18 @@
 
 #include <Python.h>
 
-#include <rmw/rmw.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
 #include <rcl/node.h>
 #include <rcl/rcl.h>
+#include <rmw/rmw.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #ifndef RMW_IMPLEMENTATION_SUFFIX
 #error "RMW_IMPLEMENTATION_SUFFIX is required to be set for _rclpy.c"
 #endif
 
+/// Initialize rcl with default options, ignoring parameters
 static PyObject *
 rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
@@ -38,6 +39,12 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   Py_RETURN_NONE;
 }
 
+/// Create a node
+/*
+ * \param[in] node_name string name of the node to be created
+ * \return NULL on failure
+ *         Capsule pointing to the pointer of the created rcl_node_t * structure otherwise
+ */
 static PyObject *
 rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -60,6 +67,20 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   return pynode;
 }
 
+/// Create a publisher
+/*
+ * This function will create a publisher and attach it to the provided topic name
+ * This publisher will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages over the wire.
+ *
+ * \param[in] pynode Capsule pointing to the node to add the publisher to
+ * \param[in] pymsg_type Message type associated with the publisher
+ * \param[in] pytopic Python object containing the name of the topic
+ * to attach the publisher to
+ * \param[in] pyqos_profile QoSProfile object with the profile of this publisher
+ * \return NULL on failure
+ *         Capsule pointing to the pointer of the created rcl_publisher_t * structure otherwise
+ */
 static PyObject *
 rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -105,6 +126,12 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   return pypublisher;
 }
 
+/// Publish a message
+/*
+ * \param[in] pypublisher Capsule pointing to the publisher
+ * \param[in] pymsg message to send
+ * \return NULL
+ */
 static PyObject *
 rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -139,6 +166,21 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Create a subscription
+/*
+ * This function will create a subscription and attach it to the provided topic name
+ * This subscription will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages over the wire.
+ *
+ * \param[in] pynode Capsule pointing to the node to add the subscriber to
+ * \param[in] pymsg_type Message module associated with the subscriber
+ * \param[in] pytopic Python object containing the name of the topic to attach the subscription to
+ * \param[in] pyqos_profile QoSProfile Python object with the profile of this subscriber
+ * \return NULL on failure
+ *         List with 2 elements:
+ *            first element: a Capsule pointing to the pointer of the created rcl_subscription_t * structure
+ *            second element: an integer representing the memory address of the created rcl_subscription_t
+ */
 static PyObject *
 rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -189,6 +231,10 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   return pylist;
 }
 
+/// Return the identifier of the current rmw_implementation
+/*
+ * \return string containing the identifier of the current rmw_implementation
+ */
 static PyObject *
 rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
@@ -200,6 +246,7 @@ rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * P
   return pyrmw_implementation_identifier;
 }
 
+/// Return a Capsule pointing to a zero initialized rcl_wait_set_t structure
 static PyObject *
 rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
@@ -210,6 +257,17 @@ rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UN
   return pywait_set;
 }
 
+/// Initialize a waitset
+/*
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] node_name string name of the node to be created
+ * \param[in] number_of_subscriptions int
+ * \param[in] number_of_guard_conditions int
+ * \param[in] number_of_guard_timers int
+ * \param[in] UNUSED FOR NOW number_of_clients int
+ * \param[in] UNUSED FOR NOW number_of_services int
+ * \return NULL
+ */
 static PyObject *
 rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -241,6 +299,11 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Clear all the subscription pointers in the waitset
+/*
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \return NULL
+ */
 static PyObject *
 rclpy_wait_set_clear_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -260,6 +323,12 @@ rclpy_wait_set_clear_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Add a subscription to the waitset
+/*
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] pysubscription Capsule pointing to the subscription to add
+ * \return NULL
+ */
 static PyObject *
 rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -282,6 +351,11 @@ rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Get list of non-null subscriptions in waitset
+/*
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \return List of subscription pointers ready for take
+ */
 static PyObject *
 rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -309,6 +383,14 @@ rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
   return sub_ready_list;
 }
 
+/// Wait until timeout is reached or event happened
+/*
+ * This function will wait for an event to happen or for the timeout to expire.
+ * A negative timeout means wait forever, a timeout of 0 means no wait
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] timeout optional time to wait before waking up (in nanoseconds)
+ * \return NULL
+ */
 static PyObject *
 rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -328,6 +410,12 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Take a message from a given subscription
+/*
+ * \param[in] pysubscription Capsule pointing to the subscription to add
+ * \param[in] pymsg_type Instance of the message type to take
+ * \return Python message with all fields populated with received message
+ */
 static PyObject *
 rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -378,6 +466,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Status of the the client library
+/*
+ * \return True if rcl is running properly, False otherwise
+ */
 static PyObject *
 rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
@@ -389,6 +481,10 @@ rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   }
 }
 
+/// Request shutdown of the client library
+/*
+ * \return NULL
+ */
 static PyObject *
 rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
@@ -401,6 +497,11 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   Py_RETURN_NONE;
 }
 
+/// Get the list of topics discovered by the provided node
+/*
+ * \param[in] pynode Capsule pointing to the node
+ * \return TopicNamesAndTypes object
+ */
 static PyObject *
 rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -461,6 +562,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   return pytopic_names_types;
 }
 
+/// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {"rclpy_init", rclpy_init, METH_VARARGS,
    "Initialize RCL."},
@@ -508,6 +610,7 @@ static PyMethodDef rclpy_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
+/// Define the Python module
 static struct PyModuleDef _rclpymodule = {
   PyModuleDef_HEAD_INIT,
   "_rclpy",
@@ -523,6 +626,7 @@ static struct PyModuleDef _rclpymodule = {
 #define MAKE_FN_NAME(x) PyInit__rclpy ## x
 #define FUNCTION_NAME(suffix) MAKE_FN_NAME(suffix)
 
+/// Init function of this module
 PyMODINIT_FUNC FUNCTION_NAME(RMW_IMPLEMENTATION_SUFFIX)(void) {
   return PyModule_Create(&_rclpymodule);
 }
