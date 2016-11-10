@@ -620,7 +620,7 @@ static PyMethodDef rclpy_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
-/// Define the python module
+/// Define the Python module
 static struct PyModuleDef _rclpymodule = {
   PyModuleDef_HEAD_INIT,
   "_rclpy",
