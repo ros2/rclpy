@@ -17,7 +17,7 @@ from rclpy import _rclpy_implementation_rmw_agnostic
 
 
 class QoSProfile:
-    """Class defining Quality of Service policies."""
+    """Define Quality of Service policies."""
 
     __slots__ = [
         '_history',
@@ -107,9 +107,9 @@ class QoSProfile:
 
 class QoSHistoryPolicy(IntEnum):
     """
-    Class defining enums for QoS History settings.
+    Enum for QoS History settings.
 
-    These enums match the ones defined in rmw/types.h
+    This enum matches the one defined in rmw/types.h
     """
 
     RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT = 0
@@ -119,9 +119,9 @@ class QoSHistoryPolicy(IntEnum):
 
 class QoSReliabilityPolicy(IntEnum):
     """
-    Class defining enums for QoS Reliability settings.
+    Enum for QoS Reliability settings.
 
-    These enums match the ones defined in rmw/types.h
+    This enum matches the one defined in rmw/types.h
     """
 
     RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT = 0
@@ -131,9 +131,9 @@ class QoSReliabilityPolicy(IntEnum):
 
 class QoSDurabilityPolicy(IntEnum):
     """
-    Class defining enums for QoS Durability settings.
+    Enum for QoS Durability settings.
 
-    These enums match the ones defined in rmw/types.h
+    This enum matches the one defined in rmw/types.h
     """
 
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
