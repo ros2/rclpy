@@ -88,11 +88,15 @@ def spin_once(node, timeout_sec=None):
         if msg:
             sub.callback(msg)
     client_ready_list = _rclpy.rclpy_get_ready_clients(wait_set)
-    print(client_ready_list)
-    if client_ready_list != [] and client_ready_list is not None:
-        print(client_ready_list)
+    print('client list: ' + str(client_ready_list))
     for cli in [c for c in node.clients if c.client_pointer in client_ready_list]:
         print('client: %s is ready' % cli.srv_name)
+    service_ready_list = _rclpy.rclpy_get_ready_services(wait_set)
+    print('service list:' + str(service_ready_list))
+    for srv in [s for s in node.services if s.service_pointer in service_ready_list]:
+        request = _rclpy.rclpy_take_request(srv.service_handle, sub.srv_type)
+        if request:
+            srv.callback(request)
 
 
 def ok():

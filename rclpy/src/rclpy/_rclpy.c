@@ -634,9 +634,42 @@ rclpy_get_ready_clients(PyObject * Py_UNUSED(self), PyObject * args)
         client_ready_list,
         PyLong_FromUnsignedLongLong((uint64_t)&wait_set->clients[client_idx]->impl));
     }
+    else {
+      fprintf(stderr, "client num %zu is null\n", client_idx);
+    }
   }
 
   return client_ready_list;
+}
+
+static PyObject *
+rclpy_get_ready_services(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
+  if (!wait_set) {
+    PyErr_Format(PyExc_RuntimeError, "waiset is null\n");
+    return NULL;
+  }
+
+  size_t service_idx;
+  PyObject * service_ready_list = PyList_New(0);
+  for (service_idx = 0; service_idx < wait_set->size_of_services; service_idx++) {
+    if (wait_set->services[service_idx]) {
+      PyList_Append(
+        service_ready_list,
+        PyLong_FromUnsignedLongLong((uint64_t)&wait_set->services[service_idx]->impl));
+    }
+    else {
+      fprintf(stderr, "service num %zu is null\n", service_idx);
+    }
+  }
+
+  return service_ready_list;
 }
 
 static PyObject *
@@ -766,7 +799,57 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
 
     return pytaken_response;
   }
-  // if take failed, just do nothing
+  // if take_response failed, just do nothing
+  Py_RETURN_NONE;
+}
+
+static PyObject *
+rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyservice;
+  PyObject * pysrv_type;
+
+  if (!PyArg_ParseTuple(args, "OO", &pyservice, &pysrv_type)) {
+    return NULL;
+  }
+
+  rcl_service_t * service =
+    (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+
+  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
+
+  typedef void *(* convert_from_py_signature)(PyObject *);
+  convert_from_py_signature convert_from_py =
+    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
+
+  PyObject * pysrv = PyObject_CallObject(pysrv_type, NULL);
+
+  void * taken_request = convert_from_py(pysrv);
+  rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
+  rcl_ret_t ret = rcl_take_request(service, header, taken_request);
+
+  if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to take from a service: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
+    PyObject * pyconvert_to_py = PyObject_GetAttrString(pysrv_type, "_CONVERT_TO_PY");
+
+    typedef PyObject *(* convert_to_py_signature)(void *);
+    convert_to_py_signature convert_to_py =
+      (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
+
+    PyObject * pytaken_request = convert_to_py(taken_request);
+
+    Py_INCREF(pytaken_request);
+
+    return pytaken_request;
+  }
+  // if take_request failed, just do nothing
   Py_RETURN_NONE;
 }
 
@@ -878,6 +961,9 @@ static PyMethodDef rclpy_methods[] = {
    "Create a Client."},
   {"rclpy_send_request", rclpy_send_request, METH_VARARGS,
    "Send a request."},
+  // {"rclpy_send_response", rclpy_send_response, METH_VARARGS,
+  //  "Send a response."},
+
   {"rclpy_create_service", rclpy_create_service, METH_VARARGS,
    "Create a Service."},
 
@@ -903,20 +989,26 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_wait_set_add_client", rclpy_wait_set_add_client, METH_VARARGS,
    "rclpy_wait_set_add_client."},
 
+  {"rclpy_get_ready_clients", rclpy_get_ready_clients, METH_VARARGS,
+   "List non null clients in waitset."},
+
   {"rclpy_wait_set_clear_services", rclpy_wait_set_clear_services, METH_VARARGS,
    "rclpy_wait_set_clear_services"},
 
   {"rclpy_wait_set_add_service", rclpy_wait_set_add_service, METH_VARARGS,
    "rclpy_wait_set_add_service."},
 
-  {"rclpy_get_ready_clients", rclpy_get_ready_clients, METH_VARARGS,
-   "List non null clients in waitset."},
+  {"rclpy_get_ready_services", rclpy_get_ready_services, METH_VARARGS,
+   "List non null services in waitset."},
 
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},
 
   {"rclpy_take", rclpy_take, METH_VARARGS,
    "rclpy_take."},
+
+  {"rclpy_take_request", rclpy_take_request, METH_VARARGS,
+   "rclpy_take_request."},
 
   {"rclpy_take_response", rclpy_take_response, METH_VARARGS,
    "rclpy_take_response."},

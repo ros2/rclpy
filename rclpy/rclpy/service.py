@@ -16,14 +16,15 @@ import rclpy
 
 
 class Service:
-    def __init__(self, service_handle, service_pointer, srv_type, srv_name, qos_profile):
+    def __init__(self, service_handle, service_pointer, srv_type, srv_name, callback, qos_profile):
         self.service_handle = service_handle
         self.service_pointer = service_pointer
         self.srv_type = srv_type
         self.srv_name = srv_name
+        self.callback = callback
         self.qos_profile = qos_profile
         self.sequence_number = 0
 
-    def call(self, req):
-        #self.sequence_number = rclpy._rclpy.rclpy_send_request(self.service_handle, req)
-        #print(self.sequence_number)
+    # def call(self, req):
+        # self.sequence_number = rclpy._rclpy.rclpy_send_request(self.service_handle, req)
+        # print(self.sequence_number)

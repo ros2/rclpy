@@ -63,7 +63,7 @@ class Node:
         self.clients.append(client)
         return client
 
-    def create_service(self, srv_type, srv_name, qos_profile=qos_profile_default):
+    def create_service(self, srv_type, srv_name, callback, qos_profile=qos_profile_default):
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
         [service_handle, service_pointer] = rclpy._rclpy.rclpy_create_service(
@@ -71,7 +71,7 @@ class Node:
             srv_type,
             srv_name,
             qos_profile.get_c_qos_profile())
-        service = Service(service_handle, service_pointer, srv_type, srv_name, qos_profile)
+        service = Service(service_handle, service_pointer, srv_type, srv_name, callback, qos_profile)
         self.services.append(service)
         return service
 
