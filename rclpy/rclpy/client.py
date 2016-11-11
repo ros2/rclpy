@@ -23,6 +23,7 @@ class Client:
         self.srv_name = srv_name
         self.qos_profile = qos_profile
         self.sequence_number = 0
+        self.response = None
 
     def call(self, req):
         self.sequence_number = rclpy._rclpy.rclpy_send_request(self.client_handle, req)

@@ -374,6 +374,46 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
+rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyservice;
+  PyObject * pyresponse;
+  PyObject * pyheader;
+
+  if (!PyArg_ParseTuple(args, "OOO", &pyservice, &pyresponse, &pyheader)) {
+    return NULL;
+  }
+  rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
+  assert(service != NULL);
+
+  rmw_request_id_t * header = (rmw_request_id_t *)PyCapsule_GetPointer(pyheader, NULL);
+  assert(service != NULL);
+  PyObject * pyresponse_type = PyObject_GetAttrString(pyresponse, "__class__");
+  assert(pyresponse_type != NULL);
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pyresponse_type, "__class__");
+  assert(pymetaclass != NULL);
+
+  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
+
+  assert(pyconvert_from_py != NULL);
+  typedef void * (* convert_from_py_signature)(PyObject *);
+  convert_from_py_signature convert_from_py =
+    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
+
+  assert(convert_from_py != NULL);
+  void * raw_ros_response = convert_from_py(pyresponse);
+
+  rcl_ret_t ret = rcl_send_response(service, header, raw_ros_response);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to send request: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+static PyObject *
 rclpy_destroy_node(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode;
@@ -696,9 +736,6 @@ rclpy_get_ready_clients(PyObject * Py_UNUSED(self), PyObject * args)
         client_ready_list,
         PyLong_FromUnsignedLongLong((uint64_t)&wait_set->clients[client_idx]->impl));
     }
-    else {
-      fprintf(stderr, "client num %zu is null\n", client_idx);
-    }
   }
 
   return client_ready_list;
@@ -725,9 +762,6 @@ rclpy_get_ready_services(PyObject * Py_UNUSED(self), PyObject * args)
       PyList_Append(
         service_ready_list,
         PyLong_FromUnsignedLongLong((uint64_t)&wait_set->services[service_idx]->impl));
-    }
-    else {
-      fprintf(stderr, "service num %zu is null\n", service_idx);
     }
   }
 
@@ -817,17 +851,17 @@ static PyObject *
 rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pyclient;
-  PyObject * pysrv_type;
-  PY_LONG_LONG pysequence_number;
+  PyObject * pyresponse_type;
+  PY_LONG_LONG sequence_number;
 
-  if (!PyArg_ParseTuple(args, "OOK", &pyclient, &pysrv_type, &pysequence_number)) {
+  if (!PyArg_ParseTuple(args, "OOK", &pyclient, &pyresponse_type, &sequence_number)) {
     return NULL;
   }
 
   rcl_client_t * client =
     (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
 
-  PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+  PyObject * pymetaclass = PyObject_GetAttrString(pyresponse_type, "__class__");
 
   PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
@@ -835,11 +869,14 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
-  PyObject * pysrv = PyObject_CallObject(pysrv_type, NULL);
+  PyObject * pysrv = PyObject_CallObject(pyresponse_type, NULL);
 
+  assert(client != NULL);
+  assert(convert_from_py != NULL);
+  assert(pysrv != NULL);
   void * taken_response = convert_from_py(pysrv);
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
-  header->sequence_number = pysequence_number;
+  header->sequence_number = sequence_number;
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
@@ -849,7 +886,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    PyObject * pyconvert_to_py = PyObject_GetAttrString(pysrv_type, "_CONVERT_TO_PY");
+    PyObject * pyconvert_to_py = PyObject_GetAttrString(pyresponse_type, "_CONVERT_TO_PY");
 
     typedef PyObject *(* convert_to_py_signature)(void *);
     convert_to_py_signature convert_to_py =
@@ -869,16 +906,16 @@ static PyObject *
 rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pyservice;
-  PyObject * pysrv_type;
+  PyObject * pyrequest_type;
 
-  if (!PyArg_ParseTuple(args, "OO", &pyservice, &pysrv_type)) {
+  if (!PyArg_ParseTuple(args, "OO", &pyservice, &pyrequest_type)) {
     return NULL;
   }
 
   rcl_service_t * service =
     (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
 
-  PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+  PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__");
 
   PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
 
@@ -886,7 +923,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
-  PyObject * pysrv = PyObject_CallObject(pysrv_type, NULL);
+  PyObject * pysrv = PyObject_CallObject(pyrequest_type, NULL);
 
   void * taken_request = convert_from_py(pysrv);
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
@@ -899,7 +936,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    PyObject * pyconvert_to_py = PyObject_GetAttrString(pysrv_type, "_CONVERT_TO_PY");
+    PyObject * pyconvert_to_py = PyObject_GetAttrString(pyrequest_type, "_CONVERT_TO_PY");
 
     typedef PyObject *(* convert_to_py_signature)(void *);
     convert_to_py_signature convert_to_py =
@@ -909,7 +946,11 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
 
     Py_INCREF(pytaken_request);
 
-    return pytaken_request;
+    PyObject * pylist = PyList_New(0);
+    PyList_Append(pylist, pytaken_request);
+    PyList_Append(pylist, PyCapsule_New(header, NULL, NULL));
+
+    return pylist;
   }
   // if take_request failed, just do nothing
   Py_RETURN_NONE;
@@ -1023,8 +1064,8 @@ static PyMethodDef rclpy_methods[] = {
    "Create a Client."},
   {"rclpy_send_request", rclpy_send_request, METH_VARARGS,
    "Send a request."},
-  // {"rclpy_send_response", rclpy_send_response, METH_VARARGS,
-  //  "Send a response."},
+  {"rclpy_send_response", rclpy_send_response, METH_VARARGS,
+   "Send a response."},
 
   {"rclpy_create_service", rclpy_create_service, METH_VARARGS,
    "Create a Service."},

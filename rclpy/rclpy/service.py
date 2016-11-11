@@ -23,8 +23,8 @@ class Service:
         self.srv_name = srv_name
         self.callback = callback
         self.qos_profile = qos_profile
-        self.sequence_number = 0
 
-    # def call(self, req):
-        # self.sequence_number = rclpy._rclpy.rclpy_send_request(self.service_handle, req)
-        # print(self.sequence_number)
+    def send_response(self, response, header):
+        print('sending response!\n{0}\n'.format(repr(response)))
+        rclpy._rclpy.rclpy_send_response(self.service_handle, response, header)
+        print('response sent')

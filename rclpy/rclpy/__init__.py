@@ -73,6 +73,9 @@ def spin_once(node, timeout_sec=None):
     _rclpy.rclpy_wait_set_clear_clients(wait_set)
     for client in node.clients:
         _rclpy.rclpy_wait_set_add_client(wait_set, client.client_handle)
+    _rclpy.rclpy_wait_set_clear_services(wait_set)
+    for service in node.services:
+        _rclpy.rclpy_wait_set_add_service(wait_set, service.service_handle)
 
     if timeout_sec is None:
         timeout = -1
@@ -88,15 +91,18 @@ def spin_once(node, timeout_sec=None):
         if msg:
             sub.callback(msg)
     client_ready_list = _rclpy.rclpy_get_ready_clients(wait_set)
-    print('client list: ' + str(client_ready_list))
     for cli in [c for c in node.clients if c.client_pointer in client_ready_list]:
-        print('client: %s is ready' % cli.srv_name)
+        response = _rclpy.rclpy_take_response(cli.client_handle, cli.srv_type.Response, cli.sequence_number)
+        if response:
+            cli.response = response
+            print('received response:\n%r\n' % response)
+
     service_ready_list = _rclpy.rclpy_get_ready_services(wait_set)
-    print('service list:' + str(service_ready_list))
     for srv in [s for s in node.services if s.service_pointer in service_ready_list]:
-        request = _rclpy.rclpy_take_request(srv.service_handle, sub.srv_type)
+        [request, header] = _rclpy.rclpy_take_request(srv.service_handle, srv.srv_type.Request)
         if request:
-            srv.callback(request)
+            response = srv.callback(request, srv.srv_type.Response())
+            srv.send_response(response, header)
 
 
 def ok():
