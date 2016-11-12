@@ -546,134 +546,71 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
  * \return NULL
  */
 static PyObject *
-rclpy_wait_set_clear_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
 {
+  const char * entity_type;
   PyObject * pywait_set;
 
-  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pywait_set)) {
     return NULL;
   }
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_ret_t ret = rcl_wait_set_clear_subscriptions(wait_set);
+  rcl_ret_t ret;
+  if (0 == strcmp(entity_type, "subscription")) {
+    ret = rcl_wait_set_clear_subscriptions(wait_set);
+  }
+  else if (0 == strcmp(entity_type, "client")) {
+    ret = rcl_wait_set_clear_clients(wait_set);
+  }
+  else if (0 == strcmp(entity_type, "service")) {
+    ret = rcl_wait_set_clear_services(wait_set);
+  }
+  else {
+    PyErr_Format(PyExc_RuntimeError,
+      "%s is not a known entity", entity_type);
+    Py_RETURN_FALSE;
+  }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to clear subscriptions from wait set: %s", rcl_get_error_string_safe());
-    return NULL;
+      "Failed to %s from waitset: %s", entity_type, rcl_get_error_string_safe());
+    Py_RETURN_FALSE;
   }
-  Py_RETURN_NONE;
-}
-
-/// Add a subscription to the waitset
-/*
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \param[in] pysubscription Capsule pointing to the subscription to add
- * \return NULL
- */
-static PyObject *
-rclpy_wait_set_add_subscription(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-  PyObject * pysubscription;
-
-  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pysubscription)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_subscription_t * subscription =
-    (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, NULL);
-  rcl_ret_t ret = rcl_wait_set_add_subscription(wait_set, subscription);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to add subscription to wait set: %s", rcl_get_error_string_safe());
-    return NULL;
-  }
-  Py_RETURN_NONE;
-}
-
-/// Get list of non-null subscriptions in waitset
-/*
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \return List of subscription pointers ready for take
- */
-static PyObject *
-rclpy_wait_set_clear_clients(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-
-  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_ret_t ret = rcl_wait_set_clear_clients(wait_set);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to clear clients from wait set: %s", rcl_get_error_string_safe());
-    return NULL;
-  }
-  Py_RETURN_NONE;
+  Py_RETURN_TRUE;
 }
 
 static PyObject *
-rclpy_wait_set_add_client(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
 {
+  const char * entity_type;
   PyObject * pywait_set;
-  PyObject * pyclient;
+  PyObject * pyentity;
 
-  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pyclient)) {
+  if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pywait_set, &pyentity)) {
     return NULL;
   }
-
+  rcl_ret_t ret;
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_client_t * client =
-    (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
-  rcl_ret_t ret = rcl_wait_set_add_client(wait_set, client);
+  if (0 == strcmp(entity_type, "subscription")) {
+    rcl_subscription_t * subscription =
+      (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_subscription(wait_set, subscription);
+  } else if (0 == strcmp(entity_type, "client")) {
+    rcl_client_t * client =
+      (rcl_client_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_client(wait_set, client);
+  } else if (0 == strcmp(entity_type, "service")) {
+    rcl_service_t * service =
+      (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_service(wait_set, service);
+  } else {
+    PyErr_Format(PyExc_RuntimeError,
+      "%s is not a known entity", entity_type);
+    Py_RETURN_FALSE;
+  }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to add client to wait set: %s", rcl_get_error_string_safe());
-    return NULL;
-  }
-  Py_RETURN_NONE;
-}
-
-static PyObject *
-rclpy_wait_set_clear_services(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-
-  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_ret_t ret = rcl_wait_set_clear_services(wait_set);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to clear services from wait set: %s", rcl_get_error_string_safe());
-    return NULL;
-  }
-  Py_RETURN_NONE;
-}
-
-static PyObject *
-rclpy_wait_set_add_service(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-  PyObject * pyservice;
-
-  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pyservice)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_service_t * service =
-    (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
-  rcl_ret_t ret = rcl_wait_set_add_service(wait_set, service);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to add service to wait set: %s", rcl_get_error_string_safe());
+      "Failed to add %s to wait set: %s", entity_type, rcl_get_error_string_safe());
     return NULL;
   }
   Py_RETURN_NONE;
@@ -1081,29 +1018,17 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_wait_set_init", rclpy_wait_set_init, METH_VARARGS,
    "rclpy_wait_set_init."},
 
-  {"rclpy_wait_set_clear_subscriptions", rclpy_wait_set_clear_subscriptions, METH_VARARGS,
-   "rclpy_wait_set_clear_subscriptions."},
+  {"rclpy_wait_set_clear_entities", rclpy_wait_set_clear_entities, METH_VARARGS,
+   "rclpy_wait_set_clear_entities."},
 
-  {"rclpy_wait_set_add_subscription", rclpy_wait_set_add_subscription, METH_VARARGS,
-   "rclpy_wait_set_add_subscription."},
+  {"rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
+   "rclpy_wait_set_add_entity."},
 
   {"rclpy_get_ready_subscriptions", rclpy_get_ready_subscriptions, METH_VARARGS,
    "List non null subscriptions in waitset."},
 
-  {"rclpy_wait_set_clear_clients", rclpy_wait_set_clear_clients, METH_VARARGS,
-   "rclpy_wait_set_clear_clients"},
-
-  {"rclpy_wait_set_add_client", rclpy_wait_set_add_client, METH_VARARGS,
-   "rclpy_wait_set_add_client."},
-
   {"rclpy_get_ready_clients", rclpy_get_ready_clients, METH_VARARGS,
    "List non null clients in waitset."},
-
-  {"rclpy_wait_set_clear_services", rclpy_wait_set_clear_services, METH_VARARGS,
-   "rclpy_wait_set_clear_services"},
-
-  {"rclpy_wait_set_add_service", rclpy_wait_set_add_service, METH_VARARGS,
-   "rclpy_wait_set_add_service."},
 
   {"rclpy_get_ready_services", rclpy_get_ready_services, METH_VARARGS,
    "List non null services in waitset."},

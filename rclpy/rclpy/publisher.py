@@ -16,11 +16,16 @@ import rclpy
 
 
 class Publisher:
-    def __init__(self, publisher_handle, msg_type, topic, qos_profile):
+    def __init__(self, publisher_handle, msg_type, topic, qos_profile, node_handle):
         self.publisher_handle = publisher_handle
         self.msg_type = msg_type
         self.topic = topic
         self.qos_profile = qos_profile
+        self.node_handle = node_handle
 
     def publish(self, msg):
         rclpy._rclpy.rclpy_publish(self.publisher_handle, msg)
+
+    def __del__(self):
+        rclpy._rclpy.rclpy_destroy_entity(
+            'publisher', self.publisher_handle, self.node_handle)

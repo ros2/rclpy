@@ -16,7 +16,8 @@ import rclpy
 
 
 class Client:
-    def __init__(self, client_handle, client_pointer, srv_type, srv_name, qos_profile):
+    def __init__(self, node_handle, client_handle, client_pointer, srv_type, srv_name, qos_profile):
+        self.node_handle = node_handle
         self.client_handle = client_handle
         self.client_pointer = client_pointer
         self.srv_type = srv_type
@@ -27,4 +28,7 @@ class Client:
 
     def call(self, req):
         self.sequence_number = rclpy._rclpy.rclpy_send_request(self.client_handle, req)
-        print(self.sequence_number)
+
+    def __del__(self):
+        rclpy._rclpy.rclpy_destroy_entity(
+            'client', self.client_handle, self.node_handle)

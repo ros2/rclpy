@@ -36,7 +36,7 @@ class Node:
             msg_type.__class__.__import_type_support__()
         publisher_handle = rclpy._rclpy.rclpy_create_publisher(
             self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
-        publisher = Publisher(publisher_handle, msg_type, topic, qos_profile)
+        publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
         self.publishers.append(publisher)
         return publisher
 
@@ -49,7 +49,7 @@ class Node:
 
         subscription = Subscription(
             subscription_handle, subscription_pointer, msg_type,
-            topic, callback, qos_profile)
+            topic, callback, qos_profile, self.handle)
         self.subscriptions.append(subscription)
         return subscription
 
@@ -61,7 +61,7 @@ class Node:
             srv_type,
             srv_name,
             qos_profile.get_c_qos_profile())
-        client = Client(client_handle, client_pointer, srv_type, srv_name, qos_profile)
+        client = Client(self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile)
         self.clients.append(client)
         return client
 
@@ -74,24 +74,56 @@ class Node:
             srv_name,
             qos_profile.get_c_qos_profile())
         service = Service(
-            service_handle, service_pointer, srv_type, srv_name, callback, qos_profile)
+            self.handle, service_handle, service_pointer, srv_type, srv_name, callback, qos_profile)
         self.services.append(service)
         return service
+
+    def destroy_publisher(self, publisher_handle):
+        for pub in self.publishers:
+            if pub.publisher_handle == publisher_handle:
+                rclpy._rclpy.rclpy_destroy_entity(
+                    'publisher', pub.publisher_handle, self.handle)
+                self.publishers.remove(pub)
+                return True
+        return False
+
+    def destroy_subscription(self, subscription_handle):
+        for sub in self.subscriptions:
+            if sub.subscription_handle == subscription_handle:
+                rclpy._rclpy.rclpy_destroy_entity(
+                    'subscription', sub.subscription_handle, self.handle)
+            self.subscriptions.remove(sub)
+            return True
+        return False
+
+    def destroy_service(self, service_handle):
+        for srv in self.services:
+            if srv.service_handle == service_handle:
+                rclpy._rclpy.rclpy_destroy_entity(
+                    'service', srv.service_handle, self.handle)
+            self.services.remove(srv)
+            return True
+        return False
+
+    def destroy_client(self, client_handle):
+        for cli in self.clients:
+            if cli.client_handle == client_handle:
+                rclpy._rclpy.rclpy_destroy_entity(
+                    'client', cli.client_handle, self.handle)
+            self.clients.remove(cli)
+            return True
+        return False
 
     def get_topic_names_and_types(self):
         return rclpy._rclpy.rclpy_get_topic_names_and_types(self.handle)
 
     def __del__(self):
         for sub in self.subscriptions:
-            rclpy._rclpy.rclpy_destroy_entity(
-                'subscription', sub.subscription_handle, self.handle)
+            del(sub)
         for pub in self.publishers:
-            rclpy._rclpy.rclpy_destroy_entity(
-                'publisher', pub.publisher_handle, self.handle)
+            del(pub)
         for cli in self.clients:
-            rclpy._rclpy.rclpy_destroy_entity(
-                'client', cli.client_handle, self.handle)
+            del(cli)
         for srv in self.services:
-            rclpy._rclpy.rclpy_destroy_entity(
-                'service', srv.service_handle, self.handle)
+            del(srv)
         rclpy._rclpy.rclpy_destroy_node(self.handle)

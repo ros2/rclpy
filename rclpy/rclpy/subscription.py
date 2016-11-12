@@ -12,15 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import rclpy
+
 
 class Subscription:
 
     def __init__(
             self, subscription_handle, subscription_pointer,
-            msg_type, topic, callback, qos_profile):
+            msg_type, topic, callback, qos_profile, node_handle):
+        self.node_handle = node_handle
         self.subscription_handle = subscription_handle
         self.subscription_pointer = subscription_pointer
         self.msg_type = msg_type
         self.topic = topic
         self.callback = callback
         self.qos_profile = qos_profile
+
+    def __del__(self):
+        rclpy._rclpy.rclpy_destroy_entity(
+            'subscription', self.subscription_handle, self.node_handle)
