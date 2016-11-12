@@ -92,8 +92,8 @@ class Node:
             if sub.subscription_handle == subscription_handle:
                 rclpy._rclpy.rclpy_destroy_entity(
                     'subscription', sub.subscription_handle, self.handle)
-            self.subscriptions.remove(sub)
-            return True
+                self.subscriptions.remove(sub)
+                return True
         return False
 
     def destroy_service(self, service_handle):
@@ -101,8 +101,8 @@ class Node:
             if srv.service_handle == service_handle:
                 rclpy._rclpy.rclpy_destroy_entity(
                     'service', srv.service_handle, self.handle)
-            self.services.remove(srv)
-            return True
+                self.services.remove(srv)
+                return True
         return False
 
     def destroy_client(self, client_handle):
@@ -110,8 +110,8 @@ class Node:
             if cli.client_handle == client_handle:
                 rclpy._rclpy.rclpy_destroy_entity(
                     'client', cli.client_handle, self.handle)
-            self.clients.remove(cli)
-            return True
+                self.clients.remove(cli)
+                return True
         return False
 
     def get_topic_names_and_types(self):
