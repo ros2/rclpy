@@ -414,27 +414,7 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
-rclpy_destroy_node(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pynode;
-
-  if (!PyArg_ParseTuple(args, "O", &pynode)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
-
-  rcl_ret_t ret = rcl_node_fini(node);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini node: %s", rcl_get_error_string_safe());
-    Py_RETURN_FALSE;
-  }
-  Py_RETURN_TRUE;
-}
-
-static PyObject *
-rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
 {
   const char * entity_type;
   PyObject * pyentity;
@@ -461,6 +441,42 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   else if (0 == strcmp(entity_type, "service")) {
     rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_service_fini(service, node);
+  }
+  else {
+    PyErr_Format(PyExc_RuntimeError,
+      "%s is not a known entity", entity_type);
+    Py_RETURN_FALSE;
+  }
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to fini %s: %s", entity_type, rcl_get_error_string_safe());
+    Py_RETURN_FALSE;
+  }
+  Py_RETURN_TRUE;
+}
+
+static PyObject *
+rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * entity_type;
+  PyObject * pyentity;
+
+  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pyentity)) {
+    return NULL;
+  }
+
+  rcl_ret_t ret;
+  if (0 == strcmp(entity_type, "timer")) {
+    rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_timer_fini(timer);
+  }
+  else if (0 == strcmp(entity_type, "guard_condition")) {
+    rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_guard_condition_fini(gc);
+  }
+  else if (0 == strcmp(entity_type, "node")) {
+    rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_node_fini(node);
   }
   else {
     PyErr_Format(PyExc_RuntimeError,
@@ -566,6 +582,9 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   else if (0 == strcmp(entity_type, "service")) {
     ret = rcl_wait_set_clear_services(wait_set);
   }
+  else if (0 == strcmp(entity_type, "guard_condition")) {
+    ret = rcl_wait_set_clear_guard_conditions(wait_set);
+  }
   else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -603,6 +622,10 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_wait_set_add_service(wait_set, service);
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    rcl_guard_condition_t * guard_condition =
+      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -993,24 +1016,24 @@ static PyMethodDef rclpy_methods[] = {
    "Create a Node."},
   {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
    "Create a Publisher."},
-  {"rclpy_publish", rclpy_publish, METH_VARARGS,
-   "Publish a message."},
   {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
    "Create a Subscription."},
+  {"rclpy_create_service", rclpy_create_service, METH_VARARGS,
+   "Create a Service."},
   {"rclpy_create_client", rclpy_create_client, METH_VARARGS,
    "Create a Client."},
+
+  {"rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
+   "Destroy a Node entity."},
+  {"rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
+   "Destroy a Node."},
+
+  {"rclpy_publish", rclpy_publish, METH_VARARGS,
+   "Publish a message."},
   {"rclpy_send_request", rclpy_send_request, METH_VARARGS,
    "Send a request."},
   {"rclpy_send_response", rclpy_send_response, METH_VARARGS,
    "Send a response."},
-
-  {"rclpy_create_service", rclpy_create_service, METH_VARARGS,
-   "Create a Service."},
-
-  {"rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
-   "Destroy a Node entity."},
-  {"rclpy_destroy_node", rclpy_destroy_node, METH_VARARGS,
-   "Destroy a Node."},
 
   {"rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
    "rclpy_get_zero_initialized_wait_set."},

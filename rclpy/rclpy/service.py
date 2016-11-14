@@ -29,7 +29,3 @@ class Service:
         print('sending response!\n{0}\n'.format(repr(response)))
         rclpy._rclpy.rclpy_send_response(self.service_handle, response, header)
         print('response sent')
-
-    def __del__(self):
-        rclpy._rclpy.rclpy_destroy_entity(
-            'service', self.service_handle, self.node_handle)

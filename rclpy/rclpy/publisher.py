@@ -25,7 +25,3 @@ class Publisher:
 
     def publish(self, msg):
         rclpy._rclpy.rclpy_publish(self.publisher_handle, msg)
-
-    def __del__(self):
-        rclpy._rclpy.rclpy_destroy_entity(
-            'publisher', self.publisher_handle, self.node_handle)

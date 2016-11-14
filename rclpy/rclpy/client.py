@@ -28,7 +28,3 @@ class Client:
 
     def call(self, req):
         self.sequence_number = rclpy._rclpy.rclpy_send_request(self.client_handle, req)
-
-    def __del__(self):
-        rclpy._rclpy.rclpy_destroy_entity(
-            'client', self.client_handle, self.node_handle)

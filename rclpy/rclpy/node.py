@@ -81,7 +81,7 @@ class Node:
     def destroy_publisher(self, publisher_handle):
         for pub in self.publishers:
             if pub.publisher_handle == publisher_handle:
-                rclpy._rclpy.rclpy_destroy_entity(
+                rclpy._rclpy.rclpy_destroy_node_entity(
                     'publisher', pub.publisher_handle, self.handle)
                 self.publishers.remove(pub)
                 return True
@@ -90,7 +90,7 @@ class Node:
     def destroy_subscription(self, subscription_handle):
         for sub in self.subscriptions:
             if sub.subscription_handle == subscription_handle:
-                rclpy._rclpy.rclpy_destroy_entity(
+                rclpy._rclpy.rclpy_destroy_node_entity(
                     'subscription', sub.subscription_handle, self.handle)
                 self.subscriptions.remove(sub)
                 return True
@@ -99,7 +99,7 @@ class Node:
     def destroy_service(self, service_handle):
         for srv in self.services:
             if srv.service_handle == service_handle:
-                rclpy._rclpy.rclpy_destroy_entity(
+                rclpy._rclpy.rclpy_destroy_node_entity(
                     'service', srv.service_handle, self.handle)
                 self.services.remove(srv)
                 return True
@@ -108,7 +108,7 @@ class Node:
     def destroy_client(self, client_handle):
         for cli in self.clients:
             if cli.client_handle == client_handle:
-                rclpy._rclpy.rclpy_destroy_entity(
+                rclpy._rclpy.rclpy_destroy_node_entity(
                     'client', cli.client_handle, self.handle)
                 self.clients.remove(cli)
                 return True
@@ -119,11 +119,12 @@ class Node:
 
     def __del__(self):
         for sub in self.subscriptions:
-            del(sub)
+            rclpy._rclpy.rclpy_destroy_node_entity(
+                'subscription', sub.subscription_handle, self.handle)
         for pub in self.publishers:
-            del(pub)
+            rclpy._rclpy.rclpy_destroy_node_entity('publisher', pub.publisher_handle, self.handle)
         for cli in self.clients:
-            del(cli)
+            rclpy._rclpy.rclpy_destroy_node_entity('client', cli.client_handle, self.handle)
         for srv in self.services:
-            del(srv)
-        rclpy._rclpy.rclpy_destroy_node(self.handle)
+            rclpy._rclpy.rclpy_destroy_node_entity('service', srv.service_handle, self.handle)
+        rclpy._rclpy.rclpy_destroy_entity('node', self.handle)

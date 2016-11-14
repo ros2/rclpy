@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy
-
 
 class Subscription:
 
@@ -27,7 +25,3 @@ class Subscription:
         self.topic = topic
         self.callback = callback
         self.qos_profile = qos_profile
-
-    def __del__(self):
-        rclpy._rclpy.rclpy_destroy_entity(
-            'subscription', self.subscription_handle, self.node_handle)
