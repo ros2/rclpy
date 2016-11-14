@@ -63,11 +63,11 @@ def spin_once(node, timeout_sec=None):
 
     _rclpy.rclpy_wait_set_init(
         wait_set,
-        len(node.subscriptions), 0, 0,
+        len(node.subscriptions), 0, len(node.timers),
         len(node.clients),
         len(node.services))
 
-    for entity in ['subscription', 'client', 'service']:
+    for entity in ['subscription', 'client', 'service', 'timer']:
         _rclpy.rclpy_wait_set_clear_entities(entity, wait_set)
         if entity == 'subscription':
             for subscription in node.subscriptions:
@@ -81,6 +81,10 @@ def spin_once(node, timeout_sec=None):
             for service in node.services:
                 _rclpy.rclpy_wait_set_add_entity(
                     entity, wait_set, service.service_handle)
+        elif entity == 'timer':
+            for timer in node.timers:
+                _rclpy.rclpy_wait_set_add_entity(
+                    entity, wait_set, timer.timer_handle)
 
     if timeout_sec is None:
         timeout = -1
@@ -109,6 +113,11 @@ def spin_once(node, timeout_sec=None):
         if request:
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
+
+    timer_ready_list = _rclpy.rclpy_get_ready_timers(wait_set)
+    for tmr in [t for t in node.timers if t.timer_pointer in timer_ready_list]:
+        tmr.callback()
+        _rclpy.rclpy_reset_timer(tmr.timer_handle)
 
 
 def ok():
