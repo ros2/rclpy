@@ -78,36 +78,36 @@ class Node:
         self.services.append(service)
         return service
 
-    def destroy_publisher(self, publisher_handle):
+    def destroy_publisher(self, publisher):
         for pub in self.publishers:
-            if pub.publisher_handle == publisher_handle:
+            if pub.publisher_handle == publisher.publisher_handle:
                 rclpy._rclpy.rclpy_destroy_node_entity(
                     'publisher', pub.publisher_handle, self.handle)
                 self.publishers.remove(pub)
                 return True
         return False
 
-    def destroy_subscription(self, subscription_handle):
+    def destroy_subscription(self, subscription):
         for sub in self.subscriptions:
-            if sub.subscription_handle == subscription_handle:
+            if sub.subscription_handle == subscription.subscription_handle:
                 rclpy._rclpy.rclpy_destroy_node_entity(
                     'subscription', sub.subscription_handle, self.handle)
                 self.subscriptions.remove(sub)
                 return True
         return False
 
-    def destroy_service(self, service_handle):
+    def destroy_service(self, service):
         for srv in self.services:
-            if srv.service_handle == service_handle:
+            if srv.service_handle == service.service_handle:
                 rclpy._rclpy.rclpy_destroy_node_entity(
                     'service', srv.service_handle, self.handle)
                 self.services.remove(srv)
                 return True
         return False
 
-    def destroy_client(self, client_handle):
+    def destroy_client(self, client):
         for cli in self.clients:
-            if cli.client_handle == client_handle:
+            if cli.client_handle == client.client_handle:
                 rclpy._rclpy.rclpy_destroy_node_entity(
                     'client', cli.client_handle, self.handle)
                 self.clients.remove(cli)
