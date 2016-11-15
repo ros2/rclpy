@@ -15,7 +15,6 @@
 import rclpy
 
 from rclpy.client import Client
-from rclpy.constants import S_TO_NS
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default
 from rclpy.service import Service
@@ -26,7 +25,6 @@ class Node:
 
     def __init__(self, handle):
         self.clients = []
-        self.guard_conditions = []
         self.handle = handle
         self.publishers = []
         self.services = []

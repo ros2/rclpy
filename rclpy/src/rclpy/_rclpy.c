@@ -466,11 +466,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret;
-  if (0 == strcmp(entity_type, "guard_condition")) {
-    rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
-    ret = rcl_guard_condition_fini(gc);
-  }
-  else if (0 == strcmp(entity_type, "node")) {
+  if (0 == strcmp(entity_type, "node")) {
     rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_node_fini(node);
   }
@@ -578,9 +574,6 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   else if (0 == strcmp(entity_type, "service")) {
     ret = rcl_wait_set_clear_services(wait_set);
   }
-  else if (0 == strcmp(entity_type, "guard_condition")) {
-    ret = rcl_wait_set_clear_guard_conditions(wait_set);
-  }
   else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -618,10 +611,6 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_wait_set_add_service(wait_set, service);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    rcl_guard_condition_t * guard_condition =
-      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
-    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
