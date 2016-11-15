@@ -91,17 +91,17 @@ def spin_once(node, timeout_sec=None):
     _rclpy.rclpy_wait(wait_set, timeout)
 
     sub_ready_list = _rclpy.rclpy_get_ready_subscriptions(wait_set)
-
     for sub in [s for s in node.subscriptions if s.subscription_pointer in sub_ready_list]:
         msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
         if msg:
             sub.callback(msg)
+
     client_ready_list = _rclpy.rclpy_get_ready_clients(wait_set)
-    for cli in [c for c in node.clients if c.client_pointer in client_ready_list]:
+    for client in [c for c in node.clients if c.client_pointer in client_ready_list]:
         response = _rclpy.rclpy_take_response(
-            cli.client_handle, cli.srv_type.Response, cli.sequence_number)
+            client.client_handle, client.srv_type.Response, client.sequence_number)
         if response:
-            cli.response = response
+            client.response = response
 
     service_ready_list = _rclpy.rclpy_get_ready_services(wait_set)
     for srv in [s for s in node.services if s.service_pointer in service_ready_list]:

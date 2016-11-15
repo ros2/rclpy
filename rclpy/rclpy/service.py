@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class Service:
@@ -28,4 +28,4 @@ class Service:
         self.qos_profile = qos_profile
 
     def send_response(self, response, header):
-        rclpy._rclpy.rclpy_send_response(self.service_handle, response, header)
+        _rclpy.rclpy_send_response(self.service_handle, response, header)

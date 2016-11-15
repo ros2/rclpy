@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class Publisher:
@@ -24,4 +24,4 @@ class Publisher:
         self.node_handle = node_handle
 
     def publish(self, msg):
-        rclpy._rclpy.rclpy_publish(self.publisher_handle, msg)
+        _rclpy.rclpy_publish(self.publisher_handle, msg)
