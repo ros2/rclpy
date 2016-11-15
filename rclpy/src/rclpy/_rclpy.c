@@ -231,9 +231,21 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   return pylist;
 }
 
-/// Return the identifier of the current rmw_implementation
+/// Create a client
 /*
- * \return string containing the identifier of the current rmw_implementation
+ * This function will create a client and attach it to the topics <pyservice_name>Request and <pyservice_name>Reply
+ * This client will use the typesupport defined in the service module
+ * provided as pysrv_type to send messages over the wire.
+ *
+ * \param[in] pynode Capsule pointing to the node to add the client to
+ * \param[in] pysrv_type Service module associated with the client
+ * \param[in] pyservice_name Python object containing the name used to generate the
+ *   <pyservice_name>Request and <pyservice_name>Reply topics names
+ * \param[in] pyqos_profile QoSProfile Python object with the profile of this client
+ * \return NULL on failure
+ *         List with 2 elements:
+ *            first element: a Capsule pointing to the pointer of the created rcl_client_t * structure
+ *            second element: an integer representing the memory address of the created rcl_client_t
  */
 static PyObject *
 rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
@@ -285,6 +297,12 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   return pylist;
 }
 
+/// Publish a request message
+/*
+ * \param[in] pyclient Capsule pointing to the client
+ * \param[in] pyrequest request message to send
+ * \return sequence_number PyLong object representing the index of the sent request
+ */
 static PyObject *
 rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -323,6 +341,22 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromLongLong(sequence_number);
 }
 
+/// Create a service server
+/*
+ * This function will create a service server and attach it to the topics <pyservice_name>Request and <pyservice_name>Reply
+ * This service will use the typesupport defined in the service module
+ * provided as pysrv_type to send messages over the wire.
+ *
+ * \param[in] pynode Capsule pointing to the node to add the service to
+ * \param[in] pysrv_type Service module associated with the service
+ * \param[in] pyservice_name Python object containing the name used to generate the
+ *   <pyservice_name>Request and <pyservice_name>Reply topics names
+ * \param[in] pyqos_profile QoSProfile Python object with the profile of this service
+ * \return NULL on failure
+ *         List with 2 elements:
+ *            first element: a Capsule pointing to the pointer of the created rcl_service_t * structure
+ *            second element: an integer representing the memory address of the created rcl_service_t
+ */
 static PyObject *
 rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -373,6 +407,13 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
   return pylist;
 }
 
+/// Publish a response message
+/*
+ * \param[in] pyservice Capsule pointing to the client
+ * \param[in] pyresponse reply message to send
+ * \param[in] pyheader Capsule pointing to the rmw_request_id_t header of the request we respond to
+ * \return NULL
+ */
 static PyObject *
 rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -413,6 +454,13 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Destroy an entity attached to a node
+/*
+ * \param[in] entity_type string defining the entity ["subscription", "publisher", "client", "service"]
+ * \param[in] pyentity Capsule pointing to the entity to destroy
+ * \param[in] pynode Capsule pointing to the node the entity belongs to
+ * \return True on success, False on failure
+ */
 static PyObject *
 rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -421,7 +469,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pynode;
 
   if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pyentity, &pynode)) {
-    return NULL;
+    Py_RETURN_FALSE;
   }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
@@ -451,6 +499,12 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_TRUE;
 }
 
+/// Destroy an rcl entity
+/*
+ * \param[in] entity_type string defining the entity ["node"]
+ * \param[in] pyentity Capsule pointing to the entity to destroy
+ * \return True on success, False on failure
+ */
 static PyObject *
 rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -458,7 +512,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pyentity;
 
   if (!PyArg_ParseTuple(args, "zO", &entity_type, &pyentity)) {
-    return NULL;
+    Py_RETURN_FALSE;
   }
 
   rcl_ret_t ret;
@@ -478,6 +532,10 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_TRUE;
 }
 
+/// Return the identifier of the current rmw_implementation
+/*
+ * \return string containing the identifier of the current rmw_implementation
+ */
 static PyObject *
 rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
@@ -543,8 +601,9 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Clear all the subscription pointers in the waitset
+/// Clear all the pointers of a given wait_set field
 /*
+ * \param[in] entity_type string defining the entity ["subscription, client, service"]
  * \param[in] pywait_set Capsule pointing to the waitset structure
  * \return NULL
  */
@@ -579,6 +638,13 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_TRUE;
 }
 
+/// Add an entity to the waitset structure
+/*
+ * \param[in] entity_type string defining the entity ["subscription, client, service"]
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] pyentity Capsule pointing to the entity to add
+ * \return NULL
+ */
 static PyObject *
 rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -606,7 +672,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
-    Py_RETURN_FALSE;
+    return NULL;
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -708,7 +774,7 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Take a message from a given subscription
 /*
- * \param[in] pysubscription Capsule pointing to the subscription to add
+ * \param[in] pysubscription Capsule pointing to the subscription to process the message
  * \param[in] pymsg_type Instance of the message type to take
  * \return Python message with all fields populated with received message
  */
@@ -762,9 +828,73 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Status of the the client library
+/// Take a request from a given service
 /*
- * \return True if rcl is running properly, False otherwise
+ * \param[in] pyservice Capsule pointing to the service to process the request
+ * \param[in] pyrequest_type Instance of the message type to take
+ * \return List with 2 elements:
+ *            first element: a Python request message with all fields populated with received request
+ *            second element: a Capsule pointing to the header (rmw_request_id) of the processed request
+ */
+static PyObject *
+rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyservice;
+  PyObject * pyrequest_type;
+
+  if (!PyArg_ParseTuple(args, "OO", &pyservice, &pyrequest_type)) {
+    return NULL;
+  }
+
+  rcl_service_t * service =
+    (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__");
+
+  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
+
+  typedef void *(* convert_from_py_signature)(PyObject *);
+  convert_from_py_signature convert_from_py =
+    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
+
+  PyObject * pysrv = PyObject_CallObject(pyrequest_type, NULL);
+
+  void * taken_request = convert_from_py(pysrv);
+  rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
+  rcl_ret_t ret = rcl_take_request(service, header, taken_request);
+
+  if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to take from a service: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
+    PyObject * pyconvert_to_py = PyObject_GetAttrString(pyrequest_type, "_CONVERT_TO_PY");
+
+    typedef PyObject *(* convert_to_py_signature)(void *);
+    convert_to_py_signature convert_to_py =
+      (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
+
+    PyObject * pytaken_request = convert_to_py(taken_request);
+
+    Py_INCREF(pytaken_request);
+
+    PyObject * pylist = PyList_New(0);
+    PyList_Append(pylist, pytaken_request);
+    PyList_Append(pylist, PyCapsule_New(header, NULL, NULL));
+
+    return pylist;
+  }
+  // if take_request failed, just do nothing
+  Py_RETURN_NONE;
+}
+
+/// Take a response from a given client
+/*
+ * \param[in] pyclient Capsule pointing to the client to process the response
+ * \param[in] pyresponse_type Instance of the message type to take
+ * \return Python response message with all fields populated with received response
  */
 static PyObject *
 rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
@@ -821,60 +951,10 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-static PyObject *
-rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pyservice;
-  PyObject * pyrequest_type;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyservice, &pyrequest_type)) {
-    return NULL;
-  }
-
-  rcl_service_t * service =
-    (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
-
-  PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__");
-
-  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
-
-  typedef void *(* convert_from_py_signature)(PyObject *);
-  convert_from_py_signature convert_from_py =
-    (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
-
-  PyObject * pysrv = PyObject_CallObject(pyrequest_type, NULL);
-
-  void * taken_request = convert_from_py(pysrv);
-  rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
-  rcl_ret_t ret = rcl_take_request(service, header, taken_request);
-
-  if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to take from a service: %s", rcl_get_error_string_safe());
-    return NULL;
-  }
-
-  if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    PyObject * pyconvert_to_py = PyObject_GetAttrString(pyrequest_type, "_CONVERT_TO_PY");
-
-    typedef PyObject *(* convert_to_py_signature)(void *);
-    convert_to_py_signature convert_to_py =
-      (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
-
-    PyObject * pytaken_request = convert_to_py(taken_request);
-
-    Py_INCREF(pytaken_request);
-
-    PyObject * pylist = PyList_New(0);
-    PyList_Append(pylist, pytaken_request);
-    PyList_Append(pylist, PyCapsule_New(header, NULL, NULL));
-
-    return pylist;
-  }
-  // if take_request failed, just do nothing
-  Py_RETURN_NONE;
-}
-
+/// Status of the the client library
+/*
+ * \return True if rcl is running properly, False otherwise
+ */
 static PyObject *
 rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
