@@ -20,7 +20,6 @@ from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
-from rclpy.timer import Timer
 
 
 class Node:
@@ -32,7 +31,6 @@ class Node:
         self.publishers = []
         self.services = []
         self.subscriptions = []
-        self.timers = []
 
     def create_publisher(self, msg_type, topic, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
@@ -82,14 +80,6 @@ class Node:
         self.services.append(service)
         return service
 
-    def create_timer(self, timer_period_sec, callback):
-        timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
-        [timer_handle, timer_pointer] = rclpy._rclpy.rclpy_create_timer(timer_period_nsec)
-        timer = Timer(timer_handle, timer_pointer, callback, timer_period_nsec)
-
-        self.timers.append(timer)
-        return timer
-
     def destroy_publisher(self, publisher):
         for pub in self.publishers:
             if pub.publisher_handle == publisher.publisher_handle:
@@ -126,15 +116,6 @@ class Node:
                 return True
         return False
 
-    def destroy_timer(self, timer):
-        for tmr in self.timers:
-            if tmr.timer_handle == timer.timer_handle:
-                rclpy._rclpy.rclpy_destroy_entity(
-                    'timer', tmr.timer_handle)
-                self.timers.remove(tmr)
-                return True
-        return False
-
     def get_topic_names_and_types(self):
         return rclpy._rclpy.rclpy_get_topic_names_and_types(self.handle)
 
@@ -148,6 +129,4 @@ class Node:
             rclpy._rclpy.rclpy_destroy_node_entity('client', cli.client_handle, self.handle)
         for srv in self.services:
             rclpy._rclpy.rclpy_destroy_node_entity('service', srv.service_handle, self.handle)
-        for tmr in self.timers:
-            rclpy._rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
         rclpy._rclpy.rclpy_destroy_entity('node', self.handle)
