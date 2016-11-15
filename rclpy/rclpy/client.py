@@ -14,6 +14,26 @@
 
 import rclpy
 
+import threading
+
+
+class ResponseThread(threading.Thread):
+    def __init__(self, client):
+        threading.Thread.__init__(self)
+        self.client = client
+        self.wait_set = rclpy._rclpy.rclpy_get_zero_initialized_wait_set()
+        rclpy._rclpy.rclpy_wait_set_init(self.wait_set, 0, 0, 0, 1, 0)
+        rclpy._rclpy.rclpy_wait_set_clear_entities('client', self.wait_set)
+        rclpy._rclpy.rclpy_wait_set_add_entity(
+            'client', self.wait_set, self.client.client_handle)
+
+    def run(self):
+        rclpy._rclpy.rclpy_wait(self.wait_set, -1)
+        response = rclpy._rclpy.rclpy_take_response(
+            self.client.client_handle, self.client.srv_type.Response, self.client.sequence_number)
+        if response:
+            self.client.response = response
+
 
 class Client:
     def __init__(self, node_handle, client_handle, client_pointer, srv_type, srv_name, qos_profile):
@@ -28,3 +48,8 @@ class Client:
 
     def call(self, req):
         self.sequence_number = rclpy._rclpy.rclpy_send_request(self.client_handle, req)
+
+    def wait_for_future(self):
+        thread1 = ResponseThread(self)
+        thread1.start()
+        thread1.join()
