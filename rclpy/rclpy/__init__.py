@@ -106,7 +106,6 @@ def spin_once(node, timeout_sec=None):
             cli.client_handle, cli.srv_type.Response, cli.sequence_number)
         if response:
             cli.response = response
-            print('received response:\n%r\n' % response)
 
     service_ready_list = _rclpy.rclpy_get_ready_services(wait_set)
     for srv in [s for s in node.services if s.service_pointer in service_ready_list]:

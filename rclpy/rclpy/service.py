@@ -26,6 +26,4 @@ class Service:
         self.qos_profile = qos_profile
 
     def send_response(self, response, header):
-        print('sending response!\n{0}\n'.format(repr(response)))
         rclpy._rclpy.rclpy_send_response(self.service_handle, response, header)
-        print('response sent')
