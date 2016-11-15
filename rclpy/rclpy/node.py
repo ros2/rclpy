@@ -61,7 +61,8 @@ class Node:
             srv_type,
             srv_name,
             qos_profile.get_c_qos_profile())
-        client = Client(self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile)
+        client = Client(
+            self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile)
         self.clients.append(client)
         return client
 
@@ -74,7 +75,8 @@ class Node:
             srv_name,
             qos_profile.get_c_qos_profile())
         service = Service(
-            self.handle, service_handle, service_pointer, srv_type, srv_name, callback, qos_profile)
+            self.handle, service_handle, service_pointer,
+            srv_type, srv_name, callback, qos_profile)
         self.services.append(service)
         return service
 

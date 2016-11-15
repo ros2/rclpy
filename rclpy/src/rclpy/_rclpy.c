@@ -429,20 +429,16 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   if (0 == strcmp(entity_type, "subscription")) {
     rcl_subscription_t * subscription = (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_subscription_fini(subscription, node);
-  }
-  else if (0 == strcmp(entity_type, "publisher")) {
+  } else if (0 == strcmp(entity_type, "publisher")) {
     rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_publisher_fini(publisher, node);
-  }
-  else if (0 == strcmp(entity_type, "client")) {
+  } else if (0 == strcmp(entity_type, "client")) {
     rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_client_fini(client, node);
-  }
-  else if (0 == strcmp(entity_type, "service")) {
+  } else if (0 == strcmp(entity_type, "service")) {
     rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_service_fini(service, node);
-  }
-  else {
+  } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
     Py_RETURN_FALSE;
@@ -469,8 +465,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   if (0 == strcmp(entity_type, "node")) {
     rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_node_fini(node);
-  }
-  else {
+  } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
     Py_RETURN_FALSE;
@@ -567,14 +562,11 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret;
   if (0 == strcmp(entity_type, "subscription")) {
     ret = rcl_wait_set_clear_subscriptions(wait_set);
-  }
-  else if (0 == strcmp(entity_type, "client")) {
+  } else if (0 == strcmp(entity_type, "client")) {
     ret = rcl_wait_set_clear_clients(wait_set);
-  }
-  else if (0 == strcmp(entity_type, "service")) {
+  } else if (0 == strcmp(entity_type, "service")) {
     ret = rcl_wait_set_clear_services(wait_set);
-  }
-  else {
+  } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
     Py_RETURN_FALSE;

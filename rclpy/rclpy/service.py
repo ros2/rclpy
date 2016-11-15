@@ -16,7 +16,9 @@ import rclpy
 
 
 class Service:
-    def __init__(self, node_handle, service_handle, service_pointer, srv_type, srv_name, callback, qos_profile):
+    def __init__(
+            self, node_handle, service_handle, service_pointer,
+            srv_type, srv_name, callback, qos_profile):
         self.node_handle = node_handle
         self.service_handle = service_handle
         self.service_pointer = service_pointer

@@ -36,7 +36,9 @@ class ResponseThread(threading.Thread):
 
 
 class Client:
-    def __init__(self, node_handle, client_handle, client_pointer, srv_type, srv_name, qos_profile):
+    def __init__(
+            self, node_handle, client_handle, client_pointer,
+            srv_type, srv_name, qos_profile):
         self.node_handle = node_handle
         self.client_handle = client_handle
         self.client_pointer = client_pointer
