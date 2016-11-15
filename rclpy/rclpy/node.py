@@ -15,6 +15,7 @@
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from rclpy.client import Client
+from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
@@ -34,6 +35,8 @@ class Node:
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
+        if msg_type.__class__._TYPE_SUPPORT is None:
+            raise NoTypeSupportImportedException
         publisher_handle = _rclpy.rclpy_create_publisher(
             self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
         publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
@@ -44,6 +47,8 @@ class Node:
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
+        if msg_type.__class__._TYPE_SUPPORT is None:
+            raise NoTypeSupportImportedException
         [subscription_handle, subscription_pointer] = _rclpy.rclpy_create_subscription(
             self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
 
@@ -56,6 +61,8 @@ class Node:
     def create_client(self, srv_type, srv_name, qos_profile=qos_profile_services_default):
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
+        if srv_type.__class__._TYPE_SUPPORT is None:
+            raise NoTypeSupportImportedException
         [client_handle, client_pointer] = _rclpy.rclpy_create_client(
             self.handle,
             srv_type,
@@ -70,6 +77,8 @@ class Node:
             self, srv_type, srv_name, callback, qos_profile=qos_profile_services_default):
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
+        if srv_type.__class__._TYPE_SUPPORT is None:
+            raise NoTypeSupportImportedException
         [service_handle, service_pointer] = _rclpy.rclpy_create_service(
             self.handle,
             srv_type,

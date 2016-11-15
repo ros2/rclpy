@@ -39,3 +39,10 @@ class NoImplementationAvailableException(Exception):
 
     def __init__(self, *args):
         Exception.__init__(self, 'no rmw implementation with a Python extension available')
+
+
+class NoTypeSupportImportedException(Exception):
+    """Raised when there is no type support imported."""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'no type_support imported')

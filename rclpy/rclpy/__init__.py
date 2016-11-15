@@ -101,6 +101,9 @@ def spin_once(node, timeout_sec=None):
         response = _rclpy.rclpy_take_response(
             client.client_handle, client.srv_type.Response, client.sequence_number)
         if response:
+            # clients spawn their own thread to wait for a response in the wait_for_future function
+            # users can either use this mechanism or monitor the content of
+            # client.response themselves to check if a response have been received
             client.response = response
 
     service_ready_list = _rclpy.rclpy_get_ready_services(wait_set)
