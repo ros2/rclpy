@@ -616,11 +616,18 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Get list of non-null entities in waitset
+/*
+ * \param[in] entity_type string defining the entity ["subscription, client, service"]
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \return List of wait_set entities pointers ready for take
+ */
 static PyObject *
-rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
 {
+  const char * entity_type;
   PyObject * pywait_set;
-  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pywait_set)) {
     return NULL;
   }
 
@@ -630,17 +637,46 @@ rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  size_t sub_idx;
-  PyObject * sub_ready_list = PyList_New(0);
-  for (sub_idx = 0; sub_idx < wait_set->size_of_subscriptions; sub_idx++) {
-    if (wait_set->subscriptions[sub_idx]) {
-      PyList_Append(
-        sub_ready_list,
-        PyLong_FromUnsignedLongLong((uint64_t)&wait_set->subscriptions[sub_idx]->impl));
+  size_t idx;
+  size_t idx_max;
+  PyObject * entity_ready_list = PyList_New(0);
+  if (0 == strcmp(entity_type, "subscription")) {
+    idx_max = wait_set->size_of_subscriptions;
+    const rcl_subscription_t ** struct_ptr = wait_set->subscriptions;
+    for (idx = 0; idx < idx_max; idx++) {
+      if (struct_ptr[idx]) {
+        PyList_Append(
+          entity_ready_list,
+          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl));
+      }
     }
+  } else if (0 == strcmp(entity_type, "client")) {
+    idx_max = wait_set->size_of_clients;
+    const rcl_client_t ** struct_ptr = wait_set->clients;
+    for (idx = 0; idx < idx_max; idx++) {
+      if (struct_ptr[idx]) {
+        PyList_Append(
+          entity_ready_list,
+          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl));
+      }
+    }
+  } else if (0 == strcmp(entity_type, "service")) {
+    idx_max = wait_set->size_of_services;
+    const rcl_service_t ** struct_ptr = wait_set->services;
+    for (idx = 0; idx < idx_max; idx++) {
+      if (struct_ptr[idx]) {
+        PyList_Append(
+          entity_ready_list,
+          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl));
+      }
+    }
+  } else {
+    PyErr_Format(PyExc_RuntimeError,
+      "%s is not a known entity", entity_type);
+    return NULL;
   }
 
-  return sub_ready_list;
+  return entity_ready_list;
 }
 
 /// Wait until timeout is reached or event happened
@@ -651,60 +687,6 @@ rclpy_get_ready_subscriptions(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] timeout optional time to wait before waking up (in nanoseconds)
  * \return NULL
  */
-static PyObject *
-rclpy_get_ready_clients(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  if (!wait_set) {
-    PyErr_Format(PyExc_RuntimeError, "waiset is null");
-    return NULL;
-  }
-
-  size_t client_idx;
-  PyObject * client_ready_list = PyList_New(0);
-  for (client_idx = 0; client_idx < wait_set->size_of_clients; client_idx++) {
-    if (wait_set->clients[client_idx]) {
-      PyList_Append(
-        client_ready_list,
-        PyLong_FromUnsignedLongLong((uint64_t)&wait_set->clients[client_idx]->impl));
-    }
-  }
-
-  return client_ready_list;
-}
-
-static PyObject *
-rclpy_get_ready_services(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  if (!wait_set) {
-    PyErr_Format(PyExc_RuntimeError, "waiset is null\n");
-    return NULL;
-  }
-
-  size_t service_idx;
-  PyObject * service_ready_list = PyList_New(0);
-  for (service_idx = 0; service_idx < wait_set->size_of_services; service_idx++) {
-    if (wait_set->services[service_idx]) {
-      PyList_Append(
-        service_ready_list,
-        PyLong_FromUnsignedLongLong((uint64_t)&wait_set->services[service_idx]->impl));
-    }
-  }
-
-  return service_ready_list;
-}
-
 static PyObject *
 rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -1024,14 +1006,8 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
    "rclpy_wait_set_add_entity."},
 
-  {"rclpy_get_ready_subscriptions", rclpy_get_ready_subscriptions, METH_VARARGS,
+  {"rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
    "List non null subscriptions in waitset."},
-
-  {"rclpy_get_ready_clients", rclpy_get_ready_clients, METH_VARARGS,
-   "List non null clients in waitset."},
-
-  {"rclpy_get_ready_services", rclpy_get_ready_services, METH_VARARGS,
-   "List non null services in waitset."},
 
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},
