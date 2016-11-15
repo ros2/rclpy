@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 
+from rclpy.constants import S_TO_NS
 from rclpy.exceptions import InvalidRCLPYImplementation
 from rclpy.impl import excepthook
 from rclpy.impl import implementation_singleton
@@ -24,8 +25,6 @@ from rclpy.impl.rmw_implementation_tools import RCLPY_IMPLEMENTATION_ENV_NAME
 from rclpy.node import Node
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
-S_TO_NS = 1000 * 1000 * 1000
 
 # install the excepthook
 excepthook.install_rclpy_excepthook()
@@ -63,7 +62,9 @@ def spin_once(node, timeout_sec=None):
 
     _rclpy.rclpy_wait_set_init(
         wait_set,
-        len(node.subscriptions), 0, len(node.timers),
+        len(node.subscriptions),
+        0,
+        len(node.timers),
         len(node.clients),
         len(node.services))
 

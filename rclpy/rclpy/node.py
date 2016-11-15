@@ -15,13 +15,12 @@
 import rclpy
 
 from rclpy.client import Client
+from rclpy.constants import S_TO_NS
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.timer import Timer
-
-S_TO_NS = 1000 * 1000 * 1000
 
 
 class Node:
