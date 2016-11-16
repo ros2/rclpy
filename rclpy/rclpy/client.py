@@ -51,6 +51,8 @@ class Client:
     def call(self, req):
         self.sequence_number = _rclpy.rclpy_send_request(self.client_handle, req)
 
+    # TODO(mikaelarguedas) this function can only be used if nobody is spinning
+    # need to be updated once guard_conditions are supported
     def wait_for_future(self):
         thread1 = ResponseThread(self)
         thread1.start()
