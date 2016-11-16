@@ -682,6 +682,19 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+#define GET_LIST_READY_ENTITIES(ENTITY_TYPE) \
+    size_t idx; \
+    size_t idx_max; \
+    idx_max = wait_set->size_of_##ENTITY_TYPE##s; \
+    const rcl_##ENTITY_TYPE##_t ** struct_ptr = wait_set->ENTITY_TYPE##s; \
+    for (idx = 0; idx < idx_max; idx++) { \
+      if (struct_ptr[idx]) { \
+        PyList_Append( \
+          entity_ready_list, \
+          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl)); \
+      } \
+    } \
+    return entity_ready_list;
 /// Get list of non-null entities in waitset
 /*
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
@@ -705,41 +718,11 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * entity_ready_list = PyList_New(0);
   if (0 == strcmp(entity_type, "subscription")) {
-    size_t idx;
-    size_t idx_max;
-    idx_max = wait_set->size_of_subscriptions;
-    const rcl_subscription_t ** struct_ptr = wait_set->subscriptions;
-    for (idx = 0; idx < idx_max; idx++) {
-      if (struct_ptr[idx]) {
-        PyList_Append(
-          entity_ready_list,
-          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl));
-      }
-    }
+    GET_LIST_READY_ENTITIES(subscription)
   } else if (0 == strcmp(entity_type, "client")) {
-    size_t idx;
-    size_t idx_max;
-    idx_max = wait_set->size_of_clients;
-    const rcl_client_t ** struct_ptr = wait_set->clients;
-    for (idx = 0; idx < idx_max; idx++) {
-      if (struct_ptr[idx]) {
-        PyList_Append(
-          entity_ready_list,
-          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl));
-      }
-    }
+    GET_LIST_READY_ENTITIES(client)
   } else if (0 == strcmp(entity_type, "service")) {
-    size_t idx;
-    size_t idx_max;
-    idx_max = wait_set->size_of_services;
-    const rcl_service_t ** struct_ptr = wait_set->services;
-    for (idx = 0; idx < idx_max; idx++) {
-      if (struct_ptr[idx]) {
-        PyList_Append(
-          entity_ready_list,
-          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl));
-      }
-    }
+    GET_LIST_READY_ENTITIES(service)
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
