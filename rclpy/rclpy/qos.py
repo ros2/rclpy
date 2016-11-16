@@ -16,7 +16,7 @@ from enum import IntEnum
 from rclpy import _rclpy_implementation_rmw_agnostic
 
 
-class QoSProfile:
+class QoSProfile(object):
     """Define Quality of Service policies."""
 
     __slots__ = [
@@ -145,13 +145,13 @@ qos_profile_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profi
     'qos_profile_default')
 qos_profile_system_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
     'qos_profile_system_default')
-# NOTE(mikaelarguedas) the following are defined but not used because services and parameters
-# are not implemented in Python yet
 qos_profile_sensor_data = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
     'qos_profile_sensor_data')
-qos_profile_parameters = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
-    'qos_profile_parameters')
 qos_profile_services_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
     'qos_profile_services_default')
+# NOTE(mikaelarguedas) the following are defined but not used because
+# parameters are not implemented in Python yet
+qos_profile_parameters = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+    'qos_profile_parameters')
 qos_profile_parameter_events = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events')

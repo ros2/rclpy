@@ -17,7 +17,8 @@ class Subscription:
 
     def __init__(
             self, subscription_handle, subscription_pointer,
-            msg_type, topic, callback, qos_profile):
+            msg_type, topic, callback, qos_profile, node_handle):
+        self.node_handle = node_handle
         self.subscription_handle = subscription_handle
         self.subscription_pointer = subscription_pointer
         self.msg_type = msg_type

@@ -12,16 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
-
-class Publisher:
-    def __init__(self, publisher_handle, msg_type, topic, qos_profile, node_handle):
-        self.publisher_handle = publisher_handle
-        self.msg_type = msg_type
-        self.topic = topic
-        self.qos_profile = qos_profile
-        self.node_handle = node_handle
-
-    def publish(self, msg):
-        _rclpy.rclpy_publish(self.publisher_handle, msg)
+S_TO_NS = 1000 * 1000 * 1000

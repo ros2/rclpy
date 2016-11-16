@@ -15,13 +15,17 @@
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-class Publisher:
-    def __init__(self, publisher_handle, msg_type, topic, qos_profile, node_handle):
-        self.publisher_handle = publisher_handle
-        self.msg_type = msg_type
-        self.topic = topic
-        self.qos_profile = qos_profile
+class Service:
+    def __init__(
+            self, node_handle, service_handle, service_pointer,
+            srv_type, srv_name, callback, qos_profile):
         self.node_handle = node_handle
+        self.service_handle = service_handle
+        self.service_pointer = service_pointer
+        self.srv_type = srv_type
+        self.srv_name = srv_name
+        self.callback = callback
+        self.qos_profile = qos_profile
 
-    def publish(self, msg):
-        _rclpy.rclpy_publish(self.publisher_handle, msg)
+    def send_response(self, response, header):
+        _rclpy.rclpy_send_response(self.service_handle, response, header)
