@@ -703,10 +703,10 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  size_t idx;
-  size_t idx_max;
   PyObject * entity_ready_list = PyList_New(0);
   if (0 == strcmp(entity_type, "subscription")) {
+    size_t idx;
+    size_t idx_max;
     idx_max = wait_set->size_of_subscriptions;
     const rcl_subscription_t ** struct_ptr = wait_set->subscriptions;
     for (idx = 0; idx < idx_max; idx++) {
@@ -717,6 +717,8 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
       }
     }
   } else if (0 == strcmp(entity_type, "client")) {
+    size_t idx;
+    size_t idx_max;
     idx_max = wait_set->size_of_clients;
     const rcl_client_t ** struct_ptr = wait_set->clients;
     for (idx = 0; idx < idx_max; idx++) {
@@ -727,6 +729,8 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
       }
     }
   } else if (0 == strcmp(entity_type, "service")) {
+    size_t idx;
+    size_t idx_max;
     idx_max = wait_set->size_of_services;
     const rcl_service_t ** struct_ptr = wait_set->services;
     for (idx = 0; idx < idx_max; idx++) {
