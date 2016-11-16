@@ -68,20 +68,17 @@ def spin_once(node, timeout_sec=None):
         len(node.clients),
         len(node.services))
 
-    for entity in ['subscription', 'client', 'service']:
+    entities = {
+      'subscription': (node.subscriptions, 'subscription_handle'),
+      'client': (node.clients, 'client_handle'),
+      'service': (node.services, 'service_handle'),
+    }
+    for entity, (handles, handle_name) in entities.items():
         _rclpy.rclpy_wait_set_clear_entities(entity, wait_set)
-        if entity == 'subscription':
-            for subscription in node.subscriptions:
-                _rclpy.rclpy_wait_set_add_entity(
-                    entity, wait_set, subscription.subscription_handle)
-        elif entity == 'client':
-            for client in node.clients:
-                _rclpy.rclpy_wait_set_add_entity(
-                    entity, wait_set, client.client_handle)
-        elif entity == 'service':
-            for service in node.services:
-                _rclpy.rclpy_wait_set_add_entity(
-                    entity, wait_set, service.service_handle)
+        for h in handles:
+            _rclpy.rclpy_wait_set_add_entity(
+                entity, wait_set, h.__getattribute__(handle_name)
+            )
 
     if timeout_sec is None:
         timeout = -1
