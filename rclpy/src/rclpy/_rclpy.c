@@ -493,7 +493,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini %s: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to fini '%s': %s", entity_type, rcl_get_error_string_safe());
     Py_RETURN_FALSE;
   }
   Py_RETURN_TRUE;
@@ -526,7 +526,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini %s: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to fini '%s': %s", entity_type, rcl_get_error_string_safe());
     Py_RETURN_FALSE;
   }
   Py_RETURN_TRUE;
@@ -632,7 +632,7 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to %s from waitset: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to clear '%s' from wait set: %s", entity_type, rcl_get_error_string_safe());
     Py_RETURN_FALSE;
   }
   Py_RETURN_TRUE;
@@ -676,7 +676,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to add %s to wait set: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to add '%s' to wait set: %s", entity_type, rcl_get_error_string_safe());
     return NULL;
   }
   Py_RETURN_NONE;
