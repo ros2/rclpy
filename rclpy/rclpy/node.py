@@ -126,10 +126,7 @@ class Node:
                 return True
         return False
 
-    def get_topic_names_and_types(self):
-        return _rclpy.rclpy_get_topic_names_and_types(self.handle)
-
-    def __del__(self):
+    def destroy_node(self):
         for sub in self.subscriptions:
             _rclpy.rclpy_destroy_node_entity(
                 'subscription', sub.subscription_handle, self.handle)
@@ -140,3 +137,11 @@ class Node:
         for srv in self.services:
             _rclpy.rclpy_destroy_node_entity('service', srv.service_handle, self.handle)
         _rclpy.rclpy_destroy_entity('node', self.handle)
+        self.handle = None
+
+    def get_topic_names_and_types(self):
+        return _rclpy.rclpy_get_topic_names_and_types(self.handle)
+
+    def __del__(self):
+        if self.handle is not None:
+            self.destroy_node()
