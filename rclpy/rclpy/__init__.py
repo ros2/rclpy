@@ -69,9 +69,9 @@ def spin_once(node, timeout_sec=None):
         len(node.services))
 
     entities = {
-      'subscription': (node.subscriptions, 'subscription_handle'),
-      'client': (node.clients, 'client_handle'),
-      'service': (node.services, 'service_handle'),
+        'subscription': (node.subscriptions, 'subscription_handle'),
+        'client': (node.clients, 'client_handle'),
+        'service': (node.services, 'service_handle'),
     }
     for entity, (handles, handle_name) in entities.items():
         _rclpy.rclpy_wait_set_clear_entities(entity, wait_set)
