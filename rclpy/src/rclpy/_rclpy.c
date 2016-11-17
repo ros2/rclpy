@@ -683,18 +683,18 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 #define GET_LIST_READY_ENTITIES(ENTITY_TYPE) \
-    size_t idx; \
-    size_t idx_max; \
-    idx_max = wait_set->size_of_##ENTITY_TYPE##s; \
-    const rcl_##ENTITY_TYPE##_t ** struct_ptr = wait_set->ENTITY_TYPE##s; \
-    for (idx = 0; idx < idx_max; idx++) { \
-      if (struct_ptr[idx]) { \
-        PyList_Append( \
-          entity_ready_list, \
-          PyLong_FromUnsignedLongLong((uint64_t)&struct_ptr[idx]->impl)); \
-      } \
+  size_t idx; \
+  size_t idx_max; \
+  idx_max = wait_set->size_of_ ## ENTITY_TYPE ## s; \
+  const rcl_ ## ENTITY_TYPE ## _t ** struct_ptr = wait_set->ENTITY_TYPE ## s; \
+  for (idx = 0; idx < idx_max; idx ++) { \
+    if (struct_ptr[idx]) { \
+      PyList_Append( \
+        entity_ready_list, \
+        PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl)); \
     } \
-    return entity_ready_list;
+  } \
+  return entity_ready_list;
 /// Get list of non-null entities in waitset
 /*
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
