@@ -229,6 +229,62 @@ rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromUnsignedLongLong(timer_period);
 }
 
+/// Cancel the timer
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
+static PyObject *
+rclpy_cancel_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  rcl_ret_t ret = rcl_timer_cancel(timer);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to reset timer: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+/// Checks if timer is cancelled
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return False on failure:
+ *            Raise RuntimeError on rcl error
+ *         True on success
+ */
+static PyObject *
+rclpy_is_timer_canceled(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  bool is_ready;
+  rcl_ret_t ret = rcl_timer_is_canceled(timer, &is_ready);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to check timer ready: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  if (is_ready) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
+}
+
 /// Reset the timer
 /*
  * \param[in] pytimer Capsule pointing to the timer
@@ -1331,7 +1387,13 @@ static PyMethodDef rclpy_methods[] = {
    "Set the period of a timer."},
 
   {"rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
-   "Check if a timer as reached period."},
+   "Check if a timer as reached timeout."},
+
+  {"rclpy_cancel_timer", rclpy_cancel_timer, METH_VARARGS,
+   "Cancel a timer."},
+
+  {"rclpy_is_timer_canceled", rclpy_is_timer_canceled, METH_VARARGS,
+   "Check if a timer s canceled."},
 
   {"rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
    "Get the remaining time before timer is ready."},

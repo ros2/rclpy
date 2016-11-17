@@ -22,6 +22,7 @@ class WallTimer(object):
         [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(timer_period_ns)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
+        self._is_canceled = False
 
     @property
     def timer_period_ns(self):
@@ -34,6 +35,26 @@ class WallTimer(object):
         val = int(value)
         _rclpy.rclpy_change_timer_period(self.timer_handle, val)
         self._timer_period_ns = val
+
+    @property
+    def is_canceled(self):
+        val = _rclpy.rclpy_is_timer_canceled(self.timer_handle)
+        self._is_canceled = True
+        return val
+
+    @is_canceled.setter
+    def is_canceled(self, value):
+        raise NotImplementedError('canceled is set by calling the `timer_cancel` function')
+
+    def cancel(self):
+        _rclpy.rclpy_cancel_timer(self.timer_handle)
+        self._is_canceled = True
+        return
+
+    def reset(self):
+        _rclpy.rclpy_reset_timer(self.timer_handle)
+        self._is_canceled = False
+        return
 
     def time_since_last_call(self):
         return _rclpy.rclpy_time_since_last_call(self.timer_handle)

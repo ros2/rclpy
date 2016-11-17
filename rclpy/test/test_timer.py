@@ -26,39 +26,96 @@ def run_catch_report_raise(func, *args, **kwargs):
         raise
 
 
-def func_walltimer(args):
-    import time
-
+def func_zero_callback(args):
     import rclpy
+
     period = float(args[0])
-    max_time = float(args[1])
     print('period: %f' % period)
 
     rclpy.init()
-    node = rclpy.create_node('test_timer_node')
+    node = rclpy.create_node('test_timer_no_callback')
 
-    timestamps = []
+    callbacks = []
+    timer = node.create_timer(period, lambda: callbacks.append(len(callbacks)))
 
-    timer = node.create_timer(period, lambda: timestamps.append(time.time()))
-
-    begin_time = time.time()
-
-    nb_iterations = 0
-    while rclpy.ok() and time.time() - begin_time < max_time:
-        rclpy.spin_once(node)
-        nb_iterations += 1
+    rclpy.spin_once(node, period / 2.)
 
     node.destroy_timer(timer)
     rclpy.shutdown()
-    assert len(timestamps) == nb_iterations
-    assert nb_iterations * period >= max_time - period, \
-        'nb_iterations * period :%f < %f' % (nb_iterations * period, max_time - period)
+    assert len(callbacks) == 0, 'shouldn\'t have received any callback'
 
-    assert nb_iterations * period <= max_time + period, \
-        'nb_iterations * period :%f > %f' % (nb_iterations * period, max_time + period)
-    for i in range(1, nb_iterations):
-        # test if all timestamps are spaced by a period within a 10% margin
-        assert timestamps[i] - timestamps[i - 1] < period * 1.1
+    return True
+
+
+def func_number_callbacks(args):
+    import time
+
+    import rclpy
+
+    period = float(args[0])
+    print('period: %f' % period)
+
+    rclpy.init()
+    node = rclpy.create_node('test_timer_no_callback')
+
+    callbacks = []
+    timer = node.create_timer(period, lambda: callbacks.append(len(callbacks)))
+    begin_time = time.time()
+
+    while rclpy.ok() and time.time() - begin_time < 4.5 * period:
+        rclpy.spin_once(node, period / 10)
+
+    node.destroy_timer(timer)
+    rclpy.shutdown()
+    assert len(callbacks) == 4, 'should have received 4 callbacks, received %s' % str(callbacks)
+
+    return True
+
+
+def func_cancel_reset_timer(args):
+    import time
+
+    import rclpy
+
+    period = float(args[0])
+    print('period: %f' % period)
+
+    rclpy.init()
+    node = rclpy.create_node('test_timer_no_callback')
+
+    callbacks = []
+    timer = node.create_timer(period, lambda: callbacks.append(len(callbacks)))
+    begin_time = time.time()
+
+    assert not timer.is_canceled
+
+    while rclpy.ok() and time.time() - begin_time < 2.5 * period:
+        rclpy.spin_once(node, period / 10)
+
+    assert len(callbacks) == 2, 'should have received 2 callbacks, received %d' % len(callbacks)
+    assert not timer.is_canceled
+
+    timer.cancel()
+    assert timer.is_canceled
+    callbacks = []
+    begin_time = time.time()
+    while rclpy.ok() and time.time() - begin_time < 2.5 * period:
+        rclpy.spin_once(node, period / 10)
+
+    assert timer.is_canceled
+    assert [] == callbacks, \
+        'shouldn\'t have reveived any callback, received %d' % len(callbacks)
+
+    timer.reset()
+    assert not timer.is_canceled
+    begin_time = time.time()
+    while rclpy.ok() and time.time() - begin_time < 2.5 * period:
+        rclpy.spin_once(node, period / 10)
+
+    assert not timer.is_canceled
+    assert len(callbacks) == 2, 'should have received 2 callbacks, received %d' % len(callbacks)
+    node.destroy_timer(timer)
+    rclpy.shutdown()
 
     return True
 
@@ -75,13 +132,42 @@ def func_launch(function, args, message):
     pool.join()
 
 
-def test_timer_1hertz():
-    func_launch(func_walltimer, ['1', '5'], 'failed to validate timer')
+def test_timer_zero_callbacks10hertz():
+    func_launch(func_zero_callback, ['0.1'], 'received callbacks when not expected')
 
 
-def test_timer_10hertz():
-    func_launch(func_walltimer, ['0.1', '3'], 'failed to validate timer')
+def test_timer_zero_callbacks100hertz():
+    func_launch(func_zero_callback, ['0.01'], 'received callbacks when not expected')
 
 
-def test_timer_100hertz():
-    func_launch(func_walltimer, ['0.01', '1'], 'failed to validate timer')
+def test_timer_zero_callbacks1000hertz():
+    func_launch(func_zero_callback, ['0.001'], 'received callbacks when not expected')
+
+
+def test_timer_number_callbacks10hertz():
+    func_launch(func_number_callbacks, ['0.1'], 'didn\'t receive the expected number of callbacks')
+
+
+def test_timer_number_callbacks100hertz():
+    func_launch(
+        func_number_callbacks, ['0.01'], 'didn\'t receive the expected number of callbacks')
+
+
+def test_timer_number_callbacks1000hertz():
+    func_launch(
+        func_number_callbacks, ['0.001'], 'didn\'t receive the expected number of callbacks')
+
+
+def test_timer_cancel_reset_10hertz():
+    func_launch(
+        func_cancel_reset_timer, ['0.1'], 'didn\'t receive the expected number of callbacks')
+
+
+def test_timer_cancel_reset_100hertz():
+    func_launch(
+        func_cancel_reset_timer, ['0.01'], 'didn\'t receive the expected number of callbacks')
+
+
+def test_timer_cancel_reset_1000hertz():
+    func_launch(
+        func_cancel_reset_timer, ['0.001'], 'didn\'t receive the expected number of callbacks')
