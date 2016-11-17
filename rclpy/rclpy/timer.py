@@ -31,11 +31,9 @@ class WallTimer(object):
 
     @timer_period_ns.setter
     def timer_period_ns(self, value):
-        print('changing timer.timer_period_ns')
         val = int(value)
         _rclpy.rclpy_change_timer_period(self.timer_handle, val)
         self._timer_period_ns = val
-        print('done changing timer.timer_period_ns')
 
     def time_since_last_call(self):
         return _rclpy.rclpy_time_since_last_call(self.timer_handle)

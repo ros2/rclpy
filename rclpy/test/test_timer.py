@@ -48,19 +48,19 @@ def func_walltimer(args):
     timer = node.create_timer(period, test_callback)
 
     begin_time = time.time()
-    timer  # noqa
 
     while rclpy.ok() and time.time() - begin_time < max_time:
         rclpy.spin_once(node)
         nb_iterations += 1
-        print(timestamps)
 
     node.destroy_timer(timer)
     rclpy.shutdown()
     assert len(timestamps) == nb_iterations
-    assert nb_iterations * period > max_time - period and \
-        nb_iterations * period < max_time + period, \
-        'nb_iterations:%d' % nb_iterations
+    assert nb_iterations * period >= max_time - period, \
+        'nb_iterations * period :%f < %f' % (nb_iterations * period, max_time - period)
+
+    assert nb_iterations * period <= max_time + period, \
+        'nb_iterations * period :%f > %f' % (nb_iterations * period, max_time + period)
     for i in range(1, nb_iterations):
         assert timestamps[i] - timestamps[i - 1] < period * 1.1
 
@@ -83,9 +83,9 @@ def test_timer_1hertz():
     func_launch(func_walltimer, ['1', '5'], 'failed to validate timer')
 
 
-def test_timer_5hertz():
-    func_launch(func_walltimer, ['0.2', '3'], 'failed to validate timer')
+def test_timer_10hertz():
+    func_launch(func_walltimer, ['0.1', '3'], 'failed to validate timer')
 
 
-def test_timer_50hertz():
-    func_launch(func_walltimer, ['0.02', '1'], 'failed to validate timer')
+def test_timer_100hertz():
+    func_launch(func_walltimer, ['0.01', '1'], 'failed to validate timer')
