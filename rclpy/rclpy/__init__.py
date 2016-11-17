@@ -88,6 +88,14 @@ def spin_once(node, timeout_sec=None):
 
     _rclpy.rclpy_wait(wait_set, timeout)
 
+    timer_ready_list = _rclpy.rclpy_get_ready_entities('timer', wait_set)
+    for tmr in [t for t in node.timers if t.timer_pointer in timer_ready_list]:
+        if _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
+            _rclpy.rclpy_call_timer(tmr.timer_handle)
+            tmr.callback()
+        else:
+            print('timer is not ready, skipping callback')
+
     sub_ready_list = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
     for sub in [s for s in node.subscriptions if s.subscription_pointer in sub_ready_list]:
         msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
@@ -110,14 +118,6 @@ def spin_once(node, timeout_sec=None):
         if request:
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
-
-    timer_ready_list = _rclpy.rclpy_get_ready_entities('timer', wait_set)
-    for tmr in [t for t in node.timers if t.timer_pointer in timer_ready_list]:
-        if _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
-            _rclpy.rclpy_call_timer(tmr.timer_handle)
-            tmr.callback()
-        else:
-            print('timer is not ready, skipping callback')
 
 
 def ok():
