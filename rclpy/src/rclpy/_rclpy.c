@@ -166,20 +166,16 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Create a subscription
+/// Create a timer
 /*
- * This function will create a subscription and attach it to the provided topic name
- * This subscription will use the typesupport defined in the message module
- * provided as pymsg_type to send messages over the wire.
- *
- * \param[in] pynode Capsule pointing to the node to add the subscriber to
- * \param[in] pymsg_type Message module associated with the subscriber
- * \param[in] pytopic Python object containing the name of the topic to attach the subscription to
- * \param[in] pyqos_profile QoSProfile Python object with the profile of this subscriber
- * \return NULL on failure
+ * \param[in] period_nsec unsigned PyLong object storing the period of the timer in nanoseconds in a 64bits unsigned variable
+ * \return NULL on failure:
+ *            Raise RuntimeError on initialisation failure
+ *            Raise TypeError if argument of invalid type
+ *            Raise ValueError if argument cannot be converted to uint64_t
  *         List with 2 elements:
- *            first element: a Capsule pointing to the pointer of the created rcl_subscription_t * structure
- *            second element: an integer representing the memory address of the created rcl_subscription_t
+ *            first element: a Capsule pointing to the pointer of the created rcl_timer_t * structure
+ *            second element: an integer representing the memory address of the created rcl_timer_t
  */
 static PyObject *
 rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
@@ -207,6 +203,13 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
   return pylist;
 }
 
+/// Returns the period of the timer in nanoseconds
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         PyLong integer in nanoseconds on success
+ */
 static PyObject *
 rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -220,12 +223,19 @@ rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_timer_get_period(timer, &timer_period);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to reset timer: %s", rcl_get_error_string_safe());
+      "Failed to get timer period: %s", rcl_get_error_string_safe());
     return NULL;
   }
   return PyLong_FromUnsignedLongLong(timer_period);
 }
 
+/// Reset the timer
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
 static PyObject *
 rclpy_reset_timer(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -245,6 +255,13 @@ rclpy_reset_timer(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Checks if timer reached its timeout
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return False on failure:
+ *            Raise RuntimeError on rcl error
+ *         True on success
+ */
 static PyObject *
 rclpy_is_timer_ready(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -268,6 +285,13 @@ rclpy_is_timer_ready(PyObject * Py_UNUSED(self), PyObject * args)
   }
 }
 
+/// Set the last call time and start counting again
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
 static PyObject *
 rclpy_call_timer(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -287,6 +311,16 @@ rclpy_call_timer(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Update the timer period
+/*
+ * The change in period will take effect after the next timer call
+ *
+ * \param[in] pytimer Capsule pointing to the timer
+ * \param[in] period_nsec unsigned PyLongLong containing the new period in nanoseconds
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
 static PyObject *
 rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -308,6 +342,15 @@ rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Get the time before the timer will be ready
+/*
+ * the returned time can be negative, this means that the timer is ready and hasn't been called yet
+ *
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         PyLongLong containing the time until next call in nanoseconds
+ */
 static PyObject *
 rclpy_time_until_next_call(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -328,6 +371,13 @@ rclpy_time_until_next_call(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromLongLong(remaining_time);
 }
 
+/// Get the time since the timer has been called
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         unsigned PyLongLong containing the time since last call in nanoseconds
+ */
 static PyObject *
 rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -348,6 +398,21 @@ rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromUnsignedLongLong(elapsed_time);
 }
 
+/// Create a subscription
+/*
+ * This function will create a subscription and attach it to the provided topic name
+ * This subscription will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages over the wire.
+ *
+ * \param[in] pynode Capsule pointing to the node to add the subscriber to
+ * \param[in] pymsg_type Message module associated with the subscriber
+ * \param[in] pytopic Python object containing the name of the topic to attach the subscription to
+ * \param[in] pyqos_profile QoSProfile Python object with the profile of this subscriber
+ * \return NULL on failure
+ *         List with 2 elements:
+ *            first element: a Capsule pointing to the pointer of the created rcl_subscription_t * structure
+ *            second element: an integer representing the memory address of the created rcl_subscription_t
+ */
 static PyObject *
 rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -1260,22 +1325,22 @@ static PyMethodDef rclpy_methods[] = {
    "Reset a timer."},
 
   {"rclpy_call_timer", rclpy_call_timer, METH_VARARGS,
-   "Reset a timer."},
+   "Call a timer and starts counting again."},
 
   {"rclpy_change_timer_period", rclpy_change_timer_period, METH_VARARGS,
-   "Set period of a timer."},
+   "Set the period of a timer."},
 
   {"rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
    "Check if a timer as reached period."},
 
   {"rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
-   "Get the remaining time before next timer call."},
+   "Get the remaining time before timer is ready."},
 
   {"rclpy_time_since_last_call", rclpy_time_since_last_call, METH_VARARGS,
    "Get the elapsed time since last timer call."},
 
   {"rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
-   "Get period of a timer."},
+   "Get the period of a timer."},
 
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},
