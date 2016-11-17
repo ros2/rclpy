@@ -309,6 +309,46 @@ rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
+rclpy_time_until_next_call(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  int64_t remaining_time;
+  rcl_ret_t ret = rcl_timer_get_time_until_next_call(timer, &remaining_time);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get time until next timer call: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  return PyLong_FromLongLong(remaining_time);
+}
+
+static PyObject *
+rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  uint64_t elapsed_time;
+  rcl_ret_t ret = rcl_timer_get_time_since_last_call(timer, &elapsed_time);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get time since last timer call: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  return PyLong_FromUnsignedLongLong(elapsed_time);
+}
+
+static PyObject *
 rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode;
@@ -691,9 +731,9 @@ rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UN
  * \param[in] node_name string name of the node to be created
  * \param[in] number_of_subscriptions int
  * \param[in] number_of_guard_conditions int
- * \param[in] number_of_guard_timers int
- * \param[in] UNUSED FOR NOW number_of_clients int
- * \param[in] UNUSED FOR NOW number_of_services int
+ * \param[in] number_of_timers int
+ * \param[in] number_of_clients int
+ * \param[in] number_of_services int
  * \return NULL
  */
 static PyObject *
@@ -752,8 +792,6 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_wait_set_clear_clients(wait_set);
   } else if (0 == strcmp(entity_type, "service")) {
     ret = rcl_wait_set_clear_services(wait_set);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    ret = rcl_wait_set_clear_guard_conditions(wait_set);
   } else if (0 == strcmp(entity_type, "timer")) {
     ret = rcl_wait_set_clear_timers(wait_set);
   } else {
@@ -800,10 +838,6 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_wait_set_add_service(wait_set, service);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    rcl_guard_condition_t * guard_condition =
-      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
-    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
   } else if (0 == strcmp(entity_type, "timer")) {
     rcl_timer_t * timer =
       (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
@@ -1230,6 +1264,12 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
    "Check if a timer as reached period."},
+
+  {"rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
+   "Get the remaining time before next timer call."},
+
+  {"rclpy_time_since_last_call", rclpy_time_since_last_call, METH_VARARGS,
+   "Get the elapsed time since last timer call."},
 
   {"rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
    "Get period of a timer."},

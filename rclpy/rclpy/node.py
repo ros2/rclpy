@@ -28,7 +28,6 @@ class Node:
 
     def __init__(self, handle):
         self.clients = []
-        self.guard_conditions = []
         self.handle = handle
         self.publishers = []
         self.services = []

@@ -12,22 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy
-
-# TODO(mikaelarguedas): decide if implementing c callbacks make sense or not
-# TODO(mikaelarguedas): add time since last call/until next call function
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class Timer(object):
 
     def __init__(self, timer_handle, timer_pointer, callback, timer_period_ns):
-        [self.timer_handle, self.timer_pointer] = rclpy._rclpy.rclpy_create_timer(timer_period_ns)
+        [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(timer_period_ns)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
 
     @property
     def timer_period_ns(self):
-        val = rclpy._rclpy.rclpy_get_timer_period(self.timer_handle)
+        val = _rclpy.rclpy_get_timer_period(self.timer_handle)
         self._timer_period_ns = val
         return val
 
@@ -35,6 +32,12 @@ class Timer(object):
     def timer_period_ns(self, value):
         print('changing timer.timer_period_ns')
         val = int(value)
-        rclpy._rclpy.rclpy_change_timer_period(self.timer_handle, val)
+        _rclpy.rclpy_change_timer_period(self.timer_handle, val)
         self._timer_period_ns = val
         print('done changing timer.timer_period_ns')
+
+    def time_since_last_call(self):
+        return _rclpy.rclpy_time_since_last_call(self.timer_handle)
+
+    def time_until_next_call(self):
+        return _rclpy.rclpy_time_until_next_call(self.timer_handle)
