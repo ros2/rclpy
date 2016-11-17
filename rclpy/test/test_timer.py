@@ -28,27 +28,22 @@ def run_catch_report_raise(func, *args, **kwargs):
 
 def func_walltimer(args):
     import time
-    import functools
+
+    import rclpy
     period = float(args[0])
     max_time = float(args[1])
     print('period: %f' % period)
 
-    def timer_cb(timestamps):
-        timestamps.append(time.time())
-
-    import rclpy
-
     rclpy.init()
-    node = rclpy.create_node('talker')
+    node = rclpy.create_node('test_timer_node')
+
     timestamps = []
-    nb_iterations = 0
 
-    test_callback = functools.partial(timer_cb, timestamps=timestamps)
-
-    timer = node.create_timer(period, test_callback)
+    timer = node.create_timer(period, lambda: timestamps.append(time.time()))
 
     begin_time = time.time()
 
+    nb_iterations = 0
     while rclpy.ok() and time.time() - begin_time < max_time:
         rclpy.spin_once(node)
         nb_iterations += 1
@@ -62,6 +57,7 @@ def func_walltimer(args):
     assert nb_iterations * period <= max_time + period, \
         'nb_iterations * period :%f > %f' % (nb_iterations * period, max_time + period)
     for i in range(1, nb_iterations):
+        # test if all timestamps are spaced by a period within a 10% margin
         assert timestamps[i] - timestamps[i - 1] < period * 1.1
 
     return True
