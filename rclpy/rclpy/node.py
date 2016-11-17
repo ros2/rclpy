@@ -21,7 +21,7 @@ from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
-from rclpy.timer import Timer
+from rclpy.timer import WallTimer
 
 
 class Node:
@@ -96,7 +96,7 @@ class Node:
     def create_timer(self, timer_period_sec, callback):
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
         [timer_handle, timer_pointer] = _rclpy.rclpy_create_timer(timer_period_nsec)
-        timer = Timer(timer_handle, timer_pointer, callback, timer_period_nsec)
+        timer = WallTimer(timer_handle, timer_pointer, callback, timer_period_nsec)
 
         self.timers.append(timer)
         return timer

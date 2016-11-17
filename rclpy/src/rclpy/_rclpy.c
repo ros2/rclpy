@@ -686,6 +686,9 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   if (0 == strcmp(entity_type, "node")) {
     rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_node_fini(node);
+  } else if (0 == strcmp(entity_type, "timer")) {
+    rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_timer_fini(timer);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);

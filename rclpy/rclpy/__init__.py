@@ -111,7 +111,7 @@ def spin_once(node, timeout_sec=None):
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
 
-    timer_ready_list = _rclpy.rclpy_get_ready_timers(wait_set)
+    timer_ready_list = _rclpy.rclpy_get_ready_entities('timer', wait_set)
     for tmr in [t for t in node.timers if t.timer_pointer in timer_ready_list]:
         if _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
             _rclpy.rclpy_call_timer(tmr.timer_handle)
