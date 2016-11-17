@@ -85,32 +85,32 @@ def func_cancel_reset_timer(args):
     timer = node.create_timer(period, lambda: callbacks.append(len(callbacks)))
     begin_time = time.time()
 
-    assert not timer.is_canceled
+    assert not timer.is_canceled()
 
     while rclpy.ok() and time.time() - begin_time < 2.5 * period:
         rclpy.spin_once(node, period / 10)
 
     assert len(callbacks) == 2, 'should have received 2 callbacks, received %d' % len(callbacks)
-    assert not timer.is_canceled
+    assert not timer.is_canceled()
 
     timer.cancel()
-    assert timer.is_canceled
+    assert timer.is_canceled()
     callbacks = []
     begin_time = time.time()
     while rclpy.ok() and time.time() - begin_time < 2.5 * period:
         rclpy.spin_once(node, period / 10)
 
-    assert timer.is_canceled
+    assert timer.is_canceled()
     assert [] == callbacks, \
         'shouldn\'t have reveived any callback, received %d' % len(callbacks)
 
     timer.reset()
-    assert not timer.is_canceled
+    assert not timer.is_canceled()
     begin_time = time.time()
     while rclpy.ok() and time.time() - begin_time < 2.5 * period:
         rclpy.spin_once(node, period / 10)
 
-    assert not timer.is_canceled
+    assert not timer.is_canceled()
     assert len(callbacks) == 2, 'should have received 2 callbacks, received %d' % len(callbacks)
     node.destroy_timer(timer)
     rclpy.shutdown()

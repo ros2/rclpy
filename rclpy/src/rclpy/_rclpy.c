@@ -1393,7 +1393,7 @@ static PyMethodDef rclpy_methods[] = {
    "Cancel a timer."},
 
   {"rclpy_is_timer_canceled", rclpy_is_timer_canceled, METH_VARARGS,
-   "Check if a timer s canceled."},
+   "Check if a timer is canceled."},
 
   {"rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
    "Get the remaining time before timer is ready."},
