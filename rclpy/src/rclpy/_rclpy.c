@@ -852,7 +852,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to add %s to wait set: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to add '%s' to wait set: %s", entity_type, rcl_get_error_string_safe());
     return NULL;
   }
   Py_RETURN_NONE;
