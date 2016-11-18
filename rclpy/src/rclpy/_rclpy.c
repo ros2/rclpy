@@ -93,7 +93,10 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  assert(PyUnicode_Check(pytopic));
+  if(!PyUnicode_Check(pytopic)) {
+    PyErr_Format(PyExc_TypeError, "Argument pytopic is not a PyUnicode object");
+    return NULL;
+  }
 
   char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
@@ -481,7 +484,10 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  assert(PyUnicode_Check(pytopic));
+  if(!PyUnicode_Check(pytopic)) {
+    PyErr_Format(PyExc_TypeError, "Argument pytopic is not a PyUnicode object");
+    return NULL;
+  }
 
   char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
@@ -547,7 +553,10 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  assert(PyUnicode_Check(pyservice_name));
+  if(!PyUnicode_Check(pyservice_name)) {
+    PyErr_Format(PyExc_TypeError, "Argument pyservice_name is not a PyUnicode object");
+    return NULL;
+  }
 
   char * service_name = (char *)PyUnicode_1BYTE_DATA(pyservice_name);
 
@@ -600,8 +609,11 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OO", &pyclient, &pyrequest)) {
     return NULL;
   }
+  if (!PyCapsule_CheckExact(pyclient)) {
+    PyErr_Format(PyExc_TypeError, "Argument pyclient is not a valid PyCapsule");
+    return NULL;
+  }
   rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
-  assert(client != NULL);
 
   PyObject * pyrequest_type = PyObject_GetAttrString(pyrequest, "__class__");
   assert(pyrequest_type != NULL);
@@ -610,13 +622,14 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   assert(pymetaclass != NULL);
 
   PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
-
   assert(pyconvert_from_py != NULL);
+
   typedef void * (* convert_from_py_signature)(PyObject *);
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
   assert(convert_from_py != NULL);
+
   void * raw_ros_request = convert_from_py(pyrequest);
   int64_t sequence_number;
   rcl_ret_t ret = rcl_send_request(client, raw_ros_request, &sequence_number);
@@ -657,7 +670,10 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  assert(PyUnicode_Check(pyservice_name));
+  if(!PyUnicode_Check(pyservice_name)) {
+    PyErr_Format(PyExc_TypeError, "Argument pyservice_name is not a PyUnicode object");
+    return NULL;
+  }
 
   char * service_name = (char *)PyUnicode_1BYTE_DATA(pyservice_name);
 
@@ -712,11 +728,19 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OOO", &pyservice, &pyresponse, &pyheader)) {
     return NULL;
   }
+  if (!PyCapsule_CheckExact(pyservice)) {
+    PyErr_Format(PyExc_TypeError, "Argument pyservice is not a valid PyCapsule");
+    return NULL;
+  }
   rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
   assert(service != NULL);
 
+  if (!PyCapsule_CheckExact(pyheader)) {
+    PyErr_Format(PyExc_TypeError, "Argument pyheader is not a valid PyCapsule");
+    return NULL;
+  }
   rmw_request_id_t * header = (rmw_request_id_t *)PyCapsule_GetPointer(pyheader, NULL);
-  assert(service != NULL);
+  assert(header != NULL);
   PyObject * pyresponse_type = PyObject_GetAttrString(pyresponse, "__class__");
   assert(pyresponse_type != NULL);
 
@@ -1073,7 +1097,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OO", &pysubscription, &pymsg_type)) {
     return NULL;
   }
-
+  if (!PyCapsule_CheckExact(pysubscription)) {
+    PyErr_Format(PyExc_TypeError, "Argument pysubscription is not a valid PyCapsule");
+    return NULL;
+  }
   rcl_subscription_t * subscription =
     (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, NULL);
 
@@ -1084,9 +1111,9 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   typedef void *(* convert_from_py_signature)(PyObject *);
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
-
   PyObject * pymsg = PyObject_CallObject(pymsg_type, NULL);
 
+  assert(convert_from_py != NULL);
   void * taken_msg = convert_from_py(pymsg);
 
   rcl_ret_t ret = rcl_take(subscription, taken_msg, NULL);
@@ -1131,6 +1158,10 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OO", &pyservice, &pyrequest_type)) {
     return NULL;
   }
+  if (!PyCapsule_CheckExact(pyservice)) {
+    PyErr_Format(PyExc_TypeError, "Argument pyservice is not a valid PyCapsule");
+    return NULL;
+  }
 
   rcl_service_t * service =
     (rcl_service_t *)PyCapsule_GetPointer(pyservice, NULL);
@@ -1142,6 +1173,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   typedef void *(* convert_from_py_signature)(PyObject *);
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
+  assert(convert_from_py != NULL);
 
   PyObject * pysrv = PyObject_CallObject(pyrequest_type, NULL);
 
@@ -1192,7 +1224,10 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OOK", &pyclient, &pyresponse_type, &sequence_number)) {
     return NULL;
   }
-
+  if (!PyCapsule_CheckExact(pyclient)) {
+    PyErr_Format(PyExc_TypeError, "Argument pyservice is not a valid PyCapsule");
+    return NULL;
+  }
   rcl_client_t * client =
     (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
 
@@ -1283,8 +1318,6 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
-  assert(pynode != NULL);
-  assert(node != NULL);
   rcl_topic_names_and_types_t topic_names_and_types =
     rcl_get_zero_initialized_topic_names_and_types();
   rcl_ret_t ret = rcl_get_topic_names_and_types(node, &topic_names_and_types);
@@ -1296,8 +1329,13 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pynames_types_module = PyImport_ImportModule("rclpy.names_and_types");
   PyObject * pytopic_names_types_class = PyObject_GetAttrString(
     pynames_types_module, "TopicNamesAndTypes");
-  PyObject * pytopic_names_types = NULL;
-  pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
+  // PyObject * pytopic_names_types = NULL;
+  PyObject * pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
+  if (!pytopic_names_types) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Couldn't create instance TopicNamesAndTypes");
+    return NULL;
+  }
 
   PyObject * pytopic_names = PyList_New(topic_names_and_types.topic_count);
   PyObject * pytype_names = PyList_New(topic_names_and_types.topic_count);
@@ -1308,15 +1346,10 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
     PyList_SetItem(
       pytype_names, idx, PyUnicode_FromString(topic_names_and_types.type_names[idx]));
   }
-  assert(PySequence_Check(pytopic_names));
-  assert(pytopic_names != NULL);
   PyObject_SetAttrString(pytopic_names_types, "topic_names", pytopic_names);
-  assert(PySequence_Check(pytype_names));
-  assert(pytype_names != NULL);
   PyObject_SetAttrString(pytopic_names_types, "type_names", pytype_names);
   PyObject * pytopic_count = NULL;
   pytopic_count = PyLong_FromSize_t(topic_names_and_types.topic_count);
-  assert(pytopic_count != NULL);
   PyObject_SetAttrString(
     pytopic_names_types,
     "topic_count",
@@ -1329,7 +1362,6 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  assert(pytopic_names_types != NULL);
   return pytopic_names_types;
 }
 
