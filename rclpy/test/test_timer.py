@@ -103,7 +103,7 @@ def func_cancel_reset_timer(args):
 
     assert timer.is_canceled()
     assert [] == callbacks, \
-        "shouldn't have reveived any callback, received %d" % len(callbacks)
+        "shouldn't have received any callback, received %d" % len(callbacks)
 
     timer.reset()
     assert not timer.is_canceled()
