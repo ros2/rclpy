@@ -15,6 +15,7 @@
 import multiprocessing
 import sys
 import traceback
+from unittest.case import SkipTest
 
 
 def run_catch_report_raise(func, *args, **kwargs):
@@ -42,7 +43,7 @@ def func_zero_callback(args):
     node.destroy_timer(timer)
     rclpy.shutdown()
     assert len(callbacks) == 0, \
-        'shouldn\'t have received any callback, received %d' % len(callbacks)
+        "shouldn't have received any callback, received %d" % len(callbacks)
 
     return True
 
@@ -102,7 +103,7 @@ def func_cancel_reset_timer(args):
 
     assert timer.is_canceled()
     assert [] == callbacks, \
-        'shouldn\'t have reveived any callback, received %d' % len(callbacks)
+        "shouldn't have reveived any callback, received %d" % len(callbacks)
 
     timer.reset()
     assert not timer.is_canceled()
@@ -133,40 +134,47 @@ def func_launch(function, args, message):
 def test_timer_zero_callbacks10hertz():
     func_launch(func_zero_callback, ['0.1'], 'received callbacks when not expected')
 
+
 # TODO(mikaelarguedas) reenable these once timer have consistent behaviour
 # on every platform at high frequency
-# def test_timer_zero_callbacks100hertz():
-#     func_launch(func_zero_callback, ['0.01'], 'received callbacks when not expected')
+def test_timer_zero_callbacks100hertz():
+    raise SkipTest
+    func_launch(func_zero_callback, ['0.01'], 'received callbacks when not expected')
 
 
-# def test_timer_zero_callbacks1000hertz():
-#     func_launch(func_zero_callback, ['0.001'], 'received callbacks when not expected')
+def test_timer_zero_callbacks1000hertz():
+    raise SkipTest
+    func_launch(func_zero_callback, ['0.001'], 'received callbacks when not expected')
 
 
 def test_timer_number_callbacks10hertz():
-    func_launch(func_number_callbacks, ['0.1'], 'didn\'t receive the expected number of callbacks')
+    func_launch(func_number_callbacks, ['0.1'], "didn't receive the expected number of callbacks")
 
 
-# def test_timer_number_callbacks100hertz():
-#     func_launch(
-#         func_number_callbacks, ['0.01'], 'didn\'t receive the expected number of callbacks')
+def test_timer_number_callbacks100hertz():
+    raise SkipTest
+    func_launch(
+        func_number_callbacks, ['0.01'], "didn't receive the expected number of callbacks")
 
 
-# def test_timer_number_callbacks1000hertz():
-#     func_launch(
-#         func_number_callbacks, ['0.001'], 'didn\'t receive the expected number of callbacks')
+def test_timer_number_callbacks1000hertz():
+    raise SkipTest
+    func_launch(
+        func_number_callbacks, ['0.001'], "didn't receive the expected number of callbacks")
 
 
 def test_timer_cancel_reset_10hertz():
     func_launch(
-        func_cancel_reset_timer, ['0.1'], 'didn\'t receive the expected number of callbacks')
+        func_cancel_reset_timer, ['0.1'], "didn't receive the expected number of callbacks")
 
 
-# def test_timer_cancel_reset_100hertz():
-#     func_launch(
-#         func_cancel_reset_timer, ['0.01'], 'didn\'t receive the expected number of callbacks')
+def test_timer_cancel_reset_100hertz():
+    raise SkipTest
+    func_launch(
+        func_cancel_reset_timer, ['0.01'], "didn't receive the expected number of callbacks")
 
 
-# def test_timer_cancel_reset_1000hertz():
-#     func_launch(
-#         func_cancel_reset_timer, ['0.001'], 'didn\'t receive the expected number of callbacks')
+def test_timer_cancel_reset_1000hertz():
+    raise SkipTest
+    func_launch(
+        func_cancel_reset_timer, ['0.001'], "didn't receive the expected number of callbacks")
