@@ -15,11 +15,13 @@
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from rclpy.client import Client
+from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
+from rclpy.timer import WallTimer
 
 
 class Node:
@@ -30,6 +32,7 @@ class Node:
         self.publishers = []
         self.services = []
         self.subscriptions = []
+        self.timers = []
 
     def create_publisher(self, msg_type, topic, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
@@ -90,6 +93,14 @@ class Node:
         self.services.append(service)
         return service
 
+    def create_timer(self, timer_period_sec, callback):
+        timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
+        [timer_handle, timer_pointer] = _rclpy.rclpy_create_timer(timer_period_nsec)
+        timer = WallTimer(timer_handle, timer_pointer, callback, timer_period_nsec)
+
+        self.timers.append(timer)
+        return timer
+
     def destroy_publisher(self, publisher):
         for pub in self.publishers:
             if pub.publisher_handle == publisher.publisher_handle:
@@ -126,6 +137,15 @@ class Node:
                 return True
         return False
 
+    def destroy_timer(self, timer):
+        for tmr in self.timers:
+            if tmr.timer_handle == timer.timer_handle:
+                _rclpy.rclpy_destroy_entity(
+                    'timer', tmr.timer_handle)
+                self.timers.remove(tmr)
+                return True
+        return False
+
     def destroy_node(self):
         for sub in self.subscriptions:
             _rclpy.rclpy_destroy_node_entity(
@@ -136,6 +156,8 @@ class Node:
             _rclpy.rclpy_destroy_node_entity('client', cli.client_handle, self.handle)
         for srv in self.services:
             _rclpy.rclpy_destroy_node_entity('service', srv.service_handle, self.handle)
+        for tmr in self.timers:
+            _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
         _rclpy.rclpy_destroy_entity('node', self.handle)
         self.handle = None
 

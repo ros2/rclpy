@@ -166,6 +166,294 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Create a timer
+/*
+ * \param[in] period_nsec unsigned PyLong object storing the period of the timer in nanoseconds in a 64bits unsigned variable
+ * \return NULL on failure:
+ *            Raise RuntimeError on initialisation failure
+ *            Raise TypeError if argument of invalid type
+ *            Raise ValueError if argument cannot be converted to uint64_t
+ *         List with 2 elements:
+ *            first element: a Capsule pointing to the pointer of the created rcl_timer_t * structure
+ *            second element: an integer representing the memory address of the created rcl_timer_t
+ */
+static PyObject *
+rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  unsigned PY_LONG_LONG period_nsec;
+
+  if (!PyArg_ParseTuple(args, "K", &period_nsec)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *) PyMem_Malloc(sizeof(rcl_timer_t));
+  *timer = rcl_get_zero_initialized_timer();
+
+  rcl_ret_t ret = rcl_timer_init(timer, period_nsec, NULL, rcl_get_default_allocator());
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create subscriptions: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  PyObject * pytimer = PyCapsule_New(timer, NULL, NULL);
+  PyObject * pylist = PyList_New(0);
+  PyList_Append(pylist, pytimer);
+  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
+
+  return pylist;
+}
+
+/// Returns the period of the timer in nanoseconds
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         PyLong integer in nanoseconds on success
+ */
+static PyObject *
+rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  uint64_t timer_period;
+  rcl_ret_t ret = rcl_timer_get_period(timer, &timer_period);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get timer period: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  return PyLong_FromUnsignedLongLong(timer_period);
+}
+
+/// Cancel the timer
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
+static PyObject *
+rclpy_cancel_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  rcl_ret_t ret = rcl_timer_cancel(timer);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to reset timer: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+/// Checks if timer is cancelled
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return False on failure:
+ *            Raise RuntimeError on rcl error
+ *         True on success
+ */
+static PyObject *
+rclpy_is_timer_canceled(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  bool is_ready;
+  rcl_ret_t ret = rcl_timer_is_canceled(timer, &is_ready);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to check timer ready: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  if (is_ready) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
+}
+
+/// Reset the timer
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
+static PyObject *
+rclpy_reset_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  rcl_ret_t ret = rcl_timer_reset(timer);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to reset timer: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+/// Checks if timer reached its timeout
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return False on failure:
+ *            Raise RuntimeError on rcl error
+ *         True on success
+ */
+static PyObject *
+rclpy_is_timer_ready(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  bool is_ready;
+  rcl_ret_t ret = rcl_timer_is_ready(timer, &is_ready);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to check timer ready: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  if (is_ready) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
+}
+
+/// Set the last call time and start counting again
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
+static PyObject *
+rclpy_call_timer(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  rcl_ret_t ret = rcl_timer_call(timer);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to call timer: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+/// Update the timer period
+/*
+ * The change in period will take effect after the next timer call
+ *
+ * \param[in] pytimer Capsule pointing to the timer
+ * \param[in] period_nsec unsigned PyLongLong containing the new period in nanoseconds
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         NULL on success
+ */
+static PyObject *
+rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  unsigned PY_LONG_LONG period_nsec;
+  if (!PyArg_ParseTuple(args, "OK", &pytimer, &period_nsec)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  uint64_t old_period;
+  rcl_ret_t ret = rcl_timer_exchange_period(timer, period_nsec, &old_period);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to exchange timer period: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+/// Get the time before the timer will be ready
+/*
+ * the returned time can be negative, this means that the timer is ready and hasn't been called yet
+ *
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         PyLongLong containing the time until next call in nanoseconds
+ */
+static PyObject *
+rclpy_time_until_next_call(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  int64_t remaining_time;
+  rcl_ret_t ret = rcl_timer_get_time_until_next_call(timer, &remaining_time);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get time until next timer call: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  return PyLong_FromLongLong(remaining_time);
+}
+
+/// Get the time since the timer has been called
+/*
+ * \param[in] pytimer Capsule pointing to the timer
+ * \return NULL on failure:
+ *            Raise RuntimeError on rcl error
+ *         unsigned PyLongLong containing the time since last call in nanoseconds
+ */
+static PyObject *
+rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytimer;
+  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
+    return NULL;
+  }
+
+  rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
+  uint64_t elapsed_time;
+  rcl_ret_t ret = rcl_timer_get_time_since_last_call(timer, &elapsed_time);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get time since last timer call: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  return PyLong_FromUnsignedLongLong(elapsed_time);
+}
+
 /// Create a subscription
 /*
  * This function will create a subscription and attach it to the provided topic name
@@ -519,6 +807,9 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   if (0 == strcmp(entity_type, "node")) {
     rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_node_fini(node);
+  } else if (0 == strcmp(entity_type, "timer")) {
+    rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_timer_fini(timer);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -564,9 +855,9 @@ rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UN
  * \param[in] node_name string name of the node to be created
  * \param[in] number_of_subscriptions int
  * \param[in] number_of_guard_conditions int
- * \param[in] number_of_guard_timers int
- * \param[in] UNUSED FOR NOW number_of_clients int
- * \param[in] UNUSED FOR NOW number_of_services int
+ * \param[in] number_of_timers int
+ * \param[in] number_of_clients int
+ * \param[in] number_of_services int
  * \return NULL
  */
 static PyObject *
@@ -625,6 +916,8 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_wait_set_clear_clients(wait_set);
   } else if (0 == strcmp(entity_type, "service")) {
     ret = rcl_wait_set_clear_services(wait_set);
+  } else if (0 == strcmp(entity_type, "timer")) {
+    ret = rcl_wait_set_clear_timers(wait_set);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -669,10 +962,14 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_wait_set_add_service(wait_set, service);
+  } else if (0 == strcmp(entity_type, "timer")) {
+    rcl_timer_t * timer =
+      (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_timer(wait_set, timer);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
-    return NULL;
+    Py_RETURN_FALSE;
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -723,6 +1020,8 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     GET_LIST_READY_ENTITIES(client)
   } else if (0 == strcmp(entity_type, "service")) {
     GET_LIST_READY_ENTITIES(service)
+  } else if (0 == strcmp(entity_type, "timer")) {
+    GET_LIST_READY_ENTITIES(timer)
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -1048,6 +1347,8 @@ static PyMethodDef rclpy_methods[] = {
    "Create a Service."},
   {"rclpy_create_client", rclpy_create_client, METH_VARARGS,
    "Create a Client."},
+  {"rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
+   "Create a Timer."},
 
   {"rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
    "Destroy a Node entity."},
@@ -1075,6 +1376,33 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
    "List non null subscriptions in waitset."},
+
+  {"rclpy_reset_timer", rclpy_reset_timer, METH_VARARGS,
+   "Reset a timer."},
+
+  {"rclpy_call_timer", rclpy_call_timer, METH_VARARGS,
+   "Call a timer and starts counting again."},
+
+  {"rclpy_change_timer_period", rclpy_change_timer_period, METH_VARARGS,
+   "Set the period of a timer."},
+
+  {"rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
+   "Check if a timer as reached timeout."},
+
+  {"rclpy_cancel_timer", rclpy_cancel_timer, METH_VARARGS,
+   "Cancel a timer."},
+
+  {"rclpy_is_timer_canceled", rclpy_is_timer_canceled, METH_VARARGS,
+   "Check if a timer is canceled."},
+
+  {"rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
+   "Get the remaining time before timer is ready."},
+
+  {"rclpy_time_since_last_call", rclpy_time_since_last_call, METH_VARARGS,
+   "Get the elapsed time since last timer call."},
+
+  {"rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
+   "Get the period of a timer."},
 
   {"rclpy_wait", rclpy_wait, METH_VARARGS,
    "rclpy_wait."},
