@@ -1178,7 +1178,8 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   typedef void *(* convert_from_py_signature)(PyObject *);
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
-  assert(convert_from_py != NULL);
+  assert(convert_from_py != NULL &&
+    "unable to retrieve convert_from_py function, type_support mustn't have been imported");
 
   PyObject * pysrv = PyObject_CallObject(pyrequest_type, NULL);
 
