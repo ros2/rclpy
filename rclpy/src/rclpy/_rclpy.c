@@ -93,7 +93,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if(!PyUnicode_Check(pytopic)) {
+  if (!PyUnicode_Check(pytopic)) {
     PyErr_Format(PyExc_TypeError, "Argument pytopic is not a PyUnicode object");
     return NULL;
   }
@@ -157,6 +157,8 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
+  assert(convert_from_py != NULL &&
+    "unable to retrieve convert_from_py function, type_support mustn't have been imported");
   void * raw_ros_message = convert_from_py(pymsg);
 
   rcl_ret_t ret = rcl_publish(publisher, raw_ros_message);
@@ -484,7 +486,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if(!PyUnicode_Check(pytopic)) {
+  if (!PyUnicode_Check(pytopic)) {
     PyErr_Format(PyExc_TypeError, "Argument pytopic is not a PyUnicode object");
     return NULL;
   }
@@ -553,7 +555,7 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if(!PyUnicode_Check(pyservice_name)) {
+  if (!PyUnicode_Check(pyservice_name)) {
     PyErr_Format(PyExc_TypeError, "Argument pyservice_name is not a PyUnicode object");
     return NULL;
   }
@@ -614,6 +616,7 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
+  assert(client != NULL);
 
   PyObject * pyrequest_type = PyObject_GetAttrString(pyrequest, "__class__");
   assert(pyrequest_type != NULL);
@@ -628,7 +631,8 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
-  assert(convert_from_py != NULL);
+  assert(convert_from_py != NULL &&
+    "unable to retrieve convert_from_py function, type_support mustn't have been imported");
 
   void * raw_ros_request = convert_from_py(pyrequest);
   int64_t sequence_number;
@@ -670,7 +674,7 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if(!PyUnicode_Check(pyservice_name)) {
+  if (!PyUnicode_Check(pyservice_name)) {
     PyErr_Format(PyExc_TypeError, "Argument pyservice_name is not a PyUnicode object");
     return NULL;
   }
@@ -754,7 +758,8 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
-  assert(convert_from_py != NULL);
+  assert(convert_from_py != NULL &&
+    "unable to retrieve convert_from_py function, type_support mustn't have been imported");
   void * raw_ros_response = convert_from_py(pyresponse);
 
   rcl_ret_t ret = rcl_send_response(service, header, raw_ros_response);
@@ -1183,7 +1188,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to take from a service: %s", rcl_get_error_string_safe());
+      "Service failed to take request: %s", rcl_get_error_string_safe());
     return NULL;
   }
 
@@ -1251,7 +1256,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to take from a service: %s", rcl_get_error_string_safe());
+      "Client failed to take response: %s", rcl_get_error_string_safe());
     return NULL;
   }
 
@@ -1329,11 +1334,10 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pynames_types_module = PyImport_ImportModule("rclpy.names_and_types");
   PyObject * pytopic_names_types_class = PyObject_GetAttrString(
     pynames_types_module, "TopicNamesAndTypes");
-  // PyObject * pytopic_names_types = NULL;
   PyObject * pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
   if (!pytopic_names_types) {
     PyErr_Format(PyExc_RuntimeError,
-      "Couldn't create instance TopicNamesAndTypes");
+      "Couldn't create instance of TopicNamesAndTypes");
     return NULL;
   }
 
