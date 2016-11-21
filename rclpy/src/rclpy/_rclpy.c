@@ -1230,7 +1230,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   if (!PyCapsule_CheckExact(pyclient)) {
-    PyErr_Format(PyExc_TypeError, "Argument pyservice is not a valid PyCapsule");
+    PyErr_Format(PyExc_TypeError, "Argument pyclient is not a valid PyCapsule");
     return NULL;
   }
   rcl_client_t * client =
