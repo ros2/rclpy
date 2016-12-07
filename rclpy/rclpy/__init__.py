@@ -82,7 +82,7 @@ def spin_once(node, timeout_sec=None):
             )
 
     if timeout_sec is None:
-        timeout = -1
+        timeout = S_TO_NS
     else:
         timeout = int(float(timeout_sec) * S_TO_NS)
 
