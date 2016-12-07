@@ -49,6 +49,7 @@ class Client:
         self.response = None
 
     def call(self, req):
+        self.response = None
         self.sequence_number = _rclpy.rclpy_send_request(self.client_handle, req)
 
     # TODO(mikaelarguedas) this function can only be used if nobody is spinning
