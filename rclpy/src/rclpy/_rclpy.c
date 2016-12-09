@@ -38,7 +38,7 @@ static void catch_function(int signo)
   }
 }
 
-/// Create a sigint guard condition
+/// Create a sigint guard condition 
 /*
  * \return NULL on failure:
  *         List with 2 elements on success:
@@ -48,11 +48,10 @@ static void catch_function(int signo)
 static PyObject *
 rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  rcl_guard_condition_t * sigint_gc =
-    (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
+  rcl_guard_condition_t * sigint_gc = (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
   *sigint_gc = rcl_get_zero_initialized_guard_condition();
   rcl_guard_condition_options_t sigint_gc_options = rcl_guard_condition_get_default_options();
-
+  
   rcl_ret_t ret = rcl_guard_condition_init(sigint_gc, sigint_gc_options);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -1121,7 +1120,7 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pywait_set;
   PY_LONG_LONG timeout = -1;
-
+  
   signal(SIGINT, catch_function);
   if (!PyArg_ParseTuple(args, "O|K", &pywait_set, &timeout)) {
     return NULL;
