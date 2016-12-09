@@ -21,9 +21,53 @@
 #include <rmw/rmw.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
+#include <signal.h>
+
 #ifndef RMW_IMPLEMENTATION_SUFFIX
 #error "RMW_IMPLEMENTATION_SUFFIX is required to be set for _rclpy.c"
 #endif
+
+static rcl_guard_condition_t * g_sigint_gc_handle;
+
+/// Catch signals
+static void catch_function(int signo)
+{
+  (void) signo;
+  rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
+  }
+}
+
+/// Create a sigint guard condition
+/*
+ * \return NULL on failure:
+ *         List with 2 elements on success:
+ *            first element: a Capsule pointing to the pointer of the created rcl_guard_condition_t * structure
+ *            second element: an integer representing the memory address of the created rcl_guard_condition_t
+ */
+static PyObject *
+rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  rcl_guard_condition_t * sigint_gc =
+    (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
+  *sigint_gc = rcl_get_zero_initialized_guard_condition();
+  rcl_guard_condition_options_t sigint_gc_options = rcl_guard_condition_get_default_options();
+
+  rcl_ret_t ret = rcl_guard_condition_init(sigint_gc, sigint_gc_options);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create guard_condition: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+  g_sigint_gc_handle = sigint_gc;
+  PyObject * pylist = PyList_New(0);
+  PyList_Append(pylist, PyCapsule_New(sigint_gc, NULL, NULL));
+  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl));
+
+  return pylist;
+}
 
 /// Initialize rcl with default options, ignoring parameters
 static PyObject *
@@ -908,8 +952,6 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-
-  // TODO(jacquelinekay) Services.
   rcl_ret_t ret = rcl_wait_set_init(
     wait_set, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
     number_of_clients, number_of_services, rcl_get_default_allocator());
@@ -947,6 +989,8 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_wait_set_clear_services(wait_set);
   } else if (0 == strcmp(entity_type, "timer")) {
     ret = rcl_wait_set_clear_timers(wait_set);
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    ret = rcl_wait_set_clear_guard_conditions(wait_set);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -995,6 +1039,10 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_timer_t * timer =
       (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_wait_set_add_timer(wait_set, timer);
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    rcl_guard_condition_t * guard_condition =
+      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -1051,6 +1099,8 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     GET_LIST_READY_ENTITIES(service)
   } else if (0 == strcmp(entity_type, "timer")) {
     GET_LIST_READY_ENTITIES(timer)
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    GET_LIST_READY_ENTITIES(guard_condition)
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
@@ -1074,6 +1124,7 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pywait_set;
   PY_LONG_LONG timeout = -1;
 
+  signal(SIGINT, catch_function);
   if (!PyArg_ParseTuple(args, "O|K", &pywait_set, &timeout)) {
     return NULL;
   }
@@ -1387,6 +1438,9 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
    "Create a Timer."},
 
+  {"rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
+   "Create a guard_condition triggered when sigint is received."},
+
   {"rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
    "Destroy a Node entity."},
   {"rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
@@ -1464,6 +1518,7 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_get_rmw_implementation_identifier", rclpy_get_rmw_implementation_identifier,
    METH_NOARGS, "Retrieve the identifier for the active RMW implementation."},
+
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
