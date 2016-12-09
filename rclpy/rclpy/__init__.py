@@ -63,12 +63,11 @@ def spin_once(node, timeout_sec=None):
     _rclpy.rclpy_wait_set_init(
         wait_set,
         len(node.subscriptions),
-        1,
+        0,
         len(node.timers),
         len(node.clients),
         len(node.services))
 
-    [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
     entities = {
         'subscription': (node.subscriptions, 'subscription_handle'),
         'client': (node.clients, 'client_handle'),
@@ -81,8 +80,6 @@ def spin_once(node, timeout_sec=None):
             _rclpy.rclpy_wait_set_add_entity(
                 entity, wait_set, h.__getattribute__(handle_name)
             )
-    _rclpy.rclpy_wait_set_clear_entities('guard_condition', wait_set)
-    _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
 
     if timeout_sec is None:
         timeout = -1
@@ -90,10 +87,6 @@ def spin_once(node, timeout_sec=None):
         timeout = int(float(timeout_sec) * S_TO_NS)
 
     _rclpy.rclpy_wait(wait_set, timeout)
-
-    guard_condition_ready_list = _rclpy.rclpy_get_ready_entities('guard_condition', wait_set)
-    if sigint_gc_handle in guard_condition_ready_list:
-        raise KeyboardInterrupt
 
     timer_ready_list = _rclpy.rclpy_get_ready_entities('timer', wait_set)
     for tmr in [t for t in node.timers if t.timer_pointer in timer_ready_list]:
