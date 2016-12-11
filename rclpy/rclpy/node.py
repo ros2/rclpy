@@ -28,11 +28,19 @@ class Node:
 
     def __init__(self, handle):
         self.clients = []
-        self.handle = handle
+        self._handle = handle
         self.publishers = []
         self.services = []
         self.subscriptions = []
         self.timers = []
+
+    @property
+    def handle(self):
+        return self._handle
+
+    @handle.setter
+    def handle(self, value):
+        raise AttributeError('handle cannot be modified after node creation')
 
     def create_publisher(self, msg_type, topic, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
@@ -160,7 +168,7 @@ class Node:
             for tmr in self.timers:
                 _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
             _rclpy.rclpy_destroy_entity('node', self.handle)
-            self.handle = None
+            self._handle = None
 
     def get_topic_names_and_types(self):
         return _rclpy.rclpy_get_topic_names_and_types(self.handle)
