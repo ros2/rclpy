@@ -155,24 +155,35 @@ class Node:
         return False
 
     def destroy_node(self):
+        ret = True
         if self.handle is not None:
             for sub in self.subscriptions:
-                _rclpy.rclpy_destroy_node_entity(
+                ret = ret and _rclpy.rclpy_destroy_node_entity(
                     'subscription', sub.subscription_handle, self.handle)
+                self.subscriptions.remove(sub)
             for pub in self.publishers:
-                _rclpy.rclpy_destroy_node_entity('publisher', pub.publisher_handle, self.handle)
+                ret = ret and _rclpy.rclpy_destroy_node_entity(
+                    'publisher', pub.publisher_handle, self.handle)
+                self.publishers.remove(pub)
             for cli in self.clients:
-                _rclpy.rclpy_destroy_node_entity('client', cli.client_handle, self.handle)
+                ret = ret and _rclpy.rclpy_destroy_node_entity(
+                    'client', cli.client_handle, self.handle)
+                self.clients.remove(cli)
             for srv in self.services:
-                _rclpy.rclpy_destroy_node_entity('service', srv.service_handle, self.handle)
+                ret = ret and _rclpy.rclpy_destroy_node_entity(
+                    'service', srv.service_handle, self.handle)
+                self.services.remove(srv)
             for tmr in self.timers:
-                _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
-            _rclpy.rclpy_destroy_entity('node', self.handle)
+                ret = ret and _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
+                self.timers.remove(tmr)
+            ret = ret and _rclpy.rclpy_destroy_entity('node', self.handle)
             self._handle = None
+        else:
+            ret = False
+        return ret
 
     def get_topic_names_and_types(self):
         return _rclpy.rclpy_get_topic_names_and_types(self.handle)
 
     def __del__(self):
-        if self.handle is not None:
-            self.destroy_node()
+        self.destroy_node()
