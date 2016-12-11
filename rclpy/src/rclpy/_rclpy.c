@@ -320,14 +320,14 @@ rclpy_is_timer_canceled(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, NULL);
-  bool is_ready;
-  rcl_ret_t ret = rcl_timer_is_canceled(timer, &is_ready);
+  bool is_canceled;
+  rcl_ret_t ret = rcl_timer_is_canceled(timer, &is_canceled);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to check timer ready: %s", rcl_get_error_string_safe());
     return NULL;
   }
-  if (is_ready) {
+  if (is_canceled) {
     Py_RETURN_TRUE;
   } else {
     Py_RETURN_FALSE;
