@@ -113,8 +113,8 @@ class QoSHistoryPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT = 0
-    RMW_QOS_POLICY_KEEP_LAST_HISTORY = 1
-    RMW_QOS_POLICY_KEEP_ALL_HISTORY = 2
+    RMW_QOS_POLICY_HISTORY_KEEP_LAST = 1
+    RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
 
 
 class QoSReliabilityPolicy(IntEnum):
@@ -125,8 +125,8 @@ class QoSReliabilityPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT = 0
-    RMW_QOS_POLICY_RELIABLE = 1
-    RMW_QOS_POLICY_BEST_EFFORT = 2
+    RMW_QOS_POLICY_RELIABILITY_RELIABLE = 1
+    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
 
 
 class QoSDurabilityPolicy(IntEnum):
@@ -137,8 +137,8 @@ class QoSDurabilityPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
-    RMW_QOS_POLICY_TRANSIENT_LOCAL_DURABILITY = 1
-    RMW_QOS_POLICY_VOLATILE_DURABILITY = 2
+    RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL = 1
+    RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
 
 
 qos_profile_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
