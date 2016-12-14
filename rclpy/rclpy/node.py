@@ -28,11 +28,19 @@ class Node:
 
     def __init__(self, handle):
         self.clients = []
-        self.handle = handle
+        self._handle = handle
         self.publishers = []
         self.services = []
         self.subscriptions = []
         self.timers = []
+
+    @property
+    def handle(self):
+        return self._handle
+
+    @handle.setter
+    def handle(self, value):
+        raise AttributeError('handle cannot be modified after node creation')
 
     def create_publisher(self, msg_type, topic, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
@@ -147,23 +155,34 @@ class Node:
         return False
 
     def destroy_node(self):
+        ret = True
+        if self.handle is None:
+            return ret
         for sub in self.subscriptions:
-            _rclpy.rclpy_destroy_node_entity(
+            ret &= _rclpy.rclpy_destroy_node_entity(
                 'subscription', sub.subscription_handle, self.handle)
+            self.subscriptions.remove(sub)
         for pub in self.publishers:
-            _rclpy.rclpy_destroy_node_entity('publisher', pub.publisher_handle, self.handle)
+            ret &= _rclpy.rclpy_destroy_node_entity(
+                'publisher', pub.publisher_handle, self.handle)
+            self.publishers.remove(pub)
         for cli in self.clients:
-            _rclpy.rclpy_destroy_node_entity('client', cli.client_handle, self.handle)
+            ret &= _rclpy.rclpy_destroy_node_entity(
+                'client', cli.client_handle, self.handle)
+            self.clients.remove(cli)
         for srv in self.services:
-            _rclpy.rclpy_destroy_node_entity('service', srv.service_handle, self.handle)
+            ret &= _rclpy.rclpy_destroy_node_entity(
+                'service', srv.service_handle, self.handle)
+            self.services.remove(srv)
         for tmr in self.timers:
-            _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
-        _rclpy.rclpy_destroy_entity('node', self.handle)
-        self.handle = None
+            ret &= _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
+            self.timers.remove(tmr)
+        ret &= _rclpy.rclpy_destroy_entity('node', self.handle)
+        self._handle = None
+        return ret
 
     def get_topic_names_and_types(self):
         return _rclpy.rclpy_get_topic_names_and_types(self.handle)
 
     def __del__(self):
-        if self.handle is not None:
-            self.destroy_node()
+        self.destroy_node()
