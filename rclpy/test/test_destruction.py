@@ -28,11 +28,11 @@ def run_catch_report_raise(func, *args, **kwargs):
 
 def func_destroy_node():
     import rclpy
+    rclpy.init()
+    node = rclpy.create_node('test_node1')
+    ret = True
     try:
-        rclpy.init()
-        node = rclpy.create_node('test_node1')
         node.destroy_node()
-        ret = True
     except RuntimeError:
         ret = False
     finally:
@@ -45,7 +45,7 @@ def func_destroy_node_twice():
     rclpy.init()
     node = rclpy.create_node('test_node2')
     assert node.destroy_node() is True
-    assert node.destroy_node() is False
+    assert node.destroy_node() is True
     return True
 
 
@@ -55,9 +55,9 @@ def func_destroy_corrupted_node():
     node = rclpy.create_node('test_node2')
     assert node.destroy_node() is True
     node._handle = 'garbage'
+    ret = False
     try:
         node.destroy_node()
-        ret = False
     except SystemError:
         ret = True
     finally:
@@ -82,11 +82,12 @@ def func_destroy_timers():
     assert 1 == len(node.timers)
     try:
         assert node.destroy_node() is True
+    except SystemError:
+        ret = False
+    else:
         assert 0 == len(node.timers)
         assert node.handle is None
         ret = True
-    except SystemError:
-        ret = False
     finally:
         rclpy.shutdown()
         return ret
@@ -121,13 +122,14 @@ def func_destroy_entities():
 
     try:
         assert node.destroy_node() is True
+    except SystemError:
+        ret = False
+    else:
         assert 0 == len(node.timers)
         assert 0 == len(node.publishers)
         assert 0 == len(node.subscriptions)
         assert node.handle is None
         ret = True
-    except SystemError:
-        ret = False
     finally:
         rclpy.shutdown()
         return ret
