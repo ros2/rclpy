@@ -119,7 +119,10 @@ def spin_once(node, timeout_sec=None):
 
     service_ready_list = _rclpy.rclpy_get_ready_entities('service', wait_set)
     for srv in [s for s in node.services if s.service_pointer in service_ready_list]:
-        [request, header] = _rclpy.rclpy_take_request(srv.service_handle, srv.srv_type.Request)
+        request_and_header = _rclpy.rclpy_take_request(srv.service_handle, srv.srv_type.Request)
+        if request_and_header is None:
+            continue
+        [request, header] = request_and_header
         if request:
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
