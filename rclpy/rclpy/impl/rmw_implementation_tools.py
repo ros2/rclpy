@@ -13,13 +13,11 @@
 # limitations under the License.
 
 import importlib
-import logging
 
 import ament_index_python
 
 from rclpy.exceptions import ImplementationAlreadyImportedException
 from rclpy.exceptions import InvalidRCLPYImplementation
-from rclpy.exceptions import NoImplementationAvailableException
 from rclpy.impl.excepthook import add_unhandled_exception_addendum
 
 __rmw_implementations = None
@@ -85,23 +83,8 @@ def import_rmw_implementation():
     if __rmw_implementation_module is not None:
         return __rmw_implementation_module
     available_implementations = get_rmw_implementations()
-    if __selected_rmw_implementation is None:
-        logger = logging.getLogger('rclpy')
-        # prefer FastRTPS, otherwise first in alphabetical order
-        # the same logic is implemented in
-        # rmw_implementation_cmake/cmake/get_default_rmw_implementation.cmake
-        default_impl = 'rmw_fastrtps_cpp'
-        if default_impl in available_implementations:
-            select_rmw_implementation(default_impl)
-        elif available_implementations:
-            select_rmw_implementation(available_implementations[0])  # select the first one
-        else:
-            raise NoImplementationAvailableException()
-        logger.debug("Implicitly selecting the '{0}' rmw implementation."
-                     .format(__selected_rmw_implementation))
-    module_name = '._rclpy__{rmw_implementation}'.format(
-        rmw_implementation=__selected_rmw_implementation,
-    )
+    __selected_rmw_implementation = 'rmw_implementation'
+    module_name = '._rclpy'
     try:
         __rmw_implementation_module = importlib.import_module(module_name, package='rclpy')
     except ImportError as exc:

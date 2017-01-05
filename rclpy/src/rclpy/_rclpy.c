@@ -23,10 +23,6 @@
 
 #include <signal.h>
 
-#ifndef RMW_IMPLEMENTATION_SUFFIX
-#error "RMW_IMPLEMENTATION_SUFFIX is required to be set for _rclpy.c"
-#endif
-
 static rcl_guard_condition_t * g_sigint_gc_handle;
 
 /// Catch signals
@@ -1535,10 +1531,8 @@ static struct PyModuleDef _rclpymodule = {
   NULL
 };
 
-#define MAKE_FN_NAME(x) PyInit__rclpy ## x
-#define FUNCTION_NAME(suffix) MAKE_FN_NAME(suffix)
-
 /// Init function of this module
-PyMODINIT_FUNC FUNCTION_NAME(RMW_IMPLEMENTATION_SUFFIX)(void) {
+PyMODINIT_FUNC PyInit__rclpy(void)
+{
   return PyModule_Create(&_rclpymodule);
 }

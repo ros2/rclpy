@@ -47,7 +47,7 @@ def func_import_each_available_rmw_implementation(rmw_implementation):
     return ctypes.c_bool(True)
 
 
-def test_import_each_available_rmw_implementation():
+def _test_import_each_available_rmw_implementation():
     from rclpy.impl.rmw_implementation_tools import get_rmw_implementations
     for rmw_implementation in get_rmw_implementations():
         pool = multiprocessing.Pool(1)
@@ -82,7 +82,7 @@ def func_select_rmw_implementation_by_environment(rmw_implementation):
     return ctypes.c_bool(True)
 
 
-def test_select_rmw_implementation_by_environment():
+def _test_select_rmw_implementation_by_environment():
     from rclpy.impl.rmw_implementation_tools import get_rmw_implementations
     orig_rclpy_implementation_env = os.environ.get('RCLPY_IMPLEMENTATION', None)
     for rmw_implementation in get_rmw_implementations():

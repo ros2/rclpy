@@ -35,60 +35,50 @@ function(set_properties _targetname _build_type)
     SUFFIX "${PythonExtra_EXTENSION_EXTENSION}")
 endfunction()
 
-macro(target)
-  if(NOT target_suffix STREQUAL "")
-    get_rcl_information("${rmw_implementation}" "rcl${target_suffix}")
-  endif()
-  # Only build the library if a C typesupport exists for the rmw_implementation
-  get_rmw_typesupport(typesupport_impls "${rmw_implementation}" LANGUAGE "c")
-  if(typesupport_impls STREQUAL "")
-    message(STATUS "Skipping rclpy for '${rmw_implementation}' because no C "
-      "typesupport library was found.")
-    return()
-  endif()
+# Only build the library if a C typesupport exists
+get_rmw_typesupport(typesupport_impls "rmw_implementation" LANGUAGE "c")
+if(typesupport_impls STREQUAL "")
+  message(STATUS "Skipping rclpy because no C typesupport library was found.")
+  return()
+endif()
 
-  add_library(
-    ${PROJECT_NAME}${target_suffix}
-    SHARED src/rclpy/_rclpy.c
-  )
-  target_compile_definitions(${PROJECT_NAME}${target_suffix}
-    PRIVATE "RMW_IMPLEMENTATION_SUFFIX=${target_suffix}")
+add_library(
+  ${PROJECT_NAME}
+  SHARED src/rclpy/_rclpy.c
+)
 
-  set_properties(${PROJECT_NAME}${target_suffix} "")
-  if(WIN32)
-    set_properties(${PROJECT_NAME}${target_suffix} "_DEBUG")
-    set_properties(${PROJECT_NAME}${target_suffix} "_MINSIZEREL")
-    set_properties(${PROJECT_NAME}${target_suffix} "_RELEASE")
-    set_properties(${PROJECT_NAME}${target_suffix} "_RELWITHDEBINFO")
-  endif()
+set_properties(${PROJECT_NAME} "")
+if(WIN32)
+  set_properties(${PROJECT_NAME} "_DEBUG")
+  set_properties(${PROJECT_NAME} "_MINSIZEREL")
+  set_properties(${PROJECT_NAME} "_RELEASE")
+  set_properties(${PROJECT_NAME} "_RELWITHDEBINFO")
+endif()
 
-  target_link_libraries(${PROJECT_NAME}${target_suffix}
-    ${PythonExtra_LIBRARIES}
-  )
+target_link_libraries(${PROJECT_NAME}
+  ${PythonExtra_LIBRARIES}
+)
 
-  ament_target_dependencies(${PROJECT_NAME}${target_suffix}
-    "rcl${target_suffix}"
-  )
+ament_target_dependencies(${PROJECT_NAME}
+  "rcl"
+)
 
-  target_include_directories(${PROJECT_NAME}${target_suffix}
-    PUBLIC
-    ${PythonExtra_INCLUDE_DIRS}
-  )
+target_include_directories(${PROJECT_NAME}
+  PUBLIC
+  ${PythonExtra_INCLUDE_DIRS}
+)
 
-  # make an entry in the ament index for each rmw implementation for which
-  # a rclpy Python extension is built
-  # this is used in the Python code to avoid trying to import a Python
-  # extension for rmw implementations which do not have one
-  ament_index_register_resource("rmw_python_extension"
-    PACKAGE_NAME ${rmw_implementation}
-  )
+# make an entry in the ament index for each rmw implementation for which
+# a rclpy Python extension is built
+# this is used in the Python code to avoid trying to import a Python
+# extension for rmw implementations which do not have one
+ament_index_register_resource("rmw_python_extension"
+  PACKAGE_NAME ${rmw_implementation}
+)
 
-  install(TARGETS ${PROJECT_NAME}${target_suffix}
-    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
-  )
-endmacro()
-
-call_for_each_rmw_implementation(target)
+install(TARGETS ${PROJECT_NAME}
+  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+)
 
 
 add_library(
