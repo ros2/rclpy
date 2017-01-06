@@ -13,20 +13,6 @@
 # limitations under the License.
 
 
-class ImplementationAlreadyImportedException(Exception):
-    """Raised on select_rmw_implemenation() after import_rmw_implementation() has been called."""
-
-    def __init__(self, *args):
-        Exception.__init__(self, 'rmw implementation already imported', *args)
-
-
-class InvalidRCLPYImplementation(Exception):
-    """Raised when an invalid RCLPYImplementation is requested."""
-
-    def __init__(self, *args):
-        Exception.__init__(self, 'requested invalid rmw implementation', *args)
-
-
 class NotInitializedException(Exception):
     """Raised when the rclpy implementation is accessed before rclpy.init()."""
 
