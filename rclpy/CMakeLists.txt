@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.5)
 
 project(rclpy C)
 
+if(ANDROID)
+  message(STATUS "rclpy does not target Android, skipping...")
+  return()
+endif()
+
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rcl REQUIRED)
