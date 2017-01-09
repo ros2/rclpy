@@ -13,13 +13,9 @@
 # limitations under the License.
 
 import importlib
-import logging
 
 import ament_index_python
 
-from rclpy.exceptions import ImplementationAlreadyImportedException
-from rclpy.exceptions import InvalidRCLPYImplementation
-from rclpy.exceptions import NoImplementationAvailableException
 from rclpy.impl.excepthook import add_unhandled_exception_addendum
 
 __rmw_implementations = None
@@ -27,7 +23,7 @@ __selected_rmw_implementation = None
 __rmw_implementation_module = None
 
 AMENT_INDEX_NAME = 'rmw_python_extension'
-RCLPY_IMPLEMENTATION_ENV_NAME = 'RCLPY_IMPLEMENTATION'
+RMW_IMPLEMENTATION_ENV_NAME = 'RMW_IMPLEMENTATION'
 
 
 def reload_rmw_implementations():
@@ -44,39 +40,15 @@ def get_rmw_implementations():
     return __rmw_implementations
 
 
-def select_rmw_implementation(rmw_implementation):
-    """
-    Set the rmw implementation to be imported by name.
-
-    Can be called multiple times, but only before calling :py:func:`rclpy.init`
-    and/or :py:func:`import_rmw_implementation`.
-
-    If given an rmw implementation that is not in the list provided by
-    :py:func:`get_rmw_implementations` then the
-    :py:class:`InvalidRCLPYImplementation` exception will be raised.
-
-    :raises: :py:class:`ImplementationAlreadyImportedException` if
-        :py:func:`import_rmw_implementation` has already been called and the
-        module already imported.
-    """
-    global __selected_rmw_implementation
-    if __rmw_implementation_module is not None:
-        raise ImplementationAlreadyImportedException()
-    if rmw_implementation not in get_rmw_implementations():
-        raise InvalidRCLPYImplementation()
-    __selected_rmw_implementation = rmw_implementation
-
-
 def import_rmw_implementation():
     """
     Import and return the selected or default rmw implementation.
 
+    The selected implementation is defined by the the environment variable
+    `RMW_IMPLEMENATION`.
     This function can be called multiple times, but the rmw implementation is
     only imported the first time.
     Subsequent calls will return a cached rmw implementation module.
-
-    If :py:func:`select_rmw_implementation` has not previously been called then
-    a default implementation will be selected implicitly before loading.
 
     :raises: :py:class:`NoImplementationAvailableException` if there are no
         implementations available.
@@ -85,23 +57,8 @@ def import_rmw_implementation():
     if __rmw_implementation_module is not None:
         return __rmw_implementation_module
     available_implementations = get_rmw_implementations()
-    if __selected_rmw_implementation is None:
-        logger = logging.getLogger('rclpy')
-        # prefer FastRTPS, otherwise first in alphabetical order
-        # the same logic is implemented in
-        # rmw_implementation_cmake/cmake/get_default_rmw_implementation.cmake
-        default_impl = 'rmw_fastrtps_cpp'
-        if default_impl in available_implementations:
-            select_rmw_implementation(default_impl)
-        elif available_implementations:
-            select_rmw_implementation(available_implementations[0])  # select the first one
-        else:
-            raise NoImplementationAvailableException()
-        logger.debug("Implicitly selecting the '{0}' rmw implementation."
-                     .format(__selected_rmw_implementation))
-    module_name = '._rclpy__{rmw_implementation}'.format(
-        rmw_implementation=__selected_rmw_implementation,
-    )
+    __selected_rmw_implementation = 'rmw_implementation'
+    module_name = '._rclpy'
     try:
         __rmw_implementation_module = importlib.import_module(module_name, package='rclpy')
     except ImportError as exc:
@@ -114,7 +71,7 @@ def import_rmw_implementation():
                 rmw_implementations_msg = '  No rmw implementation has a Python extension.'
             log_args = [
                 __selected_rmw_implementation,
-                RCLPY_IMPLEMENTATION_ENV_NAME,
+                RMW_IMPLEMENTATION_ENV_NAME,
                 rmw_implementations_msg,
             ]
             # This message will only be printed if this exception goes unhandled.

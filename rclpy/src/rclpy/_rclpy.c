@@ -23,10 +23,6 @@
 
 #include <signal.h>
 
-#ifndef RMW_IMPLEMENTATION_SUFFIX
-#error "RMW_IMPLEMENTATION_SUFFIX is required to be set for _rclpy.c"
-#endif
-
 static rcl_guard_condition_t * g_sigint_gc_handle;
 
 /// Catch signals
@@ -848,6 +844,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_service_fini(service, node);
   } else {
+    ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
     Py_RETURN_FALSE;
@@ -884,6 +881,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_timer_fini(timer);
   } else {
+    ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
     Py_RETURN_FALSE;
@@ -992,6 +990,7 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (0 == strcmp(entity_type, "guard_condition")) {
     ret = rcl_wait_set_clear_guard_conditions(wait_set);
   } else {
+    ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
     Py_RETURN_FALSE;
@@ -1044,6 +1043,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
       (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
     ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
   } else {
+    ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
     Py_RETURN_FALSE;
@@ -1535,10 +1535,8 @@ static struct PyModuleDef _rclpymodule = {
   NULL
 };
 
-#define MAKE_FN_NAME(x) PyInit__rclpy ## x
-#define FUNCTION_NAME(suffix) MAKE_FN_NAME(suffix)
-
 /// Init function of this module
-PyMODINIT_FUNC FUNCTION_NAME(RMW_IMPLEMENTATION_SUFFIX)(void) {
+PyMODINIT_FUNC PyInit__rclpy(void)
+{
   return PyModule_Create(&_rclpymodule);
 }

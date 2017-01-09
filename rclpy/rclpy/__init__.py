@@ -12,37 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import os
 import sys
 
 from rclpy.constants import S_TO_NS
-from rclpy.exceptions import InvalidRCLPYImplementation
 from rclpy.impl import excepthook
 from rclpy.impl import implementation_singleton
 from rclpy.impl import rmw_implementation_tools
-from rclpy.impl.rmw_implementation_tools import RCLPY_IMPLEMENTATION_ENV_NAME
-from rclpy.node import Node
-
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.node import Node
 
 # install the excepthook
 excepthook.install_rclpy_excepthook()
 
 
 def init(args=None):
-    rclpy_rmw_env = os.getenv(RCLPY_IMPLEMENTATION_ENV_NAME, None)
-    if rclpy_rmw_env is not None:
-        available_rmw_implementations = rmw_implementation_tools.get_rmw_implementations()
-        if rclpy_rmw_env not in available_rmw_implementations:
-            logger = logging.getLogger('rclpy')
-            logger.error(
-                "The rmw implementation specified in 'RCLPY_IMPLEMENTATION={0}', "
-                "is not one of the available implementations: {1}"
-                .format(rclpy_rmw_env, available_rmw_implementations)
-            )
-            raise InvalidRCLPYImplementation()
-        rmw_implementation_tools.select_rmw_implementation(rclpy_rmw_env)
     # This line changes what is in "_rclpy" to be the rmw implementation module that was imported.
     implementation_singleton.set_rclpy_implementation(
         rmw_implementation_tools.import_rmw_implementation()
