@@ -48,6 +48,7 @@ class ImplementationPlaceholder:
             return object.__getattr__(key)
         raise NotInitializedException()
 
+
 rclpy_implementation = ObjectProxy(ImplementationPlaceholder())
 
 

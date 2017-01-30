@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
 from rclpy.client import Client
 from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NoTypeSupportImportedException
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
