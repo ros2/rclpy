@@ -45,7 +45,7 @@ def import_rmw_implementation():
     Import and return the selected or default rmw implementation.
 
     The selected implementation is defined by the the environment variable
-    `RMW_IMPLEMENATION`.
+    `RMW_IMPLEMENTATION`.
     This function can be called multiple times, but the rmw implementation is
     only imported the first time.
     Subsequent calls will return a cached rmw implementation module.
