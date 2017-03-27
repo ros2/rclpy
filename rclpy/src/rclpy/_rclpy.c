@@ -107,6 +107,31 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   return pynode;
 }
 
+/// Get the name of a node.
+/*
+ * \param[in] pynode Capsule pointing to the node to get the name from
+ * \return NULL on failure
+ *         String containing the name of the node otherwise
+ */
+static PyObject *
+rclpy_get_node_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+
+  const char * node_name = rcl_node_get_name(node);
+  if (!node_name) {
+    return NULL;
+  }
+
+  return PyUnicode_FromString(node_name);
+}
+
 /// Create a publisher
 /*
  * This function will create a publisher and attach it to the provided topic name
@@ -1427,6 +1452,8 @@ static PyMethodDef rclpy_methods[] = {
    "Initialize RCL."},
   {"rclpy_create_node", rclpy_create_node, METH_VARARGS,
    "Create a Node."},
+  {"rclpy_get_node_name", rclpy_get_node_name, METH_VARARGS,
+   "Get the name of a node."},
   {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
    "Create a Publisher."},
   {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,

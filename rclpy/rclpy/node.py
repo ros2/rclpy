@@ -41,6 +41,9 @@ class Node:
     def handle(self, value):
         raise AttributeError('handle cannot be modified after node creation')
 
+    def get_name(self):
+        return _rclpy.rclpy_get_node_name(self.handle)
+
     def create_publisher(self, msg_type, topic, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
