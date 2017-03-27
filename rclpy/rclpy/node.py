@@ -186,5 +186,8 @@ class Node:
     def get_topic_names_and_types(self):
         return _rclpy.rclpy_get_topic_names_and_types(self.handle)
 
+    def get_node_names(self):
+        return _rclpy.rclpy_get_node_names(self.handle)
+
     def __del__(self):
         self.destroy_node()

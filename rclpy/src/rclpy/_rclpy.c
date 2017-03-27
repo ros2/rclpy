@@ -1385,6 +1385,47 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   Py_RETURN_NONE;
 }
 
+/// Get the list of nodes discovered by the provided node
+/*
+ * \param[in] pynode Capsule pointing to the node
+ * \return Python list of strings
+ */
+static PyObject *
+rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  rcl_string_array_t node_names =
+    rcl_get_zero_initialized_string_array();
+  rcl_ret_t ret = rcl_get_node_names(node, &node_names);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get_node_names: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  PyObject * pynode_names = PyList_New(node_names.size);
+  size_t idx;
+  for (idx = 0; idx < node_names.size; ++idx) {
+    PyList_SetItem(
+      pynode_names, idx, PyUnicode_FromString(node_names.data[idx]));
+  }
+
+  ret = rcl_destroy_node_names(&node_names);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to destroy node_names: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
+  return pynode_names;
+}
+
 /// Get the list of topics discovered by the provided node
 /*
  * \param[in] pynode Capsule pointing to the node
@@ -1540,6 +1581,8 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
    "rclpy_shutdown."},
 
+  {"rclpy_get_node_names", rclpy_get_node_names, METH_VARARGS,
+   "Get node names list from graph API."},
   {"rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,
    "Get topic list from graph API."},
 
