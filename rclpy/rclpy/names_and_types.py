@@ -32,8 +32,11 @@ class TopicNamesAndTypes:
     def __str__(self):
         s = ''
         for i in range(self._topic_count):
-            s += '{} : {}\n'.format(
+            s += '{} [{}]'.format(
                 self._topic_names[i], self._type_names[i])
+            if i == self._topic_count - 1:
+                break
+            s += '\n'
         return s
 
     @property
