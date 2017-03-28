@@ -30,14 +30,10 @@ class TopicNamesAndTypes:
         self.type_names = kwargs.get('type_names', list())
 
     def __str__(self):
-        s = ''
+        lines = []
         for i in range(self._topic_count):
-            s += '{} [{}]'.format(
-                self._topic_names[i], self._type_names[i])
-            if i == self._topic_count - 1:
-                break
-            s += '\n'
-        return s
+            lines.append('{} [{}]'.format(self._topic_names[i], self._type_names[i]))
+        return '\n'.join(lines)
 
     @property
     def topic_count(self):
