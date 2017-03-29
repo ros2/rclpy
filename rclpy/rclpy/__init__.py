@@ -35,8 +35,8 @@ def init(args=None):
     return _rclpy.rclpy_init(args if args is not None else sys.argv)
 
 
-def create_node(node_name):
-    node_handle = _rclpy.rclpy_create_node(node_name)
+def create_node(node_name, name_space=None):
+    node_handle = _rclpy.rclpy_create_node(node_name, name_space or "")
     return Node(node_handle)
 
 
