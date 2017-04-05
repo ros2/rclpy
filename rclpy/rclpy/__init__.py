@@ -36,7 +36,7 @@ def init(args=None):
 
 
 def create_node(node_name, namespace=None):
-    node_handle = _rclpy.rclpy_create_node(node_name, namespace or "")
+    node_handle = _rclpy.rclpy_create_node(node_name, namespace or '')
     return Node(node_handle)
 
 
