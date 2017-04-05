@@ -44,7 +44,7 @@ class Node:
     def get_name(self):
         return _rclpy.rclpy_get_node_name(self.handle)
 
-    def create_publisher(self, msg_type, topic, qos_profile=qos_profile_default):
+    def create_publisher(self, msg_type, topic, *, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
@@ -56,7 +56,7 @@ class Node:
         self.publishers.append(publisher)
         return publisher
 
-    def create_subscription(self, msg_type, topic, callback, qos_profile=qos_profile_default):
+    def create_subscription(self, msg_type, topic, callback, *, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
@@ -71,7 +71,7 @@ class Node:
         self.subscriptions.append(subscription)
         return subscription
 
-    def create_client(self, srv_type, srv_name, qos_profile=qos_profile_services_default):
+    def create_client(self, srv_type, srv_name, *, qos_profile=qos_profile_services_default):
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:
@@ -87,7 +87,7 @@ class Node:
         return client
 
     def create_service(
-            self, srv_type, srv_name, callback, qos_profile=qos_profile_services_default):
+            self, srv_type, srv_name, callback, *, qos_profile=qos_profile_services_default):
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:

@@ -25,7 +25,7 @@ from rclpy.node import Node
 excepthook.install_rclpy_excepthook()
 
 
-def init(args=None):
+def init(*, args=None):
     # This line changes what is in "_rclpy" to be the rmw implementation module that was imported.
     implementation_singleton.set_rclpy_implementation(
         rmw_implementation_tools.import_rmw_implementation()
@@ -40,7 +40,7 @@ def create_node(node_name):
     return Node(node_handle)
 
 
-def spin_once(node, timeout_sec=None):
+def spin_once(node, *, timeout_sec=None):
     wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
 
     _rclpy.rclpy_wait_set_init(
