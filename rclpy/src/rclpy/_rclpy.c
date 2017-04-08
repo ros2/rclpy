@@ -82,6 +82,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 /// Create a node
 /*
  * \param[in] node_name string name of the node to be created
+ * \param[in] namespace string namespace for the node
  * \return NULL on failure
  *         Capsule pointing to the pointer of the created rcl_node_t * structure otherwise
  */
@@ -89,15 +90,16 @@ static PyObject *
 rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 {
   const char * node_name;
+  const char * namespace_;
 
-  if (!PyArg_ParseTuple(args, "s", &node_name)) {
+  if (!PyArg_ParseTuple(args, "ss", &node_name, &namespace_)) {
     return NULL;
   }
 
   rcl_node_t * node = (rcl_node_t *)PyMem_Malloc(sizeof(rcl_node_t));
   *node = rcl_get_zero_initialized_node();
   rcl_node_options_t default_options = rcl_node_get_default_options();
-  rcl_ret_t ret = rcl_node_init(node, node_name, &default_options);
+  rcl_ret_t ret = rcl_node_init(node, node_name, namespace_, &default_options);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create node: %s", rcl_get_error_string_safe());
