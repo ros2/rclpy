@@ -1405,7 +1405,7 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
   utilities_string_array_t node_names =
     utilities_get_zero_initialized_string_array();
-  utilities_ret_t ret = rcl_get_node_names(node, &node_names);
+  utilities_ret_t ret = rcl_get_node_names(node, rcl_get_default_allocator(), &node_names);
   if (ret != UTILITIES_RET_OK) {
     // TODO(karsten1987): Add error message from utilities
     PyErr_Format(PyExc_RuntimeError,
@@ -1447,7 +1447,8 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
   rcl_topic_names_and_types_t topic_names_and_types =
     rcl_get_zero_initialized_topic_names_and_types();
-  rcl_ret_t ret = rcl_get_topic_names_and_types(node, &topic_names_and_types);
+  rcl_ret_t ret =
+    rcl_get_topic_names_and_types(node, rcl_get_default_allocator(), &topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to get_topic_names_and_types: %s", rcl_get_error_string_safe());
