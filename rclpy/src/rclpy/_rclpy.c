@@ -14,6 +14,7 @@
 
 #include <Python.h>
 
+#include <c_utilities/types.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
 #include <rcl/node.h>
@@ -1402,12 +1403,13 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
-  rcl_string_array_t node_names =
-    rcl_get_zero_initialized_string_array();
-  rcl_ret_t ret = rcl_get_node_names(node, &node_names);
-  if (ret != RCL_RET_OK) {
+  utilities_string_array_t node_names =
+    utilities_get_zero_initialized_string_array();
+  utilities_ret_t ret = rcl_get_node_names(node, &node_names);
+  if (ret != UTILITIES_RET_OK) {
+    // TODO(karsten1987): Add error message from utilities
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to get_node_names: %s", rcl_get_error_string_safe());
+      "Failed to get_node_names:");
     return NULL;
   }
 
@@ -1418,8 +1420,8 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
       pynode_names, idx, PyUnicode_FromString(node_names.data[idx]));
   }
 
-  ret = rcl_destroy_node_names(&node_names);
-  if (ret != RCL_RET_OK) {
+  ret = utilities_string_array_fini(&node_names);
+  if (ret != UTILITIES_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to destroy node_names: %s", rcl_get_error_string_safe());
     return NULL;
