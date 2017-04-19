@@ -19,7 +19,7 @@ __original_excepthook = None
 __unhandled_exception_addendums = {}
 
 
-def rclpy_excepthook(exc_type, value, traceback):
+def rclpy_excepthook(exc_type, value, traceback):  # noqa: D401
     """
     The rclpy custom except hook for unhandled exceptions.
 
