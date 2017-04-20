@@ -4,8 +4,8 @@ project(rclpy C)
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
-find_package(c_utilities REQUIRED)
 find_package(rcl REQUIRED)
+find_package(rcutils REQUIRED)
 find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
@@ -61,8 +61,8 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 ament_target_dependencies(${PROJECT_NAME}
-  "c_utilities"
   "rcl"
+  "rcutils"
 )
 
 target_include_directories(${PROJECT_NAME}
