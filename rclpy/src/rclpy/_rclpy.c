@@ -14,11 +14,11 @@
 
 #include <Python.h>
 
-#include <c_utilities/types.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
 #include <rcl/node.h>
 #include <rcl/rcl.h>
+#include <rcutils/types.h>
 #include <rmw/rmw.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 

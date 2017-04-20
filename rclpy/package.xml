@@ -10,7 +10,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>python_cmake_module</buildtool_depend>
 
-  <build_depend>c_utilities</build_depend>
+  <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
 
   <depend>rmw_implementation</depend>
