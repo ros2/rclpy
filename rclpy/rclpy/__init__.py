@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
 import sys
 
 from rclpy.constants import S_TO_NS
@@ -109,6 +110,7 @@ def spin_once(node, *, timeout_sec=None):
         if request:
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
+    gc.collect()
 
 
 def ok():
