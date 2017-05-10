@@ -1,4 +1,4 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2016-2017 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 from enum import IntEnum
 
-from rclpy import _rclpy_implementation_rmw_agnostic
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class QoSProfile(object):
@@ -102,7 +102,7 @@ class QoSProfile(object):
         self._depth = value
 
     def get_c_qos_profile(self):
-        return _rclpy_implementation_rmw_agnostic.rclpy_convert_from_py_qos_policy(
+        return _rclpy.rclpy_convert_from_py_qos_policy(
             self.history, self.depth, self.reliability, self.durability)
 
 
@@ -142,17 +142,17 @@ class QoSDurabilityPolicy(IntEnum):
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
 
 
-qos_profile_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+qos_profile_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_default')
-qos_profile_system_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+qos_profile_system_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_system_default')
-qos_profile_sensor_data = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+qos_profile_sensor_data = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_sensor_data')
-qos_profile_services_default = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+qos_profile_services_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_services_default')
 # NOTE(mikaelarguedas) the following are defined but not used because
 # parameters are not implemented in Python yet
-qos_profile_parameters = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+qos_profile_parameters = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameters')
-qos_profile_parameter_events = _rclpy_implementation_rmw_agnostic.rclpy_get_rmw_qos_profile(
+qos_profile_parameter_events = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events')

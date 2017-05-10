@@ -70,44 +70,7 @@ target_include_directories(${PROJECT_NAME}
   ${PythonExtra_INCLUDE_DIRS}
 )
 
-# make an entry in the ament index for each rmw implementation for which
-# a rclpy Python extension is built
-# this is used in the Python code to avoid trying to import a Python
-# extension for rmw implementations which do not have one
-ament_index_register_resource("rmw_python_extension"
-  PACKAGE_NAME ${rmw_implementation}
-)
-
 install(TARGETS ${PROJECT_NAME}
-  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
-)
-
-
-add_library(
-  "${PROJECT_NAME}_implementation_rmw_agnostic"
-  SHARED src/rclpy/_rclpy_implementation_rmw_agnostic.c
-)
-set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "")
-if(WIN32)
-  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_DEBUG")
-  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_MINSIZEREL")
-  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_RELEASE")
-  set_properties("${PROJECT_NAME}_implementation_rmw_agnostic" "_RELWITHDEBINFO")
-endif()
-
-target_link_libraries("${PROJECT_NAME}_implementation_rmw_agnostic"
-  ${rcl_LIBRARIES}
-  ${PythonExtra_LIBRARIES}
-)
-
-target_include_directories("${PROJECT_NAME}_implementation_rmw_agnostic"
-  PUBLIC
-  ${rcl_INCLUDE_DIRS}
-  ${rmw_INCLUDE_DIRS}
-  ${PythonExtra_INCLUDE_DIRS}
-)
-
-install(TARGETS "${PROJECT_NAME}_implementation_rmw_agnostic"
   DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
 )
 
