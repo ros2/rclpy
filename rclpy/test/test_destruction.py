@@ -20,7 +20,7 @@ import traceback
 def run_catch_report_raise(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
-    except:
+    except Exception:
         print('exception in {0}():'.format(func.__name__), file=sys.stderr)
         traceback.print_exc()
         raise
@@ -37,7 +37,7 @@ def func_destroy_node():
         ret = False
     finally:
         rclpy.shutdown()
-        return ret
+    return ret
 
 
 def func_destroy_node_twice():
@@ -62,7 +62,7 @@ def func_destroy_corrupted_node():
         ret = True
     finally:
         rclpy.shutdown()
-        return ret
+    return ret
 
 
 def func_destroy_timers():
@@ -90,7 +90,7 @@ def func_destroy_timers():
         ret = True
     finally:
         rclpy.shutdown()
-        return ret
+    return ret
 
 
 def func_destroy_entities():
@@ -132,7 +132,7 @@ def func_destroy_entities():
         ret = True
     finally:
         rclpy.shutdown()
-        return ret
+    return ret
 
 
 def func_corrupt_node_handle():
@@ -147,7 +147,7 @@ def func_corrupt_node_handle():
         ret = True
     finally:
         rclpy.shutdown()
-        return ret
+    return ret
 
 
 def func_launch(function, message):
@@ -171,7 +171,7 @@ def test_destroy_node_twice():
 
 
 def test_destroy_corrupted_node():
-    func_launch(func_destroy_corrupted_node, 'distroyed a non existing node o_O')
+    func_launch(func_destroy_corrupted_node, 'destroyed a non existing node o_O')
 
 
 def test_destroy_timers():
