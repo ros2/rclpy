@@ -1,4 +1,4 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2016-2017 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,22 +15,11 @@
 import sys
 
 from rclpy.constants import S_TO_NS
-from rclpy.impl import excepthook
-from rclpy.impl import implementation_singleton
-from rclpy.impl import rmw_implementation_tools
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 
-# install the excepthook
-excepthook.install_rclpy_excepthook()
-
 
 def init(*, args=None):
-    # This line changes what is in "_rclpy" to be the rmw implementation module that was imported.
-    implementation_singleton.set_rclpy_implementation(
-        rmw_implementation_tools.import_rmw_implementation()
-    )
-
     # Now we can use _rclpy to call the implementation specific rclpy_init().
     return _rclpy.rclpy_init(args if args is not None else sys.argv)
 
