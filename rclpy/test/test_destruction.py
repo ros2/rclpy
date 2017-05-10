@@ -58,7 +58,7 @@ def func_destroy_corrupted_node():
     ret = False
     try:
         node.destroy_node()
-    except SystemError:
+    except ValueError:
         ret = True
     finally:
         rclpy.shutdown()
