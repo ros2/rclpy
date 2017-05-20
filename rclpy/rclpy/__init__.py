@@ -17,15 +17,29 @@ import sys
 from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
+from rclpy.validate_namespace import validate_namespace
+from rclpy.validate_node_name import validate_node_name
 
 
 def init(*, args=None):
-    # Now we can use _rclpy to call the implementation specific rclpy_init().
     return _rclpy.rclpy_init(args if args is not None else sys.argv)
 
 
 def create_node(node_name, *, namespace=None):
-    node_handle = _rclpy.rclpy_create_node(node_name, namespace or '')
+    namespace = namespace or ''
+    try:
+        node_handle = _rclpy.rclpy_create_node(node_name, namespace)
+    except ValueError:
+        # these will raise more specific errors if the name or namespace is bad
+        validate_node_name(node_name)
+        # emulate what rcl_node_init() does to accept '' and relative namespaces
+        if not namespace:
+            namespace = '/'
+        if not namespace.startswith('/'):
+            namespace = '/' + namespace
+        validate_namespace(namespace)
+        # otherwise re-raise
+        raise
     return Node(node_handle)
 
 

@@ -114,8 +114,19 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_node_options_t default_options = rcl_node_get_default_options();
   rcl_ret_t ret = rcl_node_init(node, node_name, namespace_, &default_options);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to create node: %s", rcl_get_error_string_safe());
+    if (ret == RCL_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError,
+        "%s", rcl_get_error_string_safe());
+    } else if (ret == RCL_RET_NODE_INVALID_NAME) {
+      PyErr_Format(PyExc_ValueError,
+        "invalid node name: %s", rcl_get_error_string_safe());
+    } else if (ret == RCL_RET_NODE_INVALID_NAMESPACE) {
+      PyErr_Format(PyExc_ValueError,
+        "invalid node namespace: %s", rcl_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError,
+        "Unknown error creating node: %s", rcl_get_error_string_safe());
+    }
     rcl_reset_error();
     return NULL;
   }
@@ -521,6 +532,8 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
  * This publisher will use the typesupport defined in the message module
  * provided as pymsg_type to send messages over the wire.
  *
+ * A ValueError is raised (and NULL returned) when the topic name is invalid.
+ *
  * \param[in] pynode Capsule pointing to the node to add the publisher to
  * \param[in] pymsg_type Message type associated with the publisher
  * \param[in] pytopic Python object containing the name of the topic
@@ -569,6 +582,13 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
   if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_TOPIC_NAME_INVALID) {
+      PyErr_Format(PyExc_ValueError,
+        "Failed to create publisher due to invalid topic name '%s': %s",
+        topic, rcl_get_error_string_safe());
+      rcl_reset_error();
+      return NULL;
+    }
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create publisher: %s", rcl_get_error_string_safe());
     rcl_reset_error();
@@ -996,6 +1016,13 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
   if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_TOPIC_NAME_INVALID) {
+      PyErr_Format(PyExc_ValueError,
+        "Failed to create subscription due to invalid topic name '%s': %s",
+        topic, rcl_get_error_string_safe());
+      rcl_reset_error();
+      return NULL;
+    }
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create subscriptions: %s", rcl_get_error_string_safe());
     rcl_reset_error();
@@ -1068,6 +1095,13 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
   if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_SERVICE_NAME_INVALID) {
+      PyErr_Format(PyExc_ValueError,
+        "Failed to create client due to invalid service name '%s': %s",
+        service_name, rcl_get_error_string_safe());
+      rcl_reset_error();
+      return NULL;
+    }
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create client: %s", rcl_get_error_string_safe());
     rcl_reset_error();
@@ -1202,6 +1236,13 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
   if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_SERVICE_NAME_INVALID) {
+      PyErr_Format(PyExc_ValueError,
+        "Failed to create service due to invalid topic name '%s': %s",
+        service_name, rcl_get_error_string_safe());
+      rcl_reset_error();
+      return NULL;
+    }
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create service: %s", rcl_get_error_string_safe());
     rcl_reset_error();
