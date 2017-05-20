@@ -15,11 +15,17 @@
 #include <Python.h>
 
 #include <rcl/error_handling.h>
+#include <rcl/expand_topic_name.h>
 #include <rcl/graph.h>
 #include <rcl/node.h>
 #include <rcl/rcl.h>
+#include <rcl/validate_topic_name.h>
 #include <rcutils/types.h>
+#include <rmw/error_handling.h>
 #include <rmw/rmw.h>
+#include <rmw/validate_full_topic_name.h>
+#include <rmw/validate_namespace.h>
+#include <rmw/validate_node_name.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #include <signal.h>
@@ -165,6 +171,348 @@ rclpy_get_node_namespace(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   return PyUnicode_FromString(node_namespace);
+}
+
+/// Validate a topic name and return error message and index of invalidation.
+/**
+ * Does not have to be a fully qualified topic name.
+ * The topic name is not expanded.
+ *
+ * \param[in] topic_name name of the topic to be validated
+ * \return tuple of error message and invalid index if invalid, or
+ * \return None if valid
+ */
+static PyObject *
+rclpy_get_validation_error_for_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * topic_name_py;
+
+  if (!PyArg_ParseTuple(args, "O", &topic_name_py)) {
+    return NULL;
+  }
+
+  if (!PyUnicode_Check(topic_name_py)) {
+    PyErr_Format(PyExc_TypeError, "Argument topic_name is not a PyUnicode object");
+    return NULL;
+  }
+  char * topic_name = (char *)PyUnicode_1BYTE_DATA(topic_name_py);
+
+  int validation_result;
+  size_t invalid_index;
+  rcl_ret_t ret = rcl_validate_topic_name(topic_name, &validation_result, &invalid_index);
+  if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "%s", rcl_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "%s", rcl_get_error_string_safe());
+    }
+    rcl_reset_error();
+    return NULL;
+  }
+
+  if (validation_result == RCL_TOPIC_NAME_VALID) {
+    Py_RETURN_NONE;
+  }
+  const char * validation_message = rcl_topic_name_validation_result_string(validation_result);
+  if (!validation_message) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Unable to get validation error message for result '%d'", validation_result);
+    return NULL;
+  }
+
+  PyObject * result_list = PyList_New(2);
+  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
+  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+
+  return result_list;
+}
+
+/// Validate a full topic name and return error message and index of invalidation.
+/**
+ * Must be a fully qualified topic name.
+ *
+ * \param[in] topic_name name of the topic to be validated
+ * \return tuple of error message and invalid index if invalid, or
+ * \return None if valid
+ */
+static PyObject *
+rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * topic_name_py;
+
+  if (!PyArg_ParseTuple(args, "O", &topic_name_py)) {
+    return NULL;
+  }
+
+  if (!PyUnicode_Check(topic_name_py)) {
+    PyErr_Format(PyExc_TypeError, "Argument topic_name is not a PyUnicode object");
+    return NULL;
+  }
+  char * topic_name = (char *)PyUnicode_1BYTE_DATA(topic_name_py);
+
+  int validation_result;
+  size_t invalid_index;
+  rmw_ret_t ret = rmw_validate_full_topic_name(topic_name, &validation_result, &invalid_index);
+  if (ret != RMW_RET_OK) {
+    if (ret == RMW_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string_safe());
+    }
+    rmw_reset_error();
+    return NULL;
+  }
+
+  if (validation_result == RMW_NAMESPACE_VALID) {
+    Py_RETURN_NONE;
+  }
+  const char * validation_message = rmw_full_topic_name_validation_result_string(validation_result);
+  if (!validation_message) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Unable to get validation error message for result '%d'", validation_result);
+    return NULL;
+  }
+
+  PyObject * result_list = PyList_New(2);
+  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
+  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+
+  return result_list;
+}
+
+/// Validate a namespace and return error message and index of invalidation.
+/**
+ * \param[in] namespace namespace to be validated
+ * \return tuple of error message and invalid index if invalid, or
+ * \return None if valid
+ */
+static PyObject *
+rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * namespace_py;
+
+  if (!PyArg_ParseTuple(args, "O", &namespace_py)) {
+    return NULL;
+  }
+
+  if (!PyUnicode_Check(namespace_py)) {
+    PyErr_Format(PyExc_TypeError, "Argument namespace_ is not a PyUnicode object");
+    return NULL;
+  }
+  char * namespace_ = (char *)PyUnicode_1BYTE_DATA(namespace_py);
+
+  int validation_result;
+  size_t invalid_index;
+  rmw_ret_t ret = rmw_validate_namespace(namespace_, &validation_result, &invalid_index);
+  if (ret != RMW_RET_OK) {
+    if (ret == RMW_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string_safe());
+    }
+    rmw_reset_error();
+    return NULL;
+  }
+
+  if (validation_result == RMW_NAMESPACE_VALID) {
+    Py_RETURN_NONE;
+  }
+  const char * validation_message = rmw_namespace_validation_result_string(validation_result);
+  if (!validation_message) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Unable to get validation error message for result '%d'", validation_result);
+    return NULL;
+  }
+
+  PyObject * result_list = PyList_New(2);
+  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
+  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+
+  return result_list;
+}
+
+/// Validate a node name and return error message and index of invalidation.
+/**
+ * \param[in] node_name name of the node to be validated
+ * \return tuple of error message and invalid index if invalid, or
+ * \return None if valid
+ */
+static PyObject *
+rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * node_name_py;
+
+  if (!PyArg_ParseTuple(args, "O", &node_name_py)) {
+    return NULL;
+  }
+
+  if (!PyUnicode_Check(node_name_py)) {
+    PyErr_Format(PyExc_TypeError, "Argument node_name is not a PyUnicode object");
+    return NULL;
+  }
+  char * node_name = (char *)PyUnicode_1BYTE_DATA(node_name_py);
+
+  int validation_result;
+  size_t invalid_index;
+  rmw_ret_t ret = rmw_validate_node_name(node_name, &validation_result, &invalid_index);
+  if (ret != RMW_RET_OK) {
+    if (ret == RMW_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string_safe());
+    }
+    rmw_reset_error();
+    return NULL;
+  }
+
+  if (validation_result == RMW_NODE_NAME_VALID) {
+    Py_RETURN_NONE;
+  }
+  const char * validation_message = rmw_node_name_validation_result_string(validation_result);
+  if (!validation_message) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Unable to get validation error message for result '%d'", validation_result);
+    return NULL;
+  }
+
+  PyObject * result_list = PyList_New(2);
+  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
+  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+
+  return result_list;
+}
+
+static char *
+_expand_topic_name_with_exceptions(const char * topic, const char * node, const char * namespace)
+{
+  char * expanded_topic;
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcutils_allocator_t rcutils_allocator = rcutils_get_default_allocator();
+  rcutils_string_map_t substitutions_map = rcutils_get_zero_initialized_string_map();
+
+  rcutils_ret_t rcutils_ret = rcutils_string_map_init(&substitutions_map, 0, rcutils_allocator);
+  if (rcutils_ret != RCUTILS_RET_OK) {
+    if (rcutils_ret == RCUTILS_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "%s", rcutils_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "%s", rcutils_get_error_string_safe());
+    }
+    rcutils_reset_error();
+    return NULL;
+  }
+  rcl_ret_t ret = rcl_get_default_topic_name_substitutions(&substitutions_map);
+  if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "%s", rcl_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "%s", rcl_get_error_string_safe());
+    }
+    rcl_reset_error();
+    // finalize the string map before returning
+    rcutils_ret = rcutils_string_map_fini(&substitutions_map);
+    if (rcutils_ret != RCUTILS_RET_OK) {
+      fprintf(stderr,
+        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+        "failed to fini string_map (%d) during error handling: %s\n",
+        rcutils_ret,
+        rcutils_get_error_string_safe());
+      rcutils_reset_error();
+    }
+    return NULL;
+  }
+
+  ret = rcl_expand_topic_name(
+    topic,
+    node,
+    namespace,
+    &substitutions_map,
+    allocator,
+    &expanded_topic);
+
+  rcutils_ret = rcutils_string_map_fini(&substitutions_map);
+  if (rcutils_ret != RCUTILS_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError, "%s", rcutils_get_error_string_safe());
+    rcutils_reset_error();
+    allocator.deallocate(expanded_topic, allocator.state);
+    return NULL;
+  }
+  if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "%s", rcl_get_error_string_safe());
+    } else if (  // NOLINT
+      ret == RCL_RET_TOPIC_NAME_INVALID ||
+      ret == RCL_RET_UNKNOWN_SUBSTITUTION)
+    {
+      PyErr_Format(PyExc_ValueError,
+        "topic name '%s' is invalid: %s", topic, rcl_get_error_string_safe());
+    } else if (ret == RCL_RET_NODE_INVALID_NAME) {
+      PyErr_Format(PyExc_ValueError,
+        "node name '%s' is invalid: %s", node, rcl_get_error_string_safe());
+    } else if (ret == RCL_RET_NODE_INVALID_NAMESPACE) {
+      PyErr_Format(PyExc_ValueError,
+        "node namespace '%s' is invalid: %s", namespace, rcl_get_error_string_safe());
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "%s", rcl_get_error_string_safe());
+    }
+    rcl_reset_error();
+    return NULL;
+  }
+
+  return expanded_topic;
+}
+
+/// Expand a topic name
+/**
+ * Raises ValueError if the topic name, node name, or namespace are not valid.
+ *
+ * \param[in] topic_name topic string to be expanded
+ * \param[in] node_name name of the node to be used during expansion
+ * \param[in] node_namespace namespace of the node to be used during expansion
+ * \return expanded node namespace
+ */
+static PyObject *
+rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * topic_name;
+  PyObject * node_name_py;
+  PyObject * node_namespace_py;
+
+  if (!PyArg_ParseTuple(args, "OOO", &topic_name, &node_name_py, &node_namespace_py)) {
+    PyErr_Format(PyExc_RuntimeError, "Invalid arguments");
+    return NULL;
+  }
+
+  if (!PyUnicode_Check(topic_name)) {
+    PyErr_Format(PyExc_TypeError, "Argument topic_name is not a PyUnicode object");
+    return NULL;
+  }
+  char * topic = (char *)PyUnicode_1BYTE_DATA(topic_name);
+
+  if (!PyUnicode_Check(node_name_py)) {
+    PyErr_Format(PyExc_TypeError, "Argument node_name is not a PyUnicode object");
+    return NULL;
+  }
+  char * node_name = (char *)PyUnicode_1BYTE_DATA(node_name_py);
+
+  if (!PyUnicode_Check(node_namespace_py)) {
+    PyErr_Format(PyExc_TypeError, "Argument node_namespace is not a PyUnicode object");
+    return NULL;
+  }
+  char * node_namespace = (char *)PyUnicode_1BYTE_DATA(node_namespace_py);
+
+  char * expanded_topic = _expand_topic_name_with_exceptions(topic, node_name, node_namespace);
+
+  if (!expanded_topic) {
+    // exception already set
+    return NULL;
+  }
+
+  PyObject * result = PyUnicode_FromString(expanded_topic);
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  allocator.deallocate(expanded_topic, allocator.state);
+
+  return result;
 }
 
 /// Create a publisher
@@ -1745,6 +2093,20 @@ static PyMethodDef rclpy_methods[] = {
    "Get the name of a node."},
   {"rclpy_get_node_namespace", rclpy_get_node_namespace, METH_VARARGS,
    "Get the name of a node."},
+  {"rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
+   "Expand a topic name."},
+  {"rclpy_get_validation_error_for_topic_name",
+   rclpy_get_validation_error_for_topic_name, METH_VARARGS,
+   "Get the error message and invalid index of a topic name or None if valid."},
+  {"rclpy_get_validation_error_for_full_topic_name",
+   rclpy_get_validation_error_for_full_topic_name, METH_VARARGS,
+   "Get the error message and invalid index of a full topic name or None if valid."},
+  {"rclpy_get_validation_error_for_namespace",
+   rclpy_get_validation_error_for_namespace, METH_VARARGS,
+   "Get the error message and invalid index of a namespace or None if valid."},
+  {"rclpy_get_validation_error_for_node_name",
+   rclpy_get_validation_error_for_node_name, METH_VARARGS,
+   "Get the error message and invalid index of a node name or None if valid."},
   {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
    "Create a Publisher."},
   {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
