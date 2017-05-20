@@ -44,6 +44,9 @@ class Node:
     def get_name(self):
         return _rclpy.rclpy_get_node_name(self.handle)
 
+    def get_namespace(self):
+        return _rclpy.rclpy_get_node_namespace(self.handle)
+
     def create_publisher(self, msg_type, topic, *, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:

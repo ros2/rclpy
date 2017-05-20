@@ -138,6 +138,31 @@ rclpy_get_node_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(node_name);
 }
 
+/// Get the namespace of a node.
+/**
+ * \param[in] pynode Capsule pointing to the node to get the namespace from
+ * \return namespace, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_get_node_namespace(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+
+  const char * node_namespace = rcl_node_get_namespace(node);
+  if (!node_namespace) {
+    return NULL;
+  }
+
+  return PyUnicode_FromString(node_namespace);
+}
+
 /// Create a publisher
 /**
  * This function will create a publisher and attach it to the provided topic name
@@ -1683,6 +1708,8 @@ static PyMethodDef rclpy_methods[] = {
   {"rclpy_create_node", rclpy_create_node, METH_VARARGS,
    "Create a Node."},
   {"rclpy_get_node_name", rclpy_get_node_name, METH_VARARGS,
+   "Get the name of a node."},
+  {"rclpy_get_node_namespace", rclpy_get_node_namespace, METH_VARARGS,
    "Get the name of a node."},
   {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
    "Create a Publisher."},
