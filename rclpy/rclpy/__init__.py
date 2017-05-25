@@ -27,9 +27,12 @@ def init(*, args=None):
 
 def create_node(node_name, *, namespace=None):
     namespace = namespace or ''
+    failed = False
     try:
         node_handle = _rclpy.rclpy_create_node(node_name, namespace)
     except ValueError:
+        failed = True
+    if failed:
         # these will raise more specific errors if the name or namespace is bad
         validate_node_name(node_name)
         # emulate what rcl_node_init() does to accept '' and relative namespaces
@@ -38,8 +41,6 @@ def create_node(node_name, *, namespace=None):
         if not namespace.startswith('/'):
             namespace = '/' + namespace
         validate_namespace(namespace)
-        # otherwise re-raise
-        raise
     return Node(node_handle)
 
 
