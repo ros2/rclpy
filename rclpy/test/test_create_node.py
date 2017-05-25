@@ -12,45 +12,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import multiprocessing
-import sys
-import traceback
+import unittest
+
+import rclpy
+
+from rclpy.exceptions import InvalidNamespaceException
+from rclpy.exceptions import InvalidNodeNameException
 
 
-def run_catch_report_raise(func, *args, **kwargs):
-    try:
-        return func(*args, **kwargs)
-    except:
-        print('exception in {0}():'.format(func.__name__), file=sys.stderr)
-        traceback.print_exc()
-        raise
+class TestCreateNode(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        rclpy.init()
+
+    @classmethod
+    def tearDownClass(cls):
+        rclpy.shutdown()
+
+    def test_create_node(self):
+        node_name = 'create_node_test'
+        rclpy.create_node(node_name)
+
+    def test_create_node_with_namespace(self):
+        node_name = 'create_node_test'
+        namespace = '/ns'
+        rclpy.create_node(node_name, namespace=namespace)
+
+    def test_create_node_with_empty_namespace(self):
+        node_name = 'create_node_test'
+        namespace = ''
+        node = rclpy.create_node(node_name, namespace=namespace)
+        self.assertEqual('/', node.get_namespace())
+
+    def test_create_node_with_relative_namespace(self):
+        node_name = 'create_node_test'
+        namespace = 'ns'
+        node = rclpy.create_node(node_name, namespace=namespace)
+        self.assertEqual('/ns', node.get_namespace())
+
+    def test_create_node_invalid_name(self):
+        node_name = 'create_node_test_invalid_name?'
+        with self.assertRaisesRegex(InvalidNodeNameException, 'must not contain characters'):
+            rclpy.create_node(node_name)
+
+    def test_create_node_invalid_relative_namespace(self):
+        node_name = 'create_node_test_invalid_namespace'
+        namespace = 'invalid_namespace?'
+        with self.assertRaisesRegex(InvalidNamespaceException, 'must not contain characters'):
+            rclpy.create_node(node_name, namespace=namespace)
+
+    def test_create_node_invalid_namespace(self):
+        node_name = 'create_node_test_invalid_namespace'
+        namespace = '/invalid_namespace?'
+        with self.assertRaisesRegex(InvalidNamespaceException, 'must not contain characters'):
+            rclpy.create_node(node_name, namespace=namespace)
 
 
-def func_create_node(args):
-    import rclpy
-
-    rclpy.init()
-
-    node_name = 'create_node_test'
-    node = rclpy.create_node(node_name)
-    assert node.get_name() == node_name
-
-    rclpy.shutdown()
-
-    return True
-
-
-def func_launch(function, args, message):
-    pool = multiprocessing.Pool(1)
-    result = pool.apply(
-        func=run_catch_report_raise,
-        args=(function, args)
-    )
-
-    assert result, message
-    pool.close()
-    pool.join()
-
-
-def test_create_node():
-    func_launch(func_create_node, [], 'create node failed')
+if __name__ == '__main__':
+    unittest.main()
