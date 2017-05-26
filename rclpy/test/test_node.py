@@ -19,8 +19,8 @@ import rclpy
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 
+from rcl_interfaces.srv import GetParameters
 from std_msgs.msg import String
-from std_srvs.srv import Empty
 
 
 class TestNode(unittest.TestCase):
@@ -61,22 +61,22 @@ class TestNode(unittest.TestCase):
             self.node.create_subscription(String, 'foo/{bad_sub}', lambda msg: print(msg))
 
     def test_create_client(self):
-        self.node.create_client(Empty, 'side/effect')
+        self.node.create_client(GetParameters, 'get/parameters')
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not contain characters'):
-            self.node.create_client(Empty, 'side/effect?')
+            self.node.create_client(GetParameters, 'get/parameters?')
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not start with a number'):
-            self.node.create_client(Empty, '/side/42effect')
+            self.node.create_client(GetParameters, '/get/42parameters')
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_client(Empty, 'foo/{bad_sub}')
+            self.node.create_client(GetParameters, 'foo/{bad_sub}')
 
     def test_create_service(self):
-        self.node.create_service(Empty, 'side/effect', lambda req: None)
+        self.node.create_service(GetParameters, 'get/parameters', lambda req: None)
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not contain characters'):
-            self.node.create_service(Empty, 'side/effect?', lambda req: None)
+            self.node.create_service(GetParameters, 'get/parameters?', lambda req: None)
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not start with a number'):
-            self.node.create_service(Empty, '/side/42effect', lambda req: None)
+            self.node.create_service(GetParameters, '/get/42parameters', lambda req: None)
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_service(Empty, 'foo/{bad_sub}', lambda req: None)
+            self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req: None)
 
 
 if __name__ == '__main__':
