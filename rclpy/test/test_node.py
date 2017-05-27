@@ -14,12 +14,10 @@
 
 import unittest
 
+from rcl_interfaces.srv import GetParameters
 import rclpy
-
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
-
-from rcl_interfaces.srv import GetParameters
 from std_msgs.msg import String
 
 
