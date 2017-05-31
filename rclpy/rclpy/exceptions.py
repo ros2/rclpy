@@ -20,15 +20,48 @@ class NotInitializedException(Exception):
         Exception.__init__(self, 'rclpy.init() has not been called', *args)
 
 
-class NoImplementationAvailableException(Exception):
-    """Raised when there is no rmw implementation with a Python extension available."""
-
-    def __init__(self, *args):
-        Exception.__init__(self, 'no rmw implementation with a Python extension available')
-
-
 class NoTypeSupportImportedException(Exception):
     """Raised when there is no type support imported."""
 
     def __init__(self, *args):
         Exception.__init__(self, 'no type_support imported')
+
+
+class NameValidationException(Exception):
+    """Raised when a topic name, node name, or namespace are invalid."""
+
+    def __init__(self, name_type, name, error_msg, invalid_index, *args):
+        msg = """\
+Invalid {name_type}: {error_msg}:
+  '{name}'
+   {indent}^\
+""".format(name_type=name_type, name=name, error_msg=error_msg, indent=' ' * invalid_index)
+        Exception.__init__(self, msg)
+
+
+class InvalidNamespaceException(NameValidationException):
+    """Raised when a namespace is invalid."""
+
+    def __init__(self, name, error_msg, invalid_index, *args):
+        NameValidationException.__init__(self, "namespace", name, error_msg, invalid_index)
+
+
+class InvalidNodeNameException(NameValidationException):
+    """Raised when a node name is invalid."""
+
+    def __init__(self, name, error_msg, invalid_index, *args):
+        NameValidationException.__init__(self, "node name", name, error_msg, invalid_index)
+
+
+class InvalidTopicNameException(NameValidationException):
+    """Raised when a topic name is invalid."""
+
+    def __init__(self, name, error_msg, invalid_index, *args):
+        NameValidationException.__init__(self, "topic name", name, error_msg, invalid_index)
+
+
+class InvalidServiceNameException(NameValidationException):
+    """Raised when a service name is invalid."""
+
+    def __init__(self, name, error_msg, invalid_index, *args):
+        NameValidationException.__init__(self, "service name", name, error_msg, invalid_index)

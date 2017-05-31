@@ -15,12 +15,17 @@
 from rclpy.client import Client
 from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NoTypeSupportImportedException
+from rclpy.expand_topic_name import expand_topic_name
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.timer import WallTimer
+from rclpy.validate_full_topic_name import validate_full_topic_name
+from rclpy.validate_namespace import validate_namespace
+from rclpy.validate_node_name import validate_node_name
+from rclpy.validate_topic_name import validate_topic_name
 
 
 class Node:
@@ -44,14 +49,32 @@ class Node:
     def get_name(self):
         return _rclpy.rclpy_get_node_name(self.handle)
 
+    def get_namespace(self):
+        return _rclpy.rclpy_get_node_namespace(self.handle)
+
+    def _validate_topic_or_service_name(self, topic_or_service_name, *, is_service=False):
+        name = self.get_name()
+        namespace = self.get_namespace()
+        validate_node_name(name)
+        validate_namespace(namespace)
+        validate_topic_name(topic_or_service_name, is_service=is_service)
+        expanded_topic_or_service_name = expand_topic_name(topic_or_service_name, name, namespace)
+        validate_full_topic_name(expanded_topic_or_service_name, is_service=is_service)
+
     def create_publisher(self, msg_type, topic, *, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
         if msg_type.__class__._TYPE_SUPPORT is None:
             raise NoTypeSupportImportedException
-        publisher_handle = _rclpy.rclpy_create_publisher(
-            self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+        failed = False
+        try:
+            publisher_handle = _rclpy.rclpy_create_publisher(
+                self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(topic)
         publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
         self.publishers.append(publisher)
         return publisher
@@ -62,8 +85,14 @@ class Node:
             msg_type.__class__.__import_type_support__()
         if msg_type.__class__._TYPE_SUPPORT is None:
             raise NoTypeSupportImportedException
-        [subscription_handle, subscription_pointer] = _rclpy.rclpy_create_subscription(
-            self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+        failed = False
+        try:
+            [subscription_handle, subscription_pointer] = _rclpy.rclpy_create_subscription(
+                self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(topic)
 
         subscription = Subscription(
             subscription_handle, subscription_pointer, msg_type,
@@ -76,11 +105,17 @@ class Node:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:
             raise NoTypeSupportImportedException
-        [client_handle, client_pointer] = _rclpy.rclpy_create_client(
-            self.handle,
-            srv_type,
-            srv_name,
-            qos_profile.get_c_qos_profile())
+        failed = False
+        try:
+            [client_handle, client_pointer] = _rclpy.rclpy_create_client(
+                self.handle,
+                srv_type,
+                srv_name,
+                qos_profile.get_c_qos_profile())
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(srv_name, is_service=True)
         client = Client(
             self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile)
         self.clients.append(client)
@@ -92,11 +127,17 @@ class Node:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:
             raise NoTypeSupportImportedException
-        [service_handle, service_pointer] = _rclpy.rclpy_create_service(
-            self.handle,
-            srv_type,
-            srv_name,
-            qos_profile.get_c_qos_profile())
+        failed = False
+        try:
+            [service_handle, service_pointer] = _rclpy.rclpy_create_service(
+                self.handle,
+                srv_type,
+                srv_name,
+                qos_profile.get_c_qos_profile())
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(srv_name, is_service=True)
         service = Service(
             self.handle, service_handle, service_pointer,
             srv_type, srv_name, callback, qos_profile)
