@@ -72,7 +72,7 @@ def spin_once(node, *, timeout_sec=None):
     _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
 
     if timeout_sec is None:
-        timeout = -1
+        timeout = 1 * S_TO_NS
     else:
         timeout = int(float(timeout_sec) * S_TO_NS)
 
