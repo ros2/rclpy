@@ -628,20 +628,9 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
-
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-
-  typedef void * (* destroy_ros_message_signature)(void *);
-  destroy_ros_message_signature destroy_ros_message =
-    (destroy_ros_message_signature)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
   void * raw_ros_message = convert_from_py(pymsg);
 
   rcl_ret_t ret = rcl_publish(publisher, raw_ros_message);
-  destroy_ros_message(raw_ros_message);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to publish: %s", rcl_get_error_string_safe());
