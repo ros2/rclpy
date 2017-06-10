@@ -1965,7 +1965,8 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
 /// Get the list of topics discovered by the provided node
 /**
  * \param[in] pynode Capsule pointing to the node
- * \return TopicNamesAndTypes object
+ * \return Python list of tuples where each tuple contains the two strings:
+ *   the topic name and topic type
  */
 static PyObject *
 rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
@@ -1987,33 +1988,20 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_reset_error();
     return NULL;
   }
-  PyObject * pynames_types_module = PyImport_ImportModule("rclpy.names_and_types");
-  PyObject * pytopic_names_types_class = PyObject_GetAttrString(
-    pynames_types_module, "TopicNamesAndTypes");
-  PyObject * pytopic_names_types = PyObject_CallObject(pytopic_names_types_class, NULL);
-  if (!pytopic_names_types) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Couldn't create instance of TopicNamesAndTypes");
-    return NULL;
-  }
 
-  PyObject * pytopic_names = PyList_New(topic_names_and_types.topic_count);
-  PyObject * pytype_names = PyList_New(topic_names_and_types.topic_count);
+  PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.topic_count);
   size_t idx;
   for (idx = 0; idx < topic_names_and_types.topic_count; ++idx) {
+    PyObject * pytuple = PyTuple_New(2);
+    PyTuple_SetItem(
+      pytuple, 0,
+      PyUnicode_FromString(topic_names_and_types.topic_names[idx]));
+    PyTuple_SetItem(
+      pytuple, 1,
+      PyUnicode_FromString(topic_names_and_types.type_names[idx]));
     PyList_SetItem(
-      pytopic_names, idx, PyUnicode_FromString(topic_names_and_types.topic_names[idx]));
-    PyList_SetItem(
-      pytype_names, idx, PyUnicode_FromString(topic_names_and_types.type_names[idx]));
+      pytopic_names_and_types, idx, pytuple);
   }
-  PyObject_SetAttrString(pytopic_names_types, "topic_names", pytopic_names);
-  PyObject_SetAttrString(pytopic_names_types, "type_names", pytype_names);
-  PyObject * pytopic_count = NULL;
-  pytopic_count = PyLong_FromSize_t(topic_names_and_types.topic_count);
-  PyObject_SetAttrString(
-    pytopic_names_types,
-    "topic_count",
-    pytopic_count);
 
   ret = rcl_destroy_topic_names_and_types(&topic_names_and_types);
   if (ret != RCL_RET_OK) {
@@ -2023,7 +2011,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  return pytopic_names_types;
+  return pytopic_names_and_types;
 }
 
 /// Return a Python QoSProfile object
