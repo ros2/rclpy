@@ -1095,7 +1095,7 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
   if (ret != RCL_RET_OK) {
-    if (ret == RCL_RET_SERVICE_NAME_INVALID) {
+    if (ret == RCL_RET_SERVICE_INVALID) {
       PyErr_Format(PyExc_ValueError,
         "Failed to create client due to invalid service name '%s': %s",
         service_name, rcl_get_error_string_safe());
@@ -1236,7 +1236,7 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
   if (ret != RCL_RET_OK) {
-    if (ret == RCL_RET_SERVICE_NAME_INVALID) {
+    if (ret == RCL_RET_SERVICE_INVALID) {
       PyErr_Format(PyExc_ValueError,
         "Failed to create service due to invalid topic name '%s': %s",
         service_name, rcl_get_error_string_safe());
