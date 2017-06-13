@@ -2037,9 +2037,15 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG pyqos_depth;
   unsigned PY_LONG_LONG pyqos_reliability;
   unsigned PY_LONG_LONG pyqos_durability;
+  bool avoid_ros_namespace_conventions;
 
   if (!PyArg_ParseTuple(
-      args, "KKKK", &pyqos_history, &pyqos_depth, &pyqos_reliability, &pyqos_durability))
+      args, "KKKKp",
+      &pyqos_history,
+      &pyqos_depth,
+      &pyqos_reliability,
+      &pyqos_durability,
+      &avoid_ros_namespace_conventions))
   {
     return NULL;
   }
@@ -2049,6 +2055,7 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   qos_profile->depth = pyqos_depth;
   qos_profile->reliability = pyqos_reliability;
   qos_profile->durability = pyqos_durability;
+  qos_profile->avoid_ros_namespace_conventions = avoid_ros_namespace_conventions;
   PyObject * pyqos_profile = PyCapsule_New(qos_profile, NULL, NULL);
   return pyqos_profile;
 }
@@ -2074,6 +2081,8 @@ rclpy_convert_to_py_qos_policy(void * profile)
     PyLong_FromUnsignedLong(qos_profile->reliability));
   PyObject_SetAttrString(pyqos_profile, "durability",
     PyLong_FromUnsignedLong(qos_profile->durability));
+  PyObject_SetAttrString(pyqos_profile, "avoid_ros_namespace_conventions",
+    Py_BuildValue("p", qos_profile->avoid_ros_namespace_conventions));
 
   assert(pyqos_profile != NULL);
   return pyqos_profile;
