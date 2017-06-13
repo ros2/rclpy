@@ -2082,7 +2082,7 @@ rclpy_convert_to_py_qos_policy(void * profile)
   PyObject_SetAttrString(pyqos_profile, "durability",
     PyLong_FromUnsignedLong(qos_profile->durability));
   PyObject_SetAttrString(pyqos_profile, "avoid_ros_namespace_conventions",
-    Py_BuildValue("p", qos_profile->avoid_ros_namespace_conventions));
+    PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions));
 
   assert(pyqos_profile != NULL);
   return pyqos_profile;
