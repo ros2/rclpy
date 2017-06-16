@@ -15,6 +15,7 @@
 import threading
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+import rclpy.utilities
 
 
 class ResponseThread(threading.Thread):
@@ -22,15 +23,26 @@ class ResponseThread(threading.Thread):
         threading.Thread.__init__(self)
         self.client = client
         self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(self.wait_set, 0, 0, 0, 1, 0)
+        _rclpy.rclpy_wait_set_init(self.wait_set, 0, 1, 0, 1, 0)
         _rclpy.rclpy_wait_set_clear_entities('client', self.wait_set)
         _rclpy.rclpy_wait_set_add_entity(
             'client', self.wait_set, self.client.client_handle)
 
     def run(self):
+        [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
+        _rclpy.rclpy_wait_set_add_entity('guard_condition', self.wait_set, sigint_gc)
+
         _rclpy.rclpy_wait(self.wait_set, -1)
+
+        guard_condition_ready_list = \
+            _rclpy.rclpy_get_ready_entities('guard_condition', self.wait_set)
+        if sigint_gc_handle in guard_condition_ready_list:
+            rclpy.utilities.shutdown()
+            return
         response = _rclpy.rclpy_take_response(
-            self.client.client_handle, self.client.srv_type.Response, self.client.sequence_number)
+            self.client.client_handle,
+            self.client.srv_type.Response,
+            self.client.sequence_number)
         if response:
             self.client.response = response
 
