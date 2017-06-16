@@ -30,7 +30,7 @@ def shutdown():
 
 
 def try_shutdown():
-    """Shutdown rclpy if not already shutdown"""
+    """Shutdown rclpy if not already shutdown."""
     with g_shutdown_lock:
         if _rclpy.rclpy_ok():
             return _rclpy.rclpy_shutdown()
