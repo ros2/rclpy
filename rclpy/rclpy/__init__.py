@@ -17,6 +17,10 @@ import sys
 from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
+from rclpy.utilities import get_rmw_implementation_identifier  # noqa
+from rclpy.utilities import ok  # noqa
+from rclpy.utilities import shutdown  # noqa
+from rclpy.utilities import try_shutdown  # noqa
 from rclpy.validate_namespace import validate_namespace
 from rclpy.validate_node_name import validate_node_name
 
@@ -113,15 +117,3 @@ def spin_once(node, *, timeout_sec=None):
         if request:
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
-
-
-def ok():
-    return _rclpy.rclpy_ok()
-
-
-def shutdown():
-    return _rclpy.rclpy_shutdown()
-
-
-def get_rmw_implementation_identifier():
-    return _rclpy.rclpy_get_rmw_implementation_identifier()
