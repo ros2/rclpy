@@ -1867,14 +1867,6 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   header->sequence_number = sequence_number;
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
 
-  if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Client failed to take response: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    destroy_ros_message(taken_response);
-    return NULL;
-  }
-
   if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pyresponse_type, "_CONVERT_TO_PY");
 
