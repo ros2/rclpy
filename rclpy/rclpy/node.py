@@ -230,8 +230,11 @@ class Node:
         self._handle = None
         return ret
 
-    def get_topic_names_and_types(self):
-        return _rclpy.rclpy_get_topic_names_and_types(self.handle)
+    def get_topic_names_and_types(self, no_demangle=False):
+        return _rclpy.rclpy_get_topic_names_and_types(self.handle, no_demangle)
+
+    def get_service_names_and_types(self):
+        return _rclpy.rclpy_get_service_names_and_types(self.handle)
 
     def get_node_names(self):
         return _rclpy.rclpy_get_node_names(self.handle)
