@@ -628,20 +628,9 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
 
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
-
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-
-  typedef void * (* destroy_ros_message_signature)(void *);
-  destroy_ros_message_signature destroy_ros_message =
-    (destroy_ros_message_signature)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
   void * raw_ros_message = convert_from_py(pymsg);
 
   rcl_ret_t ret = rcl_publish(publisher, raw_ros_message);
-  destroy_ros_message(raw_ros_message);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to publish: %s", rcl_get_error_string_safe());
@@ -1153,19 +1142,9 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
 
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-
-  typedef void * (* destroy_ros_message_signature)(void *);
-  destroy_ros_message_signature destroy_ros_message =
-    (destroy_ros_message_signature)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
   void * raw_ros_request = convert_from_py(pyrequest);
   int64_t sequence_number;
   rcl_ret_t ret = rcl_send_request(client, raw_ros_request, &sequence_number);
-  destroy_ros_message(raw_ros_request);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to send request: %s", rcl_get_error_string_safe());
@@ -1301,20 +1280,9 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
 
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
-
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-
-  typedef void * (* destroy_ros_message_signature)(void *);
-  destroy_ros_message_signature destroy_ros_message =
-    (destroy_ros_message_signature)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
   void * raw_ros_response = convert_from_py(pyresponse);
 
   rcl_ret_t ret = rcl_send_response(service, header, raw_ros_response);
-  destroy_ros_message(raw_ros_response);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to send request: %s", rcl_get_error_string_safe());
@@ -1697,16 +1665,6 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pymsg = PyObject_CallObject(pymsg_type, NULL);
 
   assert(convert_from_py != NULL);
-
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-
-  typedef void * (* destroy_ros_message_signature)(void *);
-  destroy_ros_message_signature destroy_ros_message =
-    (destroy_ros_message_signature)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
   void * taken_msg = convert_from_py(pymsg);
 
   rcl_ret_t ret = rcl_take(subscription, taken_msg, NULL);
@@ -1714,8 +1672,6 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to take from a subscription: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    destroy_ros_message(taken_msg);
     return NULL;
   }
 
@@ -1727,7 +1683,6 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
       (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
 
     PyObject * pytaken_msg = convert_to_py(taken_msg);
-    destroy_ros_message(taken_msg);
 
     Py_INCREF(pytaken_msg);
 
@@ -1772,15 +1727,6 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
 
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-
-  typedef void * (* destroy_ros_message_signature)(void *);
-  destroy_ros_message_signature destroy_ros_message =
-    (destroy_ros_message_signature)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
   PyObject * pysrv = PyObject_CallObject(pyrequest_type, NULL);
 
   void * taken_request = convert_from_py(pysrv);
@@ -1790,8 +1736,6 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
       "Service failed to take request: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    destroy_ros_message(taken_request);
     return NULL;
   }
 
@@ -1803,7 +1747,6 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
       (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
 
     PyObject * pytaken_request = convert_to_py(taken_request);
-    destroy_ros_message(taken_request);
 
     Py_INCREF(pytaken_request);
 
@@ -1848,15 +1791,6 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   convert_from_py_signature convert_from_py =
     (convert_from_py_signature)PyCapsule_GetPointer(pyconvert_from_py, NULL);
 
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-
-  typedef void * (* destroy_ros_message_signature)(void *);
-  destroy_ros_message_signature destroy_ros_message =
-    (destroy_ros_message_signature)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
   PyObject * pysrv = PyObject_CallObject(pyresponse_type, NULL);
 
   assert(client != NULL);
@@ -1867,6 +1801,12 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   header->sequence_number = sequence_number;
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
 
+  if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Client failed to take response: %s", rcl_get_error_string_safe());
+    return NULL;
+  }
+
   if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pyresponse_type, "_CONVERT_TO_PY");
 
@@ -1875,7 +1815,6 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
       (convert_to_py_signature)PyCapsule_GetPointer(pyconvert_to_py, NULL);
 
     PyObject * pytaken_response = convert_to_py(taken_response);
-    destroy_ros_message(taken_response);
 
     Py_INCREF(pytaken_response);
 
