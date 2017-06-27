@@ -1362,13 +1362,13 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
-    Py_RETURN_FALSE;
+    return NULL;
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to fini '%s': %s", entity_type, rcl_get_error_string_safe());
     rcl_reset_error();
-    Py_RETURN_FALSE;
+    return NULL;
   }
   Py_RETURN_TRUE;
 }
@@ -1511,13 +1511,13 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
-    Py_RETURN_FALSE;
+    return NULL;
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to clear '%s' from wait set: %s", entity_type, rcl_get_error_string_safe());
     rcl_reset_error();
-    Py_RETURN_FALSE;
+    return NULL;
   }
   Py_RETURN_TRUE;
 }
@@ -1565,7 +1565,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
       "%s is not a known entity", entity_type);
-    Py_RETURN_FALSE;
+    return NULL;
   }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,

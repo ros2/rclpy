@@ -207,27 +207,39 @@ class Node:
         if not class_ or class_.__name__ != 'PyCapsule':
             raise ValueError('The node handle must be a PyCapsule')
 
-        for sub in self.subscriptions:
-            ret &= _rclpy.rclpy_destroy_node_entity(
+        for sub in list(self.subscriptions):
+            destroyed = _rclpy.rclpy_destroy_node_entity(
                 'subscription', sub.subscription_handle, self.handle)
-            self.subscriptions.remove(sub)
-        for pub in self.publishers:
-            ret &= _rclpy.rclpy_destroy_node_entity(
+            if destroyed:
+                self.subscriptions.remove(sub)
+            ret &= destroyed
+        for pub in list(self.publishers):
+            destroyed = _rclpy.rclpy_destroy_node_entity(
                 'publisher', pub.publisher_handle, self.handle)
-            self.publishers.remove(pub)
-        for cli in self.clients:
-            ret &= _rclpy.rclpy_destroy_node_entity(
+            if destroyed:
+                self.publishers.remove(pub)
+            ret &= destroyed
+        for cli in list(self.clients):
+            destroyed = _rclpy.rclpy_destroy_node_entity(
                 'client', cli.client_handle, self.handle)
-            self.clients.remove(cli)
-        for srv in self.services:
-            ret &= _rclpy.rclpy_destroy_node_entity(
+            if destroyed:
+                self.clients.remove(cli)
+            ret &= destroyed
+        for srv in list(self.services):
+            destroyed = _rclpy.rclpy_destroy_node_entity(
                 'service', srv.service_handle, self.handle)
-            self.services.remove(srv)
-        for tmr in self.timers:
-            ret &= _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
-            self.timers.remove(tmr)
-        ret &= _rclpy.rclpy_destroy_entity('node', self.handle)
-        self._handle = None
+            if destroyed:
+                self.services.remove(srv)
+            ret &= destroyed
+        for tmr in list(self.timers):
+            destroyed = _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
+            if destroyed:
+                self.timers.remove(tmr)
+            ret &= destroyed
+        destroyed = _rclpy.rclpy_destroy_entity('node', self.handle)
+        if destroyed:
+            self._handle = None
+        ret &= destroyed
         return ret
 
     def get_topic_names_and_types(self, no_demangle=False):
