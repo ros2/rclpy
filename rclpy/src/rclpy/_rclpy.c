@@ -1719,6 +1719,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
+  if (PyErr_Occurred()) {
+    return NULL;
+  }
+
   if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_TO_PY");
 
@@ -1728,6 +1732,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
     PyObject * pytaken_msg = convert_to_py(taken_msg);
     destroy_ros_message(taken_msg);
+
+    if (PyErr_Occurred()) {
+      return NULL;
+    }
 
     Py_INCREF(pytaken_msg);
 
