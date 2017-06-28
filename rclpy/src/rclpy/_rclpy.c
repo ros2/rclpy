@@ -639,6 +639,10 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
   void * raw_ros_message = convert_from_py(pymsg);
+  if (!raw_ros_message) {
+    // the function has set the Python error
+    return NULL;
+  }
 
   rcl_ret_t ret = rcl_publish(publisher, raw_ros_message);
   destroy_ros_message(raw_ros_message);
@@ -1163,6 +1167,10 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
   void * raw_ros_request = convert_from_py(pyrequest);
+  if (!raw_ros_request) {
+    // the function has set the Python error
+    return NULL;
+  }
   int64_t sequence_number;
   rcl_ret_t ret = rcl_send_request(client, raw_ros_request, &sequence_number);
   destroy_ros_message(raw_ros_request);
@@ -1312,6 +1320,10 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
   void * raw_ros_response = convert_from_py(pyresponse);
+  if (!raw_ros_response) {
+    // the function has set the Python error
+    return NULL;
+  }
 
   rcl_ret_t ret = rcl_send_response(service, header, raw_ros_response);
   destroy_ros_message(raw_ros_response);
@@ -1708,6 +1720,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
   void * taken_msg = convert_from_py(pymsg);
+  if (!taken_msg) {
+    // the function has set the Python error
+    return NULL;
+  }
 
   rcl_ret_t ret = rcl_take(subscription, taken_msg, NULL);
 
@@ -1728,6 +1744,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
     PyObject * pytaken_msg = convert_to_py(taken_msg);
     destroy_ros_message(taken_msg);
+    if (!pytaken_msg) {
+      // the function has set the Python error
+      return NULL;
+    }
 
     Py_INCREF(pytaken_msg);
 
@@ -1784,6 +1804,10 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pysrv = PyObject_CallObject(pyrequest_type, NULL);
 
   void * taken_request = convert_from_py(pysrv);
+  if (!taken_request) {
+    // the function has set the Python error
+    return NULL;
+  }
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
   rcl_ret_t ret = rcl_take_request(service, header, taken_request);
 
@@ -1804,6 +1828,10 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
 
     PyObject * pytaken_request = convert_to_py(taken_request);
     destroy_ros_message(taken_request);
+    if (!pytaken_request) {
+      // the function has set the Python error
+      return NULL;
+    }
 
     Py_INCREF(pytaken_request);
 
@@ -1863,6 +1891,10 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   assert(convert_from_py != NULL);
   assert(pysrv != NULL);
   void * taken_response = convert_from_py(pysrv);
+  if (!taken_response) {
+    // the function has set the Python error
+    return NULL;
+  }
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
   header->sequence_number = sequence_number;
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
@@ -1876,6 +1908,10 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
 
     PyObject * pytaken_response = convert_to_py(taken_response);
     destroy_ros_message(taken_response);
+    if (!pytaken_response) {
+      // the function has set the Python error
+      return NULL;
+    }
 
     Py_INCREF(pytaken_response);
 
