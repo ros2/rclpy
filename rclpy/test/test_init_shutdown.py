@@ -83,6 +83,16 @@ def func_double_shutdown():
     return False
 
 
+def func_create_node_without_init():
+    import rclpy
+    from rclpy.exceptions import NotInitializedException
+    try:
+        rclpy.create_node('foo')
+    except NotInitializedException:
+        return True
+    return False
+
+
 def func_launch(function, message):
     pool = multiprocessing.Pool(1)
     result = pool.apply(
@@ -113,3 +123,7 @@ def test_double_init():
 
 def test_double_shutdown():
     func_launch(func_double_shutdown, 'Expected Runtime error when shutting down rclpy twice')
+
+
+def test_create_node_without_init():
+    func_launch(func_create_node_without_init, 'Expected NotInitializedException')
