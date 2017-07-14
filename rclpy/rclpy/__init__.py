@@ -15,10 +15,11 @@
 import sys
 
 from rclpy.constants import S_TO_NS
+from rclpy.exceptions import NotInitializedException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa
-from rclpy.utilities import ok  # noqa
+from rclpy.utilities import ok
 from rclpy.utilities import shutdown  # noqa
 from rclpy.utilities import try_shutdown  # noqa
 from rclpy.validate_namespace import validate_namespace
@@ -32,6 +33,8 @@ def init(*, args=None):
 def create_node(node_name, *, namespace=None):
     namespace = namespace or ''
     failed = False
+    if not ok():
+        raise NotInitializedException('cannot create node')
     try:
         node_handle = _rclpy.rclpy_create_node(node_name, namespace)
     except ValueError:
