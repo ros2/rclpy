@@ -54,12 +54,15 @@ def func_destroy_corrupted_node():
     rclpy.init()
     node = rclpy.create_node('test_node2')
     assert node.destroy_node() is True
+    org_handle = node._handle
     node._handle = 'garbage'
     ret = False
     try:
         node.destroy_node()
     except ValueError:
         ret = True
+        node._handle = org_handle
+        node.destroy_node()
     finally:
         rclpy.shutdown()
     return ret
