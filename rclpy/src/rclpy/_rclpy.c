@@ -2139,7 +2139,7 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG pyqos_depth;
   unsigned PY_LONG_LONG pyqos_reliability;
   unsigned PY_LONG_LONG pyqos_durability;
-  bool avoid_ros_namespace_conventions;
+  int avoid_ros_namespace_conventions;
 
   if (!PyArg_ParseTuple(
       args, "KKKKp",
