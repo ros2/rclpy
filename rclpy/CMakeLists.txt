@@ -74,6 +74,38 @@ install(TARGETS ${PROJECT_NAME}
   DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
 )
 
+# Logging module
+add_library(
+  rclpy_logging
+  SHARED src/rclpy/_rclpy_logging.c
+)
+
+set(library_name rclpy_logging)
+set_properties(${library_name} "")
+if(WIN32)
+  set_properties(${library_name} "_DEBUG")
+  set_properties(${library_name} "_MINSIZEREL")
+  set_properties(${library_name} "_RELEASE")
+  set_properties(${library_name} "_RELWITHDEBINFO")
+endif()
+
+target_link_libraries(${library_name}
+  ${PythonExtra_LIBRARIES}
+)
+
+ament_target_dependencies(${library_name}
+  "rcutils"
+)
+
+target_include_directories(${library_name}
+  PUBLIC
+  ${PythonExtra_INCLUDE_DIRS}
+)
+
+install(TARGETS ${library_name}
+  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

@@ -30,3 +30,4 @@ import importlib
 
 
 rclpy_implementation = importlib.import_module('._rclpy', package='rclpy')
+rclpy_logging_implementation = importlib.import_module('._rclpy_logging', package='rclpy')
