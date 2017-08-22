@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.5)
 
 project(rclpy C)
 
+# Default to C11
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 11)
+endif()
+
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rcl REQUIRED)
@@ -76,6 +81,27 @@ ament_target_dependencies(rclpy
   "rcutils"
 )
 
+# Logging support (auto-generated for different combinations of features)
+# "watch" template for changes
+configure_file(
+  "resource/_rclpy_logging.c.em"
+  "_rclpy_logging.c.em.watch"
+  COPYONLY)
+# generate file with logging support from template
+set(logging_rcutils_config_path ${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl)
+set(template_in ${CMAKE_CURRENT_SOURCE_DIR}/resource/_rclpy_logging.c.em)
+set(template_out src/rclpy/_rclpy_logging.c)
+set(python_code
+  "import em"
+  "em.invoke(['-o', '${template_out}', '-D', 'logging_rcutils_config_path=\"${logging_rcutils_config_path}\"', '${template_in}'])")
+string(REPLACE ";" "$<SEMICOLON>" python_code "${python_code}")
+add_custom_command(OUTPUT src/rclpy/_rclpy_logging.c
+  COMMAND ${CMAKE_COMMAND} -E make_directory "src/rclpy"
+  COMMAND ${PYTHON_EXECUTABLE} ARGS -c "${python_code}"
+  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/_rclpy_logging.c.em.watch"
+  COMMENT "Expanding _rclpy_logging.c.em"
+  VERBATIM
+)
 add_library(
   rclpy_logging
   SHARED src/rclpy/_rclpy_logging.c

@@ -24,12 +24,49 @@ class TestLogging(unittest.TestCase):
     def setUpClass(cls):
         rclpy.logging.initialize()
 
-    def test_set_get_severity_threshold(self):
+    def test_severity_threshold(self):
         original_severity = rclpy.logging.get_severity_threshold()
         for severity in LoggingSeverity:
             rclpy.logging.set_severity_threshold(severity)
             self.assertEqual(severity, rclpy.logging.get_severity_threshold())
         rclpy.logging.set_severity_threshold(original_severity)
+
+    def test_log(self):
+        rclpy.logging.logdebug('message')
+        rclpy.logging.loginfo('message')
+        rclpy.logging.logwarn('message')
+        rclpy.logging.logerr('message')
+        rclpy.logging.logfatal('message')
+
+        for severity in reversed(LoggingSeverity):
+            print('\n')
+            print('logging once')
+            rclpy.logging.log(
+                'message', severity,
+                name='my_name',
+                once=True,
+            )
+            print('logging throttled')
+            rclpy.logging.log(
+                'message', severity,
+                throttle_duration=1000,
+                name='my_name',
+                throttle_time_source_type='RCUTILS_STEADY_TIME',
+                skip_first=True,
+            )
+            # Check half-specified feature
+            with self.assertRaisesRegex(RuntimeError, 'required parameter .* not specified'):
+                rclpy.logging.log(
+                    'message', severity,
+                    throttle_duration=1000,
+                )
+            # Check unused kwargs
+            rclpy.logging.log(
+                'message', severity,
+                name='my_name',
+                once=True,
+                unused_kwarg='unused_kwarg',
+            )
 
 
 if __name__ == '__main__':

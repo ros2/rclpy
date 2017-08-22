@@ -15,20 +15,7 @@
 
 from enum import IntEnum
 
-from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
-
-
-def initialize():
-    return _rclpy_logging.rclpy_logging_initialize()
-
-
-def get_severity_threshold():
-    return _rclpy_logging.rclpy_logging_get_severity_threshold()
-
-
-def set_severity_threshold(severity):
-    assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
-    return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
+import rclpy.impl.logging_rcutils
 
 
 class LoggingSeverity(IntEnum):
@@ -38,8 +25,48 @@ class LoggingSeverity(IntEnum):
     This enum matches the one defined in rcutils/logging.h
     """
 
-    RCLPY_LOG_SEVERITY_DEBUG = 0
-    RCLPY_LOG_SEVERITY_INFO = 1
-    RCLPY_LOG_SEVERITY_WARN = 2
-    RCLPY_LOG_SEVERITY_ERROR = 3
-    RCLPY_LOG_SEVERITY_FATAL = 4
+    DEBUG = 0
+    INFO = 1
+    WARN = 2
+    ERROR = 3
+    FATAL = 4
+
+
+def initialize():
+    return rclpy.impl.logging_rcutils.initialize()
+
+
+def get_severity_threshold():
+    return LoggingSeverity(rclpy.impl.logging_rcutils.get_severity_threshold())
+
+
+def set_severity_threshold(severity):
+    assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
+    return rclpy.impl.logging_rcutils.set_severity_threshold(severity)
+
+
+def logdebug(message):
+    return log(message, severity=LoggingSeverity.DEBUG)
+
+
+def loginfo(message):
+    return log(message, severity=LoggingSeverity.INFO)
+
+
+def logwarn(message):
+    return log(message, severity=LoggingSeverity.WARN)
+
+
+def logerr(message):
+    return log(message, severity=LoggingSeverity.ERROR)
+
+
+def logfatal(message):
+    return log(message, severity=LoggingSeverity.FATAL)
+
+
+def log(message, severity, **kwargs):
+    assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
+    severity = LoggingSeverity(severity)
+
+    return rclpy.impl.logging_rcutils.log(message, severity, **kwargs)
