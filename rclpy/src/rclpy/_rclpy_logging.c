@@ -70,11 +70,14 @@ static PyMethodDef rclpy_logging_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
+PyDoc_STRVAR(rclpy_logging__doc__,
+"RCLPY module for logging.");
+
 /// Define the Python module
 static struct PyModuleDef _rclpy_logging_module = {
   PyModuleDef_HEAD_INIT,
   "_rclpy_logging",
-  "_rclpy_logging_doc",
+  rclpy_logging__doc__,
   -1,   /* -1 means that the module keeps state in global variables */
   rclpy_logging_methods,
   NULL,
