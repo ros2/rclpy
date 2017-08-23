@@ -43,67 +43,46 @@ if(typesupport_impls STREQUAL "")
   return()
 endif()
 
+function(configure_python_c_extension_library _library_name)
+  set_properties(${_library_name} "")
+  if(WIN32)
+    set_properties(${_library_name} "_DEBUG")
+    set_properties(${_library_name} "_MINSIZEREL")
+    set_properties(${_library_name} "_RELEASE")
+    set_properties(${_library_name} "_RELWITHDEBINFO")
+  endif()
+
+  target_link_libraries(${_library_name}
+    ${PythonExtra_LIBRARIES}
+  )
+
+  target_include_directories(${_library_name}
+    PUBLIC
+    ${PythonExtra_INCLUDE_DIRS}
+  )
+
+  install(TARGETS ${_library_name}
+    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+  )
+endfunction()
+
 add_library(
-  ${PROJECT_NAME}
+  rclpy
   SHARED src/rclpy/_rclpy.c
 )
-
-set_properties(${PROJECT_NAME} "")
-if(WIN32)
-  set_properties(${PROJECT_NAME} "_DEBUG")
-  set_properties(${PROJECT_NAME} "_MINSIZEREL")
-  set_properties(${PROJECT_NAME} "_RELEASE")
-  set_properties(${PROJECT_NAME} "_RELWITHDEBINFO")
-endif()
-
-target_link_libraries(${PROJECT_NAME}
-  ${PythonExtra_LIBRARIES}
-)
-
-ament_target_dependencies(${PROJECT_NAME}
+configure_python_c_extension_library(rclpy)
+ament_target_dependencies(rclpy
   "rcl"
   "rcutils"
 )
 
-target_include_directories(${PROJECT_NAME}
-  PUBLIC
-  ${PythonExtra_INCLUDE_DIRS}
-)
-
-install(TARGETS ${PROJECT_NAME}
-  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
-)
-
-# Logging module
 add_library(
   rclpy_logging
   SHARED src/rclpy/_rclpy_logging.c
 )
-
-set(library_name rclpy_logging)
-set_properties(${library_name} "")
-if(WIN32)
-  set_properties(${library_name} "_DEBUG")
-  set_properties(${library_name} "_MINSIZEREL")
-  set_properties(${library_name} "_RELEASE")
-  set_properties(${library_name} "_RELWITHDEBINFO")
-endif()
-
-target_link_libraries(${library_name}
-  ${PythonExtra_LIBRARIES}
-)
-
-ament_target_dependencies(${library_name}
+configure_python_c_extension_library(rclpy_logging)
+ament_target_dependencies(rclpy_logging
   "rcutils"
-)
-
-target_include_directories(${library_name}
-  PUBLIC
-  ${PythonExtra_INCLUDE_DIRS}
-)
-
-install(TARGETS ${library_name}
-  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
 )
 
 if(BUILD_TESTING)
