@@ -15,15 +15,12 @@
 import sys
 
 from rclpy.constants import S_TO_NS
-from rclpy.exceptions import NotInitializedException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa
-from rclpy.utilities import ok
+from rclpy.utilities import ok  # noqa
 from rclpy.utilities import shutdown  # noqa
 from rclpy.utilities import try_shutdown  # noqa
-from rclpy.validate_namespace import validate_namespace
-from rclpy.validate_node_name import validate_node_name
 
 
 def init(*, args=None):
@@ -31,24 +28,7 @@ def init(*, args=None):
 
 
 def create_node(node_name, *, namespace=None):
-    namespace = namespace or ''
-    failed = False
-    if not ok():
-        raise NotInitializedException('cannot create node')
-    try:
-        node_handle = _rclpy.rclpy_create_node(node_name, namespace)
-    except ValueError:
-        failed = True
-    if failed:
-        # these will raise more specific errors if the name or namespace is bad
-        validate_node_name(node_name)
-        # emulate what rcl_node_init() does to accept '' and relative namespaces
-        if not namespace:
-            namespace = '/'
-        if not namespace.startswith('/'):
-            namespace = '/' + namespace
-        validate_namespace(namespace)
-    return Node(node_handle)
+    return Node(node_name, namespace=namespace)
 
 
 def spin_once(node, *, timeout_sec=None):

@@ -14,6 +14,7 @@
 
 from rclpy.client import Client
 from rclpy.constants import S_TO_NS
+from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -22,6 +23,7 @@ from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.timer import WallTimer
+from rclpy.utilities import ok
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
 from rclpy.validate_node_name import validate_node_name
@@ -30,13 +32,34 @@ from rclpy.validate_topic_name import validate_topic_name
 
 class Node:
 
-    def __init__(self, handle):
+    def __init__(self, node_name, *, namespace=None):
         self.clients = []
-        self._handle = handle
+        self._handle = None
         self.publishers = []
         self.services = []
         self.subscriptions = []
         self.timers = []
+
+        namespace = namespace or ''
+        failed = False
+        if not ok():
+            raise NotInitializedException('cannot create node')
+        try:
+            node_handle = _rclpy.rclpy_create_node(node_name, namespace)
+            self._handle = node_handle
+        except ValueError:
+            failed = True
+        if failed:
+            # these will raise more specific errors if the name or namespace is bad
+            validate_node_name(node_name)
+            # emulate what rcl_node_init() does to accept '' and relative namespaces
+            if not namespace:
+                namespace = '/'
+            if not namespace.startswith('/'):
+                namespace = '/' + namespace
+            validate_namespace(namespace)
+            # Should not get to this point
+            raise RuntimeError("rclpy_create_node failed for unknown reason")
 
     @property
     def handle(self):
