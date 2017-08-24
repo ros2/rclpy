@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.client import Client
 from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NotInitializedException
@@ -39,6 +40,7 @@ class Node:
         self.services = []
         self.subscriptions = []
         self.timers = []
+        self._default_callback_group = MutuallyExclusiveCallbackGroup()
 
         namespace = namespace or ''
         failed = False
@@ -102,7 +104,11 @@ class Node:
         self.publishers.append(publisher)
         return publisher
 
-    def create_subscription(self, msg_type, topic, callback, *, qos_profile=qos_profile_default):
+    def create_subscription(
+            self, msg_type, topic, callback, *, qos_profile=qos_profile_default,
+            callback_group=None):
+        if callback_group is None:
+            callback_group = self._default_callback_group
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
@@ -119,11 +125,16 @@ class Node:
 
         subscription = Subscription(
             subscription_handle, subscription_pointer, msg_type,
-            topic, callback, qos_profile, self.handle)
+            topic, callback, callback_group, qos_profile, self.handle)
         self.subscriptions.append(subscription)
+        callback_group.add_entity(subscription)
         return subscription
 
-    def create_client(self, srv_type, srv_name, *, qos_profile=qos_profile_services_default):
+    def create_client(
+            self, srv_type, srv_name, *, qos_profile=qos_profile_services_default,
+            callback_group=None):
+        if callback_group is None:
+            callback_group = self._default_callback_group
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:
@@ -140,12 +151,17 @@ class Node:
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
         client = Client(
-            self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile)
+            self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile,
+            callback_group)
         self.clients.append(client)
+        callback_group.add_entity(client)
         return client
 
     def create_service(
-            self, srv_type, srv_name, callback, *, qos_profile=qos_profile_services_default):
+            self, srv_type, srv_name, callback, *, qos_profile=qos_profile_services_default,
+            callback_group=None):
+        if callback_group is None:
+            callback_group = self._default_callback_group
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:
@@ -163,15 +179,19 @@ class Node:
             self._validate_topic_or_service_name(srv_name, is_service=True)
         service = Service(
             self.handle, service_handle, service_pointer,
-            srv_type, srv_name, callback, qos_profile)
+            srv_type, srv_name, callback, callback_group, qos_profile)
         self.services.append(service)
+        callback_group.add_entity(service)
         return service
 
-    def create_timer(self, timer_period_sec, callback):
+    def create_timer(self, timer_period_sec, callback, callback_group=None):
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
-        timer = WallTimer(callback, timer_period_nsec)
+        if callback_group is None:
+            callback_group = self._default_callback_group
+        timer = WallTimer(callback, callback_group, timer_period_nsec)
 
         self.timers.append(timer)
+        callback_group.add_entity(timer)
         return timer
 
     def destroy_publisher(self, publisher):
