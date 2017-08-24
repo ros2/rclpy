@@ -1761,7 +1761,13 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 #endif  // _WIN32
   previous_handler = signal(SIGINT, catch_function);
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, NULL);
-  rcl_ret_t ret = rcl_wait(wait_set, timeout);
+  rcl_ret_t ret;
+
+  // Could be a long wait, release the GIL
+  Py_BEGIN_ALLOW_THREADS;
+  ret = rcl_wait(wait_set, timeout);
+  Py_END_ALLOW_THREADS;
+
   signal(SIGINT, previous_handler);
   if (ret != RCL_RET_OK && ret != RCL_RET_TIMEOUT) {
     PyErr_Format(PyExc_RuntimeError,
