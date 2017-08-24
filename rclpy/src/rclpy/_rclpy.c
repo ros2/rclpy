@@ -77,6 +77,92 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
   return pylist;
 }
 
+/// Create a general purpose guard condition
+/**
+ * A successful call will return a list with two elements:
+ *
+ * - a Capsule with the pointer of the created rcl_guard_condition_t * structure
+ * - an integer representing the memory address of the rcl_guard_condition_t
+ *
+ * \return a list with the capsule and memory location, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  rcl_guard_condition_t * gc =
+    (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
+  *gc = rcl_get_zero_initialized_guard_condition();
+  rcl_guard_condition_options_t gc_options = rcl_guard_condition_get_default_options();
+
+  rcl_ret_t ret = rcl_guard_condition_init(gc, gc_options);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create guard_condition: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+  PyObject * pylist = PyList_New(0);
+  PyList_Append(pylist, PyCapsule_New(gc, NULL, NULL));
+  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&gc->impl));
+
+  return pylist;
+}
+
+/// Destroy a general purpose guard condition
+/**
+ *
+ * \param[in] guard_condition Capsule pointing to guard condtition to destory
+ * \return True on success, False on failure
+ */
+static PyObject *
+rclpy_destroy_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pygc;
+
+  if (!PyArg_ParseTuple(args, "O", &pygc)) {
+    Py_RETURN_FALSE;
+  }
+
+  rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(pygc, NULL);
+  rcl_ret_t ret = rcl_guard_condition_fini(gc);
+
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to fini guard_condition: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+  Py_RETURN_TRUE;
+}
+
+/// Trigger a general purpose guard condition
+/**
+ *
+ * \param[in] guard_condition Capsule pointing to guard condtition
+ * \return True on success, False on failure
+ */
+static PyObject *
+rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pygc;
+
+  if (!PyArg_ParseTuple(args, "O", &pygc)) {
+    Py_RETURN_FALSE;
+  }
+
+  rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(pygc, NULL);
+  rcl_ret_t ret = rcl_trigger_guard_condition(gc);
+
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+  Py_RETURN_TRUE;
+}
+
 /// Initialize rcl with default options, ignoring parameters
 static PyObject *
 rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
@@ -2367,6 +2453,12 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
    "Create a guard_condition triggered when sigint is received."},
+  {"rclpy_create_guard_condition", rclpy_create_guard_condition, METH_VARARGS,
+   "Create a general purpose guard_condition."},
+  {"rclpy_trigger_guard_condition", rclpy_trigger_guard_condition, METH_VARARGS,
+   "Trigger a general purpose guard_condition."},
+  {"rclpy_destroy_guard_condition", rclpy_destroy_guard_condition, METH_VARARGS,
+   "Destroy a general purpose guard_condition."},
 
   {"rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
    "Destroy a Node entity."},
