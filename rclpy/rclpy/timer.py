@@ -18,7 +18,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 # TODO(mikaelarguedas) create a Timer or ROSTimer once we can specify custom time sources
 class WallTimer(object):
 
-    def __init__(self, timer_handle, timer_pointer, callback, timer_period_ns):
+    def __init__(self, callback, timer_period_ns):
         [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(timer_period_ns)
         self.timer_period_ns = timer_period_ns
         self.callback = callback

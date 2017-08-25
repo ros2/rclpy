@@ -146,8 +146,7 @@ class Node:
 
     def create_timer(self, timer_period_sec, callback):
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
-        [timer_handle, timer_pointer] = _rclpy.rclpy_create_timer(timer_period_nsec)
-        timer = WallTimer(timer_handle, timer_pointer, callback, timer_period_nsec)
+        timer = WallTimer(callback, timer_period_nsec)
 
         self.timers.append(timer)
         return timer
