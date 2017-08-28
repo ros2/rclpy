@@ -17,7 +17,7 @@ from enum import IntEnum
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-class QoSProfile(object):
+class QoSProfile:
     """Define Quality of Service policies."""
 
     __slots__ = [
