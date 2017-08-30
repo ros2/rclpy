@@ -20,10 +20,6 @@ from rclpy.logging import LoggingSeverity
 
 class TestLogging(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        rclpy.logging.initialize()
-
     def test_severity_threshold(self):
         original_severity = rclpy.logging.get_severity_threshold()
         for severity in LoggingSeverity:
@@ -39,7 +35,9 @@ class TestLogging(unittest.TestCase):
         rclpy.logging.logfatal('message')
 
         for severity in reversed(LoggingSeverity):
+            # TODO(dhood): tests that logging features work as expected
             print('\n')
+            print(severity)
             print('logging once')
             rclpy.logging.log(
                 'message', severity,
@@ -52,19 +50,19 @@ class TestLogging(unittest.TestCase):
                 throttle_duration=1000,
                 name='my_name',
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
-                skip_first=True,
             )
             # Check half-specified feature
             with self.assertRaisesRegex(RuntimeError, 'required parameter .* not specified'):
                 rclpy.logging.log(
                     'message', severity,
-                    throttle_duration=1000,
+                    throttle_time_source_type='asdf',
                 )
             # Check unused kwargs
+            print('logging skip first')
             rclpy.logging.log(
                 'message', severity,
                 name='my_name',
-                once=True,
+                skip_first=True,
                 unused_kwarg='unused_kwarg',
             )
 

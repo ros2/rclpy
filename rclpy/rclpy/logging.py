@@ -14,8 +14,10 @@
 
 
 from enum import IntEnum
+import inspect
 
 import rclpy.impl.logging_rcutils
+from rclpy.impl.logging_rcutils import _frame_to_caller_id
 
 
 class LoggingSeverity(IntEnum):
@@ -32,41 +34,60 @@ class LoggingSeverity(IntEnum):
     FATAL = 4
 
 
-def initialize():
-    return rclpy.impl.logging_rcutils.initialize()
+def get_named_logger(name):
+    return rclpy.impl.logging_rcutils.RcutilsLogger(name)
+
+_rclpy_logger = get_named_logger('rclpy.internal')
 
 
 def get_severity_threshold():
-    return LoggingSeverity(rclpy.impl.logging_rcutils.get_severity_threshold())
+    return LoggingSeverity(_rclpy_logger.get_severity_threshold())
 
 
 def set_severity_threshold(severity):
     assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
-    return rclpy.impl.logging_rcutils.set_severity_threshold(severity)
+    return _rclpy_logger.set_severity_threshold(severity)
 
 
-def logdebug(message):
-    return log(message, severity=LoggingSeverity.DEBUG)
+def logdebug(message, **kwargs):
+    _rclpy_logger.log(
+        message, severity=LoggingSeverity.DEBUG,
+        caller_id=_frame_to_caller_id(inspect.currentframe().f_back.f_back),
+        **kwargs)
 
 
-def loginfo(message):
-    return log(message, severity=LoggingSeverity.INFO)
+def loginfo(message, **kwargs):
+    _rclpy_logger.log(
+        message, severity=LoggingSeverity.INFO,
+        caller_id=_frame_to_caller_id(inspect.currentframe().f_back.f_back.f_back),
+        **kwargs)
 
 
-def logwarn(message):
-    return log(message, severity=LoggingSeverity.WARN)
+def logwarn(message, **kwargs):
+    _rclpy_logger.log(
+        message, severity=LoggingSeverity.WARN,
+        caller_id=_frame_to_caller_id(inspect.currentframe().f_back.f_back),
+        **kwargs)
 
 
-def logerr(message):
-    return log(message, severity=LoggingSeverity.ERROR)
+def logerr(message, **kwargs):
+    _rclpy_logger.log(
+        message, severity=LoggingSeverity.ERROR,
+        caller_id=_frame_to_caller_id(inspect.currentframe().f_back.f_back),
+        **kwargs)
 
 
-def logfatal(message):
-    return log(message, severity=LoggingSeverity.FATAL)
+def logfatal(message, **kwargs):
+    _rclpy_logger.log(
+        message, severity=LoggingSeverity.FATAL,
+        caller_id=_frame_to_caller_id(inspect.currentframe().f_back.f_back),
+        **kwargs)
 
 
+# TODO(dhood): document the supported features
 def log(message, severity, **kwargs):
     assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
     severity = LoggingSeverity(severity)
-
-    return rclpy.impl.logging_rcutils.log(message, severity, **kwargs)
+    _rclpy_logger.log(
+        message, severity,
+        **kwargs)
