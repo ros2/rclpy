@@ -43,25 +43,25 @@ class InvalidNamespaceException(NameValidationException):
     """Raised when a namespace is invalid."""
 
     def __init__(self, name, error_msg, invalid_index, *args):
-        NameValidationException.__init__(self, "namespace", name, error_msg, invalid_index)
+        NameValidationException.__init__(self, 'namespace', name, error_msg, invalid_index)
 
 
 class InvalidNodeNameException(NameValidationException):
     """Raised when a node name is invalid."""
 
     def __init__(self, name, error_msg, invalid_index, *args):
-        NameValidationException.__init__(self, "node name", name, error_msg, invalid_index)
+        NameValidationException.__init__(self, 'node name', name, error_msg, invalid_index)
 
 
 class InvalidTopicNameException(NameValidationException):
     """Raised when a topic name is invalid."""
 
     def __init__(self, name, error_msg, invalid_index, *args):
-        NameValidationException.__init__(self, "topic name", name, error_msg, invalid_index)
+        NameValidationException.__init__(self, 'topic name', name, error_msg, invalid_index)
 
 
 class InvalidServiceNameException(NameValidationException):
     """Raised when a service name is invalid."""
 
     def __init__(self, name, error_msg, invalid_index, *args):
-        NameValidationException.__init__(self, "service name", name, error_msg, invalid_index)
+        NameValidationException.__init__(self, 'service name', name, error_msg, invalid_index)

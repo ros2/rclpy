@@ -19,6 +19,7 @@ import rclpy.utilities
 
 
 class ResponseThread(threading.Thread):
+
     def __init__(self, client):
         threading.Thread.__init__(self)
         self.client = client

@@ -22,7 +22,7 @@ from unittest.case import SkipTest
 def run_catch_report_raise(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
-    except:
+    except Exception:
         print('exception in {0}():'.format(func.__name__), file=sys.stderr)
         traceback.print_exc()
         raise
