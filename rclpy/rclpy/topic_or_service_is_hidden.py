@@ -28,4 +28,4 @@ def topic_or_service_is_hidden(name):
     :param name str: topic or service name to test
     :returns: True if name is hidden, otherwise False
     """
-    return any([token for token in name.split('/') if token.startswith(HIDDEN_TOPIC_PREFIX)])
+    return any(token for token in name.split('/') if token.startswith(HIDDEN_TOPIC_PREFIX))

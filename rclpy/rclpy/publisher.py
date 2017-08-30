@@ -16,6 +16,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class Publisher:
+
     def __init__(self, publisher_handle, msg_type, topic, qos_profile, node_handle):
         self.publisher_handle = publisher_handle
         self.msg_type = msg_type
