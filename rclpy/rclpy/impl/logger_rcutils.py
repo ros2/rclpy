@@ -19,7 +19,6 @@ import inspect
 import time
 
 _rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
-_rclpy_logging.rclpy_logging_initialize()
 
 
 def _find_caller(frame):
