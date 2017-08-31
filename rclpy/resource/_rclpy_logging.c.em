@@ -61,10 +61,10 @@ rclpy_logging_get_severity_threshold()
 
   return PyLong_FromLong(severity);
 }
+
 @{
 from rcutils.logging import severities
 }@
-
 @[for severity in severities]@
 /// rclpy_logging_log_@(severity.lower()).
 /**
@@ -79,12 +79,15 @@ rclpy_logging_log_@(severity.lower())(PyObject * Py_UNUSED(self), PyObject * arg
 {
   const char * message;
   const char * name;
-  if (!PyArg_ParseTuple(args, "ss", &name, &message)) {
+  const char * function_name;
+  const char * filename;
+  unsigned PY_LONG_LONG line_number;
+  if (!PyArg_ParseTuple(args, "ssssK", &name, &message, &function_name, &filename, &line_number)) {
     return NULL;
   }
-  static rcutils_log_location_t __rcutils_logging_location = {__func__, __FILE__, __LINE__};
+  rcutils_log_location_t logging_location = {function_name, filename, line_number};
   if (RCUTILS_LOG_SEVERITY_@(severity) >= rcutils_logging_get_severity_threshold()) {
-    rcutils_log(&__rcutils_logging_location, RCUTILS_LOG_SEVERITY_@(severity), name, message);
+    rcutils_log(&logging_location, RCUTILS_LOG_SEVERITY_@(severity), name, message);
   }
   Py_RETURN_NONE;
 }

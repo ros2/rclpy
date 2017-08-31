@@ -192,6 +192,7 @@ class RcutilsLogger:
                     self._contexts[caller_id_str])
         if make_log_call:
             # Get the relevant function from the C extension
-            print(str(caller_id))
-            f = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
-            f(name, message)
+            log_function = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
+            log_function(
+                name, message,
+                caller_id['function_name'], caller_id['filename'], caller_id['line_number'])
