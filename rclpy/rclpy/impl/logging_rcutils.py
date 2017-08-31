@@ -42,7 +42,7 @@ def get_caller_id(frame=None):
         function_name=frame.f_code.co_name,
         filename=inspect.getabsfile(frame),
         line_number=frame.f_lineno,
-        last_index=frame.f_lasti,
+        last_index=frame.f_lasti,  # This is to distinguish between two callers on the same line
     )
 
 
@@ -131,9 +131,10 @@ class SkipFirst(LoggingFeature):
         return logging_condition
 
 
+# The ordering of this dictionary matches the order in which features will be processed.
 supported_features = OrderedDict({
-    'skip_first': SkipFirst,
     'throttle': Throttle,
+    'skip_first': SkipFirst,
     'once': Once,
 })
 
@@ -154,7 +155,7 @@ def get_features_from_kwargs(**kwargs):
                         'required parameter "{0}" not specified '
                         'but is required for the the logging feature "{1}"'.format(
                             param_name, feature))
-    # TODO(dhood): warning for unused kwargs?
+    # TODO(dhood): warning for unused kwargs
     return detected_features
 
 
@@ -174,6 +175,7 @@ class RcutilsLogger:
     def log(self, message, severity, **kwargs):
         caller_id = get_caller_id()
         caller_id_str = pickle.dumps(caller_id)
+        # Get/prepare the context corresponding to the caller.
         if caller_id_str not in self._contexts:
             # Infer the requested log features from the keyword arguments
             detected_features = get_features_from_kwargs(**kwargs)
@@ -185,8 +187,9 @@ class RcutilsLogger:
                     supported_features[feature].initialize_context(context, **kwargs)
             context['features'] = detected_features
             self._contexts[caller_id_str] = context
-
         context = self._contexts[caller_id_str]
+
+        # Determine if it's appropriate to process the record (any feature can vote no)
         make_log_call = True
         for feature in context['features']:
             if feature in supported_features and make_log_call:
