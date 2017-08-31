@@ -172,21 +172,23 @@ class RcutilsLogger:
         return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
 
     def log(self, message, severity, **kwargs):
-        # Infer the requested log features from the keyword arguments
-        features = get_features_from_kwargs(**kwargs)
-
-        name = kwargs.get('name', self.name)
         caller_id = get_caller_id()
         caller_id_str = pickle.dumps(caller_id)
         if caller_id_str not in self._contexts:
+            # Infer the requested log features from the keyword arguments
+            detected_features = get_features_from_kwargs(**kwargs)
+
+            name = kwargs.get('name', self.name)
             context = {'name': name, 'severity': severity}
-            for feature in features:
+            for feature in detected_features:
                 if feature in supported_features:
                     supported_features[feature].initialize_context(context, **kwargs)
+            context['features'] = detected_features
             self._contexts[caller_id_str] = context
 
+        context = self._contexts[caller_id_str]
         make_log_call = True
-        for feature in features:
+        for feature in context['features']:
             if feature in supported_features and make_log_call:
                 make_log_call &= supported_features[feature].log_condition(
                     self._contexts[caller_id_str])
@@ -194,5 +196,5 @@ class RcutilsLogger:
             # Get the relevant function from the C extension
             log_function = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
             log_function(
-                name, message,
+                context['name'], message,
                 caller_id['function_name'], caller_id['filename'], caller_id['line_number'])
