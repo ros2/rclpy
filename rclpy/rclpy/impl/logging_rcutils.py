@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from collections import OrderedDict
 try:
     import cPickle as pickle
 except ImportError:
@@ -130,11 +131,11 @@ class SkipFirst(LoggingFeature):
         return logging_condition
 
 
-supported_features = {
+supported_features = OrderedDict({
+    'skip_first': SkipFirst,
     'throttle': Throttle,
     'once': Once,
-    'skip_first': SkipFirst,
-}
+})
 
 
 def get_features_from_kwargs(**kwargs):
@@ -186,7 +187,7 @@ class RcutilsLogger:
 
         make_log_call = True
         for feature in features:
-            if feature in supported_features:
+            if feature in supported_features and make_log_call:
                 make_log_call &= supported_features[feature].log_condition(
                     self._contexts[caller_id_str])
         if make_log_call:
