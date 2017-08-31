@@ -80,12 +80,12 @@ rclpy_logging_log_@(severity.lower())(PyObject * Py_UNUSED(self), PyObject * arg
   const char * message;
   const char * name;
   const char * function_name;
-  const char * filename;
+  const char * file_name;
   unsigned PY_LONG_LONG line_number;
-  if (!PyArg_ParseTuple(args, "ssssK", &name, &message, &function_name, &filename, &line_number)) {
+  if (!PyArg_ParseTuple(args, "ssssK", &name, &message, &function_name, &file_name, &line_number)) {
     return NULL;
   }
-  rcutils_log_location_t logging_location = {function_name, filename, line_number};
+  rcutils_log_location_t logging_location = {function_name, file_name, line_number};
   if (RCUTILS_LOG_SEVERITY_@(severity) >= rcutils_logging_get_severity_threshold()) {
     rcutils_log(&logging_location, RCUTILS_LOG_SEVERITY_@(severity), name, message);
   }

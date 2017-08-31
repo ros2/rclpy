@@ -14,10 +14,6 @@
 
 
 from collections import OrderedDict
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 import importlib
 import inspect
 import time
@@ -35,15 +31,15 @@ def _find_caller(frame):
     return frame
 
 
-def get_caller_id(frame=None):
-    if not frame:
-        frame = _find_caller(inspect.currentframe())
-    return dict(
-        function_name=frame.f_code.co_name,
-        filename=inspect.getabsfile(frame),
-        line_number=frame.f_lineno,
-        last_index=frame.f_lasti,  # This is to distinguish between two callers on the same line
-    )
+class CallerId:
+
+    def __init__(self, frame=None):
+        if not frame:
+            frame = _find_caller(inspect.currentframe())
+        self.function_name = frame.f_code.co_name
+        self.file_name = inspect.getabsfile(frame)
+        self.line_number = frame.f_lineno
+        self.last_index = frame.f_lasti  # To distinguish between two callers on the same line
 
 
 class LoggingFilter:
@@ -173,10 +169,9 @@ class RcutilsLogger:
         return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
 
     def log(self, message, severity, **kwargs):
-        caller_id = get_caller_id()
-        caller_id_str = pickle.dumps(caller_id)
+        caller_id = CallerId()
         # Get/prepare the context corresponding to the caller.
-        if caller_id_str not in self._contexts:
+        if caller_id not in self._contexts:
             # Infer the requested log filters from the keyword arguments
             detected_filters = get_filters_from_kwargs(**kwargs)
 
@@ -186,18 +181,18 @@ class RcutilsLogger:
                 if filter in supported_filters:
                     supported_filters[filter].initialize_context(context, **kwargs)
             context['filters'] = detected_filters
-            self._contexts[caller_id_str] = context
-        context = self._contexts[caller_id_str]
+            self._contexts[caller_id] = context
+        context = self._contexts[caller_id]
 
         # Determine if it's appropriate to process the message (any filter can vote no)
         make_log_call = True
         for filter in context['filters']:
             if filter in supported_filters and make_log_call:
                 make_log_call &= supported_filters[filter].log_condition(
-                    self._contexts[caller_id_str])
+                    self._contexts[caller_id])
         if make_log_call:
             # Get the relevant function from the C extension
             log_function = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
             log_function(
                 context['name'], message,
-                caller_id['function_name'], caller_id['filename'], caller_id['line_number'])
+                caller_id.function_name, caller_id.file_name, caller_id.line_number)
