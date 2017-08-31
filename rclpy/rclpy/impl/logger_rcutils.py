@@ -26,9 +26,9 @@ _rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
 _rclpy_logging.rclpy_logging_initialize()
 
 
-def _get_caller_frame(frame):
+def _find_caller(frame):
     # TODO(dhood): make this less hacky
-    while 'logging_rcutils' in inspect.getabsfile(frame) \
+    while 'logger_rcutils' in inspect.getabsfile(frame) \
             or '/logging.py' in inspect.getabsfile(frame):
         frame = frame.f_back
         # print(inspect.getabsfile(frame))
@@ -37,7 +37,7 @@ def _get_caller_frame(frame):
 
 def get_caller_id(frame=None):
     if not frame:
-        frame = _get_caller_frame(inspect.currentframe())
+        frame = _find_caller(inspect.currentframe())
     return dict(
         function_name=frame.f_code.co_name,
         filename=inspect.getabsfile(frame),
@@ -46,11 +46,11 @@ def get_caller_id(frame=None):
     )
 
 
-class LoggingFeature:
-    """Base class for logging features."""
+class LoggingFilter:
+    """Base class for logging filters."""
 
     """
-    Parameters of a feature and their default value, if appropriate.
+    Parameters of a filter and their default value, if appropriate.
 
     A default value of None makes a parameter required.
     """
@@ -73,7 +73,7 @@ class LoggingFeature:
         return True
 
 
-class Once(LoggingFeature):
+class Once(LoggingFilter):
     params = {
         'once': None,
     }
@@ -91,7 +91,7 @@ class Once(LoggingFeature):
         return logging_condition
 
 
-class Throttle(LoggingFeature):
+class Throttle(LoggingFilter):
     params = {
         'throttle_duration': None,
         'throttle_time_source_type': 'RCUTILS_STEADY_TIME',
@@ -113,7 +113,7 @@ class Throttle(LoggingFeature):
         return logging_condition
 
 
-class SkipFirst(LoggingFeature):
+class SkipFirst(LoggingFilter):
     params = {
         'skip_first': None,
     }
@@ -131,32 +131,32 @@ class SkipFirst(LoggingFeature):
         return logging_condition
 
 
-# The ordering of this dictionary matches the order in which features will be processed.
-supported_features = OrderedDict({
+# The ordering of this dictionary matches the order in which filters will be processed.
+supported_filters = OrderedDict({
     'throttle': Throttle,
     'skip_first': SkipFirst,
     'once': Once,
 })
 
 
-def get_features_from_kwargs(**kwargs):
-    detected_features = []
-    for feature, feature_class in supported_features.items():
-        if any(kwargs.get(param_name) for param_name in feature_class.params.keys()):
-            detected_features.append(feature)
+def get_filters_from_kwargs(**kwargs):
+    detected_filters = []
+    for filter, filter_class in supported_filters.items():
+        if any(kwargs.get(param_name) for param_name in filter_class.params.keys()):
+            detected_filters.append(filter)
     # Check that all required parameters (with no default value) have been specified
-    for feature in detected_features:
-        for param_name, default_value in supported_features[feature].params.items():
+    for filter in detected_filters:
+        for param_name, default_value in supported_filters[filter].params.items():
             if param_name not in kwargs:
                 if default_value is not None:
                     kwargs[param_name] = default_value
                 else:
                     raise RuntimeError(
                         'required parameter "{0}" not specified '
-                        'but is required for the the logging feature "{1}"'.format(
-                            param_name, feature))
+                        'but is required for the the logging filter "{1}"'.format(
+                            param_name, filter))
     # TODO(dhood): warning for unused kwargs
-    return detected_features
+    return detected_filters
 
 
 class RcutilsLogger:
@@ -177,23 +177,23 @@ class RcutilsLogger:
         caller_id_str = pickle.dumps(caller_id)
         # Get/prepare the context corresponding to the caller.
         if caller_id_str not in self._contexts:
-            # Infer the requested log features from the keyword arguments
-            detected_features = get_features_from_kwargs(**kwargs)
+            # Infer the requested log filters from the keyword arguments
+            detected_filters = get_filters_from_kwargs(**kwargs)
 
             name = kwargs.get('name', self.name)
             context = {'name': name, 'severity': severity}
-            for feature in detected_features:
-                if feature in supported_features:
-                    supported_features[feature].initialize_context(context, **kwargs)
-            context['features'] = detected_features
+            for filter in detected_filters:
+                if filter in supported_filters:
+                    supported_filters[filter].initialize_context(context, **kwargs)
+            context['filters'] = detected_filters
             self._contexts[caller_id_str] = context
         context = self._contexts[caller_id_str]
 
-        # Determine if it's appropriate to process the record (any feature can vote no)
+        # Determine if it's appropriate to process the message (any filter can vote no)
         make_log_call = True
-        for feature in context['features']:
-            if feature in supported_features and make_log_call:
-                make_log_call &= supported_features[feature].log_condition(
+        for filter in context['filters']:
+            if filter in supported_filters and make_log_call:
+                make_log_call &= supported_filters[filter].log_condition(
                     self._contexts[caller_id_str])
         if make_log_call:
             # Get the relevant function from the C extension
