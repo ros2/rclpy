@@ -25,13 +25,24 @@ _rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
 _rclpy_logging.rclpy_logging_initialize()
 
 
-def _frame_to_caller_id(frame):
-    caller_id = (
-        inspect.getabsfile(frame),
-        frame.f_lineno,
-        frame.f_lasti,
+def _get_caller_frame(frame):
+    # TODO(dhood): make this less hacky
+    while 'logging_rcutils' in inspect.getabsfile(frame) \
+            or '/logging.py' in inspect.getabsfile(frame):
+        frame = frame.f_back
+        # print(inspect.getabsfile(frame))
+    return frame
+
+
+def get_caller_id(frame=None):
+    if not frame:
+        frame = _get_caller_frame(inspect.currentframe())
+    return dict(
+        function_name=frame.f_code.co_name,
+        filename=inspect.getabsfile(frame),
+        line_number=frame.f_lineno,
+        last_index=frame.f_lasti,
     )
-    return pickle.dumps(caller_id)
 
 
 class LoggingFeature:
@@ -164,22 +175,22 @@ class RcutilsLogger:
         features = get_features_from_kwargs(**kwargs)
 
         name = kwargs.get('name', self.name)
-        caller_id = kwargs.get(
-            'caller_id',
-            _frame_to_caller_id(inspect.currentframe().f_back.f_back))
-        if caller_id not in self._contexts:
+        caller_id = get_caller_id()
+        caller_id_str = pickle.dumps(caller_id)
+        if caller_id_str not in self._contexts:
             context = {'name': name, 'severity': severity}
             for feature in features:
                 if feature in supported_features:
                     supported_features[feature].initialize_context(context, **kwargs)
-            self._contexts[caller_id] = context
+            self._contexts[caller_id_str] = context
 
         make_log_call = True
         for feature in features:
             if feature in supported_features:
                 make_log_call &= supported_features[feature].log_condition(
-                    self._contexts[caller_id])
+                    self._contexts[caller_id_str])
         if make_log_call:
             # Get the relevant function from the C extension
+            print(str(caller_id))
             f = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
             f(name, message)
