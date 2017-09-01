@@ -235,8 +235,10 @@ class RcutilsLogger:
                 self._contexts[caller_id_str])
             if not make_log_call:
                 break
+        # Only log the message if the severity is appropriate.
+        make_log_call &= severity >= self.get_severity_threshold()
         if make_log_call:
-            # Get the relevant function from the C extension
+            # Get and call the relevant function from the C extension.
             log_function = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
             log_function(
                 name, message,

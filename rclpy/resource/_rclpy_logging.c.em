@@ -88,9 +88,7 @@ rclpy_logging_log_@(severity.lower())(PyObject * Py_UNUSED(self), PyObject * arg
 
   RCUTILS_LOGGING_AUTOINIT
   rcutils_log_location_t logging_location = {function_name, file_name, line_number};
-  if (RCUTILS_LOG_SEVERITY_@(severity) >= rcutils_logging_get_severity_threshold()) {
-    rcutils_log(&logging_location, RCUTILS_LOG_SEVERITY_@(severity), name, message);
-  }
+  rcutils_log(&logging_location, RCUTILS_LOG_SEVERITY_@(severity), name, message);
   Py_RETURN_NONE;
 }
 
