@@ -62,37 +62,35 @@ rclpy_logging_get_severity_threshold()
   return PyLong_FromLong(severity);
 }
 
-@{
-from rcutils.logging import severities
-}@
-@[for severity in severities]@
-/// rclpy_logging_log_@(severity.lower()).
+/// Log a message through rcutils with the specified severity.
 /**
- * Log a message with severity @(severity)@
  *
+ * \param severity Enum of type RCUTILS_LOG_SEVERITY.
  * \param name Name of logger.
  * \param message String to log.
+ * \param function_name String with the function name of the caller.
+ * \param file_name String with the file name of the caller.
+ * \param line_number Line number of the calling function.
  * \return None
  */
 static PyObject *
-rclpy_logging_log_@(severity.lower())(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  const char * message;
+  unsigned PY_LONG_LONG severity;
   const char * name;
+  const char * message;
   const char * function_name;
   const char * file_name;
   unsigned PY_LONG_LONG line_number;
-  if (!PyArg_ParseTuple(args, "ssssK", &name, &message, &function_name, &file_name, &line_number)) {
+  if (!PyArg_ParseTuple(args, "KssssK", &severity, &name, &message, &function_name, &file_name, &line_number)) {
     return NULL;
   }
 
   RCUTILS_LOGGING_AUTOINIT
   rcutils_log_location_t logging_location = {function_name, file_name, line_number};
-  rcutils_log(&logging_location, RCUTILS_LOG_SEVERITY_@(severity), name, message);
+  rcutils_log(&logging_location, severity, name, message);
   Py_RETURN_NONE;
 }
-
-@[end for]@
 
 /// Define the public methods of this module
 static PyMethodDef rclpy_logging_methods[] = {
@@ -102,11 +100,8 @@ static PyMethodDef rclpy_logging_methods[] = {
    "Get the global severity threshold."},
   {"rclpy_logging_set_severity_threshold", rclpy_logging_set_severity_threshold, METH_VARARGS,
    "Set the global severity threshold."},
-
-@[for severity in severities]@
-  {"rclpy_logging_log_@(severity.lower())", (PyCFunction)rclpy_logging_log_@(severity.lower()), METH_VARARGS,
-   "Log a message with severity @(severity)"},
-@[end for]@
+  {"rclpy_logging_rcutils_log", (PyCFunction)rclpy_logging_rcutils_log, METH_VARARGS,
+   "Log a message with the specified severity"},
 
   {NULL, NULL, 0, NULL}  /* sentinel */
 };

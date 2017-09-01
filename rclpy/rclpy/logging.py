@@ -22,7 +22,7 @@ class LoggingSeverity(IntEnum):
     """
     Enum for logging severity levels.
 
-    This enum matches the one defined in rcutils/logging.h
+    This enum must match the one defined in rcutils/logging.h
     """
 
     DEBUG = 0
