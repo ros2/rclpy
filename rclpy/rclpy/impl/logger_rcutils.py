@@ -155,12 +155,12 @@ supported_filters = OrderedDict({
 
 def get_filters_from_kwargs(**kwargs):
     detected_filters = []
-    for filter, filter_class in supported_filters.items():
+    for supported_filter, filter_class in supported_filters.items():
         if any(kwargs.get(param_name) for param_name in filter_class.params.keys()):
-            detected_filters.append(filter)
+            detected_filters.append(supported_filter)
     # Check that all required parameters (with no default value) have been specified
-    for filter in detected_filters:
-        for param_name, default_value in supported_filters[filter].params.items():
+    for detected_filter in detected_filters:
+        for param_name, default_value in supported_filters[detected_filter].params.items():
             if param_name not in kwargs:
                 if default_value is not None:
                     kwargs[param_name] = default_value
@@ -168,7 +168,7 @@ def get_filters_from_kwargs(**kwargs):
                     raise RuntimeError(
                         'required parameter "{0}" not specified '
                         'but is required for the the logging filter "{1}"'.format(
-                            param_name, filter))
+                            param_name, detected_filter))
     # TODO(dhood): warning for unused kwargs
     return detected_filters
 
