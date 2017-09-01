@@ -11,10 +11,10 @@
   <buildtool_depend>python_cmake_module</buildtool_depend>
 
   <build_depend>rmw_implementation_cmake</build_depend>
+  <build_depend>rcutils</build_depend>
 
   <depend>rmw_implementation</depend>
   <depend>rcl</depend>
-  <depend>rcutils</depend>
 
   <exec_depend>ament_index_python</exec_depend>
 

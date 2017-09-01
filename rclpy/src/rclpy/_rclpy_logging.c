@@ -1,5 +1,3 @@
-// generated from rclpy/resource/_rcly_logging.c.em
-
 // Copyright 2017 Open Source Robotics Foundation, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,7 +80,9 @@ rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
   const char * function_name;
   const char * file_name;
   unsigned PY_LONG_LONG line_number;
-  if (!PyArg_ParseTuple(args, "KssssK", &severity, &name, &message, &function_name, &file_name, &line_number)) {
+  if (!PyArg_ParseTuple(args, "KssssK",
+    &severity, &name, &message, &function_name, &file_name, &line_number))
+  {
     return NULL;
   }
 
