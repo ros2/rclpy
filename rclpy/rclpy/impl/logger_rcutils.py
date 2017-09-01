@@ -146,11 +146,12 @@ class SkipFirst(LoggingFilter):
 
 
 # The ordering of this dictionary matches the order in which filters will be processed.
-supported_filters = OrderedDict({
-    'throttle': Throttle,
-    'skip_first': SkipFirst,
-    'once': Once,
-})
+# Note(dhood): ordering in the constructor is only maintained as of Python 3.6,
+# so we assign the entries individually.
+supported_filters = OrderedDict()
+supported_filters['throttle'] = Throttle
+supported_filters['skip_first'] = SkipFirst
+supported_filters['once'] = Once
 
 
 def get_filters_from_kwargs(**kwargs):
@@ -216,11 +217,14 @@ class RcutilsLogger:
                         'Logging filter parameters cannot be changed between calls.')
 
         # Determine if it's appropriate to process the message (any filter can vote no)
+        # Note(dhood): even if a message doesn't get logged, a filter might still update its state
+        # as if it had been. This matches the behavior of the C logging macros provided by rcutils.
         make_log_call = True
         for logging_filter in context['filters']:
-            if logging_filter in supported_filters and make_log_call:
-                make_log_call &= supported_filters[logging_filter].log_condition(
-                    self._contexts[caller_id_str])
+            make_log_call &= supported_filters[logging_filter].log_condition(
+                self._contexts[caller_id_str])
+            if not make_log_call:
+                break
         if make_log_call:
             # Get the relevant function from the C extension
             log_function = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
