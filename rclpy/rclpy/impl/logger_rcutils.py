@@ -185,18 +185,18 @@ class RcutilsLogger:
 
             name = kwargs.get('name', self.name)
             context = {'name': name, 'severity': severity}
-            for filter in detected_filters:
-                if filter in supported_filters:
-                    supported_filters[filter].initialize_context(context, **kwargs)
+            for detected_filter in detected_filters:
+                if detected_filter in supported_filters:
+                    supported_filters[detected_filter].initialize_context(context, **kwargs)
             context['filters'] = detected_filters
             self._contexts[caller_id] = context
         context = self._contexts[caller_id]
 
         # Determine if it's appropriate to process the message (any filter can vote no)
         make_log_call = True
-        for filter in context['filters']:
-            if filter in supported_filters and make_log_call:
-                make_log_call &= supported_filters[filter].log_condition(
+        for detected_filter in context['filters']:
+            if detected_filter in supported_filters and make_log_call:
+                make_log_call &= supported_filters[detected_filter].log_condition(
                     self._contexts[caller_id])
         if make_log_call:
             # Get the relevant function from the C extension
