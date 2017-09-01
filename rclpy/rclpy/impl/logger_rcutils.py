@@ -20,13 +20,22 @@ import time
 
 _rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
 
+_internal_callers = None  # List of known filenames from which logging methods can be called.
+
 
 def _find_caller(frame):
-    # TODO(dhood): make this less hacky
-    while 'logger_rcutils' in inspect.getabsfile(frame) \
-            or '/logging.py' in inspect.getabsfile(frame):
+    """Get the first calling frame that is outside of rclpy."""
+    global _internal_callers
+    if _internal_callers is None:
+        # Populate the list of known filenames from which logging methods can be called.
+        # This has to be done from within a function to avoid cyclic module imports.
+        import rclpy.logging
+        _internal_callers = [__file__, rclpy.logging.__file__]
+
+    frame_filename = inspect.getabsfile(frame)
+    while any(f in frame_filename for f in _internal_callers):
         frame = frame.f_back
-        # print(inspect.getabsfile(frame))
+        frame_filename = inspect.getabsfile(frame)
     return frame
 
 
