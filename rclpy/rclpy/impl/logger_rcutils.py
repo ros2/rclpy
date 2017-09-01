@@ -156,8 +156,11 @@ supported_filters['once'] = Once
 
 def get_filters_from_kwargs(**kwargs):
     detected_filters = []
+    all_supported_params = []
     for supported_filter, filter_class in supported_filters.items():
-        if any(kwargs.get(param_name) for param_name in filter_class.params.keys()):
+        filter_params = filter_class.params.keys()
+        all_supported_params.extend(filter_params)
+        if any(kwargs.get(param_name) for param_name in filter_params):
             detected_filters.append(supported_filter)
     # Check that all required parameters (with no default value) have been specified
     for detected_filter in detected_filters:
@@ -170,7 +173,12 @@ def get_filters_from_kwargs(**kwargs):
                         'required parameter "{0}" not specified '
                         'but is required for the the logging filter "{1}"'.format(
                             param_name, detected_filter))
-    # TODO(dhood): warning for unused kwargs
+    for kwarg in kwargs:
+        if kwarg not in all_supported_params:
+            raise RuntimeError(
+                'parameter "{0}" is not one of the recognized logging options "{1}"'
+                .format(kwarg, all_supported_params)
+            )
     return detected_filters
 
 
@@ -187,8 +195,9 @@ class RcutilsLogger:
     def set_severity_threshold(self, severity):
         return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
 
-    def log(self, message, severity, **kwargs):
-        name = kwargs.get('name', self.name)
+    def log(self, message, severity, name=None, **kwargs):
+        if name is None:
+            name = self.name
         caller_id = CallerId()
         # Get/prepare the context corresponding to the caller.
         caller_id_str = pickle.dumps(caller_id)
@@ -229,5 +238,5 @@ class RcutilsLogger:
             # Get the relevant function from the C extension
             log_function = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
             log_function(
-                context['name'], message,
+                name, message,
                 caller_id.function_name, caller_id.file_name, caller_id.line_number)

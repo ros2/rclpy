@@ -57,14 +57,15 @@ class TestLogging(unittest.TestCase):
                     'message', severity,
                     throttle_time_source_type='asdf',
                 )
-            # Check unused kwargs
-            print('logging skip first')
-            rclpy.logging.log(
-                'message', severity,
-                name='my_name',
-                skip_first=True,
-                unused_kwarg='unused_kwarg',
-            )
+
+            # Check unused kwarg is not allowed
+            with self.assertRaisesRegex(RuntimeError, 'parameter .* is not one of the recognized'):
+                rclpy.logging.log(
+                    'message', severity,
+                    name='my_name',
+                    skip_first=True,
+                    unused_kwarg='unused_kwarg',
+                )
 
             # Check changing log call parameters is not allowed
             with self.assertRaisesRegex(ValueError, 'parameters cannot be changed between'):
