@@ -14,6 +14,10 @@
 
 
 from collections import OrderedDict
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 import importlib
 import inspect
 import time
@@ -62,12 +66,16 @@ class LoggingFilter:
 
     """
     Initialize the context of a logging call, e.g. declare variables needed for
-
     determining the log condition and add them to the context.
     """
-    @staticmethod
-    def initialize_context(context, **kwargs):
-        pass
+    @classmethod
+    def initialize_context(cls, context, **kwargs):
+        for param in cls.params:
+            context[param] = kwargs.get(param, cls.params[param])
+            if context[param] is None:
+                raise RuntimeError(
+                    'Required parameter "{0}" was not specified for logging filter "{1}"'
+                    .format(param, cls.__name__))
 
     """
     Decide if it's appropriate to log given a context, and update the context accordingly.
@@ -82,8 +90,9 @@ class Once(LoggingFilter):
         'once': None,
     }
 
-    @staticmethod
-    def initialize_context(context, **kwargs):
+    @classmethod
+    def initialize_context(cls, context, **kwargs):
+        super(cls, cls).initialize_context(context, **kwargs)
         context['has_been_logged_once'] = False
 
     @staticmethod
@@ -101,9 +110,9 @@ class Throttle(LoggingFilter):
         'throttle_time_source_type': 'RCUTILS_STEADY_TIME',
     }
 
-    @staticmethod
-    def initialize_context(context, **kwargs):
-        context['throttle_duration'] = kwargs['throttle_duration']
+    @classmethod
+    def initialize_context(cls, context, **kwargs):
+        super(cls, cls).initialize_context(context, **kwargs)
         context['throttle_last_logged'] = 0
 
     @staticmethod
@@ -122,8 +131,9 @@ class SkipFirst(LoggingFilter):
         'skip_first': None,
     }
 
-    @staticmethod
-    def initialize_context(context, **kwargs):
+    @classmethod
+    def initialize_context(cls, context, **kwargs):
+        super(cls, cls).initialize_context(context, **kwargs)
         context['first_has_been_skipped'] = False
 
     @staticmethod
@@ -177,27 +187,40 @@ class RcutilsLogger:
         return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
 
     def log(self, message, severity, **kwargs):
+        name = kwargs.get('name', self.name)
         caller_id = CallerId()
         # Get/prepare the context corresponding to the caller.
-        if caller_id not in self._contexts:
+        caller_id_str = pickle.dumps(caller_id)
+        if caller_id_str not in self._contexts:
             # Infer the requested log filters from the keyword arguments
             detected_filters = get_filters_from_kwargs(**kwargs)
 
-            name = kwargs.get('name', self.name)
             context = {'name': name, 'severity': severity}
             for detected_filter in detected_filters:
                 if detected_filter in supported_filters:
                     supported_filters[detected_filter].initialize_context(context, **kwargs)
             context['filters'] = detected_filters
-            self._contexts[caller_id] = context
-        context = self._contexts[caller_id]
+            self._contexts[caller_id_str] = context
+        else:
+            context = self._contexts[caller_id_str]
+            # Don't support any changes in requested filters/parameters.
+            if name != context['name']:
+                raise ValueError('Logger name cannot be changed between calls.')
+            detected_filters = get_filters_from_kwargs(**kwargs)
+            if detected_filters != context['filters']:
+                raise RuntimeError('Requested logging filters cannot be changed between calls.')
+            for detected_filter in detected_filters:
+                filter_params = supported_filters[detected_filter].params
+                if any(context[p] != kwargs.get(p, filter_params[p]) for p in filter_params):
+                    raise ValueError(
+                        'Logging filter parameters cannot be changed between calls.')
 
         # Determine if it's appropriate to process the message (any filter can vote no)
         make_log_call = True
-        for detected_filter in context['filters']:
-            if detected_filter in supported_filters and make_log_call:
-                make_log_call &= supported_filters[detected_filter].log_condition(
-                    self._contexts[caller_id])
+        for logging_filter in context['filters']:
+            if logging_filter in supported_filters and make_log_call:
+                make_log_call &= supported_filters[logging_filter].log_condition(
+                    self._contexts[caller_id_str])
         if make_log_call:
             # Get the relevant function from the C extension
             log_function = getattr(_rclpy_logging, 'rclpy_logging_log_' + severity.name.lower())
