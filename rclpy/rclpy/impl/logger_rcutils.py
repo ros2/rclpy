@@ -106,7 +106,7 @@ class Once(LoggingFilter):
 
 class Throttle(LoggingFilter):
     params = {
-        'throttle_duration': None,
+        'throttle_duration_sec': None,
         'throttle_time_source_type': 'RCUTILS_STEADY_TIME',
     }
 
@@ -120,7 +120,8 @@ class Throttle(LoggingFilter):
         logging_condition = True
         # TODO(dhood): use rcutils time and the time source type
         now = time.time()
-        logging_condition = now >= context['throttle_last_logged'] + context['throttle_duration']
+        next_log_time = context['throttle_last_logged'] + context['throttle_duration_sec']
+        logging_condition = now >= next_log_time
         if logging_condition:
             context['throttle_last_logged'] = now
         return logging_condition

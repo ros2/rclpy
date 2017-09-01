@@ -47,7 +47,7 @@ class TestLogging(unittest.TestCase):
             print('logging throttled')
             rclpy.logging.log(
                 'message', severity,
-                throttle_duration=1000,
+                throttle_duration_sec=1,
                 name='my_name',
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
             )
@@ -69,11 +69,11 @@ class TestLogging(unittest.TestCase):
 
             # Check changing log call parameters is not allowed
             with self.assertRaisesRegex(ValueError, 'parameters cannot be changed between'):
-                # Start at 1 because a throttle_duration of 0 causes the filter to be ignored.
+                # Start at 1 because a throttle_duration_sec of 0 causes the filter to be ignored.
                 for i in range(1, 3):
                     rclpy.logging.log(
                         'message', severity,
-                        throttle_duration=i,
+                        throttle_duration_sec=i,
                     )
 
             with self.assertRaisesRegex(ValueError, 'name cannot be changed between'):
