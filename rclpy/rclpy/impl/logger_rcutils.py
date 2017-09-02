@@ -248,3 +248,23 @@ class RcutilsLogger:
                 caller_id.function_name, caller_id.file_name, caller_id.line_number)
         if return_log_condition:
             return make_log_call
+
+    def debug(self, message, **kwargs):
+        from rclpy.logging import LoggingSeverity
+        return self.log(message, LoggingSeverity.DEBUG, **kwargs)
+
+    def info(self, message, **kwargs):
+        from rclpy.logging import LoggingSeverity
+        return self.log(message, LoggingSeverity.INFO, **kwargs)
+
+    def warn(self, message, **kwargs):
+        from rclpy.logging import LoggingSeverity
+        return self.log(message, LoggingSeverity.WARN, **kwargs)
+
+    def error(self, message, **kwargs):
+        from rclpy.logging import LoggingSeverity
+        return self.log(message, LoggingSeverity.ERROR, **kwargs)
+
+    def fatal(self, message, **kwargs):
+        from rclpy.logging import LoggingSeverity
+        return self.log(message, LoggingSeverity.FATAL, **kwargs)
