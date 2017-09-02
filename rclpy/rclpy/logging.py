@@ -48,27 +48,27 @@ def set_severity_threshold(severity):
 
 
 def logdebug(message, **kwargs):
-    root_logger.log(message, severity=LoggingSeverity.DEBUG, **kwargs)
+    return root_logger.log(message, severity=LoggingSeverity.DEBUG, **kwargs)
 
 
 def loginfo(message, **kwargs):
-    root_logger.log(message, severity=LoggingSeverity.INFO, **kwargs)
+    return root_logger.log(message, severity=LoggingSeverity.INFO, **kwargs)
 
 
 def logwarn(message, **kwargs):
-    root_logger.log(message, severity=LoggingSeverity.WARN, **kwargs)
+    return root_logger.log(message, severity=LoggingSeverity.WARN, **kwargs)
 
 
 def logerr(message, **kwargs):
-    root_logger.log(message, severity=LoggingSeverity.ERROR, **kwargs)
+    return root_logger.log(message, severity=LoggingSeverity.ERROR, **kwargs)
 
 
 def logfatal(message, **kwargs):
-    root_logger.log(message, severity=LoggingSeverity.FATAL, **kwargs)
+    return root_logger.log(message, severity=LoggingSeverity.FATAL, **kwargs)
 
 
 # TODO(dhood): document the supported features
 def log(message, severity, **kwargs):
     assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
     severity = LoggingSeverity(severity)
-    root_logger.log(message, severity, **kwargs)
+    return root_logger.log(message, severity, **kwargs)

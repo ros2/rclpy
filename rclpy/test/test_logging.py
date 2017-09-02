@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
+import time
 import unittest
 
 import rclpy
@@ -27,61 +29,147 @@ class TestLogging(unittest.TestCase):
             self.assertEqual(severity, rclpy.logging.get_severity_threshold())
         rclpy.logging.set_severity_threshold(original_severity)
 
-    def test_log(self):
-        rclpy.logging.logdebug('message')
-        rclpy.logging.loginfo('message')
-        rclpy.logging.logwarn('message')
-        rclpy.logging.logerr('message')
-        rclpy.logging.logfatal('message')
+    def test_log_threshold(self):
+        rclpy.logging.set_severity_threshold(LoggingSeverity.INFO)
 
-        for severity in reversed(LoggingSeverity):
-            # TODO(dhood): tests that logging features work as expected
-            print('\n')
-            print(severity)
-            print('logging once')
-            rclpy.logging.log(
-                'message', severity,
-                name='my_name',
+        # Logging below threshold not expected to be logged
+        self.assertFalse(rclpy.logging.logdebug('message_debug', return_log_condition=True))
+
+        # Logging at or above threshold expected to be logged
+        self.assertTrue(rclpy.logging.loginfo('message_info', return_log_condition=True))
+        self.assertTrue(rclpy.logging.logwarn('message_warn', return_log_condition=True))
+        self.assertTrue(rclpy.logging.logerr('message_err', return_log_condition=True))
+        self.assertTrue(rclpy.logging.logfatal('message_fatal', return_log_condition=True))
+
+    def test_log_once(self):
+        message_was_logged = []
+        for i in range(5):
+            message_was_logged.append(rclpy.logging.log(
+                'message_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
                 once=True,
-            )
-            print('logging throttled')
-            rclpy.logging.log(
-                'message', severity,
+                return_log_condition=True,
+            ))
+        self.assertEqual(message_was_logged, [True] + [False] * 4)
+
+        # If the argument is specified as false it shouldn't impact the logging.
+        message_was_logged = []
+        for i in range(5):
+            message_was_logged.append(rclpy.logging.log(
+                'message2_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
+                once=False,
+                return_log_condition=True,
+            ))
+        self.assertEqual(message_was_logged, [True] * 5)
+
+    def test_log_throttle(self):
+        message_was_logged = []
+        for i in range(5):
+            message_was_logged.append(rclpy.logging.log(
+                'message_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
                 throttle_duration_sec=1,
-                name='my_name',
+                throttle_time_source_type='RCUTILS_STEADY_TIME',
+                return_log_condition=True,
+            ))
+            time.sleep(0.3)
+        self.assertEqual(message_was_logged, [True] + [False] * 3 + [True])
+
+    def test_log_skip_first(self):
+        message_was_logged = []
+        for i in range(5):
+            message_was_logged.append(rclpy.logging.log(
+                'message_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
+                skip_first=True,
+                return_log_condition=True,
+            ))
+        self.assertEqual(message_was_logged, [False] + [True] * 4)
+
+    def test_log_skip_first_throttle(self):
+        # Because of the ordering of supported_filters, first the throttle condition will be
+        # evaluated/updated, then the skip_first condition
+        message_was_logged = []
+        for i in range(5):
+            message_was_logged.append(rclpy.logging.log(
+                'message_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
+                skip_first=True,
+                throttle_duration_sec=1,
+                throttle_time_source_type='RCUTILS_STEADY_TIME',
+                return_log_condition=True,
+            ))
+            time.sleep(0.3)
+        self.assertEqual(message_was_logged, [False] * 4 + [True])
+
+    def test_log_skip_first_once(self):
+        # Because of the ordering of supported_filters, first the skip_first condition will be
+        # evaluated/updated, then the once condition
+        message_was_logged = []
+        for i in range(5):
+            message_was_logged.append(rclpy.logging.log(
+                'message_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
+                once=True,
+                skip_first=True,
+                return_log_condition=True,
+            ))
+            time.sleep(0.3)
+        self.assertEqual(message_was_logged, [False, True] + [False] * 3)
+
+    def test_log_arguments(self):
+        # Check half-specified filter not allowed if a required parameter is missing
+        with self.assertRaisesRegex(RuntimeError, 'required parameter .* not specified'):
+            rclpy.logging.log(
+                'message',
+                LoggingSeverity.INFO,
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
             )
-            # Check half-specified feature
-            with self.assertRaisesRegex(RuntimeError, 'required parameter .* not specified'):
+
+        # Check half-specified filter is allowed if an optional parameter is missing
+        rclpy.logging.log(
+            'message',
+            LoggingSeverity.INFO,
+            throttle_duration_sec=0.1,
+        )
+
+        # Check unused kwarg is not allowed
+        with self.assertRaisesRegex(RuntimeError, 'parameter .* is not one of the recognized'):
+            rclpy.logging.log(
+                'message',
+                LoggingSeverity.INFO,
+                name='my_name',
+                skip_first=True,
+                unused_kwarg='unused_kwarg',
+                return_log_condition=True,
+            )
+
+    def test_log_parameters_changing(self):
+        # Check changing log call parameters is not allowed
+        with self.assertRaisesRegex(ValueError, 'parameters cannot be changed between'):
+            # Start at 1 because a throttle_duration_sec of 0 causes the filter to be ignored.
+            for i in range(1, 3):
                 rclpy.logging.log(
-                    'message', severity,
-                    throttle_time_source_type='asdf',
+                    'message_' + inspect.stack()[0][3] + '_' + str(i),
+                    LoggingSeverity.INFO,
+                    throttle_duration_sec=i,
                 )
 
-            # Check unused kwarg is not allowed
-            with self.assertRaisesRegex(RuntimeError, 'parameter .* is not one of the recognized'):
+        with self.assertRaisesRegex(ValueError, 'name cannot be changed between'):
+            for i in range(2):
                 rclpy.logging.log(
-                    'message', severity,
-                    name='my_name',
-                    skip_first=True,
-                    unused_kwarg='unused_kwarg',
+                    'message_' + inspect.stack()[0][3] + '_' + str(i),
+                    LoggingSeverity.INFO,
+                    name='name_' + str(i),
                 )
 
-            # Check changing log call parameters is not allowed
-            with self.assertRaisesRegex(ValueError, 'parameters cannot be changed between'):
-                # Start at 1 because a throttle_duration_sec of 0 causes the filter to be ignored.
-                for i in range(1, 3):
-                    rclpy.logging.log(
-                        'message', severity,
-                        throttle_duration_sec=i,
-                    )
-
-            with self.assertRaisesRegex(ValueError, 'name cannot be changed between'):
-                for i in range(2):
-                    rclpy.logging.log(
-                        'message', severity,
-                        name=str(i),
-                    )
+        with self.assertRaisesRegex(ValueError, 'severity cannot be changed between'):
+            for severity in LoggingSeverity:
+                rclpy.logging.log(
+                    'message_' + inspect.stack()[0][3] + '_' + str(severity),
+                    severity,
+                )
 
 
 if __name__ == '__main__':

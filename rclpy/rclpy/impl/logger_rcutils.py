@@ -70,6 +70,7 @@ class LoggingFilter:
     """
     @classmethod
     def initialize_context(cls, context, **kwargs):
+        # Store all parameters in the context so we can check that users never try to change them.
         for param in cls.params:
             context[param] = kwargs.get(param, cls.params[param])
             if context[param] is None:
@@ -199,6 +200,7 @@ class RcutilsLogger:
     def log(self, message, severity, name=None, **kwargs):
         if name is None:
             name = self.name
+        return_log_condition = kwargs.pop('return_log_condition', False)
         caller_id = CallerId()
         # Get/prepare the context corresponding to the caller.
         caller_id_str = pickle.dumps(caller_id)
@@ -214,7 +216,9 @@ class RcutilsLogger:
             self._contexts[caller_id_str] = context
         else:
             context = self._contexts[caller_id_str]
-            # Don't support any changes in requested filters/parameters.
+            # Don't support any changes to the logger.
+            if severity != context['severity']:
+                raise ValueError('Logger severity cannot be changed between calls.')
             if name != context['name']:
                 raise ValueError('Logger name cannot be changed between calls.')
             detected_filters = get_filters_from_kwargs(**kwargs)
@@ -243,3 +247,5 @@ class RcutilsLogger:
             log_function(
                 severity, name, message,
                 caller_id.function_name, caller_id.file_name, caller_id.line_number)
+        if return_log_condition:
+            return make_log_call
