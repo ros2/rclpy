@@ -197,9 +197,8 @@ class RcutilsLogger:
     def set_severity_threshold(self, severity):
         return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
 
-    def log(self, message, severity, name=None, **kwargs):
-        if name is None:
-            name = self.name
+    def log(self, message, severity, **kwargs):
+        name = kwargs.pop('name', self.name)
         return_log_condition = kwargs.pop('return_log_condition', False)
         caller_id = CallerId()
         # Get/prepare the context corresponding to the caller.
