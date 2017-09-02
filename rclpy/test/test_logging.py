@@ -171,6 +171,22 @@ class TestLogging(unittest.TestCase):
                     severity,
                 )
 
+    def test_named_logger(self):
+        my_logger = rclpy.logging.get_named_logger('my_logger')
+
+        # Check that this logger's context is independent of the root logger's context
+        loggers = [my_logger, rclpy.logging.root_logger]
+        for logger in loggers:
+            message_was_logged = []
+            for i in range(5):
+                message_was_logged.append(logger.log(
+                    'message_' + inspect.stack()[0][3] + '_' + str(i),
+                    LoggingSeverity.INFO,
+                    once=True,
+                    return_log_condition=True,
+                ))
+            self.assertEqual(message_was_logged, [True] + [False] * 4)
+
 
 if __name__ == '__main__':
     unittest.main()

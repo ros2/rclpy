@@ -186,10 +186,9 @@ def get_filters_from_kwargs(**kwargs):
 
 class RcutilsLogger:
 
-    _contexts = {}
-
     def __init__(self, name=''):
         self.name = name
+        self.contexts = {}
 
     def get_severity_threshold(self):
         return _rclpy_logging.rclpy_logging_get_severity_threshold()
@@ -203,7 +202,7 @@ class RcutilsLogger:
         caller_id = CallerId()
         # Get/prepare the context corresponding to the caller.
         caller_id_str = pickle.dumps(caller_id)
-        if caller_id_str not in self._contexts:
+        if caller_id_str not in self.contexts:
             # Infer the requested log filters from the keyword arguments
             detected_filters = get_filters_from_kwargs(**kwargs)
 
@@ -212,9 +211,9 @@ class RcutilsLogger:
                 if detected_filter in supported_filters:
                     supported_filters[detected_filter].initialize_context(context, **kwargs)
             context['filters'] = detected_filters
-            self._contexts[caller_id_str] = context
+            self.contexts[caller_id_str] = context
         else:
-            context = self._contexts[caller_id_str]
+            context = self.contexts[caller_id_str]
             # Don't support any changes to the logger.
             if severity != context['severity']:
                 raise ValueError('Logger severity cannot be changed between calls.')
@@ -235,7 +234,7 @@ class RcutilsLogger:
         make_log_call = True
         for logging_filter in context['filters']:
             make_log_call &= supported_filters[logging_filter].log_condition(
-                self._contexts[caller_id_str])
+                self.contexts[caller_id_str])
             if not make_log_call:
                 break
         # Only log the message if the severity is appropriate.
