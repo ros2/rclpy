@@ -87,6 +87,8 @@ class LoggingFilter:
 
 
 class Once(LoggingFilter):
+    """Ignore all log calls except the first one."""
+
     params = {
         'once': None,
     }
@@ -106,6 +108,8 @@ class Once(LoggingFilter):
 
 
 class Throttle(LoggingFilter):
+    """Ignore log calls if the last call is not longer ago than the specified duration."""
+
     params = {
         'throttle_duration_sec': None,
         'throttle_time_source_type': 'RCUTILS_STEADY_TIME',
@@ -129,6 +133,8 @@ class Throttle(LoggingFilter):
 
 
 class SkipFirst(LoggingFilter):
+    """Ignore the first log call but process all subsequent calls."""
+
     params = {
         'skip_first': None,
     }
@@ -199,13 +205,14 @@ class RcutilsLogger:
     def log(self, message, severity, **kwargs):
         name = kwargs.pop('name', self.name)
         return_log_condition = kwargs.pop('return_log_condition', False)
-        caller_id = CallerId()
+
+        # Infer the requested log filters from the keyword arguments
+        detected_filters = get_filters_from_kwargs(**kwargs)
+
         # Get/prepare the context corresponding to the caller.
+        caller_id = CallerId()
         caller_id_str = pickle.dumps(caller_id)
         if caller_id_str not in self.contexts:
-            # Infer the requested log filters from the keyword arguments
-            detected_filters = get_filters_from_kwargs(**kwargs)
-
             context = {'name': name, 'severity': severity}
             for detected_filter in detected_filters:
                 if detected_filter in supported_filters:
@@ -219,7 +226,6 @@ class RcutilsLogger:
                 raise ValueError('Logger severity cannot be changed between calls.')
             if name != context['name']:
                 raise ValueError('Logger name cannot be changed between calls.')
-            detected_filters = get_filters_from_kwargs(**kwargs)
             if detected_filters != context['filters']:
                 raise RuntimeError('Requested logging filters cannot be changed between calls.')
             for detected_filter in detected_filters:

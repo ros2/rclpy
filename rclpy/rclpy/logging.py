@@ -68,7 +68,8 @@ def logfatal(message, **kwargs):
     return root_logger.log(message, severity=LoggingSeverity.FATAL, **kwargs)
 
 
-# TODO(dhood): document the supported features
+# TODO(dhood): document the supported filter options for all logging convenience functions
+# in a way that prevents copy-paste
 def log(message, severity, **kwargs):
     assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
     severity = LoggingSeverity(severity)
