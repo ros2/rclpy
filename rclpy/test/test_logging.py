@@ -174,6 +174,24 @@ class TestLogging(unittest.TestCase):
     def test_named_logger(self):
         my_logger = rclpy.logging.get_named_logger('my_logger')
 
+        rclpy.logging.set_severity_threshold(LoggingSeverity.INFO)
+        # Test convenience functions
+
+        # Logging below threshold not expected to be logged
+        self.assertFalse(my_logger.debug('message_debug', return_log_condition=True))
+
+        # Logging at or above threshold expected to be logged
+        self.assertTrue(my_logger.info('message_info', return_log_condition=True))
+        self.assertTrue(my_logger.warn('message_warn', return_log_condition=True))
+        self.assertTrue(my_logger.error('message_err', return_log_condition=True))
+        self.assertTrue(my_logger.fatal('message_fatal', return_log_condition=True))
+
+        # Check that specifying a different severity isn't allowed
+        with self.assertRaisesRegex(TypeError, "got multiple values for argument 'severity'"):
+            my_logger.fatal(
+                'message_fatal',
+                severity=LoggingSeverity.DEBUG, return_log_condition=True)
+
         # Check that this logger's context is independent of the root logger's context
         loggers = [my_logger, rclpy.logging.root_logger]
         for logger in loggers:

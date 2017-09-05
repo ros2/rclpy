@@ -35,6 +35,7 @@ class LoggingSeverity(IntEnum):
 def get_named_logger(name):
     return rclpy.impl.logger_rcutils.RcutilsLogger(name)
 
+
 root_logger = get_named_logger('')
 
 
