@@ -1588,6 +1588,44 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Destroy the waitset structure
+/**
+ * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \return NULL
+ */
+static PyObject *
+rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pywait_set;
+
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
+    return NULL;
+  }
+  void * p = PyCapsule_GetPointer(pywait_set, NULL);
+  if (Py_None == p) {
+    PyErr_Format(PyExc_RuntimeError, "wait set is None");
+    return NULL;
+  }
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)p;
+
+  rcl_ret_t ret = rcl_wait_set_fini(wait_set);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to fini wait set: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyMem_Free(wait_set);
+
+  if (PyCapsule_SetPointer(pywait_set, Py_None)) {
+    // exception set by PyCapsule_SetPointer
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
 #define GET_LIST_READY_ENTITIES(ENTITY_TYPE) \
   size_t idx; \
   size_t idx_max; \
@@ -2290,6 +2328,9 @@ static PyMethodDef rclpy_methods[] = {
 
   {"rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
    "rclpy_wait_set_add_entity."},
+
+  {"rclpy_destroy_wait_set", rclpy_destroy_wait_set, METH_VARARGS,
+   "rclpy_destroy_wait_set."},
 
   {"rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
    "List non null subscriptions in waitset."},
