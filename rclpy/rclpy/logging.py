@@ -15,7 +15,7 @@
 
 from enum import IntEnum
 
-import rclpy.impl.logger_rcutils
+import rclpy.impl.rcutils_logger
 
 
 class LoggingSeverity(IntEnum):
@@ -33,7 +33,7 @@ class LoggingSeverity(IntEnum):
 
 
 def get_named_logger(name):
-    return rclpy.impl.logger_rcutils.RcutilsLogger(name)
+    return rclpy.impl.rcutils_logger.RcutilsLogger(name)
 
 
 root_logger = get_named_logger('')
