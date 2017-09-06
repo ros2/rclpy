@@ -43,15 +43,12 @@ class Node:
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
 
         namespace = namespace or ''
-        failed = False
         if not ok():
             raise NotInitializedException('cannot create node')
         try:
             node_handle = _rclpy.rclpy_create_node(node_name, namespace)
             self._handle = node_handle
         except ValueError:
-            failed = True
-        if failed:
             # these will raise more specific errors if the name or namespace is bad
             validate_node_name(node_name)
             # emulate what rcl_node_init() does to accept '' and relative namespaces
