@@ -82,7 +82,7 @@ class LoggingFilter:
     Decide if it's appropriate to log given a context, and update the context accordingly.
     """
     @staticmethod
-    def log_condition(context):
+    def should_log(context):
         return True
 
 
@@ -99,7 +99,7 @@ class Once(LoggingFilter):
         context['has_been_logged_once'] = False
 
     @staticmethod
-    def log_condition(context):
+    def should_log(context):
         logging_condition = False
         if not context['has_been_logged_once']:
             logging_condition = True
@@ -121,7 +121,7 @@ class Throttle(LoggingFilter):
         context['throttle_last_logged'] = 0
 
     @staticmethod
-    def log_condition(context):
+    def should_log(context):
         logging_condition = True
         # TODO(dhood): use rcutils time and the time source type
         now = time.time()
@@ -145,7 +145,7 @@ class SkipFirst(LoggingFilter):
         context['first_has_been_skipped'] = False
 
     @staticmethod
-    def log_condition(context):
+    def should_log(context):
         logging_condition = True
         if not context['first_has_been_skipped']:
             logging_condition = False
@@ -241,7 +241,7 @@ class RcutilsLogger:
         # as if it had been. This matches the behavior of the C logging macros provided by rcutils.
         make_log_call = True
         for logging_filter in context['filters']:
-            make_log_call &= supported_filters[logging_filter].log_condition(
+            make_log_call &= supported_filters[logging_filter].should_log(
                 self.contexts[caller_id_str])
             if not make_log_call:
                 break
