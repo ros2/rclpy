@@ -111,13 +111,14 @@ class Executor:
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
             self._nodes = set()
-        _rclpy.rclpy_destroy_guard_condition(self._guard_condition)
+        _rclpy.rclpy_destroy_entity('guard_condition', self._guard_condition)
+
         self._guard_condition = None
         return True
 
     def __del__(self):
         if self._guard_condition is not None:
-            _rclpy.rclpy_destroy_guard_condition(self._guard_condition)
+            _rclpy.rclpy_destroy_entity('guard_condition', self._guard_condition)
 
     def add_node(self, node):
         """
