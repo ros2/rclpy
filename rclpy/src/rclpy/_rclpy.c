@@ -1356,19 +1356,31 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
     Py_RETURN_FALSE;
   }
 
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  void * p = PyCapsule_GetPointer(pynode, NULL);
+  if (Py_None == p) {
+    PyErr_Format(PyExc_RuntimeError, "node is None");
+    return NULL;
+  }
+  rcl_node_t * node = (rcl_node_t *)p;
+
+  p = PyCapsule_GetPointer(pyentity, NULL);
+  if (Py_None == p) {
+    PyErr_Format(PyExc_RuntimeError, "entity is None");
+    return NULL;
+  }
+
   rcl_ret_t ret;
   if (0 == strcmp(entity_type, "subscription")) {
-    rcl_subscription_t * subscription = (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, NULL);
+    rcl_subscription_t * subscription = (rcl_subscription_t *)p;
     ret = rcl_subscription_fini(subscription, node);
   } else if (0 == strcmp(entity_type, "publisher")) {
-    rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(pyentity, NULL);
+    rcl_publisher_t * publisher = (rcl_publisher_t *)p;
     ret = rcl_publisher_fini(publisher, node);
   } else if (0 == strcmp(entity_type, "client")) {
-    rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyentity, NULL);
+    rcl_client_t * client = (rcl_client_t *)p;
     ret = rcl_client_fini(client, node);
   } else if (0 == strcmp(entity_type, "service")) {
-    rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, NULL);
+    rcl_service_t * service = (rcl_service_t *)p;
     ret = rcl_service_fini(service, node);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
@@ -1382,6 +1394,14 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_reset_error();
     return NULL;
   }
+
+  PyMem_Free(p);
+
+  if (PyCapsule_SetPointer(pyentity, Py_None)) {
+    // exception set by PyCapsule_SetPointer
+    return NULL;
+  }
+
   Py_RETURN_TRUE;
 }
 
@@ -1401,12 +1421,18 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     Py_RETURN_FALSE;
   }
 
+  void * p = PyCapsule_GetPointer(pyentity, NULL);
+  if (Py_None == p) {
+    PyErr_Format(PyExc_RuntimeError, "entity is None");
+    return NULL;
+  }
+
   rcl_ret_t ret;
   if (0 == strcmp(entity_type, "node")) {
-    rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, NULL);
+    rcl_node_t * node = (rcl_node_t *)p;
     ret = rcl_node_fini(node);
   } else if (0 == strcmp(entity_type, "timer")) {
-    rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, NULL);
+    rcl_timer_t * timer = (rcl_timer_t *)p;
     ret = rcl_timer_fini(timer);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
@@ -1420,6 +1446,14 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_reset_error();
     Py_RETURN_FALSE;
   }
+
+  PyMem_Free(p);
+
+  if (PyCapsule_SetPointer(pyentity, Py_None)) {
+    // exception set by PyCapsule_SetPointer
+    return NULL;
+  }
+
   Py_RETURN_TRUE;
 }
 
