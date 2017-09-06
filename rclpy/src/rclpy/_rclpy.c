@@ -70,9 +70,9 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
     return NULL;
   }
   g_sigint_gc_handle = sigint_gc;
-  PyObject * pylist = PyList_New(0);
-  PyList_Append(pylist, PyCapsule_New(sigint_gc, NULL, NULL));
-  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl));
+  PyObject * pylist = PyList_New(2);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(sigint_gc, NULL, NULL));
+  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl));
 
   return pylist;
 }
@@ -699,9 +699,9 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * pytimer = PyCapsule_New(timer, NULL, NULL);
-  PyObject * pylist = PyList_New(0);
-  PyList_Append(pylist, pytimer);
-  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
+  PyObject * pylist = PyList_New(2);
+  PyList_SET_ITEM(pylist, 0, pytimer);
+  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
 
   return pylist;
 }
@@ -1043,9 +1043,9 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * pysubscription = PyCapsule_New(subscription, NULL, NULL);
-  PyObject * pylist = PyList_New(0);
-  PyList_Append(pylist, pysubscription);
-  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl));
+  PyObject * pylist = PyList_New(2);
+  PyList_SET_ITEM(pylist, 0, pysubscription);
+  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl));
 
   return pylist;
 }
@@ -1127,9 +1127,9 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * pyclient = PyCapsule_New(client, NULL, NULL);
-  PyObject * pylist = PyList_New(0);
-  PyList_Append(pylist, pyclient);
-  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&client->impl));
+  PyObject * pylist = PyList_New(2);
+  PyList_SET_ITEM(pylist, 0, pyclient);
+  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&client->impl));
 
   return pylist;
 }
@@ -1277,9 +1277,9 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * pyservice = PyCapsule_New(service, NULL, NULL);
-  PyObject * pylist = PyList_New(0);
-  PyList_Append(pylist, pyservice);
-  PyList_Append(pylist, PyLong_FromUnsignedLongLong((uint64_t)&service->impl));
+  PyObject * pylist = PyList_New(2);
+  PyList_SET_ITEM(pylist, 0, pyservice);
+  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&service->impl));
 
   return pylist;
 }
@@ -1927,9 +1927,9 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
 
     Py_INCREF(pytaken_request);
 
-    PyObject * pylist = PyList_New(0);
-    PyList_Append(pylist, pytaken_request);
-    PyList_Append(pylist, PyCapsule_New(header, NULL, NULL));
+    PyObject * pylist = PyList_New(2);
+    PyList_SET_ITEM(pylist, 0, pytaken_request);
+    PyList_SET_ITEM(pylist, 1, PyCapsule_New(header, NULL, NULL));
 
     return pylist;
   }
