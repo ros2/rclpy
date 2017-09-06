@@ -253,9 +253,8 @@ class RcutilsLogger:
         # as if it had been. This matches the behavior of the C logging macros provided by rcutils.
         make_log_call = True
         for logging_filter in context['filters']:
-            make_log_call &= supported_filters[logging_filter].should_log(
-                self.contexts[caller_id_str])
-            if not make_log_call:
+            if not supported_filters[logging_filter].should_log(context):
+                make_log_call = False
                 break
         # Only log the message if the severity is appropriate.
         make_log_call &= severity >= self.get_severity_threshold()
