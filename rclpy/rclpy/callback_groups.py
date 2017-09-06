@@ -48,7 +48,7 @@ class CallbackGroup:
         :param entity: a subscription, timer, client, or service instance
         :rtype: bool
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def beginning_execution(self, entity):
         """
@@ -60,7 +60,7 @@ class CallbackGroup:
         :param entity: a subscription, timer, client, or service instance
         :rtype: bool
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def ending_execution(self, entity):
         """
@@ -69,7 +69,7 @@ class CallbackGroup:
         :param entity: a subscription, timer, client, or service instance
         :rtype: None
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class ReentrantCallbackGroup(CallbackGroup):
