@@ -58,7 +58,7 @@ class Node:
                 namespace = '/' + namespace
             validate_namespace(namespace)
             # Should not get to this point
-            raise RuntimeError("rclpy_create_node failed for unknown reason")
+            raise RuntimeError('rclpy_create_node failed for unknown reason')
 
     @property
     def handle(self):
