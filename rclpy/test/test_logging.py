@@ -33,13 +33,13 @@ class TestLogging(unittest.TestCase):
         rclpy.logging.set_severity_threshold(LoggingSeverity.INFO)
 
         # Logging below threshold not expected to be logged
-        self.assertFalse(rclpy.logging.logdebug('message_debug', return_log_condition=True))
+        self.assertFalse(rclpy.logging.logdebug('message_debug'))
 
         # Logging at or above threshold expected to be logged
-        self.assertTrue(rclpy.logging.loginfo('message_info', return_log_condition=True))
-        self.assertTrue(rclpy.logging.logwarn('message_warn', return_log_condition=True))
-        self.assertTrue(rclpy.logging.logerr('message_err', return_log_condition=True))
-        self.assertTrue(rclpy.logging.logfatal('message_fatal', return_log_condition=True))
+        self.assertTrue(rclpy.logging.loginfo('message_info'))
+        self.assertTrue(rclpy.logging.logwarn('message_warn'))
+        self.assertTrue(rclpy.logging.logerr('message_err'))
+        self.assertTrue(rclpy.logging.logfatal('message_fatal'))
 
     def test_log_once(self):
         message_was_logged = []
@@ -48,7 +48,6 @@ class TestLogging(unittest.TestCase):
                 'message_' + inspect.stack()[0][3] + '_' + str(i),
                 LoggingSeverity.INFO,
                 once=True,
-                return_log_condition=True,
             ))
         self.assertEqual(message_was_logged, [True] + [False] * 4)
 
@@ -59,7 +58,6 @@ class TestLogging(unittest.TestCase):
                 'message2_' + inspect.stack()[0][3] + '_' + str(i),
                 LoggingSeverity.INFO,
                 once=False,
-                return_log_condition=True,
             ))
         self.assertEqual(message_was_logged, [True] * 5)
 
@@ -71,7 +69,6 @@ class TestLogging(unittest.TestCase):
                 LoggingSeverity.INFO,
                 throttle_duration_sec=1,
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
-                return_log_condition=True,
             ))
             time.sleep(0.3)
         self.assertEqual(message_was_logged, [True] + [False] * 3 + [True])
@@ -83,7 +80,6 @@ class TestLogging(unittest.TestCase):
                 'message_' + inspect.stack()[0][3] + '_' + str(i),
                 LoggingSeverity.INFO,
                 skip_first=True,
-                return_log_condition=True,
             ))
         self.assertEqual(message_was_logged, [False] + [True] * 4)
 
@@ -98,7 +94,6 @@ class TestLogging(unittest.TestCase):
                 skip_first=True,
                 throttle_duration_sec=1,
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
-                return_log_condition=True,
             ))
             time.sleep(0.3)
         self.assertEqual(message_was_logged, [False] * 4 + [True])
@@ -113,7 +108,6 @@ class TestLogging(unittest.TestCase):
                 LoggingSeverity.INFO,
                 once=True,
                 skip_first=True,
-                return_log_condition=True,
             ))
             time.sleep(0.3)
         self.assertEqual(message_was_logged, [False, True] + [False] * 3)
@@ -142,7 +136,6 @@ class TestLogging(unittest.TestCase):
                 name='my_name',
                 skip_first=True,
                 unused_kwarg='unused_kwarg',
-                return_log_condition=True,
             )
 
     def test_log_parameters_changing(self):
@@ -178,19 +171,18 @@ class TestLogging(unittest.TestCase):
         # Test convenience functions
 
         # Logging below threshold not expected to be logged
-        self.assertFalse(my_logger.debug('message_debug', return_log_condition=True))
+        self.assertFalse(my_logger.debug('message_debug'))
 
         # Logging at or above threshold expected to be logged
-        self.assertTrue(my_logger.info('message_info', return_log_condition=True))
-        self.assertTrue(my_logger.warn('message_warn', return_log_condition=True))
-        self.assertTrue(my_logger.error('message_err', return_log_condition=True))
-        self.assertTrue(my_logger.fatal('message_fatal', return_log_condition=True))
+        self.assertTrue(my_logger.warn('message_warn'))
+        self.assertTrue(my_logger.error('message_err'))
+        self.assertTrue(my_logger.fatal('message_fatal'))
 
         # Check that specifying a different severity isn't allowed
         with self.assertRaisesRegex(TypeError, "got multiple values for argument 'severity'"):
             my_logger.fatal(
                 'message_fatal',
-                severity=LoggingSeverity.DEBUG, return_log_condition=True)
+                severity=LoggingSeverity.DEBUG)
 
         # Check that this logger's context is independent of the root logger's context
         loggers = [my_logger, rclpy.logging.root_logger]
@@ -201,7 +193,6 @@ class TestLogging(unittest.TestCase):
                     'message_' + inspect.stack()[0][3] + '_' + str(i),
                     LoggingSeverity.INFO,
                     once=True,
-                    return_log_condition=True,
                 ))
             self.assertEqual(message_was_logged, [True] + [False] * 4)
 

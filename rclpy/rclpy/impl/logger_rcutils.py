@@ -207,7 +207,6 @@ class RcutilsLogger:
 
     def log(self, message, severity, **kwargs):
         name = kwargs.pop('name', self.name)
-        return_log_condition = kwargs.pop('return_log_condition', False)
 
         # Infer the requested log filters from the keyword arguments
         detected_filters = get_filters_from_kwargs(**kwargs)
@@ -254,8 +253,7 @@ class RcutilsLogger:
             log_function(
                 severity, name, message,
                 caller_id.function_name, caller_id.file_name, caller_id.line_number)
-        if return_log_condition:
-            return make_log_call
+        return make_log_call
 
     def debug(self, message, **kwargs):
         from rclpy.logging import LoggingSeverity
