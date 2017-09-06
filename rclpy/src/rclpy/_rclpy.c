@@ -1830,6 +1830,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
+  if (PyErr_Occurred()) {
+    return NULL;
+  }
+
   if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pymsg_type, "_CONVERT_TO_PY");
 
@@ -1841,6 +1845,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     destroy_ros_message(taken_msg);
     if (!pytaken_msg) {
       // the function has set the Python error
+      return NULL;
+    }
+
+    if (PyErr_Occurred()) {
       return NULL;
     }
 
