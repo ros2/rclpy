@@ -44,7 +44,9 @@ def get_severity_threshold():
 
 
 def set_severity_threshold(severity):
-    assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
+    if not isinstance(severity, LoggingSeverity) or not isinstance(severity, int):
+        raise TypeError(
+            'Received severity of "{0}" instead of required type LoggingSeverity'.format(severity))
     return root_logger.set_severity_threshold(severity)
 
 
@@ -71,6 +73,8 @@ def logfatal(message, **kwargs):
 # TODO(dhood): document the supported filter options for all logging convenience functions
 # in a way that prevents copy-paste
 def log(message, severity, **kwargs):
-    assert isinstance(severity, LoggingSeverity) or isinstance(severity, int)
+    if not isinstance(severity, LoggingSeverity) or not isinstance(severity, int):
+        raise TypeError(
+            'Received severity of "{0}" instead of required type LoggingSeverity'.format(severity))
     severity = LoggingSeverity(severity)
     return root_logger.log(message, severity, **kwargs)
