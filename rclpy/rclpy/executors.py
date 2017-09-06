@@ -35,6 +35,42 @@ class _WaitSet:
         _rclpy.rclpy_destroy_wait_set(self.wait_set)
 
 
+class _WorkTracker:
+    """Track the amount of work that is in progress."""
+
+    def __init__(self):
+        # Number of tasks that are being executed
+        self._num_work_executing = 0
+        self._work_condition = _Condition()
+
+    def __enter__(self):
+        """Increment the amount of executing work by 1."""
+        with self._work_condition:
+            self._num_work_executing += 1
+
+    def __exit__(self, t, v, tb):
+        """Decrement the amount of work executing by 1."""
+        with self._work_condition:
+            self._num_work_executing -= 1
+            self._work_condition.notify_all()
+
+    def wait(self, timeout_sec=None):
+        """
+        Wait until all work completes.
+
+        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :type timeout_sec: float or None
+        :rtype: bool True if all work completed
+        """
+        # Wait for all work to complete
+        if timeout_sec is None or timeout_sec >= 0:
+            with self._work_condition:
+                if not self._work_condition.wait_for(
+                        lambda: self._num_work_executing == 0, timeout_sec):
+                    return False
+        return True
+
+
 class Executor:
     """
     A base class for an executor.
@@ -57,9 +93,7 @@ class Executor:
         self._guard_condition_handle = gc_handle
         # True if shutdown has been called
         self._is_shutdown = False
-        # Number of tasks that are being executed
-        self._num_work_executing = 0
-        self._work_condition = _Condition()
+        self._work_tracker = _WorkTracker()
 
     def shutdown(self, timeout_sec=None):
         """
@@ -72,12 +106,8 @@ class Executor:
         :rtype: bool
         """
         self._is_shutdown = True
-        # Wait for all work to complete
-        if timeout_sec is None or timeout_sec >= 0:
-            with self._work_condition:
-                if not self._work_condition.wait_for(
-                        lambda: self._num_work_executing == 0, timeout_sec):
-                    return False
+        if not self._work_tracker.wait():
+            return False
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
             self._nodes = set()
@@ -179,8 +209,7 @@ class Executor:
         :rtype: callable
         """
         gc = self._guard_condition
-        work_cv = self._work_condition
-        num_work = self._num_work_executing
+        work_tracker = self._work_tracker
         is_shutdown = self._is_shutdown
         # Mark this so it doesn't get added back to the wait list
         entity._executor_event = True
@@ -188,38 +217,29 @@ class Executor:
         def handler():
             nonlocal entity
             nonlocal gc
-            nonlocal work_cv
-            nonlocal num_work
             nonlocal is_shutdown
+            nonlocal work_tracker
             if not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, try again later
                 entity._executor_event = False
                 _rclpy.rclpy_trigger_guard_condition(gc)
                 return
-            try:
-                # Track the amount of work being executed
-                if is_shutdown:
-                    return
-                with work_cv:
-                    num_work += 1
-
+            if is_shutdown:
+                return
+            with work_tracker:
                 arg = take_from_wait_list(entity)
 
                 # Signal that this has been 'taken' and can be added back to the wait list
                 entity._executor_event = False
                 _rclpy.rclpy_trigger_guard_condition(gc)
 
-                call_callback(entity, arg)
-            finally:
-                # Track the amount of work being executed
-                with work_cv:
-                    num_work -= 1
-                    work_cv.notify_all()
-
-                entity.callback_group.ending_execution(entity)
-                # Signal that work has been done so the next callback in a mutually exclusive
-                # callback group can get executed
-                _rclpy.rclpy_trigger_guard_condition(gc)
+                try:
+                    call_callback(entity, arg)
+                finally:
+                    entity.callback_group.ending_execution(entity)
+                    # Signal that work has been done so the next callback in a mutually exclusive
+                    # callback group can get executed
+                    _rclpy.rclpy_trigger_guard_condition(gc)
         return handler
 
     def _filter_eligible_entities(self, entities):
