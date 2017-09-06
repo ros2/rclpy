@@ -63,13 +63,14 @@ rclpy_logging_set_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args
 /// Log a message through rcutils with the specified severity.
 /**
  *
- * \param severity Enum of type RCUTILS_LOG_SEVERITY.
- * \param name Name of logger.
- * \param message String to log.
- * \param function_name String with the function name of the caller.
- * \param file_name String with the file name of the caller.
- * \param line_number Line number of the calling function.
- * \return None
+ * \param[in] severity Enum of type RCUTILS_LOG_SEVERITY.
+ * \param[in] name Name of logger.
+ * \param[in] message String to log.
+ * \param[in] function_name String with the function name of the caller.
+ * \param[in] file_name String with the file name of the caller.
+ * \param[in] line_number Line number of the calling function.
+ * \return None, or
+ * \return NULL on failure
  */
 static PyObject *
 rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
