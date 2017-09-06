@@ -100,7 +100,7 @@ static PyMethodDef rclpy_logging_methods[] = {
    "Get the global severity threshold."},
   {"rclpy_logging_set_severity_threshold", rclpy_logging_set_severity_threshold, METH_VARARGS,
    "Set the global severity threshold."},
-  {"rclpy_logging_rcutils_log", (PyCFunction)rclpy_logging_rcutils_log, METH_VARARGS,
+  {"rclpy_logging_rcutils_log", rclpy_logging_rcutils_log, METH_VARARGS,
    "Log a message with the specified severity"},
 
   {NULL, NULL, 0, NULL}  /* sentinel */
