@@ -219,12 +219,10 @@ class Executor:
             nonlocal gc
             nonlocal is_shutdown
             nonlocal work_tracker
-            if not entity.callback_group.beginning_execution(entity):
-                # Didn't get the callback, try again later
+            if is_shutdown or not entity.callback_group.beginning_execution(entity):
+                # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
                 _rclpy.rclpy_trigger_guard_condition(gc)
-                return
-            if is_shutdown:
                 return
             with work_tracker:
                 arg = take_from_wait_list(entity)
