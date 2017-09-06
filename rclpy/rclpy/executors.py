@@ -106,7 +106,7 @@ class Executor:
         :rtype: bool
         """
         self._is_shutdown = True
-        if not self._work_tracker.wait():
+        if not self._work_tracker.wait(timeout_sec):
             return False
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
