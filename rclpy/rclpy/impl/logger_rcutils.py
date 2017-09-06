@@ -95,7 +95,7 @@ class Once(LoggingFilter):
 
     @classmethod
     def initialize_context(cls, context, **kwargs):
-        super(cls, cls).initialize_context(context, **kwargs)
+        super(Once, cls).initialize_context(context, **kwargs)
         context['has_been_logged_once'] = False
 
     @staticmethod
@@ -117,7 +117,7 @@ class Throttle(LoggingFilter):
 
     @classmethod
     def initialize_context(cls, context, **kwargs):
-        super(cls, cls).initialize_context(context, **kwargs)
+        super(Throttle, cls).initialize_context(context, **kwargs)
         context['throttle_last_logged'] = 0
 
     @staticmethod
@@ -141,7 +141,7 @@ class SkipFirst(LoggingFilter):
 
     @classmethod
     def initialize_context(cls, context, **kwargs):
-        super(cls, cls).initialize_context(context, **kwargs)
+        super(SkipFirst, cls).initialize_context(context, **kwargs)
         context['first_has_been_skipped'] = False
 
     @staticmethod
