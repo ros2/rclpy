@@ -153,9 +153,7 @@ class SkipFirst(LoggingFilter):
         return logging_condition
 
 
-# The ordering of this dictionary matches the order in which filters will be processed.
-# Note(dhood): ordering in the constructor is only maintained as of Python 3.6,
-# so we assign the entries individually.
+# The ordering of this dictionary defines the order in which filters will be processed.
 supported_filters = OrderedDict()
 supported_filters['throttle'] = Throttle
 supported_filters['skip_first'] = SkipFirst
@@ -163,6 +161,11 @@ supported_filters['once'] = Once
 
 
 def get_filters_from_kwargs(**kwargs):
+    """
+    Determine which filters have had parameters specified in the given keyword arguments.
+
+    Returns the list of filters using the order specified by `supported_filters`.
+    """
     detected_filters = []
     all_supported_params = []
     for supported_filter, filter_class in supported_filters.items():
