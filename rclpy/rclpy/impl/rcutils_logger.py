@@ -127,8 +127,8 @@ class Throttle(LoggingFilter):
     @staticmethod
     def should_log(context):
         logging_condition = True
-        # TODO(dhood): use rcutils time and the time source type
-        now = time.time()
+        # TODO(dhood): use rcutils time once support is available in rclpy
+        now = time.monotonic()
         next_log_time = context['throttle_last_logged'] + context['throttle_duration_sec']
         logging_condition = now >= next_log_time
         if logging_condition:
