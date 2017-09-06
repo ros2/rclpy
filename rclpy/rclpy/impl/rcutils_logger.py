@@ -123,6 +123,14 @@ class Throttle(LoggingFilter):
     def initialize_context(cls, context, **kwargs):
         super(Throttle, cls).initialize_context(context, **kwargs)
         context['throttle_last_logged'] = 0
+        # TODO(dhood): clarify the accepted values of the time source type, once it's actually used
+        if context['throttle_time_source_type'] != 'RCUTILS_STEADY_TIME':
+            raise ValueError(
+                'Received throttle_time_source_type of "{0}"; '
+                'currently only RCUTILS_STEADY_TIME is supported'
+                # TODO(dhood): remove the following note when the time source is actually rcutils
+                ' (simulated with python time.monotonic)'
+                .format(context['throttle_time_source_type']))
 
     @staticmethod
     def should_log(context):
