@@ -121,4 +121,5 @@ def spin_once(node, *, timeout_sec=None):
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
 
+    _rclpy.rclpy_destroy_entity('guard_condition', sigint_gc)
     _rclpy.rclpy_destroy_wait_set(wait_set)
