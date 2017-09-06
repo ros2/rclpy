@@ -1844,8 +1844,6 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    Py_INCREF(pytaken_msg);
-
     return pytaken_msg;
   }
   // if take failed, just do nothing
@@ -1928,8 +1926,6 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    Py_INCREF(pytaken_request);
-
     PyObject * pylist = PyList_New(2);
     PyList_SET_ITEM(pylist, 0, pytaken_request);
     PyList_SET_ITEM(pylist, 1, PyCapsule_New(header, NULL, NULL));
@@ -2007,8 +2003,6 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
       // the function has set the Python error
       return NULL;
     }
-
-    Py_INCREF(pytaken_response);
 
     return pytaken_response;
   }
