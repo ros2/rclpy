@@ -74,7 +74,7 @@ class LoggingFilter:
         for param in cls.params:
             context[param] = kwargs.get(param, cls.params[param])
             if context[param] is None:
-                raise RuntimeError(
+                raise TypeError(
                     'Required parameter "{0}" was not specified for logging filter "{1}"'
                     .format(param, cls.__name__))
 
@@ -180,13 +180,13 @@ def get_filters_from_kwargs(**kwargs):
                 if default_value is not None:
                     kwargs[param_name] = default_value
                 else:
-                    raise RuntimeError(
+                    raise TypeError(
                         'required parameter "{0}" not specified '
                         'but is required for the the logging filter "{1}"'.format(
                             param_name, detected_filter))
     for kwarg in kwargs:
         if kwarg not in all_supported_params:
-            raise RuntimeError(
+            raise TypeError(
                 'parameter "{0}" is not one of the recognized logging options "{1}"'
                 .format(kwarg, all_supported_params)
             )
@@ -230,7 +230,7 @@ class RcutilsLogger:
             if name != context['name']:
                 raise ValueError('Logger name cannot be changed between calls.')
             if detected_filters != context['filters']:
-                raise RuntimeError('Requested logging filters cannot be changed between calls.')
+                raise ValueError('Requested logging filters cannot be changed between calls.')
             for detected_filter in detected_filters:
                 filter_params = supported_filters[detected_filter].params
                 if any(context[p] != kwargs.get(p, filter_params[p]) for p in filter_params):

@@ -120,7 +120,7 @@ class TestLogging(unittest.TestCase):
 
     def test_log_arguments(self):
         # Check half-specified filter not allowed if a required parameter is missing
-        with self.assertRaisesRegex(RuntimeError, 'required parameter .* not specified'):
+        with self.assertRaisesRegex(TypeError, 'required parameter .* not specified'):
             rclpy.logging.log(
                 'message',
                 LoggingSeverity.INFO,
@@ -135,7 +135,7 @@ class TestLogging(unittest.TestCase):
         )
 
         # Check unused kwarg is not allowed
-        with self.assertRaisesRegex(RuntimeError, 'parameter .* is not one of the recognized'):
+        with self.assertRaisesRegex(TypeError, 'parameter .* is not one of the recognized'):
             rclpy.logging.log(
                 'message',
                 LoggingSeverity.INFO,
