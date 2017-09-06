@@ -20,30 +20,39 @@ except ImportError:
     import pickle
 import importlib
 import inspect
+from pathlib import Path
 import time
 
 _rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`)
-_known_callers = []
+known_callers = []
 _internal_callers = None  # This will be populated on first logging call.
+
+
+def _normalize_path(path):
+    return str(Path(path).resolve())
 
 
 def _find_caller(frame):
     """Get the first calling frame that is outside of rclpy."""
     global _internal_callers
+    global known_callers
     if _internal_callers is None:
         # Populate the list of internal filenames from which logging methods can be called.
         # This has to be done from within a function to avoid cyclic module imports.
         import rclpy.logging
-        _internal_callers = [__file__, rclpy.logging.__file__]
+        _internal_callers = [
+            _normalize_path(__file__),
+            _normalize_path(rclpy.logging.__file__),
+        ]
         # Preserve any filenames that may have been added by third parties.
-        _known_callers.extend(_internal_callers)
+        known_callers.extend(_internal_callers)
 
-    frame_filename = inspect.getabsfile(frame)
-    while any(f in frame_filename for f in _known_callers):
+    frame_filename = _normalize_path(inspect.getabsfile(frame))
+    while any(f in frame_filename for f in known_callers):
         frame = frame.f_back
-        frame_filename = inspect.getabsfile(frame)
+        frame_filename = _normalize_path(inspect.getabsfile(frame))
     return frame
 
 
