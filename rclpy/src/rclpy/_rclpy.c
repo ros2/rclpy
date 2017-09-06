@@ -1434,6 +1434,10 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (0 == strcmp(entity_type, "timer")) {
     rcl_timer_t * timer = (rcl_timer_t *)p;
     ret = rcl_timer_fini(timer);
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    rcl_guard_condition_t * guard_condition =
+      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, NULL);
+    ret = rcl_guard_condition_fini(guard_condition);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
