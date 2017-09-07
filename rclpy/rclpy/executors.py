@@ -366,7 +366,8 @@ class Executor:
                         yield handler, srv, node
 
             # Check timeout timer
-            if timeout_timer is not None and timeout_timer.timer_pointer in timers_ready:
+            if (timeout_nsec == 0 or
+                    (timeout_timer is not None and timeout_timer.timer_pointer in timers_ready)):
                 break
 
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import unittest
 
 import rclpy
@@ -67,6 +68,15 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor()
         executor.add_node(self.node)
         self.assertIn(self.node, executor.get_nodes())
+
+    def test_executor_spin_non_blocking(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.node)
+        start = time.time()
+        executor.spin_once(timeout_sec=0)
+        end = time.time()
+        self.assertLess(start - end, 0.001)
 
 
 if __name__ == '__main__':
