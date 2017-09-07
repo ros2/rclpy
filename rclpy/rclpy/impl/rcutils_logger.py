@@ -14,10 +14,6 @@
 
 
 from collections import OrderedDict
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 import importlib
 import inspect
 from pathlib import Path
@@ -66,6 +62,16 @@ class CallerId:
         self.file_name = _normalize_path(inspect.getabsfile(frame))
         self.line_number = frame.f_lineno
         self.last_index = frame.f_lasti  # To distinguish between two callers on the same line
+
+    def __hash__(self):
+        return hash((self.function_name, self.file_name, self.line_number, self.last_index))
+
+    def __eq__(self, other):
+        return (self.function_name, self.file_name, self.line_number, self.last_index) == \
+            (other.function_name, other.file_name, other.line_number, other.last_index)
+
+    def __ne__(self, other):
+        return not(self == other)
 
 
 class LoggingFilter:
@@ -244,16 +250,15 @@ class RcutilsLogger:
 
         # Get/prepare the context corresponding to the caller.
         caller_id = CallerId()
-        caller_id_str = pickle.dumps(caller_id)
-        if caller_id_str not in self.contexts:
+        if caller_id not in self.contexts:
             context = {'name': name, 'severity': severity}
             for detected_filter in detected_filters:
                 if detected_filter in supported_filters:
                     supported_filters[detected_filter].initialize_context(context, **kwargs)
             context['filters'] = detected_filters
-            self.contexts[caller_id_str] = context
+            self.contexts[caller_id] = context
         else:
-            context = self.contexts[caller_id_str]
+            context = self.contexts[caller_id]
             # Don't support any changes to the logger.
             if severity != context['severity']:
                 raise ValueError('Logger severity cannot be changed between calls.')
