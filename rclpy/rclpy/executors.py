@@ -17,7 +17,6 @@ import multiprocessing
 from threading import Condition as _Condition
 from threading import Lock as _Lock
 
-from rclpy.callback_groups import ReentrantCallbackGroup as _ReentrantGroup
 from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.timer import WallTimer as _WallTimer
@@ -261,9 +260,6 @@ class Executor:
         :type nodes: list or None
         :rtype: Generator[(callable, entity, :class:`rclpy.node.Node`)]
         """
-        if nodes is None:
-            nodes = self.get_nodes()
-
         timeout_timer = None
         # Get timeout in nanoseconds. 0 = don't wait. < 0 means block forever
         timeout_nsec = None
@@ -273,7 +269,10 @@ class Executor:
             timeout_nsec = 0
         else:
             timeout_nsec = int(float(timeout_sec) * S_TO_NS)
-            timeout_timer = _WallTimer(lambda: None, _ReentrantGroup(), timeout_nsec)
+            timeout_timer = _WallTimer(None, None, timeout_nsec)
+
+        if nodes is None:
+            nodes = self.get_nodes()
 
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
@@ -301,6 +300,7 @@ class Executor:
                     len(timers),
                     len(clients),
                     len(services))
+
                 entities = {
                     'subscription': (subscriptions, 'subscription_handle'),
                     'client': (clients, 'client_handle'),
