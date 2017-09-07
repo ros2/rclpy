@@ -62,7 +62,7 @@ class CallerId:
         if not frame:
             frame = _find_caller(inspect.currentframe())
         self.function_name = frame.f_code.co_name
-        self.file_name = inspect.getabsfile(frame)
+        self.file_name = _normalize_path(inspect.getabsfile(frame))
         self.line_number = frame.f_lineno
         self.last_index = frame.f_lasti  # To distinguish between two callers on the same line
 
