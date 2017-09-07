@@ -73,9 +73,9 @@ class TestExecutor(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor()
         executor.add_node(self.node)
-        start = time.time()
+        start = time.monotonic()
         executor.spin_once(timeout_sec=0)
-        end = time.time()
+        end = time.monotonic()
         self.assertLess(start - end, 0.001)
 
 
