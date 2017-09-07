@@ -253,19 +253,19 @@ class RcutilsLogger:
         # Determine if it's appropriate to process the message (any filter can vote no)
         # Note(dhood): even if a message doesn't get logged, a filter might still update its state
         # as if it had been. This matches the behavior of the C logging macros provided by rcutils.
-        make_log_call = True
         for logging_filter in context['filters']:
             if not supported_filters[logging_filter].should_log(context):
-                make_log_call = False
-                break
+                return False
+
         # Only log the message if the severity is appropriate.
-        make_log_call &= severity >= self.get_severity_threshold()
-        if make_log_call:
-            # Call the relevant function from the C extension.
-            _rclpy_logging.rclpy_logging_rcutils_log(
-                severity, name, message,
-                caller_id.function_name, caller_id.file_name, caller_id.line_number)
-        return make_log_call
+        if severity < self.get_severity_threshold():
+            return False
+
+        # Call the relevant function from the C extension.
+        _rclpy_logging.rclpy_logging_rcutils_log(
+            severity, name, message,
+            caller_id.function_name, caller_id.file_name, caller_id.line_number)
+        return True
 
     def debug(self, message, **kwargs):
         from rclpy.logging import LoggingSeverity
