@@ -17,7 +17,7 @@ from collections import OrderedDict
 from collections import namedtuple
 import importlib
 import inspect
-from pathlib import Path
+import os
 import time
 
 _rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
@@ -28,10 +28,6 @@ _internal_callers = []
 _populate_internal_callers = True
 
 
-def _normalize_path(path):
-    return str(Path(path).resolve())
-
-
 def _find_caller(frame):
     """Get the first calling frame that is outside of rclpy."""
     global _populate_internal_callers
@@ -40,17 +36,18 @@ def _find_caller(frame):
         # Populate the list of internal filenames from which logging methods can be called.
         # This has to be done from within a function to avoid cyclic module imports.
         import rclpy.logging
-        # Preserve any filenames that may have been added by third parties.
+        # Extend the list to preserve any filenames that may have been added by third parties.
+        # Note: the call to `abspath` will also resolve mixed slashes that can result on Windows.
         _internal_callers.extend([
-            _normalize_path(__file__),
-            _normalize_path(rclpy.logging.__file__),
+            os.path.abspath(__file__),
+            os.path.abspath(rclpy.logging.__file__),
         ])
         _populate_internal_callers = False
 
-    frame_filename = _normalize_path(inspect.getabsfile(frame))
+    frame_filename = os.path.abspath(inspect.getabsfile(frame))
     while any(f in frame_filename for f in _internal_callers):
         frame = frame.f_back
-        frame_filename = _normalize_path(inspect.getabsfile(frame))
+        frame_filename = os.path.abspath(inspect.getabsfile(frame))
     return frame
 
 
@@ -63,7 +60,7 @@ class CallerId(
         return super(CallerId, cls).__new__(
             cls,
             function_name=frame.f_code.co_name,
-            file_name=_normalize_path(inspect.getabsfile(frame)),
+            file_name=os.path.abspath(inspect.getabsfile(frame)),
             line_number=frame.f_lineno,
             last_index=frame.f_lasti,  # To distinguish between two callers on the same line
         )
