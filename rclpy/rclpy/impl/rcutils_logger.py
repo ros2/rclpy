@@ -55,6 +55,8 @@ def _find_caller(frame):
 
 class CallerId:
 
+    __slots__ = ('function_name', 'file_name', 'line_number', 'last_index')
+
     def __init__(self, frame=None):
         if not frame:
             frame = _find_caller(inspect.currentframe())
@@ -64,11 +66,11 @@ class CallerId:
         self.last_index = frame.f_lasti  # To distinguish between two callers on the same line
 
     def __hash__(self):
-        return hash((self.function_name, self.file_name, self.line_number, self.last_index))
+        return hash(tuple(getattr(self, s) for s in self.__slots__))
 
     def __eq__(self, other):
-        return (self.function_name, self.file_name, self.line_number, self.last_index) == \
-            (other.function_name, other.file_name, other.line_number, other.last_index)
+        return tuple(getattr(self, s) for s in self.__slots__) == \
+            tuple(getattr(self, s) for s in self.__slots__)
 
     def __ne__(self, other):
         return not(self == other)
