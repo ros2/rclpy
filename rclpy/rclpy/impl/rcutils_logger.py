@@ -44,10 +44,10 @@ def _find_caller(frame):
         ])
         _populate_internal_callers = False
 
-    file_path = os.path.abspath(inspect.getabsfile(frame))
+    file_path = os.path.abspath(inspect.getframeinfo(frame).filename)
     while any(f in file_path for f in _internal_callers):
         frame = frame.f_back
-        file_path = os.path.abspath(inspect.getabsfile(frame))
+        file_path = os.path.abspath(inspect.getframeinfo(frame).filename)
     return frame
 
 
@@ -60,7 +60,7 @@ class CallerId(
         return super(CallerId, cls).__new__(
             cls,
             function_name=frame.f_code.co_name,
-            file_path=os.path.abspath(inspect.getabsfile(frame)),
+            file_path=os.path.abspath(inspect.getframeinfo(frame).filename),
             line_number=frame.f_lineno,
             last_index=frame.f_lasti,  # To distinguish between two callers on the same line
         )
