@@ -25,9 +25,10 @@ import time
 
 _rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
 
-# Known filenames from which logging methods can be called (will be ignored in `_find_caller`)
-known_callers = []
-_internal_callers = None  # This will be populated on first logging call.
+# Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
+_internal_callers = []
+# This will cause rclpy filenames to be registered in `_internal_callers` on first logging call.
+_populate_internal_callers = True
 
 
 def _normalize_path(path):
@@ -36,21 +37,21 @@ def _normalize_path(path):
 
 def _find_caller(frame):
     """Get the first calling frame that is outside of rclpy."""
+    global _populate_internal_callers
     global _internal_callers
-    global known_callers
-    if _internal_callers is None:
+    if _populate_internal_callers:
         # Populate the list of internal filenames from which logging methods can be called.
         # This has to be done from within a function to avoid cyclic module imports.
         import rclpy.logging
-        _internal_callers = [
+        # Preserve any filenames that may have been added by third parties.
+        _internal_callers.extend([
             _normalize_path(__file__),
             _normalize_path(rclpy.logging.__file__),
-        ]
-        # Preserve any filenames that may have been added by third parties.
-        known_callers.extend(_internal_callers)
+        ])
+        _populate_internal_callers = False
 
     frame_filename = _normalize_path(inspect.getabsfile(frame))
-    while any(f in frame_filename for f in known_callers):
+    while any(f in frame_filename for f in _internal_callers):
         frame = frame.f_back
         frame_filename = _normalize_path(inspect.getabsfile(frame))
     return frame
