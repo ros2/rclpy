@@ -49,27 +49,31 @@ def set_severity_threshold(severity):
 
 
 def logdebug(message, **kwargs):
+    """Log a message with `DEBUG` severity via :py:classmethod:RcutilsLogger.log:."""
     return root_logger.log(message, severity=LoggingSeverity.DEBUG, **kwargs)
 
 
 def loginfo(message, **kwargs):
+    """Log a message with `INFO` severity via :py:classmethod:RcutilsLogger.log:."""
     return root_logger.log(message, severity=LoggingSeverity.INFO, **kwargs)
 
 
 def logwarn(message, **kwargs):
+    """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
     return root_logger.log(message, severity=LoggingSeverity.WARN, **kwargs)
 
 
 def logerr(message, **kwargs):
+    """Log a message with `ERROR` severity via :py:classmethod:RcutilsLogger.log:."""
     return root_logger.log(message, severity=LoggingSeverity.ERROR, **kwargs)
 
 
 def logfatal(message, **kwargs):
+    """Log a message with `FATAL` severity via :py:classmethod:RcutilsLogger.log:."""
     return root_logger.log(message, severity=LoggingSeverity.FATAL, **kwargs)
 
 
-# TODO(dhood): document the supported filter options for all logging convenience functions
-# in a way that prevents copy-paste
 def log(message, severity, **kwargs):
+    """Log a message with the specified severity via :py:classmethod:RcutilsLogger.log:."""
     severity = LoggingSeverity(severity)
     return root_logger.log(message, severity, **kwargs)

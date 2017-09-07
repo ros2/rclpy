@@ -232,6 +232,34 @@ class RcutilsLogger:
         return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
 
     def log(self, message, severity, **kwargs):
+        r"""
+        Log a message with the specified severity.
+
+        The message will only be logged if its severity is not less than the severity threshold
+        of the logger, and no logging filter causes the message to be skipped.
+
+
+        :param message str: message to log.
+        :param severity: severity of the message.
+        :type severity: :py:class:LoggingSeverity
+        :keyword name str: name of the logger to use.
+        :param \**kwargs: optional parameters for logging filters (see below).
+
+        :Keyword Arguments:
+            * *throttle_duration_sec* (``float``) --
+              Duration of the throttle interval for the :py:class:Throttle: filter.
+            * *throttle_time_source_type* (``str``) --
+              Optional time source type for the :py:class:Throttle: filter (default of
+              ``RCUTILS_STEADY_TIME``)
+            * *skip_first* (``bool``) --
+              If True, enable the :py:class:SkipFirst: filter.
+            * *once* (``bool``) --
+              If True, enable the :py:class:Once: filter.
+        :returns: False if a filter caused the message to not be logged; True otherwise.
+        :raises: TypeError on invalid filter parameter combinations.
+        :raises: ValueError on invalid parameters values.
+        :rtype: bool
+        """
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
 
@@ -282,21 +310,26 @@ class RcutilsLogger:
         return True
 
     def debug(self, message, **kwargs):
+        """Log a message with `DEBUG` severity via :py:classmethod:RcutilsLogger.log:."""
         from rclpy.logging import LoggingSeverity
         return self.log(message, LoggingSeverity.DEBUG, **kwargs)
 
     def info(self, message, **kwargs):
+        """Log a message with `INFO` severity via :py:classmethod:RcutilsLogger.log:."""
         from rclpy.logging import LoggingSeverity
         return self.log(message, LoggingSeverity.INFO, **kwargs)
 
     def warn(self, message, **kwargs):
+        """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         from rclpy.logging import LoggingSeverity
         return self.log(message, LoggingSeverity.WARN, **kwargs)
 
     def error(self, message, **kwargs):
+        """Log a message with `ERROR` severity via :py:classmethod:RcutilsLogger.log:."""
         from rclpy.logging import LoggingSeverity
         return self.log(message, LoggingSeverity.ERROR, **kwargs)
 
     def fatal(self, message, **kwargs):
+        """Log a message with `FATAL` severity via :py:classmethod:RcutilsLogger.log:."""
         from rclpy.logging import LoggingSeverity
         return self.log(message, LoggingSeverity.FATAL, **kwargs)
