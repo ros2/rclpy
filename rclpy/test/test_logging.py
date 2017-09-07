@@ -55,7 +55,7 @@ class TestLogging(unittest.TestCase):
         message_was_logged = []
         for i in range(5):
             message_was_logged.append(rclpy.logging.log(
-                'message2_' + inspect.stack()[0][3] + '_' + str(i),
+                'message2_' + inspect.stack()[0][3] + '_false_' + str(i),
                 LoggingSeverity.INFO,
                 once=False,
             ))
