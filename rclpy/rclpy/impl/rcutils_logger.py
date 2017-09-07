@@ -44,15 +44,15 @@ def _find_caller(frame):
         ])
         _populate_internal_callers = False
 
-    frame_filename = os.path.abspath(inspect.getabsfile(frame))
-    while any(f in frame_filename for f in _internal_callers):
+    file_path = os.path.abspath(inspect.getabsfile(frame))
+    while any(f in file_path for f in _internal_callers):
         frame = frame.f_back
-        frame_filename = os.path.abspath(inspect.getabsfile(frame))
+        file_path = os.path.abspath(inspect.getabsfile(frame))
     return frame
 
 
 class CallerId(
-        namedtuple('CallerId', ['function_name', 'file_name', 'line_number', 'last_index'])):
+        namedtuple('CallerId', ['function_name', 'file_path', 'line_number', 'last_index'])):
 
     def __new__(cls, frame=None):
         if not frame:
@@ -60,7 +60,7 @@ class CallerId(
         return super(CallerId, cls).__new__(
             cls,
             function_name=frame.f_code.co_name,
-            file_name=os.path.abspath(inspect.getabsfile(frame)),
+            file_path=os.path.abspath(inspect.getabsfile(frame)),
             line_number=frame.f_lineno,
             last_index=frame.f_lasti,  # To distinguish between two callers on the same line
         )
@@ -278,7 +278,7 @@ class RcutilsLogger:
         # Call the relevant function from the C extension.
         _rclpy_logging.rclpy_logging_rcutils_log(
             severity, name, message,
-            caller_id.function_name, caller_id.file_name, caller_id.line_number)
+            caller_id.function_name, caller_id.file_path, caller_id.line_number)
         return True
 
     def debug(self, message, **kwargs):
