@@ -188,14 +188,16 @@ def get_filters_from_kwargs(**kwargs):
     # Check that all required parameters (with no default value) have been specified
     for detected_filter in detected_filters:
         for param_name, default_value in supported_filters[detected_filter].params.items():
-            if param_name not in kwargs:
-                if default_value is not None:
-                    kwargs[param_name] = default_value
-                else:
-                    raise TypeError(
-                        'required parameter "{0}" not specified '
-                        'but is required for the the logging filter "{1}"'.format(
-                            param_name, detected_filter))
+            if param_name in kwargs:
+                continue
+
+            # Param not specified; use the default.
+            if default_value is None:
+                raise TypeError(
+                    'required parameter "{0}" not specified '
+                    'but is required for the the logging filter "{1}"'.format(
+                        param_name, detected_filter))
+            kwargs[param_name] = default_value
     for kwarg in kwargs:
         if kwarg not in all_supported_params:
             raise TypeError(
