@@ -73,13 +73,13 @@ rclpy_logging_set_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args
 static PyObject *
 rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  unsigned PY_LONG_LONG severity;
+  int severity;
   const char * name;
   const char * message;
   const char * function_name;
   const char * file_name;
   unsigned PY_LONG_LONG line_number;
-  if (!PyArg_ParseTuple(args, "KssssK",
+  if (!PyArg_ParseTuple(args, "issssK",
     &severity, &name, &message, &function_name, &file_name, &line_number))
   {
     return NULL;
