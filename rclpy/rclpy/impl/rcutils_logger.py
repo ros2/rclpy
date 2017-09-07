@@ -37,17 +37,17 @@ def _find_caller(frame):
         # This has to be done from within a function to avoid cyclic module imports.
         import rclpy.logging
         # Extend the list to preserve any filenames that may have been added by third parties.
-        # Note: the call to `abspath` will also resolve mixed slashes that can result on Windows.
+        # Note: the call to `realpath` will also resolve mixed slashes that can result on Windows.
         _internal_callers.extend([
-            os.path.abspath(__file__),
-            os.path.abspath(rclpy.logging.__file__),
+            os.path.realpath(__file__),
+            os.path.realpath(rclpy.logging.__file__),
         ])
         _populate_internal_callers = False
 
-    file_path = os.path.abspath(inspect.getframeinfo(frame).filename)
+    file_path = os.path.realpath(inspect.getframeinfo(frame).filename)
     while any(f in file_path for f in _internal_callers):
         frame = frame.f_back
-        file_path = os.path.abspath(inspect.getframeinfo(frame).filename)
+        file_path = os.path.realpath(inspect.getframeinfo(frame).filename)
     return frame
 
 
