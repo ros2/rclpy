@@ -45,8 +45,7 @@ rclpy_logging_get_severity_threshold()
 /**
  *
  * \param[in] severity Threshold to set
- * \return None, or
- * \return NULL on failure
+ * \return None
  */
 static PyObject *
 rclpy_logging_set_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
@@ -69,8 +68,7 @@ rclpy_logging_set_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args
  * \param[in] function_name String with the function name of the caller.
  * \param[in] file_name String with the file name of the caller.
  * \param[in] line_number Line number of the calling function.
- * \return None, or
- * \return NULL on failure
+ * \return None
  */
 static PyObject *
 rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
