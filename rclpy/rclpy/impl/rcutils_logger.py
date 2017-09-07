@@ -14,6 +14,7 @@
 
 
 from collections import OrderedDict
+from collections import namedtuple
 import importlib
 import inspect
 from pathlib import Path
@@ -53,27 +54,19 @@ def _find_caller(frame):
     return frame
 
 
-class CallerId:
+class CallerId(
+        namedtuple('CallerId', ['function_name', 'file_name', 'line_number', 'last_index'])):
 
-    __slots__ = ('function_name', 'file_name', 'line_number', 'last_index')
-
-    def __init__(self, frame=None):
+    def __new__(cls, frame=None):
         if not frame:
             frame = _find_caller(inspect.currentframe())
-        self.function_name = frame.f_code.co_name
-        self.file_name = _normalize_path(inspect.getabsfile(frame))
-        self.line_number = frame.f_lineno
-        self.last_index = frame.f_lasti  # To distinguish between two callers on the same line
-
-    def __hash__(self):
-        return hash(tuple(getattr(self, s) for s in self.__slots__))
-
-    def __eq__(self, other):
-        return tuple(getattr(self, s) for s in self.__slots__) == \
-            tuple(getattr(self, s) for s in self.__slots__)
-
-    def __ne__(self, other):
-        return not(self == other)
+        return super(CallerId, cls).__new__(
+            cls,
+            function_name=frame.f_code.co_name,
+            file_name=_normalize_path(inspect.getabsfile(frame)),
+            line_number=frame.f_lineno,
+            last_index=frame.f_lasti,  # To distinguish between two callers on the same line
+        )
 
 
 class LoggingFilter:
