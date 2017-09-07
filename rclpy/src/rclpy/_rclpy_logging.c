@@ -23,7 +23,7 @@
  * \return None
  */
 static PyObject *
-rclpy_logging_initialize()
+rclpy_logging_initialize(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcutils_logging_initialize();
   Py_RETURN_NONE;
@@ -34,7 +34,7 @@ rclpy_logging_initialize()
  * \return severity
  */
 static PyObject *
-rclpy_logging_get_severity_threshold()
+rclpy_logging_get_severity_threshold(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   int severity = rcutils_logging_get_severity_threshold();
 
