@@ -13,8 +13,8 @@
 # limitations under the License.
 
 
-from collections import OrderedDict
 from collections import namedtuple
+from collections import OrderedDict
 import importlib
 import inspect
 import os
