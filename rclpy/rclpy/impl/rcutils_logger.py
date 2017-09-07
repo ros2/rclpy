@@ -224,12 +224,19 @@ class RcutilsLogger:
         self.contexts = {}
 
     def get_severity_threshold(self):
-        return _rclpy_logging.rclpy_logging_get_severity_threshold()
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(_rclpy_logging.rclpy_logging_get_severity_threshold())
+        return severity
 
     def set_severity_threshold(self, severity):
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(severity)
         return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
 
     def log(self, message, severity, **kwargs):
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(severity)
+
         name = kwargs.pop('name', self.name)
 
         # Infer the requested log filters from the keyword arguments
