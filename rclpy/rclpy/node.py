@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.client import Client
 from rclpy.constants import S_TO_NS
+from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -22,6 +24,7 @@ from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.timer import WallTimer
+from rclpy.utilities import ok
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
 from rclpy.validate_node_name import validate_node_name
@@ -30,13 +33,32 @@ from rclpy.validate_topic_name import validate_topic_name
 
 class Node:
 
-    def __init__(self, handle):
+    def __init__(self, node_name, *, namespace=None):
         self.clients = []
-        self._handle = handle
+        self._handle = None
         self.publishers = []
         self.services = []
         self.subscriptions = []
         self.timers = []
+        self._default_callback_group = MutuallyExclusiveCallbackGroup()
+
+        namespace = namespace or ''
+        if not ok():
+            raise NotInitializedException('cannot create node')
+        try:
+            node_handle = _rclpy.rclpy_create_node(node_name, namespace)
+            self._handle = node_handle
+        except ValueError:
+            # these will raise more specific errors if the name or namespace is bad
+            validate_node_name(node_name)
+            # emulate what rcl_node_init() does to accept '' and relative namespaces
+            if not namespace:
+                namespace = '/'
+            if not namespace.startswith('/'):
+                namespace = '/' + namespace
+            validate_namespace(namespace)
+            # Should not get to this point
+            raise RuntimeError('rclpy_create_node failed for unknown reason')
 
     @property
     def handle(self):
@@ -79,7 +101,11 @@ class Node:
         self.publishers.append(publisher)
         return publisher
 
-    def create_subscription(self, msg_type, topic, callback, *, qos_profile=qos_profile_default):
+    def create_subscription(
+            self, msg_type, topic, callback, *, qos_profile=qos_profile_default,
+            callback_group=None):
+        if callback_group is None:
+            callback_group = self._default_callback_group
         # this line imports the typesupport for the message module if not already done
         if msg_type.__class__._TYPE_SUPPORT is None:
             msg_type.__class__.__import_type_support__()
@@ -96,11 +122,16 @@ class Node:
 
         subscription = Subscription(
             subscription_handle, subscription_pointer, msg_type,
-            topic, callback, qos_profile, self.handle)
+            topic, callback, callback_group, qos_profile, self.handle)
         self.subscriptions.append(subscription)
+        callback_group.add_entity(subscription)
         return subscription
 
-    def create_client(self, srv_type, srv_name, *, qos_profile=qos_profile_services_default):
+    def create_client(
+            self, srv_type, srv_name, *, qos_profile=qos_profile_services_default,
+            callback_group=None):
+        if callback_group is None:
+            callback_group = self._default_callback_group
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:
@@ -117,12 +148,17 @@ class Node:
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
         client = Client(
-            self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile)
+            self.handle, client_handle, client_pointer, srv_type, srv_name, qos_profile,
+            callback_group)
         self.clients.append(client)
+        callback_group.add_entity(client)
         return client
 
     def create_service(
-            self, srv_type, srv_name, callback, *, qos_profile=qos_profile_services_default):
+            self, srv_type, srv_name, callback, *, qos_profile=qos_profile_services_default,
+            callback_group=None):
+        if callback_group is None:
+            callback_group = self._default_callback_group
         if srv_type.__class__._TYPE_SUPPORT is None:
             srv_type.__class__.__import_type_support__()
         if srv_type.__class__._TYPE_SUPPORT is None:
@@ -140,15 +176,19 @@ class Node:
             self._validate_topic_or_service_name(srv_name, is_service=True)
         service = Service(
             self.handle, service_handle, service_pointer,
-            srv_type, srv_name, callback, qos_profile)
+            srv_type, srv_name, callback, callback_group, qos_profile)
         self.services.append(service)
+        callback_group.add_entity(service)
         return service
 
-    def create_timer(self, timer_period_sec, callback):
+    def create_timer(self, timer_period_sec, callback, callback_group=None):
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
-        timer = WallTimer(callback, timer_period_nsec)
+        if callback_group is None:
+            callback_group = self._default_callback_group
+        timer = WallTimer(callback, callback_group, timer_period_nsec)
 
         self.timers.append(timer)
+        callback_group.add_entity(timer)
         return timer
 
     def destroy_publisher(self, publisher):

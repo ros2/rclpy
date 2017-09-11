@@ -17,11 +17,14 @@ class Subscription:
 
     def __init__(
             self, subscription_handle, subscription_pointer,
-            msg_type, topic, callback, qos_profile, node_handle):
+            msg_type, topic, callback, callback_group, qos_profile, node_handle):
         self.node_handle = node_handle
         self.subscription_handle = subscription_handle
         self.subscription_pointer = subscription_pointer
         self.msg_type = msg_type
         self.topic = topic
         self.callback = callback
+        self.callback_group = callback_group
+        # True when the callback is ready to fire but has not been "taken" by an executor
+        self._executor_event = False
         self.qos_profile = qos_profile

@@ -18,13 +18,16 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class Service:
     def __init__(
             self, node_handle, service_handle, service_pointer,
-            srv_type, srv_name, callback, qos_profile):
+            srv_type, srv_name, callback, callback_group, qos_profile):
         self.node_handle = node_handle
         self.service_handle = service_handle
         self.service_pointer = service_pointer
         self.srv_type = srv_type
         self.srv_name = srv_name
         self.callback = callback
+        self.callback_group = callback_group
+        # True when the callback is ready to fire but has not been "taken" by an executor
+        self._executor_event = False
         self.qos_profile = qos_profile
 
     def send_response(self, response, header):
