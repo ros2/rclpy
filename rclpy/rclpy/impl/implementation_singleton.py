@@ -28,13 +28,15 @@ For example, you might use it like this:
 
 import importlib
 import os
+import sys
 
 try:
     rclpy_implementation = importlib.import_module('._rclpy', package='rclpy')
 except ImportError as e:
     if os.path.isfile(e.path):
-        raise ImportWarning(
+        print(
             "The C extension '%s' failed to be imported while being present on the system."
             " Please refer to '%s' for possible solutions\n" %
-            (e.path, 'https://github.com/ros2/ros2/wiki/Rclpy-Import-error-hint'))
+            (e.path, 'https://github.com/ros2/ros2/wiki/Rclpy-Import-error-hint'),
+            file=sys.stderr)
     raise
