@@ -27,18 +27,16 @@ For example, you might use it like this:
 """
 
 import importlib
-
-module_name = '._rclpy'
+import os
+import sys
 
 try:
-    rclpy_implementation = importlib.import_module(module_name, package='rclpy')
+    rclpy_implementation = importlib.import_module('._rclpy', package='rclpy')
 except ImportError as e:
-    import os
     if os.path.isfile(e.path):
-        import sys
         print(
-            "The module '%s' failed to be imported while being present on the system."
+            "The C extension '%s' failed to be imported while being present on the system."
             " Please refer to '%s' for possible solutions\n" %
-            (module_name, 'https://github.com/ros2/ros2/wiki/Rclpy-Import-error-hint'),
+            (e.path, 'https://github.com/ros2/ros2/wiki/Rclpy-Import-error-hint'),
             file=sys.stderr)
     raise
