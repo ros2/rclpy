@@ -31,6 +31,22 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_topic_name import validate_topic_name
 
 
+def check_for_type_support(msg_type):
+    try:
+        ts = msg_type.__class__._TYPE_SUPPORT
+    except AttributeError as e:
+        e.args = (
+            e.args[0] +
+            ' This might be a ROS 1 message type but it should be a ROS 2 message type.'
+            ' Make sure to source your ROS 2 workspace after your ROS 1 workspace.',
+            *e.args[1:])
+        raise
+    if ts is None:
+        msg_type.__class__.__import_type_support__()
+    if msg_type.__class__._TYPE_SUPPORT is None:
+        raise NoTypeSupportImportedException()
+
+
 class Node:
 
     def __init__(self, node_name, *, namespace=None):
@@ -85,10 +101,7 @@ class Node:
 
     def create_publisher(self, msg_type, topic, *, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done
-        if msg_type.__class__._TYPE_SUPPORT is None:
-            msg_type.__class__.__import_type_support__()
-        if msg_type.__class__._TYPE_SUPPORT is None:
-            raise NoTypeSupportImportedException
+        check_for_type_support(msg_type)
         failed = False
         try:
             publisher_handle = _rclpy.rclpy_create_publisher(
@@ -107,10 +120,7 @@ class Node:
         if callback_group is None:
             callback_group = self._default_callback_group
         # this line imports the typesupport for the message module if not already done
-        if msg_type.__class__._TYPE_SUPPORT is None:
-            msg_type.__class__.__import_type_support__()
-        if msg_type.__class__._TYPE_SUPPORT is None:
-            raise NoTypeSupportImportedException
+        check_for_type_support(msg_type)
         failed = False
         try:
             [subscription_handle, subscription_pointer] = _rclpy.rclpy_create_subscription(
@@ -132,10 +142,7 @@ class Node:
             callback_group=None):
         if callback_group is None:
             callback_group = self._default_callback_group
-        if srv_type.__class__._TYPE_SUPPORT is None:
-            srv_type.__class__.__import_type_support__()
-        if srv_type.__class__._TYPE_SUPPORT is None:
-            raise NoTypeSupportImportedException
+        check_for_type_support(srv_type)
         failed = False
         try:
             [client_handle, client_pointer] = _rclpy.rclpy_create_client(
@@ -159,10 +166,7 @@ class Node:
             callback_group=None):
         if callback_group is None:
             callback_group = self._default_callback_group
-        if srv_type.__class__._TYPE_SUPPORT is None:
-            srv_type.__class__.__import_type_support__()
-        if srv_type.__class__._TYPE_SUPPORT is None:
-            raise NoTypeSupportImportedException
+        check_for_type_support(srv_type)
         failed = False
         try:
             [service_handle, service_pointer] = _rclpy.rclpy_create_service(
