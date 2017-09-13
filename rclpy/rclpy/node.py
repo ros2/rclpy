@@ -35,10 +35,12 @@ def check_for_type_support(msg_type):
     try:
         getattr(msg_type.__class__, '_TYPE_SUPPORT')
     except AttributeError as e:
-        raise AttributeError(
+        e.args = (
+            e.args[0] +
             "unable to access '_TYPE_SUPPORT' attribute\n"
-            'Make sure to source your ROS2 workspace after your ROS1 workspace'
-        )
+            'Make sure to source your ROS2 workspace after your ROS1 workspace',
+            *e.args[1:])
+        raise
     if msg_type.__class__._TYPE_SUPPORT is None:
         msg_type.__class__.__import_type_support__()
     if msg_type.__class__._TYPE_SUPPORT is None:
