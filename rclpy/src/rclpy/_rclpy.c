@@ -2520,11 +2520,14 @@ static PyMethodDef rclpy_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
+PyDoc_STRVAR(rclpy__doc__,
+  "RCLPY: module for ROS Python client library.");
+
 /// Define the Python module
 static struct PyModuleDef _rclpymodule = {
   PyModuleDef_HEAD_INIT,
   "_rclpy",
-  "_rclpy_doc",
+  rclpy__doc__,
   -1,   /* -1 means that the module keeps state in global variables */
   rclpy_methods,
   NULL,
