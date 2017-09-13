@@ -33,13 +33,14 @@ from rclpy.validate_topic_name import validate_topic_name
 
 def check_for_type_support(msg_type):
     try:
-        if msg_type.__class__._TYPE_SUPPORT is None:
-            msg_type.__class__.__import_type_support__()
-    except AttributeError:
+        getattr(msg_type.__class__, '_TYPE_SUPPORT')
+    except AttributeError as e:
         raise AttributeError(
             "unable to access '_TYPE_SUPPORT' attribute\n"
-            'Make sure that your ROS2 workspace s before your ROS1 workspace'
-            ' in your PYTHONPATH.')
+            'Make sure to source your ROS2 workspace after your ROS1 workspace'
+        )
+    if msg_type.__class__._TYPE_SUPPORT is None:
+        msg_type.__class__.__import_type_support__()
     if msg_type.__class__._TYPE_SUPPORT is None:
         raise NoTypeSupportImportedException()
 
