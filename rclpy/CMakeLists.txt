@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.5)
 
 project(rclpy C)
 
+# Default to C11
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 11)
+endif()
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra)
+endif()
+
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rcl REQUIRED)
@@ -13,9 +21,8 @@ find_package(python_cmake_module REQUIRED)
 find_package(PythonExtra MODULE)
 
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
-if(NOT WIN32)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
