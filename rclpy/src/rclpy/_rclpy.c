@@ -2521,7 +2521,7 @@ static PyMethodDef rclpy_methods[] = {
 };
 
 PyDoc_STRVAR(rclpy__doc__,
-  "RCLPY: module for ROS Python client library.");
+  "ROS 2 Python client library.");
 
 /// Define the Python module
 static struct PyModuleDef _rclpymodule = {
