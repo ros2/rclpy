@@ -84,6 +84,8 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
  * - a Capsule with the pointer of the created rcl_guard_condition_t * structure
  * - an integer representing the memory address of the rcl_guard_condition_t
  *
+ * \remark Call rclpy_destroy_entity() to destroy a guard condition
+ * \sa rclpy_destroy_entity()
  * \return a list with the capsule and memory location, or
  * \return NULL on failure
  */
@@ -121,7 +123,7 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pygc;
 
-  if (!PyArg_ParseTuple(args, "O", &pygc)) {
+  if (!PyArg_ParseTuple(args, "O", &pygc) || !PyCapsule_CheckExact(pygc)) {
     Py_RETURN_FALSE;
   }
 
