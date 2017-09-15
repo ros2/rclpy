@@ -62,8 +62,7 @@ class Node:
         if not ok():
             raise NotInitializedException('cannot create node')
         try:
-            node_handle = _rclpy.rclpy_create_node(node_name, namespace)
-            self._handle = node_handle
+            self._handle = _rclpy.rclpy_create_node(node_name, namespace)
         except ValueError:
             # these will raise more specific errors if the name or namespace is bad
             validate_node_name(node_name)
