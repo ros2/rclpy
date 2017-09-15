@@ -123,7 +123,7 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pygc;
 
-  if (!PyArg_ParseTuple(args, "O", &pygc)) {
+  if (!PyArg_ParseTuple(args, "O", &pygc) || !PyCapsule_CheckExact(pygc)) {
     Py_RETURN_FALSE;
   }
 
