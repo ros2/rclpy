@@ -18,7 +18,7 @@ find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
 find_package(python_cmake_module REQUIRED)
-find_package(PythonExtra MODULE)
+find_package(PythonExtra MODULE REQUIRED)
 
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 
