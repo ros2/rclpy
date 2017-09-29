@@ -2388,136 +2388,234 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
-  {"rclpy_init", rclpy_init, METH_VARARGS,
-   "Initialize RCL."},
-  {"rclpy_create_node", rclpy_create_node, METH_VARARGS,
-   "Create a Node."},
-  {"rclpy_get_node_name", rclpy_get_node_name, METH_VARARGS,
-   "Get the name of a node."},
-  {"rclpy_get_node_namespace", rclpy_get_node_namespace, METH_VARARGS,
-   "Get the name of a node."},
-  {"rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
-   "Expand a topic name."},
-  {"rclpy_get_validation_error_for_topic_name",
-   rclpy_get_validation_error_for_topic_name, METH_VARARGS,
-   "Get the error message and invalid index of a topic name or None if valid."},
-  {"rclpy_get_validation_error_for_full_topic_name",
-   rclpy_get_validation_error_for_full_topic_name, METH_VARARGS,
-   "Get the error message and invalid index of a full topic name or None if valid."},
-  {"rclpy_get_validation_error_for_namespace",
-   rclpy_get_validation_error_for_namespace, METH_VARARGS,
-   "Get the error message and invalid index of a namespace or None if valid."},
-  {"rclpy_get_validation_error_for_node_name",
-   rclpy_get_validation_error_for_node_name, METH_VARARGS,
-   "Get the error message and invalid index of a node name or None if valid."},
-  {"rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
-   "Create a Publisher."},
-  {"rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
-   "Create a Subscription."},
-  {"rclpy_create_service", rclpy_create_service, METH_VARARGS,
-   "Create a Service."},
-  {"rclpy_create_client", rclpy_create_client, METH_VARARGS,
-   "Create a Client."},
-  {"rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
-   "Create a Timer."},
+  {
+    "rclpy_init", rclpy_init, METH_VARARGS,
+    "Initialize RCL."
+  },
+  {
+    "rclpy_create_node", rclpy_create_node, METH_VARARGS,
+    "Create a Node."
+  },
+  {
+    "rclpy_get_node_name", rclpy_get_node_name, METH_VARARGS,
+    "Get the name of a node."
+  },
+  {
+    "rclpy_get_node_namespace", rclpy_get_node_namespace, METH_VARARGS,
+    "Get the name of a node."
+  },
+  {
+    "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
+    "Expand a topic name."
+  },
+  {
+    "rclpy_get_validation_error_for_topic_name",
+    rclpy_get_validation_error_for_topic_name, METH_VARARGS,
+    "Get the error message and invalid index of a topic name or None if valid."
+  },
+  {
+    "rclpy_get_validation_error_for_full_topic_name",
+    rclpy_get_validation_error_for_full_topic_name, METH_VARARGS,
+    "Get the error message and invalid index of a full topic name or None if valid."
+  },
+  {
+    "rclpy_get_validation_error_for_namespace",
+    rclpy_get_validation_error_for_namespace, METH_VARARGS,
+    "Get the error message and invalid index of a namespace or None if valid."
+  },
+  {
+    "rclpy_get_validation_error_for_node_name",
+    rclpy_get_validation_error_for_node_name, METH_VARARGS,
+    "Get the error message and invalid index of a node name or None if valid."
+  },
+  {
+    "rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,
+    "Create a Publisher."
+  },
+  {
+    "rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
+    "Create a Subscription."
+  },
+  {
+    "rclpy_create_service", rclpy_create_service, METH_VARARGS,
+    "Create a Service."
+  },
+  {
+    "rclpy_create_client", rclpy_create_client, METH_VARARGS,
+    "Create a Client."
+  },
+  {
+    "rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
+    "Create a Timer."
+  },
 
-  {"rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
-   "Create a guard_condition triggered when sigint is received."},
-  {"rclpy_create_guard_condition", rclpy_create_guard_condition, METH_VARARGS,
-   "Create a general purpose guard_condition."},
-  {"rclpy_trigger_guard_condition", rclpy_trigger_guard_condition, METH_VARARGS,
-   "Trigger a general purpose guard_condition."},
+  {
+    "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
+    "Create a guard_condition triggered when sigint is received."
+  },
+  {
+    "rclpy_create_guard_condition", rclpy_create_guard_condition, METH_VARARGS,
+    "Create a general purpose guard_condition."
+  },
+  {
+    "rclpy_trigger_guard_condition", rclpy_trigger_guard_condition, METH_VARARGS,
+    "Trigger a general purpose guard_condition."
+  },
 
-  {"rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
-   "Destroy a Node entity."},
-  {"rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
-   "Destroy an rclpy entity."},
+  {
+    "rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
+    "Destroy a Node entity."
+  },
+  {
+    "rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
+    "Destroy an rclpy entity."
+  },
 
-  {"rclpy_publish", rclpy_publish, METH_VARARGS,
-   "Publish a message."},
-  {"rclpy_send_request", rclpy_send_request, METH_VARARGS,
-   "Send a request."},
-  {"rclpy_send_response", rclpy_send_response, METH_VARARGS,
-   "Send a response."},
+  {
+    "rclpy_publish", rclpy_publish, METH_VARARGS,
+    "Publish a message."
+  },
+  {
+    "rclpy_send_request", rclpy_send_request, METH_VARARGS,
+    "Send a request."
+  },
+  {
+    "rclpy_send_response", rclpy_send_response, METH_VARARGS,
+    "Send a response."
+  },
 
-  {"rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
-   "rclpy_get_zero_initialized_wait_set."},
+  {
+    "rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
+    "rclpy_get_zero_initialized_wait_set."
+  },
 
-  {"rclpy_wait_set_init", rclpy_wait_set_init, METH_VARARGS,
-   "rclpy_wait_set_init."},
+  {
+    "rclpy_wait_set_init", rclpy_wait_set_init, METH_VARARGS,
+    "rclpy_wait_set_init."
+  },
 
-  {"rclpy_wait_set_clear_entities", rclpy_wait_set_clear_entities, METH_VARARGS,
-   "rclpy_wait_set_clear_entities."},
+  {
+    "rclpy_wait_set_clear_entities", rclpy_wait_set_clear_entities, METH_VARARGS,
+    "rclpy_wait_set_clear_entities."
+  },
 
-  {"rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
-   "rclpy_wait_set_add_entity."},
+  {
+    "rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
+    "rclpy_wait_set_add_entity."
+  },
 
-  {"rclpy_destroy_wait_set", rclpy_destroy_wait_set, METH_VARARGS,
-   "rclpy_destroy_wait_set."},
+  {
+    "rclpy_destroy_wait_set", rclpy_destroy_wait_set, METH_VARARGS,
+    "rclpy_destroy_wait_set."
+  },
 
-  {"rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
-   "List non null subscriptions in waitset."},
+  {
+    "rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
+    "List non null subscriptions in waitset."
+  },
 
-  {"rclpy_reset_timer", rclpy_reset_timer, METH_VARARGS,
-   "Reset a timer."},
+  {
+    "rclpy_reset_timer", rclpy_reset_timer, METH_VARARGS,
+    "Reset a timer."
+  },
 
-  {"rclpy_call_timer", rclpy_call_timer, METH_VARARGS,
-   "Call a timer and starts counting again."},
+  {
+    "rclpy_call_timer", rclpy_call_timer, METH_VARARGS,
+    "Call a timer and starts counting again."
+  },
 
-  {"rclpy_change_timer_period", rclpy_change_timer_period, METH_VARARGS,
-   "Set the period of a timer."},
+  {
+    "rclpy_change_timer_period", rclpy_change_timer_period, METH_VARARGS,
+    "Set the period of a timer."
+  },
 
-  {"rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
-   "Check if a timer as reached timeout."},
+  {
+    "rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
+    "Check if a timer as reached timeout."
+  },
 
-  {"rclpy_cancel_timer", rclpy_cancel_timer, METH_VARARGS,
-   "Cancel a timer."},
+  {
+    "rclpy_cancel_timer", rclpy_cancel_timer, METH_VARARGS,
+    "Cancel a timer."
+  },
 
-  {"rclpy_is_timer_canceled", rclpy_is_timer_canceled, METH_VARARGS,
-   "Check if a timer is canceled."},
+  {
+    "rclpy_is_timer_canceled", rclpy_is_timer_canceled, METH_VARARGS,
+    "Check if a timer is canceled."
+  },
 
-  {"rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
-   "Get the remaining time before timer is ready."},
+  {
+    "rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
+    "Get the remaining time before timer is ready."
+  },
 
-  {"rclpy_time_since_last_call", rclpy_time_since_last_call, METH_VARARGS,
-   "Get the elapsed time since last timer call."},
+  {
+    "rclpy_time_since_last_call", rclpy_time_since_last_call, METH_VARARGS,
+    "Get the elapsed time since last timer call."
+  },
 
-  {"rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
-   "Get the period of a timer."},
+  {
+    "rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
+    "Get the period of a timer."
+  },
 
-  {"rclpy_wait", rclpy_wait, METH_VARARGS,
-   "rclpy_wait."},
+  {
+    "rclpy_wait", rclpy_wait, METH_VARARGS,
+    "rclpy_wait."
+  },
 
-  {"rclpy_take", rclpy_take, METH_VARARGS,
-   "rclpy_take."},
+  {
+    "rclpy_take", rclpy_take, METH_VARARGS,
+    "rclpy_take."
+  },
 
-  {"rclpy_take_request", rclpy_take_request, METH_VARARGS,
-   "rclpy_take_request."},
+  {
+    "rclpy_take_request", rclpy_take_request, METH_VARARGS,
+    "rclpy_take_request."
+  },
 
-  {"rclpy_take_response", rclpy_take_response, METH_VARARGS,
-   "rclpy_take_response."},
+  {
+    "rclpy_take_response", rclpy_take_response, METH_VARARGS,
+    "rclpy_take_response."
+  },
 
-  {"rclpy_ok", rclpy_ok, METH_NOARGS,
-   "rclpy_ok."},
+  {
+    "rclpy_ok", rclpy_ok, METH_NOARGS,
+    "rclpy_ok."
+  },
 
-  {"rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
-   "rclpy_shutdown."},
+  {
+    "rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
+    "rclpy_shutdown."
+  },
 
-  {"rclpy_get_node_names", rclpy_get_node_names, METH_VARARGS,
-   "Get node names list from graph API."},
-  {"rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,
-   "Get topic list from graph API."},
-  {"rclpy_get_service_names_and_types", rclpy_get_service_names_and_types, METH_VARARGS,
-   "Get service list from graph API."},
+  {
+    "rclpy_get_node_names", rclpy_get_node_names, METH_VARARGS,
+    "Get node names list from graph API."
+  },
+  {
+    "rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,
+    "Get topic list from graph API."
+  },
+  {
+    "rclpy_get_service_names_and_types", rclpy_get_service_names_and_types, METH_VARARGS,
+    "Get service list from graph API."
+  },
 
-  {"rclpy_get_rmw_implementation_identifier", rclpy_get_rmw_implementation_identifier,
-   METH_NOARGS, "Retrieve the identifier for the active RMW implementation."},
+  {
+    "rclpy_get_rmw_implementation_identifier", rclpy_get_rmw_implementation_identifier,
+    METH_NOARGS, "Retrieve the identifier for the active RMW implementation."
+  },
 
-  {"rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
-   "Convert a QoSPolicy python object into a rmw_qos_profile_t."},
+  {
+    "rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
+    "Convert a QoSPolicy python object into a rmw_qos_profile_t."
+  },
 
-  {"rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
-   "Get QOS profile."},
+  {
+    "rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
+    "Get QOS profile."
+  },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
 };

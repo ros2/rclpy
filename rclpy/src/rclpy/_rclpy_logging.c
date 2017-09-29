@@ -93,14 +93,22 @@ rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Define the public methods of this module
 static PyMethodDef rclpy_logging_methods[] = {
-  {"rclpy_logging_initialize", rclpy_logging_initialize, METH_NOARGS,
-   "Initialize the logging system."},
-  {"rclpy_logging_get_severity_threshold", rclpy_logging_get_severity_threshold, METH_NOARGS,
-   "Get the global severity threshold."},
-  {"rclpy_logging_set_severity_threshold", rclpy_logging_set_severity_threshold, METH_VARARGS,
-   "Set the global severity threshold."},
-  {"rclpy_logging_rcutils_log", rclpy_logging_rcutils_log, METH_VARARGS,
-   "Log a message with the specified severity"},
+  {
+    "rclpy_logging_initialize", rclpy_logging_initialize, METH_NOARGS,
+    "Initialize the logging system."
+  },
+  {
+    "rclpy_logging_get_severity_threshold", rclpy_logging_get_severity_threshold, METH_NOARGS,
+    "Get the global severity threshold."
+  },
+  {
+    "rclpy_logging_set_severity_threshold", rclpy_logging_set_severity_threshold, METH_VARARGS,
+    "Set the global severity threshold."
+  },
+  {
+    "rclpy_logging_rcutils_log", rclpy_logging_rcutils_log, METH_VARARGS,
+    "Log a message with the specified severity"
+  },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
