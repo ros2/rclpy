@@ -21,17 +21,7 @@ from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.timer import WallTimer as _WallTimer
 from rclpy.utilities import ok
-
-
-class _WaitSet:
-    """Make sure the wait set gets destroyed when a generator exits."""
-
-    def __enter__(self):
-        self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        return self.wait_set
-
-    def __exit__(self, t, v, tb):
-        _rclpy.rclpy_destroy_wait_set(self.wait_set)
+from rclpy.wait_set import WaitSet as _WaitSet
 
 
 class _WorkTracker:

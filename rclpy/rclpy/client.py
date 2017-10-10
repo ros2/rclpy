@@ -14,6 +14,7 @@
 
 import threading
 
+from rclpy.graph_listener import GraphEventSubscription as _GraphEventSubscription
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 import rclpy.utilities
 
@@ -77,3 +78,19 @@ class Client:
         thread1 = ResponseThread(self)
         thread1.start()
         thread1.join()
+
+    def service_is_ready(self):
+        return _rclpy.rclpy_service_server_is_available(self.node_handle, self.client_handle)
+
+    def wait_for_service(self, timeout_sec=None):
+        """
+        Block until the service is available.
+
+        Return true if the service is available.
+
+        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :type timeout_sec: float or None
+        :rtype: bool
+        """
+        with _GraphEventSubscription(self.node_handle) as event_sub:
+            return event_sub.wait_for(self.service_is_ready, timeout_sec)
