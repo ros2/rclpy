@@ -70,10 +70,24 @@ function(configure_python_c_extension_library _library_name)
   )
 endfunction()
 
+
+# Sigint handling stuff
+add_library(
+  rclpy_sigint
+  SHARED src/rclpy/sigint_gc.c
+)
+target_include_directories(rclpy_sigint PUBLIC ${CMAKE_SOURCE_DIR})
+configure_python_c_extension_library(rclpy_sigint)
+ament_target_dependencies(rclpy_sigint
+  "rcl"
+)
+
+# Main library
 add_library(
   rclpy
   SHARED src/rclpy/_rclpy.c
 )
+target_link_libraries(rclpy rclpy_sigint)
 configure_python_c_extension_library(rclpy)
 ament_target_dependencies(rclpy
   "rcl"
@@ -87,6 +101,18 @@ add_library(
 )
 configure_python_c_extension_library(rclpy_logging)
 ament_target_dependencies(rclpy_logging
+  "rcutils"
+)
+
+# WaitSet wrapper library
+add_library(
+  rclpy_wait_set
+  SHARED src/rclpy/_rclpy_wait_set.c
+)
+target_link_libraries(rclpy_wait_set rclpy_sigint)
+configure_python_c_extension_library(rclpy_wait_set)
+ament_target_dependencies(rclpy_wait_set
+  "rcl"
   "rcutils"
 )
 
@@ -108,8 +134,7 @@ if(BUILD_TESTING)
     ament_add_pytest_test(rclpytests test
       PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
-        PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
-      TIMEOUT 90
+      TIMEOUT 120
     )
   endif()
 endif()

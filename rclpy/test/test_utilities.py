@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Open Source Robotics Foundation, Inc.
+# Copyright 2017 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Provide singleton access to the rclpy C modules.
+import unittest
 
-For example, you might use it like this:
+from rclpy.constants import S_TO_NS
+import rclpy.utilities
 
-.. code::
 
-    from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+class TestUtilities(unittest.TestCase):
 
-    _rclpy.rclpy_init()
-    while _rclpy.rclpy_ok():
-        # ...
-"""
+    def test_timeout_sec_to_nsec(self):
+        self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(None))
+        self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(-1))
+        self.assertEqual(0, rclpy.utilities.timeout_sec_to_nsec(0))
+        self.assertEqual(1.5 * S_TO_NS, rclpy.utilities.timeout_sec_to_nsec(1.5))
 
-from rclpy.impl import _import
 
-rclpy_implementation = _import('._rclpy')
-rclpy_logging_implementation = _import('._rclpy_logging')
-rclpy_wait_set_implementation = _import('._rclpy_wait_set')
+if __name__ == '__main__':
+    unittest.main()

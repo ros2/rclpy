@@ -28,20 +28,44 @@
 #include <rmw/validate_node_name.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
-#include <signal.h>
+#include "src/rclpy/sigint_gc.h"
 
-static rcl_guard_condition_t * g_sigint_gc_handle;
 
-/// Catch signals
-static void catch_function(int signo)
+/// Get a guard condition for node graph events
+/**
+ * Raises ValueError if the provided argument is not a PyCapsule.
+ *
+ * A successful call will return a list with two elements:
+ *
+ * - a Capsule with the pointer of the retrieved rcl_guard_condition_t * structure
+ * - an integer representing the memory address of the rcl_guard_condition_t
+ *
+ * \param[in] A capsule containing rcl_node_t *
+ * \return a list with the capsule and memory location, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_get_graph_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  (void) signo;
-  rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
   }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  rcl_guard_condition_t * guard_condition =
+    (rcl_guard_condition_t *)rcl_node_get_graph_guard_condition(node);
+
+  PyObject * pylist = PyList_New(2);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(guard_condition, "rcl_guard_condition_t", NULL));
+  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&guard_condition->impl));
+
+  return pylist;
 }
 
 /// Create a sigint guard condition
@@ -72,7 +96,7 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
     PyMem_Free(sigint_gc);
     return NULL;
   }
-  g_sigint_gc_handle = sigint_gc;
+  g_rclpy_sigint_gc_handle = sigint_gc;
   PyObject * pylist = PyList_New(2);
   PyList_SET_ITEM(pylist, 0, PyCapsule_New(sigint_gc, "rcl_guard_condition_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl));
@@ -1519,6 +1543,49 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Check if a service server is available
+/**
+ * Raises ValueError if the arguments are not capsules
+ *
+ * \param[in] pynode Capsule pointing to the node the entity belongs to
+ * \param[in] pyclient Capsule pointing to the client
+ * \return True if the service server is available
+ */
+static PyObject *
+rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  PyObject * pyclient;
+
+  if (!PyArg_ParseTuple(args, "OO", &pynode, &pyclient)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+  rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, "rcl_client_t");
+  if (!client) {
+    return NULL;
+  }
+
+  bool is_ready;
+  rcl_ret_t ret = rcl_service_server_is_available(node, client, &is_ready);
+
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to check service availability: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+
+  if (is_ready) {
+    Py_RETURN_TRUE;
+  }
+  Py_RETURN_FALSE;
+}
+
 /// Destroy an entity attached to a node
 /**
  * Entity type must be one of ["subscription", "publisher", "client", "service"].
@@ -1655,312 +1722,6 @@ rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * P
     "s", rmw_implementation_identifier);
 
   return pyrmw_implementation_identifier;
-}
-
-/// Return a Capsule pointing to a zero initialized rcl_wait_set_t structure
-static PyObject *
-rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
-{
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyMem_Malloc(sizeof(rcl_wait_set_t));
-  *wait_set = rcl_get_zero_initialized_wait_set();
-  PyObject * pywait_set = PyCapsule_New(wait_set, "rcl_wait_set_t", NULL);
-
-  return pywait_set;
-}
-
-/// Initialize a waitset
-/**
- * Raises RuntimeError if the wait set could not be initialized
- *
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \param[in] node_name string name of the node to be created
- * \param[in] number_of_subscriptions int
- * \param[in] number_of_guard_conditions int
- * \param[in] number_of_timers int
- * \param[in] number_of_clients int
- * \param[in] number_of_services int
- * \return None
- */
-static PyObject *
-rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-  unsigned PY_LONG_LONG number_of_subscriptions;
-  unsigned PY_LONG_LONG number_of_guard_conditions;
-  unsigned PY_LONG_LONG number_of_timers;
-  unsigned PY_LONG_LONG number_of_clients;
-  unsigned PY_LONG_LONG number_of_services;
-
-  if (!PyArg_ParseTuple(
-      args, "OKKKKK", &pywait_set, &number_of_subscriptions,
-      &number_of_guard_conditions, &number_of_timers,
-      &number_of_clients, &number_of_services))
-  {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
-  if (!wait_set) {
-    return NULL;
-  }
-  rcl_ret_t ret = rcl_wait_set_init(
-    wait_set, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
-    number_of_clients, number_of_services, rcl_get_default_allocator());
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to initialize wait set: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    return NULL;
-  }
-  Py_RETURN_NONE;
-}
-
-/// Clear all the pointers of a given wait_set field
-/**
- * Raises RuntimeError if the entity type is unknown or any rcl error occurs
- *
- * \param[in] entity_type string defining the entity ["subscription, client, service"]
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \return NULL
- */
-static PyObject *
-rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  const char * entity_type;
-  PyObject * pywait_set;
-
-  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pywait_set)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
-  if (!wait_set) {
-    return NULL;
-  }
-  rcl_ret_t ret;
-  if (0 == strcmp(entity_type, "subscription")) {
-    ret = rcl_wait_set_clear_subscriptions(wait_set);
-  } else if (0 == strcmp(entity_type, "client")) {
-    ret = rcl_wait_set_clear_clients(wait_set);
-  } else if (0 == strcmp(entity_type, "service")) {
-    ret = rcl_wait_set_clear_services(wait_set);
-  } else if (0 == strcmp(entity_type, "timer")) {
-    ret = rcl_wait_set_clear_timers(wait_set);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    ret = rcl_wait_set_clear_guard_conditions(wait_set);
-  } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
-    return NULL;
-  }
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to clear '%s' from wait set: %s", entity_type, rcl_get_error_string_safe());
-    rcl_reset_error();
-    return NULL;
-  }
-  Py_RETURN_TRUE;
-}
-
-/// Add an entity to the waitset structure
-/**
- * Raises RuntimeError if the entity type is unknown or any rcl error occurrs
- *
- * \param[in] entity_type string defining the entity ["subscription, client, service"]
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \param[in] pyentity Capsule pointing to the entity to add
- * \return None
- */
-static PyObject *
-rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  const char * entity_type;
-  PyObject * pywait_set;
-  PyObject * pyentity;
-
-  if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pywait_set, &pyentity)) {
-    return NULL;
-  }
-  rcl_ret_t ret;
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
-  if (!wait_set) {
-    return NULL;
-  }
-  if (0 == strcmp(entity_type, "subscription")) {
-    rcl_subscription_t * subscription =
-      (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, "rcl_subscription_t");
-    ret = rcl_wait_set_add_subscription(wait_set, subscription);
-  } else if (0 == strcmp(entity_type, "client")) {
-    rcl_client_t * client =
-      (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
-    ret = rcl_wait_set_add_client(wait_set, client);
-  } else if (0 == strcmp(entity_type, "service")) {
-    rcl_service_t * service =
-      (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
-    ret = rcl_wait_set_add_service(wait_set, service);
-  } else if (0 == strcmp(entity_type, "timer")) {
-    rcl_timer_t * timer =
-      (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
-    ret = rcl_wait_set_add_timer(wait_set, timer);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    rcl_guard_condition_t * guard_condition =
-      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, "rcl_guard_condition_t");
-    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
-  } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
-    return NULL;
-  }
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to add '%s' to wait set: %s", entity_type, rcl_get_error_string_safe());
-    rcl_reset_error();
-    return NULL;
-  }
-  Py_RETURN_NONE;
-}
-
-/// Destroy the waitset structure
-/**
- * Raises RuntimeError if the wait set could not be destroyed
- *
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \return None
- */
-static PyObject *
-rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-
-  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
-    return NULL;
-  }
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
-  if (!wait_set) {
-    return NULL;
-  }
-
-  rcl_ret_t ret = rcl_wait_set_fini(wait_set);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini wait set: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    return NULL;
-  }
-
-  PyMem_Free(wait_set);
-
-  if (PyCapsule_SetPointer(pywait_set, Py_None)) {
-    // exception set by PyCapsule_SetPointer
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
-}
-
-#define GET_LIST_READY_ENTITIES(ENTITY_TYPE) \
-  size_t idx; \
-  size_t idx_max; \
-  idx_max = wait_set->size_of_ ## ENTITY_TYPE ## s; \
-  const rcl_ ## ENTITY_TYPE ## _t ** struct_ptr = wait_set->ENTITY_TYPE ## s; \
-  for (idx = 0; idx < idx_max; idx ++) { \
-    if (struct_ptr[idx]) { \
-      PyList_Append( \
-        entity_ready_list, \
-        PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl)); \
-    } \
-  } \
-  return entity_ready_list;
-/// Get list of non-null entities in waitset
-/**
- * Raises ValueError if pywait_set is not a wait_set capsule
- * Raises RuntimeError if the entity type is not known
- *
- * \param[in] entity_type string defining the entity ["subscription, client, service"]
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \return List of wait_set entities pointers ready for take
- */
-static PyObject *
-rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  const char * entity_type;
-  PyObject * pywait_set;
-  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pywait_set)) {
-    return NULL;
-  }
-
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
-  if (!wait_set) {
-    return NULL;
-  }
-
-  PyObject * entity_ready_list = PyList_New(0);
-  if (0 == strcmp(entity_type, "subscription")) {
-    GET_LIST_READY_ENTITIES(subscription)
-  } else if (0 == strcmp(entity_type, "client")) {
-    GET_LIST_READY_ENTITIES(client)
-  } else if (0 == strcmp(entity_type, "service")) {
-    GET_LIST_READY_ENTITIES(service)
-  } else if (0 == strcmp(entity_type, "timer")) {
-    GET_LIST_READY_ENTITIES(timer)
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    GET_LIST_READY_ENTITIES(guard_condition)
-  } else {
-    PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
-    return NULL;
-  }
-
-  return entity_ready_list;
-}
-
-/// Wait until timeout is reached or event happened
-/**
- * Raises ValueError if pywait_set is not a wait_set capsule
- * Raises RuntimeError if there was an error while waiting
- *
- * This function will wait for an event to happen or for the timeout to expire.
- * A negative timeout means wait forever, a timeout of 0 means no wait
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \param[in] timeout optional time to wait before waking up (in nanoseconds)
- * \return NULL
- */
-static PyObject *
-rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pywait_set;
-  PY_LONG_LONG timeout = -1;
-
-  if (!PyArg_ParseTuple(args, "O|K", &pywait_set, &timeout)) {
-    return NULL;
-  }
-#ifdef _WIN32
-  _crt_signal_t
-#else
-  sig_t
-#endif  // _WIN32
-  previous_handler = signal(SIGINT, catch_function);
-  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
-  if (!wait_set) {
-    return NULL;
-  }
-  rcl_ret_t ret;
-
-  // Could be a long wait, release the GIL
-  Py_BEGIN_ALLOW_THREADS;
-  ret = rcl_wait(wait_set, timeout);
-  Py_END_ALLOW_THREADS;
-
-  signal(SIGINT, previous_handler);
-  if (ret != RCL_RET_OK && ret != RCL_RET_TIMEOUT) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to wait on wait set: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    return NULL;
-  }
-  Py_RETURN_NONE;
 }
 
 /// Take a message from a given subscription
@@ -2603,6 +2364,15 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
+    "rclpy_service_server_is_available", rclpy_service_server_is_available, METH_VARARGS,
+    "Return true if the service server is available"
+  },
+
+  {
+    "rclpy_get_graph_guard_condition", rclpy_get_graph_guard_condition, METH_VARARGS,
+    "Get a guard condition that is triggered when the node graph updates."
+  },
+  {
     "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
     "Create a guard_condition triggered when sigint is received."
   },
@@ -2635,36 +2405,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_send_response", rclpy_send_response, METH_VARARGS,
     "Send a response."
-  },
-
-  {
-    "rclpy_get_zero_initialized_wait_set", rclpy_get_zero_initialized_wait_set, METH_NOARGS,
-    "rclpy_get_zero_initialized_wait_set."
-  },
-
-  {
-    "rclpy_wait_set_init", rclpy_wait_set_init, METH_VARARGS,
-    "rclpy_wait_set_init."
-  },
-
-  {
-    "rclpy_wait_set_clear_entities", rclpy_wait_set_clear_entities, METH_VARARGS,
-    "rclpy_wait_set_clear_entities."
-  },
-
-  {
-    "rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
-    "rclpy_wait_set_add_entity."
-  },
-
-  {
-    "rclpy_destroy_wait_set", rclpy_destroy_wait_set, METH_VARARGS,
-    "rclpy_destroy_wait_set."
-  },
-
-  {
-    "rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
-    "List non null subscriptions in waitset."
   },
 
   {
@@ -2710,11 +2450,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
     "Get the period of a timer."
-  },
-
-  {
-    "rclpy_wait", rclpy_wait, METH_VARARGS,
-    "rclpy_wait."
   },
 
   {
