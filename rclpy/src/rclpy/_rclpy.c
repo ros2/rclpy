@@ -123,7 +123,10 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pygc;
 
-  if (!PyArg_ParseTuple(args, "O", &pygc) || !PyCapsule_CheckExact(pygc)) {
+  if (!PyArg_ParseTuple(args, "O", &pygc)) {
+    return NULL;
+  }
+  if (!PyCapsule_CheckExact(pygc)) {
     Py_RETURN_FALSE;
   }
 
@@ -551,7 +554,6 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * node_namespace_py;
 
   if (!PyArg_ParseTuple(args, "OOO", &topic_name, &node_name_py, &node_namespace_py)) {
-    PyErr_Format(PyExc_RuntimeError, "Invalid arguments");
     return NULL;
   }
 
@@ -1435,7 +1437,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pynode;
 
   if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pyentity, &pynode)) {
-    Py_RETURN_FALSE;
+    return NULL;
   }
 
   void * p = PyCapsule_GetPointer(pynode, NULL);
@@ -1500,7 +1502,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pyentity;
 
   if (!PyArg_ParseTuple(args, "zO", &entity_type, &pyentity)) {
-    Py_RETURN_FALSE;
+    return NULL;
   }
 
   void * p = PyCapsule_GetPointer(pyentity, NULL);
