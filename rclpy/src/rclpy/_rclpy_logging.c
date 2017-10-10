@@ -29,19 +29,19 @@ rclpy_logging_initialize(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   Py_RETURN_NONE;
 }
 
-/// Get the global severity threshold of the logging system.
+/// Get the default severity threshold of the logging system.
 /**
  * \return severity
  */
 static PyObject *
 rclpy_logging_get_severity_threshold(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  int severity = rcutils_logging_get_severity_threshold();
+  int severity = rcutils_logging_get_default_severity_threshold();
 
   return PyLong_FromLong(severity);
 }
 
-/// Set the global severity threshold of the logging system.
+/// Set the default severity threshold of the logging system.
 /**
  *
  * \param[in] severity Threshold to set
@@ -55,7 +55,7 @@ rclpy_logging_set_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args
     return NULL;
   }
 
-  rcutils_logging_set_severity_threshold(severity);
+  rcutils_logging_set_default_severity_threshold(severity);
   Py_RETURN_NONE;
 }
 
