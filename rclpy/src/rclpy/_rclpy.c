@@ -638,17 +638,15 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   *publisher = rcl_get_zero_initialized_publisher();
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
 
-  if (!PyCapsule_CheckExact(pyqos_profile)) {
-    PyErr_Format(PyExc_RuntimeError, "Invalid pyqos_profile capsule in rclpy_create_publisher");
-    return NULL;
-  }
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
-  publisher_ops.qos = *qos_profile;
-  PyMem_Free(p);
-  if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-    // exception set by PyCapsule_SetPointer
-    return NULL;
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
+    rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
+    publisher_ops.qos = *qos_profile;
+    PyMem_Free(p);
+    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
+      // exception set by PyCapsule_SetPointer
+      return NULL;
+    }
   }
 
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
@@ -1083,17 +1081,15 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   *subscription = rcl_get_zero_initialized_subscription();
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
-  if (!PyCapsule_CheckExact(pyqos_profile)) {
-    PyErr_Format(PyExc_RuntimeError, "Invalid pyqos_profile capsule in rclpy_create_subscription");
-    return NULL;
-  }
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
-  subscription_ops.qos = *qos_profile;
-  PyMem_Free(p);
-  if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-    // exception set by PyCapsule_SetPointer
-    return NULL;
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
+    rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
+    subscription_ops.qos = *qos_profile;
+    PyMem_Free(p);
+    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
+      // exception set by PyCapsule_SetPointer
+      return NULL;
+    }
   }
 
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
@@ -1169,17 +1165,15 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   *client = rcl_get_zero_initialized_client();
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
-  if (!PyCapsule_CheckExact(pyqos_profile)) {
-    PyErr_Format(PyExc_RuntimeError, "Invalid pyqos_profile capsule in rclpy_create_client");
-    return NULL;
-  }
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
-  client_ops.qos = *qos_profile;
-  PyMem_Free(p);
-  if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-    // exception set by PyCapsule_SetPointer
-    return NULL;
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
+    rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
+    client_ops.qos = *qos_profile;
+    PyMem_Free(p);
+    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
+      // exception set by PyCapsule_SetPointer
+      return NULL;
+    }
   }
 
   rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
@@ -1321,17 +1315,15 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
   *service = rcl_get_zero_initialized_service();
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
-  if (!PyCapsule_CheckExact(pyqos_profile)) {
-    PyErr_Format(PyExc_RuntimeError, "Invalid pyqos_profile capsule in rclpy_create_service");
-    return NULL;
-  }
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
-  service_ops.qos = *qos_profile;
-  PyMem_Free(p);
-  if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-    // exception set by PyCapsule_SetPointer
-    return NULL;
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
+    rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
+    service_ops.qos = *qos_profile;
+    PyMem_Free(p);
+    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
+      // exception set by PyCapsule_SetPointer
+      return NULL;
+    }
   }
 
   rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
