@@ -123,7 +123,10 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pygc;
 
-  if (!PyArg_ParseTuple(args, "O", &pygc) || !PyCapsule_CheckExact(pygc)) {
+  if (!PyArg_ParseTuple(args, "O", &pygc)) {
+    return NULL;
+  }
+  if (!PyCapsule_CheckExact(pygc)) {
     Py_RETURN_FALSE;
   }
 
@@ -551,7 +554,6 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * node_namespace_py;
 
   if (!PyArg_ParseTuple(args, "OOO", &topic_name, &node_name_py, &node_namespace_py)) {
-    PyErr_Format(PyExc_RuntimeError, "Invalid arguments");
     return NULL;
   }
 
@@ -636,8 +638,8 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   *publisher = rcl_get_zero_initialized_publisher();
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
 
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  if (Py_None != p) {
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     publisher_ops.qos = *qos_profile;
     PyMem_Free(p);
@@ -1079,8 +1081,8 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   *subscription = rcl_get_zero_initialized_subscription();
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  if (Py_None != p) {
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     subscription_ops.qos = *qos_profile;
     PyMem_Free(p);
@@ -1163,8 +1165,8 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   *client = rcl_get_zero_initialized_client();
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  if (Py_None != p) {
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     client_ops.qos = *qos_profile;
     PyMem_Free(p);
@@ -1313,8 +1315,8 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
   *service = rcl_get_zero_initialized_service();
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
-  void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
-  if (Py_None != p) {
+  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     service_ops.qos = *qos_profile;
     PyMem_Free(p);
@@ -1435,7 +1437,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pynode;
 
   if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pyentity, &pynode)) {
-    Py_RETURN_FALSE;
+    return NULL;
   }
 
   void * p = PyCapsule_GetPointer(pynode, NULL);
@@ -1500,7 +1502,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pyentity;
 
   if (!PyArg_ParseTuple(args, "zO", &entity_type, &pyentity)) {
-    Py_RETURN_FALSE;
+    return NULL;
   }
 
   void * p = PyCapsule_GetPointer(pyentity, NULL);
