@@ -16,6 +16,7 @@ import threading
 import traceback
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+import rclpy.logging
 from rclpy.timer import WallTimer as _WallTimer
 from rclpy.wait_set import WaitSet as _WaitSet
 
@@ -82,7 +83,7 @@ class GraphListenerSingleton:
         with self._lock:
             if timer in self._timers:
                 del self._timers[timer]
-                self._wait_set.remove_timer(timer.timer_handle, timer.timer_pointer)
+                self._wait_set.remove_timer(timer.timer_pointer)
 
     def add_callback(self, node_handle, callback):
         """
@@ -158,7 +159,7 @@ class GraphListenerSingleton:
                     try:
                         callback()
                     except:
-                        _rclpy.logging.logwarn(traceback.format_exc())
+                        rclpy.logging.logwarn(traceback.format_exc())
 
 
 class GraphEventSubscription:
@@ -175,17 +176,17 @@ class GraphEventSubscription:
             self._timer = self._listener.add_timer(timeout_ns, self.on_timeout)
 
     def on_timeout(self):
-        if self._callback:
-            self._listener.remove_callback(self._node_handle, self._callback)
-            self._callback = None
-        self._listener.remove_timer(self.timer)
         self._timeout_callback()
+        self._unsubscribe()
 
     def _unsubscribe(self):
         if self._callback:
             self._listener.remove_callback(self._node_handle, self._callback)
+            self._callback = None
         if self._timer:
-            self._listener.remove_timer(self.timer)
+            self._listener.remove_timer(self._timer)
+            self._timeout_callback = None
+            self._timer = None
 
     def __del__(self):
         self._unsubscribe()
