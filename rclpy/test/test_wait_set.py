@@ -78,7 +78,7 @@ class TestWaitSet(unittest.TestCase):
             self.assertFalse(ws.is_ready(sub.subscription_pointer))
 
             msg = String()
-            msg.data = "Hello World"
+            msg.data = 'Hello World'
             pub.publish(msg)
 
             ws.wait(5000000000)
