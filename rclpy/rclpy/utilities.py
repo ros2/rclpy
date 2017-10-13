@@ -14,6 +14,7 @@
 
 import threading
 
+from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 g_shutdown_lock = threading.Lock()
@@ -38,3 +39,16 @@ def try_shutdown():
 
 def get_rmw_implementation_identifier():
     return _rclpy.rclpy_get_rmw_implementation_identifier()
+
+
+def timeout_sec_to_nsec(timeout_sec):
+    """Convert timeout in seconds to rcl compatible timeout in nanoseconds."""
+    if timeout_sec is None:
+        # Block forever
+        return -1
+    elif timeout_sec <= 0:
+        # Return immediately
+        return 0
+    else:
+        # wait for given time
+        return int(float(timeout_sec) * S_TO_NS)

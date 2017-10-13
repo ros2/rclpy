@@ -17,10 +17,10 @@ import multiprocessing
 from threading import Condition as _Condition
 from threading import Lock as _Lock
 
-from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.timer import WallTimer as _WallTimer
 from rclpy.utilities import ok
+from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.wait_set import WaitSet as _WaitSet
 
 
@@ -258,13 +258,8 @@ class Executor:
         """
         timeout_timer = None
         # Get timeout in nanoseconds. 0 = don't wait. < 0 means block forever
-        timeout_nsec = None
-        if timeout_sec is None:
-            timeout_nsec = -1
-        elif timeout_sec <= 0:
-            timeout_nsec = 0
-        else:
-            timeout_nsec = int(float(timeout_sec) * S_TO_NS)
+        timeout_nsec = timeout_sec_to_nsec(timeout_sec)
+        if timeout_nsec > 0:
             timeout_timer = _WallTimer(None, None, timeout_nsec)
 
         if nodes is None:
