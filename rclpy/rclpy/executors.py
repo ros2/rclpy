@@ -47,10 +47,12 @@ class _WorkTracker:
         """
         Wait until all work completes.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :rtype: bool True if all work completed
         """
+        if timeout_sec is not None and timeout_sec < 0:
+            timeout_sec = None
         # Wait for all work to complete
         if timeout_sec is None or timeout_sec >= 0:
             with self._work_condition:
@@ -90,7 +92,7 @@ class Executor:
 
         Return true if all outstanding callbacks finished executing.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :rtype: bool
         """
@@ -142,7 +144,7 @@ class Executor:
 
         A custom executor should use :func:`Executor.wait_for_ready_callbacks` to get work.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :rtype: None
         """
@@ -250,14 +252,13 @@ class Executor:
         """
         Yield callbacks that are ready to be performed.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :param nodes: A list of nodes to wait on. Wait on all nodes if None.
         :type nodes: list or None
         :rtype: Generator[(callable, entity, :class:`rclpy.node.Node`)]
         """
         timeout_timer = None
-        # Get timeout in nanoseconds. 0 = don't wait. < 0 means block forever
         timeout_nsec = timeout_sec_to_nsec(timeout_sec)
         if timeout_nsec > 0:
             timeout_timer = _WallTimer(None, None, timeout_nsec)

@@ -21,8 +21,8 @@ class TestUtilities(unittest.TestCase):
 
     def test_timeout_sec_to_nsec(self):
         self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(None))
+        self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(-1))
         self.assertEqual(0, rclpy.utilities.timeout_sec_to_nsec(0))
-        self.assertEqual(0, rclpy.utilities.timeout_sec_to_nsec(-1))
         self.assertEqual(1000000000, rclpy.utilities.timeout_sec_to_nsec(1))
 
 

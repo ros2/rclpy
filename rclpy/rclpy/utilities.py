@@ -51,9 +51,12 @@ def timeout_sec_to_nsec(timeout_sec):
     if timeout_sec is None:
         # Block forever
         return -1
-    elif timeout_sec <= 0:
+    elif timeout_sec > -1.0 / S_TO_NS and timeout_sec < 1.0 / S_TO_NS:
         # Return immediately
         return 0
+    elif timeout_sec < 0:
+        # block forever
+        return -1
     else:
         # wait for given time
         return int(float(timeout_sec) * S_TO_NS)
