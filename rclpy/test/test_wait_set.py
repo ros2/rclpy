@@ -52,7 +52,7 @@ class TestWaitSet(unittest.TestCase):
 
     def test_timer_ready(self):
         ws = WaitSet()
-        timer_handle, timer_pointer = _rclpy.rclpy_create_timer(100000)
+        timer_handle, timer_pointer = _rclpy.rclpy_create_timer(100000000)
         try:
             ws.add_timer(timer_handle, timer_pointer)
             self.assertFalse(ws.is_ready(timer_pointer))
@@ -60,7 +60,7 @@ class TestWaitSet(unittest.TestCase):
             ws.wait(1)
             self.assertFalse(ws.is_ready(timer_pointer))
 
-            ws.wait(100000)
+            ws.wait(100000000)
             self.assertTrue(ws.is_ready(timer_pointer))
         finally:
             _rclpy.rclpy_destroy_entity('timer', timer_handle)
