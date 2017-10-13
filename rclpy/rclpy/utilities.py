@@ -42,7 +42,12 @@ def get_rmw_implementation_identifier():
 
 
 def timeout_sec_to_nsec(timeout_sec):
-    """Convert timeout in seconds to rcl compatible timeout in nanoseconds."""
+    """
+    Convert timeout in seconds to rcl compatible timeout in nanoseconds.
+
+    Python tends to use floating point numbers in seconds for timeouts. This utility converts a
+    python-style timeout to an integer in nanoseconds that can be used by rcl_wait.
+    """
     if timeout_sec is None:
         # Block forever
         return -1
