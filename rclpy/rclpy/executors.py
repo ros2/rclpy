@@ -294,63 +294,41 @@ class Executor:
                 timers.append(timeout_timer)
 
             # Construct a wait set
-            with _WaitSet() as wait_set:
-                _rclpy.rclpy_wait_set_init(
-                    wait_set,
-                    len(subscriptions),
-                    len(guards) + 2,
-                    len(timers),
-                    len(clients),
-                    len(services))
+            wait_set = _WaitSet()
+            wait_set.add_subscriptions(subscriptions)
+            wait_set.add_clients(clients)
+            wait_set.add_services(services)
+            wait_set.add_timers(timers)
+            wait_set.add_guard_conditions(guards)
+            wait_set.add_guard_condition(sigint_gc, sigint_gc_handle)
+            wait_set.add_guard_condition(self._guard_condition, self._guard_condition_handle)
 
-                entities = {
-                    'subscription': (subscriptions, 'subscription_handle'),
-                    'guard_condition': (guards, 'guard_handle'),
-                    'client': (clients, 'client_handle'),
-                    'service': (services, 'service_handle'),
-                    'timer': (timers, 'timer_handle'),
-                }
-                for entity, (handles, handle_name) in entities.items():
-                    _rclpy.rclpy_wait_set_clear_entities(entity, wait_set)
-                    for h in handles:
-                        _rclpy.rclpy_wait_set_add_entity(
-                            entity, wait_set, h.__getattribute__(handle_name)
-                        )
-                _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
-                _rclpy.rclpy_wait_set_add_entity(
-                    'guard_condition', wait_set, self._guard_condition)
-
-                # Wait for something to become ready
-                _rclpy.rclpy_wait(wait_set, timeout_nsec)
-
-                # get ready entities
-                subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
-                guards_ready = _rclpy.rclpy_get_ready_entities('guard_condition', wait_set)
-                timers_ready = _rclpy.rclpy_get_ready_entities('timer', wait_set)
-                clients_ready = _rclpy.rclpy_get_ready_entities('client', wait_set)
-                services_ready = _rclpy.rclpy_get_ready_entities('service', wait_set)
+            # Wait for something to become ready
+            wait_set.wait(timeout_nsec)
 
             # Check sigint guard condition
-            if sigint_gc_handle in guards_ready:
+            if wait_set.is_ready(sigint_gc_handle):
                 raise KeyboardInterrupt
             _rclpy.rclpy_destroy_entity(sigint_gc)
 
             # Mark all guards as triggered before yielding any handlers since they're auto-taken
-            for gc in [g for g in guards if g.guard_pointer in guards_ready]:
+            for gc in [g for g in guards if wait_set.is_ready(g.guard_pointer)]:
                 gc._executor_triggered = True
 
             # Process ready entities one node at a time
             for node in nodes:
-                for tmr in [t for t in node.timers if t.timer_pointer in timers_ready]:
+                for tmr in [t for t in timers if wait_set.is_ready(t.timer_pointer)]:
                     # Check that a timer is ready to workaround rcl issue with cancelled timers
                     if _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
-                        if tmr.callback_group.can_execute(tmr):
+                        if tmr == timeout_timer:
+                            continue
+                        elif tmr.callback_group.can_execute(tmr):
                             handler = self._make_handler(
                                 tmr, self._take_timer, self._execute_timer)
                             yielded_work = True
                             yield handler, tmr, node
 
-                for sub in [s for s in node.subscriptions if s.subscription_pointer in subs_ready]:
+                for sub in [s for s in subscriptions if wait_set.is_ready(s.subscription_pointer)]:
                     if sub.callback_group.can_execute(sub):
                         handler = self._make_handler(
                             sub, self._take_subscription, self._execute_subscription)
@@ -364,14 +342,14 @@ class Executor:
                         yielded_work = True
                         yield handler, gc, node
 
-                for client in [c for c in node.clients if c.client_pointer in clients_ready]:
+                for client in [c for c in clients if wait_set.is_ready(c.client_pointer)]:
                     if client.callback_group.can_execute(client):
                         handler = self._make_handler(
                             client, self._take_client, self._execute_client)
                         yielded_work = True
                         yield handler, client, node
 
-                for srv in [s for s in node.services if s.service_pointer in services_ready]:
+                for srv in [s for s in services if wait_set.is_ready(s.service_pointer)]:
                     if srv.callback_group.can_execute(srv):
                         handler = self._make_handler(
                             srv, self._take_service, self._execute_service)
@@ -380,7 +358,8 @@ class Executor:
 
             # Check timeout timer
             if (timeout_nsec == 0 or
-                    (timeout_timer is not None and timeout_timer.timer_pointer in timers_ready)):
+                    (timeout_timer is not None and wait_set.is_ready(
+                        timeout_timer.timer_pointer))):
                 break
 
 
