@@ -158,7 +158,7 @@ class GraphListenerSingleton:
                 for callback in ready_callbacks:
                     try:
                         callback()
-                    except:
+                    except Exception:
                         rclpy.logging.logwarn(traceback.format_exc())
 
 
