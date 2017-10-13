@@ -86,11 +86,30 @@ class Client:
         """
         Block until the service is available.
 
-        Return true if the service is available.
-
         :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
         :type timeout_sec: float or None
-        :rtype: bool
+        :rtype: bool true if the service is available
         """
-        with _GraphEventSubscription(self.node_handle) as event_sub:
-            return event_sub.wait_for(self.service_is_ready, timeout_sec)
+        timeout_nsec = rclpy.utilities.timeout_sec_to_nsec(timeout_sec)
+        result = self.service_is_ready()
+        if result or timeout_sec == 0:
+            return result
+
+        event = threading.Event()
+
+        def on_graph_event():
+            nonlocal self
+            nonlocal event
+            nonlocal result
+            result = self.service_is_ready()
+            if result:
+                event.set()
+
+        def on_timeout():
+            nonlocal event
+            event.set()
+
+        with _GraphEventSubscription(self.node_handle, on_graph_event, timeout_nsec, on_timeout):
+            event.wait()
+
+        return result
