@@ -15,12 +15,11 @@
 
 from collections import namedtuple
 from collections import OrderedDict
-import importlib
 import inspect
 import os
 import time
 
-_rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
+from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
 _internal_callers = []
@@ -223,13 +222,14 @@ class RcutilsLogger:
 
     def get_severity_threshold(self):
         from rclpy.logging import LoggingSeverity
-        severity = LoggingSeverity(_rclpy_logging.rclpy_logging_get_default_severity_threshold())
+        severity = LoggingSeverity(
+            _rclpy_logging.rclpy_logging_get_logger_severity_threshold(self.name))
         return severity
 
     def set_severity_threshold(self, severity):
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
-        return _rclpy_logging.rclpy_logging_set_default_severity_threshold(severity)
+        return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(self.name, severity)
 
     def log(self, message, severity, **kwargs):
         r"""

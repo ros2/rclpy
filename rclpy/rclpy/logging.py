@@ -15,6 +15,7 @@
 
 from enum import IntEnum
 
+from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
 import rclpy.impl.rcutils_logger
 
 
@@ -40,12 +41,12 @@ root_logger = get_named_logger('')
 
 
 def get_default_severity_threshold():
-    return LoggingSeverity(root_logger.get_severity_threshold())
+    return _rclpy_logging.rclpy_logging_get_default_severity_threshold()
 
 
 def set_default_severity_threshold(severity):
     severity = LoggingSeverity(severity)
-    return root_logger.set_severity_threshold(severity)
+    return _rclpy_logging.rclpy_logging_set_default_severity_threshold(severity)
 
 
 def logdebug(message, **kwargs):

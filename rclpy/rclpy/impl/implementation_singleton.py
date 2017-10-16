@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Provide singleton access to the rclpy C module.
+Provide singleton access to the rclpy C modules.
 
 For example, you might use it like this:
 
@@ -38,3 +38,4 @@ except ImportError as e:
             " Please refer to '%s' for possible solutions" % \
             (e.path, 'https://github.com/ros2/ros2/wiki/Rclpy-Import-error-hint')
     raise
+rclpy_logging_implementation = importlib.import_module('._rclpy_logging', package='rclpy')
