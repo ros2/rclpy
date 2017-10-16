@@ -22,15 +22,15 @@ from rclpy.logging import LoggingSeverity
 
 class TestLogging(unittest.TestCase):
 
-    def test_severity_threshold(self):
-        original_severity = rclpy.logging.get_severity_threshold()
+    def test_default_severity_threshold(self):
+        original_severity = rclpy.logging.get_default_severity_threshold()
         for severity in LoggingSeverity:
-            rclpy.logging.set_severity_threshold(severity)
-            self.assertEqual(severity, rclpy.logging.get_severity_threshold())
-        rclpy.logging.set_severity_threshold(original_severity)
+            rclpy.logging.set_default_severity_threshold(severity)
+            self.assertEqual(severity, rclpy.logging.get_default_severity_threshold())
+        rclpy.logging.set_default_severity_threshold(original_severity)
 
     def test_log_threshold(self):
-        rclpy.logging.set_severity_threshold(LoggingSeverity.INFO)
+        rclpy.logging.set_default_severity_threshold(LoggingSeverity.INFO)
 
         # Logging below threshold not expected to be logged
         self.assertFalse(rclpy.logging.logdebug('message_debug'))
@@ -167,7 +167,7 @@ class TestLogging(unittest.TestCase):
     def test_named_logger(self):
         my_logger = rclpy.logging.get_named_logger('my_logger')
 
-        rclpy.logging.set_severity_threshold(LoggingSeverity.INFO)
+        rclpy.logging.set_default_severity_threshold(LoggingSeverity.INFO)
         # Test convenience functions
 
         # Logging below threshold not expected to be logged

@@ -39,11 +39,11 @@ def get_named_logger(name):
 root_logger = get_named_logger('')
 
 
-def get_severity_threshold():
+def get_default_severity_threshold():
     return LoggingSeverity(root_logger.get_severity_threshold())
 
 
-def set_severity_threshold(severity):
+def set_default_severity_threshold(severity):
     severity = LoggingSeverity(severity)
     return root_logger.set_severity_threshold(severity)
 
