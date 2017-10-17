@@ -39,7 +39,7 @@ class ResponseThread(threading.Thread):
             _rclpy.rclpy_get_ready_entities('guard_condition', self.wait_set)
 
         # destroying here to make sure we dont call shutdown before cleaning up
-        _rclpy.rclpy_destroy_entity('guard_condition', sigint_gc)
+        _rclpy.rclpy_destroy_entity(sigint_gc)
         if sigint_gc_handle in guard_condition_ready_list:
             rclpy.utilities.shutdown()
             return
