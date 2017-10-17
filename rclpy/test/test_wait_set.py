@@ -26,7 +26,7 @@ class TestWaitSet(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         rclpy.init()
-        cls.node = rclpy.create_node('TestWaitSet', namespace='/')
+        cls.node = rclpy.create_node('TestWaitSet')
 
     @classmethod
     def tearDownClass(cls):
