@@ -49,7 +49,8 @@ class _WorkTracker:
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
-        :rtype: bool True if all work completed
+        :rtype: bool
+        :returns: True if all work completed
         """
         if timeout_sec is not None and timeout_sec < 0:
             timeout_sec = None

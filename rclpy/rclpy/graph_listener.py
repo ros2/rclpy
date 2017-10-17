@@ -63,7 +63,7 @@ class GraphListenerSingleton:
         :type timer_period_ns: integer
         :param callback: called when the graph updates
         :type callback: callable
-        :rtype: rclpy.timer.WallTimer instance
+        :rtype: rclpy.timer.WallTimer
         """
         with self._lock:
             tmr = _WallTimer(callback, None, timer_period_ns)

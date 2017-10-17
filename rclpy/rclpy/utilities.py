@@ -47,6 +47,11 @@ def timeout_sec_to_nsec(timeout_sec):
 
     Python tends to use floating point numbers in seconds for timeouts. This utility converts a
     python-style timeout to an integer in nanoseconds that can be used by rcl_wait.
+
+    :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
+    :type timeout_sec: float or None
+    :rtype: int
+    :returns: rcl_wait compatible timeout in nanoseconds
     """
     if timeout_sec is None:
         # Block forever

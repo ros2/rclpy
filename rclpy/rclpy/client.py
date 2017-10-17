@@ -88,7 +88,8 @@ class Client:
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
-        :rtype: bool true if the service is available
+        :rtype: bool
+        :returns: true if the service is available
         """
         timeout_nsec = rclpy.utilities.timeout_sec_to_nsec(timeout_sec)
         result = self.service_is_ready()
