@@ -1580,7 +1580,7 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   if (!PyCapsule_CheckExact(pynode) || !PyCapsule_CheckExact(pyclient)) {
-    PyErr_Format(PyExc_ValueError, "Expected two PyCapsule as arugments");
+    PyErr_Format(PyExc_ValueError, "Expected two PyCapsule as arguments");
     return NULL;
   }
 
