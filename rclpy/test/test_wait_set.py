@@ -16,6 +16,7 @@ import unittest
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
+from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.wait_set import WaitSet
 from std_msgs.msg import String
@@ -52,7 +53,7 @@ class TestWaitSet(unittest.TestCase):
 
     def test_timer_ready(self):
         ws = WaitSet()
-        timer_handle, timer_pointer = _rclpy.rclpy_create_timer(100000000)
+        timer_handle, timer_pointer = _rclpy.rclpy_create_timer(int(0.1 * S_TO_NS))
         try:
             ws.add_timer(timer_handle, timer_pointer)
             self.assertFalse(ws.is_ready(timer_pointer))
@@ -60,7 +61,7 @@ class TestWaitSet(unittest.TestCase):
             ws.wait(1)
             self.assertFalse(ws.is_ready(timer_pointer))
 
-            ws.wait(100000000)
+            ws.wait(int(0.1 * S_TO_NS))
             self.assertTrue(ws.is_ready(timer_pointer))
         finally:
             _rclpy.rclpy_destroy_entity('timer', timer_handle)
@@ -81,7 +82,7 @@ class TestWaitSet(unittest.TestCase):
             msg.data = 'Hello World'
             pub.publish(msg)
 
-            ws.wait(5000000000)
+            ws.wait(5 * S_TO_NS)
             self.assertTrue(ws.is_ready(sub.subscription_pointer))
         finally:
             self.node.destroy_publisher(pub)
@@ -106,7 +107,7 @@ class TestWaitSet(unittest.TestCase):
             cli.wait_for_service()
             cli.call(GetParameters.Request())
 
-            ws.wait(5000000000)
+            ws.wait(5 * S_TO_NS)
             # TODO(sloretz) test client after it's wait_for_future() API is sorted out
             self.assertTrue(ws.is_ready(srv.service_pointer))
         finally:
