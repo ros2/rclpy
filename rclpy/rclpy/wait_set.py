@@ -21,8 +21,8 @@ class WaitSet:
     """Provide conveneint methods and destroy the wait set when garbage collected."""
 
     def __init__(self):
-        # maps entity pointers (the python integer, not the PyCapsule) to a bool
-        self._ready_pointers = {}
+        # List of entity pointers (the python integer, not the PyCapsule) that are ready
+        self._ready_pointers = []
 
         # maps pointers (integers) to handles (PyCapsule)
         self._subscriptions = {}
@@ -43,7 +43,6 @@ class WaitSet:
 
     def add_subscription(self, subscription_handle, subscription_pointer):
         self._subscriptions[subscription_pointer] = subscription_handle
-        self._ready_pointers[subscription_pointer] = False
         self._needs_building = True
 
     def add_subscriptions(self, subscriptions):
@@ -52,12 +51,10 @@ class WaitSet:
 
     def remove_subscription(self, subscription_pointer):
         del self._subscriptions[subscription_pointer]
-        del self._ready_pointers[subscription_pointer]
         self._needs_building = True
 
     def add_guard_condition(self, gc_handle, gc_pointer):
         self._guard_conditions[gc_pointer] = gc_handle
-        self._ready_pointers[gc_pointer] = False
         self._needs_building = True
 
     def add_guard_conditions(self, guards):
@@ -66,12 +63,10 @@ class WaitSet:
 
     def remove_guard_condition(self, gc_pointer):
         del self._guard_conditions[gc_pointer]
-        del self._ready_pointers[gc_pointer]
         self._needs_building = True
 
     def add_timer(self, timer_handle, timer_pointer):
         self._timers[timer_pointer] = timer_handle
-        self._ready_pointers[timer_pointer] = False
         self._needs_building = True
 
     def add_timers(self, timers):
@@ -80,12 +75,10 @@ class WaitSet:
 
     def remove_timer(self, timer_pointer):
         del self._timers[timer_pointer]
-        del self._ready_pointers[timer_pointer]
         self._needs_building = True
 
     def add_client(self, client_handle, client_pointer):
         self._clients[client_pointer] = client_handle
-        self._ready_pointers[client_pointer] = False
         self._needs_building = True
 
     def add_clients(self, clients):
@@ -94,12 +87,10 @@ class WaitSet:
 
     def remove_client(self, client_pointer):
         del self._clients[client_pointer]
-        del self._ready_pointers[client_pointer]
         self._needs_building = True
 
     def add_service(self, service_handle, service_pointer):
         self._services[service_pointer] = service_handle
-        self._ready_pointers[service_pointer] = False
         self._needs_building = True
 
     def add_services(self, services):
@@ -108,7 +99,6 @@ class WaitSet:
 
     def remove_service(self, service_pointer):
         del self._services[service_pointer]
-        del self._ready_pointers[service_pointer]
         self._needs_building = True
 
     def wait(self, timeout_nsec):
@@ -146,17 +136,11 @@ class WaitSet:
             _rclpy.rclpy_wait(self._wait_set, timeout_nsec)
 
             ws = self._wait_set
-            sub = [(e, True) for e in _rclpy.rclpy_get_ready_entities('subscription', ws)]
-            grd = [(e, True) for e in _rclpy.rclpy_get_ready_entities('guard_condition', ws)]
-            tmr = [(e, True) for e in _rclpy.rclpy_get_ready_entities('timer', ws)]
-            cli = [(e, True) for e in _rclpy.rclpy_get_ready_entities('client', ws)]
-            srv = [(e, True) for e in _rclpy.rclpy_get_ready_entities('service', ws)]
-
-        self._ready_pointers.update(sub)
-        self._ready_pointers.update(grd)
-        self._ready_pointers.update(tmr)
-        self._ready_pointers.update(cli)
-        self._ready_pointers.update(srv)
+            self._ready_pointers = _rclpy.rclpy_get_ready_entities('subscription', ws)
+            self._ready_pointers.extend(_rclpy.rclpy_get_ready_entities('guard_condition', ws))
+            self._ready_pointers.extend(_rclpy.rclpy_get_ready_entities('timer', ws))
+            self._ready_pointers.extend(_rclpy.rclpy_get_ready_entities('client', ws))
+            self._ready_pointers.extend(_rclpy.rclpy_get_ready_entities('service', ws))
 
     def is_ready(self, entity_pointer):
-        return self._ready_pointers[entity_pointer]
+        return entity_pointer in self._ready_pointers

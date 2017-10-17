@@ -48,6 +48,9 @@ class TestWaitSet(unittest.TestCase):
             # TODO(sloretz) why does the next assertion fail with wait(0)?
             ws.wait(1)
             self.assertTrue(ws.is_ready(gc_pointer))
+
+            ws.wait(1)
+            self.assertFalse(ws.is_ready(gc_pointer))
         finally:
             _rclpy.rclpy_destroy_entity('guard_condition', gc_handle)
 
@@ -63,6 +66,10 @@ class TestWaitSet(unittest.TestCase):
 
             ws.wait(int(0.1 * S_TO_NS))
             self.assertTrue(ws.is_ready(timer_pointer))
+
+            _rclpy.rclpy_call_timer(timer_handle)
+            ws.wait(1)
+            self.assertFalse(ws.is_ready(timer_pointer))
         finally:
             _rclpy.rclpy_destroy_entity('timer', timer_handle)
 
@@ -84,6 +91,10 @@ class TestWaitSet(unittest.TestCase):
 
             ws.wait(5 * S_TO_NS)
             self.assertTrue(ws.is_ready(sub.subscription_pointer))
+
+            _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
+            ws.wait(1)
+            self.assertFalse(ws.is_ready(sub.subscription_pointer))
         finally:
             self.node.destroy_publisher(pub)
             self.node.destroy_subscription(sub)
@@ -110,6 +121,10 @@ class TestWaitSet(unittest.TestCase):
             ws.wait(5 * S_TO_NS)
             # TODO(sloretz) test client after it's wait_for_future() API is sorted out
             self.assertTrue(ws.is_ready(srv.service_pointer))
+
+            _rclpy.rclpy_take_request(srv.service_handle, srv.srv_type.Request)
+            ws.wait(1)
+            self.assertFalse(ws.is_ready(srv.service_pointer))
         finally:
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
