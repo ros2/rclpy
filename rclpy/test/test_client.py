@@ -37,9 +37,9 @@ class TestClient(unittest.TestCase):
     def test_wait_for_service_5sec(self):
         cli = self.node.create_client(GetParameters, 'get/parameters')
         try:
-            start = time.time()
+            start = time.monotonic()
             cli.wait_for_service(timeout_sec=5.0)
-            end = time.time()
+            end = time.monotonic()
             self.assertGreater(5.0, end - start - TIME_FUDGE)
             self.assertLess(5.0, end - start + TIME_FUDGE)
         finally:
@@ -48,9 +48,9 @@ class TestClient(unittest.TestCase):
     def test_wait_for_service_nowait(self):
         cli = self.node.create_client(GetParameters, 'get/parameters')
         try:
-            start = time.time()
+            start = time.monotonic()
             cli.wait_for_service(timeout_sec=0)
-            end = time.time()
+            end = time.monotonic()
             self.assertGreater(0, end - start - TIME_FUDGE)
             self.assertLess(0, end - start + TIME_FUDGE)
         finally:
