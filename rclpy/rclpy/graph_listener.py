@@ -51,8 +51,7 @@ class GraphListenerSingleton:
     def _try_start_thread(self):
         # Assumes lock is already held
         if self._thread is None:
-            self._thread = threading.Thread(target=self._runner)
-            self._thread.daemon = True
+            self._thread = threading.Thread(target=self._runner, daemon=True)
             self._thread.start()
 
     def add_timer(self, timer_period_ns, callback):
