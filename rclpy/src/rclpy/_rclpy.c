@@ -1579,7 +1579,7 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OO", &pynode, &pyclient)) {
     return NULL;
   }
-  if (!PyCapsule_CheckExact(pynode) || !PyCapsule_CheckExact(pyclient)) {
+  if (!PyCapsule_IsValid(pynode, NULL) || !PyCapsule_IsValid(pyclient, NULL)) {
     PyErr_Format(PyExc_ValueError, "Expected two PyCapsule as arguments");
     return NULL;
   }
