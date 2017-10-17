@@ -46,14 +46,14 @@ class WaitSet:
         self._ready_pointers[subscription_pointer] = False
         self._needs_building = True
 
+    def add_subscriptions(self, subscriptions):
+        for sub in subscriptions:
+            self.add_subscription(sub.subscription_handle, sub.subscription_pointer)
+
     def remove_subscription(self, subscription_pointer):
         del self._subscriptions[subscription_pointer]
         del self._ready_pointers[subscription_pointer]
         self._needs_building = True
-
-    def add_subscriptions(self, subscriptions):
-        for sub in subscriptions:
-            self.add_subscription(sub.subscription_handle, sub.subscription_pointer)
 
     def add_guard_condition(self, gc_handle, gc_pointer):
         self._guard_conditions[gc_pointer] = gc_handle
