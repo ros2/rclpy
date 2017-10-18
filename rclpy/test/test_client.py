@@ -27,7 +27,7 @@ class TestClient(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         rclpy.init()
-        cls.node = rclpy.create_node('TestClient', namespace='/')
+        cls.node = rclpy.create_node('TestClient')
 
     @classmethod
     def tearDownClass(cls):
