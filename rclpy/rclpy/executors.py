@@ -55,11 +55,10 @@ class _WorkTracker:
         if timeout_sec is not None and timeout_sec < 0:
             timeout_sec = None
         # Wait for all work to complete
-        if timeout_sec is None or timeout_sec >= 0:
-            with self._work_condition:
-                if not self._work_condition.wait_for(
-                        lambda: self._num_work_executing == 0, timeout_sec):
-                    return False
+        with self._work_condition:
+            if not self._work_condition.wait_for(
+                    lambda: self._num_work_executing == 0, timeout_sec):
+                return False
         return True
 
 
