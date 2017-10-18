@@ -41,15 +41,14 @@ class TestWaitSet(unittest.TestCase):
             ws.add_guard_condition(gc_handle, gc_pointer)
             self.assertFalse(ws.is_ready(gc_pointer))
 
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(gc_pointer))
 
             _rclpy.rclpy_trigger_guard_condition(gc_handle)
-            # TODO(sloretz) why does the next assertion fail with wait(0)?
-            ws.wait(1)
+            ws.wait(0)
             self.assertTrue(ws.is_ready(gc_pointer))
 
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(gc_pointer))
         finally:
             _rclpy.rclpy_destroy_entity('guard_condition', gc_handle)
@@ -61,14 +60,14 @@ class TestWaitSet(unittest.TestCase):
             ws.add_timer(timer_handle, timer_pointer)
             self.assertFalse(ws.is_ready(timer_pointer))
 
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(timer_pointer))
 
             ws.wait(int(0.1 * S_TO_NS))
             self.assertTrue(ws.is_ready(timer_pointer))
 
             _rclpy.rclpy_call_timer(timer_handle)
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(timer_pointer))
         finally:
             _rclpy.rclpy_destroy_entity('timer', timer_handle)
@@ -82,7 +81,7 @@ class TestWaitSet(unittest.TestCase):
             ws.add_subscription(sub.subscription_handle, sub.subscription_pointer)
             self.assertFalse(ws.is_ready(sub.subscription_pointer))
 
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(sub.subscription_pointer))
 
             msg = String()
@@ -93,7 +92,7 @@ class TestWaitSet(unittest.TestCase):
             self.assertTrue(ws.is_ready(sub.subscription_pointer))
 
             _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(sub.subscription_pointer))
         finally:
             self.node.destroy_publisher(pub)
@@ -111,7 +110,7 @@ class TestWaitSet(unittest.TestCase):
             self.assertFalse(ws.is_ready(cli.client_pointer))
             self.assertFalse(ws.is_ready(srv.service_pointer))
 
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(cli.client_pointer))
             self.assertFalse(ws.is_ready(srv.service_pointer))
 
@@ -123,7 +122,7 @@ class TestWaitSet(unittest.TestCase):
             self.assertTrue(ws.is_ready(srv.service_pointer))
 
             _rclpy.rclpy_take_request(srv.service_handle, srv.srv_type.Request)
-            ws.wait(1)
+            ws.wait(0)
             self.assertFalse(ws.is_ready(srv.service_pointer))
         finally:
             self.node.destroy_client(cli)
