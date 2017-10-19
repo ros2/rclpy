@@ -25,7 +25,20 @@
 static PyObject *
 rclpy_logging_initialize(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
+  // TODO(dhood): error checking
   rcutils_logging_initialize();
+  Py_RETURN_NONE;
+}
+
+/// Shutdown the logging system.
+/**
+ * \return None
+ */
+static PyObject *
+rclpy_logging_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  // TODO(dhood): error checking
+  rcutils_logging_shutdown();
   Py_RETURN_NONE;
 }
 
@@ -178,6 +191,10 @@ static PyMethodDef rclpy_logging_methods[] = {
   {
     "rclpy_logging_initialize", rclpy_logging_initialize, METH_NOARGS,
     "Initialize the logging system."
+  },
+  {
+    "rclpy_logging_shutdown", rclpy_logging_shutdown, METH_NOARGS,
+    "Shutdown the logging system."
   },
   {
     "rclpy_logging_get_default_severity_threshold", rclpy_logging_get_default_severity_threshold,

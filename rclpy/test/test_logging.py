@@ -267,6 +267,16 @@ class TestLogging(unittest.TestCase):
 
         rclpy.logging.set_default_severity_threshold(original_severity)
 
+    def test_clear_config(self):
+        my_logger = rclpy.logging.get_named_logger('my_temp_logger')
+        my_logger.set_severity_threshold(LoggingSeverity.WARN)
+        self.assertEqual(LoggingSeverity.WARN, my_logger.get_effective_severity_threshold())
+        rclpy.logging.clear_config()
+        self.assertNotEqual(LoggingSeverity.WARN, my_logger.get_effective_severity_threshold())
+        self.assertEqual(
+            rclpy.logging.get_default_severity_threshold(),
+            my_logger.get_effective_severity_threshold())
+
 
 if __name__ == '__main__':
     unittest.main()

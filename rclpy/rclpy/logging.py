@@ -37,6 +37,20 @@ class LoggingSeverity(IntEnum):
 root_logger = rclpy.impl.rcutils_logger.RcutilsLogger('ros.rclpy')
 
 
+def initialize():
+    return _rclpy_logging.rclpy_logging_initialize()
+
+
+def shutdown():
+    return _rclpy_logging.rclpy_logging_shutdown()
+
+
+def clear_config():
+    """Clear the configuration of the logging system, e.g. logger severity thresholds."""
+    shutdown()
+    initialize()
+
+
 def get_named_logger(name):
     return root_logger.get_child(name)
 
