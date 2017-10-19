@@ -51,6 +51,41 @@ class TestGuardCondition(unittest.TestCase):
 
         self.node.destroy_guard_condition(gc)
 
+    def test_double_trigger(self):
+        called1 = False
+        called2 = False
+
+        def func1():
+            nonlocal called1
+            called1 = True
+
+        def func2():
+            nonlocal called2
+            called2 = True
+
+        gc1 = self.node.create_guard_condition(func1)
+        gc2 = self.node.create_guard_condition(func2)
+
+        self.executor.spin_once(timeout_sec=0)
+        self.assertFalse(called1)
+        self.assertFalse(called2)
+
+        gc1.trigger()
+        gc2.trigger()
+        self.executor.spin_once(timeout_sec=0)
+        self.executor.spin_once(timeout_sec=0)
+        self.assertTrue(called1)
+        self.assertTrue(called2)
+
+        called1 = False
+        called2 = False
+        self.executor.spin_once(timeout_sec=0)
+        self.assertFalse(called1)
+        self.assertFalse(called2)
+
+        self.node.destroy_guard_condition(gc1)
+        self.node.destroy_guard_condition(gc2)
+
 
 if __name__ == '__main__':
     unittest.main()

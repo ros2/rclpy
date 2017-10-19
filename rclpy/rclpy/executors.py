@@ -198,8 +198,7 @@ class Executor:
             srv.send_response(response, header)
 
     def _take_guard_condition(self, gc):
-        # Nothing to do
-        pass
+        gc._executor_triggered = False
 
     def _execute_guard_condition(self, gc, _):
         gc.callback()
@@ -291,10 +290,15 @@ class Executor:
             services = []
             for node in nodes:
                 subscriptions.extend(self._filter_eligible_entities(node.subscriptions))
-                guards.extend(self._filter_eligible_entities(node.guards))
                 timers.extend(self._filter_eligible_entities(node.timers))
                 clients.extend(self._filter_eligible_entities(node.clients))
                 services.extend(self._filter_eligible_entities(node.services))
+                node_guards = self._filter_eligible_entities(node.guards)
+                # retrigger a guard condition that was triggered but not handled
+                for gc in node_guards:
+                    if gc._executor_triggered:
+                        gc.trigger()
+                guards.extend(node_guards)
             (sigint_gc, sigint_gc_handle) = _rclpy.rclpy_get_sigint_guard_condition()
             if timeout_timer is not None:
                 timers.append(timeout_timer)
@@ -341,6 +345,10 @@ class Executor:
                 raise KeyboardInterrupt
             _rclpy.rclpy_destroy_entity('guard_condition', sigint_gc)
 
+            # Mark all guards as triggered before yielding any handlers since they're auto-taken
+            for gc in [g for g in guards if g.guard_pointer in guards_ready]:
+                gc._executor_triggered = True
+
             # Process ready entities one node at a time
             for node in nodes:
                 for tmr in [t for t in node.timers if t.timer_pointer in timers_ready]:
@@ -359,7 +367,7 @@ class Executor:
                         yielded_work = True
                         yield handler, sub, node
 
-                for gc in [g for g in node.guards if g.guard_pointer in guards_ready]:
+                for gc in [g for g in node.guards if g._executor_triggered]:
                     if gc.callback_group.can_execute(gc):
                         handler = self._make_handler(
                             gc, self._take_guard_condition, self._execute_guard_condition)

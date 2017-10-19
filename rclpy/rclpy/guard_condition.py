@@ -22,6 +22,8 @@ class GuardCondition:
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
+        # True when the executor sees this has been triggered but has not yet been handled
+        self._executor_triggered = False
 
     def trigger(self):
         _rclpy.rclpy_trigger_guard_condition(self.guard_handle)
