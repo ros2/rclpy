@@ -62,7 +62,7 @@ rclpy_logging_set_default_severity_threshold(PyObject * Py_UNUSED(self), PyObjec
 /// Get the severity threshold of a logger.
 /**
  * \param[in] name Fully-qualified name of logger.
- * \return severity
+ * \return The logger severity threshold if it has been set or UNSET otherwise.
  */
 static PyObject *
 rclpy_logging_get_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
@@ -71,8 +71,9 @@ rclpy_logging_get_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject
   if (!PyArg_ParseTuple(args, "s", &name)) {
     return NULL;
   }
-  int severity = rcutils_logging_get_logger_effective_threshold(name);
+  int severity = rcutils_logging_get_logger_severity_threshold(name);
 
+  // TODO(dhood): error handling
   return PyLong_FromLong(severity);
 }
 
@@ -94,6 +95,25 @@ rclpy_logging_set_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject
 
   rcutils_logging_set_logger_severity_threshold(name, severity);
   Py_RETURN_NONE;
+}
+
+/// Get the effective severity threshold of a logger.
+/**
+ * \param[in] name Fully-qualified name of logger.
+ * \return The effective severity threshold: the logger severity if it has been set, otherwise
+ *   the severity threshold determined by that of the logger's ancestors, otherwise
+ *   the default severity threshold.
+ */
+static PyObject *
+rclpy_logging_get_logger_effective_threshold(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * name;
+  if (!PyArg_ParseTuple(args, "s", &name)) {
+    return NULL;
+  }
+  int severity = rcutils_logging_get_logger_effective_threshold(name);
+
+  return PyLong_FromLong(severity);
 }
 
 /// Determine if the logger is enabled for a severity.
@@ -174,6 +194,10 @@ static PyMethodDef rclpy_logging_methods[] = {
   {
     "rclpy_logging_set_logger_severity_threshold", rclpy_logging_set_logger_severity_threshold,
     METH_VARARGS, "Set the severity threshold of a logger."
+  },
+  {
+    "rclpy_logging_get_logger_effective_threshold", rclpy_logging_get_logger_effective_threshold,
+    METH_VARARGS, "Get the effective severity threshold of a logger."
   },
   {
     "rclpy_logging_is_enabled_for", rclpy_logging_is_enabled_for,

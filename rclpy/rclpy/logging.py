@@ -26,6 +26,7 @@ class LoggingSeverity(IntEnum):
     This enum must match the one defined in rcutils/logging.h
     """
 
+    UNSET = 0
     DEBUG = 10
     INFO = 20
     WARN = 30
@@ -47,6 +48,21 @@ def get_default_severity_threshold():
 def set_default_severity_threshold(severity):
     severity = LoggingSeverity(severity)
     return _rclpy_logging.rclpy_logging_set_default_severity_threshold(severity)
+
+
+def get_logger_severity_threshold(name):
+    severity = _rclpy_logging.rclpy_logging_get_logger_severity_threshold(name)
+    return LoggingSeverity(severity)
+
+
+def set_logger_severity_threshold(name, severity):
+    severity = LoggingSeverity(severity)
+    return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(name, severity)
+
+
+def get_logger_effective_severity_threshold(name):
+    severity = _rclpy_logging.rclpy_logging_get_logger_effective_threshold(name)
+    return LoggingSeverity(severity)
 
 
 def logdebug(message, **kwargs):
