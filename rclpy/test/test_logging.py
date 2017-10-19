@@ -32,7 +32,7 @@ class TestLogging(unittest.TestCase):
     def test_logger_severity_threshold(self):
         # We should be able to set the threshold of a nonexistent logger / one that doesn't
         # correspond to a python object, e.g. an RMW internal logger.
-        name = 'my_logger_name'
+        name = 'my_internal_logger_name'
         original_severity = rclpy.logging.get_logger_severity_threshold(name)
         for severity in LoggingSeverity:
             rclpy.logging.set_logger_severity_threshold(name, severity)
@@ -47,10 +47,12 @@ class TestLogging(unittest.TestCase):
         rclpy.logging.root_logger.set_severity_threshold(original_severity)
 
     def test_logger_effective_severity_threshold(self):
-        name = 'my_logger_name'
-        original_severity = rclpy.logging.get_logger_severity_threshold(name)
+        name = 'my_nonexistent_logger_name'
+        self.assertEqual(
+            rclpy.logging.get_default_severity_threshold(),
+            rclpy.logging.get_logger_effective_severity_threshold(name))
 
-        # Check that the effective threshold for a logger with unset severity is the default
+        # Check that the effective threshold for a logger with manually unset severity is default
         rclpy.logging.set_logger_severity_threshold(name, LoggingSeverity.UNSET)
         self.assertEqual(
             rclpy.logging.get_default_severity_threshold(),
@@ -60,7 +62,6 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(
             LoggingSeverity.ERROR,
             rclpy.logging.get_logger_effective_severity_threshold(name))
-        rclpy.logging.set_logger_severity_threshold(name, original_severity)
 
     def test_log_threshold(self):
         rclpy.logging.root_logger.set_severity_threshold(LoggingSeverity.INFO)
