@@ -96,6 +96,31 @@ rclpy_logging_set_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject
   Py_RETURN_NONE;
 }
 
+/// Determine if the logger is enabled for a severity.
+/**
+ *
+ * \param[in] name Fully-qualified name of logger.
+ * \param[in] severity Logging severity to compare against.
+ * \return True if the logger is enabled for the severity.
+ *         False otherwise.
+ */
+static PyObject *
+rclpy_logging_is_enabled_for(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * name;
+  int severity;
+  if (!PyArg_ParseTuple(args, "si", &name, &severity)) {
+    return NULL;
+  }
+
+  bool is_enabled = rcutils_logging_is_enabled_for(name, severity);
+  if (is_enabled) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
+}
+
 /// Log a message through rcutils with the specified severity.
 /**
  *
@@ -149,6 +174,10 @@ static PyMethodDef rclpy_logging_methods[] = {
   {
     "rclpy_logging_set_logger_severity_threshold", rclpy_logging_set_logger_severity_threshold,
     METH_VARARGS, "Set the severity threshold of a logger."
+  },
+  {
+    "rclpy_logging_is_enabled_for", rclpy_logging_is_enabled_for,
+    METH_VARARGS, "Determine if a logger is enabled for a severity."
   },
   {
     "rclpy_logging_rcutils_log", rclpy_logging_rcutils_log, METH_VARARGS,

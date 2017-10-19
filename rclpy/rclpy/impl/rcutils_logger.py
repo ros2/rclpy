@@ -231,6 +231,11 @@ class RcutilsLogger:
         severity = LoggingSeverity(severity)
         return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(self.name, severity)
 
+    def is_enabled_for(self, severity):
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(severity)
+        return _rclpy_logging.rclpy_logging_is_enabled_for(self.name, severity)
+
     def log(self, message, severity, **kwargs):
         r"""
         Log a message with the specified severity.
@@ -300,7 +305,7 @@ class RcutilsLogger:
                 return False
 
         # Only log the message if the severity is appropriate.
-        if severity < self.get_severity_threshold():
+        if not self.is_enabled_for(severity):
             return False
 
         # Call the relevant function from the C extension.
