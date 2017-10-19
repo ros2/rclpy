@@ -16,6 +16,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class GuardCondition:
+
     def __init__(self, callback, callback_group):
         self.guard_handle, self.guard_pointer = _rclpy.rclpy_create_guard_condition()
         self.callback = callback
