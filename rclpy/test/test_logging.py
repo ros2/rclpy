@@ -229,6 +229,43 @@ class TestLogging(unittest.TestCase):
                 ))
             self.assertEqual(message_was_logged, [True] + [False] * 4)
 
+    def test_named_logger_hierarchy(self):
+        my_logger = rclpy.logging.get_named_logger('my_logger')
+        self.assertEqual(rclpy.logging.root_logger.name + '.my_logger', my_logger.name)
+
+        my_logger_child = my_logger.get_child('child')
+        self.assertEqual(my_logger.name + '.child', my_logger_child.name)
+
+        original_severity = rclpy.logging.get_default_severity_threshold()
+        default_severity = LoggingSeverity.INFO
+        rclpy.logging.set_default_severity_threshold(default_severity)
+
+        # Check that children get the default severity if parent unset
+        self.assertEqual(default_severity, my_logger.get_effective_severity_threshold())
+        self.assertEqual(default_severity, my_logger_child.get_effective_severity_threshold())
+
+        # Check that children inherit their parent's threshold
+        my_logger_severity = LoggingSeverity.ERROR
+        my_logger.set_severity_threshold(my_logger_severity)
+        self.assertEqual(my_logger_severity, my_logger.get_effective_severity_threshold())
+        self.assertEqual(my_logger_severity, my_logger_child.get_effective_severity_threshold())
+
+        # Check that child's threshold has preference over their parent's, if set
+        my_logger_child_severity = LoggingSeverity.DEBUG
+        my_logger_child.set_severity_threshold(my_logger_child_severity)
+        self.assertEqual(my_logger_severity, my_logger.get_effective_severity_threshold())
+        self.assertEqual(
+            my_logger_child_severity,
+            my_logger_child.get_effective_severity_threshold())
+
+        # Check that severity inheritance returns if the child's threshold is cleared
+        my_logger_child_severity = LoggingSeverity.UNSET
+        my_logger_child.set_severity_threshold(my_logger_child_severity)
+        self.assertEqual(my_logger_severity, my_logger.get_effective_severity_threshold())
+        self.assertEqual(my_logger_severity, my_logger_child.get_effective_severity_threshold())
+
+        rclpy.logging.set_default_severity_threshold(original_severity)
+
 
 if __name__ == '__main__':
     unittest.main()
