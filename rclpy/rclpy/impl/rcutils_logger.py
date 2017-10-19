@@ -234,7 +234,7 @@ class RcutilsLogger:
     def is_enabled_for(self, severity):
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
-        return _rclpy_logging.rclpy_logging_is_enabled_for(self.name, severity)
+        return _rclpy_logging.rclpy_logging_logger_is_enabled_for(self.name, severity)
 
     def log(self, message, severity, **kwargs):
         r"""

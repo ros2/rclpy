@@ -105,13 +105,13 @@ rclpy_logging_set_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject
  *   the default severity threshold.
  */
 static PyObject *
-rclpy_logging_get_logger_effective_threshold(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_logging_get_logger_effective_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
 {
   const char * name;
   if (!PyArg_ParseTuple(args, "s", &name)) {
     return NULL;
   }
-  int severity = rcutils_logging_get_logger_effective_threshold(name);
+  int severity = rcutils_logging_get_logger_effective_severity_threshold(name);
 
   return PyLong_FromLong(severity);
 }
@@ -125,7 +125,7 @@ rclpy_logging_get_logger_effective_threshold(PyObject * Py_UNUSED(self), PyObjec
  *         False otherwise.
  */
 static PyObject *
-rclpy_logging_is_enabled_for(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_logging_logger_is_enabled_for(PyObject * Py_UNUSED(self), PyObject * args)
 {
   const char * name;
   int severity;
@@ -133,7 +133,7 @@ rclpy_logging_is_enabled_for(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  bool is_enabled = rcutils_logging_is_enabled_for(name, severity);
+  bool is_enabled = rcutils_logging_logger_is_enabled_for(name, severity);
   if (is_enabled) {
     Py_RETURN_TRUE;
   } else {
@@ -196,11 +196,12 @@ static PyMethodDef rclpy_logging_methods[] = {
     METH_VARARGS, "Set the severity threshold of a logger."
   },
   {
-    "rclpy_logging_get_logger_effective_threshold", rclpy_logging_get_logger_effective_threshold,
+    "rclpy_logging_get_logger_effective_severity_threshold",
+    rclpy_logging_get_logger_effective_severity_threshold,
     METH_VARARGS, "Get the effective severity threshold of a logger."
   },
   {
-    "rclpy_logging_is_enabled_for", rclpy_logging_is_enabled_for,
+    "rclpy_logging_logger_is_enabled_for", rclpy_logging_logger_is_enabled_for,
     METH_VARARGS, "Determine if a logger is enabled for a severity."
   },
   {

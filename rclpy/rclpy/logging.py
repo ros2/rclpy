@@ -61,7 +61,7 @@ def set_logger_severity_threshold(name, severity):
 
 
 def get_logger_effective_severity_threshold(name):
-    severity = _rclpy_logging.rclpy_logging_get_logger_effective_threshold(name)
+    severity = _rclpy_logging.rclpy_logging_get_logger_effective_severity_threshold(name)
     return LoggingSeverity(severity)
 
 
