@@ -234,6 +234,12 @@ class RcutilsLogger:
         severity = LoggingSeverity(severity)
         return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(self.name, severity)
 
+    def get_effective_severity_threshold(self):
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(
+            _rclpy_logging.rclpy_logging_get_logger_effective_severity_threshold(self.name))
+        return severity
+
     def is_enabled_for(self, severity):
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
