@@ -197,6 +197,13 @@ class Executor:
             response = srv.callback(request, srv.srv_type.Response())
             srv.send_response(response, header)
 
+    def _take_guard_condition(self, gc):
+        # Nothing to do
+        pass
+
+    def _execute_guard_condition(self, gc, _):
+        gc.callback()
+
     def _make_handler(self, entity, take_from_wait_list, call_callback):
         """
         Make a handler that performs work on an entity.
@@ -278,12 +285,13 @@ class Executor:
         while not yielded_work and not self._is_shutdown:
             # Gather entities that can be waited on
             subscriptions = []
-            num_guard_conditions = 2
+            guards = []
             timers = []
             clients = []
             services = []
             for node in nodes:
                 subscriptions.extend(self._filter_eligible_entities(node.subscriptions))
+                guards.extend(self._filter_eligible_entities(node.guards))
                 timers.extend(self._filter_eligible_entities(node.timers))
                 clients.extend(self._filter_eligible_entities(node.clients))
                 services.extend(self._filter_eligible_entities(node.services))
@@ -296,13 +304,14 @@ class Executor:
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     len(subscriptions),
-                    num_guard_conditions,
+                    len(guards) + 2,
                     len(timers),
                     len(clients),
                     len(services))
 
                 entities = {
                     'subscription': (subscriptions, 'subscription_handle'),
+                    'guard_condition': (guards, 'guard_handle'),
                     'client': (clients, 'client_handle'),
                     'service': (services, 'service_handle'),
                     'timer': (timers, 'timer_handle'),
@@ -313,7 +322,6 @@ class Executor:
                         _rclpy.rclpy_wait_set_add_entity(
                             entity, wait_set, h.__getattribute__(handle_name)
                         )
-                _rclpy.rclpy_wait_set_clear_entities('guard_condition', wait_set)
                 _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
                 _rclpy.rclpy_wait_set_add_entity(
                     'guard_condition', wait_set, self._guard_condition)
@@ -350,6 +358,13 @@ class Executor:
                             sub, self._take_subscription, self._execute_subscription)
                         yielded_work = True
                         yield handler, sub, node
+
+                for gc in [g for g in node.guards if g.guard_pointer in guards_ready]:
+                    if gc.callback_group.can_execute(gc):
+                        handler = self._make_handler(
+                            gc, self._take_guard_condition, self._execute_guard_condition)
+                        yielded_work = True
+                        yield handler, gc, node
 
                 for client in [c for c in node.clients if c.client_pointer in clients_ready]:
                     if client.callback_group.can_execute(client):
