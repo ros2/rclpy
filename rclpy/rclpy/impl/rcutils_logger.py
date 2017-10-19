@@ -220,6 +220,9 @@ class RcutilsLogger:
         self.name = name
         self.contexts = {}
 
+    def get_child(self, name):
+        return RcutilsLogger(name=self.name + '.' + name)
+
     def get_severity_threshold(self):
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(

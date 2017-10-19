@@ -34,11 +34,11 @@ class LoggingSeverity(IntEnum):
     FATAL = 50
 
 
+root_logger = rclpy.impl.rcutils_logger.RcutilsLogger('ros.rclpy')
+
+
 def get_named_logger(name):
-    return rclpy.impl.rcutils_logger.RcutilsLogger(name)
-
-
-root_logger = get_named_logger('')
+    return root_logger.get_child(name)
 
 
 def get_default_severity_threshold():
