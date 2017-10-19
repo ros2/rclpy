@@ -46,7 +46,7 @@ static void catch_function(int signo)
 
 /// Get a guard condition for node graph events
 /**
- * Raises TypeError if the provided argument is not a PyCapsule.
+ * Raises ValueError if the provided argument is not a PyCapsule.
  *
  * A successful call will return a list with two elements:
  *
@@ -65,12 +65,12 @@ rclpy_get_graph_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "O", &pynode)) {
     return NULL;
   }
-  if (!PyCapsule_IsValid(pynode, NULL)) {
-    PyErr_Format(PyExc_TypeError, "Expected a PyCapsule as an argument");
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  if (!node) {
     return NULL;
   }
 
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
   rcl_guard_condition_t * guard_condition =
     (rcl_guard_condition_t *)rcl_node_get_graph_guard_condition(node);
 
@@ -1579,13 +1579,15 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OO", &pynode, &pyclient)) {
     return NULL;
   }
-  if (!PyCapsule_IsValid(pynode, NULL) || !PyCapsule_IsValid(pyclient, NULL)) {
-    PyErr_Format(PyExc_ValueError, "Expected two PyCapsule as arguments");
-    return NULL;
-  }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  if (!node) {
+    return NULL;
+  }
   rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, NULL);
+  if (!client) {
+    return NULL;
+  }
 
   bool is_ready;
   rcl_ret_t ret = rcl_service_server_is_available(node, client, &is_ready);
