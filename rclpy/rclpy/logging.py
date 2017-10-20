@@ -34,7 +34,7 @@ class LoggingSeverity(IntEnum):
     FATAL = 50
 
 
-root_logger = rclpy.impl.rcutils_logger.RcutilsLogger('ros.rclpy')
+root_logger = rclpy.impl.rcutils_logger.RcutilsLogger('ros')
 
 
 def initialize():
