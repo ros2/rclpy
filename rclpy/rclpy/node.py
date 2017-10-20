@@ -19,7 +19,6 @@ from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.logging import get_named_logger
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
@@ -50,13 +49,9 @@ def check_for_type_support(msg_type):
 
 class Node:
 
-    def __init__(self, node_name, *, namespace=None, parent_logger=None):
+    def __init__(self, node_name, *, namespace=None):
         self.clients = []
         self._handle = None
-        if parent_logger:
-            self.logger = parent_logger.get_child(node_name)
-        else:
-            self.logger = get_named_logger(node_name)
         self.publishers = []
         self.services = []
         self.subscriptions = []
