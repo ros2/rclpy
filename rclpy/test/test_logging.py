@@ -231,8 +231,9 @@ class TestLogging(unittest.TestCase):
             self.assertEqual(message_was_logged, [True] + [False] * 4)
 
     def test_named_logger_hierarchy(self):
+        # Check construction of a root logger, not attached to any parents
         my_logger = rclpy.logging.get_named_logger('my_logger')
-        self.assertEqual(rclpy.logging.root_logger.name + '.my_logger', my_logger.name)
+        self.assertEqual('my_logger', my_logger.name)
 
         my_logger_child = my_logger.get_child('child')
         self.assertEqual(my_logger.name + '.child', my_logger_child.name)
