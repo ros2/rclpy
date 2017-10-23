@@ -31,6 +31,7 @@ import os
 
 try:
     rclpy_implementation = importlib.import_module('._rclpy', package='rclpy')
+    rclpy_logging_implementation = importlib.import_module('._rclpy_logging', package='rclpy')
 except ImportError as e:
     if os.path.isfile(e.path):
         e.msg += \
@@ -38,4 +39,3 @@ except ImportError as e:
             " Please refer to '%s' for possible solutions" % \
             (e.path, 'https://github.com/ros2/ros2/wiki/Rclpy-Import-error-hint')
     raise
-rclpy_logging_implementation = importlib.import_module('._rclpy_logging', package='rclpy')
