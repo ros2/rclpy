@@ -235,6 +235,12 @@ class TestLogging(unittest.TestCase):
         my_logger = rclpy.logging.get_named_logger('my_logger')
         self.assertEqual('my_logger', my_logger.name)
 
+        with self.assertRaisesRegex(ValueError, 'Child logger name should not be empty'):
+            my_logger_child = my_logger.get_child('')
+
+        with self.assertRaisesRegex(ValueError, 'Child logger name should not be empty'):
+            my_logger_child = my_logger.get_child(None)
+
         my_logger_child = my_logger.get_child('child')
         self.assertEqual(my_logger.name + '.child', my_logger_child.name)
 

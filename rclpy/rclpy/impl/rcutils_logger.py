@@ -221,6 +221,8 @@ class RcutilsLogger:
         self.contexts = {}
 
     def get_child(self, name):
+        if not name or len(name) == 0:
+            raise ValueError('Child logger name should not be empty.')
         return RcutilsLogger(name=self.name + '.' + name)
 
     def get_severity_threshold(self):
