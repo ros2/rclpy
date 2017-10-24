@@ -231,14 +231,21 @@ class TestLogging(unittest.TestCase):
             self.assertEqual(message_was_logged, [True] + [False] * 4)
 
     def test_named_logger_hierarchy(self):
-        # Check construction of a root logger, not attached to any parents
+        # Check that any logger attached to the root logger gets its severity threshold
+        with self.assertRaisesRegex(ValueError, 'Logger name must not be empty'):
+            my_logger = rclpy.logging.get_named_logger('')
+
         my_logger = rclpy.logging.get_named_logger('my_logger')
         self.assertEqual('my_logger', my_logger.name)
 
-        with self.assertRaisesRegex(ValueError, 'Child logger name should not be empty'):
+        self.assertEqual(
+            rclpy.logging.get_default_severity_threshold(),
+            my_logger.get_effective_severity_threshold())
+
+        with self.assertRaisesRegex(ValueError, 'Child logger name must not be empty'):
             my_logger_child = my_logger.get_child('')
 
-        with self.assertRaisesRegex(ValueError, 'Child logger name should not be empty'):
+        with self.assertRaisesRegex(ValueError, 'Child logger name must not be empty'):
             my_logger_child = my_logger.get_child(None)
 
         my_logger_child = my_logger.get_child('child')

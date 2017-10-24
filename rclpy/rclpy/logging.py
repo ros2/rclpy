@@ -34,11 +34,13 @@ class LoggingSeverity(IntEnum):
     FATAL = 50
 
 
+root_logger = rclpy.impl.rcutils_logger.RcutilsLogger()
+
+
 def get_named_logger(name):
-    return rclpy.impl.rcutils_logger.RcutilsLogger(name)
-
-
-root_logger = get_named_logger('')
+    if not name:
+        raise ValueError('Logger name must not be empty.')
+    return root_logger.get_child(name)
 
 
 def initialize():
