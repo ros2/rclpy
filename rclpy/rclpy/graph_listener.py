@@ -15,9 +15,11 @@
 import threading
 import traceback
 
+from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 import rclpy.logging
 from rclpy.timer import WallTimer as _WallTimer
+from rclpy.utilities import ok as _ok
 from rclpy.wait_set import WaitSet as _WaitSet
 
 
@@ -41,12 +43,16 @@ class GraphListenerSingleton:
         self._wait_set.add_guard_condition(self._gc_handle, self._gc_pointer)
 
     def __del__(self):
-        with self._lock:
-            th = self._thread
-            self._thread = None
-        if th:
-            th.join()
-        _rclpy.rclpy_destroy_entity('guard_condition', self._gc_handle)
+        self.destroy()
+
+    @classmethod
+    def destroy(cls):
+        self = getattr(cls, '__singleton')
+        if self is not None:
+            with self._lock:
+                setattr(cls, '__singleton', None)
+                self._thread = None
+            _rclpy.rclpy_destroy_entity('guard_condition', self._gc_handle)
 
     def _try_start_thread(self):
         # Assumes lock is already held
@@ -134,11 +140,16 @@ class GraphListenerSingleton:
 
     def _runner(self):
         while True:
-            # Wait forever
-            self._wait_set.wait(-1)
+            # Wait 1 second
+            self._wait_set.wait(S_TO_NS)
 
-            # notify graph event subscribers
             with self._lock:
+                # Shutdown if necessary
+                if not _ok():
+                    self.destroy()
+                    break
+
+                # notify graph event subscribers
                 if not self._thread:
                     # Asked to shut down thread
                     return
