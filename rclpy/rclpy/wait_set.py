@@ -37,9 +37,19 @@ class WaitSet:
         # rcl_wait is not thread safe, so prevent multiple wait calls at once
         self._wait_lock = threading.Lock()
 
-    def __del__(self):
+    def destroy(self):
         if self._wait_set is not None:
             _rclpy.rclpy_destroy_wait_set(self._wait_set)
+            self._wait_set = None
+
+    def __del__(self):
+        self.destroy()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, t, v, tb):
+        self.destroy()
 
     def add_subscription(self, subscription_handle, subscription_pointer):
         self._subscriptions[subscription_pointer] = subscription_handle
