@@ -18,6 +18,7 @@ from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
+from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
@@ -56,6 +57,7 @@ class Node:
         self.services = []
         self.subscriptions = []
         self.timers = []
+        self.guards = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
 
         namespace = namespace or ''
@@ -194,6 +196,15 @@ class Node:
         callback_group.add_entity(timer)
         return timer
 
+    def create_guard_condition(self, callback, callback_group=None):
+        if callback_group is None:
+            callback_group = self._default_callback_group
+        guard = GuardCondition(callback, callback_group)
+
+        self.guards.append(guard)
+        callback_group.add_entity(guard)
+        return guard
+
     def destroy_publisher(self, publisher):
         for pub in self.publishers:
             if pub.publisher_handle == publisher.publisher_handle:
@@ -239,6 +250,15 @@ class Node:
                 return True
         return False
 
+    def destroy_guard_condition(self, guard):
+        for gc in self.guards:
+            if gc.guard_handle == guard.guard_handle:
+                _rclpy.rclpy_destroy_entity(
+                    'guard_condition', gc.guard_handle)
+                self.guards.remove(gc)
+                return True
+        return False
+
     def destroy_node(self):
         ret = True
         if self.handle is None:
@@ -277,6 +297,11 @@ class Node:
             destroyed = _rclpy.rclpy_destroy_entity('timer', tmr.timer_handle)
             if destroyed:
                 self.timers.remove(tmr)
+            ret &= destroyed
+        for gc in list(self.guards):
+            destroyed = _rclpy.rclpy_destroy_entity('guard_condition', gc.guard_handle)
+            if destroyed:
+                self.guards.remove(gc)
             ret &= destroyed
         destroyed = _rclpy.rclpy_destroy_entity('node', self.handle)
         if destroyed:
