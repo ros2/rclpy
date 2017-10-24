@@ -268,7 +268,7 @@ class Node:
             _rclpy.rclpy_destroy_node_entity(srv.service_handle, self.handle)
         for tmr in self.timers:
             _rclpy.rclpy_destroy_entity(tmr.timer_handle)
-        for gc in list(self.guards):
+        for gc in self.guards:
             _rclpy.rclpy_destroy_entity(gc.guard_handle)
 
         self.timers = []
