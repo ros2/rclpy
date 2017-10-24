@@ -248,8 +248,7 @@ class Node:
     def destroy_guard_condition(self, guard):
         for gc in self.guards:
             if gc.guard_handle == guard.guard_handle:
-                _rclpy.rclpy_destroy_entity(
-                    'guard_condition', gc.guard_handle)
+                _rclpy.rclpy_destroy_entity(gc.guard_handle)
                 self.guards.remove(gc)
                 return True
         return False
