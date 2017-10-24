@@ -53,36 +53,6 @@ rclpy_logging_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   Py_RETURN_NONE;
 }
 
-/// Get the default severity threshold of the logging system.
-/**
- * \return severity
- */
-static PyObject *
-rclpy_logging_get_default_severity_threshold(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
-{
-  int severity = rcutils_logging_get_default_severity_threshold();
-
-  return PyLong_FromLong(severity);
-}
-
-/// Set the default severity threshold of the logging system.
-/**
- *
- * \param[in] severity Threshold to set
- * \return None
- */
-static PyObject *
-rclpy_logging_set_default_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  int severity;
-  if (!PyArg_ParseTuple(args, "i", &severity)) {
-    return NULL;
-  }
-
-  rcutils_logging_set_default_severity_threshold(severity);
-  Py_RETURN_NONE;
-}
-
 /// Get the severity threshold of a logger.
 /**
  * \param[in] name Fully-qualified name of logger.
@@ -229,14 +199,6 @@ static PyMethodDef rclpy_logging_methods[] = {
   {
     "rclpy_logging_shutdown", rclpy_logging_shutdown, METH_NOARGS,
     "Shutdown the logging system."
-  },
-  {
-    "rclpy_logging_get_default_severity_threshold", rclpy_logging_get_default_severity_threshold,
-    METH_NOARGS, "Get the global severity threshold."
-  },
-  {
-    "rclpy_logging_set_default_severity_threshold", rclpy_logging_set_default_severity_threshold,
-    METH_VARARGS, "Set the global severity threshold."
   },
   {
     "rclpy_logging_get_logger_severity_threshold", rclpy_logging_get_logger_severity_threshold,

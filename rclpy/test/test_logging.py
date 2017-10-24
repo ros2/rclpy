@@ -22,12 +22,12 @@ from rclpy.logging import LoggingSeverity
 
 class TestLogging(unittest.TestCase):
 
-    def test_default_severity_threshold(self):
-        original_severity = rclpy.logging.get_default_severity_threshold()
+    def test_root_logger_severity_threshold(self):
+        original_severity = rclpy.logging.root_logger.get_severity_threshold()
         for severity in LoggingSeverity:
-            rclpy.logging.set_default_severity_threshold(severity)
-            self.assertEqual(severity, rclpy.logging.get_default_severity_threshold())
-        rclpy.logging.set_default_severity_threshold(original_severity)
+            rclpy.logging.root_logger.set_severity_threshold(severity)
+            self.assertEqual(severity, rclpy.logging.root_logger.get_severity_threshold())
+        rclpy.logging.root_logger.set_severity_threshold(original_severity)
 
     def test_logger_severity_threshold(self):
         # We should be able to set the threshold of a nonexistent logger / one that doesn't
@@ -49,13 +49,13 @@ class TestLogging(unittest.TestCase):
     def test_logger_effective_severity_threshold(self):
         name = 'my_nonexistent_logger_name'
         self.assertEqual(
-            rclpy.logging.get_default_severity_threshold(),
+            rclpy.logging.root_logger.get_severity_threshold(),
             rclpy.logging.get_logger_effective_severity_threshold(name))
 
         # Check that the effective threshold for a logger with manually unset severity is default
         rclpy.logging.set_logger_severity_threshold(name, LoggingSeverity.UNSET)
         self.assertEqual(
-            rclpy.logging.get_default_severity_threshold(),
+            rclpy.logging.root_logger.get_severity_threshold(),
             rclpy.logging.get_logger_effective_severity_threshold(name))
         # Check that the effective threshold for a logger with set severity
         rclpy.logging.set_logger_severity_threshold(name, LoggingSeverity.ERROR)
@@ -231,15 +231,16 @@ class TestLogging(unittest.TestCase):
             self.assertEqual(message_was_logged, [True] + [False] * 4)
 
     def test_named_logger_hierarchy(self):
-        # Check that any logger attached to the root logger gets its severity threshold
+        # Create a logger that implicitly is a child of the un-named root logger
         with self.assertRaisesRegex(ValueError, 'Logger name must not be empty'):
             my_logger = rclpy.logging.get_named_logger('')
 
         my_logger = rclpy.logging.get_named_logger('my_logger')
         self.assertEqual('my_logger', my_logger.name)
 
+        # Check that any logger gets the severity threshold of the root logger by default
         self.assertEqual(
-            rclpy.logging.get_default_severity_threshold(),
+            rclpy.logging.root_logger.get_severity_threshold(),
             my_logger.get_effective_severity_threshold())
 
         with self.assertRaisesRegex(ValueError, 'Child logger name must not be empty'):
@@ -251,11 +252,11 @@ class TestLogging(unittest.TestCase):
         my_logger_child = my_logger.get_child('child')
         self.assertEqual(my_logger.name + '.child', my_logger_child.name)
 
-        original_severity = rclpy.logging.get_default_severity_threshold()
+        original_severity = rclpy.logging.root_logger.get_severity_threshold()
         default_severity = LoggingSeverity.INFO
-        rclpy.logging.set_default_severity_threshold(default_severity)
+        rclpy.logging.root_logger.set_severity_threshold(default_severity)
 
-        # Check that children get the default severity if parent unset
+        # Check that children get the default severity if parent's threshold is unset
         self.assertEqual(default_severity, my_logger.get_effective_severity_threshold())
         self.assertEqual(default_severity, my_logger_child.get_effective_severity_threshold())
 
@@ -279,7 +280,7 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(my_logger_severity, my_logger.get_effective_severity_threshold())
         self.assertEqual(my_logger_severity, my_logger_child.get_effective_severity_threshold())
 
-        rclpy.logging.set_default_severity_threshold(original_severity)
+        rclpy.logging.root_logger.set_severity_threshold(original_severity)
 
     def test_clear_config(self):
         my_logger = rclpy.logging.get_named_logger('my_temp_logger')
@@ -288,7 +289,7 @@ class TestLogging(unittest.TestCase):
         rclpy.logging.clear_config()
         self.assertNotEqual(LoggingSeverity.WARN, my_logger.get_effective_severity_threshold())
         self.assertEqual(
-            rclpy.logging.get_default_severity_threshold(),
+            rclpy.logging.root_logger.get_severity_threshold(),
             my_logger.get_effective_severity_threshold())
 
 
