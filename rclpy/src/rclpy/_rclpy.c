@@ -122,10 +122,10 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(ar
 
 /// Trigger a general purpose guard condition
 /**
- * Raises ValueError if the guard condition is not a capsule of the correcttype
+ * Raises ValueError if pygc is not a guard condition capsule
  * Raises RuntimeError if the guard condition could not be triggered
  *
- * \param[in] guard_condition Capsule pointing to guard condtition
+ * \param[in] pygc Capsule pointing to guard condtition
  */
 static PyObject *
 rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
@@ -248,7 +248,7 @@ rclpy_get_node_name(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Get the namespace of a node.
 /**
- * Raises ValueError if not passed a node capsule
+ * Raises ValueError if pynode is not a node capsule
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from
  * \return namespace, or
@@ -713,7 +713,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Publish a message
 /**
- * Raises ValueError if the capsule is not a publisher pointer
+ * Raises ValueError if pypublisher is not a publisher capsule
  * Raises RuntimeError if the message cannot be published
  *
  * \param[in] pypublisher Capsule pointing to the publisher
@@ -824,7 +824,7 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Returns the period of the timer in nanoseconds
 /**
- * Raises ValueError if capsule is not a timer capsule
+ * Raises ValueError if pytimer is not a timer capsule
  * Raises RuntimeError if the timer period cannot be retrieved
  *
  * \param[in] pytimer Capsule pointing to the timer
@@ -856,8 +856,8 @@ rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Cancel the timer
 /**
- * Raises ValueError if capsule is not a timer
- * Raises RuntimeError if the timmer cannot be cancelled
+ * Raises ValueError if pytimer is not a timer capsule
+ * Raises RuntimeError if the timmer cannot be canceled
  *
  * \param[in] pytimer Capsule pointing to the timer
  * \return NULL on failure:
@@ -888,7 +888,7 @@ rclpy_cancel_timer(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Checks if timer is cancelled
 /**
- * Raises ValueError if capsule is not a timer
+ * Raises ValueError if pytimer is not a timer capsule
  * Raises Runtime error if there is an rcl error
  *
  * \param[in] pytimer Capsule pointing to the timer
@@ -955,7 +955,7 @@ rclpy_reset_timer(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Checks if timer reached its timeout
 /**
- *  Raises ValueError if capsule is not a timer
+ *  Raises ValueError if pytimer is not a timer capsule
  *  Raises RuntimeError if there is an rcl error
  *
  * \param[in] pytimer Capsule pointing to the timer
@@ -990,7 +990,7 @@ rclpy_is_timer_ready(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Set the last call time and start counting again
 /**
- * Raises ValueError if capsule is not a timer
+ * Raises ValueError if pytimer is not a timer capsule
  * Raises RuntimeError if there is an rcl error
  *
  * \param[in] pytimer Capsule pointing to the timer
@@ -1024,7 +1024,7 @@ rclpy_call_timer(PyObject * Py_UNUSED(self), PyObject * args)
 /**
  * The change in period will take effect after the next timer call
  *
- * Raises ValueError if the capsule is not a timer
+ * Raises ValueError if pytimer is not a timer capsule
  * Raises RuntimeError if the timer perioud could not be changed
  *
  * \param[in] pytimer Capsule pointing to the timer
@@ -1060,7 +1060,7 @@ rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
 /**
  * the returned time can be negative, this means that the timer is ready and hasn't been called yet
  *
- * Raises ValueError if the capsule is not a timer
+ * Raises ValueError if pytimer is not a timer capsule
  * Raises RuntimeError there is an rcl error
  *
  * \param[in] pytimer Capsule pointing to the timer
@@ -1129,7 +1129,7 @@ rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
  * - a Capsule pointing to the pointer of the created rcl_subscription_t * structure
  * - an integer representing the memory address of the created rcl_subscription_t
  *
- * Raises ValueError if the capsule is not a node
+ * Raises ValueError if the capsules are not the correct types
  * Raises RuntimeError if the subscription could not be created
  *
  * \param[in] pynode Capsule pointing to the node to add the subscriber to
@@ -1219,7 +1219,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
  * - a Capsule pointing to the pointer of the created rcl_client_t * structure
  * - an integer representing the memory address of the created rcl_client_t
  *
- * Raises ValueError if the capsule is not a node
+ * Raises ValueError if the capsules are not the correct types
  * Raises RuntimeError if the client could not be created
  *
  * \param[in] pynode Capsule pointing to the node to add the client to
@@ -1300,7 +1300,7 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Publish a request message
 /**
- * Raises ValueError if the capsule is not a client
+ * Raises ValueError if pyclient is not a client capsule
  * Raises RuntimeError if the request could not be sent
  *
  * \param[in] pyclient Capsule pointing to the client
@@ -1376,7 +1376,7 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
  * - a Capsule pointing to the pointer of the created rcl_service_t * structure
  * - an integer representing the memory address of the created rcl_service_t
  *
- * Raises ValueError if the capsule is not a node
+ * Raises ValueError if the capsules are not the correct types
  * Raises RuntimeError if the service could not be created
  *
  * \param[in] pynode Capsule pointing to the node to add the service to
@@ -1454,7 +1454,7 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Publish a response message
 /**
- * Raises ValueError if the capsule is not a service
+ * Raises ValueError if pyservice is not a service capsule
  * Raises RuntimeError if the response could not be sent
  *
  * \param[in] pyservice Capsule pointing to the service
@@ -1722,7 +1722,7 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Clear all the pointers of a given wait_set field
 /**
- * Raises RuntimeError if the entity type is unknown or any rcl error occurrs
+ * Raises RuntimeError if the entity type is unknown or any rcl error occurs
  *
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
  * \param[in] pywait_set Capsule pointing to the waitset structure
@@ -1880,7 +1880,7 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
   return entity_ready_list;
 /// Get list of non-null entities in waitset
 /**
- * Raises ValueError if the capsule is invalid or of the wrong type
+ * Raises ValueError if pywait_set is not a wait_set capsule
  * Raises RuntimeError if the entity type is not known
  *
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
@@ -1923,7 +1923,7 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Wait until timeout is reached or event happened
 /**
- * Raises ValueError if the wait set is not a capsule or is of the wrong type
+ * Raises ValueError if pywait_set is not a wait_set capsule
  * Raises RuntimeError if there was an error while waiting
  *
  * This function will wait for an event to happen or for the timeout to expire.
@@ -2048,7 +2048,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Take a request from a given service
 /**
- * Raises ValueError if the service is not a capsule or is of the wrong type
+ * Raises ValueError if pyservice is not a service capsule
  *
  * \param[in] pyservice Capsule pointing to the service to process the request
  * \param[in] pyrequest_type Instance of the message type to take
@@ -2138,7 +2138,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Take a response from a given client
 /**
- * Raises ValueError if the client is not a capsule or is of the wrong type
+ * Raises ValueError if pyclient is not a client capsule
  *
  * \param[in] pyclient Capsule pointing to the client to process the response
  * \param[in] pyresponse_type Instance of the message type to take
@@ -2247,7 +2247,7 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 
 /// Get the list of nodes discovered by the provided node
 /**
- *  Raises ValueError if the capsule is not a node or is the wrong type
+ *  Raises ValueError if pynode is not a node capsule
  *  Raises RuntimeError  if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node
