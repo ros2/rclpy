@@ -51,7 +51,7 @@ class TestWaitSet(unittest.TestCase):
             ws.wait(0)
             self.assertFalse(ws.is_ready(gc_pointer))
         finally:
-            _rclpy.rclpy_destroy_entity('guard_condition', gc_handle)
+            _rclpy.rclpy_destroy_entity(gc_handle)
 
     def test_timer_ready(self):
         ws = WaitSet()
@@ -70,7 +70,7 @@ class TestWaitSet(unittest.TestCase):
             ws.wait(0)
             self.assertFalse(ws.is_ready(timer_pointer))
         finally:
-            _rclpy.rclpy_destroy_entity('timer', timer_handle)
+            _rclpy.rclpy_destroy_entity(timer_handle)
 
     def test_subscriber_ready(self):
         ws = WaitSet()

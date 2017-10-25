@@ -305,7 +305,7 @@ class Executor:
                 # Check sigint guard condition
                 if wait_set.is_ready(sigint_gc_handle):
                     raise KeyboardInterrupt
-                _rclpy.rclpy_destroy_entity('guard_condition', sigint_gc)
+                _rclpy.rclpy_destroy_entity(sigint_gc)
 
                 # Mark all guards as triggered before yielding since they're auto-taken
                 for gc in [g for g in guards if wait_set.is_ready(g.guard_pointer)]:

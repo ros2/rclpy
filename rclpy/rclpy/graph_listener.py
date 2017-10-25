@@ -52,7 +52,7 @@ class GraphListenerSingleton:
             with self._lock:
                 setattr(cls, '__singleton', None)
                 self._thread = None
-            _rclpy.rclpy_destroy_entity('guard_condition', self._gc_handle)
+            _rclpy.rclpy_destroy_entity(self._gc_handle)
 
     def _try_start_thread(self):
         # Assumes lock is already held
