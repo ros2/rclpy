@@ -80,6 +80,15 @@ class TestNode(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_service_names_and_types()
 
+    def test_topic_names_and_types(self):
+        # test that it doesn't raise
+        self.node.get_topic_names_and_types(no_demangle=True)
+        self.node.get_topic_names_and_types(no_demangle=False)
+
+    def test_node_names(self):
+        # test that it doesn't raise
+        self.node.get_node_names()
+
 
 if __name__ == '__main__':
     unittest.main()
