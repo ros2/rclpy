@@ -1195,7 +1195,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
         topic, rcl_get_error_string_safe());
     } else {
       PyErr_Format(PyExc_RuntimeError,
-        "Failed to create subscriptions: %s", rcl_get_error_string_safe());
+        "Failed to create subscription: %s", rcl_get_error_string_safe());
     }
     Py_DECREF(pysubscription);
     rcl_reset_error();
@@ -1575,7 +1575,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(service);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError, "%s is not a known node entity", PyCapsule_GetName(pyentity));
+    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known node entity", PyCapsule_GetName(pyentity));
     return NULL;
   }
   if (ret != RCL_RET_OK) {
@@ -1629,7 +1629,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(guard_condition);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError, "unknown entity type (%s)", PyCapsule_GetName(pyentity));
+    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", PyCapsule_GetName(pyentity));
     return NULL;
   }
   if (ret != RCL_RET_OK) {
@@ -1756,7 +1756,7 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
-      "%s is not a known entity", entity_type);
+      "'%s' is not a known entity", entity_type);
     return NULL;
   }
   if (ret != RCL_RET_OK) {
@@ -1815,7 +1815,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
-      "%s is not a known entity", entity_type);
+      "'%s' is not a known entity", entity_type);
     return NULL;
   }
   if (ret != RCL_RET_OK) {
@@ -1914,7 +1914,7 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     GET_LIST_READY_ENTITIES(guard_condition)
   } else {
     PyErr_Format(PyExc_RuntimeError,
-      "%s is not a known entity", entity_type);
+      "'%s' is not a known entity", entity_type);
     return NULL;
   }
 
@@ -2536,7 +2536,7 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
     pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_parameter_events);
   } else {
     PyErr_Format(PyExc_RuntimeError,
-      "Requested unknown rmw_qos_profile: %s", pyrmw_profile);
+      "Requested unknown rmw_qos_profile: '%s'", pyrmw_profile);
     return NULL;
   }
   return pyqos_profile;
