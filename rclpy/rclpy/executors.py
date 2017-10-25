@@ -110,14 +110,14 @@ class Executor:
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
             self._nodes = set()
-        _rclpy.rclpy_destroy_entity('guard_condition', self._guard_condition)
+        _rclpy.rclpy_destroy_entity(self._guard_condition)
 
         self._guard_condition = None
         return True
 
     def __del__(self):
         if self._guard_condition is not None:
-            _rclpy.rclpy_destroy_entity('guard_condition', self._guard_condition)
+            _rclpy.rclpy_destroy_entity(self._guard_condition)
 
     def add_node(self, node):
         """
@@ -343,7 +343,7 @@ class Executor:
             # Check sigint guard condition
             if sigint_gc_handle in guards_ready:
                 raise KeyboardInterrupt
-            _rclpy.rclpy_destroy_entity('guard_condition', sigint_gc)
+            _rclpy.rclpy_destroy_entity(sigint_gc)
 
             # Mark all guards as triggered before yielding any handlers since they're auto-taken
             for gc in [g for g in guards if g.guard_pointer in guards_ready]:
