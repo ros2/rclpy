@@ -76,6 +76,10 @@ class TestNode(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
             self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req: None)
 
+    def test_service_names_and_types(self):
+        # test that it doesn't raise
+        self.node.get_service_names_and_types()
+
 
 if __name__ == '__main__':
     unittest.main()
