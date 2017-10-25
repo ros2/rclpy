@@ -1176,8 +1176,8 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pysubscription = PyCapsule_New(subscription, "rcl_subscription_t", NULL);
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
-  if (PyCapsule_IsValid(pyqos_profile, NULL)) {
-    void * p = PyCapsule_GetPointer(pyqos_profile, NULL);
+  if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
+    void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     subscription_ops.qos = *qos_profile;
     PyMem_Free(p);
@@ -1454,7 +1454,7 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Publish a response message
 /**
- * Raises ValueError if pyservice is not a service capsule
+ * Raises ValueError if the capsules are not the correct types
  * Raises RuntimeError if the response could not be sent
  *
  * \param[in] pyservice Capsule pointing to the service
@@ -2299,6 +2299,7 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Get the list of topics discovered by the provided node
 /**
+ * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node
@@ -2369,6 +2370,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Get the list of services discovered by the provided node
 /**
+ * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node
@@ -2384,7 +2386,7 @@ rclpy_get_service_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, NULL);
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
   if (!node) {
     return NULL;
   }
