@@ -1575,7 +1575,8 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(service);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known node entity", PyCapsule_GetName(pyentity));
+    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known node entity",
+      PyCapsule_GetName(pyentity));
     return NULL;
   }
   if (ret != RCL_RET_OK) {
