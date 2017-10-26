@@ -32,7 +32,7 @@ import os
 try:
     rclpy_implementation = importlib.import_module('._rclpy', package='rclpy')
 except ImportError as e:
-    if os.path.isfile(e.path):
+    if e.path is not None and os.path.isfile(e.path):
         e.msg += \
             "\nThe C extension '%s' failed to be imported while being present on the system." \
             " Please refer to '%s' for possible solutions" % \
