@@ -354,9 +354,10 @@ class Executor:
                             yield handler, srv, node
 
                 # Check timeout timer
-                if (timeout_nsec == 0 or
-                        (timeout_timer is not None and wait_set.is_ready(
-                            timeout_timer.timer_pointer))):
+                if (
+                    timeout_nsec == 0 or
+                    (timeout_timer is not None and wait_set.is_ready(timeout_timer.timer_pointer))
+                ):
                     break
 
 
