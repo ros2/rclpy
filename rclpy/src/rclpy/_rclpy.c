@@ -1441,7 +1441,7 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
       PyErr_Format(PyExc_RuntimeError,
         "Failed to create service: %s", rcl_get_error_string_safe());
     }
-    Py_DECREF(service);
+    Py_DECREF(pyservice);
     rcl_reset_error();
     return NULL;
   }
