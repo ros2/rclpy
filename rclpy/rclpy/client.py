@@ -14,7 +14,7 @@
 
 import threading
 
-from rclpy.graph_listener import GraphEventSubscription as _GraphEventSubscription
+from rclpy.graph_listener import GraphEventSubscription
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 import rclpy.utilities
 
@@ -110,7 +110,7 @@ class Client:
             nonlocal event
             event.set()
 
-        with _GraphEventSubscription(self.node_handle, on_graph_event, timeout_nsec, on_timeout):
+        with GraphEventSubscription(self.node_handle, on_graph_event, timeout_nsec, on_timeout):
             event.wait()
 
         return result
