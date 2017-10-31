@@ -18,9 +18,9 @@ import traceback
 from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 import rclpy.logging
-from rclpy.timer import WallTimer as _WallTimer
-from rclpy.utilities import ok as _ok
-from rclpy.wait_set import WaitSet as _WaitSet
+from rclpy.timer import WallTimer
+from rclpy.utilities import ok
+from rclpy.wait_set import WaitSet
 
 
 class GraphListenerSingleton:
@@ -39,7 +39,7 @@ class GraphListenerSingleton:
         self._gc_handle, self._gc_pointer = _rclpy.rclpy_create_guard_condition()
         self._thread = None
         self._lock = threading.RLock()
-        self._wait_set = _WaitSet()
+        self._wait_set = WaitSet()
         self._wait_set.add_guard_condition(self._gc_handle, self._gc_pointer)
 
     def __del__(self):
@@ -71,7 +71,7 @@ class GraphListenerSingleton:
         :rtype: rclpy.timer.WallTimer
         """
         with self._lock:
-            tmr = _WallTimer(callback, None, timer_period_ns)
+            tmr = WallTimer(callback, None, timer_period_ns)
             self._timers[tmr] = callback
             self._wait_set.add_timer(tmr.timer_handle, tmr.timer_pointer)
 
@@ -145,7 +145,7 @@ class GraphListenerSingleton:
 
             with self._lock:
                 # Shutdown if necessary
-                if not _ok():
+                if not ok():
                     self.destroy()
                     break
 

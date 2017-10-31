@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from concurrent.futures import ThreadPoolExecutor as _ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
-from threading import Condition as _Condition
-from threading import Lock as _Lock
+from threading import Condition
+from threading import Lock
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.timer import WallTimer as _WallTimer
+from rclpy.timer import WallTimer
 from rclpy.utilities import ok
 from rclpy.utilities import timeout_sec_to_nsec
-from rclpy.wait_set import WaitSet as _WaitSet
+from rclpy.wait_set import WaitSet
 
 
 class _WorkTracker:
@@ -30,7 +30,7 @@ class _WorkTracker:
     def __init__(self):
         # Number of tasks that are being executed
         self._num_work_executing = 0
-        self._work_condition = _Condition()
+        self._work_condition = Condition()
 
     def __enter__(self):
         """Increment the amount of executing work by 1."""
@@ -77,7 +77,7 @@ class Executor:
     def __init__(self):
         super().__init__()
         self._nodes = set()
-        self._nodes_lock = _Lock()
+        self._nodes_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         gc, gc_handle = _rclpy.rclpy_create_guard_condition()
         self._guard_condition = gc
@@ -261,7 +261,7 @@ class Executor:
         timeout_timer = None
         timeout_nsec = timeout_sec_to_nsec(timeout_sec)
         if timeout_nsec > 0:
-            timeout_timer = _WallTimer(None, None, timeout_nsec)
+            timeout_timer = WallTimer(None, None, timeout_nsec)
 
         if nodes is None:
             nodes = self.get_nodes()
@@ -290,7 +290,7 @@ class Executor:
                 timers.append(timeout_timer)
 
             # Construct a wait set
-            with _WaitSet() as wait_set:
+            with WaitSet() as wait_set:
                 wait_set.add_subscriptions(subscriptions)
                 wait_set.add_clients(clients)
                 wait_set.add_services(services)
@@ -392,7 +392,7 @@ class MultiThreadedExecutor(Executor):
                 num_threads = multiprocessing.cpu_count()
             except NotImplementedError:
                 num_threads = 1
-        self._executor = _ThreadPoolExecutor(num_threads)
+        self._executor = ThreadPoolExecutor(num_threads)
 
     def spin_once(self, timeout_sec=None):
         try:
