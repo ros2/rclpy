@@ -148,7 +148,7 @@ class Executor:
         :type timeout_sec: float or None
         :rtype: None
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _take_timer(self, tmr):
         _rclpy.rclpy_call_timer(tmr.timer_handle)
@@ -304,7 +304,7 @@ class Executor:
 
                 # Check sigint guard condition
                 if wait_set.is_ready(sigint_gc_handle):
-                    raise KeyboardInterrupt
+                    raise KeyboardInterrupt()
                 _rclpy.rclpy_destroy_entity(sigint_gc)
 
                 # Mark all guards as triggered before yielding since they're auto-taken
