@@ -32,7 +32,7 @@ class WaitSet:
         self._services = {}
 
         # Set when the wait set needs to be built or rebuilt
-        self._needs_building = True
+        self._need_resize = True
         self._wait_set = None
         # rcl_wait is not thread safe, so prevent multiple wait calls at once
         self._wait_lock = threading.Lock()
@@ -53,7 +53,7 @@ class WaitSet:
 
     def add_subscription(self, subscription_handle, subscription_pointer):
         self._subscriptions[subscription_pointer] = subscription_handle
-        self._needs_building = True
+        self._need_resize = True
 
     def add_subscriptions(self, subscriptions):
         for sub in subscriptions:
@@ -61,11 +61,11 @@ class WaitSet:
 
     def remove_subscription(self, subscription_pointer):
         del self._subscriptions[subscription_pointer]
-        self._needs_building = True
+        self._need_resize = True
 
     def add_guard_condition(self, gc_handle, gc_pointer):
         self._guard_conditions[gc_pointer] = gc_handle
-        self._needs_building = True
+        self._need_resize = True
 
     def add_guard_conditions(self, guards):
         for gc in guards:
@@ -73,11 +73,11 @@ class WaitSet:
 
     def remove_guard_condition(self, gc_pointer):
         del self._guard_conditions[gc_pointer]
-        self._needs_building = True
+        self._need_resize = True
 
     def add_timer(self, timer_handle, timer_pointer):
         self._timers[timer_pointer] = timer_handle
-        self._needs_building = True
+        self._need_resize = True
 
     def add_timers(self, timers):
         for tmr in timers:
@@ -85,11 +85,11 @@ class WaitSet:
 
     def remove_timer(self, timer_pointer):
         del self._timers[timer_pointer]
-        self._needs_building = True
+        self._need_resize = True
 
     def add_client(self, client_handle, client_pointer):
         self._clients[client_pointer] = client_handle
-        self._needs_building = True
+        self._need_resize = True
 
     def add_clients(self, clients):
         for cli in clients:
@@ -97,11 +97,11 @@ class WaitSet:
 
     def remove_client(self, client_pointer):
         del self._clients[client_pointer]
-        self._needs_building = True
+        self._need_resize = True
 
     def add_service(self, service_handle, service_pointer):
         self._services[service_pointer] = service_handle
-        self._needs_building = True
+        self._need_resize = True
 
     def add_services(self, services):
         for srv in services:
@@ -109,11 +109,12 @@ class WaitSet:
 
     def remove_service(self, service_pointer):
         del self._services[service_pointer]
-        self._needs_building = True
+        self._need_resize = True
 
     def wait(self, timeout_nsec):
         with self._wait_lock:
-            if self._needs_building:
+            if self._need_resize:
+                self._need_resize = False
                 if self._wait_set is not None:
                     _rclpy.rclpy_destroy_wait_set(self._wait_set)
 
@@ -126,22 +127,22 @@ class WaitSet:
                     len(self._clients),
                     len(self._services))
 
-                _rclpy.rclpy_wait_set_clear_entities('subscription', self._wait_set)
-                _rclpy.rclpy_wait_set_clear_entities('guard_condition', self._wait_set)
-                _rclpy.rclpy_wait_set_clear_entities('timer', self._wait_set)
-                _rclpy.rclpy_wait_set_clear_entities('client', self._wait_set)
-                _rclpy.rclpy_wait_set_clear_entities('service', self._wait_set)
+            _rclpy.rclpy_wait_set_clear_entities('subscription', self._wait_set)
+            _rclpy.rclpy_wait_set_clear_entities('guard_condition', self._wait_set)
+            _rclpy.rclpy_wait_set_clear_entities('timer', self._wait_set)
+            _rclpy.rclpy_wait_set_clear_entities('client', self._wait_set)
+            _rclpy.rclpy_wait_set_clear_entities('service', self._wait_set)
 
-                for handle in self._subscriptions.values():
-                    _rclpy.rclpy_wait_set_add_entity('subscription', self._wait_set, handle)
-                for handle in self._guard_conditions.values():
-                    _rclpy.rclpy_wait_set_add_entity('guard_condition', self._wait_set, handle)
-                for handle in self._timers.values():
-                    _rclpy.rclpy_wait_set_add_entity('timer', self._wait_set, handle)
-                for handle in self._clients.values():
-                    _rclpy.rclpy_wait_set_add_entity('client', self._wait_set, handle)
-                for handle in self._services.values():
-                    _rclpy.rclpy_wait_set_add_entity('service', self._wait_set, handle)
+            for handle in self._subscriptions.values():
+                _rclpy.rclpy_wait_set_add_entity('subscription', self._wait_set, handle)
+            for handle in self._guard_conditions.values():
+                _rclpy.rclpy_wait_set_add_entity('guard_condition', self._wait_set, handle)
+            for handle in self._timers.values():
+                _rclpy.rclpy_wait_set_add_entity('timer', self._wait_set, handle)
+            for handle in self._clients.values():
+                _rclpy.rclpy_wait_set_add_entity('client', self._wait_set, handle)
+            for handle in self._services.values():
+                _rclpy.rclpy_wait_set_add_entity('service', self._wait_set, handle)
 
             _rclpy.rclpy_wait(self._wait_set, timeout_nsec)
 
