@@ -687,11 +687,6 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     publisher_ops.qos = *qos_profile;
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
@@ -1180,11 +1175,6 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     subscription_ops.qos = *qos_profile;
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
@@ -1270,11 +1260,6 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     client_ops.qos = *qos_profile;
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
@@ -1424,11 +1409,6 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     service_ops.qos = *qos_profile;
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
