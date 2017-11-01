@@ -385,13 +385,18 @@ class SingleThreadedExecutor(Executor):
 
     def __init__(self):
         super().__init__()
+        self._callback_iter = None
 
     def spin_once(self, timeout_sec=None):
+        # Reuse the same callback iterator to avoid unecessary calls to rcl_wait
+        if self._callback_iter is None:
+            self._callback_iter = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
         try:
-            handler, entity, node = next(self.wait_for_ready_callbacks(timeout_sec=timeout_sec))
-            handler()
+            handler, entity, node = next(self._callback_iter)
         except StopIteration:
-            pass
+            self._callback_iter = None
+        else:
+            handler()
 
 
 class MultiThreadedExecutor(Executor):
@@ -407,6 +412,7 @@ class MultiThreadedExecutor(Executor):
         :type num_threads: int
         """
         super().__init__()
+        self._callback_iter = None
         if num_threads is None:
             try:
                 num_threads = multiprocessing.cpu_count()
@@ -415,8 +421,12 @@ class MultiThreadedExecutor(Executor):
         self._executor = ThreadPoolExecutor(num_threads)
 
     def spin_once(self, timeout_sec=None):
+        # Reuse the same callback iterator to avoid unecessary calls to rcl_wait
+        if self._callback_iter is None:
+            self._callback_iter = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
         try:
-            handler, entity, node = next(self.wait_for_ready_callbacks(timeout_sec=timeout_sec))
-            self._executor.submit(handler)
+            handler, entity, node = next(self._callback_iter)
         except StopIteration:
-            pass
+            self._callback_iter = None
+        else:
+            self._executor.submit(handler)
