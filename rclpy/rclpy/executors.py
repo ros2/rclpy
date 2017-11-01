@@ -254,7 +254,7 @@ class Executor:
 
     def _new_callbacks(self, nodes, wait_set):
         """
-        Yields brand new work to executor implementations.
+        Yield brand new work to executor implementations.
 
         :param nodes: nodes to yield work for
         :type nodes: list
