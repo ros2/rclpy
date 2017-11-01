@@ -17,7 +17,7 @@ from enum import IntEnum
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-class QoSProfile(object):
+class QoSProfile:
     """Define Quality of Service policies."""
 
     __slots__ = [
@@ -25,11 +25,12 @@ class QoSProfile(object):
         '_depth',
         '_reliability',
         '_durability',
+        '_avoid_ros_namespace_conventions',
     ]
 
     def __init__(self, **kwargs):
-        assert all(['_' + key in self.__slots__ for key in kwargs.keys()]), \
-            "Invalid arguments passed to constructor: %r" % kwargs.keys()
+        assert all('_' + key in self.__slots__ for key in kwargs.keys()), \
+            'Invalid arguments passed to constructor: %r' % kwargs.keys()
         self.history = kwargs.get(
             'history',
             QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT)
@@ -40,6 +41,9 @@ class QoSProfile(object):
         self.durability = kwargs.get(
             'durability',
             QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT)
+        self.avoid_ros_namespace_conventions = kwargs.get(
+            'avoid_ros_namespace_conventions',
+            False)
 
     @property
     def history(self):
@@ -101,9 +105,29 @@ class QoSProfile(object):
         assert isinstance(value, int)
         self._depth = value
 
+    @property
+    def avoid_ros_namespace_conventions(self):
+        """
+        Get field 'avoid_ros_namespace_conventions'.
+
+        :returns: avoid_ros_namespace_conventions attribute
+        :rtype: bool
+        """
+        return self._avoid_ros_namespace_conventions
+
+    @avoid_ros_namespace_conventions.setter
+    def avoid_ros_namespace_conventions(self, value):
+        assert isinstance(value, bool)
+        self._avoid_ros_namespace_conventions = value
+
     def get_c_qos_profile(self):
         return _rclpy.rclpy_convert_from_py_qos_policy(
-            self.history, self.depth, self.reliability, self.durability)
+            self.history,
+            self.depth,
+            self.reliability,
+            self.durability,
+            self.avoid_ros_namespace_conventions,
+        )
 
 
 class QoSHistoryPolicy(IntEnum):

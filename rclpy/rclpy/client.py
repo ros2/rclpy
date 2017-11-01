@@ -15,22 +15,38 @@
 import threading
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+import rclpy.utilities
 
 
 class ResponseThread(threading.Thread):
+
     def __init__(self, client):
         threading.Thread.__init__(self)
         self.client = client
         self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(self.wait_set, 0, 0, 0, 1, 0)
+        _rclpy.rclpy_wait_set_init(self.wait_set, 0, 1, 0, 1, 0)
         _rclpy.rclpy_wait_set_clear_entities('client', self.wait_set)
         _rclpy.rclpy_wait_set_add_entity(
             'client', self.wait_set, self.client.client_handle)
 
     def run(self):
+        [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
+        _rclpy.rclpy_wait_set_add_entity('guard_condition', self.wait_set, sigint_gc)
+
         _rclpy.rclpy_wait(self.wait_set, -1)
+
+        guard_condition_ready_list = \
+            _rclpy.rclpy_get_ready_entities('guard_condition', self.wait_set)
+
+        # destroying here to make sure we dont call shutdown before cleaning up
+        _rclpy.rclpy_destroy_entity(sigint_gc)
+        if sigint_gc_handle in guard_condition_ready_list:
+            rclpy.utilities.shutdown()
+            return
         response = _rclpy.rclpy_take_response(
-            self.client.client_handle, self.client.srv_type.Response, self.client.sequence_number)
+            self.client.client_handle,
+            self.client.srv_type.Response,
+            self.client.sequence_number)
         if response:
             self.client.response = response
 
@@ -38,7 +54,7 @@ class ResponseThread(threading.Thread):
 class Client:
     def __init__(
             self, node_handle, client_handle, client_pointer,
-            srv_type, srv_name, qos_profile):
+            srv_type, srv_name, qos_profile, callback_group):
         self.node_handle = node_handle
         self.client_handle = client_handle
         self.client_pointer = client_pointer
@@ -47,6 +63,9 @@ class Client:
         self.qos_profile = qos_profile
         self.sequence_number = 0
         self.response = None
+        self.callback_group = callback_group
+        # True when the callback is ready to fire but has not been "taken" by an executor
+        self._executor_event = False
 
     def call(self, req):
         self.response = None

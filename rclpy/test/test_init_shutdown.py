@@ -20,7 +20,7 @@ import traceback
 def run_catch_report_raise(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
-    except:
+    except Exception:
         print('exception in {0}():'.format(func.__name__), file=sys.stderr)
         traceback.print_exc()
         raise
@@ -83,6 +83,16 @@ def func_double_shutdown():
     return False
 
 
+def func_create_node_without_init():
+    import rclpy
+    from rclpy.exceptions import NotInitializedException
+    try:
+        rclpy.create_node('foo')
+    except NotInitializedException:
+        return True
+    return False
+
+
 def func_launch(function, message):
     pool = multiprocessing.Pool(1)
     result = pool.apply(
@@ -113,3 +123,7 @@ def test_double_init():
 
 def test_double_shutdown():
     func_launch(func_double_shutdown, 'Expected Runtime error when shutting down rclpy twice')
+
+
+def test_create_node_without_init():
+    func_launch(func_create_node_without_init, 'Expected NotInitializedException')

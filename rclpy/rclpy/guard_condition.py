@@ -1,4 +1,4 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2017 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,20 +15,16 @@
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-class Service:
-    def __init__(
-            self, node_handle, service_handle, service_pointer,
-            srv_type, srv_name, callback, callback_group, qos_profile):
-        self.node_handle = node_handle
-        self.service_handle = service_handle
-        self.service_pointer = service_pointer
-        self.srv_type = srv_type
-        self.srv_name = srv_name
+class GuardCondition:
+
+    def __init__(self, callback, callback_group):
+        self.guard_handle, self.guard_pointer = _rclpy.rclpy_create_guard_condition()
         self.callback = callback
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
-        self.qos_profile = qos_profile
+        # True when the executor sees this has been triggered but has not yet been handled
+        self._executor_triggered = False
 
-    def send_response(self, response, header):
-        _rclpy.rclpy_send_response(self.service_handle, response, header)
+    def trigger(self):
+        _rclpy.rclpy_trigger_guard_condition(self.guard_handle)

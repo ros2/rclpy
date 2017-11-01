@@ -54,12 +54,15 @@ def func_destroy_corrupted_node():
     rclpy.init()
     node = rclpy.create_node('test_node2')
     assert node.destroy_node() is True
+    org_handle = node._handle
     node._handle = 'garbage'
     ret = False
     try:
         node.destroy_node()
     except ValueError:
         ret = True
+        node._handle = org_handle
+        node.destroy_node()
     finally:
         rclpy.shutdown()
     return ret
@@ -108,9 +111,9 @@ def func_destroy_entities():
     pub2 = node.create_publisher(Float32, 'pub2_topic')
     pub2  # noqa
     assert 2 == len(node.publishers)
-    sub1 = node.create_subscription(String, 'sub1_topic', lambda msg: print("Received %r" % msg))
+    sub1 = node.create_subscription(String, 'sub1_topic', lambda msg: print('Received %r' % msg))
     assert 1 == len(node.subscriptions)
-    sub2 = node.create_subscription(UInt8, 'sub2_topic', lambda msg: print("Received %r" % msg))
+    sub2 = node.create_subscription(UInt8, 'sub2_topic', lambda msg: print('Received %r' % msg))
     sub2  # noqa
     assert 2 == len(node.subscriptions)
 

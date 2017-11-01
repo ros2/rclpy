@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>rclpy</name>
-  <version>0.0.0</version>
+  <version>0.0.3</version>
   <description>Package containing the Python client.</description>
   <maintainer email="esteve@osrfoundation.org">Esteve Fernandez</maintainer>
   <license>Apache License 2.0</license>
@@ -21,6 +21,7 @@
   <test_depend>ament_cmake_nose</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>rcl_interfaces</test_depend>
   <test_depend>rosidl_generator_py</test_depend>
   <test_depend>std_msgs</test_depend>
 

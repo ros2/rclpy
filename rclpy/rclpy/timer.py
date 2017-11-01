@@ -16,12 +16,15 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 # TODO(mikaelarguedas) create a Timer or ROSTimer once we can specify custom time sources
-class WallTimer(object):
+class WallTimer:
 
-    def __init__(self, timer_handle, timer_pointer, callback, timer_period_ns):
+    def __init__(self, callback, callback_group, timer_period_ns):
         [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(timer_period_ns)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
+        self.callback_group = callback_group
+        # True when the callback is ready to fire but has not been "taken" by an executor
+        self._executor_event = False
 
     @property
     def timer_period_ns(self):

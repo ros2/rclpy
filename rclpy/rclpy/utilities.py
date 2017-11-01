@@ -1,4 +1,4 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2017 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
+
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+g_shutdown_lock = threading.Lock()
 
-class Publisher:
 
-    def __init__(self, publisher_handle, msg_type, topic, qos_profile, node_handle):
-        self.publisher_handle = publisher_handle
-        self.msg_type = msg_type
-        self.topic = topic
-        self.qos_profile = qos_profile
-        self.node_handle = node_handle
+def ok():
+    with g_shutdown_lock:
+        return _rclpy.rclpy_ok()
 
-    def publish(self, msg):
-        _rclpy.rclpy_publish(self.publisher_handle, msg)
+
+def shutdown():
+    with g_shutdown_lock:
+        return _rclpy.rclpy_shutdown()
+
+
+def try_shutdown():
+    """Shutdown rclpy if not already shutdown."""
+    with g_shutdown_lock:
+        if _rclpy.rclpy_ok():
+            return _rclpy.rclpy_shutdown()
+
+
+def get_rmw_implementation_identifier():
+    return _rclpy.rclpy_get_rmw_implementation_identifier()
