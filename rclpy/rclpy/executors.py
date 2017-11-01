@@ -82,6 +82,10 @@ class Executor:
         gc, gc_handle = _rclpy.rclpy_create_guard_condition()
         self._guard_condition = gc
         self._guard_condition_handle = gc_handle
+        # Triggered by signal handler for sigint
+        (sigint_gc, sigint_gc_handle) = _rclpy.rclpy_get_sigint_guard_condition()
+        self._sigint_gc = sigint_gc
+        self._sigint_gc_handle = sigint_gc_handle
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
@@ -238,15 +242,15 @@ class Executor:
                     _rclpy.rclpy_trigger_guard_condition(gc)
         return handler
 
-    def _filter_eligible_entities(self, entities):
+    def _can_execute(self, entity):
         """
-        Filter entities that should not be put onto the wait list.
+        Return true if an entity is eligible for execution.
 
-        :param entity_list: Entities to be checked for eligibility
-        :type entity_list: list
-        :rtype: list
+        :param entity: an entity to be checked
+        :type entity_list: Client, Service, Publisher, Subscriber
+        :rtype: bool
         """
-        return [e for e in entities if e.callback_group.can_execute(e) and not e._executor_event]
+        return entity.callback_group.can_execute(entity) and not entity._executor_event
 
     def wait_for_ready_callbacks(self, timeout_sec=None, nodes=None):
         """
@@ -275,17 +279,23 @@ class Executor:
             clients = []
             services = []
             for node in nodes:
-                subscriptions.extend(self._filter_eligible_entities(node.subscriptions))
-                timers.extend(self._filter_eligible_entities(node.timers))
-                clients.extend(self._filter_eligible_entities(node.clients))
-                services.extend(self._filter_eligible_entities(node.services))
-                node_guards = self._filter_eligible_entities(node.guards)
-                # retrigger a guard condition that was triggered but not handled
-                for gc in node_guards:
-                    if gc._executor_triggered:
-                        gc.trigger()
-                guards.extend(node_guards)
-            (sigint_gc, sigint_gc_handle) = _rclpy.rclpy_get_sigint_guard_condition()
+                subscriptions.extend(node.subscriptions)
+                timers.extend(node.timers)
+                clients.extend(node.clients)
+                services.extend(node.services)
+                guards.extend(node.guards)
+
+            subscriptions = [e for e in filter(self._can_execute, subscriptions)]
+            guards = [e for e in filter(self._can_execute, guards)]
+            timers = [e for e in filter(self._can_execute, timers)]
+            clients = [e for e in filter(self._can_execute, clients)]
+            services = [e for e in filter(self._can_execute, services)]
+
+            # retrigger a guard condition that was triggered but not handled
+            for gc in guards:
+                if gc._executor_triggered:
+                    gc.trigger()
+
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
@@ -296,16 +306,15 @@ class Executor:
                 wait_set.add_services(services)
                 wait_set.add_timers(timers)
                 wait_set.add_guard_conditions(guards)
-                wait_set.add_guard_condition(sigint_gc, sigint_gc_handle)
+                wait_set.add_guard_condition(self._sigint_gc, self._sigint_gc_handle)
                 wait_set.add_guard_condition(self._guard_condition, self._guard_condition_handle)
 
                 # Wait for something to become ready
                 wait_set.wait(timeout_nsec)
 
                 # Check sigint guard condition
-                if wait_set.is_ready(sigint_gc_handle):
+                if wait_set.is_ready(self._sigint_gc_handle):
                     raise KeyboardInterrupt()
-                _rclpy.rclpy_destroy_entity(sigint_gc)
 
                 # Mark all guards as triggered before yielding since they're auto-taken
                 for gc in [g for g in guards if wait_set.is_ready(g.guard_pointer)]:
