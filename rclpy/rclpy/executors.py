@@ -17,6 +17,8 @@ import multiprocessing
 from threading import Condition
 from threading import Lock
 
+from rclpy.guard_condition import GuardCondition
+from rclpy.guard_condition import KeyboardInterruptGuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.timer import WallTimer
 from rclpy.utilities import ok
@@ -79,13 +81,9 @@ class Executor:
         self._nodes = set()
         self._nodes_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
-        gc, gc_handle = _rclpy.rclpy_create_guard_condition()
-        self._guard_condition = gc
-        self._guard_condition_handle = gc_handle
+        self._guard_condition = GuardCondition(None, None)
         # Triggered by signal handler for sigint
-        (sigint_gc, sigint_gc_handle) = _rclpy.rclpy_get_sigint_guard_condition()
-        self._sigint_gc = sigint_gc
-        self._sigint_gc_handle = sigint_gc_handle
+        self._sigint_gc = KeyboardInterruptGuardCondition()
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
@@ -106,14 +104,17 @@ class Executor:
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
             self._nodes = set()
-        _rclpy.rclpy_destroy_entity(self._guard_condition)
+        _rclpy.rclpy_destroy_entity(self._guard_condition.guard_handle)
+        _rclpy.rclpy_destroy_entity(self._sigint_gc.guard_handle)
 
         self._guard_condition = None
+        self._sigint_gc = None
         return True
 
     def __del__(self):
         if self._guard_condition is not None:
-            _rclpy.rclpy_destroy_entity(self._guard_condition)
+            _rclpy.rclpy_destroy_entity(self._guard_condition.guard_handle)
+            _rclpy.rclpy_destroy_entity(self._sigint_gc.guard_handle)
 
     def add_node(self, node):
         """
@@ -126,7 +127,7 @@ class Executor:
         with self._nodes_lock:
             self._nodes.add(node)
             # Rebuild the wait set so it includes this new node
-            _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+            self._guard_condition.trigger()
 
     def get_nodes(self):
         """
@@ -224,14 +225,14 @@ class Executor:
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
-                _rclpy.rclpy_trigger_guard_condition(gc)
+                gc.trigger()
                 return
             with work_tracker:
                 arg = take_from_wait_list(entity)
 
                 # Signal that this has been 'taken' and can be added back to the wait list
                 entity._executor_event = False
-                _rclpy.rclpy_trigger_guard_condition(gc)
+                gc.trigger()
 
                 try:
                     call_callback(entity, arg)
@@ -239,7 +240,7 @@ class Executor:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-                    _rclpy.rclpy_trigger_guard_condition(gc)
+                    gc.trigger()
         return handler
 
     def _can_execute(self, entity):
@@ -349,26 +350,25 @@ class Executor:
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
-            # Construct a wait set
-            with WaitSet() as wait_set:
-                wait_set.add_subscriptions(subscriptions)
-                wait_set.add_clients(clients)
-                wait_set.add_services(services)
-                wait_set.add_timers(timers)
-                wait_set.add_guard_conditions(guards)
-                wait_set.add_guard_condition(self._sigint_gc, self._sigint_gc_handle)
-                wait_set.add_guard_condition(self._guard_condition, self._guard_condition_handle)
+            guards.append(self._sigint_gc)
+            guards.append(self._guard_condition)
 
+            # Construct a wait set
+            with WaitSet(subscriptions, guards, timers, clients, services) as wait_set:
                 # Wait for something to become ready
                 wait_set.wait(timeout_nsec)
 
                 # Check sigint guard condition
-                if wait_set.is_ready(self._sigint_gc_handle):
+                if wait_set.is_ready(self._sigint_gc.guard_handle):
                     raise KeyboardInterrupt()
 
+                guards.remove(self._sigint_gc)
+                guards.remove(self._guard_condition)
+
                 # Mark all guards as triggered before yielding since they're auto-taken
-                for gc in [g for g in guards if wait_set.is_ready(g.guard_pointer)]:
-                    gc._executor_triggered = True
+                for gc in guards:
+                    if wait_set.is_ready(gc.guard_pointer):
+                        gc._executor_triggered = True
 
                 yielded_work = yield from self._new_callbacks(nodes, wait_set)
 

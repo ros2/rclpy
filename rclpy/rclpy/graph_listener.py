@@ -16,6 +16,8 @@ import threading
 import traceback
 
 from rclpy.constants import S_TO_NS
+from rclpy.guard_condition import GuardCondition
+from rclpy.guard_condition import NodeGraphGuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 import rclpy.logging
 from rclpy.timer import WallTimer
@@ -32,15 +34,15 @@ class GraphListenerSingleton:
         return getattr(cls, '__singleton')
 
     def __init__(self):
+        # Maps guard_condition pointers to guard condition instances
+        self._guards = {}
         # Maps guard_condition pointers to a list of subscriber callbacks
         self._callbacks = {}
         # Maps timer instances to timer callbacks
         self._timers = {}
-        self._gc_handle, self._gc_pointer = _rclpy.rclpy_create_guard_condition()
+        self._gc = GuardCondition(None, None)
         self._thread = None
         self._lock = threading.RLock()
-        self._wait_set = WaitSet()
-        self._wait_set.add_guard_condition(self._gc_handle, self._gc_pointer)
 
     def __del__(self):
         self.destroy()
@@ -52,7 +54,7 @@ class GraphListenerSingleton:
             with self._lock:
                 setattr(cls, '__singleton', None)
                 self._thread = None
-            _rclpy.rclpy_destroy_entity(self._gc_handle)
+            _rclpy.rclpy_destroy_entity(self._gc.guard_handle)
 
     def _try_start_thread(self):
         # Assumes lock is already held
@@ -73,8 +75,7 @@ class GraphListenerSingleton:
         with self._lock:
             tmr = WallTimer(callback, None, timer_period_ns)
             self._timers[tmr] = callback
-            self._wait_set.add_timer(tmr.timer_handle, tmr.timer_pointer)
-
+            self._gc.trigger()
             self._try_start_thread()
             return tmr
 
@@ -88,7 +89,7 @@ class GraphListenerSingleton:
         with self._lock:
             if timer in self._timers:
                 del self._timers[timer]
-                self._wait_set.remove_timer(timer.timer_pointer)
+                self._gc.trigger()
 
     def add_callback(self, node_handle, callback):
         """
@@ -100,15 +101,15 @@ class GraphListenerSingleton:
         :type callback: callable
         """
         with self._lock:
-            gc_handle, gc_pointer = _rclpy.rclpy_get_graph_guard_condition(node_handle)
-            if gc_pointer not in self._callbacks:
+            gc = NodeGraphGuardCondition(node_handle)
+            if gc.guard_pointer not in self._callbacks:
                 # new node, rebuild wait set
-                self._callbacks[gc_pointer] = []
-                self._wait_set.add_guard_condition(gc_handle, gc_pointer)
-                _rclpy.rclpy_trigger_guard_condition(self._gc_handle)
+                self._callbacks[gc.guard_pointer] = []
+                self._guards[gc.guard_pointer] = gc
+                self._gc.trigger()
 
             # Add a callback
-            self._callbacks[gc_pointer].append(callback)
+            self._callbacks[gc.guard_pointer].append(callback)
 
             self._try_start_thread()
             # start the thread if necessary
@@ -127,49 +128,56 @@ class GraphListenerSingleton:
         :type callback: callable
         """
         with self._lock:
-            gc_handle, gc_pointer = _rclpy.rclpy_get_graph_guard_condition(node_handle)
-            if gc_pointer in self._callbacks:
+            gc = NodeGraphGuardCondition(node_handle)
+            if gc.guard_pointer in self._callbacks:
                 # Remove the callback
-                self._callbacks[gc_pointer].remove(callback)
+                callbacks = self._callbacks[gc.guard_pointer]
+                callbacks.remove(callback)
 
-                if not self._callbacks[gc_pointer]:
+                if not callbacks:
                     # last subscriber for this node, remove the node and rebuild the wait set
-                    del self._callbacks[gc_pointer]
-                    self._wait_set.remove_guard_condition(gc_pointer)
-                    _rclpy.rclpy_trigger_guard_condition(self._gc_handle)
+                    del self._callbacks[gc.guard_pointer]
+                    del self._guards[gc.guard_pointer]
+                    self._gc.trigger()
 
     def _runner(self):
         while True:
-            # Wait 1 second
-            self._wait_set.wait(S_TO_NS)
-
             with self._lock:
-                # Shutdown if necessary
-                if not ok():
-                    self.destroy()
-                    break
+                guards = list(self._guards.values())
+                timers = list(self._timers.keys())
+                guards.append(self._gc)
 
-                # notify graph event subscribers
-                if not self._thread:
-                    # Asked to shut down thread
-                    return
-                ready_callbacks = []
-                # Guard conditions
-                for gc_pointer, callback_list in self._callbacks.items():
-                    if self._wait_set.is_ready(gc_pointer):
-                        for callback in callback_list:
+            with WaitSet([], guards, timers, [], []) as wait_set:
+                # Wait 1 second
+                wait_set.wait(S_TO_NS)
+
+                with self._lock:
+                    # Shutdown if necessary
+                    if not ok():
+                        self.destroy()
+                        break
+
+                    # notify graph event subscribers
+                    if not self._thread:
+                        # Asked to shut down thread
+                        return
+                    ready_callbacks = []
+                    # Guard conditions
+                    for gc_pointer, callback_list in self._callbacks.items():
+                        if wait_set.is_ready(gc_pointer):
+                            for callback in callback_list:
+                                ready_callbacks.append(callback)
+                    # Timers
+                    for tmr, callback in self._timers.items():
+                        if wait_set.is_ready(tmr.timer_pointer):
                             ready_callbacks.append(callback)
-                # Timers
-                for tmr, callback in self._timers.items():
-                    if self._wait_set.is_ready(tmr.timer_pointer):
-                        ready_callbacks.append(callback)
-                        _rclpy.rclpy_call_timer(tmr.timer_handle)
-                # Call callbacks
-                for callback in ready_callbacks:
-                    try:
-                        callback()
-                    except Exception:
-                        rclpy.logging.logwarn(traceback.format_exc())
+                            _rclpy.rclpy_call_timer(tmr.timer_handle)
+                    # Call callbacks
+                    for callback in ready_callbacks:
+                        try:
+                            callback()
+                        except Exception:
+                            rclpy.logging.logwarn(traceback.format_exc())
 
 
 class GraphEventSubscription:

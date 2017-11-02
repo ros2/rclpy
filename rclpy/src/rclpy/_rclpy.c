@@ -1801,21 +1801,19 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Clear all the pointers of a given wait_set field
+/// Clear all the pointers of all wait_set fields
 /**
  * Raises RuntimeError if the entity type is unknown or any rcl error occurs
  *
- * \param[in] entity_type string defining the entity ["subscription, client, service"]
  * \param[in] pywait_set Capsule pointing to the waitset structure
- * \return NULL
+ * \return None
  */
 static PyObject *
 rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  const char * entity_type;
   PyObject * pywait_set;
 
-  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pywait_set)) {
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
     return NULL;
   }
 
@@ -1823,86 +1821,91 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   if (!wait_set) {
     return NULL;
   }
-  rcl_ret_t ret;
-  if (0 == strcmp(entity_type, "subscription")) {
-    ret = rcl_wait_set_clear_subscriptions(wait_set);
-  } else if (0 == strcmp(entity_type, "client")) {
-    ret = rcl_wait_set_clear_clients(wait_set);
-  } else if (0 == strcmp(entity_type, "service")) {
-    ret = rcl_wait_set_clear_services(wait_set);
-  } else if (0 == strcmp(entity_type, "timer")) {
-    ret = rcl_wait_set_clear_timers(wait_set);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    ret = rcl_wait_set_clear_guard_conditions(wait_set);
-  } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
+
+  if (
+    RCL_RET_OK != rcl_wait_set_clear_subscriptions(wait_set) ||
+    RCL_RET_OK != rcl_wait_set_clear_clients(wait_set) ||
+    RCL_RET_OK != rcl_wait_set_clear_services(wait_set) ||
+    RCL_RET_OK != rcl_wait_set_clear_timers(wait_set) ||
+    RCL_RET_OK != rcl_wait_set_clear_guard_conditions(wait_set))
+  {
     PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
-    return NULL;
-  }
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to clear '%s' from wait set: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to clear from wait set: %s", rcl_get_error_string_safe());
     rcl_reset_error();
     return NULL;
   }
-  Py_RETURN_TRUE;
+  Py_RETURN_NONE;
 }
 
-/// Add an entity to the waitset structure
+/// Add entities to the waitset structure
 /**
- * Raises RuntimeError if the entity type is unknown or any rcl error occurrs
+ * Raises RuntimeError if any entity type is unknown or any rcl error occurs
+ * Raises ValueError if an entity is not a valid PyCapsule
  *
- * \param[in] entity_type string defining the entity ["subscription, client, service"]
  * \param[in] pywait_set Capsule pointing to the waitset structure
- * \param[in] pyentity Capsule pointing to the entity to add
+ * \param[in] pyentities Iterable of PyCapsule belonging to an entity (sub, pub, timer, ...)
  * \return None
  */
 static PyObject *
-rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_wait_set_add_entities(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  const char * entity_type;
   PyObject * pywait_set;
-  PyObject * pyentity;
+  PyObject * pyentities;
 
-  if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pywait_set, &pyentity)) {
+  if (!PyArg_ParseTuple(args, "OO", &pywait_set, &pyentities)) {
     return NULL;
   }
+
   rcl_ret_t ret;
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
   if (!wait_set) {
     return NULL;
   }
-  if (0 == strcmp(entity_type, "subscription")) {
-    rcl_subscription_t * subscription =
-      (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, "rcl_subscription_t");
-    ret = rcl_wait_set_add_subscription(wait_set, subscription);
-  } else if (0 == strcmp(entity_type, "client")) {
-    rcl_client_t * client =
-      (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
-    ret = rcl_wait_set_add_client(wait_set, client);
-  } else if (0 == strcmp(entity_type, "service")) {
-    rcl_service_t * service =
-      (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
-    ret = rcl_wait_set_add_service(wait_set, service);
-  } else if (0 == strcmp(entity_type, "timer")) {
-    rcl_timer_t * timer =
-      (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
-    ret = rcl_wait_set_add_timer(wait_set, timer);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    rcl_guard_condition_t * guard_condition =
-      (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, "rcl_guard_condition_t");
-    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
-  } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
+
+  PyObject * pyiterator = PyObject_GetIter(pyentities);
+  if (!pyiterator) {
     return NULL;
   }
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to add '%s' to wait set: %s", entity_type, rcl_get_error_string_safe());
-    rcl_reset_error();
+
+  PyObject * pyentity;
+  while ((pyentity = PyIter_Next(pyiterator))) {
+    if (PyCapsule_IsValid(pyentity, "rcl_subscription_t")) {
+      rcl_subscription_t * subscription =
+        (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, "rcl_subscription_t");
+      ret = rcl_wait_set_add_subscription(wait_set, subscription);
+    } else if (PyCapsule_IsValid(pyentity, "rcl_client_t")) {
+      rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
+      ret = rcl_wait_set_add_client(wait_set, client);
+    } else if (PyCapsule_IsValid(pyentity, "rcl_service_t")) {
+      rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
+      ret = rcl_wait_set_add_service(wait_set, service);
+    } else if (PyCapsule_IsValid(pyentity, "rcl_timer_t")) {
+      rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
+      ret = rcl_wait_set_add_timer(wait_set, timer);
+    } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
+      rcl_guard_condition_t * guard_condition =
+        (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, "rcl_guard_condition_t");
+      ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
+    }
+
+    if (ret != RCL_RET_OK) {
+      const char * entity_type = PyCapsule_GetName(pyentity);
+      if (entity_type) {
+        PyErr_Format(PyExc_RuntimeError,
+          "Failed to add '%s' to wait set: %s", entity_type, rcl_get_error_string_safe());
+      }
+      // else { // PyCapsule_GetName set an exception }
+      rcl_reset_error();
+      Py_DECREF(pyentity);
+      break;
+    } else {
+      Py_DECREF(pyentity);
+    }
+  }
+
+  Py_DECREF(pyiterator);
+
+  if (PyErr_Occurred()) {
     return NULL;
   }
   Py_RETURN_NONE;
@@ -1947,33 +1950,38 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 #define GET_LIST_READY_ENTITIES(ENTITY_TYPE) \
-  size_t idx; \
-  size_t idx_max; \
-  idx_max = wait_set->size_of_ ## ENTITY_TYPE ## s; \
-  const rcl_ ## ENTITY_TYPE ## _t ** struct_ptr = wait_set->ENTITY_TYPE ## s; \
-  for (idx = 0; idx < idx_max; idx ++) { \
-    if (struct_ptr[idx]) { \
-      PyList_Append( \
-        entity_ready_list, \
-        PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl)); \
+  { \
+    size_t idx; \
+    size_t idx_max; \
+    idx_max = wait_set->size_of_ ## ENTITY_TYPE ## s; \
+    const rcl_ ## ENTITY_TYPE ## _t ** struct_ptr = wait_set->ENTITY_TYPE ## s; \
+    for (idx = 0; idx < idx_max; idx ++) { \
+      if (struct_ptr[idx]) { \
+        PyObject * pyptr = PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl); \
+        if (!pyptr) { \
+          Py_DECREF(entity_ready_list); \
+          return NULL; \
+        } \
+        if (-1 == PyList_Append(entity_ready_list, pyptr)) { \
+          Py_DECREF(pyptr); \
+          Py_DECREF(entity_ready_list); \
+          return NULL; \
+        } \
+      } \
     } \
-  } \
-  return entity_ready_list;
+  }
 /// Get list of non-null entities in waitset
 /**
  * Raises ValueError if pywait_set is not a wait_set capsule
- * Raises RuntimeError if the entity type is not known
  *
- * \param[in] entity_type string defining the entity ["subscription, client, service"]
  * \param[in] pywait_set Capsule pointing to the waitset structure
  * \return List of wait_set entities pointers ready for take
  */
 static PyObject *
 rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  const char * entity_type;
   PyObject * pywait_set;
-  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pywait_set)) {
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
     return NULL;
   }
 
@@ -1983,21 +1991,14 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * entity_ready_list = PyList_New(0);
-  if (0 == strcmp(entity_type, "subscription")) {
-    GET_LIST_READY_ENTITIES(subscription)
-  } else if (0 == strcmp(entity_type, "client")) {
-    GET_LIST_READY_ENTITIES(client)
-  } else if (0 == strcmp(entity_type, "service")) {
-    GET_LIST_READY_ENTITIES(service)
-  } else if (0 == strcmp(entity_type, "timer")) {
-    GET_LIST_READY_ENTITIES(timer)
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    GET_LIST_READY_ENTITIES(guard_condition)
-  } else {
-    PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
+  if (!entity_ready_list) {
     return NULL;
   }
+  GET_LIST_READY_ENTITIES(subscription)
+  GET_LIST_READY_ENTITIES(client)
+  GET_LIST_READY_ENTITIES(service)
+  GET_LIST_READY_ENTITIES(timer)
+  GET_LIST_READY_ENTITIES(guard_condition)
 
   return entity_ready_list;
 }
@@ -2748,8 +2749,8 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
-    "rclpy_wait_set_add_entity."
+    "rclpy_wait_set_add_entities", rclpy_wait_set_add_entities, METH_VARARGS,
+    "rclpy_wait_set_add_entities."
   },
 
   {
