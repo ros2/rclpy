@@ -289,7 +289,7 @@ class TestLogging(unittest.TestCase):
         rclpy.logging.clear_config()
         self.assertNotEqual(LoggingSeverity.WARN, my_logger.get_effective_severity_threshold())
         self.assertEqual(
-            rclpy.logging.root_logger.get_severity_threshold(),
+            rclpy.logging.root_logger.get_effective_severity_threshold(),
             my_logger.get_effective_severity_threshold())
 
 
