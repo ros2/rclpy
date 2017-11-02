@@ -336,11 +336,11 @@ class Executor:
                 services.extend(node.services)
                 guards.extend(node.guards)
 
-            subscriptions = filter(self._can_execute, subscriptions)
+            subscriptions = list(filter(self._can_execute, subscriptions))
             guards = list(filter(self._can_execute, guards))
             timers = list(filter(self._can_execute, timers))
-            clients = filter(self._can_execute, clients)
-            services = filter(self._can_execute, services)
+            clients = list(filter(self._can_execute, clients))
+            services = list(filter(self._can_execute, services))
 
             # retrigger a guard condition that was triggered but not handled
             for gc in guards:

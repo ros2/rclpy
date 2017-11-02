@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import itertools
-
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -23,11 +21,11 @@ class WaitSet:
     def __init__(self, subscriptions, guards, timers, clients, services):
         # List of entity pointers (the python integer, not the PyCapsule) that are ready
         self._ready_pointers = []
-        self._subscriptions = [s.subscription_handle for s in subscriptions]
-        self._guards = [g.guard_handle for g in guards]
-        self._timers = [t.timer_handle for t in timers]
-        self._clients = [c.client_handle for c in clients]
-        self._services = [s.service_handle for s in services]
+        self._subscriptions = subscriptions
+        self._guards = guards
+        self._timers = timers
+        self._clients = clients
+        self._services = services
 
         self._wait_set = None
 
@@ -48,9 +46,16 @@ class WaitSet:
     def wait(self, timeout_nsec):
         # Populate wait set
         _rclpy.rclpy_wait_set_clear_entities(self._wait_set)
-        entities = itertools.chain(
-            self._subscriptions, self._guards, self._timers, self._clients, self._services)
-        _rclpy.rclpy_wait_set_add_entities(self._wait_set, entities)
+        _rclpy.rclpy_wait_set_add_entities(
+            self._wait_set, map(lambda sub: sub.subscription_handle, self._subscriptions))
+        _rclpy.rclpy_wait_set_add_entities(
+            self._wait_set, map(lambda gc: gc.guard_handle, self._guards))
+        _rclpy.rclpy_wait_set_add_entities(
+            self._wait_set, map(lambda tmr: tmr.timer_handle, self._timers))
+        _rclpy.rclpy_wait_set_add_entities(
+            self._wait_set, map(lambda cli: cli.client_handle, self._clients))
+        _rclpy.rclpy_wait_set_add_entities(
+            self._wait_set, map(lambda srv: srv.service_handle, self._services))
 
         # Wait
         _rclpy.rclpy_wait(self._wait_set, timeout_nsec)
