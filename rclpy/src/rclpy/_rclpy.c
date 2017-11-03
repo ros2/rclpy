@@ -28,21 +28,8 @@
 #include <rmw/validate_node_name.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
-#include <signal.h>
+#include "src/rclpy/sigint_gc.h"
 
-static rcl_guard_condition_t * g_sigint_gc_handle;
-
-/// Catch signals
-static void catch_function(int signo)
-{
-  (void) signo;
-  rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-  }
-}
 
 /// Get a guard condition for node graph events
 /**
@@ -110,7 +97,7 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
     rcl_reset_error();
     return NULL;
   }
-  g_sigint_gc_handle = sigint_gc;
+  g_rclpy_sigint_gc_handle = sigint_gc;
   PyObject * pylist = PyList_New(2);
   PyList_SET_ITEM(pylist, 0, pygc);
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl));
@@ -2028,7 +2015,7 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 #else
   sig_t
 #endif  // _WIN32
-  previous_handler = signal(SIGINT, catch_function);
+  previous_handler = signal(SIGINT, rclpy_catch_function);
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
   if (!wait_set) {
     return NULL;

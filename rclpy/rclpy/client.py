@@ -32,7 +32,7 @@ class ResponseThread(threading.Thread):
 
     def run(self):
         [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
-        _rclpy.rclpy_wait_set_add_entity('guard_condition', self.wait_set, sigint_gc)
+        _rclpy.rclpy_wait_set_add_entity(self.wait_set, sigint_gc)
 
         _rclpy.rclpy_wait(self.wait_set, -1)
 

@@ -19,8 +19,8 @@ import rclpy
 from rclpy.constants import S_TO_NS
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_wait_set_implementation as _rclpy_wait_set
 from rclpy.timer import WallTimer
-from rclpy.wait_set import WaitSet
 from std_msgs.msg import String
 
 
@@ -39,36 +39,38 @@ class TestWaitSet(unittest.TestCase):
     def test_guard_condition_ready(self):
         gc = GuardCondition(None, None)
         try:
-            with WaitSet([], [gc], [], [], []) as ws:
-                self.assertFalse(ws.is_ready(gc.guard_pointer))
+            ws = _rclpy_wait_set.WaitSet()
+            ws.add_guard_conditions([gc])
+            self.assertFalse(ws.is_ready(gc))
 
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(gc.guard_pointer))
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(gc))
 
-                gc.trigger()
-                ws.wait(0)
-                self.assertTrue(ws.is_ready(gc.guard_pointer))
+            gc.trigger()
+            ws.wait(0)
+            self.assertTrue(ws.is_ready(gc))
 
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(gc.guard_pointer))
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(gc))
         finally:
             _rclpy.rclpy_destroy_entity(gc.guard_handle)
 
     def test_timer_ready(self):
         timer = WallTimer(None, None, int(0.1 * S_TO_NS))
         try:
-            with WaitSet([], [], [timer], [], []) as ws:
-                self.assertFalse(ws.is_ready(timer.timer_pointer))
+            ws = _rclpy_wait_set.WaitSet()
+            ws.add_timers([timer])
+            self.assertFalse(ws.is_ready(timer))
 
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(timer.timer_pointer))
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(timer))
 
-                ws.wait(int(0.1 * S_TO_NS))
-                self.assertTrue(ws.is_ready(timer.timer_pointer))
+            ws.wait(int(0.1 * S_TO_NS))
+            self.assertTrue(ws.is_ready(timer))
 
-                _rclpy.rclpy_call_timer(timer.timer_handle)
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(timer.timer_pointer))
+            _rclpy.rclpy_call_timer(timer.timer_handle)
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(timer))
         finally:
             _rclpy.rclpy_destroy_entity(timer.timer_handle)
 
@@ -76,22 +78,23 @@ class TestWaitSet(unittest.TestCase):
         sub = self.node.create_subscription(String, 'chatter', lambda msg: print(msg))
         pub = self.node.create_publisher(String, 'chatter')
         try:
-            with WaitSet([sub], [], [], [], []) as ws:
-                self.assertFalse(ws.is_ready(sub.subscription_pointer))
+            ws = _rclpy_wait_set.WaitSet()
+            ws.add_subscriptions([sub])
+            self.assertFalse(ws.is_ready(sub))
 
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(sub.subscription_pointer))
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(sub))
 
-                msg = String()
-                msg.data = 'Hello World'
-                pub.publish(msg)
+            msg = String()
+            msg.data = 'Hello World'
+            pub.publish(msg)
 
-                ws.wait(5 * S_TO_NS)
-                self.assertTrue(ws.is_ready(sub.subscription_pointer))
+            ws.wait(5 * S_TO_NS)
+            self.assertTrue(ws.is_ready(sub))
 
-                _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(sub.subscription_pointer))
+            _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(sub))
         finally:
             self.node.destroy_publisher(pub)
             self.node.destroy_subscription(sub)
@@ -102,24 +105,26 @@ class TestWaitSet(unittest.TestCase):
             GetParameters, 'get/parameters', lambda req: GetParameters.Response())
 
         try:
-            with WaitSet([], [], [], [cli], [srv]) as ws:
-                self.assertFalse(ws.is_ready(cli.client_pointer))
-                self.assertFalse(ws.is_ready(srv.service_pointer))
+            ws = _rclpy_wait_set.WaitSet()
+            ws.add_clients([cli])
+            ws.add_services([srv])
+            self.assertFalse(ws.is_ready(cli))
+            self.assertFalse(ws.is_ready(srv))
 
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(cli.client_pointer))
-                self.assertFalse(ws.is_ready(srv.service_pointer))
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(cli))
+            self.assertFalse(ws.is_ready(srv))
 
-                cli.wait_for_service()
-                cli.call(GetParameters.Request())
+            cli.wait_for_service()
+            cli.call(GetParameters.Request())
 
-                ws.wait(5 * S_TO_NS)
-                # TODO(sloretz) test client after it's wait_for_future() API is sorted out
-                self.assertTrue(ws.is_ready(srv.service_pointer))
+            ws.wait(5 * S_TO_NS)
+            # TODO(sloretz) test client after it's wait_for_future() API is sorted out
+            self.assertTrue(ws.is_ready(srv))
 
-                _rclpy.rclpy_take_request(srv.service_handle, srv.srv_type.Request)
-                ws.wait(0)
-                self.assertFalse(ws.is_ready(srv.service_pointer))
+            _rclpy.rclpy_take_request(srv.service_handle, srv.srv_type.Request)
+            ws.wait(0)
+            self.assertFalse(ws.is_ready(srv))
         finally:
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)

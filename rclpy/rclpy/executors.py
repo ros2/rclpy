@@ -20,10 +20,10 @@ from threading import Lock
 from rclpy.guard_condition import GuardCondition
 from rclpy.guard_condition import KeyboardInterruptGuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_wait_set_implementation as _rclpy_wait_set
 from rclpy.timer import WallTimer
 from rclpy.utilities import ok
 from rclpy.utilities import timeout_sec_to_nsec
-from rclpy.wait_set import WaitSet
 
 
 class _WorkTracker:
@@ -87,6 +87,7 @@ class Executor:
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
+        self._wait_set = _rclpy_wait_set.WaitSet()
 
     def shutdown(self, timeout_sec=None):
         """
@@ -136,7 +137,7 @@ class Executor:
         :rtype: list
         """
         with self._nodes_lock:
-            return [node for node in self._nodes]
+            return list(self._nodes)
 
     def spin(self):
         """Execute callbacks until shutdown."""
@@ -251,7 +252,7 @@ class Executor:
         :type entity_list: Client, Service, Publisher, Subscriber
         :rtype: bool
         """
-        return entity.callback_group.can_execute(entity) and not entity._executor_event
+        return not entity._executor_event and entity.callback_group.can_execute(entity)
 
     def _new_callbacks(self, nodes, wait_set):
         """
@@ -267,7 +268,7 @@ class Executor:
         # Process ready entities one node at a time
         for node in nodes:
             for tmr in node.timers:
-                if wait_set.is_ready(tmr.timer_pointer) and tmr.callback_group.can_execute(tmr):
+                if wait_set.is_ready(tmr) and tmr.callback_group.can_execute(tmr):
                     # TODO(Sloretz) Which rcl cancelled timer bug does this workaround?
                     if not _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
                         continue
@@ -276,7 +277,7 @@ class Executor:
                     yield handler, tmr, node
 
             for sub in node.subscriptions:
-                if (wait_set.is_ready(sub.subscription_pointer) and
+                if (wait_set.is_ready(sub) and
                         sub.callback_group.can_execute(sub)):
                     handler = self._make_handler(
                         sub, self._take_subscription, self._execute_subscription)
@@ -291,13 +292,13 @@ class Executor:
                     yield handler, gc, node
 
             for cli in node.clients:
-                if wait_set.is_ready(cli.client_pointer) and cli.callback_group.can_execute(cli):
+                if wait_set.is_ready(cli) and cli.callback_group.can_execute(cli):
                     handler = self._make_handler(cli, self._take_client, self._execute_client)
                     yielded_work = True
                     yield handler, cli, node
 
             for srv in node.services:
-                if wait_set.is_ready(srv.service_pointer) and srv.callback_group.can_execute(srv):
+                if wait_set.is_ready(srv) and srv.callback_group.can_execute(srv):
                     handler = self._make_handler(srv, self._take_service, self._execute_service)
                     yielded_work = True
                     yield handler, srv, node
@@ -323,24 +324,15 @@ class Executor:
 
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
+            self._wait_set.clear()
             # Gather entities that can be waited on
-            subscriptions = []
             guards = []
-            timers = []
-            clients = []
-            services = []
             for node in nodes:
-                subscriptions.extend(node.subscriptions)
-                timers.extend(node.timers)
-                clients.extend(node.clients)
-                services.extend(node.services)
-                guards.extend(node.guards)
-
-            subscriptions = list(filter(self._can_execute, subscriptions))
-            guards = list(filter(self._can_execute, guards))
-            timers = list(filter(self._can_execute, timers))
-            clients = list(filter(self._can_execute, clients))
-            services = list(filter(self._can_execute, services))
+                self._wait_set.add_subscriptions(filter(self._can_execute, node.subscriptions))
+                self._wait_set.add_timers(filter(self._can_execute, node.timers))
+                self._wait_set.add_clients(filter(self._can_execute, node.clients))
+                self._wait_set.add_services(filter(self._can_execute, node.services))
+                guards.extend(filter(self._can_execute, node.guards))
 
             # retrigger a guard condition that was triggered but not handled
             for gc in guards:
@@ -348,36 +340,31 @@ class Executor:
                     gc.trigger()
 
             if timeout_timer is not None:
-                timers.append(timeout_timer)
+                self._wait_set.add_timers((timeout_timer,))
 
-            guards.append(self._sigint_gc)
-            guards.append(self._guard_condition)
+            self._wait_set.add_guard_conditions((self._sigint_gc, self._guard_condition))
+            self._wait_set.add_guard_conditions(guards)
 
-            # Construct a wait set
-            with WaitSet(subscriptions, guards, timers, clients, services) as wait_set:
-                # Wait for something to become ready
-                wait_set.wait(timeout_nsec)
+            # Wait for something to become ready
+            self._wait_set.wait(timeout_nsec)
 
-                # Check sigint guard condition
-                if wait_set.is_ready(self._sigint_gc.guard_handle):
-                    raise KeyboardInterrupt()
+            # Check sigint guard condition
+            if self._wait_set.is_ready(self._sigint_gc):
+                raise KeyboardInterrupt()
 
-                guards.remove(self._sigint_gc)
-                guards.remove(self._guard_condition)
+            # Mark all guards as triggered before yielding since they're auto-taken
+            for gc in guards:
+                if self._wait_set.is_ready(gc):
+                    gc._executor_triggered = True
 
-                # Mark all guards as triggered before yielding since they're auto-taken
-                for gc in guards:
-                    if wait_set.is_ready(gc.guard_pointer):
-                        gc._executor_triggered = True
+            yielded_work = yield from self._new_callbacks(nodes, self._wait_set)
 
-                yielded_work = yield from self._new_callbacks(nodes, wait_set)
-
-                # Check timeout timer
-                if (
-                    timeout_nsec == 0 or
-                    (timeout_timer is not None and wait_set.is_ready(timeout_timer.timer_pointer))
-                ):
-                    break
+            # Check timeout timer
+            if (
+                timeout_nsec == 0 or
+                (timeout_timer is not None and self._wait_set.is_ready(timeout_timer))
+            ):
+                break
 
 
 class SingleThreadedExecutor(Executor):
