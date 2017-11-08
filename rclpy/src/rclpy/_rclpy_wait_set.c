@@ -78,30 +78,19 @@ rclpy_wait_set_init(
   rclpy_wait_set_t * self, PyObject * Py_UNUSED(args), PyObject * Py_UNUSED(kwds))
 {
   // rclpy_wait_set_dealloc will take care of decref
-  self->pysubs = PyList_New(0);
-  if (!self->pysubs) {
-    return -1;
+#define MAKE_LIST_OR_BAIL(ELIST) \
+  ELIST = PyList_New(0); \
+  if (!(ELIST)) { \
+    return -1; \
   }
-  self->pytmrs = PyList_New(0);
-  if (!self->pytmrs) {
-    return -1;
-  }
-  self->pygcs = PyList_New(0);
-  if (!self->pygcs) {
-    return -1;
-  }
-  self->pyclis = PyList_New(0);
-  if (!self->pyclis) {
-    return -1;
-  }
-  self->pysrvs = PyList_New(0);
-  if (!self->pysrvs) {
-    return -1;
-  }
-  self->pyready = PyList_New(0);
-  if (!self->pyready) {
-    return -1;
-  }
+
+  MAKE_LIST_OR_BAIL(self->pysubs);
+  MAKE_LIST_OR_BAIL(self->pytmrs);
+  MAKE_LIST_OR_BAIL(self->pygcs);
+  MAKE_LIST_OR_BAIL(self->pyclis);
+  MAKE_LIST_OR_BAIL(self->pysrvs);
+  MAKE_LIST_OR_BAIL(self->pyready);
+#undef MAKE_LIST_OR_BAIL
 
   rcl_ret_t ret = rcl_wait_set_init(&(self->wait_set), 0, 0, 0, 0, 0, rcl_get_default_allocator());
   if (ret != RCL_RET_OK) {
