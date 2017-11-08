@@ -244,16 +244,6 @@ class Executor:
                     gc.trigger()
         return handler
 
-    def _can_execute(self, entity):
-        """
-        Return true if an entity is eligible for execution.
-
-        :param entity: an entity to be checked
-        :type entity_list: Client, Service, Publisher, Subscriber
-        :rtype: bool
-        """
-        return not entity._executor_event and entity.callback_group.can_execute(entity)
-
     def _new_callbacks(self, nodes, wait_set):
         """
         Yield brand new work to executor implementations.
@@ -326,13 +316,17 @@ class Executor:
         while not yielded_work and not self._is_shutdown:
             self._wait_set.clear()
             # Gather entities that can be waited on
+
+            def can_execute(entity):
+                return not entity._executor_event and entity.callback_group.can_execute(entity)
+
             guards = []
             for node in nodes:
-                self._wait_set.add_subscriptions(filter(self._can_execute, node.subscriptions))
-                self._wait_set.add_timers(filter(self._can_execute, node.timers))
-                self._wait_set.add_clients(filter(self._can_execute, node.clients))
-                self._wait_set.add_services(filter(self._can_execute, node.services))
-                guards.extend(filter(self._can_execute, node.guards))
+                self._wait_set.add_subscriptions(filter(can_execute, node.subscriptions))
+                self._wait_set.add_timers(filter(can_execute, node.timers))
+                self._wait_set.add_clients(filter(can_execute, node.clients))
+                self._wait_set.add_services(filter(can_execute, node.services))
+                guards.extend(filter(can_execute, node.guards))
 
             # retrigger a guard condition that was triggered but not handled
             for gc in guards:
