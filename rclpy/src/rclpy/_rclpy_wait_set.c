@@ -26,13 +26,13 @@ typedef struct
 {
   PyObject_HEAD
   rcl_wait_set_t wait_set;
-  /// A set of pycapsules in the wait set
+  /// Lists of pycapsules in the wait set
   PyObject * pysubs;
   PyObject * pytmrs;
   PyObject * pygcs;
   PyObject * pyclis;
   PyObject * pysrvs;
-  /// A set of pycapsule that are ready
+  /// List of pycapsule that are ready
   PyObject * pyready;
 } rclpy_wait_set_t;
 
@@ -47,7 +47,7 @@ rclpy_wait_set_dealloc(rclpy_wait_set_t * self)
     rcl_reset_error();
   }
 
-  // X because it could be NULL if PySet_New failed during rclpy_wait_set_new
+  // X because it could be NULL if PyList_New failed during rclpy_wait_set_new
   Py_XDECREF(self->pysubs);
   Py_XDECREF(self->pytmrs);
   Py_XDECREF(self->pygcs);
@@ -78,27 +78,27 @@ rclpy_wait_set_init(
   rclpy_wait_set_t * self, PyObject * Py_UNUSED(args), PyObject * Py_UNUSED(kwds))
 {
   // rclpy_wait_set_dealloc will take care of decref
-  self->pysubs = PySet_New(NULL);
+  self->pysubs = PyList_New(0);
   if (!self->pysubs) {
     return -1;
   }
-  self->pytmrs = PySet_New(NULL);
+  self->pytmrs = PyList_New(0);
   if (!self->pytmrs) {
     return -1;
   }
-  self->pygcs = PySet_New(NULL);
+  self->pygcs = PyList_New(0);
   if (!self->pygcs) {
     return -1;
   }
-  self->pyclis = PySet_New(NULL);
+  self->pyclis = PyList_New(0);
   if (!self->pyclis) {
     return -1;
   }
-  self->pysrvs = PySet_New(NULL);
+  self->pysrvs = PyList_New(0);
   if (!self->pysrvs) {
     return -1;
   }
-  self->pyready = PySet_New(NULL);
+  self->pyready = PyList_New(0);
   if (!self->pyready) {
     return -1;
   }
@@ -139,12 +139,12 @@ _rclpy_to_pycapsule(PyObject * pyentity)
 }
 
 
-/// Add entities of a known type to the correct set
+/// Add entities of a known type to the correct list
 /*
  * Raises ValueError if capsule is invalid
  * Handles adding entities of a given type to the wait set
  *
- * \param[in] pyset a set that the entities should be added to
+ * \param[in] pylist a list that the entities should be added to
  * \param[in] pyentities an iterable of (sub, pub, client, serv, guard)
  * \param[in] handle_attr an attribute of an entity where the handle is stored
  * \param[in] handle_type a pycapsule name this entity uses
@@ -152,11 +152,11 @@ _rclpy_to_pycapsule(PyObject * pyentity)
  */
 static inline rcl_ret_t
 _rclpy_add_entity(
-  PyObject * pyset, PyObject * pyentities, const char * handle_attr,
+  PyObject * pylist, PyObject * pyentities, const char * handle_attr,
   const char * handle_type)
 {
-  // It's possible for arbitrary python code to be invoked that invalidates this reference
-  Py_INCREF(pyset);
+  // It's possible for arbitrary python code to be invoked
+  Py_INCREF(pylist);
   Py_INCREF(pyentities);
 
   PyObject * pyiter = PyObject_GetIter(pyentities);
@@ -181,7 +181,7 @@ _rclpy_add_entity(
     }
 
     if (PyCapsule_IsValid(pyentity, handle_type)) {
-      if (-1 == PySet_Add(pyset, pyentity)) {
+      if (-1 == PyList_Append(pylist, pyentity)) {
         break;
       }
     } else {
@@ -195,7 +195,7 @@ _rclpy_add_entity(
 
   Py_DECREF(pyiter);
   Py_DECREF(pyentities);
-  Py_DECREF(pyset);
+  Py_DECREF(pylist);
 
   if (PyErr_Occurred()) {
     // Return down here after references have been cleaned dup
@@ -379,9 +379,9 @@ _rclpy_build_wait_set(rclpy_wait_set_t * self)
     return ret;
   }
 
-#define RCLPY_ADD_ENTITY(ETYPE, WSFUNC, ESET) \
+#define RCLPY_ADD_ENTITY(ETYPE, WSFUNC, ELIST) \
   do { \
-    PyObject * pyiter = PyObject_GetIter((ESET)); \
+    PyObject * pyiter = PyObject_GetIter(ELIST); \
     if (!pyiter) { \
       return RCL_RET_ERROR; \
     } \
@@ -426,13 +426,13 @@ _rclpy_build_wait_set(rclpy_wait_set_t * self)
 static inline rcl_ret_t
 _rclpy_build_ready_entities(rclpy_wait_set_t * self)
 {
-  if (-1 == PySet_Clear(self->pyready)) {
+  if (-1 == PySequence_DelSlice(self->pyready, 0, PySequence_Length(self->pyready))) {
     return RCL_RET_ERROR;
   }
 
-#define GET_READY_ENTITIES(ETYPE, ESET) \
+#define GET_READY_ENTITIES(ETYPE, ELIST) \
   do { \
-    PyObject * pyiter = PyObject_GetIter((ESET)); \
+    PyObject * pyiter = PyObject_GetIter((ELIST)); \
     if (!pyiter) { \
       return RCL_RET_ERROR; \
     } \
@@ -451,7 +451,7 @@ _rclpy_build_ready_entities(rclpy_wait_set_t * self)
       const rcl_ ## ETYPE ## _t ** struct_ptr = self->wait_set.ETYPE ## s; \
       for (idx = 0; idx < idx_max; ++idx) { \
         if (struct_ptr[idx] == entity) { \
-          if (-1 == PySet_Add(self->pyready, pyentity)) { \
+          if (-1 == PyList_Append(self->pyready, pyentity)) { \
             Py_DECREF(pyentity); \
             Py_DECREF(pyiter); \
             return RCL_RET_ERROR; \
@@ -535,18 +535,17 @@ rclpy_wait_set_wait(rclpy_wait_set_t * self, PyObject * args)
 static PyObject *
 rclpy_wait_set_clear(rclpy_wait_set_t * self)
 {
-  if (-1 == PySet_Clear(self->pysubs) ||
-    -1 == PySet_Clear(self->pytmrs) ||
-    -1 == PySet_Clear(self->pygcs) ||
-    -1 == PySet_Clear(self->pyclis) ||
-    -1 == PySet_Clear(self->pysrvs))
+  if (-1 == PySequence_DelSlice(self->pysubs, 0, PySequence_Length(self->pysubs)) ||
+    -1 == PySequence_DelSlice(self->pytmrs, 0, PySequence_Length(self->pytmrs)) ||
+    -1 == PySequence_DelSlice(self->pygcs, 0, PySequence_Length(self->pygcs)) ||
+    -1 == PySequence_DelSlice(self->pyclis, 0, PySequence_Length(self->pyclis)) ||
+    -1 == PySequence_DelSlice(self->pysrvs, 0, PySequence_Length(self->pysrvs)))
   {
     return NULL;
   }
 
   Py_RETURN_NONE;
 }
-
 
 /// Return True if an entity is ready
 /**
@@ -565,13 +564,7 @@ rclpy_wait_set_is_ready(rclpy_wait_set_t * self, PyObject * args)
 
   pyentity = _rclpy_to_pycapsule(pyentity);
 
-  // Arbitrary python code could invalidate references in __hash__
-  Py_INCREF(self);
-  Py_INCREF(pyentity);
-  int contains = PySet_Contains(self->pyready, pyentity);
-  Py_DECREF(pyentity);
-  Py_DECREF(self);
-
+  int contains = PySequence_Contains(self->pyready, pyentity);
   if (-1 == contains) {
     // Exception set
     return NULL;
