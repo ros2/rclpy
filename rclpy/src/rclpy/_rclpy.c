@@ -62,20 +62,19 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
   rcl_guard_condition_t * sigint_gc =
     (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
   *sigint_gc = rcl_get_zero_initialized_guard_condition();
-  PyObject * pygc = PyCapsule_New(sigint_gc, "rcl_guard_condition_t", NULL);
   rcl_guard_condition_options_t sigint_gc_options = rcl_guard_condition_get_default_options();
 
   rcl_ret_t ret = rcl_guard_condition_init(sigint_gc, sigint_gc_options);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create guard_condition: %s", rcl_get_error_string_safe());
-    Py_DECREF(pygc);
     rcl_reset_error();
+    PyMem_Free(sigint_gc);
     return NULL;
   }
   g_sigint_gc_handle = sigint_gc;
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, pygc);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(sigint_gc, "rcl_guard_condition_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl));
 
   return pylist;
@@ -101,20 +100,19 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(ar
   rcl_guard_condition_t * gc =
     (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
   *gc = rcl_get_zero_initialized_guard_condition();
-  PyObject * pygc = PyCapsule_New(gc, "rcl_guard_condition_t", NULL);
   rcl_guard_condition_options_t gc_options = rcl_guard_condition_get_default_options();
 
   rcl_ret_t ret = rcl_guard_condition_init(gc, gc_options);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create guard_condition: %s", rcl_get_error_string_safe());
-    Py_DECREF(pygc);
     rcl_reset_error();
+    PyMem_Free(gc);
     return NULL;
   }
   PyObject * pylist = PyList_New(2);
 
-  PyList_SET_ITEM(pylist, 0, pygc);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(gc, "rcl_guard_condition_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&gc->impl));
 
   return pylist;
@@ -210,10 +208,10 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
         "Unknown error creating node: %s", rcl_get_error_string_safe());
     }
     rcl_reset_error();
+    PyMem_Free(node);
     return NULL;
   }
-  PyObject * pynode = PyCapsule_New(node, "rcl_node_t", NULL);
-  return pynode;
+  return PyCapsule_New(node, "rcl_node_t", NULL);
 }
 
 /// Get the name of a node.
@@ -678,10 +676,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   rosidl_message_type_support_t * ts =
     (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
 
-  rcl_publisher_t * publisher = (rcl_publisher_t *)PyMem_Malloc(sizeof(rcl_publisher_t));
-  *publisher = rcl_get_zero_initialized_publisher();
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
-  PyObject * pypublisher = PyCapsule_New(publisher, "rcl_publisher_t", NULL);
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
@@ -694,6 +689,9 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
+  rcl_publisher_t * publisher = (rcl_publisher_t *)PyMem_Malloc(sizeof(rcl_publisher_t));
+  *publisher = rcl_get_zero_initialized_publisher();
+
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_TOPIC_NAME_INVALID) {
@@ -704,11 +702,11 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
       PyErr_Format(PyExc_RuntimeError,
         "Failed to create publisher: %s", rcl_get_error_string_safe());
     }
-    Py_DECREF(pypublisher);
     rcl_reset_error();
+    PyMem_Free(publisher);
     return NULL;
   }
-  return pypublisher;
+  return PyCapsule_New(publisher, "rcl_publisher_t", NULL);
 }
 
 /// Publish a message
@@ -804,19 +802,18 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_timer_t * timer = (rcl_timer_t *) PyMem_Malloc(sizeof(rcl_timer_t));
-  PyObject * pytimer = PyCapsule_New(timer, "rcl_timer_t", NULL);
   *timer = rcl_get_zero_initialized_timer();
 
   rcl_ret_t ret = rcl_timer_init(timer, period_nsec, NULL, rcl_get_default_allocator());
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create subscriptions: %s", rcl_get_error_string_safe());
-    Py_DECREF(pytimer);
     rcl_reset_error();
+    PyMem_Free(timer);
     return NULL;
   }
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, pytimer);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(timer, "rcl_timer_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
 
   return pylist;
@@ -1170,10 +1167,6 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   rosidl_message_type_support_t * ts =
     (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
 
-  rcl_subscription_t * subscription =
-    (rcl_subscription_t *)PyMem_Malloc(sizeof(rcl_subscription_t));
-  *subscription = rcl_get_zero_initialized_subscription();
-  PyObject * pysubscription = PyCapsule_New(subscription, "rcl_subscription_t", NULL);
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
@@ -1187,6 +1180,10 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
+  rcl_subscription_t * subscription =
+    (rcl_subscription_t *)PyMem_Malloc(sizeof(rcl_subscription_t));
+  *subscription = rcl_get_zero_initialized_subscription();
+
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_TOPIC_NAME_INVALID) {
@@ -1197,12 +1194,12 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
       PyErr_Format(PyExc_RuntimeError,
         "Failed to create subscription: %s", rcl_get_error_string_safe());
     }
-    Py_DECREF(pysubscription);
     rcl_reset_error();
+    PyMem_Free(subscription);
     return NULL;
   }
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, pysubscription);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(subscription, "rcl_subscription_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl));
 
   return pylist;
@@ -1260,10 +1257,6 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   rosidl_service_type_support_t * ts =
     (rosidl_service_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
 
-  rcl_client_t * client =
-    (rcl_client_t *)PyMem_Malloc(sizeof(rcl_client_t));
-  *client = rcl_get_zero_initialized_client();
-  PyObject * pyclient = PyCapsule_New(client, "rcl_client_t", NULL);
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
@@ -1277,6 +1270,9 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
+  rcl_client_t * client = (rcl_client_t *)PyMem_Malloc(sizeof(rcl_client_t));
+  *client = rcl_get_zero_initialized_client();
+
   rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {
@@ -1287,12 +1283,12 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
       PyErr_Format(PyExc_RuntimeError,
         "Failed to create client: %s", rcl_get_error_string_safe());
     }
-    Py_DECREF(pyclient);
     rcl_reset_error();
+    PyMem_Free(client);
     return NULL;
   }
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, pyclient);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(client, "rcl_client_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&client->impl));
 
   return pylist;
@@ -1414,10 +1410,6 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
   rosidl_service_type_support_t * ts =
     (rosidl_service_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
 
-  rcl_service_t * service =
-    (rcl_service_t *)PyMem_Malloc(sizeof(rcl_service_t));
-  *service = rcl_get_zero_initialized_service();
-  PyObject * pyservice = PyCapsule_New(service, "rcl_service_t", NULL);
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
@@ -1431,6 +1423,8 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
+  rcl_service_t * service = (rcl_service_t *)PyMem_Malloc(sizeof(rcl_service_t));
+  *service = rcl_get_zero_initialized_service();
   rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {
@@ -1441,12 +1435,12 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
       PyErr_Format(PyExc_RuntimeError,
         "Failed to create service: %s", rcl_get_error_string_safe());
     }
-    Py_DECREF(pyservice);
+    PyMem_Free(service);
     rcl_reset_error();
     return NULL;
   }
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, pyservice);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(service, "rcl_service_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&service->impl));
 
   return pylist;
@@ -2101,14 +2095,13 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   }
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
   rcl_ret_t ret = rcl_take_request(service, header, taken_request);
-  PyObject * pyheader = PyCapsule_New(header, "rmw_request_id_t", NULL);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
       "Service failed to take request: %s", rcl_get_error_string_safe());
-    Py_DECREF(pyheader);
     rcl_reset_error();
     destroy_ros_message(taken_request);
+    PyMem_Free(header);
     return NULL;
   }
 
@@ -2123,17 +2116,18 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
     destroy_ros_message(taken_request);
     if (!pytaken_request) {
       // the function has set the Python error
-      Py_DECREF(pyheader);
+      PyMem_Free(header);
       return NULL;
     }
 
     PyObject * pylist = PyList_New(2);
     PyList_SET_ITEM(pylist, 0, pytaken_request);
-    PyList_SET_ITEM(pylist, 1, pyheader);
+    PyList_SET_ITEM(pylist, 1, PyCapsule_New(header, "rmw_request_id_t", NULL));
 
     return pylist;
   }
   // if take_request failed, just do nothing
+  PyMem_Free(header);
   Py_RETURN_NONE;
 }
 
