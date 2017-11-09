@@ -77,15 +77,12 @@ add_library(
   SHARED src/rclpy/sigint_gc.c
 )
 target_include_directories(rclpy_sigint PUBLIC ${CMAKE_SOURCE_DIR})
-install(
-  TARGETS rclpy_sigint
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
+install(TARGETS rclpy_sigint DESTINATION lib)
 ament_target_dependencies(rclpy_sigint
   "rcl"
 )
+# Other packages will need to be able to load this library when importing rclpy
+ament_export_libraries(rclpy_sigint)
 
 # Main library
 add_library(
