@@ -18,7 +18,6 @@ from threading import Condition
 from threading import Lock
 
 from rclpy.guard_condition import GuardCondition
-from rclpy.guard_condition import KeyboardInterruptGuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.implementation_singleton import rclpy_wait_set_implementation as _rclpy_wait_set
 from rclpy.timer import WallTimer
@@ -83,7 +82,7 @@ class Executor:
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         self._guard_condition = GuardCondition(None, None)
         # Triggered by signal handler for sigint
-        self._sigint_gc = KeyboardInterruptGuardCondition()
+        self._sigint_gc, _ = _rclpy.rclpy_get_sigint_guard_condition()
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
@@ -106,7 +105,7 @@ class Executor:
         with self._nodes_lock:
             self._nodes = set()
         _rclpy.rclpy_destroy_entity(self._guard_condition.guard_handle)
-        _rclpy.rclpy_destroy_entity(self._sigint_gc.guard_handle)
+        _rclpy.rclpy_destroy_entity(self._sigint_gc)
 
         self._guard_condition = None
         self._sigint_gc = None
@@ -115,7 +114,7 @@ class Executor:
     def __del__(self):
         if self._guard_condition is not None:
             _rclpy.rclpy_destroy_entity(self._guard_condition.guard_handle)
-            _rclpy.rclpy_destroy_entity(self._sigint_gc.guard_handle)
+            _rclpy.rclpy_destroy_entity(self._sigint_gc)
 
     def add_node(self, node):
         """

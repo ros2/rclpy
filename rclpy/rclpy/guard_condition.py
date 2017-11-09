@@ -28,15 +28,3 @@ class GuardCondition:
 
     def trigger(self):
         _rclpy.rclpy_trigger_guard_condition(self.guard_handle)
-
-
-class KeyboardInterruptGuardCondition:
-
-    def __init__(self):
-        self.guard_handle, self.guard_pointer = _rclpy.rclpy_get_sigint_guard_condition()
-
-
-class NodeGraphGuardCondition:
-
-    def __init__(self, node_handle):
-        self.guard_handle, self.guard_pointer = _rclpy.rclpy_get_graph_guard_condition(node_handle)

@@ -14,7 +14,6 @@
 
 import threading
 
-from rclpy.graph_listener import GraphEventSubscription
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.implementation_singleton import rclpy_wait_set_implementation as _rclpy_wait_set
 import rclpy.utilities
@@ -29,6 +28,7 @@ class ResponseThread(threading.Thread):
 
     def run(self):
         [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
+        self._wait_set.clear()
         self._wait_set.add_guard_conditions([sigint_gc])
         self._wait_set.add_clients([self.client.client_handle])
 
@@ -73,39 +73,3 @@ class Client:
         thread1 = ResponseThread(self)
         thread1.start()
         thread1.join()
-
-    def service_is_ready(self):
-        return _rclpy.rclpy_service_server_is_available(self.node_handle, self.client_handle)
-
-    def wait_for_service(self, timeout_sec=None):
-        """
-        Block until the service is available.
-
-        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
-        :type timeout_sec: float or None
-        :rtype: bool
-        :returns: true if the service is available
-        """
-        timeout_nsec = rclpy.utilities.timeout_sec_to_nsec(timeout_sec)
-        result = self.service_is_ready()
-        if result or timeout_sec == 0:
-            return result
-
-        event = threading.Event()
-
-        def on_graph_event():
-            nonlocal self
-            nonlocal event
-            nonlocal result
-            result = self.service_is_ready()
-            if result:
-                event.set()
-
-        def on_timeout():
-            nonlocal event
-            event.set()
-
-        with GraphEventSubscription(self.node_handle, on_graph_event, timeout_nsec, on_timeout):
-            event.wait()
-
-        return result

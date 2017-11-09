@@ -31,43 +31,6 @@
 #include "src/rclpy/sigint_gc.h"
 
 
-/// Get a guard condition for node graph events
-/**
- * Raises ValueError if the provided argument is not a PyCapsule.
- *
- * A successful call will return a list with two elements:
- *
- * - a Capsule with the pointer of the retrieved rcl_guard_condition_t * structure
- * - an integer representing the memory address of the rcl_guard_condition_t
- *
- * \param[in] A capsule containing rcl_node_t *
- * \return a list with the capsule and memory location, or
- * \return NULL on failure
- */
-static PyObject *
-rclpy_get_graph_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pynode;
-
-  if (!PyArg_ParseTuple(args, "O", &pynode)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-
-  rcl_guard_condition_t * guard_condition =
-    (rcl_guard_condition_t *)rcl_node_get_graph_guard_condition(node);
-
-  PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(guard_condition, "rcl_guard_condition_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&guard_condition->impl));
-
-  return pylist;
-}
-
 /// Create a sigint guard condition
 /**
  * A successful call will return a list with two elements:
@@ -1543,49 +1506,6 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Check if a service server is available
-/**
- * Raises ValueError if the arguments are not capsules
- *
- * \param[in] pynode Capsule pointing to the node the entity belongs to
- * \param[in] pyclient Capsule pointing to the client
- * \return True if the service server is available
- */
-static PyObject *
-rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pynode;
-  PyObject * pyclient;
-
-  if (!PyArg_ParseTuple(args, "OO", &pynode, &pyclient)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-  rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, "rcl_client_t");
-  if (!client) {
-    return NULL;
-  }
-
-  bool is_ready;
-  rcl_ret_t ret = rcl_service_server_is_available(node, client, &is_ready);
-
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to check service availability: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    return NULL;
-  }
-
-  if (is_ready) {
-    Py_RETURN_TRUE;
-  }
-  Py_RETURN_FALSE;
-}
-
 /// Destroy an entity attached to a node
 /**
  * Entity type must be one of ["subscription", "publisher", "client", "service"].
@@ -2363,15 +2283,6 @@ static PyMethodDef rclpy_methods[] = {
     "Create a Timer."
   },
 
-  {
-    "rclpy_service_server_is_available", rclpy_service_server_is_available, METH_VARARGS,
-    "Return true if the service server is available"
-  },
-
-  {
-    "rclpy_get_graph_guard_condition", rclpy_get_graph_guard_condition, METH_VARARGS,
-    "Get a guard condition that is triggered when the node graph updates."
-  },
   {
     "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
     "Create a guard_condition triggered when sigint is received."

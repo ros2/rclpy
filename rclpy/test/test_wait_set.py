@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import unittest
 
 from rcl_interfaces.srv import GetParameters
@@ -115,7 +116,8 @@ class TestWaitSet(unittest.TestCase):
             self.assertFalse(ws.is_ready(cli))
             self.assertFalse(ws.is_ready(srv))
 
-            cli.wait_for_service()
+            # TODO(Sloretz) replace with wait_for_service()
+            time.sleep(5)
             cli.call(GetParameters.Request())
 
             ws.wait(5 * S_TO_NS)
