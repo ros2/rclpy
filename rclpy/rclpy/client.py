@@ -14,7 +14,9 @@
 
 import threading
 
+from rclpy.graph_listener import GraphEventSubscription
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_wait_set_implementation as _rclpy_wait_set
 import rclpy.utilities
 
 
@@ -23,24 +25,18 @@ class ResponseThread(threading.Thread):
     def __init__(self, client):
         threading.Thread.__init__(self)
         self.client = client
-        self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(self.wait_set, 0, 1, 0, 1, 0)
-        _rclpy.rclpy_wait_set_clear_entities('client', self.wait_set)
-        _rclpy.rclpy_wait_set_add_entity(
-            'client', self.wait_set, self.client.client_handle)
+        self._wait_set = _rclpy_wait_set.WaitSet()
 
     def run(self):
         [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
-        _rclpy.rclpy_wait_set_add_entity('guard_condition', self.wait_set, sigint_gc)
+        self._wait_set.add_guard_conditions([sigint_gc])
+        self._wait_set.add_clients([self.client.client_handle])
 
-        _rclpy.rclpy_wait(self.wait_set, -1)
-
-        guard_condition_ready_list = \
-            _rclpy.rclpy_get_ready_entities('guard_condition', self.wait_set)
+        self._wait_set.wait(-1)
 
         # destroying here to make sure we dont call shutdown before cleaning up
         _rclpy.rclpy_destroy_entity(sigint_gc)
-        if sigint_gc_handle in guard_condition_ready_list:
+        if self._wait_set.is_ready(sigint_gc):
             rclpy.utilities.shutdown()
             return
         response = _rclpy.rclpy_take_response(
@@ -77,3 +73,39 @@ class Client:
         thread1 = ResponseThread(self)
         thread1.start()
         thread1.join()
+
+    def service_is_ready(self):
+        return _rclpy.rclpy_service_server_is_available(self.node_handle, self.client_handle)
+
+    def wait_for_service(self, timeout_sec=None):
+        """
+        Block until the service is available.
+
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
+        :type timeout_sec: float or None
+        :rtype: bool
+        :returns: true if the service is available
+        """
+        timeout_nsec = rclpy.utilities.timeout_sec_to_nsec(timeout_sec)
+        result = self.service_is_ready()
+        if result or timeout_sec == 0:
+            return result
+
+        event = threading.Event()
+
+        def on_graph_event():
+            nonlocal self
+            nonlocal event
+            nonlocal result
+            result = self.service_is_ready()
+            if result:
+                event.set()
+
+        def on_timeout():
+            nonlocal event
+            event.set()
+
+        with GraphEventSubscription(self.node_handle, on_graph_event, timeout_nsec, on_timeout):
+            event.wait()
+
+        return result

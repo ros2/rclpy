@@ -14,6 +14,7 @@
 
 import threading
 
+from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 g_shutdown_lock = threading.Lock()
@@ -38,3 +39,23 @@ def try_shutdown():
 
 def get_rmw_implementation_identifier():
     return _rclpy.rclpy_get_rmw_implementation_identifier()
+
+
+def timeout_sec_to_nsec(timeout_sec):
+    """
+    Convert timeout in seconds to rcl compatible timeout in nanoseconds.
+
+    Python tends to use floating point numbers in seconds for timeouts. This utility converts a
+    python-style timeout to an integer in nanoseconds that can be used by rcl_wait.
+
+    :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if < 1ns
+    :type timeout_sec: float or None
+    :rtype: int
+    :returns: rcl_wait compatible timeout in nanoseconds
+    """
+    if timeout_sec is None or timeout_sec < 0:
+        # Block forever
+        return -1
+    else:
+        # wait for given time
+        return int(float(timeout_sec) * S_TO_NS)
