@@ -71,6 +71,7 @@ function(configure_python_c_extension_library _library_name)
 endfunction()
 
 
+
 # Sigint handling stuff
 add_library(
   rclpy_sigint
@@ -83,6 +84,8 @@ ament_target_dependencies(rclpy_sigint
 )
 # Other packages will need to be able to load this library when importing rclpy
 ament_export_libraries(rclpy_sigint)
+# Windows dllimport/dllexport (GenerateExportHeader broken for C on this version of CMake)
+target_compile_definitions(rclpy_sigint PRIVATE "RCLPY_SIGINT_BUILDING_LIBRARY")
 
 # Main library
 add_library(
