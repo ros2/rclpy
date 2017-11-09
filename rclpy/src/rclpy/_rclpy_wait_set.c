@@ -151,6 +151,8 @@ _rclpy_add_entity(
   PyObject * pyiter = PyObject_GetIter(pyentities);
   if (!pyiter) {
     // exception set
+    Py_DECREF(pylist);
+    Py_DECREF(pyentities);
     return RCL_RET_ERROR;
   }
 
@@ -161,7 +163,7 @@ _rclpy_add_entity(
       pyentity = PyObject_GetAttrString(pyentity, handle_attr);
     }
 
-    // No chance of arbitracy python code below, so decref early
+    // No chance of arbitrary python code below, so decref early
     Py_DECREF(pyentity);
 
     if (!pyentity) {
