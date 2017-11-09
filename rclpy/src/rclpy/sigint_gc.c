@@ -14,7 +14,7 @@
 
 #include "src/rclpy/sigint_gc.h"
 
-#include <Python.h>
+#include <stdio.h>
 
 #include <rcl/error_handling.h>
 
@@ -26,8 +26,7 @@ void rclpy_catch_function(int signo)
   (void) signo;
   rcl_ret_t ret = rcl_trigger_guard_condition(g_rclpy_sigint_gc_handle);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
+    fprintf(stderr, "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
     rcl_reset_error();
   }
 }

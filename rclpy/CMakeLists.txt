@@ -77,7 +77,12 @@ add_library(
   SHARED src/rclpy/sigint_gc.c
 )
 target_include_directories(rclpy_sigint PUBLIC ${CMAKE_SOURCE_DIR})
-configure_python_c_extension_library(rclpy_sigint)
+install(
+  TARGETS rclpy_sigint
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 ament_target_dependencies(rclpy_sigint
   "rcl"
 )
