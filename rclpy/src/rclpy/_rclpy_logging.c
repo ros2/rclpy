@@ -20,43 +20,142 @@
 
 /// Initialize the logging system.
 /**
- * \return None
+ * \return None or
+ * \return NULL on failure
  */
 static PyObject *
 rclpy_logging_initialize(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  rcutils_logging_initialize();
+  rcutils_ret_t ret = rcutils_logging_initialize();
+  if (ret != RCUTILS_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to initialize logging system, return code: %d\n", ret);
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
-/// Get the global severity threshold of the logging system.
+/// Shutdown the logging system.
 /**
- * \return severity
+ * \return None or
+ * \return NULL on failure
  */
 static PyObject *
-rclpy_logging_get_severity_threshold(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_logging_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  int severity = rcutils_logging_get_severity_threshold();
+  // TODO(dhood): error checking
+  rcutils_ret_t ret = rcutils_logging_shutdown();
+  if (ret != RCUTILS_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to shutdown logging system, return code: %d\n", ret);
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
 
+/// Get the severity threshold of a logger.
+/**
+ * \param[in] name Fully-qualified name of logger.
+ * \return The logger severity threshold if it has been set, or
+ * \return `RCUTILS_LOG_SEVERITY_UNSET` if it is unset, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_logging_get_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * name;
+  if (!PyArg_ParseTuple(args, "s", &name)) {
+    return NULL;
+  }
+  int severity = rcutils_logging_get_logger_severity_threshold(name);
+
+  if (severity < 0) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get severity threshold for logger \"%s\", return code: %d\n",
+      name, severity);
+    return NULL;
+  }
   return PyLong_FromLong(severity);
 }
 
-/// Set the global severity threshold of the logging system.
+/// Set the severity threshold of a logger.
 /**
  *
+ * \param[in] name Fully-qualified name of logger.
  * \param[in] severity Threshold to set
- * \return None
+ * \return None or
+ * \return NULL on failure
  */
 static PyObject *
-rclpy_logging_set_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_logging_set_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
 {
+  const char * name;
   int severity;
-  if (!PyArg_ParseTuple(args, "i", &severity)) {
+  if (!PyArg_ParseTuple(args, "si", &name, &severity)) {
     return NULL;
   }
 
-  rcutils_logging_set_severity_threshold(severity);
+  rcutils_ret_t ret = rcutils_logging_set_logger_severity_threshold(name, severity);
+  if (ret != RCUTILS_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to set severity threshold \"%d\" for logger \"%s\", return code: %d\n",
+      severity, name, ret);
+    return NULL;
+  }
   Py_RETURN_NONE;
+}
+
+/// Get the effective severity threshold of a logger.
+/**
+ * The effective severity threshold is determined as the logger severity if it has been set,
+ * otherwise it defers to the severity threshold of the logger's ancestors, and if all are unset
+ * the default severity threshold is used.
+ *
+ * \param[in] name Fully-qualified name of logger.
+ * \return The effective severity threshold, or
+ * \return NULL of failure.
+ */
+static PyObject *
+rclpy_logging_get_logger_effective_severity_threshold(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * name;
+  if (!PyArg_ParseTuple(args, "s", &name)) {
+    return NULL;
+  }
+  int severity = rcutils_logging_get_logger_effective_severity_threshold(name);
+
+  if (severity < 0) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get effective severity threshold for logger \"%s\", return code: %d\n",
+      name, severity);
+    return NULL;
+  }
+  return PyLong_FromLong(severity);
+}
+
+/// Determine if the logger is enabled for a severity.
+/**
+ *
+ * \param[in] name Fully-qualified name of logger.
+ * \param[in] severity Logging severity to compare against.
+ * \return True if the logger is enabled for the severity,
+ * \return False otherwise.
+ */
+static PyObject *
+rclpy_logging_logger_is_enabled_for(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * name;
+  int severity;
+  if (!PyArg_ParseTuple(args, "si", &name, &severity)) {
+    return NULL;
+  }
+
+  bool is_enabled = rcutils_logging_logger_is_enabled_for(name, severity);
+  if (is_enabled) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
 }
 
 /// Log a message through rcutils with the specified severity.
@@ -98,12 +197,25 @@ static PyMethodDef rclpy_logging_methods[] = {
     "Initialize the logging system."
   },
   {
-    "rclpy_logging_get_severity_threshold", rclpy_logging_get_severity_threshold, METH_NOARGS,
-    "Get the global severity threshold."
+    "rclpy_logging_shutdown", rclpy_logging_shutdown, METH_NOARGS,
+    "Shutdown the logging system."
   },
   {
-    "rclpy_logging_set_severity_threshold", rclpy_logging_set_severity_threshold, METH_VARARGS,
-    "Set the global severity threshold."
+    "rclpy_logging_get_logger_severity_threshold", rclpy_logging_get_logger_severity_threshold,
+    METH_VARARGS, "Get the severity threshold of a logger."
+  },
+  {
+    "rclpy_logging_set_logger_severity_threshold", rclpy_logging_set_logger_severity_threshold,
+    METH_VARARGS, "Set the severity threshold of a logger."
+  },
+  {
+    "rclpy_logging_get_logger_effective_severity_threshold",
+    rclpy_logging_get_logger_effective_severity_threshold,
+    METH_VARARGS, "Get the effective severity threshold of a logger."
+  },
+  {
+    "rclpy_logging_logger_is_enabled_for", rclpy_logging_logger_is_enabled_for,
+    METH_VARARGS, "Determine if a logger is enabled for a severity."
   },
   {
     "rclpy_logging_rcutils_log", rclpy_logging_rcutils_log, METH_VARARGS,

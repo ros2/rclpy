@@ -15,6 +15,7 @@
 
 from enum import IntEnum
 
+from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
 import rclpy.impl.rcutils_logger
 
 
@@ -25,27 +26,50 @@ class LoggingSeverity(IntEnum):
     This enum must match the one defined in rcutils/logging.h
     """
 
-    DEBUG = 0
-    INFO = 1
-    WARN = 2
-    ERROR = 3
-    FATAL = 4
+    UNSET = 0
+    DEBUG = 10
+    INFO = 20
+    WARN = 30
+    ERROR = 40
+    FATAL = 50
+
+
+root_logger = rclpy.impl.rcutils_logger.RcutilsLogger()
 
 
 def get_named_logger(name):
-    return rclpy.impl.rcutils_logger.RcutilsLogger(name)
+    if not name:
+        raise ValueError('Logger name must not be empty.')
+    return root_logger.get_child(name)
 
 
-root_logger = get_named_logger('')
+def initialize():
+    return _rclpy_logging.rclpy_logging_initialize()
 
 
-def get_severity_threshold():
-    return LoggingSeverity(root_logger.get_severity_threshold())
+def shutdown():
+    return _rclpy_logging.rclpy_logging_shutdown()
 
 
-def set_severity_threshold(severity):
+def clear_config():
+    """Clear the configuration of the logging system, e.g. logger severity thresholds."""
+    shutdown()
+    initialize()
+
+
+def get_logger_severity_threshold(name):
+    severity = _rclpy_logging.rclpy_logging_get_logger_severity_threshold(name)
+    return LoggingSeverity(severity)
+
+
+def set_logger_severity_threshold(name, severity):
     severity = LoggingSeverity(severity)
-    return root_logger.set_severity_threshold(severity)
+    return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(name, severity)
+
+
+def get_logger_effective_severity_threshold(name):
+    severity = _rclpy_logging.rclpy_logging_get_logger_effective_severity_threshold(name)
+    return LoggingSeverity(severity)
 
 
 def logdebug(message, **kwargs):

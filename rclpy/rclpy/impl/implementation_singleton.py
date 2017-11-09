@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Provide singleton access to the rclpy C module.
+Provide singleton access to the rclpy C modules.
 
 For example, you might use it like this:
 
@@ -31,6 +31,7 @@ import os
 
 try:
     rclpy_implementation = importlib.import_module('._rclpy', package='rclpy')
+    rclpy_logging_implementation = importlib.import_module('._rclpy_logging', package='rclpy')
 except ImportError as e:
     if e.path is not None and os.path.isfile(e.path):
         e.msg += \

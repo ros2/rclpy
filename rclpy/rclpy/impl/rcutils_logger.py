@@ -15,12 +15,11 @@
 
 from collections import namedtuple
 from collections import OrderedDict
-import importlib
 import inspect
 import os
 import time
 
-_rclpy_logging = importlib.import_module('._rclpy_logging', package='rclpy')
+from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
 _internal_callers = []
@@ -221,15 +220,35 @@ class RcutilsLogger:
         self.name = name
         self.contexts = {}
 
+    def get_child(self, name):
+        if not name:
+            raise ValueError('Child logger name must not be empty.')
+        if self.name:
+            # Prepend the name of this logger
+            name = self.name + '.' + name
+        return RcutilsLogger(name=name)
+
     def get_severity_threshold(self):
         from rclpy.logging import LoggingSeverity
-        severity = LoggingSeverity(_rclpy_logging.rclpy_logging_get_severity_threshold())
+        severity = LoggingSeverity(
+            _rclpy_logging.rclpy_logging_get_logger_severity_threshold(self.name))
         return severity
 
     def set_severity_threshold(self, severity):
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
-        return _rclpy_logging.rclpy_logging_set_severity_threshold(severity)
+        return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(self.name, severity)
+
+    def get_effective_severity_threshold(self):
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(
+            _rclpy_logging.rclpy_logging_get_logger_effective_severity_threshold(self.name))
+        return severity
+
+    def is_enabled_for(self, severity):
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(severity)
+        return _rclpy_logging.rclpy_logging_logger_is_enabled_for(self.name, severity)
 
     def log(self, message, severity, **kwargs):
         r"""
@@ -300,7 +319,7 @@ class RcutilsLogger:
                 return False
 
         # Only log the message if the severity is appropriate.
-        if severity < self.get_severity_threshold():
+        if not self.is_enabled_for(severity):
             return False
 
         # Call the relevant function from the C extension.
