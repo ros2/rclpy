@@ -606,9 +606,14 @@ static PyMethodDef rclpy_wait_set_methods[] = {
 
 // Partially initializing is recommended in the python docs
 // I don't see a way to complete the initializer without duplicating #ifdef in cpython header
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 /// Python type _rclpy_wait_set.WaitSet
+#if defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#elif defined(__GNUC__) || defined(__GNUG__)
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
 static PyTypeObject rclpy_wait_set_type_t = {
   PyVarObject_HEAD_INIT(NULL, 0)
   "_rclpy_wait_set.WaitSet",    /* tp_name */
@@ -649,7 +654,11 @@ static PyTypeObject rclpy_wait_set_type_t = {
   0,                            /* tp_alloc */
   rclpy_wait_set_new,           /* tp_new */
 };
-#pragma GCC diagnostic pop
+#if defined(__clang__)
+# pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+# pragma GCC diagnostic pop
+#endif
 
 static PyModuleDef wait_set_module = {
   PyModuleDef_HEAD_INIT,
