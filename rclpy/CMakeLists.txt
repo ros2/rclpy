@@ -10,8 +10,8 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra)
 endif()
 
-find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(ament_cmake_ros REQUIRED)
 find_package(rcl REQUIRED)
 find_package(rcutils REQUIRED)
 find_package(rmw REQUIRED)
@@ -72,7 +72,7 @@ endfunction()
 
 add_library(
   rclpy
-  SHARED src/rclpy/_rclpy.c
+  src/rclpy/_rclpy.c
 )
 configure_python_c_extension_library(rclpy)
 ament_target_dependencies(rclpy
@@ -83,7 +83,7 @@ ament_target_dependencies(rclpy
 # Logging support provided by rcutils
 add_library(
   rclpy_logging
-  SHARED src/rclpy/_rclpy_logging.c
+  src/rclpy/_rclpy_logging.c
 )
 configure_python_c_extension_library(rclpy_logging)
 ament_target_dependencies(rclpy_logging
