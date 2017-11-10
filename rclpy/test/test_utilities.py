@@ -24,7 +24,7 @@ class TestUtilities(unittest.TestCase):
         self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(None))
         self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(-1))
         self.assertEqual(0, rclpy.utilities.timeout_sec_to_nsec(0))
-        self.assertEqual(1.5 * S_TO_NS, rclpy.utilities.timeout_sec_to_nsec(1.5))
+        self.assertEqual(int(1.5 * S_TO_NS), rclpy.utilities.timeout_sec_to_nsec(1.5))
 
 
 if __name__ == '__main__':
