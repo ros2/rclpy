@@ -579,7 +579,7 @@ static PyMemberDef rclpy_wait_set_members[] = {
     "service capsules"},
   {"_pyready", T_OBJECT_EX, offsetof(rclpy_wait_set_t, pyready), 0,
     "ready capsules"},
-  {NULL}  /* Sentinel */
+  {NULL, 0, 0, 0, NULL}  /* Sentinel */
 };
 
 /// Define methods of _rclpy_wait_set.WaitSet
@@ -600,7 +600,7 @@ static PyMethodDef rclpy_wait_set_methods[] = {
     "Remove all entities from the wait set."},
   {"is_ready", (PyCFunction)rclpy_wait_set_is_ready, METH_VARARGS,
     "Return True if an entity is ready."},
-  {NULL}  /* Sentinel */
+  {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
 
