@@ -70,9 +70,7 @@ function(configure_python_c_extension_library _library_name)
   )
 endfunction()
 
-
-
-# Sigint handling stuff
+# Library with signal handler
 add_library(
   rclpy_sigint
   SHARED src/rclpy/sigint_gc.c
@@ -82,9 +80,9 @@ install(TARGETS rclpy_sigint DESTINATION lib)
 ament_target_dependencies(rclpy_sigint
   "rcl"
 )
-# Other packages will need to be able to load this library when importing rclpy
+# Export so ather packages can load this library when importing rclpy
 ament_export_libraries(rclpy_sigint)
-# Windows dllimport/dllexport (GenerateExportHeader broken for C on this version of CMake)
+# Windows dllimport/dllexport
 target_compile_definitions(rclpy_sigint PRIVATE "RCLPY_SIGINT_BUILDING_LIBRARY")
 
 # Main library
