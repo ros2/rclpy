@@ -250,7 +250,7 @@ class Executor:
         :param nodes: nodes to yield work for
         :type nodes: list
         :param wait_set: wait set that has already been waited on
-        :type wait_set: rclpy.wait_set.WaitSet
+        :type wait_set: _rclpy_wait_set.WaitSet
         :rtype: Generator[(callable, entity, :class:`rclpy.node.Node`)]
         """
         yielded_work = False
@@ -293,6 +293,16 @@ class Executor:
                     yield handler, srv, node
         return yielded_work
 
+    def can_execute(self, entity):
+        """
+        Determine if a callback for an entity can be executed.
+
+        :param entity: Subscription, Timer, Guard condition, etc
+        :returns: True if the entity callback can be executed
+        :rtype: bool
+        """
+        return not entity._executor_event and entity.callback_group.can_execute(entity)
+
     def wait_for_ready_callbacks(self, timeout_sec=None, nodes=None):
         """
         Yield callbacks that are ready to be performed.
@@ -313,30 +323,26 @@ class Executor:
 
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
-            self._wait_set.clear()
             # Gather entities that can be waited on
-
-            def can_execute(entity):
-                return not entity._executor_event and entity.callback_group.can_execute(entity)
-
+            self._wait_set.clear()
             guards = []
             for node in nodes:
-                self._wait_set.add_subscriptions(filter(can_execute, node.subscriptions))
-                self._wait_set.add_timers(filter(can_execute, node.timers))
-                self._wait_set.add_clients(filter(can_execute, node.clients))
-                self._wait_set.add_services(filter(can_execute, node.services))
-                guards.extend(filter(can_execute, node.guards))
+                self._wait_set.add_subscriptions(filter(self.can_execute, node.subscriptions))
+                self._wait_set.add_timers(filter(self.can_execute, node.timers))
+                self._wait_set.add_clients(filter(self.can_execute, node.clients))
+                self._wait_set.add_services(filter(self.can_execute, node.services))
+                guards.extend(filter(self.can_execute, node.guards))
 
             # retrigger a guard condition that was triggered but not handled
             for gc in guards:
                 if gc._executor_triggered:
                     gc.trigger()
 
-            if timeout_timer is not None:
-                self._wait_set.add_timers((timeout_timer,))
-
             self._wait_set.add_guard_conditions((self._sigint_gc, self._guard_condition))
             self._wait_set.add_guard_conditions(guards)
+
+            if timeout_timer is not None:
+                self._wait_set.add_timers((timeout_timer,))
 
             # Wait for something to become ready
             self._wait_set.wait(timeout_nsec)
