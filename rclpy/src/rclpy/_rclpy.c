@@ -2186,7 +2186,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
   PyMem_Free(header);
 
-  if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
+  if (ret == RCL_RET_OK) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pyresponse_type, "_CONVERT_TO_PY");
 
     typedef PyObject *(* convert_to_py_signature)(void *);
@@ -2202,8 +2202,11 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
 
     return pytaken_response;
   }
-  // if take_response failed, just do nothing
-  Py_RETURN_NONE;
+  PyErr_Format(PyExc_RuntimeError,
+    "Client failed to take response: %s", rcl_get_error_string_safe());
+  rcl_reset_error();
+
+  return NULL;
 }
 
 /// Status of the the client library
