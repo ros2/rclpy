@@ -2186,7 +2186,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
   PyMem_Free(header);
 
-  if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
+  if (ret != RCL_RET_CLIENT_TAKE_FAILED) {
     PyObject * pyconvert_to_py = PyObject_GetAttrString(pyresponse_type, "_CONVERT_TO_PY");
 
     typedef PyObject *(* convert_to_py_signature)(void *);
