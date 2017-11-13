@@ -104,8 +104,8 @@ class TestLogging(unittest.TestCase):
                 throttle_duration_sec=1,
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
             ))
-            time.sleep(0.3)
-        self.assertEqual(message_was_logged, [True] + [False] * 3 + [True])
+            time.sleep(0.4)
+        self.assertEqual(message_was_logged, [True, False, False, True, False])
 
     def test_log_skip_first(self):
         message_was_logged = []
