@@ -105,7 +105,14 @@ class TestLogging(unittest.TestCase):
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
             ))
             time.sleep(0.4)
-        self.assertEqual(message_was_logged, [True, False, False, True, False])
+        self.assertEqual(
+            message_was_logged, [
+                True,  # t=0, not throttled
+                False,  # t=0.4, throttled
+                False,  # t=0.8, throttled
+                True,  # t=1.2, not throttled
+                False  # t=1.6, throttled
+            ])
 
     def test_log_skip_first(self):
         message_was_logged = []
@@ -129,8 +136,15 @@ class TestLogging(unittest.TestCase):
                 throttle_duration_sec=1,
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
             ))
-            time.sleep(0.3)
-        self.assertEqual(message_was_logged, [False] * 4 + [True])
+            time.sleep(0.4)
+        self.assertEqual(
+            message_was_logged, [
+                False,  # t=0, not throttled, but skipped because first
+                False,  # t=0.4, throttled
+                False,  # t=0.8, throttled
+                True,  # t=1.2, not throttled
+                False  # t=1.6, throttled
+            ])
 
     def test_log_skip_first_once(self):
         # Because of the ordering of supported_filters, first the skip_first condition will be
