@@ -32,6 +32,9 @@ class TestValidateNodeName(unittest.TestCase):
         # node name must not be empty
         with self.assertRaisesRegex(InvalidNodeNameException, 'must not be empty'):
             validate_node_name('')
+        # node name may not contain '.'
+        with self.assertRaisesRegex(InvalidNodeNameException, 'must not contain characters'):
+            validate_node_name('invalid_node.')
         # node name may not contain '?'
         with self.assertRaisesRegex(InvalidNodeNameException, 'must not contain characters'):
             validate_node_name('invalid_node?')
