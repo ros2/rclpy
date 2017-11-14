@@ -105,7 +105,6 @@ class TestLogging(unittest.TestCase):
                 throttle_time_source_type='RCUTILS_STEADY_TIME',
             ))
             time.sleep(0.4)
-        self.assertEqual(message_was_logged, [True, False, False, True, False])
         self.assertEqual(
             message_was_logged, [
                 True,  # t=0, not throttled
