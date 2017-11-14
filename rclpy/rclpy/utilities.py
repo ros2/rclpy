@@ -14,27 +14,33 @@
 
 import threading
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
 g_shutdown_lock = threading.Lock()
 
 
 def ok():
+    # imported locally to avoid loading extensions on module import
+    from rclpy.impl.implementation_singleton import rclpy_implementation
     with g_shutdown_lock:
-        return _rclpy.rclpy_ok()
+        return rclpy_implementation.rclpy_ok()
 
 
 def shutdown():
+    # imported locally to avoid loading extensions on module import
+    from rclpy.impl.implementation_singleton import rclpy_implementation
     with g_shutdown_lock:
-        return _rclpy.rclpy_shutdown()
+        return rclpy_implementation.rclpy_shutdown()
 
 
 def try_shutdown():
     """Shutdown rclpy if not already shutdown."""
+    # imported locally to avoid loading extensions on module import
+    from rclpy.impl.implementation_singleton import rclpy_implementation
     with g_shutdown_lock:
-        if _rclpy.rclpy_ok():
-            return _rclpy.rclpy_shutdown()
+        if rclpy_implementation.rclpy_ok():
+            return rclpy_implementation.rclpy_shutdown()
 
 
 def get_rmw_implementation_identifier():
-    return _rclpy.rclpy_get_rmw_implementation_identifier()
+    # imported locally to avoid loading extensions on module import
+    from rclpy.impl.implementation_singleton import rclpy_implementation
+    return rclpy_implementation.rclpy_get_rmw_implementation_identifier()

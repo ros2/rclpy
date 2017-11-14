@@ -1,4 +1,4 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2016-2017 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import importlib
 import sys
 
 assert 'rclpy' not in sys.modules, 'rclpy should not have been imported before running tests'
-sys.path.insert(0, os.getcwd())
 
-import rclpy  # noqa
-assert rclpy  # silence pyflakes
+# this will make the extensions load from the build folder
+import rclpy.impl  # noqa
+import test_rclpy  # noqa
+
+
+def _custom_import(name):
+    return importlib.import_module(name, package='test_rclpy')
+
+
+rclpy.impl._import = _custom_import
