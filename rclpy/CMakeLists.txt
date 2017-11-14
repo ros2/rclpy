@@ -97,6 +97,8 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
+  find_package(ament_cmake_pytest REQUIRED)
+
   rosidl_generator_py_get_typesupports(_typesupport_impls)
   ament_index_get_prefix_path(ament_index_build_path SKIP_AMENT_PREFIX_PATH)
   # Get the first item (it will be the build space version of the build path).
@@ -106,7 +108,7 @@ if(BUILD_TESTING)
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
   if(NOT _typesupport_impls STREQUAL "")
-    ament_add_nose_test(rclpytests test
+    ament_add_pytest_test(rclpytests test
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
       PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
