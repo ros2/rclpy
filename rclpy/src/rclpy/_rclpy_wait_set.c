@@ -470,7 +470,7 @@ _rclpy_build_ready_entities(rclpy_wait_set_t * self)
  * This function will wait for an event to happen or for the timeout to expire.
  * A negative timeout means wait forever, a timeout of 0 means no wait
  * \param[in] timeout optional time to wait before waking up (in nanoseconds)
- * \return NULL
+ * \return None
  */
 static PyObject *
 rclpy_wait_set_wait(rclpy_wait_set_t * self, PyObject * args)
