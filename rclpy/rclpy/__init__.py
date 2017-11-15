@@ -14,9 +14,6 @@
 
 import sys
 
-from rclpy.executors import SingleThreadedExecutor as _SingleThreadedExecutor
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.node import Node
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa
 from rclpy.utilities import ok
 from rclpy.utilities import shutdown  # noqa
@@ -24,15 +21,22 @@ from rclpy.utilities import try_shutdown  # noqa
 
 
 def init(*, args=None):
-    return _rclpy.rclpy_init(args if args is not None else sys.argv)
+    # imported locally to avoid loading extensions on module import
+    from rclpy.impl.implementation_singleton import rclpy_implementation
+    return rclpy_implementation.rclpy_init(
+        args if args is not None else sys.argv)
 
 
 def create_node(node_name, *, namespace=None):
+    # imported locally to avoid loading extensions on module import
+    from rclpy.node import Node
     return Node(node_name, namespace=namespace)
 
 
 def spin_once(node, *, timeout_sec=None):
-    executor = _SingleThreadedExecutor()
+    # imported locally to avoid loading extensions on module import
+    from rclpy.executors import SingleThreadedExecutor
+    executor = SingleThreadedExecutor()
     try:
         executor.add_node(node)
         executor.spin_once(timeout_sec=timeout_sec)
@@ -41,7 +45,9 @@ def spin_once(node, *, timeout_sec=None):
 
 
 def spin(node):
-    executor = _SingleThreadedExecutor()
+    # imported locally to avoid loading extensions on module import
+    from rclpy.executors import SingleThreadedExecutor
+    executor = SingleThreadedExecutor()
     try:
         executor.add_node(node)
         while ok():
