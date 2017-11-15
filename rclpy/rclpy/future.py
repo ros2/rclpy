@@ -17,12 +17,29 @@ import queue
 import threading
 
 
-class Task:
-    """
-    A task that can be executed.
+class Future:
+    """Access the result of a :class:`.Task`."""
 
-    TODO Subclass asycio.Task? Need make it thread safe
-    """
+    def __init__(self, task):
+        self._task = task
+
+    def __await__(self):
+        # Yield if the task is not finished
+        while not self._task.done():
+            yield
+
+    def result(self):
+        """
+        Get the result of the task.
+
+        :returns: the result of the task this future tracks, or None if the task is not done.
+        """
+        if self._task.done():
+            return self._task.result()
+
+
+class Task:
+    """A task that can be executed."""
 
     def __init__(self, handler):
         self._handler = handler
@@ -30,6 +47,7 @@ class Task:
         self._done = False
         self._lock = threading.Lock()
         self._queue = queue.Queue()
+        self._result = None
 
     def __call__(self):
         """
@@ -43,9 +61,10 @@ class Task:
             while not self._done:
                 if self._coroutine is None:
                     # A non-coroutine callback executes here
-                    result = self._handler()
-                    if asyncio.iscoroutine(result):
-                        self._coroutine = result
+                    self._result = self._handler()
+                    if asyncio.iscoroutine(self._result):
+                        self._coroutine = self._result
+                        self._result = None
                     self._handler = None
 
                 if self._coroutine is not None:
@@ -67,6 +86,9 @@ class Task:
 
     def done(self):
         return self._done
+
+    def result(self):
+        return self._result
 
     def add_done_callback(self, fn):
         self._queue.put(fn)
