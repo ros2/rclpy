@@ -142,6 +142,7 @@ if(BUILD_TESTING)
     ament_add_pytest_test(rclpytests test
       PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
+        PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
       APPEND_LIBRARY_DIRS "$<TARGET_FILE_DIR:rclpy_sigint>"  # Windows add rclpy_sigint.dll to path
       TIMEOUT 90
     )
