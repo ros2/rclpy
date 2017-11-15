@@ -163,13 +163,13 @@ _rclpy_add_entity(
       pyentity = PyObject_GetAttrString(pyentity, handle_attr);
     }
 
-    // No chance of arbitrary python code below, so decref early
-    Py_DECREF(pyentity);
-
     if (!pyentity) {
       // Exception set
       break;
     }
+
+    // No chance of arbitrary python code below, so decref early
+    Py_DECREF(pyentity);
 
     if (PyCapsule_IsValid(pyentity, handle_type)) {
       if (-1 == PyList_Append(pylist, pyentity)) {
