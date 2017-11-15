@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from concurrent.futures import ThreadPoolExecutor
+import inspect
 import multiprocessing
 from threading import Condition
 from threading import Lock
@@ -164,8 +165,15 @@ class Executor:
             return
         (request, header) = request_and_header
         if request:
-            response = srv.callback(request, srv.srv_type.Response())
-            srv.send_response(response, header)
+
+            async def exec(request, header):
+                """Enable service callbacks to be coroutines."""
+                response = srv.callback(request, srv.srv_type.Response())
+                if inspect.isawaitable(response):
+                    response = await response
+                srv.send_response(response, header)
+
+            return exec(request, header)
 
     def _take_guard_condition(self, gc):
         gc._executor_triggered = False
