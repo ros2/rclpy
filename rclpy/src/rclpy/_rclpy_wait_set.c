@@ -417,6 +417,7 @@ _rclpy_build_wait_set(rclpy_wait_set_t * self)
 static inline rcl_ret_t
 _rclpy_build_ready_entities(rclpy_wait_set_t * self)
 {
+  // Clear self->pyready
   if (-1 == PySequence_DelSlice(self->pyready, 0, PySequence_Length(self->pyready))) {
     return RCL_RET_ERROR;
   }
