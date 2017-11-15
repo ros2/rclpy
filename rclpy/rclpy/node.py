@@ -20,6 +20,7 @@ from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.logging import get_named_logger
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.service import Service
@@ -52,6 +53,8 @@ class Node:
 
     def __init__(self, node_name, *, namespace=None):
         self._handle = None
+        # TODO(dhood): get logger name from rcl, use namespace (with slashes converted)
+        self._logger = get_named_logger(node_name)
         self.publishers = []
         self.subscriptions = []
         self.clients = []
@@ -90,6 +93,9 @@ class Node:
 
     def get_namespace(self):
         return _rclpy.rclpy_get_node_namespace(self.handle)
+
+    def get_logger(self):
+        return self._logger
 
     def _validate_topic_or_service_name(self, topic_or_service_name, *, is_service=False):
         name = self.get_name()
