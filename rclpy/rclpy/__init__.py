@@ -16,6 +16,7 @@ import sys
 
 from rclpy.executors import SingleThreadedExecutor as _SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+import rclpy.logging  # noqa
 from rclpy.node import Node
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa
 from rclpy.utilities import ok
