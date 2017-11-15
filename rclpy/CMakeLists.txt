@@ -85,7 +85,7 @@ install(
 ament_target_dependencies(rclpy_sigint
   "rcl"
 )
-# Export so ather packages can load this library when importing rclpy
+# Export so other packages can load this library when importing rclpy
 ament_export_libraries(rclpy_sigint)
 # Windows dllimport/dllexport
 target_compile_definitions(rclpy_sigint PRIVATE "RCLPY_SIGINT_BUILDING_LIBRARY")
