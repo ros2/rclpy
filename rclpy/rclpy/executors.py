@@ -266,8 +266,7 @@ class Executor:
                     yield handler, tmr, node
 
             for sub in node.subscriptions:
-                if (wait_set.is_ready(sub) and
-                        sub.callback_group.can_execute(sub)):
+                if wait_set.is_ready(sub) and sub.callback_group.can_execute(sub):
                     handler = self._make_handler(
                         sub, self._take_subscription, self._execute_subscription)
                     yielded_work = True
