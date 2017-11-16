@@ -73,3 +73,6 @@ class Client:
         thread1 = ResponseThread(self)
         thread1.start()
         thread1.join()
+
+    def service_is_ready(self):
+        return _rclpy.rclpy_service_server_is_available(self.node_handle, self.client_handle)

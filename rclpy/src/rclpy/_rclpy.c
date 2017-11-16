@@ -1506,6 +1506,50 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+
+/// Check if a service server is available
+/**
+ * Raises ValueError if the arguments are not capsules
+ *
+ * \param[in] pynode Capsule pointing to the node the entity belongs to
+ * \param[in] pyclient Capsule pointing to the client
+ * \return True if the service server is available
+ */
+static PyObject *
+rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  PyObject * pyclient;
+
+  if (!PyArg_ParseTuple(args, "OO", &pynode, &pyclient)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+  rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, "rcl_client_t");
+  if (!client) {
+    return NULL;
+  }
+
+  bool is_ready;
+  rcl_ret_t ret = rcl_service_server_is_available(node, client, &is_ready);
+
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to check service availability: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+
+  if (is_ready) {
+    Py_RETURN_TRUE;
+  }
+  Py_RETURN_FALSE;
+}
+
 /// Destroy an entity attached to a node
 /**
  * Entity type must be one of ["subscription", "publisher", "client", "service"].
@@ -2281,6 +2325,11 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
     "Create a Timer."
+  },
+
+  {
+    "rclpy_service_server_is_available", rclpy_service_server_is_available, METH_VARARGS,
+    "Return true if the service server is available"
   },
 
   {
