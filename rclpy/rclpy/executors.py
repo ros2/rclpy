@@ -83,6 +83,7 @@ class Executor:
 
         self._guard_condition = None
         self._sigint_gc = None
+        self._tasks = None
         return True
 
     def __del__(self):
@@ -176,14 +177,14 @@ class Executor:
             return exec(request, header)
 
     def _take_guard_condition(self, gc):
-        gc._executor_triggered = False
+        pass
 
     def _execute_guard_condition(self, gc, _):
         return gc.callback()
 
-    def _make_handler(self, entity, node, take_from_wait_list, call_callback):
+    def _make_task(self, entity, take_from_wait_list, call_callback):
         """
-        Make a handler that performs work on an entity.
+        Make a task that performs work on an entity.
 
         :param entity: An entity to wait on
         :param take_from_wait_list: Makes the entity to stop appearing in the wait list
@@ -229,29 +230,17 @@ class Executor:
 
         task = Task(execute)
         task.add_done_callback(postExecute)
-        self._tasks.append((task, entity, node))
         return task
 
-    def _old_callbacks(self):
-        yielded_work = False
-        # Use opportunity to clean up old callbacks
-        self._tasks = [(task, e, n) for task, e, n in self._tasks if not task.done()]
-        for task, entity, node in self._tasks:
-            yielded_work = True
-            yield task, entity, node
-        return yielded_work
-
-    def _new_callbacks(self, nodes, wait_set):
+    def _process_new_callbacks(self, nodes, wait_set):
         """
-        Yield brand new work to executor implementations.
+        Create Tasks for brand new work.
 
         :param nodes: nodes to yield work for
         :type nodes: list
         :param wait_set: wait set that has already been waited on
         :type wait_set: _rclpy_wait_set.WaitSet
-        :rtype: Generator[(callable, entity, :class:`rclpy.node.Node`)]
         """
-        yielded_work = False
         # Process ready entities one node at a time
         for node in nodes:
             for tmr in node.timers:
@@ -259,38 +248,30 @@ class Executor:
                     # TODO(Sloretz) Which rcl cancelled timer bug does this workaround?
                     if not _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
                         continue
-                    handler = self._make_handler(tmr, node, self._take_timer, self._execute_timer)
-                    yielded_work = True
-                    yield handler, tmr, node
+                    task = self._make_task(tmr, self._take_timer, self._execute_timer)
+                    self._tasks.append((task, tmr, node))
 
             for sub in node.subscriptions:
                 if wait_set.is_ready(sub) and sub.callback_group.can_execute(sub):
-                    handler = self._make_handler(
-                        sub, node, self._take_subscription, self._execute_subscription)
-                    yielded_work = True
-                    yield handler, sub, node
+                    task = self._make_task(
+                        sub, self._take_subscription, self._execute_subscription)
+                    self._tasks.append((task, sub, node))
 
             for gc in node.guards:
-                if gc._executor_triggered and gc.callback_group.can_execute(gc):
-                    handler = self._make_handler(
-                        gc, node, self._take_guard_condition, self._execute_guard_condition)
-                    yielded_work = True
-                    yield handler, gc, node
+                if wait_set.is_ready(gc) and gc.callback_group.can_execute(gc):
+                    task = self._make_task(
+                        gc, self._take_guard_condition, self._execute_guard_condition)
+                    self._tasks.append((task, gc, node))
 
             for cli in node.clients:
                 if wait_set.is_ready(cli) and cli.callback_group.can_execute(cli):
-                    handler = self._make_handler(
-                        cli, node, self._take_client, self._execute_client)
-                    yielded_work = True
-                    yield handler, cli, node
+                    task = self._make_task(cli, self._take_client, self._execute_client)
+                    self._tasks.append((task, cli, node))
 
             for srv in node.services:
                 if wait_set.is_ready(srv) and srv.callback_group.can_execute(srv):
-                    handler = self._make_handler(
-                        srv, node, self._take_service, self._execute_service)
-                    yielded_work = True
-                    yield handler, srv, node
-        return yielded_work
+                    task = self._make_task(srv, self._take_service, self._execute_service)
+                    self._tasks.append((task, srv, node))
 
     def can_execute(self, entity):
         """
@@ -327,21 +308,14 @@ class Executor:
         while not yielded_work and not self._is_shutdown:
             # Gather entities that can be waited on
             self._wait_set.clear()
-            guards = []
             for node in nodes:
                 self._wait_set.add_subscriptions(filter(self.can_execute, node.subscriptions))
                 self._wait_set.add_timers(filter(self.can_execute, node.timers))
                 self._wait_set.add_clients(filter(self.can_execute, node.clients))
                 self._wait_set.add_services(filter(self.can_execute, node.services))
-                guards.extend(filter(self.can_execute, node.guards))
-
-            # retrigger a guard condition that was triggered but not handled
-            for gc in guards:
-                if gc._executor_triggered:
-                    gc.trigger()
+                self._wait_set.add_guard_conditions(filter(self.can_execute, node.guards))
 
             self._wait_set.add_guard_conditions((self._sigint_gc, self._guard_condition))
-            self._wait_set.add_guard_conditions(guards)
 
             if timeout_timer is not None:
                 self._wait_set.add_timers((timeout_timer,))
@@ -353,14 +327,14 @@ class Executor:
             if self._wait_set.is_ready(self._sigint_gc):
                 raise KeyboardInterrupt()
 
-            # Mark all guards as triggered before yielding since they're auto-taken
-            for gc in guards:
-                if self._wait_set.is_ready(gc):
-                    gc._executor_triggered = True
+            # Turn new work into tasks to be executed
+            self._process_new_callbacks(nodes, self._wait_set)
 
-            yielded_new_work = yield from self._new_callbacks(nodes, self._wait_set)
-            yielded_old_work = yield from self._old_callbacks()
-            yielded_work = yielded_new_work or yielded_old_work
+            # Clean up old tasks
+            self._tasks = [(task, e, n) for task, e, n in self._tasks if not task.done()]
+
+            # Yield work to the executor (reversed so newer work is executed first)
+            yielded_work = yield from reversed(self._tasks)
 
             # Check timeout timer
             if (
