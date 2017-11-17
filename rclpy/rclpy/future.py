@@ -46,9 +46,9 @@ class Future:
         """Cancel the running task."""
         self._task.cancel()
 
-    def cancelled(self):
+    def is_cancelled(self):
         """Return true if the task is cancelled."""
-        return self._task.cancelled()
+        return self._task.is_cancelled()
 
     def done(self):
         """Return True if the task is done or cancelled."""
@@ -61,7 +61,7 @@ class Present(Future):
     def __init__(self, result):
         task = Task(lambda: result)
         task()
-        super().__init__(self, task)
+        super().__init__(task)
 
 
 class Task:
@@ -83,8 +83,11 @@ class Task:
         """
         Run or resume a task.
 
-        This attempts to execute a callback. If the callback is a coroutine it will attempt to
-        await it.
+        This attempts to execute a handler. If the handler is a coroutine it will attempt to
+        await it. If there are done callbacks it will repeat that process until all callbacks have
+        been executed.
+
+        The return value of the handler passed to the constructor is stored as the task result.
         """
         with self._lock:
             # Execute as much as it can (including done callbacks) until a coroutine yields
