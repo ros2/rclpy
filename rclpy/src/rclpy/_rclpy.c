@@ -31,6 +31,60 @@
 #include "src/rclpy/sigint_gc.h"
 
 
+/// Get a guard condition for node graph events
+/**
+ * Raises ValueError if the provided argument is not a PyCapsule.
+ *
+ * A successful call will return a list with two elements:
+ *
+ * - a Capsule with the pointer of the retrieved rcl_guard_condition_t * structure
+ * - an integer representing the memory address of the rcl_guard_condition_t
+ *
+ * \param[in] A capsule containing rcl_node_t *
+ * \return 2-tuple with the capsule and memory location, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_get_graph_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  rcl_guard_condition_t * guard_condition =
+    (rcl_guard_condition_t *)rcl_node_get_graph_guard_condition(node);
+
+  PyObject * pytuple = PyTuple_New(2);
+  if (!pytuple) {
+    // Exception set
+    return NULL;
+  }
+  PyObject * pygc = PyCapsule_New(guard_condition, "rcl_guard_condition_t", NULL);
+  if (!pygc) {
+    // Exception set
+    Py_DECREF(pytuple);
+    return NULL;
+  }
+  PyObject * pygc_int = PyLong_FromUnsignedLongLong((uint64_t)&guard_condition->impl);
+  if (!pygc_int) {
+    // Exception set
+    Py_DECREF(pytuple);
+    Py_DECREF(pygc);
+    return NULL;
+  }
+  PyTuple_SET_ITEM(pytuple, 0, pygc);
+  PyTuple_SET_ITEM(pytuple, 1, pygc_int);
+
+  return pytuple;
+}
+
 /// Create a sigint guard condition
 /**
  * A successful call will return a list with two elements:
@@ -2332,6 +2386,10 @@ static PyMethodDef rclpy_methods[] = {
     "Return true if the service server is available"
   },
 
+  {
+    "rclpy_get_graph_guard_condition", rclpy_get_graph_guard_condition, METH_VARARGS,
+    "Get a guard condition that is triggered when the node graph updates."
+  },
   {
     "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
     "Create a guard_condition triggered when sigint is received."

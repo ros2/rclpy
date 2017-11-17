@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
+
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.client import Client
 from rclpy.constants import S_TO_NS
@@ -19,6 +21,7 @@ from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
+from rclpy.guard_condition import NodeGraphGuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default, qos_profile_services_default
@@ -59,6 +62,8 @@ class Node:
         self.timers = []
         self.guards = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
+        self._graph_condition = None
+        self._graph_condition_lock = threading.Lock()
 
         namespace = namespace or ''
         if not ok():
@@ -204,6 +209,23 @@ class Node:
         self.guards.append(guard)
         callback_group.add_entity(guard)
         return guard
+
+    def add_graph_event_callback(self, callback):
+        """Add a callback to be executed every time a node graph event occurrs."""
+        with self._graph_condition_lock:
+            if self._graph_condition is None:
+                self._graph_condition = NodeGraphGuardCondition(self.handle)
+                self.guards.append(self._graph_condition)
+            self._graph_condition.add_callback(callback)
+
+    def remove_graph_event_callback(self, callback):
+        """Remove a callback from the list that is executed every time a graph event occurrs."""
+        with self._graph_condition_lock:
+            self._graph_condition.remove_callback(callback)
+            if not self._graph_condition.has_callbacks():
+                # no one is listening to graph events, remove it from the executor
+                self.guards.remove(self._graph_condition)
+            self._graph_condition = None
 
     def destroy_publisher(self, publisher):
         for pub in self.publishers:
