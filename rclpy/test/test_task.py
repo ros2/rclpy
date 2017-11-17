@@ -14,6 +14,7 @@
 
 import unittest
 
+from rclpy.future import Present
 from rclpy.future import Task
 
 
@@ -104,6 +105,15 @@ class TestTask(unittest.TestCase):
         t()
         self.assertFalse(called1)
         self.assertTrue(called2)
+
+
+class TestPresent(unittest.TestCase):
+
+    def test_immediately_has_result(self):
+        uut = Present(result=5)
+        self.assertTrue(uut.done())
+        self.assertFalse(uut.is_cancelled())
+        self.assertEqual(5, uut.result())
 
 
 if __name__ == '__main__':
