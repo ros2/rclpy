@@ -25,8 +25,6 @@ class ExecutorHandle:
         self._take_from_wait_list = take_callback
         self.execute_callback = execute_callback
         self._cancel_ready_callback = cancel_ready_callback
-        # Tasks the executor should schedule
-        self._tasks = queue.Queue()
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._ready = False
 
@@ -49,20 +47,3 @@ class ExecutorHandle:
         args = self._take_from_wait_list()
         self._ready = False
         return args
-
-    def schedule_task(self, handler, timeout_sec=None, on_timeout=None):
-        """
-        Schedule a task on an executor that expires.
-
-        :param handler: callable or coroutine to run. Return value is the task result
-        :param timeout_sec: How long to wait before calling the on_timeout handler
-        :param on_timeout: callable or coroutine to run on timeout
-        :returns: a future for the task
-        :rtype: rclpy.future.Future
-        """
-        # Add a task to be consumed by the executor
-        task = rclpy.future.Task(handler)
-        future = rclpy.future.Future(task)
-        timeout_nsec = timeout_sec_to_nsec(timeout_sec)
-        self._tasks.put((handler, timeout_nsec, on_timeout))
-        return future
