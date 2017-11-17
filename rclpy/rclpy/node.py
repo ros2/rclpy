@@ -258,25 +258,24 @@ class Node:
         if self.handle is None:
             return ret
 
-        for pub in self.publishers:
+        while self.publishers:
+            pub = self.publishers.pop()
             _rclpy.rclpy_destroy_node_entity(pub.publisher_handle, self.handle)
-        for sub in self.subscriptions:
+        while self.subscriptions:
+            sub = self.subscriptions.pop()
             _rclpy.rclpy_destroy_node_entity(sub.subscription_handle, self.handle)
-        for cli in self.clients:
+        while self.clients:
+            cli = self.clients.pop()
             _rclpy.rclpy_destroy_node_entity(cli.client_handle, self.handle)
-        for srv in self.services:
+        while self.services:
+            srv = self.services.pop()
             _rclpy.rclpy_destroy_node_entity(srv.service_handle, self.handle)
-        for tmr in self.timers:
+        while self.timers:
+            tmr = self.timers.pop()
             _rclpy.rclpy_destroy_entity(tmr.timer_handle)
-        for gc in self.guards:
+        while self.guards:
+            gc = self.guards.pop()
             _rclpy.rclpy_destroy_entity(gc.guard_handle)
-
-        self.publishers = []
-        self.subscriptions = []
-        self.clients = []
-        self.services = []
-        self.timers = []
-        self.guards = []
 
         _rclpy.rclpy_destroy_entity(self.handle)
         self._handle = None
