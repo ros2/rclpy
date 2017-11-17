@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.executor_handle import ExecutorHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -23,8 +24,14 @@ class WallTimer:
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group
-        # True when the callback is ready to fire but has not been "taken" by an executor
-        self._executor_event = False
+        # Holds info the executor uses to do work for this entity
+        self._executor_handle = ExecutorHandle(self._take, self._execute)
+
+    def _take(self):
+        _rclpy.rclpy_call_timer(self.timer_handle)
+
+    def _execute(self, _):
+        return self.callback()
 
     @property
     def timer_period_ns(self):

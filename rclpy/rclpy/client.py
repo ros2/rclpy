@@ -14,6 +14,7 @@
 
 import threading
 
+from rclpy.executor_handle import ExecutorHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.implementation_singleton import rclpy_wait_set_implementation as _rclpy_wait_set
 import rclpy.utilities
@@ -60,8 +61,20 @@ class Client:
         self.sequence_number = 0
         self.response = None
         self.callback_group = callback_group
-        # True when the callback is ready to fire but has not been "taken" by an executor
-        self._executor_event = False
+        # Holds info the executor uses to do work for this entity
+        self._executor_handle = ExecutorHandle(self._take, self._execute)
+
+    def _take(self):
+        response = _rclpy.rclpy_take_response(
+            self.client_handle, self.srv_type.Response, self.sequence_number)
+        return response
+
+    def _execute(self, response):
+        if response:
+            # clients spawn their own thread to wait for a response in the
+            # wait_for_future function. Users can either use this mechanism or monitor
+            # the content of client.response to check if a response has been received
+            self.response = response
 
     def call(self, req):
         self.response = None

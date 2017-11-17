@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.executor_handle import ExecutorHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -21,8 +22,19 @@ class GuardCondition:
         self.guard_handle, self.guard_pointer = _rclpy.rclpy_create_guard_condition()
         self.callback = callback
         self.callback_group = callback_group
-        # True when the callback is ready to fire but has not been "taken" by an executor
-        self._executor_event = False
+        # Holds info the executor uses to do work for this entity
+        self._executor_handle = ExecutorHandle(
+            self._take, self._execute, cancel_ready_callback=self._cancel_ready)
+
+    def _take(self):
+        pass
+
+    def _execute(self, _):
+        return self.callback()
+
+    def _cancel_ready(self):
+        # guard conditions are auto-taken when they come up in the wait-list, so retrigger
+        self.trigger()
 
     def trigger(self):
         _rclpy.rclpy_trigger_guard_condition(self.guard_handle)

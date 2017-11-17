@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from concurrent.futures import ThreadPoolExecutor
-import inspect
 import multiprocessing
 from threading import Condition
 from threading import Lock
@@ -130,92 +129,33 @@ class Executor:
         """
         raise NotImplementedError()
 
-    def _take_timer(self, tmr):
-        _rclpy.rclpy_call_timer(tmr.timer_handle)
-
-    def _execute_timer(self, tmr, _):
-        return tmr.callback()
-
-    def _take_subscription(self, sub):
-        msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
-        return msg
-
-    def _execute_subscription(self, sub, msg):
-        if msg:
-            return sub.callback(msg)
-
-    def _take_client(self, client):
-        response = _rclpy.rclpy_take_response(
-            client.client_handle, client.srv_type.Response, client.sequence_number)
-        return response
-
-    def _execute_client(self, client, response):
-        if response:
-            # clients spawn their own thread to wait for a response in the
-            # wait_for_future function. Users can either use this mechanism or monitor
-            # the content of client.response to check if a response has been received
-            client.response = response
-
-    def _take_service(self, srv):
-        request_and_header = _rclpy.rclpy_take_request(
-            srv.service_handle, srv.srv_type.Request)
-        return request_and_header
-
-    def _execute_service(self, srv, request_and_header):
-        if request_and_header is None:
-            return
-        (request, header) = request_and_header
-        if request:
-
-            async def exec(request, header):
-                """Enable service callbacks to be coroutines."""
-                response = srv.callback(request, srv.srv_type.Response())
-                if inspect.isawaitable(response):
-                    response = await response
-                srv.send_response(response, header)
-
-            return exec(request, header)
-
-    def _take_guard_condition(self, gc):
-        pass
-
-    def _execute_guard_condition(self, gc, _):
-        return gc.callback()
-
-    def _make_task(self, entity, take_from_wait_list, call_callback):
+    def _make_task(self, entity):
         """
         Make a task that performs work on an entity.
 
         :param entity: An entity to wait on
-        :param take_from_wait_list: Makes the entity to stop appearing in the wait list
-        :type take_from_wait_list: callable
-        :param call_callback: Does the work the entity is ready for
-        :type call_callback: callable
-        :rtype: callable
+        :rtype: rclpy.future.Task
         """
         gc = self._guard_condition
         is_shutdown = self._is_shutdown
         # Mark this so it doesn't get added back to the wait list
-        entity._executor_event = True
+        entity._executor_handle.notify_ready()
 
         def execute():
-            nonlocal call_callback
             nonlocal entity
             nonlocal gc
             nonlocal is_shutdown
-            nonlocal take_from_wait_list
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
-                entity._executor_event = False
+                entity._executor_handle.cancel_ready()
                 gc.trigger()
                 return
 
             # Signal that this has been 'taken' and can be added back to the wait list
-            arg = take_from_wait_list(entity)
-            entity._executor_event = False
+            arg = entity._executor_handle.take_from_wait_list()
             gc.trigger()
             # Return result of callback (Task will do the right thing if this is a coroutine)
-            return call_callback(entity, arg)
+            return entity._executor_handle.execute_callback(arg)
 
         def postExecute():
             nonlocal entity
@@ -248,29 +188,27 @@ class Executor:
                     # TODO(Sloretz) Which rcl cancelled timer bug does this workaround?
                     if not _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
                         continue
-                    task = self._make_task(tmr, self._take_timer, self._execute_timer)
+                    task = self._make_task(tmr)
                     self._tasks.append((task, tmr, node))
 
             for sub in node.subscriptions:
                 if wait_set.is_ready(sub) and sub.callback_group.can_execute(sub):
-                    task = self._make_task(
-                        sub, self._take_subscription, self._execute_subscription)
+                    task = self._make_task(sub)
                     self._tasks.append((task, sub, node))
 
             for gc in node.guards:
                 if wait_set.is_ready(gc) and gc.callback_group.can_execute(gc):
-                    task = self._make_task(
-                        gc, self._take_guard_condition, self._execute_guard_condition)
+                    task = self._make_task(gc)
                     self._tasks.append((task, gc, node))
 
             for cli in node.clients:
                 if wait_set.is_ready(cli) and cli.callback_group.can_execute(cli):
-                    task = self._make_task(cli, self._take_client, self._execute_client)
+                    task = self._make_task(cli)
                     self._tasks.append((task, cli, node))
 
             for srv in node.services:
                 if wait_set.is_ready(srv) and srv.callback_group.can_execute(srv):
-                    task = self._make_task(srv, self._take_service, self._execute_service)
+                    task = self._make_task(srv)
                     self._tasks.append((task, srv, node))
 
     def can_execute(self, entity):
@@ -281,7 +219,7 @@ class Executor:
         :returns: True if the entity callback can be executed
         :rtype: bool
         """
-        return not entity._executor_event and entity.callback_group.can_execute(entity)
+        return not entity._executor_handle.ready() and entity.callback_group.can_execute(entity)
 
     def wait_for_ready_callbacks(self, timeout_sec=None, nodes=None):
         """
