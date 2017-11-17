@@ -27,6 +27,7 @@ class Future:
         # Yield if the task is not finished
         while not self._task.done():
             yield
+        return self._task.result()
 
     def result(self):
         """
@@ -37,16 +38,45 @@ class Future:
         if self._task.done():
             return self._task.result()
 
+    def add_done_callback(self, func):
+        """Add a callback to be executed when a task is done."""
+        self._task.add_done_callback(func)
+
+    def cancel(self):
+        """Cancel the running task."""
+        self._task.cancel()
+
+    def cancelled(self):
+        """Return true if the task is cancelled."""
+        return self._task.cancelled()
+
+    def done(self):
+        """Return True if the task is done or cancelled."""
+        return self._task.done()
+
+
+class Present(Future):
+    """Be a Future whose result is known now."""
+
+    def __init__(self, result):
+        task = Task(lambda: result)
+        task()
+        super().__init__(self, task)
+
 
 class Task:
     """A task that can be executed."""
 
     def __init__(self, handler):
+        # handler is the next thing to run. It may or may not be a coroutine
         self._handler = handler
+        # set to a coroutine returned by a handler
         self._coroutine = None
         self._done = False
+        self._cancelled = False
         self._lock = threading.Lock()
         self._queue = queue.Queue()
+        self._has_result = False
         self._result = None
 
     def __call__(self):
@@ -57,20 +87,20 @@ class Task:
         await it.
         """
         with self._lock:
-            # Execute as much as we can (including done callbacks) until a coroutine yields
+            # Execute as much as it can (including done callbacks) until a coroutine yields
             while not self._done:
-                if self._coroutine is None:
+                result = None
+                if self._handler is not None:
                     # A non-coroutine callback executes here
-                    self._result = self._handler()
-                    if asyncio.iscoroutine(self._result):
-                        self._coroutine = self._result
-                        self._result = None
+                    result = self._handler()
+                    if asyncio.iscoroutine(result):
+                        self._coroutine = result
                     self._handler = None
 
                 if self._coroutine is not None:
                     try:
                         # A coroutine gets executed here
-                        self._coroutine.send(None)
+                        result = self._coroutine.send(None)
                     except StopIteration:
                         self._coroutine.close()
                         self._coroutine = None
@@ -78,11 +108,22 @@ class Task:
                         # The coroutine yielded
                         break
 
+                if self._coroutine is None and not self._has_result:
+                    self._has_result = True
+                    self._result = result
+
                 try:
                     # Get the next callback, and make executing it part of this task
                     self._handler = self._queue.get_nowait()
                 except queue.Empty:
                     self._done = True
+
+    def cancel(self):
+        self._cancelled = True
+        self._done = True
+
+    def is_cancelled(self):
+        return self._cancelled
 
     def done(self):
         return self._done
@@ -91,4 +132,8 @@ class Task:
         return self._result
 
     def add_done_callback(self, fn):
-        self._queue.put(fn)
+        with self._lock:
+            if self._done:
+                fn()
+            else:
+                self._queue.put(fn)
