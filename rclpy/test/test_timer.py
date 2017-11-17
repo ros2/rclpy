@@ -144,14 +144,12 @@ def test_timer_zero_callbacks10hertz():
     func_launch(func_zero_callback, ['0.1'], 'received callbacks when not expected')
 
 
-# TODO(mikaelarguedas) reenable these once timer have consistent behaviour
-# on every platform at high frequency
 def test_timer_zero_callbacks100hertz():
-    if os.name == 'nt':
-        raise SkipTest
     func_launch(func_zero_callback, ['0.01'], 'received callbacks when not expected')
 
 
+# TODO(mikaelarguedas) reenable these once timer have consistent behaviour
+# on every platform at high frequency
 def test_timer_zero_callbacks1000hertz():
     if os.name == 'nt':
         raise SkipTest
@@ -163,8 +161,6 @@ def test_timer_number_callbacks10hertz():
 
 
 def test_timer_number_callbacks100hertz():
-    if os.name == 'nt':
-        raise SkipTest
     func_launch(
         func_number_callbacks, ['0.01'], "didn't receive the expected number of callbacks")
 
@@ -182,8 +178,6 @@ def test_timer_cancel_reset_10hertz():
 
 
 def test_timer_cancel_reset_100hertz():
-    if os.name == 'nt':
-        raise SkipTest
     func_launch(
         func_cancel_reset_timer, ['0.01'], "didn't receive the expected number of callbacks")
 
