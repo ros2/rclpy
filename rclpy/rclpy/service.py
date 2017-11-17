@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
+
+from rclpy.executor_handle import ExecutorHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -26,9 +29,31 @@ class Service:
         self.srv_name = srv_name
         self.callback = callback
         self.callback_group = callback_group
-        # True when the callback is ready to fire but has not been "taken" by an executor
-        self._executor_event = False
+        # Holds info the executor uses to do work for this entity
+        self._executor_handle = ExecutorHandle(self._take, self._execute)
         self.qos_profile = qos_profile
+
+    def _take(self):
+        request_and_header = _rclpy.rclpy_take_request(self.service_handle, self.srv_type.Request)
+        return request_and_header
+
+    def _execute(self, request_and_header):
+        if request_and_header is None:
+            return
+        (request, header) = request_and_header
+        if request:
+
+            async def exec_service(request, header):
+                """Enable service callbacks to be coroutines."""
+                nonlocal self
+                response = self.callback(request, self.srv_type.Response())
+                if inspect.isawaitable(response):
+                    response = await response
+                # This special method is needed to make sure send_response gets called after the
+                # user's callback even if it yields
+                self.send_response(response, header)
+
+            return exec_service(request, header)
 
     def send_response(self, response, header):
         _rclpy.rclpy_send_response(self.service_handle, response, header)

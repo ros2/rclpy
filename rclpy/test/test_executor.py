@@ -20,6 +20,12 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import SingleThreadedExecutor
 
 
+class AwaitableClass:
+
+    def __await__(self):
+        yield
+
+
 class TestExecutor(unittest.TestCase):
 
     @classmethod
@@ -77,6 +83,34 @@ class TestExecutor(unittest.TestCase):
         executor.spin_once(timeout_sec=0)
         end = time.monotonic()
         self.assertLess(start - end, 0.001)
+
+    def test_executor_coroutine(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.node)
+
+        called1 = False
+        called2 = False
+
+        async def timer_coroutine():
+            nonlocal called1
+            nonlocal called2
+            called1 = True
+            await AwaitableClass()
+            called2 = True
+
+        tmr = self.node.create_timer(0.1, timer_coroutine)
+        try:
+            executor.spin_once(timeout_sec=1.23)
+            self.assertTrue(called1)
+            self.assertFalse(called2)
+
+            called1 = False
+            executor.spin_once(timeout_sec=0)
+            self.assertFalse(called1)
+            self.assertTrue(called2)
+        finally:
+            self.node.destroy_timer(tmr)
 
 
 if __name__ == '__main__':

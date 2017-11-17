@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.executor_handle import ExecutorHandle
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
 
 class Subscription:
 
@@ -25,6 +28,14 @@ class Subscription:
         self.topic = topic
         self.callback = callback
         self.callback_group = callback_group
-        # True when the callback is ready to fire but has not been "taken" by an executor
-        self._executor_event = False
+        # Holds info the executor uses to do work for this entity
+        self._executor_handle = ExecutorHandle(self._take, self._execute)
         self.qos_profile = qos_profile
+
+    def _take(self):
+        msg = _rclpy.rclpy_take(self.subscription_handle, self.msg_type)
+        return msg
+
+    def _execute(self, msg):
+        if msg:
+            return self.callback(msg)
