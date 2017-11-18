@@ -112,6 +112,7 @@ class Task:
                         break
 
                 if self._coroutine is None and not self._has_result:
+                    print('Has result', result)
                     self._has_result = True
                     self._result = result
 

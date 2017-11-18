@@ -193,3 +193,8 @@ def test_timer_cancel_reset_1000hertz():
         raise SkipTest
     func_launch(
         func_cancel_reset_timer, ['0.001'], "didn't receive the expected number of callbacks")
+
+
+if __name__ == '__main__':
+    import cProfile
+    cProfile.run('func_number_callbacks(["0.001"])', filename='timer_test.prof')

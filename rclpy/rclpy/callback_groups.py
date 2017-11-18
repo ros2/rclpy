@@ -45,6 +45,9 @@ class CallbackGroup:
         """
         Return true if an entity can be executed.
 
+        The executor may call this on a task that has already started execution. In this case the
+        callback group should return True from this method.
+
         :param entity: a subscription, timer, client, or service instance
         :rtype: bool
         """
@@ -96,17 +99,19 @@ class MutuallyExclusiveCallbackGroup(CallbackGroup):
     def can_execute(self, entity):
         with self._lock:
             assert weakref.ref(entity) in self.entities
-            return self._active_entity is None
+            return self._active_entity is None or weakref.ref(entity) == self._active_entity
 
     def beginning_execution(self, entity):
         with self._lock:
-            assert weakref.ref(entity) in self.entities
+            weak_entity = weakref.ref(entity)
+            assert weak_entity in self.entities
             if self._active_entity is None:
-                self._active_entity = entity
+                self._active_entity = weak_entity
                 return True
         return False
 
     def ending_execution(self, entity):
         with self._lock:
-            assert self._active_entity == entity
+            weak_entity = weakref.ref(entity)
+            assert self._active_entity == weak_entity
             self._active_entity = None

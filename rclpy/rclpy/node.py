@@ -64,6 +64,8 @@ class Node:
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._graph_condition = None
         self._graph_condition_lock = threading.Lock()
+        # 2-tuple (task, entity) used to store work to be executed
+        self._tasks = []
 
         namespace = namespace or ''
         if not ok():
@@ -299,6 +301,7 @@ class Node:
         self.services = []
         self.timers = []
         self.guards = []
+        self._tasks = []
 
         _rclpy.rclpy_destroy_entity(self.handle)
         self._handle = None
