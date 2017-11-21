@@ -498,7 +498,7 @@ rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * 
 static char *
 _expand_topic_name_with_exceptions(const char * topic, const char * node, const char * namespace)
 {
-  char * expanded_topic;
+  char * expanded_topic = NULL;
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcutils_allocator_t rcutils_allocator = rcutils_get_default_allocator();
   rcutils_string_map_t substitutions_map = rcutils_get_zero_initialized_string_map();
