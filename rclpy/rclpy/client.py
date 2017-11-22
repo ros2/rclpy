@@ -15,6 +15,7 @@
 import threading
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_wait_set_implementation as _rclpy_wait_set
 import rclpy.utilities
 
 
@@ -23,24 +24,19 @@ class ResponseThread(threading.Thread):
     def __init__(self, client):
         threading.Thread.__init__(self)
         self.client = client
-        self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(self.wait_set, 0, 1, 0, 1, 0)
-        _rclpy.rclpy_wait_set_clear_entities('client', self.wait_set)
-        _rclpy.rclpy_wait_set_add_entity(
-            'client', self.wait_set, self.client.client_handle)
+        self._wait_set = _rclpy_wait_set.WaitSet()
 
     def run(self):
         [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
-        _rclpy.rclpy_wait_set_add_entity('guard_condition', self.wait_set, sigint_gc)
+        self._wait_set.clear()
+        self._wait_set.add_guard_conditions([sigint_gc])
+        self._wait_set.add_clients([self.client.client_handle])
 
-        _rclpy.rclpy_wait(self.wait_set, -1)
-
-        guard_condition_ready_list = \
-            _rclpy.rclpy_get_ready_entities('guard_condition', self.wait_set)
+        self._wait_set.wait(-1)
 
         # destroying here to make sure we dont call shutdown before cleaning up
         _rclpy.rclpy_destroy_entity(sigint_gc)
-        if sigint_gc_handle in guard_condition_ready_list:
+        if self._wait_set.is_ready(sigint_gc):
             rclpy.utilities.shutdown()
             return
         response = _rclpy.rclpy_take_response(
