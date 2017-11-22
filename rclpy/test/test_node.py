@@ -89,6 +89,12 @@ class TestNode(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names()
 
+    def test_node_logger(self):
+        node_logger = self.node.get_logger()
+        self.assertEqual(node_logger.name, 'my_node')
+        node_logger.set_severity_threshold(rclpy.logging.LoggingSeverity.INFO)
+        node_logger.debug('test')
+
 
 if __name__ == '__main__':
     unittest.main()
