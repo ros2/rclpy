@@ -254,12 +254,14 @@ class RcutilsLogger:
         r"""
         Log a message with the specified severity.
 
-        The message will only be logged if its severity is not less than the severity threshold
-        of the logger, and no logging filter causes the message to be skipped.
+        The message will not be logged if:
+          * the logger is not enabled for the message's severity (the message severity is less than
+            the severity threshold of the logger), or
+          * a logging filter causes the message to be skipped.
 
         .. note::
-           Logging filters will only be evaluated if the message severity is not less than the
-           severity threshold of the logger.
+           Logging filters will only be evaluated if the logger is enabled for the message's
+           severity.
 
         :param message str: message to log.
         :param severity: severity of the message.
