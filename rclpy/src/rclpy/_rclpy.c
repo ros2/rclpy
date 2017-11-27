@@ -1668,11 +1668,11 @@ rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UN
   return pywait_set;
 }
 
-/// Initialize a waitset
+/// Initialize a wait set
 /**
  * Raises RuntimeError if the wait set could not be initialized
  *
- * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] pywait_set Capsule pointing to the wait set structure
  * \param[in] node_name string name of the node to be created
  * \param[in] number_of_subscriptions int
  * \param[in] number_of_guard_conditions int
@@ -1715,12 +1715,12 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Clear all the pointers of a given wait_set field
+/// Clear all the pointers of a given wait set field
 /**
  * Raises RuntimeError if the entity type is unknown or any rcl error occurs
  *
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
- * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] pywait_set Capsule pointing to the wait set structure
  * \return NULL
  */
 static PyObject *
@@ -1763,12 +1763,12 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_TRUE;
 }
 
-/// Add an entity to the waitset structure
+/// Add an entity to the wait set structure
 /**
  * Raises RuntimeError if the entity type is unknown or any rcl error occurrs
  *
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
- * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] pywait_set Capsule pointing to the wait set structure
  * \param[in] pyentity Capsule pointing to the entity to add
  * \return None
  */
@@ -1822,11 +1822,11 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Destroy the waitset structure
+/// Destroy the wait set structure
 /**
  * Raises RuntimeError if the wait set could not be destroyed
  *
- * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] pywait_set Capsule pointing to the wait set structure
  * \return None
  */
 static PyObject *
@@ -1873,14 +1873,14 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
     } \
   } \
   return entity_ready_list;
-/// Get list of non-null entities in waitset
+/// Get list of non-null entities in wait set
 /**
- * Raises ValueError if pywait_set is not a wait_set capsule
+ * Raises ValueError if pywait_set is not a wait set capsule
  * Raises RuntimeError if the entity type is not known
  *
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
- * \param[in] pywait_set Capsule pointing to the waitset structure
- * \return List of wait_set entities pointers ready for take
+ * \param[in] pywait_set Capsule pointing to the wait set structure
+ * \return List of wait set entities pointers ready for take
  */
 static PyObject *
 rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
@@ -1918,12 +1918,12 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Wait until timeout is reached or event happened
 /**
- * Raises ValueError if pywait_set is not a wait_set capsule
+ * Raises ValueError if pywait_set is not a wait set capsule
  * Raises RuntimeError if there was an error while waiting
  *
  * This function will wait for an event to happen or for the timeout to expire.
  * A negative timeout means wait forever, a timeout of 0 means no wait
- * \param[in] pywait_set Capsule pointing to the waitset structure
+ * \param[in] pywait_set Capsule pointing to the wait set structure
  * \param[in] timeout optional time to wait before waking up (in nanoseconds)
  * \return NULL
  */
@@ -2664,7 +2664,7 @@ static PyMethodDef rclpy_methods[] = {
 
   {
     "rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
-    "List non null subscriptions in waitset."
+    "List non null entities in wait set."
   },
 
   {
