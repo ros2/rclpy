@@ -254,9 +254,14 @@ class RcutilsLogger:
         r"""
         Log a message with the specified severity.
 
-        The message will only be logged if its severity is not less than the severity threshold
-        of the logger, and no logging filter causes the message to be skipped.
+        The message will not be logged if:
+          * the logger is not enabled for the message's severity (the message severity is less than
+            the severity threshold of the logger), or
+          * a logging filter causes the message to be skipped.
 
+        .. note::
+           Logging filters will only be evaluated if the logger is enabled for the message's
+           severity.
 
         :param message str: message to log.
         :param severity: severity of the message.
@@ -311,16 +316,16 @@ class RcutilsLogger:
                     raise ValueError(
                         'Logging filter parameters cannot be changed between calls.')
 
-        # Determine if it's appropriate to process the message (any filter can vote no)
+        # Only check filters if the severity is appropriate.
+        if not self.is_enabled_for(severity):
+            return False
+
+        # Check if any filter determines the message shouldn't be processed.
         # Note(dhood): even if a message doesn't get logged, a filter might still update its state
         # as if it had been. This matches the behavior of the C logging macros provided by rcutils.
         for logging_filter in context['filters']:
             if not supported_filters[logging_filter].should_log(context):
                 return False
-
-        # Only log the message if the severity is appropriate.
-        if not self.is_enabled_for(severity):
-            return False
 
         # Call the relevant function from the C extension.
         _rclpy_logging.rclpy_logging_rcutils_log(
