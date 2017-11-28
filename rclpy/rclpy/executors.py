@@ -71,6 +71,12 @@ class _WorkTracker:
         return True
 
 
+class TimeoutException(Exception):
+    """Signal that a timeout occurred."""
+
+    pass
+
+
 class Executor:
     """
     A base class for an executor.
@@ -94,6 +100,10 @@ class Executor:
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
+        # State for wait_for_ready_callbacks to reuse generator
+        self._cb_iter = None
+        self._last_args = None
+        self._last_kwargs = None
 
     def shutdown(self, timeout_sec=None):
         """
@@ -114,6 +124,9 @@ class Executor:
         _rclpy.rclpy_destroy_entity(self._guard_condition)
 
         self._guard_condition = None
+        self._cb_iter = None
+        self._last_args = None
+        self._last_kwargs = None
         return True
 
     def __del__(self):
@@ -257,9 +270,11 @@ class Executor:
         """
         return not entity._executor_event and entity.callback_group.can_execute(entity)
 
-    def wait_for_ready_callbacks(self, timeout_sec=None, nodes=None):
+    def _wait_for_ready_callbacks(self, timeout_sec=None, nodes=None):
         """
         Yield callbacks that are ready to be performed.
+
+        Raises :class:`TimeoutException` on timeout.
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
@@ -390,23 +405,41 @@ class Executor:
                             yield handler, srv, node
 
             # Check timeout timer
-            if (timeout_nsec == 0 or
-                    (timeout_timer is not None and timeout_timer.timer_pointer in timers_ready)):
-                break
+            if (
+                timeout_nsec == 0 or
+                (timeout_timer is not None and timeout_timer.timer_pointer in timers_ready)
+            ):
+                raise TimeoutException()
+
+    def wait_for_ready_callbacks(self, *args, **kwargs):
+        """
+        Reuse generator and return callbacks that are ready to be performed.
+
+        See :func:`Executor._wait_for_ready_callbacks` for documentation
+        """
+        if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
+            # Create a new generator
+            self._last_args = args
+            self._last_kwargs = kwargs
+            self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+        try:
+            return next(self._cb_iter)
+        except StopIteration:
+            # Ran out of work, recursively create a new generator
+            self._cb_iter = None
+            return self.wait_for_ready_callbacks(*args, **kwargs)
 
 
 class SingleThreadedExecutor(Executor):
     """Runs callbacks in the thread which calls :func:`SingleThreadedExecutor.spin`."""
 
-    def __init__(self):
-        super().__init__()
-
     def spin_once(self, timeout_sec=None):
         try:
-            handler, entity, node = next(self.wait_for_ready_callbacks(timeout_sec=timeout_sec))
-            handler()
-        except StopIteration:
+            handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except TimeoutException:
             pass
+        else:
+            handler()
 
 
 class MultiThreadedExecutor(Executor):
@@ -431,7 +464,8 @@ class MultiThreadedExecutor(Executor):
 
     def spin_once(self, timeout_sec=None):
         try:
-            handler, entity, node = next(self.wait_for_ready_callbacks(timeout_sec=timeout_sec))
-            self._executor.submit(handler)
-        except StopIteration:
+            handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except TimeoutException:
             pass
+        else:
+            self._executor.submit(handler)
