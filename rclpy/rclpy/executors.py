@@ -17,10 +17,10 @@ import multiprocessing
 from threading import Condition as _Condition
 from threading import Lock as _Lock
 
-from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.timer import WallTimer as _WallTimer
 from rclpy.utilities import ok
+from rclpy.utilities import timeout_sec_to_nsec
 
 
 class _WaitSet:
@@ -57,16 +57,17 @@ class _WorkTracker:
         """
         Wait until all work completes.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :rtype: bool True if all work completed
         """
+        if timeout_sec is not None and timeout_sec < 0:
+            timeout_sec = None
         # Wait for all work to complete
-        if timeout_sec is None or timeout_sec >= 0:
-            with self._work_condition:
-                if not self._work_condition.wait_for(
-                        lambda: self._num_work_executing == 0, timeout_sec):
-                    return False
+        with self._work_condition:
+            if not self._work_condition.wait_for(
+                    lambda: self._num_work_executing == 0, timeout_sec):
+                return False
         return True
 
 
@@ -100,7 +101,7 @@ class Executor:
 
         Return true if all outstanding callbacks finished executing.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :rtype: bool
         """
@@ -152,7 +153,7 @@ class Executor:
 
         A custom executor should use :func:`Executor.wait_for_ready_callbacks` to get work.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :rtype: None
         """
@@ -260,21 +261,15 @@ class Executor:
         """
         Yield callbacks that are ready to be performed.
 
-        :param timeout_sec: Seconds to wait. Block forever if None. Don't wait if <= 0
+        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
         :param nodes: A list of nodes to wait on. Wait on all nodes if None.
         :type nodes: list or None
         :rtype: Generator[(callable, entity, :class:`rclpy.node.Node`)]
         """
         timeout_timer = None
-        # Get timeout in nanoseconds. 0 = don't wait. < 0 means block forever
-        timeout_nsec = None
-        if timeout_sec is None:
-            timeout_nsec = -1
-        elif timeout_sec <= 0:
-            timeout_nsec = 0
-        else:
-            timeout_nsec = int(float(timeout_sec) * S_TO_NS)
+        timeout_nsec = timeout_sec_to_nsec(timeout_sec)
+        if timeout_nsec > 0:
             timeout_timer = _WallTimer(None, None, timeout_nsec)
 
         if nodes is None:
