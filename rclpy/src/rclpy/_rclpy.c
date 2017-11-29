@@ -318,9 +318,8 @@ rclpy_get_validation_error_for_topic_name(PyObject * Py_UNUSED(self), PyObject *
     Py_RETURN_NONE;
   }
   const char * validation_message = rcl_topic_name_validation_result_string(validation_result);
-  if (!validation_message) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
+  if (validation_message) {
+    PyErr_Format(PyExc_RuntimeError, "%s, result '%d'", validation_message, validation_result);
     return NULL;
   }
 
@@ -374,9 +373,8 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
     Py_RETURN_NONE;
   }
   const char * validation_message = rmw_full_topic_name_validation_result_string(validation_result);
-  if (!strcmp(validation_message, "undefined topic name type")) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
+  if (validation_message) {
+    PyErr_Format(PyExc_RuntimeError, "%s, result '%d'", validation_message, validation_result);
     return NULL;
   }
 
@@ -428,9 +426,8 @@ rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * 
     Py_RETURN_NONE;
   }
   const char * validation_message = rmw_namespace_validation_result_string(validation_result);
-  if (!strcmp(validation_message, "undefined namespace type")) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
+  if (validation_message) {
+    PyErr_Format(PyExc_RuntimeError, "%s, result '%d'", validation_message, validation_result);
     return NULL;
   }
 
@@ -482,9 +479,8 @@ rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * 
     Py_RETURN_NONE;
   }
   const char * validation_message = rmw_node_name_validation_result_string(validation_result);
-  if (!strcmp(validation_message, "undefined node name type")) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
+  if (validation_message) {
+    PyErr_Format(PyExc_RuntimeError, "%s, result '%d'", validation_message, validation_result);
     return NULL;
   }
 
