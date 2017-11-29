@@ -57,6 +57,19 @@ class TestClient(unittest.TestCase):
         finally:
             self.node.destroy_client(cli)
 
+    def test_wait_for_service_exists(self):
+        cli = self.node.create_client(GetParameters, 'test_wfs_exists')
+        srv = self.node.create_service(GetParameters, 'test_wfs_exists', lambda request: None)
+        try:
+            start = time.monotonic()
+            self.assertTrue(cli.wait_for_service(timeout_sec=1.0))
+            end = time.monotonic()
+            self.assertGreater(0, end - start - TIME_FUDGE)
+            self.assertLess(0, end - start + TIME_FUDGE)
+        finally:
+            self.node.destroy_client(cli)
+            self.node.destroy_service(srv)
+
 
 if __name__ == '__main__':
     unittest.main()
