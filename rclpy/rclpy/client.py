@@ -79,13 +79,11 @@ class Client:
         # TODO(sloretz) Return as soon as the service is available
         # This is a temporary implementation. The sleep time is arbitrary.
         sleep_time = 0.25
-        while (
-            rclpy.utilities.ok() and not self.service_is_ready() and
-            (timeout_sec is None or timeout_sec > 0.0)
-        ):
+        if timeout_sec is None:
+            timeout_sec = float('inf')
+        while rclpy.utilities.ok() and not self.service_is_ready() and timeout_sec > 0.0:
             time.sleep(sleep_time)
-            if timeout_sec is not None:
-                timeout_sec -= sleep_time
+            timeout_sec -= sleep_time
 
         return self.service_is_ready()
 
