@@ -417,18 +417,21 @@ class Executor:
 
         See :func:`Executor._wait_for_ready_callbacks` for documentation
         """
-        if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
-            # Create a new generator
-            self._last_args = args
-            self._last_kwargs = kwargs
-            self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+        # if an old generator is done, this variable makes the loop get a new one before returning
+        got_generator = False
+        while not got_generator:
+            if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
+                # Create a new generator
+                self._last_args = args
+                self._last_kwargs = kwargs
+                self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+                got_generator = True
 
-        try:
-            return next(self._cb_iter)
-        except StopIteration:
-            # Ran out of work, recursively create a new generator
-            self._cb_iter = None
-            return self.wait_for_ready_callbacks(*args, **kwargs)
+            try:
+                return next(self._cb_iter)
+            except StopIteration:
+                # Generator ran out of work
+                self._cb_iter = None
 
 
 class SingleThreadedExecutor(Executor):
