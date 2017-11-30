@@ -422,6 +422,7 @@ class Executor:
             self._last_args = args
             self._last_kwargs = kwargs
             self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+
         try:
             return next(self._cb_iter)
         except StopIteration:
