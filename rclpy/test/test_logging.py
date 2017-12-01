@@ -40,11 +40,10 @@ class TestLogging(unittest.TestCase):
         rclpy.logging.set_logger_severity_threshold(name, original_severity)
 
     def test_logger_object_severity_threshold(self):
-        original_severity = rclpy.logging.root_logger.get_severity_threshold()
+        logger = rclpy.logging.get_named_logger('test_logger')
         for severity in LoggingSeverity:
-            rclpy.logging.root_logger.set_severity_threshold(severity)
-            self.assertEqual(severity, rclpy.logging.root_logger.get_severity_threshold())
-        rclpy.logging.root_logger.set_severity_threshold(original_severity)
+            logger.set_severity_threshold(severity)
+            self.assertEqual(severity, logger.get_severity_threshold())
 
     def test_logger_effective_severity_threshold(self):
         name = 'my_nonexistent_logger_name'
