@@ -14,8 +14,8 @@
 
 #include <Python.h>
 
+#include <rcutils/error_handling.h>
 #include <rcutils/logging.h>
-#include <rcutils/logging_macros.h>
 #include <rcutils/time.h>
 
 /// Initialize the logging system.
@@ -30,6 +30,7 @@ rclpy_logging_initialize(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   if (ret != RCUTILS_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to initialize logging system, return code: %d\n", ret);
+    rcutils_reset_error();
     return NULL;
   }
   Py_RETURN_NONE;
@@ -48,6 +49,7 @@ rclpy_logging_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   if (ret != RCUTILS_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to shutdown logging system, return code: %d\n", ret);
+    rcutils_reset_error();
     return NULL;
   }
   Py_RETURN_NONE;
@@ -73,6 +75,7 @@ rclpy_logging_get_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject
     PyErr_Format(PyExc_RuntimeError,
       "Failed to get severity threshold for logger \"%s\", return code: %d\n",
       name, severity);
+    rcutils_reset_error();
     return NULL;
   }
   return PyLong_FromLong(severity);
@@ -100,6 +103,7 @@ rclpy_logging_set_logger_severity_threshold(PyObject * Py_UNUSED(self), PyObject
     PyErr_Format(PyExc_RuntimeError,
       "Failed to set severity threshold \"%d\" for logger \"%s\", return code: %d\n",
       severity, name, ret);
+    rcutils_reset_error();
     return NULL;
   }
   Py_RETURN_NONE;
@@ -128,6 +132,7 @@ rclpy_logging_get_logger_effective_severity_threshold(PyObject * Py_UNUSED(self)
     PyErr_Format(PyExc_RuntimeError,
       "Failed to get effective severity threshold for logger \"%s\", return code: %d\n",
       name, severity);
+    rcutils_reset_error();
     return NULL;
   }
   return PyLong_FromLong(severity);
