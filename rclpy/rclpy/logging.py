@@ -57,11 +57,6 @@ def clear_config():
     initialize()
 
 
-def get_logger_severity_threshold(name):
-    severity = _rclpy_logging.rclpy_logging_get_logger_severity_threshold(name)
-    return LoggingSeverity(severity)
-
-
 def set_logger_severity_threshold(name, severity):
     severity = LoggingSeverity(severity)
     return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(name, severity)
