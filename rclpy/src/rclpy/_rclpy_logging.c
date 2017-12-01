@@ -16,7 +16,6 @@
 
 #include <rcutils/error_handling.h>
 #include <rcutils/logging.h>
-#include <rcutils/logging_macros.h>
 #include <rcutils/time.h>
 
 /// Initialize the logging system.
