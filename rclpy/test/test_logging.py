@@ -40,7 +40,7 @@ class TestLogging(unittest.TestCase):
         rclpy.logging.set_logger_severity_threshold(name, original_severity)
 
     def test_logger_object_severity_threshold(self):
-        logger = rclpy.logging.get_named_logger('test_logger')
+        logger = rclpy.logging.get_logger('test_logger')
         for severity in LoggingSeverity:
             logger.set_severity_threshold(severity)
             self.assertEqual(severity, logger.get_severity_threshold())
@@ -212,7 +212,7 @@ class TestLogging(unittest.TestCase):
                 )
 
     def test_named_logger(self):
-        my_logger = rclpy.logging.get_named_logger('my_logger')
+        my_logger = rclpy.logging.get_logger('my_logger')
 
         my_logger.set_severity_threshold(LoggingSeverity.INFO)
         # Test convenience functions
@@ -246,9 +246,9 @@ class TestLogging(unittest.TestCase):
     def test_named_logger_hierarchy(self):
         # Create a logger that implicitly is a child of the un-named root logger
         with self.assertRaisesRegex(ValueError, 'Logger name must not be empty'):
-            my_logger = rclpy.logging.get_named_logger('')
+            my_logger = rclpy.logging.get_logger('')
 
-        my_logger = rclpy.logging.get_named_logger('my_logger')
+        my_logger = rclpy.logging.get_logger('my_logger')
         self.assertEqual('my_logger', my_logger.name)
 
         # Check that any logger gets the severity threshold of the root logger by default
@@ -296,7 +296,7 @@ class TestLogging(unittest.TestCase):
         rclpy.logging._root_logger.set_severity_threshold(original_severity)
 
     def test_clear_config(self):
-        my_logger = rclpy.logging.get_named_logger('my_temp_logger')
+        my_logger = rclpy.logging.get_logger('my_temp_logger')
         my_logger.set_severity_threshold(LoggingSeverity.WARN)
         self.assertEqual(LoggingSeverity.WARN, my_logger.get_effective_severity_threshold())
         rclpy.logging.clear_config()
