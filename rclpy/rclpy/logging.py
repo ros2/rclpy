@@ -52,16 +52,16 @@ def shutdown():
 
 
 def clear_config():
-    """Clear the configuration of the logging system, e.g. logger severity thresholds."""
+    """Clear the configuration of the logging system, e.g. logger levels."""
     shutdown()
     initialize()
 
 
-def set_logger_severity_threshold(name, severity):
-    severity = LoggingSeverity(severity)
-    return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(name, severity)
+def set_logger_level(name, level):
+    level = LoggingSeverity(level)
+    return _rclpy_logging.rclpy_logging_set_logger_level(name, level)
 
 
-def get_logger_effective_severity_threshold(name):
-    severity = _rclpy_logging.rclpy_logging_get_logger_effective_severity_threshold(name)
-    return LoggingSeverity(severity)
+def get_logger_effective_level(name):
+    logger = _rclpy_logging.rclpy_logging_get_logger_effective_level(name)
+    return LoggingSeverity(logger)

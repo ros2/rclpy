@@ -228,16 +228,16 @@ class RcutilsLogger:
             name = self.name + '.' + name
         return RcutilsLogger(name=name)
 
-    def set_severity_threshold(self, severity):
+    def set_level(self, level):
         from rclpy.logging import LoggingSeverity
-        severity = LoggingSeverity(severity)
-        return _rclpy_logging.rclpy_logging_set_logger_severity_threshold(self.name, severity)
+        level = LoggingSeverity(level)
+        return _rclpy_logging.rclpy_logging_set_logger_level(self.name, level)
 
-    def get_effective_severity_threshold(self):
+    def get_effective_level(self):
         from rclpy.logging import LoggingSeverity
-        severity = LoggingSeverity(
-            _rclpy_logging.rclpy_logging_get_logger_effective_severity_threshold(self.name))
-        return severity
+        level = LoggingSeverity(
+            _rclpy_logging.rclpy_logging_get_logger_effective_level(self.name))
+        return level
 
     def is_enabled_for(self, severity):
         from rclpy.logging import LoggingSeverity
@@ -250,7 +250,7 @@ class RcutilsLogger:
 
         The message will not be logged if:
           * the logger is not enabled for the message's severity (the message severity is less than
-            the severity threshold of the logger), or
+            the level of the logger), or
           * a logging filter causes the message to be skipped.
 
         .. note::
