@@ -47,7 +47,7 @@ class Client:
         """
         event = threading.Event()
 
-        def unblock(self, future):
+        def unblock(future):
             nonlocal event
             event.set()
 
@@ -69,6 +69,13 @@ class Client:
         sequence_number = _rclpy.rclpy_send_request(self.client_handle, req)
         future = Future()
         self._pending_requests[sequence_number] = future
+
+        def remove_pending_request(future):
+            nonlocal self, sequence_number
+            del self._pending_requests[sequence_number]
+
+        future.add_done_callback(remove_pending_request)
+
         return future
 
     def service_is_ready(self):
