@@ -165,7 +165,9 @@ class Task(Future):
         """
         if self._done or self._executing:
             return
-        with self._lock:
+        if not self._lock.acquire(blocking=False):
+            return
+        try:
             if self._done:
                 return
             self._executing = True
@@ -191,6 +193,8 @@ class Task(Future):
                 self._complete_task()
 
             self._executing = False
+        finally:
+            self._lock.release()
 
     def _complete_task(self):
         """Store result and schedule done callbacks."""
