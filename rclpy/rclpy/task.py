@@ -197,7 +197,7 @@ class Task(Future):
             self._lock.release()
 
     def _complete_task(self):
-        """Store result and schedule done callbacks."""
+        """Cleanup after task finished."""
         self._handler = None
         self._args = None
 
