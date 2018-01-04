@@ -222,11 +222,15 @@ class Executor:
 
     async def _execute_client(self, client, seq_and_response):
         sequence, response = seq_and_response
-        if sequence is not None and sequence == client.sequence_number:
-            # clients spawn their own thread to wait for a response in the
-            # wait_for_future function. Users can either use this mechanism or monitor
-            # the content of client.response to check if a response has been received
-            client.response = response
+        if sequence is not None:
+            try:
+                future = client._pending_requests[sequence]
+            except IndexError:
+                # The request was cancelled
+                pass
+            else:
+                future._set_executor(self)
+                future.set_result(response)
 
     def _take_service(self, srv):
         request_and_header = _rclpy.rclpy_take_request(
