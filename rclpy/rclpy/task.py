@@ -39,9 +39,8 @@ class Future:
         # Lock for threadsafety
         self._lock = threading.Lock()
         # An executor to use when scheduling done callbacks
-        self._executor = _fake_weakref
-        if executor is not None:
-            self._executor = weakref.ref(executor)
+        self._executor = None
+        self._set_executor(executor)
 
     def __await__(self):
         # Yield if the task is not finished
@@ -117,11 +116,18 @@ class Future:
             for callback in self._callbacks:
                 executor.create_task(callback, self)
 
+    def _set_executor(self, executor=None):
+        """Set the executor this future is associated with."""
+        if executor is None:
+            self._executor = _fake_weakref
+        else:
+            self._executor = weakref.ref(executor)
+
     def add_done_callback(self, callback):
         """
         Add a callback to be executed when the task is done.
 
-        :param callback: a callback to be run when the task completes.
+        :param callback: a callback taking the future as an agrument to be run when completed
         """
         if self._done:
             executor = self._executor()
