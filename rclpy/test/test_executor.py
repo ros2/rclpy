@@ -43,6 +43,8 @@ class TestExecutor(unittest.TestCase):
 
         executor.add_node(self.node)
         executor.spin_once(timeout_sec=1.23)
+        # Sleep for race condition between test cleanup and MultiThreadedExecutor thread pool
+        time.sleep(0.1)
 
         self.node.destroy_timer(tmr)
         return got_callback
