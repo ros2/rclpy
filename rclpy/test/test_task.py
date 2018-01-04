@@ -31,30 +31,22 @@ class DummyExecutor:
 class TestTask(unittest.TestCase):
 
     def test_task_normal_callable(self):
-        called = False
 
         def func():
-            nonlocal called
-            called = True
             return 'Sentinel Result'
 
         t = Task(func)
         t()
-        self.assertTrue(called)
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
 
     def test_task_lambda(self):
-        called = False
 
         def func():
-            nonlocal called
-            called = True
             return 'Sentinel Result'
 
         t = Task(lambda: func())
         t()
-        self.assertTrue(called)
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
 
