@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import time
 import unittest
 
@@ -80,6 +81,123 @@ class TestExecutor(unittest.TestCase):
         executor.spin_once(timeout_sec=0)
         end = time.monotonic()
         self.assertLess(start - end, 0.001)
+
+    def test_execute_coroutine_timer(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.node)
+
+        called1 = False
+        called2 = False
+
+        async def coroutine():
+            nonlocal called1
+            nonlocal called2
+            called1 = True
+            await asyncio.sleep(0)
+            called2 = True
+
+        tmr = self.node.create_timer(0.1, coroutine)
+        try:
+            executor.spin_once(timeout_sec=1.23)
+            self.assertTrue(called1)
+            self.assertFalse(called2)
+
+            called1 = False
+            executor.spin_once(timeout_sec=0)
+            self.assertFalse(called1)
+            self.assertTrue(called2)
+        finally:
+            self.node.destroy_timer(tmr)
+
+    def test_execute_coroutine_guard_condition(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.node)
+
+        called1 = False
+        called2 = False
+
+        async def coroutine():
+            nonlocal called1
+            nonlocal called2
+            called1 = True
+            await asyncio.sleep(0)
+            called2 = True
+
+        gc = self.node.create_guard_condition(coroutine)
+        try:
+            gc.trigger()
+            executor.spin_once(timeout_sec=0)
+            self.assertTrue(called1)
+            self.assertFalse(called2)
+
+            called1 = False
+            executor.spin_once(timeout_sec=1)
+            self.assertFalse(called1)
+            self.assertTrue(called2)
+        finally:
+            self.node.destroy_guard_condition(gc)
+
+    def test_create_task_coroutine(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.node)
+
+        async def coroutine():
+            return 'Sentinel Result'
+
+        future = executor.create_task(coroutine)
+        self.assertFalse(future.done())
+
+        executor.spin_once(timeout_sec=0)
+        self.assertTrue(future.done())
+        self.assertEqual('Sentinel Result', future.result())
+
+    def test_create_task_normal_function(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.node)
+
+        def func():
+            return 'Sentinel Result'
+
+        future = executor.create_task(func)
+        self.assertFalse(future.done())
+
+        executor.spin_once(timeout_sec=0)
+        self.assertTrue(future.done())
+        self.assertEqual('Sentinel Result', future.result())
+
+    def test_create_task_dependent_coroutines(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.node)
+
+        async def coro1():
+            return 'Sentinel Result 1'
+
+        future1 = executor.create_task(coro1)
+
+        async def coro2():
+            nonlocal future1
+            await future1
+            return 'Sentinel Result 2'
+
+        future2 = executor.create_task(coro2)
+
+        # Coro2 is newest task, so it gets to await future1 in this spin
+        executor.spin_once(timeout_sec=0)
+        # Coro1 execs in this spin
+        executor.spin_once(timeout_sec=0)
+        self.assertTrue(future1.done())
+        self.assertEqual('Sentinel Result 1', future1.result())
+        self.assertFalse(future2.done())
+
+        # Coro2 passes the await step here (timeout change forces new generator)
+        executor.spin_once(timeout_sec=1)
+        self.assertTrue(future2.done())
+        self.assertEqual('Sentinel Result 2', future2.result())
 
 
 if __name__ == '__main__':
