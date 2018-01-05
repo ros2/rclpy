@@ -50,9 +50,10 @@ class Future:
 
     def cancel(self):
         """Request cancellation of the running task if it is not done already."""
-        if not self._done:
-            self._cancelled = True
-        self._schedule_done_callbacks()
+        with self._lock:
+            if not self._done:
+                self._cancelled = True
+            self._schedule_done_callbacks()
 
     def cancelled(self):
         """
@@ -94,10 +95,11 @@ class Future:
 
         :param result: The output of a long running task.
         """
-        self._result = result
-        self._done = True
-        self._cancelled = False
-        self._schedule_done_callbacks()
+        with self._lock:
+            self._result = result
+            self._done = True
+            self._cancelled = False
+            self._schedule_done_callbacks()
 
     def set_exception(self, exception):
         """
@@ -105,10 +107,11 @@ class Future:
 
         :param result: The output of a long running task.
         """
-        self._exception = exception
-        self._done = True
-        self._cancelled = False
-        self._schedule_done_callbacks()
+        with self._lock:
+            self._exception = exception
+            self._done = True
+            self._cancelled = False
+            self._schedule_done_callbacks()
 
     def _schedule_done_callbacks(self):
         """Schedule done callbacks on the executor if possible."""
@@ -116,13 +119,15 @@ class Future:
         if executor is not None:
             for callback in self._callbacks:
                 executor.create_task(callback, self)
+        self._callbacks = []
 
     def _set_executor(self, executor=None):
         """Set the executor this future is associated with."""
-        if executor is None:
-            self._executor = _fake_weakref
-        else:
-            self._executor = weakref.ref(executor)
+        with self._lock:
+            if executor is None:
+                self._executor = _fake_weakref
+            else:
+                self._executor = weakref.ref(executor)
 
     def add_done_callback(self, callback):
         """
@@ -130,12 +135,12 @@ class Future:
 
         :param callback: a callback taking the future as an agrument to be run when completed
         """
-        if self._done:
-            executor = self._executor()
-            if executor is not None:
-                executor.create_task(callback, self)
-        else:
-            with self._lock:
+        with self._lock:
+            if self._done:
+                executor = self._executor()
+                if executor is not None:
+                    executor.create_task(callback, self)
+            else:
                 self._callbacks.append(callback)
 
 
@@ -160,6 +165,8 @@ class Task(Future):
             self._args = None
         # True while the task is being executed
         self._executing = False
+        # Lock acquired to prevent task from executing in parallel with itself
+        self._task_lock = threading.Lock()
 
     def __call__(self):
         """
@@ -170,9 +177,7 @@ class Task(Future):
 
         The return value of the handler is stored as the task result.
         """
-        if self._done or self._executing:
-            return
-        if not self._lock.acquire(blocking=False):
+        if self._done or self._executing or not self._task_lock.acquire(blocking=False):
             return
         try:
             if self._done:
@@ -201,7 +206,7 @@ class Task(Future):
 
             self._executing = False
         finally:
-            self._lock.release()
+            self._task_lock.release()
 
     def _complete_task(self):
         """Cleanup after task finished."""
