@@ -218,6 +218,27 @@ class TestFuture(unittest.TestCase):
         except StopIteration as e:
             self.assertEqual('Sentinel Result', e.value)
 
+    def test_cancel_schedules_callbacks(self):
+        executor = DummyExecutor()
+        f = Future(executor=executor)
+        f.add_done_callback(lambda f: None)
+        f.cancel()
+        self.assertTrue(executor.done_callbacks)
+
+    def test_set_result_schedules_callbacks(self):
+        executor = DummyExecutor()
+        f = Future(executor=executor)
+        f.add_done_callback(lambda f: None)
+        f.set_result('Anything')
+        self.assertTrue(executor.done_callbacks)
+
+    def test_set_exception_schedules_callbacks(self):
+        executor = DummyExecutor()
+        f = Future(executor=executor)
+        f.add_done_callback(lambda f: None)
+        f.set_exception('Anything')
+        self.assertTrue(executor.done_callbacks)
+
 
 if __name__ == '__main__':
     unittest.main()

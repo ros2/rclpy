@@ -52,6 +52,7 @@ class Future:
         """Request cancellation of the running task if it is not done already."""
         if not self._done:
             self._cancelled = True
+        self._schedule_done_callbacks()
 
     def cancelled(self):
         """
