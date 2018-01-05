@@ -121,7 +121,7 @@ class Future:
                 executor.create_task(callback, self)
         self._callbacks = []
 
-    def _set_executor(self, executor=None):
+    def _set_executor(self, executor):
         """Set the executor this future is associated with."""
         with self._lock:
             if executor is None:
