@@ -2164,16 +2164,15 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
  *
  * \param[in] pyclient Capsule pointing to the client to process the response
  * \param[in] pyresponse_type Instance of the message type to take
- * \return Python response message with all fields populated with received response
+ * \return 2-tuple sequence number and received response or None if there is no response to take
  */
 static PyObject *
 rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pyclient;
   PyObject * pyresponse_type;
-  PY_LONG_LONG sequence_number;
 
-  if (!PyArg_ParseTuple(args, "OOK", &pyclient, &pyresponse_type, &sequence_number)) {
+  if (!PyArg_ParseTuple(args, "OO", &pyclient, &pyresponse_type)) {
     return NULL;
   }
   rcl_client_t * client =
@@ -2209,8 +2208,8 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
-  header->sequence_number = sequence_number;
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
+  int64_t sequence = header->sequence_number;
   PyMem_Free(header);
 
   if (ret != RCL_RET_CLIENT_TAKE_FAILED) {
@@ -2227,7 +2226,21 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    return pytaken_response;
+    // Create the tuple to return
+    PyObject * pysequence = PyLong_FromLongLong(sequence);
+    if (!pysequence) {
+      Py_DECREF(pytaken_response);
+      return NULL;
+    }
+    PyObject * pytuple = PyTuple_New(2);
+    if (!pytuple) {
+      Py_DECREF(pysequence);
+      Py_DECREF(pytaken_response);
+      return NULL;
+    }
+    PyTuple_SET_ITEM(pytuple, 0, pysequence);
+    PyTuple_SET_ITEM(pytuple, 1, pytaken_response);
+    return pytuple;
   }
   // if take_response failed, just do nothing
   Py_RETURN_NONE;
