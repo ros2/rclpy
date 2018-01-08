@@ -317,12 +317,8 @@ rclpy_get_validation_error_for_topic_name(PyObject * Py_UNUSED(self), PyObject *
   if (validation_result == RCL_TOPIC_NAME_VALID) {
     Py_RETURN_NONE;
   }
+
   const char * validation_message = rcl_topic_name_validation_result_string(validation_result);
-  if (!validation_message) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
-    return NULL;
-  }
 
   PyObject * result_list = PyList_New(2);
   PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
@@ -373,12 +369,8 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
   if (validation_result == RMW_NAMESPACE_VALID) {
     Py_RETURN_NONE;
   }
+
   const char * validation_message = rmw_full_topic_name_validation_result_string(validation_result);
-  if (!validation_message) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
-    return NULL;
-  }
 
   PyObject * result_list = PyList_New(2);
   PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
@@ -427,12 +419,8 @@ rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * 
   if (validation_result == RMW_NAMESPACE_VALID) {
     Py_RETURN_NONE;
   }
+
   const char * validation_message = rmw_namespace_validation_result_string(validation_result);
-  if (!validation_message) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
-    return NULL;
-  }
 
   PyObject * result_list = PyList_New(2);
   PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
@@ -481,12 +469,8 @@ rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * 
   if (validation_result == RMW_NODE_NAME_VALID) {
     Py_RETURN_NONE;
   }
+
   const char * validation_message = rmw_node_name_validation_result_string(validation_result);
-  if (!validation_message) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Unable to get validation error message for result '%d'", validation_result);
-    return NULL;
-  }
 
   PyObject * result_list = PyList_New(2);
   PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
