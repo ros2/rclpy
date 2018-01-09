@@ -44,11 +44,11 @@ class ResponseThread(threading.Thread):
         if sigint_gc_handle in guard_condition_ready_list:
             rclpy.utilities.shutdown()
             return
-        seq_and_response = _rclpy.rclpy_take_response(
+        seq, response = _rclpy.rclpy_take_response(
             self.client.client_handle,
             self.client.srv_type.Response)
-        if seq_and_response and seq_and_response[0] == self.client.sequence_number:
-            self.client.response = seq_and_response[1]
+        if seq is not None and seq == self.client.sequence_number:
+            self.client.response = response
 
 
 class Client:

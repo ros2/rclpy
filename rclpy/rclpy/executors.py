@@ -218,11 +218,7 @@ class Executor:
             await await_or_execute(sub.callback, msg)
 
     def _take_client(self, client):
-        seq_and_response = _rclpy.rclpy_take_response(
-            client.client_handle, client.srv_type.Response)
-        if seq_and_response:
-            return seq_and_response
-        return None, None
+        return _rclpy.rclpy_take_response(client.client_handle, client.srv_type.Response)
 
     async def _execute_client(self, client, seq_and_response):
         sequence, response = seq_and_response
