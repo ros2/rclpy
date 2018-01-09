@@ -80,6 +80,45 @@ ament_target_dependencies(rclpy
   "rcutils"
 )
 
+# Generate code using cython
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake )
+find_package(Cython REQUIRED)
+
+function(cythonize)
+  set(options)
+  set(oneValueArgs TARGET INPUT OUTPUT)
+  set(multiValueArgs DEPENDS)
+  cmake_parse_arguments(_ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  add_custom_command( OUTPUT ${_ARG_OUTPUT}
+    COMMAND ${CYTHON_EXECUTABLE}
+    ARGS -I rclpy/ --output-file ${_ARG_OUTPUT} ${_ARG_INPUT}
+    DEPENDS ${_ARG_INPUT} ${_ARG_DEPENDS}
+    COMMENT "Cython generating code to ${_ARG_OUTPUT}"
+  )
+  add_custom_target(${_ARG_TARGET} DEPENDS ${_ARG_OUTPUT})
+endfunction()
+
+set( _cython_output_dir "${CMAKE_CURRENT_BINARY_DIR}/cython_output")
+file(MAKE_DIRECTORY ${_cython_output_dir})
+cythonize(
+  TARGET cythonize_wait_set
+  INPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/_rclpy_wait_set.pyx"
+  OUTPUT "${_cython_output_dir}/rclpy_wait_set.c"
+  DEPENDS rclpy/rcl.pxd
+)
+
+add_library(
+  rclpy_wait_set
+  SHARED ${_cython_output_dir}/rclpy_wait_set.c
+)
+add_dependencies(rclpy_wait_set cythonize_wait_set)
+configure_python_c_extension_library(rclpy_wait_set)
+ament_target_dependencies(rclpy_wait_set
+  "rcl"
+  "rcutils"
+)
+
 # Logging support provided by rcutils
 add_library(
   rclpy_logging
