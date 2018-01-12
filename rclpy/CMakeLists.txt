@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(rclpy C)
+project(rclpy C CXX)
 
 # Default to C11
 if(NOT CMAKE_C_STANDARD)
@@ -87,6 +87,22 @@ add_library(
 )
 configure_python_c_extension_library(rclpy_logging)
 ament_target_dependencies(rclpy_logging
+  "rcutils"
+)
+
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake )
+find_package(PYBIND11 REQUIRED)
+
+add_library(
+  rclpy_wait_set
+  SHARED src/rclpy/_rclpy_wait_set.cpp
+)
+configure_python_c_extension_library(rclpy_wait_set)
+set_target_properties(rclpy_wait_set PROPERTIES CXX_VISIBILITY_PRESET "hidden")
+set_target_properties(rclpy_wait_set PROPERTIES CXX_STANDARD 11)
+target_include_directories(rclpy_wait_set PRIVATE ${PYBIND11_INCLUDE_DIR})
+ament_target_dependencies(rclpy_wait_set
+  "rcl"
   "rcutils"
 )
 
