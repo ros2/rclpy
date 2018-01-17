@@ -159,7 +159,7 @@ class TestTask(unittest.TestCase):
         def func(arg):
             return arg
 
-        t = Task(func, arg_in)
+        t = Task(func, args=(arg_in,))
         t()
         self.assertEqual('Sentinel Arg', t.result())
 
@@ -169,7 +169,27 @@ class TestTask(unittest.TestCase):
         async def coro(arg):
             return arg
 
-        t = Task(coro, arg_in)
+        t = Task(coro, args=(arg_in,))
+        t()
+        self.assertEqual('Sentinel Arg', t.result())
+
+    def test_task_normal_callable_kwargs(self):
+        arg_in = 'Sentinel Arg'
+
+        def func(kwarg=None):
+            return kwarg
+
+        t = Task(func, kwargs={'kwarg': arg_in})
+        t()
+        self.assertEqual('Sentinel Arg', t.result())
+
+    def test_coroutine_kwargs(self):
+        arg_in = 'Sentinel Arg'
+
+        async def coro(kwarg=None):
+            return kwarg
+
+        t = Task(coro, kwargs={'kwarg': arg_in})
         t()
         self.assertEqual('Sentinel Arg', t.result())
 

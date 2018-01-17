@@ -120,7 +120,7 @@ class Executor:
         self._last_args = None
         self._last_kwargs = None
 
-    def create_task(self, callback, *args):
+    def create_task(self, callback, *args, **kwargs):
         """
         Add a callback or coroutine to be executed during :meth:`spin` and return a Future.
 
@@ -130,7 +130,7 @@ class Executor:
         :type callback: callable or coroutine function
         :rtype: :class:`rclpy.task.Future` instance
         """
-        task = Task(callback, *args, executor=self)
+        task = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
             self._tasks.append((task, None, None))
         # Task inherits from Future
@@ -283,7 +283,7 @@ class Executor:
                     # callback group can get executed
                     _rclpy.rclpy_trigger_guard_condition(gc)
         task = Task(
-            handler, entity, self._guard_condition, self._is_shutdown, self._work_tracker,
+            handler, (entity, self._guard_condition, self._is_shutdown, self._work_tracker),
             executor=self)
         with self._tasks_lock:
             self._tasks.append((task, entity, node))

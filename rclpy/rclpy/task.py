@@ -154,15 +154,21 @@ class Task(Future):
     This class should only be instantiated by :class:`rclpy.executors.Executor`.
     """
 
-    def __init__(self, handler, *args, executor=None):
+    def __init__(self, handler, args=None, kwargs=None, executor=None):
         super().__init__(executor=executor)
         # _handler is either a normal function or a coroutine
         self._handler = handler
         # Arguments passed into the function
+        if args is None:
+            args = []
         self._args = args
+        if kwargs is None:
+            kwargs = {}
+        self._kwargs = kwargs
         if inspect.iscoroutinefunction(handler):
-            self._handler = handler(*args)
+            self._handler = handler(*args, **kwargs)
             self._args = None
+            self._kwargs = None
         # True while the task is being executed
         self._executing = False
         # Lock acquired to prevent task from executing in parallel with itself
@@ -199,7 +205,7 @@ class Task(Future):
             else:
                 # Execute a normal function
                 try:
-                    self.set_result(self._handler(*self._args))
+                    self.set_result(self._handler(*self._args, **self._kwargs))
                 except Exception as e:
                     self.set_exception(e)
                 self._complete_task()
@@ -212,6 +218,7 @@ class Task(Future):
         """Cleanup after task finished."""
         self._handler = None
         self._args = None
+        self._kwargs = None
 
     def executing(self):
         """
