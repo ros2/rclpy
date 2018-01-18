@@ -54,3 +54,14 @@ def spin(node):
             executor.spin_once()
     finally:
         executor.shutdown()
+
+
+def spin_until_future_complete(node, future):
+    # imported locally to avoid loading extensions on module import
+    from rclpy.executors import SingleThreadedExecutor
+    executor = SingleThreadedExecutor()
+    try:
+        executor.add_node(node)
+        executor.spin_until_future_complete(future)
+    finally:
+        executor.shutdown()

@@ -191,6 +191,11 @@ class Executor:
         while ok():
             self.spin_once()
 
+    def spin_until_future_complete(self, future):
+        """Execute until a given future is done."""
+        while ok() and not future.done():
+            self.spin_once()
+
     def spin_once(self, timeout_sec=None):
         """
         Wait for and execute a single callback.
