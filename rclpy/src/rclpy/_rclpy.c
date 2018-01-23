@@ -274,6 +274,36 @@ rclpy_get_node_namespace(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(node_namespace);
 }
 
+/// Get the name of the logger associated with a node.
+/**
+ * Raises ValueError if pynode is not a node capsule
+ *
+ * \param[in] pynode Capsule pointing to the node to get the logger name of
+ * \return logger_name, or
+ * \return None on failure
+ */
+static PyObject *
+rclpy_get_node_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  const char * node_logger_name = rcl_node_get_logger_name(node);
+  if (!node_logger_name) {
+    Py_RETURN_NONE;
+  }
+
+  return PyUnicode_FromString(node_logger_name);
+}
+
 /// Validate a topic name and return error message and index of invalidation.
 /**
  * Does not have to be a fully qualified topic name.
@@ -2582,7 +2612,11 @@ static PyMethodDef rclpy_methods[] = {
   },
   {
     "rclpy_get_node_namespace", rclpy_get_node_namespace, METH_VARARGS,
-    "Get the name of a node."
+    "Get the namespace of a node."
+  },
+  {
+    "rclpy_get_node_logger_name", rclpy_get_node_logger_name, METH_VARARGS,
+    "Get the logger name associated with a node."
   },
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,

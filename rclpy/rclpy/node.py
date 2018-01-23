@@ -53,8 +53,6 @@ class Node:
 
     def __init__(self, node_name, *, namespace=None):
         self._handle = None
-        # TODO(dhood): get logger name from rcl, use namespace (with slashes converted)
-        self._logger = get_logger(node_name)
         self.publishers = []
         self.subscriptions = []
         self.clients = []
@@ -79,6 +77,7 @@ class Node:
             validate_namespace(namespace)
             # Should not get to this point
             raise RuntimeError('rclpy_create_node failed for unknown reason')
+        self._logger = get_logger(_rclpy.rclpy_get_node_logger_name(self.handle))
 
     @property
     def handle(self):
