@@ -218,12 +218,11 @@ class Executor:
             await await_or_execute(sub.callback, msg)
 
     def _take_client(self, client):
-        response = _rclpy.rclpy_take_response(
-            client.client_handle, client.srv_type.Response, client.sequence_number)
-        return response
+        return _rclpy.rclpy_take_response(client.client_handle, client.srv_type.Response)
 
-    async def _execute_client(self, client, response):
-        if response:
+    async def _execute_client(self, client, seq_and_response):
+        sequence, response = seq_and_response
+        if sequence is not None and sequence == client.sequence_number:
             # clients spawn their own thread to wait for a response in the
             # wait_for_future function. Users can either use this mechanism or monitor
             # the content of client.response to check if a response has been received
