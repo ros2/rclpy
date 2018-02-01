@@ -30,3 +30,4 @@ from rclpy.impl import _import
 
 rclpy_implementation = _import('._rclpy')
 rclpy_logging_implementation = _import('._rclpy_logging')
+rclpy_waitset = _import('._rclpy_wait_set')
