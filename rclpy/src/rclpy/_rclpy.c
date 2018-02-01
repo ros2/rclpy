@@ -824,7 +824,7 @@ rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
   if (!timer) {
     return NULL;
   }
-  uint64_t timer_period;
+  int64_t timer_period;
   rcl_ret_t ret = rcl_timer_get_period(timer, &timer_period);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -1025,7 +1025,7 @@ rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
   if (!timer) {
     return NULL;
   }
-  uint64_t old_period;
+  int64_t old_period;
   rcl_ret_t ret = rcl_timer_exchange_period(timer, period_nsec, &old_period);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -1087,7 +1087,7 @@ rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, "rcl_timer_t");
-  uint64_t elapsed_time;
+  int64_t elapsed_time;
   rcl_ret_t ret = rcl_timer_get_time_since_last_call(timer, &elapsed_time);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
