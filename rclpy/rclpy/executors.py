@@ -177,6 +177,17 @@ class Executor:
             # Rebuild the wait set so it includes this new node
             _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
 
+    def remove_node(self, node):
+        """Stop managing this node's callbacks."""
+        with self._nodes_lock:
+            try:
+                self._nodes.add(node)
+            except KeyError:
+                pass
+            else:
+                # Rebuild the wait set so it doesn't include this node
+                _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+
     def get_nodes(self):
         """
         Return nodes which have been added to this executor.
