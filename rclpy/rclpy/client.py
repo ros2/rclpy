@@ -59,6 +59,22 @@ class Client:
             raise future.exception()
         return future.result()
 
+    def remove_pending_request(self, future):
+        """
+        Remove a future from the list of pending requests.
+
+        This prevents a future from receiving a request and executing its done callbacks.
+        :param future: a future returned from :meth:`call_async`
+        :type future: rclpy.task.Future
+        """
+        for seq, req_future in self._pending_requests.items():
+            if future == req_future:
+                try:
+                    del self._pending_requests[seq]
+                except KeyError:
+                    pass
+                break
+
     def call_async(self, req):
         """
         Make a service request and asyncronously get the result.
@@ -70,11 +86,7 @@ class Client:
         future = Future()
         self._pending_requests[sequence_number] = future
 
-        def remove_pending_request(future):
-            nonlocal self, sequence_number
-            del self._pending_requests[sequence_number]
-
-        future.add_done_callback(remove_pending_request)
+        future.add_done_callback(self.remove_pending_request)
 
         return future
 
