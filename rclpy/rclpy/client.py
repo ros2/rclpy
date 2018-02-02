@@ -83,6 +83,9 @@ class Client:
         :rtype: :class:`rclpy.task.Future` instance
         """
         sequence_number = _rclpy.rclpy_send_request(self.client_handle, req)
+        if sequence_number in self._pending_requests:
+            raise RuntimeError("Sequence (%r) conflicts with pending request" % sequence_number)
+
         future = Future()
         self._pending_requests[sequence_number] = future
 
