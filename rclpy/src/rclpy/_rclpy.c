@@ -286,7 +286,6 @@ static PyObject *
 rclpy_get_node_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode;
-
   if (!PyArg_ParseTuple(args, "O", &pynode)) {
     return NULL;
   }
