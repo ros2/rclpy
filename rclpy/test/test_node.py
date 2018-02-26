@@ -91,7 +91,7 @@ class TestNode(unittest.TestCase):
 
     def test_node_logger(self):
         node_logger = self.node.get_logger()
-        self.assertEqual(node_logger.name, 'my_node')
+        self.assertEqual(node_logger.name, 'my_ns.my_node')
         node_logger.set_level(rclpy.logging.LoggingSeverity.INFO)
         node_logger.debug('test')
 
