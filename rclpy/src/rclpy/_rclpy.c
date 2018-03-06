@@ -155,14 +155,63 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
  * Raises RuntimeError if rcl could not be initialized
  */
 static PyObject *
-rclpy_init(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  // TODO(esteve): parse args
-  rcl_ret_t ret = rcl_init(0, NULL, rcl_get_default_allocator());
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to init: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
+  // Expect one argument which is a list of strings
+  PyObject * pyargs;
+  if (!PyArg_ParseTuple(args, "O", &pyargs)) {
+    // Exception raised
+    return NULL;
+  }
+
+  pyargs = PySequence_List(pyargs);
+  if (NULL == pyargs) {
+    // Exception raised
+    return NULL;
+  }
+  Py_ssize_t pysize_num_args = PyList_Size(pyargs);
+  if (pysize_num_args > INT_MAX) {
+    PyErr_Format(PyExc_OverflowError, "Too many arguments");
+    return NULL;
+  }
+  int num_args = (int)pysize_num_args;
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  char ** arg_values = NULL;
+  bool have_args = true;
+  if (num_args > 0) {
+    arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
+    if (NULL == arg_values) {
+      PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
+      Py_DECREF(pyargs);
+      return NULL;
+    }
+
+    for (int i = 0; i < num_args; ++i) {
+      // Returns borrowed reference, do not decref
+      PyObject * pyarg = PyList_GetItem(pyargs, i);
+      if (NULL == pyarg) {
+        have_args = false;
+        break;
+      }
+      // Borrows a pointer, do not free arg_values[i]
+      arg_values[i] = PyUnicode_AsUTF8(pyarg);
+    }
+  }
+
+  if (have_args) {
+    rcl_ret_t ret = rcl_init(num_args, arg_values, allocator);
+    if (ret != RCL_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
+      rcl_reset_error();
+    }
+  }
+  if (NULL != arg_values) {
+    allocator.deallocate(arg_values, allocator.state);
+  }
+  Py_DECREF(pyargs);
+
+  if (PyErr_Occurred()) {
     return NULL;
   }
   Py_RETURN_NONE;
