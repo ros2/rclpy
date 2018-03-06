@@ -177,23 +177,26 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   int num_args = (int)pysize_num_args;
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  char ** arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
-  if (NULL == arg_values) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
-    Py_DECREF(pyargs);
-    return NULL;
-  }
-
+  char ** arg_values = NULL;
   bool have_args = true;
-  for (int i = 0; i < num_args; ++i) {
-    // Returns borrowed reference, do not decref
-    PyObject * pyarg = PyList_GetItem(pyargs, i);
-    if (NULL == pyarg) {
-      have_args = false;
-      break;
+  if (num_args > 0) {
+    arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
+    if (NULL == arg_values) {
+      PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
+      Py_DECREF(pyargs);
+      return NULL;
     }
-    // Borrows a pointer, do not free arg_values[i]
-    arg_values[i] = PyUnicode_AsUTF8(pyarg);
+
+    for (int i = 0; i < num_args; ++i) {
+      // Returns borrowed reference, do not decref
+      PyObject * pyarg = PyList_GetItem(pyargs, i);
+      if (NULL == pyarg) {
+        have_args = false;
+        break;
+      }
+      // Borrows a pointer, do not free arg_values[i]
+      arg_values[i] = PyUnicode_AsUTF8(pyarg);
+    }
   }
 
   if (have_args) {
@@ -203,7 +206,9 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
       rcl_reset_error();
     }
   }
-  allocator.deallocate(arg_values, allocator.state);
+  if (NULL != arg_values) {
+    allocator.deallocate(arg_values, allocator.state);
+  }
   Py_DECREF(pyargs);
 
   if (PyErr_Occurred()) {
