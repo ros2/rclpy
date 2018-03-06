@@ -169,7 +169,12 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     // Exception raised
     return NULL;
   }
-  Py_ssize_t num_args = PyList_Size(pyargs);
+  Py_ssize_t pysize_num_args = PyList_Size(pyargs);
+  if (pysize_num_args > INT_MAX) {
+    PyErr_Format(PyExc_OverflowError, "Too many arguments");
+    return NULL;
+  }
+  int num_args = (int)pysize_num_args;
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
   char ** arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
