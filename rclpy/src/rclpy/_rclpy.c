@@ -160,11 +160,13 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   // Expect one argument which is a list of strings
   PyObject * pyargs;
   if (!PyArg_ParseTuple(args, "O", &pyargs)) {
+    // Exception raised
     return NULL;
   }
 
   pyargs = PySequence_List(pyargs);
   if (NULL == pyargs) {
+    // Exception raised
     return NULL;
   }
   Py_ssize_t num_args = PyList_Size(pyargs);
