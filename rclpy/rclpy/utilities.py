@@ -12,12 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import threading
 
 from rclpy.constants import S_TO_NS
 
 
 g_shutdown_lock = threading.Lock()
+
+
+def remove_ros_args(args=None):
+    # imported locally to avoid loading extensions on module import
+    from rclpy.impl.implementation_singleton import rclpy_implementation
+    return rclpy_implementation.rclpy_remove_ros_args(
+        args if args is not None else sys.argv)
 
 
 def ok():
