@@ -177,7 +177,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   int num_args = (int)pysize_num_args;
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  char ** arg_values = NULL;
+  const char ** arg_values = NULL;
   bool have_args = true;
   if (num_args > 0) {
     arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
