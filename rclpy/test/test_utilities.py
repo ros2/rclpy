@@ -31,12 +31,8 @@ class TestValidateRemoveRosArgs(unittest.TestCase):
 
     def test_remove_ros_args_empty(self):
         args = []
-        excepted = False
-        try:
+        with self.assertRaises(RuntimeError):
             rclpy.utilities.remove_ros_args(args=args)
-        except RuntimeError as e:
-            excepted = True
-        self.assertTrue(excepted)
 
 
 class TestUtilities(unittest.TestCase):

@@ -221,7 +221,10 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
         for (int ii = 0; ii < nonros_argc; ++ii) {
           PyList_SET_ITEM(result_list, ii, PyUnicode_FromString(nonros_argv[ii]));
         }
+#pragma warning(push)
+#pragma warning(disable: 4090)
         allocator.deallocate(nonros_argv, allocator.state);
+#pragma warning(pop)
       }
 
       ret = rcl_arguments_fini(&parsed_args);
@@ -232,7 +235,10 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
   if (NULL != arg_values) {
-    allocator.deallocate(arg_values, allocator.state);
+#pragma warning(push)
+#pragma warning(disable: 4090)
+    allocator.deallocate(nonros_argv, allocator.state);
+#pragma warning(pop)
   }
   Py_DECREF(pyargs);
 
@@ -305,7 +311,10 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
   if (NULL != arg_values) {
+#pragma warning(push)
+#pragma warning(disable: 4090)
     allocator.deallocate(arg_values, allocator.state);
+#pragma warning(pop)
   }
   Py_DECREF(pyargs);
 
