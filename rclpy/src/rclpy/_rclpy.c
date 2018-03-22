@@ -221,6 +221,9 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
         for (int ii = 0; ii < nonros_argc; ++ii) {
           PyList_SET_ITEM(result_list, ii, PyUnicode_FromString(nonros_argv[ii]));
         }
+/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
+ * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
+ */
 #pragma warning(push)
 #pragma warning(disable: 4090)
         allocator.deallocate(nonros_argv, allocator.state);
@@ -235,9 +238,12 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
   if (NULL != arg_values) {
+/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
+ * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
+ */
 #pragma warning(push)
 #pragma warning(disable: 4090)
-    allocator.deallocate(nonros_argv, allocator.state);
+    allocator.deallocate(arg_values, allocator.state);
 #pragma warning(pop)
   }
   Py_DECREF(pyargs);
@@ -311,6 +317,9 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
   if (NULL != arg_values) {
+/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
+ * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
+ */
 #pragma warning(push)
 #pragma warning(disable: 4090)
     allocator.deallocate(arg_values, allocator.state);
