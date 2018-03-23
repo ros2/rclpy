@@ -57,6 +57,15 @@ def spin(node):
 
 
 def spin_until_future_complete(node, future):
+    """
+    Execute work until the future is complete.
+
+    Callbacks and other work will be executed in a SingleThreadedExecutor until future.done()
+    returns True or rclpy is shutdown.
+
+    :param future: The future object to wait on.
+    :type future: rclpy.task.Future
+    """
     # imported locally to avoid loading extensions on module import
     from rclpy.executors import SingleThreadedExecutor
     executor = SingleThreadedExecutor()
