@@ -150,6 +150,124 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+static PyObject *
+rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  // Expect one argument which is a list of strings
+  PyObject * pyargs;
+  if (!PyArg_ParseTuple(args, "O", &pyargs)) {
+    // Exception raised
+    return NULL;
+  }
+
+  pyargs = PySequence_List(pyargs);
+  if (NULL == pyargs) {
+    // Exception raised
+    return NULL;
+  }
+  Py_ssize_t pysize_num_args = PyList_Size(pyargs);
+  if (pysize_num_args > INT_MAX) {
+    PyErr_Format(PyExc_OverflowError, "Too many arguments");
+    return NULL;
+  }
+  int num_args = (int)pysize_num_args;
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  const char ** arg_values = NULL;
+  bool have_args = true;
+  if (num_args > 0) {
+    arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
+    if (NULL == arg_values) {
+      PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
+      Py_DECREF(pyargs);
+      return NULL;
+    }
+
+    for (int i = 0; i < num_args; ++i) {
+      // Returns borrowed reference, do not decref
+      PyObject * pyarg = PyList_GetItem(pyargs, i);
+      if (NULL == pyarg) {
+        have_args = false;
+        break;
+      }
+      // Borrows a pointer, do not free arg_values[i]
+      arg_values[i] = PyUnicode_AsUTF8(pyarg);
+    }
+  }
+  PyObject * result_list = NULL;
+  if (have_args) {
+    rcl_arguments_t parsed_args;
+
+    rcl_ret_t ret = rcl_parse_arguments(num_args, arg_values, allocator, &parsed_args);
+    if (ret != RCL_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
+      rcl_reset_error();
+    } else {
+      int nonros_argc = 0;
+      const char ** nonros_argv = NULL;
+
+      ret = rcl_remove_ros_arguments(
+        arg_values,
+        &parsed_args,
+        allocator,
+        &nonros_argc,
+        &nonros_argv);
+
+      if (RCL_RET_OK != ret) {
+        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
+        rcl_reset_error();
+      } else {
+        result_list = PyList_New(nonros_argc);
+        for (int ii = 0; ii < nonros_argc; ++ii) {
+          PyList_SET_ITEM(result_list, ii, PyUnicode_FromString(nonros_argv[ii]));
+        }
+/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
+ * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
+ */
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4090)
+#endif
+        allocator.deallocate(nonros_argv, allocator.state);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+      }
+
+      ret = rcl_arguments_fini(&parsed_args);
+      if (RCL_RET_OK != ret) {
+        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
+        rcl_reset_error();
+      }
+    }
+  }
+  if (NULL != arg_values) {
+/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
+ * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
+ */
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4090)
+#endif
+    allocator.deallocate(arg_values, allocator.state);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+  }
+  Py_DECREF(pyargs);
+
+  if (PyErr_Occurred()) {
+    return NULL;
+  }
+
+  if (NULL == result_list) {
+    return NULL;
+  }
+
+  return result_list;
+}
+
+
 /// Initialize rcl with default options, ignoring parameters
 /**
  * Raises RuntimeError if rcl could not be initialized
@@ -177,7 +295,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   int num_args = (int)pysize_num_args;
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  char ** arg_values = NULL;
+  const char ** arg_values = NULL;
   bool have_args = true;
   if (num_args > 0) {
     arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
@@ -207,7 +325,17 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
   if (NULL != arg_values) {
+/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
+ * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
+ */
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4090)
+#endif
     allocator.deallocate(arg_values, allocator.state);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
   }
   Py_DECREF(pyargs);
 
@@ -2666,6 +2794,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_init", rclpy_init, METH_VARARGS,
     "Initialize RCL."
+  },
+  {
+    "rclpy_remove_ros_args", rclpy_remove_ros_args, METH_VARARGS,
+    "Remove ROS-specific arguments from argument vector"
   },
   {
     "rclpy_create_node", rclpy_create_node, METH_VARARGS,
