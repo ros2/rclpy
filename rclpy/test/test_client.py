@@ -70,6 +70,23 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
+    def test_concurrent_calls_to_service(self):
+        cli = self.node.create_client(GetParameters, 'get/parameters')
+        srv = self.node.create_service(
+            GetParameters, 'get/parameters',
+            lambda request, response: response)
+        try:
+            self.assertTrue(cli.wait_for_service(timeout_sec=20))
+            future1 = cli.call_async(GetParameters.Request())
+            future2 = cli.call_async(GetParameters.Request())
+            rclpy.spin_until_future_complete(self.node, future1)
+            rclpy.spin_until_future_complete(self.node, future2)
+            self.assertTrue(future1.result() is not None)
+            self.assertTrue(future2.result() is not None)
+        finally:
+            self.node.destroy_client(cli)
+            self.node.destroy_service(srv)
+
 
 if __name__ == '__main__':
     unittest.main()

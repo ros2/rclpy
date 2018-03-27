@@ -16,39 +16,8 @@ import threading
 import time
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.task import Future
 import rclpy.utilities
-
-
-class ResponseThread(threading.Thread):
-
-    def __init__(self, client):
-        threading.Thread.__init__(self)
-        self.client = client
-        self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(self.wait_set, 0, 1, 0, 1, 0)
-        _rclpy.rclpy_wait_set_clear_entities('client', self.wait_set)
-        _rclpy.rclpy_wait_set_add_entity(
-            'client', self.wait_set, self.client.client_handle)
-
-    def run(self):
-        [sigint_gc, sigint_gc_handle] = _rclpy.rclpy_get_sigint_guard_condition()
-        _rclpy.rclpy_wait_set_add_entity('guard_condition', self.wait_set, sigint_gc)
-
-        _rclpy.rclpy_wait(self.wait_set, -1)
-
-        guard_condition_ready_list = \
-            _rclpy.rclpy_get_ready_entities('guard_condition', self.wait_set)
-
-        # destroying here to make sure we dont call shutdown before cleaning up
-        _rclpy.rclpy_destroy_entity(sigint_gc)
-        if sigint_gc_handle in guard_condition_ready_list:
-            rclpy.utilities.shutdown()
-            return
-        seq, response = _rclpy.rclpy_take_response(
-            self.client.client_handle,
-            self.client.srv_type.Response)
-        if seq is not None and seq == self.client.sequence_number:
-            self.client.response = response
 
 
 class Client:
@@ -61,15 +30,68 @@ class Client:
         self.srv_type = srv_type
         self.srv_name = srv_name
         self.qos_profile = qos_profile
-        self.sequence_number = 0
-        self.response = None
+        # Key is a sequence number, value is an instance of a Future
+        self._pending_requests = {}
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
 
     def call(self, req):
-        self.response = None
-        self.sequence_number = _rclpy.rclpy_send_request(self.client_handle, req)
+        """
+        Make a service request and wait for the result.
+
+        Do not call this method in a callback or a deadlock may occur.
+
+        :param req: The service request
+        :return: The service response
+        """
+        event = threading.Event()
+
+        def unblock(future):
+            nonlocal event
+            event.set()
+
+        future = self.call_async(req)
+        future.add_done_callback(unblock)
+
+        event.wait()
+        if future.exception() is not None:
+            raise future.exception()
+        return future.result()
+
+    def remove_pending_request(self, future):
+        """
+        Remove a future from the list of pending requests.
+
+        This prevents a future from receiving a request and executing its done callbacks.
+        :param future: a future returned from :meth:`call_async`
+        :type future: rclpy.task.Future
+        """
+        for seq, req_future in self._pending_requests.items():
+            if future == req_future:
+                try:
+                    del self._pending_requests[seq]
+                except KeyError:
+                    pass
+                break
+
+    def call_async(self, req):
+        """
+        Make a service request and asyncronously get the result.
+
+        :return: a Future instance that completes when the request does
+        :rtype: :class:`rclpy.task.Future` instance
+        """
+        sequence_number = _rclpy.rclpy_send_request(self.client_handle, req)
+        if sequence_number in self._pending_requests:
+            raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)
+
+        future = Future()
+        self._pending_requests[sequence_number] = future
+
+        future.add_done_callback(self.remove_pending_request)
+
+        return future
 
     def service_is_ready(self):
         return _rclpy.rclpy_service_server_is_available(self.node_handle, self.client_handle)
@@ -85,10 +107,3 @@ class Client:
             timeout_sec -= sleep_time
 
         return self.service_is_ready()
-
-    # TODO(mikaelarguedas) this function can only be used if nobody is spinning
-    # need to be updated once guard_conditions are supported
-    def wait_for_future(self):
-        thread1 = ResponseThread(self)
-        thread1.start()
-        thread1.join()
