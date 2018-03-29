@@ -56,6 +56,20 @@ def create_node(node_name, *, namespace=None):
 
 
 def spin_once(node, *, timeout_sec=None):
+    """
+    Execute one item of work or wait until timeout expires.
+
+    One callback will be executed in a SingleThreadedExecutor as long as that
+    callback is ready before the timeout expires.
+
+    It is possible the work done may be for a node other than the one passed to this method
+    if the global executor has a partially completed coroutine.
+
+    :param node: A node to add to the executor to check for work.
+    :param timeout_sec: Maximum time in seconds to wait for work.
+    :return: Always returns None regardless whether work executes or timeout expires.
+    :rtype: None
+    """
     executor = get_global_executor()
     try:
         executor.add_node(node)
@@ -65,6 +79,16 @@ def spin_once(node, *, timeout_sec=None):
 
 
 def spin(node):
+    """
+    Execute work blocking until the library is shutdown.
+
+    Callbacks will be executed in a SingleThreadedExecutor until shutdown() is called.
+    This method blocks.
+
+    :param node: A node to add to the executor to check for work.
+    :return: Always returns None regardless whether work executes or timeout expires.
+    :rtype: None
+    """
     executor = get_global_executor()
     try:
         executor.add_node(node)
