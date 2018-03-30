@@ -2525,8 +2525,13 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pynode_names = PyList_New(node_names.size);
   size_t idx;
   for (idx = 0; idx < node_names.size; ++idx) {
-    PyList_SetItem(
-      pynode_names, idx, PyUnicode_FromString(node_names.data[idx]));
+    if (node_names.data[idx]) {
+      PyList_SetItem(
+        pynode_names, idx, PyUnicode_FromString(node_names.data[idx]));
+    } else {
+      Py_INCREF(Py_None);
+      PyList_SetItem(pynode_names, idx, Py_None);
+    }
   }
 
   ret = rcutils_string_array_fini(&node_names);
