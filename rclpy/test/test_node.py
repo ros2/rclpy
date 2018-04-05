@@ -89,6 +89,14 @@ class TestNode(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names()
 
+    def test_count_publishers_subscribers(self):
+        # TODO: How to create topic?
+        topic_name = 'foo'
+        publishers_count = self.node.count_publishers(topic_name)
+        self.assertEqual(0, publishers_count)
+        subscribers_count = self.node.count_subscribers(topic_name)
+        self.assertEqual(0, subscribers_count)
+
     def test_node_logger(self):
         node_logger = self.node.get_logger()
         self.assertEqual(node_logger.name, 'my_ns.my_node')

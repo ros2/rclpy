@@ -296,5 +296,13 @@ class Node:
     def get_node_names(self):
         return _rclpy.rclpy_get_node_names(self.handle)
 
+    def count_publishers(self, topic_name):
+        validate_topic_name(topic_name)
+        return _rclpy.rclpy_count_publishers(self.handle, topic_name)
+
+    def count_subscribers(self, topic_name):
+        validate_topic_name(topic_name)
+        return _rclpy.rclpy_count_subscribers(self.handle, topic_name)
+
     def __del__(self):
         self.destroy_node()
