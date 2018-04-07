@@ -752,7 +752,6 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
   return result_list;
 }
 
-
 /// Validate a namespace and return error message and index of invalidation.
 /**
  * Raises MemoryError if memory could not be allocated
