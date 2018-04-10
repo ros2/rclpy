@@ -591,7 +591,7 @@ rclpy_get_node_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(node_logger_name);
 }
 
-typedef rcl_ret_t (*count_func)(const rcl_node_t * node, const char * topic_name, size_t * count);
+typedef rcl_ret_t (* count_func)(const rcl_node_t * node, const char * topic_name, size_t * count);
 
 static PyObject *
 _count_subscribers_publishers(PyObject * args, const char * type, count_func count_function)
