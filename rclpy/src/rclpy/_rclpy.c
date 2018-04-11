@@ -196,7 +196,7 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
   }
   PyObject * result_list = NULL;
   if (have_args) {
-    rcl_arguments_t parsed_args;
+    rcl_arguments_t parsed_args = rcl_get_zero_initialized_arguments();
 
     rcl_ret_t ret = rcl_parse_arguments(num_args, arg_values, allocator, &parsed_args);
     if (ret != RCL_RET_OK) {
