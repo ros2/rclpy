@@ -66,7 +66,7 @@ def spin_once(node, *, timeout_sec=None):
     if the global executor has a partially completed coroutine.
 
     :param node: A node to add to the executor to check for work.
-    :param timeout_sec: Maximum time in seconds to wait for work.
+    :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
     :return: Always returns None regardless whether work executes or timeout expires.
     :rtype: None
     """
