@@ -49,10 +49,22 @@ def shutdown():
     _shutdown()
 
 
-def create_node(node_name, *, namespace=None):
+def create_node(node_name, *, cli_args=None, namespace=None, use_global_arguments=True):
+    """
+    Create an instance of :class:`rclpy.node.Node`.
+
+    :param node_name: A unique name to give to this node
+    :param cli_args: A list of strings of command line args to be used only by this node.
+    :param namespace: The namespace to which relative topic and service names will be prefixed.
+    :param use_global_arguments: False if the node should ignore process-wide command line args.
+    :return: An instance of a node
+    :rtype: :class:`rclpy.node.Node`
+    """
     # imported locally to avoid loading extensions on module import
     from rclpy.node import Node
-    return Node(node_name, namespace=namespace)
+    return Node(
+        node_name, cli_args=cli_args, namespace=namespace,
+        use_global_arguments=use_global_arguments)
 
 
 def spin_once(node, *, timeout_sec=None):

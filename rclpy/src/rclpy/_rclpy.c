@@ -20,6 +20,7 @@
 #include <rcl/node.h>
 #include <rcl/rcl.h>
 #include <rcl/validate_topic_name.h>
+#include <rcutils/strdup.h>
 #include <rcutils/types.h>
 #include <rmw/error_handling.h>
 #include <rmw/rmw.h>
@@ -150,6 +151,122 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Deallocate a list of allocated strings.
+void
+_rclpy_arg_list_fini(int num_args, char ** argv)
+{
+  if (NULL == argv) {
+    return;
+  }
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  // Free each arg individually
+  for (int i = 0; i < num_args; ++i) {
+    char * arg = argv[i];
+    if (NULL == arg) {
+      // NULL in list means array was partially inititialized when an error occurred
+      break;
+    }
+    allocator.deallocate(arg, allocator.state);
+  }
+  // Then free the whole array
+  allocator.deallocate(argv, allocator.state);
+}
+
+/// Copy a sequence of strings into a c-style array
+/* Raises OverflowError if there are too many arguments in pyargs
+ * Raises MemoryError if an allocation fails
+ * \param[in] pyargs a sequence of strings to be converted
+ * \param[out] num_args the number of args in the output, equal to len(pyargs)
+ * \param[out] arg_values a c-array of c-style strings
+ */
+rcl_ret_t
+_rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
+{
+  // Convert to list() in case pyargs is a generator
+  pyargs = PySequence_List(pyargs);
+  if (NULL == pyargs) {
+    // Exception raised
+    return RCL_RET_ERROR;
+  }
+  Py_ssize_t pysize_num_args = PyList_Size(pyargs);
+  if (pysize_num_args > INT_MAX) {
+    PyErr_Format(PyExc_OverflowError, "Too many arguments");
+    Py_DECREF(pyargs);
+    return RCL_RET_ERROR;
+  }
+  *num_args = (int)pysize_num_args;
+  *arg_values = NULL;
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  if (*num_args > 0) {
+    *arg_values = allocator.allocate(sizeof(char *) * (*num_args), allocator.state);
+    if (NULL == *arg_values) {
+      PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
+      Py_DECREF(pyargs);
+      return RCL_RET_BAD_ALLOC;
+    }
+
+    for (int i = 0; i < *num_args; ++i) {
+      // Returns borrowed reference, do not decref
+      PyObject * pyarg = PyList_GetItem(pyargs, i);
+      if (NULL == pyarg) {
+        _rclpy_arg_list_fini(i, *arg_values);
+        Py_DECREF(pyargs);
+        // Exception raised
+        return RCL_RET_ERROR;
+      }
+      const char * arg_str = PyUnicode_AsUTF8(pyarg);
+      (*arg_values)[i] = rcutils_strdup(arg_str, allocator);
+      if (NULL == (*arg_values)[i]) {
+        _rclpy_arg_list_fini(i, *arg_values);
+        PyErr_Format(PyExc_MemoryError, "Failed to duplicate string");
+        Py_DECREF(pyargs);
+        return RCL_RET_BAD_ALLOC;
+      }
+    }
+  }
+  Py_DECREF(pyargs);
+  return RCL_RET_OK;
+}
+
+/// Parse a sequence of strings into rcl_arguments_t struct
+/* Raises TypeError of pyargs is not a sequence
+ * Raises OverflowError if len(pyargs) > INT_MAX
+ * \param[in] pyargs a python sequence of strings
+ * \param[out] parsed_args a zero initialized pointer to rcl_arguments_t
+ */
+rcl_ret_t
+_rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
+{
+  rcl_ret_t ret;
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  int num_args = 0;
+  char ** arg_values = NULL;
+  // Py_None is a singleton so comparing pointer value works
+  if (Py_None != pyargs) {
+    ret = _rclpy_pyargs_to_list(pyargs, &num_args, &arg_values);
+    if (RCL_RET_OK != ret) {
+      // Exception set
+      return ret;
+    }
+  }
+  // call rcl_parse_arguments() even if pyargs is None so rcl_arguments_t structure is always valid.
+  // Otherwise the remapping functions will error if the user passes no arguments to a node and sets
+  // use_global_arguments to False.
+
+  // Adding const via cast to eliminate warning about incompatible pointer type
+  const char ** const_arg_values = (const char **)arg_values;
+  ret = rcl_parse_arguments(num_args, const_arg_values, allocator, parsed_args);
+
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+  }
+  _rclpy_arg_list_fini(num_args, arg_values);
+  return ret;
+}
+
 static PyObject *
 rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -160,67 +277,45 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  pyargs = PySequence_List(pyargs);
-  if (NULL == pyargs) {
-    // Exception raised
-    return NULL;
-  }
-  Py_ssize_t pysize_num_args = PyList_Size(pyargs);
-  if (pysize_num_args > INT_MAX) {
-    PyErr_Format(PyExc_OverflowError, "Too many arguments");
-    return NULL;
-  }
-  int num_args = (int)pysize_num_args;
+  rcl_ret_t ret;
+  PyObject * result_list = NULL;
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  const char ** arg_values = NULL;
-  bool have_args = true;
-  if (num_args > 0) {
-    arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
-    if (NULL == arg_values) {
-      PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
-      Py_DECREF(pyargs);
-      return NULL;
-    }
-
-    for (int i = 0; i < num_args; ++i) {
-      // Returns borrowed reference, do not decref
-      PyObject * pyarg = PyList_GetItem(pyargs, i);
-      if (NULL == pyarg) {
-        have_args = false;
-        break;
-      }
-      // Borrows a pointer, do not free arg_values[i]
-      arg_values[i] = PyUnicode_AsUTF8(pyarg);
-    }
+  int num_args;
+  char ** arg_values;
+  ret = _rclpy_pyargs_to_list(pyargs, &num_args, &arg_values);
+  if (RCL_RET_OK != ret) {
+    // Exception set
+    return NULL;
   }
-  PyObject * result_list = NULL;
-  if (have_args) {
-    rcl_arguments_t parsed_args = rcl_get_zero_initialized_arguments();
 
-    rcl_ret_t ret = rcl_parse_arguments(num_args, arg_values, allocator, &parsed_args);
-    if (ret != RCL_RET_OK) {
+  // Adding const via cast to eliminate warning about incompatible pointer type
+  const char ** const_arg_values = (const char **)arg_values;
+  rcl_arguments_t parsed_args = rcl_get_zero_initialized_arguments();
+
+  ret = rcl_parse_arguments(num_args, const_arg_values, allocator, &parsed_args);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+  } else {
+    int nonros_argc = 0;
+    const char ** nonros_argv = NULL;
+
+    ret = rcl_remove_ros_arguments(
+      const_arg_values,
+      &parsed_args,
+      allocator,
+      &nonros_argc,
+      &nonros_argv);
+
+    if (RCL_RET_OK != ret) {
       PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
       rcl_reset_error();
     } else {
-      int nonros_argc = 0;
-      const char ** nonros_argv = NULL;
-
-      ret = rcl_remove_ros_arguments(
-        arg_values,
-        &parsed_args,
-        allocator,
-        &nonros_argc,
-        &nonros_argv);
-
-      if (RCL_RET_OK != ret) {
-        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
-        rcl_reset_error();
-      } else {
-        result_list = PyList_New(nonros_argc);
-        for (int ii = 0; ii < nonros_argc; ++ii) {
-          PyList_SET_ITEM(result_list, ii, PyUnicode_FromString(nonros_argv[ii]));
-        }
+      result_list = PyList_New(nonros_argc);
+      for (int ii = 0; ii < nonros_argc; ++ii) {
+        PyList_SET_ITEM(result_list, ii, PyUnicode_FromString(nonros_argv[ii]));
+      }
 /* it was determined that the following warning is likely a front-end parsing issue in MSVC.
  * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
  */
@@ -228,42 +323,24 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
 #pragma warning(push)
 #pragma warning(disable: 4090)
 #endif
-        allocator.deallocate(nonros_argv, allocator.state);
+      allocator.deallocate(nonros_argv, allocator.state);
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
-      }
+    }
 
-      ret = rcl_arguments_fini(&parsed_args);
-      if (RCL_RET_OK != ret) {
-        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
-        rcl_reset_error();
-      }
+    ret = rcl_arguments_fini(&parsed_args);
+    if (RCL_RET_OK != ret) {
+      PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string_safe());
+      rcl_reset_error();
     }
   }
-  if (NULL != arg_values) {
-/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
- * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
- */
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable: 4090)
-#endif
-    allocator.deallocate(arg_values, allocator.state);
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-  }
-  Py_DECREF(pyargs);
+
+  _rclpy_arg_list_fini(num_args, arg_values);
 
   if (PyErr_Occurred()) {
     return NULL;
   }
-
-  if (NULL == result_list) {
-    return NULL;
-  }
-
   return result_list;
 }
 
@@ -359,17 +436,32 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 {
+  rcl_ret_t ret;
   const char * node_name;
   const char * namespace_;
+  PyObject * py_cli_args;
+  int use_global_arguments;
 
-  if (!PyArg_ParseTuple(args, "ss", &node_name, &namespace_)) {
+  if (
+    !PyArg_ParseTuple(args, "ssOp", &node_name, &namespace_, &py_cli_args, &use_global_arguments))
+  {
+    return NULL;
+  }
+
+  rcl_arguments_t arguments = rcl_get_zero_initialized_arguments();
+
+  ret = _rclpy_parse_args(py_cli_args, &arguments);
+  if (RCL_RET_OK != ret) {
+    // exception set
     return NULL;
   }
 
   rcl_node_t * node = (rcl_node_t *)PyMem_Malloc(sizeof(rcl_node_t));
   *node = rcl_get_zero_initialized_node();
-  rcl_node_options_t default_options = rcl_node_get_default_options();
-  rcl_ret_t ret = rcl_node_init(node, node_name, namespace_, &default_options);
+  rcl_node_options_t options = rcl_node_get_default_options();
+  options.use_global_arguments = use_global_arguments;
+  options.arguments = arguments;
+  ret = rcl_node_init(node, node_name, namespace_, &options);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError,
