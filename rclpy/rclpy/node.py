@@ -51,7 +51,7 @@ def check_for_type_support(msg_type):
 
 class Node:
 
-    def __init__(self, node_name, *, namespace=None):
+    def __init__(self, node_name, *, cli_args=None, namespace=None, use_global_arguments=True):
         self._handle = None
         self.publishers = []
         self.subscriptions = []
@@ -65,7 +65,8 @@ class Node:
         if not ok():
             raise NotInitializedException('cannot create node')
         try:
-            self._handle = _rclpy.rclpy_create_node(node_name, namespace)
+            self._handle = _rclpy.rclpy_create_node(
+                node_name, namespace, cli_args, use_global_arguments)
         except ValueError:
             # these will raise more specific errors if the name or namespace is bad
             validate_node_name(node_name)

@@ -96,5 +96,29 @@ class TestNode(unittest.TestCase):
         node_logger.debug('test')
 
 
+class TestCreateNode(unittest.TestCase):
+
+    def test_use_global_arguments(self):
+        rclpy.init(args=['process_name', '__node:=global_node_name'])
+        try:
+            node1 = rclpy.create_node('my_node', namespace='/my_ns', use_global_arguments=True)
+            node2 = rclpy.create_node('my_node', namespace='/my_ns', use_global_arguments=False)
+            self.assertEqual('global_node_name', node1.get_name())
+            self.assertEqual('my_node', node2.get_name())
+            node1.destroy_node()
+            node2.destroy_node()
+        finally:
+            rclpy.shutdown()
+
+    def test_node_arguments(self):
+        rclpy.init()
+        try:
+            node = rclpy.create_node('my_node', namespace='/my_ns', cli_args=['__ns:=/foo/bar'])
+            self.assertEqual('/foo/bar', node.get_namespace())
+            node.destroy_node()
+        finally:
+            rclpy.shutdown()
+
+
 if __name__ == '__main__':
     unittest.main()
