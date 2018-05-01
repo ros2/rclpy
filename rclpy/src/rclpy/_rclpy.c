@@ -478,7 +478,26 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
     }
     rcl_reset_error();
     PyMem_Free(node);
+
+    if (RCL_RET_OK != rcl_arguments_fini(&arguments)) {
+      rcl_reset_error();
+      // Warn because an exception is already raised
+      // Warning should use line number of the current stack frame
+      int stack_level = 1;
+      PyErr_WarnFormat(
+        PyExc_RuntimeWarning, stack_level, "Failed to fini arguments during error handling: %s",
+        rcl_get_error_string_safe());
+    }
     return NULL;
+  }
+  if (RCL_RET_OK != rcl_arguments_fini(&arguments)) {
+    rcl_reset_error();
+    // Warn because the node was successfully created
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini arguments: %s",
+      rcl_get_error_string_safe());
   }
   return PyCapsule_New(node, "rcl_node_t", NULL);
 }
