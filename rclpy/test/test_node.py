@@ -121,7 +121,8 @@ class TestNode(unittest.TestCase):
 
     def test_node_logger(self):
         node_logger = self.node.get_logger()
-        self.assertEqual(node_logger.name, 'my_ns.my_node')
+        expected_name = '%s.%s' % (TEST_NAMESPACE.replace('/', '.')[1:], TEST_NODE)
+        self.assertEqual(node_logger.name, expected_name)
         node_logger.set_level(rclpy.logging.LoggingSeverity.INFO)
         node_logger.debug('test')
 
