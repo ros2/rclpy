@@ -591,6 +591,62 @@ rclpy_get_node_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(node_logger_name);
 }
 
+typedef rcl_ret_t (* count_func)(const rcl_node_t * node, const char * topic_name, size_t * count);
+
+static PyObject *
+_count_subscribers_publishers(PyObject * args, const char * type, count_func count_function)
+{
+  PyObject * pynode;
+  const char * topic_name;
+
+  if (!PyArg_ParseTuple(args, "Os", &pynode, &topic_name)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  size_t count = 0;
+  rcl_ret_t ret = count_function(node, topic_name, &count);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to count %s: %s",
+      type, rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+
+  return PyLong_FromSize_t(count);
+}
+
+/// Count publishers for a topic.
+/**
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from
+ * \param[in] topic_name string fully qualified topic name
+ * \return count of publishers
+ */
+static PyObject *
+rclpy_count_publishers(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  return _count_subscribers_publishers(args, "publishers", rcl_count_publishers);
+}
+
+/// Count subscribers for a topic.
+/**
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from
+ * \param[in] topic_name string fully qualified topic name
+ * \return count of subscribers
+ */
+static PyObject *
+rclpy_count_subscribers(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  return _count_subscribers_publishers(args, "subscribers", rcl_count_subscribers);
+}
+
+
 /// Validate a topic name and return error message and index of invalidation.
 /**
  * Does not have to be a fully qualified topic name.
@@ -2930,6 +2986,14 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_node_logger_name", rclpy_get_node_logger_name, METH_VARARGS,
     "Get the logger name associated with a node."
+  },
+  {
+    "rclpy_count_publishers", rclpy_count_publishers, METH_VARARGS,
+    "Count publishers for a topic."
+  },
+  {
+    "rclpy_count_subscribers", rclpy_count_subscribers, METH_VARARGS,
+    "Count subscribers for a topic."
   },
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,

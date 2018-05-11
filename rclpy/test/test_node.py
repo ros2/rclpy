@@ -20,13 +20,16 @@ from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 from std_msgs.msg import String
 
+TEST_NODE = 'my_node'
+TEST_NAMESPACE = '/my_ns'
+
 
 class TestNode(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         rclpy.init()
-        cls.node = rclpy.create_node('my_node', namespace='/my_ns')
+        cls.node = rclpy.create_node(TEST_NODE, namespace=TEST_NAMESPACE)
 
     @classmethod
     def tearDownClass(cls):
@@ -37,8 +40,8 @@ class TestNode(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         with self.assertRaises(AttributeError):
             self.node.handle = 'garbage'
-        self.assertEqual(self.node.get_name(), 'my_node')
-        self.assertEqual(self.node.get_namespace(), '/my_ns')
+        self.assertEqual(self.node.get_name(), TEST_NODE)
+        self.assertEqual(self.node.get_namespace(), TEST_NAMESPACE)
 
     def test_create_publisher(self):
         self.node.create_publisher(String, 'chatter')
@@ -89,9 +92,37 @@ class TestNode(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names()
 
+    def test_count_publishers_subscribers(self):
+        short_topic_name = 'chatter'
+        fq_topic_name = '%s/%s' % (TEST_NAMESPACE, short_topic_name)
+
+        self.assertEqual(0, self.node.count_publishers(fq_topic_name))
+        self.assertEqual(0, self.node.count_subscribers(fq_topic_name))
+
+        self.node.create_publisher(String, short_topic_name)
+        self.assertEqual(1, self.node.count_publishers(short_topic_name))
+        self.assertEqual(1, self.node.count_publishers(fq_topic_name))
+
+        self.node.create_subscription(String, short_topic_name, lambda msg: print(msg))
+        self.assertEqual(1, self.node.count_subscribers(short_topic_name))
+        self.assertEqual(1, self.node.count_subscribers(fq_topic_name))
+
+        self.node.create_subscription(String, short_topic_name, lambda msg: print(msg))
+        self.assertEqual(2, self.node.count_subscribers(short_topic_name))
+        self.assertEqual(2, self.node.count_subscribers(fq_topic_name))
+
+        # error cases
+        with self.assertRaisesRegex(TypeError, 'Argument topic_name is not a'):
+            self.node.count_subscribers(1)
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.count_subscribers('42')
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.count_publishers('42')
+
     def test_node_logger(self):
         node_logger = self.node.get_logger()
-        self.assertEqual(node_logger.name, 'my_ns.my_node')
+        expected_name = '%s.%s' % (TEST_NAMESPACE.replace('/', '.')[1:], TEST_NODE)
+        self.assertEqual(node_logger.name, expected_name)
         node_logger.set_level(rclpy.logging.LoggingSeverity.INFO)
         node_logger.debug('test')
 
