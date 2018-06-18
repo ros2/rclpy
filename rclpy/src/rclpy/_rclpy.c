@@ -33,6 +33,12 @@
 
 static rcl_guard_condition_t * g_sigint_gc_handle;
 
+#ifdef _WIN32
+  _crt_signal_t g_original_signal_handler = NULL;
+#else
+  sig_t g_original_signal_handler = NULL;
+#endif  // _WIN32
+
 /// Catch signals
 static void catch_function(int signo)
 {
@@ -42,6 +48,9 @@ static void catch_function(int signo)
     PyErr_Format(PyExc_RuntimeError,
       "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
     rcl_reset_error();
+  }
+  if (NULL != g_original_signal_handler) {
+    g_original_signal_handler(signo);
   }
 }
 
@@ -2336,12 +2345,7 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "O|K", &pywait_set, &timeout)) {
     return NULL;
   }
-#ifdef _WIN32
-  _crt_signal_t
-#else
-  sig_t
-#endif  // _WIN32
-  previous_handler = signal(SIGINT, catch_function);
+  g_original_signal_handler = signal(SIGINT, catch_function);
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
   if (!wait_set) {
     return NULL;
@@ -2353,7 +2357,8 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   ret = rcl_wait(wait_set, timeout);
   Py_END_ALLOW_THREADS;
 
-  signal(SIGINT, previous_handler);
+  signal(SIGINT, g_original_signal_handler);
+  g_original_signal_handler = NULL;
   if (ret != RCL_RET_OK && ret != RCL_RET_TIMEOUT) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to wait on wait set: %s", rcl_get_error_string_safe());
