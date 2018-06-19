@@ -410,9 +410,6 @@ class Executor:
                 clients_ready = _rclpy.rclpy_get_ready_entities('client', wait_set)
                 services_ready = _rclpy.rclpy_get_ready_entities('service', wait_set)
 
-            # Check sigint guard condition
-            if sigint_gc_handle in guards_ready:
-                raise KeyboardInterrupt
             _rclpy.rclpy_destroy_entity(sigint_gc)
 
             # Mark all guards as triggered before yielding any handlers since they're auto-taken
