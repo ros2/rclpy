@@ -24,6 +24,12 @@ from rclpy.timer import WallTimer
 from rclpy.utilities import ok
 from rclpy.utilities import timeout_sec_to_nsec
 
+# TODO(wjwwood): make _rclpy_wait(...) thread-safe
+# Executor.spin_once() end's up calling _rclpy_wait(...), which right now is
+# not thread-safe, no matter if differnet wait sets are used or not.
+g_wait_set_spinning_lock = Lock()
+g_wait_set_spinning = False
+
 
 class _WaitSet:
     """Make sure the wait set gets destroyed when a generator exits."""
@@ -475,21 +481,33 @@ class Executor:
 
         See :func:`Executor._wait_for_ready_callbacks` for documentation
         """
-        # if an old generator is done, this variable makes the loop get a new one before returning
-        got_generator = False
-        while not got_generator:
-            if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
-                # Create a new generator
-                self._last_args = args
-                self._last_kwargs = kwargs
-                self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
-                got_generator = True
+        global g_wait_set_spinning_lock
+        global g_wait_set_spinning
+        with g_wait_set_spinning_lock:
+            if g_wait_set_spinning:
+                raise RuntimeError(
+                    'Executor.wait_for_ready_callbacks() called concurrently in multiple threads')
+            g_wait_set_spinning = True
 
-            try:
-                return next(self._cb_iter)
-            except StopIteration:
-                # Generator ran out of work
-                self._cb_iter = None
+        try:
+            # if an old generator is done, this var makes the loop get a new one before returning
+            got_generator = False
+            while not got_generator:
+                if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
+                    # Create a new generator
+                    self._last_args = args
+                    self._last_kwargs = kwargs
+                    self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+                    got_generator = True
+
+                try:
+                    return next(self._cb_iter)
+                except StopIteration:
+                    # Generator ran out of work
+                    self._cb_iter = None
+        finally:
+            with g_wait_set_spinning_lock:
+                g_wait_set_spinning = False
 
 
 class SingleThreadedExecutor(Executor):
