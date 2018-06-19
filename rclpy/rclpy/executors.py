@@ -25,8 +25,9 @@ from rclpy.utilities import ok
 from rclpy.utilities import timeout_sec_to_nsec
 
 # TODO(wjwwood): make _rclpy_wait(...) thread-safe
-# Executor.spin_once() end's up calling _rclpy_wait(...), which right now is
-# not thread-safe, no matter if differnet wait sets are used or not.
+# Executor.spin_once() ends up calling _rclpy_wait(...), which right now is
+# not thread-safe, no matter if different wait sets are used or not.
+# See, for example, https://github.com/ros2/rclpy/issues/192
 g_wait_set_spinning_lock = Lock()
 g_wait_set_spinning = False
 
