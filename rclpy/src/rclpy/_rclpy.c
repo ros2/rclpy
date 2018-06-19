@@ -34,9 +34,9 @@
 static rcl_guard_condition_t * g_sigint_gc_handle;
 
 #ifdef _WIN32
-  _crt_signal_t g_original_signal_handler = NULL;
+_crt_signal_t g_original_signal_handler = NULL;
 #else
-  sig_t g_original_signal_handler = NULL;
+sig_t g_original_signal_handler = NULL;
 #endif  // _WIN32
 
 /// Catch signals
