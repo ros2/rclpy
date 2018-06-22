@@ -427,7 +427,6 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 
   // Register our signal handler that will forward to the original one.
   g_original_signal_handler = signal(SIGINT, catch_function);
-  // TODO(dhood): restore original signal handler on rclpy shutdown.
 
   if (PyErr_Occurred()) {
     return NULL;
@@ -2660,6 +2659,11 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
     rcl_reset_error();
     return NULL;
   }
+
+  // Restore the original signal handler.
+  signal(SIGINT, g_original_signal_handler);
+  g_original_signal_handler = NULL;
+
   Py_RETURN_NONE;
 }
 
