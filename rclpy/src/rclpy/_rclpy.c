@@ -425,6 +425,10 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   }
   Py_DECREF(pyargs);
 
+  // Register our signal handler that will forward to the original one.
+  g_original_signal_handler = signal(SIGINT, catch_function);
+  // TODO(dhood): restore original signal handler on rclpy shutdown.
+
   if (PyErr_Occurred()) {
     return NULL;
   }
@@ -2345,7 +2349,6 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "O|K", &pywait_set, &timeout)) {
     return NULL;
   }
-  g_original_signal_handler = signal(SIGINT, catch_function);
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
   if (!wait_set) {
     return NULL;
@@ -2357,8 +2360,6 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   ret = rcl_wait(wait_set, timeout);
   Py_END_ALLOW_THREADS;
 
-  signal(SIGINT, g_original_signal_handler);
-  g_original_signal_handler = NULL;
   if (ret != RCL_RET_OK && ret != RCL_RET_TIMEOUT) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to wait on wait set: %s", rcl_get_error_string_safe());
