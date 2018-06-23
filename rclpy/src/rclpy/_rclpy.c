@@ -43,11 +43,13 @@ sig_t g_original_signal_handler = NULL;
 static void catch_function(int signo)
 {
   (void) signo;
-  rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
+  if (NULL != g_sigint_gc_handle) {
+    rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
+    if (ret != RCL_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError,
+        "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
+      rcl_reset_error();
+    }
   }
   if (NULL != g_original_signal_handler) {
     g_original_signal_handler(signo);
