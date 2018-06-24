@@ -43,11 +43,13 @@ sig_t g_original_signal_handler = NULL;
 static void catch_function(int signo)
 {
   (void) signo;
-  rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
+  if (NULL != g_sigint_gc_handle) {
+    rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
+    if (ret != RCL_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError,
+        "Failed to trigger guard_condition: %s", rcl_get_error_string_safe());
+      rcl_reset_error();
+    }
   }
   if (NULL != g_original_signal_handler) {
     g_original_signal_handler(signo);
@@ -424,6 +426,9 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 #endif
   }
   Py_DECREF(pyargs);
+
+  // Register our signal handler that will forward to the original one.
+  g_original_signal_handler = signal(SIGINT, catch_function);
 
   if (PyErr_Occurred()) {
     return NULL;
@@ -2345,7 +2350,6 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "O|K", &pywait_set, &timeout)) {
     return NULL;
   }
-  g_original_signal_handler = signal(SIGINT, catch_function);
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
   if (!wait_set) {
     return NULL;
@@ -2357,8 +2361,6 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   ret = rcl_wait(wait_set, timeout);
   Py_END_ALLOW_THREADS;
 
-  signal(SIGINT, g_original_signal_handler);
-  g_original_signal_handler = NULL;
   if (ret != RCL_RET_OK && ret != RCL_RET_TIMEOUT) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to wait on wait set: %s", rcl_get_error_string_safe());
@@ -2659,6 +2661,11 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
     rcl_reset_error();
     return NULL;
   }
+
+  // Restore the original signal handler.
+  signal(SIGINT, g_original_signal_handler);
+  g_original_signal_handler = NULL;
+
   Py_RETURN_NONE;
 }
 
