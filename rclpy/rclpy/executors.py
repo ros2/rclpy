@@ -521,7 +521,7 @@ class SingleThreadedExecutor(Executor):
             pass
         else:
             handler()
-            if handler.exception():
+            if handler.exception() is not None:
                 raise handler.exception()
 
 
