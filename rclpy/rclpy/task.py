@@ -45,7 +45,7 @@ class Future:
         self._set_executor(executor)
 
     def __del__(self):
-        if self._exception is not None and self._exception_fetched:
+        if self._exception is not None and not self._exception_fetched:
             print(
                 'The following exception was never retrieved: ' +
                 str(self._exception), file=sys.stderr)
@@ -95,7 +95,7 @@ class Future:
 
         :return: The exception raised by the task
         """
-        self._exception_fetched = False
+        self._exception_fetched = True
         return self._exception
 
     def set_result(self, result):
@@ -118,7 +118,7 @@ class Future:
         """
         with self._lock:
             self._exception = exception
-            self._exception_fetched = True
+            self._exception_fetched = False
             self._done = True
             self._cancelled = False
             self._schedule_done_callbacks()
