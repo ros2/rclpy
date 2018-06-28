@@ -55,8 +55,6 @@ class Client:
         future.add_done_callback(unblock)
 
         event.wait()
-        if future.exception() is not None:
-            raise future.exception()
         return future.result()
 
     def remove_pending_request(self, future):

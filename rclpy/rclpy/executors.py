@@ -521,6 +521,8 @@ class SingleThreadedExecutor(Executor):
             pass
         else:
             handler()
+            # check result to re-raise potential exceptions
+            handler.result()
 
 
 class MultiThreadedExecutor(Executor):
@@ -549,4 +551,6 @@ class MultiThreadedExecutor(Executor):
         except TimeoutException:
             pass
         else:
-            self._executor.submit(handler)
+            future = self._executor.submit(handler)
+            # currently the future is not been waited on?
+            # the result needs to be checked in order to re-raise potential exceptions

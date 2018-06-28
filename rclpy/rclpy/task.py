@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from concurrent.futures import CancelledError
+from concurrent.futures._base import Error
 import inspect
 import threading
 import weakref
@@ -79,6 +81,12 @@ class Future:
 
         :return: The result set by the task
         """
+        if self._cancelled:
+            raise CancelledError
+        if not self._done:
+            raise Error
+        if self._exception is not None:
+            raise self._exception
         return self._result
 
     def exception(self):
