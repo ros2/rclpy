@@ -2327,6 +2327,7 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (0 == strcmp(entity_type, "guard_condition")) {
     GET_LIST_READY_ENTITIES(guard_condition)
   } else {
+    Py_DECREF(entity_ready_list);
     PyErr_Format(PyExc_RuntimeError,
       "'%s' is not a known entity", entity_type);
     return NULL;
