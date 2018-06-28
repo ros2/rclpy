@@ -16,7 +16,6 @@ import inspect
 import sys
 import threading
 import weakref
-from concurrent.futures import CancelledError
 
 
 def _fake_weakref():
