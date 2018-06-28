@@ -17,7 +17,6 @@ import sys
 import threading
 import weakref
 from concurrent.futures import CancelledError
-from concurrent.futures._base import Error
 
 
 def _fake_weakref():
@@ -90,8 +89,9 @@ class Future:
         """
         if self._cancelled:
             raise CancelledError
-        if not self._done:
-            raise Error
+        # a coroutine might not have finished after calling spin_once
+        # if not self._done:
+        #     raise Error
         if self._exception is not None:
             raise self._exception
         return self._result
