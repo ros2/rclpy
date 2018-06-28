@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from concurrent.futures import CancelledError
-from concurrent.futures._base import Error
 import inspect
+import sys
 import threading
 import weakref
+from concurrent.futures import CancelledError
+from concurrent.futures._base import Error
 
 
 def _fake_weakref():
@@ -43,6 +44,12 @@ class Future:
         # An executor to use when scheduling done callbacks
         self._executor = None
         self._set_executor(executor)
+
+    def __del__(self):
+        if self._exception is not None:
+            print(
+                'The following exception was never retrieved: ' +
+                str(self._exception), file=sys.stderr)
 
     def __await__(self):
         # Yield if the task is not finished
