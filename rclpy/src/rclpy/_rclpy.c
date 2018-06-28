@@ -2285,6 +2285,9 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
       if (obj) { \
         PyList_Append(entity_ready_list, obj); \
         Py_DECREF(obj); \
+      } else { \
+        Py_DECREF(entity_ready_list); \
+        return NULL; \
       } \
     } \
   } \
