@@ -36,6 +36,7 @@ class Future:
         self._result = None
         # An exception raised by the handler when called
         self._exception = None
+        self._exception_fetched = False
         # callbacks to be scheduled after this task completes
         self._callbacks = []
         # Lock for threadsafety
@@ -45,7 +46,7 @@ class Future:
         self._set_executor(executor)
 
     def __del__(self):
-        if self._exception is not None:
+        if self._exception is not None and self._exception_fetched:
             print(
                 'The following exception was never retrieved: ' +
                 str(self._exception), file=sys.stderr)
@@ -87,13 +88,6 @@ class Future:
 
         :return: The result set by the task
         """
-        if self._cancelled:
-            raise CancelledError
-        # a coroutine might not have finished after calling spin_once
-        # if not self._done:
-        #     raise Error
-        if self._exception is not None:
-            raise self._exception
         return self._result
 
     def exception(self):
@@ -102,6 +96,7 @@ class Future:
 
         :return: The exception raised by the task
         """
+        self._exception_fetched = False
         return self._exception
 
     def set_result(self, result):
@@ -124,6 +119,7 @@ class Future:
         """
         with self._lock:
             self._exception = exception
+            self._exception_fetched = True
             self._done = True
             self._cancelled = False
             self._schedule_done_callbacks()

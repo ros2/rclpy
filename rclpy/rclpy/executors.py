@@ -521,8 +521,8 @@ class SingleThreadedExecutor(Executor):
             pass
         else:
             handler()
-            # check result to re-raise potential exceptions
-            handler.result()
+            if handler.exception():
+                raise handler.exception()
 
 
 class MultiThreadedExecutor(Executor):
