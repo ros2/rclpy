@@ -2281,9 +2281,14 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
   const rcl_ ## ENTITY_TYPE ## _t ** struct_ptr = wait_set->ENTITY_TYPE ## s; \
   for (idx = 0; idx < idx_max; idx ++) { \
     if (struct_ptr[idx]) { \
-      PyList_Append( \
-        entity_ready_list, \
-        PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl)); \
+      PyObject * obj = PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl); \
+      if (obj) { \
+        PyList_Append(entity_ready_list, obj); \
+        Py_DECREF(obj); \
+      } else { \
+        Py_DECREF(entity_ready_list); \
+        return NULL; \
+      } \
     } \
   } \
   return entity_ready_list;
@@ -2321,13 +2326,11 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     GET_LIST_READY_ENTITIES(timer)
   } else if (0 == strcmp(entity_type, "guard_condition")) {
     GET_LIST_READY_ENTITIES(guard_condition)
-  } else {
-    PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
-    return NULL;
   }
-
-  return entity_ready_list;
+  Py_DECREF(entity_ready_list);
+  PyErr_Format(PyExc_RuntimeError,
+    "'%s' is not a known entity", entity_type);
+  return NULL;
 }
 
 /// Wait until timeout is reached or event happened
@@ -2413,6 +2416,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
   void * taken_msg = convert_from_py(pymsg);
+  Py_DECREF(pymsg);
   if (!taken_msg) {
     // the function has set the Python error
     return NULL;
