@@ -61,56 +61,14 @@ typedef void destroy_ros_message_signature(void *);
 typedef bool convert_from_py_signature(PyObject *, void *);
 typedef PyObject * convert_to_py_signature(void *);
 
-static create_ros_message_signature * get_create_ros_message(PyObject* pymetaclass) {
-  PyObject * pycreate_ros_message = PyObject_GetAttrString(pymetaclass, "_CREATE_ROS_MESSAGE");
-  if (!pycreate_ros_message) {
+static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr) {
+  PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
+  if (!pyattr) {
     return NULL;
   }
-
-  create_ros_message_signature * create_ros_message =
-    (create_ros_message_signature *)PyCapsule_GetPointer(pycreate_ros_message, NULL);
-
-  Py_DECREF(pycreate_ros_message);
-  return create_ros_message;
-}
-
-static destroy_ros_message_signature * get_destroy_ros_message(PyObject* pymetaclass) {
-  PyObject * pydestroy_ros_message = PyObject_GetAttrString(pymetaclass, "_DESTROY_ROS_MESSAGE");
-  if (!pydestroy_ros_message) {
-    return NULL;
-  }
-
-  destroy_ros_message_signature * destroy_ros_message =
-    (destroy_ros_message_signature *)PyCapsule_GetPointer(pydestroy_ros_message, NULL);
-
-  Py_DECREF(pydestroy_ros_message);
-  return destroy_ros_message;
-}
-
-static convert_from_py_signature * get_convert_from_py(PyObject* pymetaclass) {
-  PyObject * pyconvert_from_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_FROM_PY");
-  if (!pyconvert_from_py) {
-    return NULL;
-  }
-
-  convert_from_py_signature * convert_from_py =
-    (convert_from_py_signature *)PyCapsule_GetPointer(pyconvert_from_py, NULL);
-
-  Py_DECREF(pyconvert_from_py);
-  return convert_from_py;
-}
-
-static convert_to_py_signature * get_convert_to_py(PyObject* pymetaclass) {
-  PyObject * pyconvert_to_py = PyObject_GetAttrString(pymetaclass, "_CONVERT_TO_PY");
-  if (!pyconvert_to_py) {
-    return NULL;
-  }
-
-  convert_to_py_signature * convert_to_py =
-      (convert_to_py_signature *)PyCapsule_GetPointer(pyconvert_to_py, NULL);
-
-  Py_DECREF(pyconvert_to_py);
-  return convert_to_py;
+  void * ptr = PyCapsule_GetPointer(pyattr, NULL);
+  Py_DECREF(pyattr);
+  return ptr;
 }
 
 /// Create a sigint guard condition
@@ -1167,15 +1125,15 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
   Py_DECREF(pymsg_type);
 
-  create_ros_message_signature * create_ros_message = get_create_ros_message(pymetaclass);
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(pymetaclass, "_CREATE_ROS_MESSAGE");
   assert(create_ros_message != NULL &&
     "unable to retrieve create_ros_message function, type_support mustn't have been imported");
 
-  destroy_ros_message_signature * destroy_ros_message = get_destroy_ros_message(pymetaclass);
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(pymetaclass, "_DESTROY_ROS_MESSAGE");
   assert(destroy_ros_message != NULL &&
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
-  convert_from_py_signature * convert_from_py = get_convert_from_py(pymetaclass);
+  convert_from_py_signature * convert_from_py = get_capsule_pointer(pymetaclass, "_CONVERT_FROM_PY");
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
 
@@ -1753,15 +1711,15 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__");
   assert(pymetaclass != NULL);
 
-  create_ros_message_signature * create_ros_message = get_create_ros_message(pymetaclass);
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(pymetaclass, "_CREATE_ROS_MESSAGE");
   assert(create_ros_message != NULL &&
     "unable to retrieve create_ros_message function, type_support mustn't have been imported");
 
-  destroy_ros_message_signature * destroy_ros_message = get_destroy_ros_message(pymetaclass);
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(pymetaclass, "_DESTROY_ROS_MESSAGE");
   assert(destroy_ros_message != NULL &&
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
-  convert_from_py_signature * convert_from_py = get_convert_from_py(pymetaclass);
+  convert_from_py_signature * convert_from_py = get_capsule_pointer(pymetaclass, "_CONVERT_FROM_PY");
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
 
@@ -1916,15 +1874,15 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
 
   Py_DECREF(pyresponse_type);
 
-  create_ros_message_signature * create_ros_message = get_create_ros_message(pymetaclass);
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(pymetaclass, "_CREATE_ROS_MESSAGE");
   assert(create_ros_message != NULL &&
     "unable to retrieve create_ros_message function, type_support mustn't have been imported");
 
-  destroy_ros_message_signature * destroy_ros_message = get_destroy_ros_message(pymetaclass);
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(pymetaclass, "_DESTROY_ROS_MESSAGE");
   assert(destroy_ros_message != NULL &&
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
-  convert_from_py_signature * convert_from_py = get_convert_from_py(pymetaclass);
+  convert_from_py_signature * convert_from_py = get_capsule_pointer(pymetaclass, "_CONVERT_FROM_PY");
   assert(convert_from_py != NULL &&
     "unable to retrieve convert_from_py function, type_support mustn't have been imported");
 
@@ -2459,11 +2417,11 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
 
-  create_ros_message_signature * create_ros_message = get_create_ros_message(pymetaclass);
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(pymetaclass, "_CREATE_ROS_MESSAGE");
   assert(create_ros_message != NULL &&
     "unable to retrieve create_ros_message function, type_support mustn't have been imported");
 
-  destroy_ros_message_signature * destroy_ros_message = get_destroy_ros_message(pymetaclass);
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(pymetaclass, "_DESTROY_ROS_MESSAGE");
   assert(destroy_ros_message != NULL &&
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
@@ -2485,7 +2443,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
-    convert_to_py_signature * convert_to_py = get_convert_to_py(pymetaclass);
+    convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
     Py_DECREF(pymetaclass);
 
     PyObject * pytaken_msg = convert_to_py(taken_msg);
@@ -2532,11 +2490,11 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__");
 
-  create_ros_message_signature * create_ros_message = get_create_ros_message(pymetaclass);
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(pymetaclass, "_CREATE_ROS_MESSAGE");
   assert(create_ros_message != NULL &&
     "unable to retrieve create_ros_message function, type_support mustn't have been imported");
 
-  destroy_ros_message_signature * destroy_ros_message = get_destroy_ros_message(pymetaclass);
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(pymetaclass, "_DESTROY_ROS_MESSAGE");
   assert(destroy_ros_message != NULL &&
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
@@ -2561,7 +2519,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    convert_to_py_signature* convert_to_py = get_convert_to_py(pymetaclass);
+    convert_to_py_signature* convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
     Py_DECREF(pymetaclass);
 
     PyObject * pytaken_request = convert_to_py(taken_request);
@@ -2610,11 +2568,11 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pymetaclass = PyObject_GetAttrString(pyresponse_type, "__class__");
 
-  create_ros_message_signature * create_ros_message = get_create_ros_message(pymetaclass);
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(pymetaclass, "_CREATE_ROS_MESSAGE");
   assert(create_ros_message != NULL &&
     "unable to retrieve create_ros_message function, type_support mustn't have been imported");
  
-  destroy_ros_message_signature * destroy_ros_message = get_destroy_ros_message(pymetaclass);
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(pymetaclass, "_DESTROY_ROS_MESSAGE");
   assert(destroy_ros_message != NULL &&
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
@@ -2636,7 +2594,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (ret != RCL_RET_CLIENT_TAKE_FAILED) {
-    convert_to_py_signature * convert_to_py = get_convert_to_py(pymetaclass);
+    convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
     Py_DECREF(pymetaclass);
 
     PyObject * pytaken_response = convert_to_py(taken_response);
