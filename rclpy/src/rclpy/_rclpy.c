@@ -56,12 +56,13 @@ static void catch_function(int signo)
   }
 }
 
-typedef void * create_ros_message_signature(void);
-typedef void destroy_ros_message_signature(void *);
-typedef bool convert_from_py_signature(PyObject *, void *);
-typedef PyObject * convert_to_py_signature(void *);
+typedef void * create_ros_message_signature (void);
+typedef void destroy_ros_message_signature (void *);
+typedef bool convert_from_py_signature (PyObject *, void *);
+typedef PyObject * convert_to_py_signature (void *);
 
-static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr) {
+static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
+{
   PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
   if (!pyattr) {
     return NULL;
@@ -2532,7 +2533,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    convert_to_py_signature* convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
+    convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
     Py_DECREF(pymetaclass);
 
     PyObject * pytaken_request = convert_to_py(taken_request);
