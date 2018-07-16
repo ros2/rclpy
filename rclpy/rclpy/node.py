@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
 from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NotInitializedException
@@ -80,6 +81,9 @@ class Node:
             raise RuntimeError('rclpy_create_node failed for unknown reason')
         self._logger = get_logger(_rclpy.rclpy_get_node_logger_name(self.handle))
 
+        self._entity_changed_gc = GuardCondition(lambda: None, ReentrantCallbackGroup())
+        self.guards.append(self._entity_changed_gc)
+
     @property
     def handle(self):
         return self._handle
@@ -142,6 +146,7 @@ class Node:
             topic, callback, callback_group, qos_profile, self.handle)
         self.subscriptions.append(subscription)
         callback_group.add_entity(subscription)
+        self._entity_changed_gc.trigger()
         return subscription
 
     def create_client(
@@ -166,6 +171,7 @@ class Node:
             callback_group)
         self.clients.append(client)
         callback_group.add_entity(client)
+        self._entity_changed_gc.trigger()
         return client
 
     def create_service(
@@ -190,6 +196,7 @@ class Node:
             srv_type, srv_name, callback, callback_group, qos_profile)
         self.services.append(service)
         callback_group.add_entity(service)
+        self._entity_changed_gc.trigger()
         return service
 
     def create_timer(self, timer_period_sec, callback, callback_group=None):
@@ -200,6 +207,7 @@ class Node:
 
         self.timers.append(timer)
         callback_group.add_entity(timer)
+        self._entity_changed_gc.trigger()
         return timer
 
     def create_guard_condition(self, callback, callback_group=None):
@@ -209,6 +217,7 @@ class Node:
 
         self.guards.append(guard)
         callback_group.add_entity(guard)
+        self._entity_changed_gc.trigger()
         return guard
 
     def destroy_publisher(self, publisher):
@@ -224,6 +233,7 @@ class Node:
             if sub.subscription_handle == subscription.subscription_handle:
                 _rclpy.rclpy_destroy_node_entity(sub.subscription_handle, self.handle)
                 self.subscriptions.remove(sub)
+                self._entity_changed_gc.trigger()
                 return True
         return False
 
@@ -232,6 +242,7 @@ class Node:
             if cli.client_handle == client.client_handle:
                 _rclpy.rclpy_destroy_node_entity(cli.client_handle, self.handle)
                 self.clients.remove(cli)
+                self._entity_changed_gc.trigger()
                 return True
         return False
 
@@ -240,6 +251,7 @@ class Node:
             if srv.service_handle == service.service_handle:
                 _rclpy.rclpy_destroy_node_entity(srv.service_handle, self.handle)
                 self.services.remove(srv)
+                self._entity_changed_gc.trigger()
                 return True
         return False
 
@@ -248,14 +260,18 @@ class Node:
             if tmr.timer_handle == timer.timer_handle:
                 _rclpy.rclpy_destroy_entity(tmr.timer_handle)
                 self.timers.remove(tmr)
+                self._entity_changed_gc.trigger()
                 return True
         return False
 
     def destroy_guard_condition(self, guard):
         for gc in self.guards:
             if gc.guard_handle == guard.guard_handle:
-                _rclpy.rclpy_destroy_entity(gc.guard_handle)
                 self.guards.remove(gc)
+                # Trigger after removing so executor rebuilds wait set without this guard condition
+                self._entity_changed_gc.trigger()
+                # trigger before destroying in case this is self._entity_changed_gc
+                _rclpy.rclpy_destroy_entity(gc.guard_handle)
                 return True
         return False
 
