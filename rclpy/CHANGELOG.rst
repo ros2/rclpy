@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.3 (2018-07-17)
+------------------
 * use test_msgs instead of std_msgs (`#204 <https://github.com/ros2/rclpy/issues/204>`_)
 * Fixes memory leaks for nested fields (`#203 <https://github.com/ros2/rclpy/issues/203>`_)
   This separates memory allocation out from convert_from_py function.
