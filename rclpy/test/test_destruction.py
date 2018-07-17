@@ -98,7 +98,7 @@ def func_destroy_timers():
 
 def func_destroy_entities():
     import rclpy
-    from test_msgs.msg import Primitives
+    from std_msgs.msg import Int16, Float32, String, UInt8
     rclpy.init()
 
     node = rclpy.create_node('test_node4')
@@ -106,16 +106,14 @@ def func_destroy_entities():
     timer = node.create_timer(0.1, None)
     timer  # noqa
     assert 1 == len(node.timers)
-    pub1 = node.create_publisher(Primitives, 'pub1_topic')
+    pub1 = node.create_publisher(Int16, 'pub1_topic')
     assert 1 == len(node.publishers)
-    pub2 = node.create_publisher(Primitives, 'pub2_topic')
+    pub2 = node.create_publisher(Float32, 'pub2_topic')
     pub2  # noqa
     assert 2 == len(node.publishers)
-    sub1 = node.create_subscription(
-        Primitives, 'sub1_topic', lambda msg: print('Received %r' % msg))
+    sub1 = node.create_subscription(String, 'sub1_topic', lambda msg: print('Received %r' % msg))
     assert 1 == len(node.subscriptions)
-    sub2 = node.create_subscription(
-        Primitives, 'sub2_topic', lambda msg: print('Received %r' % msg))
+    sub2 = node.create_subscription(UInt8, 'sub2_topic', lambda msg: print('Received %r' % msg))
     sub2  # noqa
     assert 2 == len(node.subscriptions)
 
