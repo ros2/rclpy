@@ -19,6 +19,7 @@
 #include <rcl/graph.h>
 #include <rcl/node.h>
 #include <rcl/rcl.h>
+#include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
 #include <rcutils/strdup.h>
 #include <rcutils/types.h>
@@ -2983,6 +2984,64 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   return pyqos_profile;
 }
 
+/// Create a time point
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises RuntimeError on initialization failure
+ * Raises TypeError if argument of invalid type
+ * Raises ValueError if argument cannot be converted to uint64_t
+ *
+ * \param[in] nanoseconds unsigned PyLong object storing the nanoseconds value
+ *   of the time point in a 64-bit unsigned integer
+ * \return Capsule of the pointer to the created rcl_time_point_t * structure, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  unsigned PY_LONG_LONG nanoseconds;
+
+  if (!PyArg_ParseTuple(args, "K", &nanoseconds)) {
+    return NULL;
+  }
+
+  rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
+
+  time_point->nanoseconds = nanoseconds;
+
+  // TODO(dhood): Allow clock type to be specified
+  time_point->clock_type = RCL_SYSTEM_TIME;
+
+  return PyCapsule_New(time_point, "rcl_time_point_t", NULL);
+}
+
+/// Returns the nanoseconds value of the time point
+/**
+ * Raises ValueError if pytime_point is not a time point capsule
+ * Raises RuntimeError if the time point valule cannot be retrieved
+ *
+ * \param[in] pytime_point Capsule pointing to the time point
+ * \return NULL on failure:
+ *         PyLong integer in nanoseconds on success
+ */
+static PyObject *
+rclpy_get_time_point_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pytime_point;
+  if (!PyArg_ParseTuple(args, "O", &pytime_point)) {
+    return NULL;
+  }
+
+  rcl_time_point_t * time_point = (rcl_time_point_t *)PyCapsule_GetPointer(
+    pytime_point, "rcl_time_point_t");
+  if (!time_point) {
+    return NULL;
+  }
+
+  return PyLong_FromUnsignedLongLong(time_point->nanoseconds);
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -3233,6 +3292,16 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
     "Get QOS profile."
+  },
+
+  {
+    "rclpy_create_time_point", rclpy_create_time_point, METH_VARARGS,
+    "Create a time point."
+  },
+
+  {
+    "rclpy_get_time_point_nanoseconds", rclpy_get_time_point_nanoseconds, METH_VARARGS,
+    "Get the nanoseconds value of a time point."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
