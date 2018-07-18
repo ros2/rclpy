@@ -39,10 +39,12 @@ class TestTime(unittest.TestCase):
             time = Time(clock_type='SYSTEM_TIME')
 
     def test_time_operators(self):
-        time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
+        # Check that modifying the original doesn't affect a copy
+        time1 = Time(nanoseconds=2, clock_type=ClockType.SYSTEM_TIME)
         time2 = time1
-        assert time2.nanoseconds == 1
-        assert time2.clock_type == ClockType.STEADY_TIME
+        time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
+        assert time2.nanoseconds == 2
+        assert time2.clock_type == ClockType.SYSTEM_TIME
 
         # Addition/subtraction of time and duration
         duration = Duration(nanoseconds=1)
