@@ -17,7 +17,7 @@ import unittest
 from rclpy.duration import Duration
 from rclpy.time import Time
 
-from std_msgs.msg import Header
+from test_msgs.msg import Builtins
 
 
 class TestTime(unittest.TestCase):
@@ -61,9 +61,14 @@ class TestTime(unittest.TestCase):
     def test_time_message_conversions(self):
         time1 = Time(nanoseconds=1)
         time2 = Time(nanoseconds=2)
-        header = Header()
-        header.stamp = time1.to_msg()
+        builtins_msg = Builtins()
+        builtins_msg.time_value = time1.to_msg()
 
-        diff = time2 - Time.from_msg(header.stamp)
+        diff = time2 - Time.from_msg(builtins_msg.time_value)
         assert isinstance(diff, Duration)
         assert diff.nanoseconds == 1
+
+        builtins_msg.duration_value = diff.to_msg()
+        time2 = time1 + Duration.from_msg(builtins_msg.duration_value)
+        assert isinstance(time2, Time)
+        assert time2.nanoseconds == 2
