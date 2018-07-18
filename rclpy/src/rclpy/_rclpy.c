@@ -3074,7 +3074,7 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
 /// Returns the nanoseconds value of the duration
 /**
  * Raises ValueError if pyduration is not a duration capsule
- * Raises RuntimeError if the time point valule cannot be retrieved
+ * Raises RuntimeError if the duration value cannot be retrieved
  *
  * \param[in] pyduration Capsule pointing to the duration
  * \return NULL on failure:
@@ -3095,6 +3095,74 @@ rclpy_get_duration_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   return PyLong_FromUnsignedLongLong(duration->nanoseconds);
+}
+
+/// Create a clock
+/**
+ * This function creates a Clock object of the specified type
+ * \param[in] pyclock_type enum of type ClockType
+ * \return NULL on failure
+ *         Capsule to an rcl_clock_t object
+ */
+static PyObject *
+rclpy_create_clock(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  unsigned PY_LONG_LONG clock_type;
+
+  if (!PyArg_ParseTuple(args, "K", &clock_type)) {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *)PyMem_Malloc(sizeof(rcl_clock_t));
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_clock_init(clock_type, clock, &allocator);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to initialize clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    PyMem_Free(clock);
+    return NULL;
+  }
+
+  return PyCapsule_New(clock, "rcl_clock_t", NULL);
+}
+
+/// Returns the current value of the clock
+/**
+ * Raises ValueError if pyclock is not a clock capsule
+ * Raises RuntimeError if the clock's value cannot be retrieved
+ *
+ * \param[in] pyclock Capsule pointing to the clock
+ * \return NULL on failure:
+ *         Capsule to a time point on success
+ */
+static PyObject *
+rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclock;
+  if (!PyArg_ParseTuple(args, "O", &pyclock)) {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(
+    pyclock, "rcl_clock_t");
+  if (!clock) {
+    return NULL;
+  }
+
+  rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
+
+  rcl_ret_t ret = rcl_clock_get_now(clock, time_point);
+
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get current value of clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    PyMem_Free(time_point);
+    return NULL;
+  }
+
+  return PyCapsule_New(time_point, "rcl_time_point_t", NULL);
 }
 
 /// Define the public methods of this module
@@ -3367,6 +3435,16 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_duration_nanoseconds", rclpy_get_duration_nanoseconds, METH_VARARGS,
     "Get the nanoseconds value of a duration."
+  },
+
+  {
+    "rclpy_create_clock", rclpy_create_clock, METH_VARARGS,
+    "Create a clock."
+  },
+
+  {
+    "rclpy_clock_get_now", rclpy_clock_get_now, METH_VARARGS,
+    "Get the current value of a clock."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
