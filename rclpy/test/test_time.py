@@ -44,17 +44,25 @@ class TestTime(unittest.TestCase):
         assert time2.nanoseconds == 1
         assert time2.clock_type == ClockType.STEADY_TIME
 
-        # Addition of time and duration
+        # Addition/subtraction of time and duration
         duration = Duration(nanoseconds=1)
         time3 = time1 + duration
         assert isinstance(time3, Time)
         assert time3.nanoseconds == 2
+        assert time3.clock_type == ClockType.STEADY_TIME
+
         time3 = duration + time1
         assert isinstance(time3, Time)
         assert time3.nanoseconds == 2
+        assert time3.clock_type == ClockType.STEADY_TIME
+
+        time3 = time1 - duration
+        assert isinstance(time3, Time)
+        assert time3.nanoseconds == 0
+        assert time3.clock_type == ClockType.STEADY_TIME
 
         # Subtraction of times with the same clock type
-        diff = time3 - time1
+        diff = time1 - time3
         assert isinstance(diff, Duration)
         assert diff.nanoseconds == 1
 
@@ -66,8 +74,6 @@ class TestTime(unittest.TestCase):
         # Invalid combinations
         with self.assertRaises(TypeError):
             time2 = time1 + time2
-        with self.assertRaises(TypeError):
-            time2 = time1 - duration
         with self.assertRaises(TypeError):
             time2 = duration - time1
 

@@ -58,6 +58,11 @@ class Time:
                 raise TypeError("Can't subtract times with different clock types")
             # TODO(dhood): underflow checking
             return Duration(nanoseconds=(self.nanoseconds - other.nanoseconds))
+        if isinstance(other, Duration):
+            # TODO(dhood): underflow checking
+            return Time(
+                nanoseconds=(self.nanoseconds - other.nanoseconds),
+                clock_type=self.clock_type)
         else:
             return NotImplemented
 
