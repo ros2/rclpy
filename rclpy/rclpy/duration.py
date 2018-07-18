@@ -39,5 +39,5 @@ class Duration:
     @classmethod
     def from_msg(cls, msg):
         if not isinstance(msg, builtin_interfaces.msg.Duration):
-            raise TypeError('Must pass a builtin_interfaces.msg.Time object')
+            raise TypeError('Must pass a builtin_interfaces.msg.Duration object')
         return cls(seconds=msg.sec, nanoseconds=msg.nanosec)

@@ -36,15 +36,21 @@ class TestClock(unittest.TestCase):
         assert clock.clock_type == ClockType.SYSTEM_TIME
 
     def test_clock_now(self):
+        # System time should be roughly equal to time.time()
+        # There will still be differences between them, with the bound depending on the scheduler.
         clock = Clock(clock_type=ClockType.SYSTEM_TIME)
         now = clock.now()
+        python_time_sec = time.time()
         assert isinstance(now, Time)
-        assert abs(now.nanoseconds * 1e-9 - time.time()) < 5
+        assert abs(now.nanoseconds * 1e-9 - python_time_sec) < 5
 
+        # Unless there is a date change during the test, system time have increased between these
+        # calls.
         now2 = clock.now()
         # TODO(dhood): use comparators when implemented
         assert (now2 - now).nanoseconds > 0
 
+        # Steady time should always return increasing values
         clock = Clock(clock_type=ClockType.STEADY_TIME)
         now = clock.now()
         now2 = now
