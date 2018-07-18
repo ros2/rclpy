@@ -43,4 +43,4 @@ class Clock:
     def now(self):
         time_handle = _rclpy.rclpy_clock_get_now(self.clock_handle)
         # TODO(dhood): Return a python object from the C extension
-        return Time(nanoseconds=_rclpy.rclpy_get_time_point_nanoseconds(time_handle))
+        return Time(nanoseconds=_rclpy.rclpy_time_point_get_nanoseconds(time_handle))

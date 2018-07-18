@@ -31,7 +31,7 @@ class Time:
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_get_time_point_nanoseconds(self.time_handle)
+        return _rclpy.rclpy_time_point_get_nanoseconds(self.time_handle)
 
     def __add__(self, other):
         if isinstance(other, Duration):

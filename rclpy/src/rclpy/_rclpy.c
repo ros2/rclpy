@@ -3026,7 +3026,7 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
  *         PyLong integer in nanoseconds on success
  */
 static PyObject *
-rclpy_get_time_point_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_time_point_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pytime_point;
   if (!PyArg_ParseTuple(args, "O", &pytime_point)) {
@@ -3081,7 +3081,7 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
  *         PyLong integer in nanoseconds on success
  */
 static PyObject *
-rclpy_get_duration_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pyduration;
   if (!PyArg_ParseTuple(args, "O", &pyduration)) {
@@ -3423,7 +3423,7 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_get_time_point_nanoseconds", rclpy_get_time_point_nanoseconds, METH_VARARGS,
+    "rclpy_time_point_get_nanoseconds", rclpy_time_point_get_nanoseconds, METH_VARARGS,
     "Get the nanoseconds value of a time point."
   },
 
@@ -3433,7 +3433,7 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_get_duration_nanoseconds", rclpy_get_duration_nanoseconds, METH_VARARGS,
+    "rclpy_duration_get_nanoseconds", rclpy_duration_get_nanoseconds, METH_VARARGS,
     "Get the nanoseconds value of a duration."
   },
 

@@ -29,7 +29,7 @@ class Duration:
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_get_duration_nanoseconds(self.duration_handle)
+        return _rclpy.rclpy_duration_get_nanoseconds(self.duration_handle)
 
     def to_msg(self):
         # TODO(dhood): break into sec and nanosec
