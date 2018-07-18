@@ -67,8 +67,9 @@ class Time:
             return NotImplemented
 
     def to_msg(self):
-        # TODO(dhood): break into sec and nanosec
-        return builtin_interfaces.msg.Time(nanosec=self.nanoseconds)
+        seconds = int(self.nanoseconds * 1e-9)
+        nanoseconds = int(self.nanoseconds % 1e9)
+        return builtin_interfaces.msg.Time(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
     def from_msg(cls, msg):

@@ -32,8 +32,9 @@ class Duration:
         return _rclpy.rclpy_duration_get_nanoseconds(self._duration_handle)
 
     def to_msg(self):
-        # TODO(dhood): break into sec and nanosec
-        return builtin_interfaces.msg.Duration(nanosec=self.nanoseconds)
+        seconds = int(self.nanoseconds * 1e-9)
+        nanoseconds = int(self.nanoseconds % 1e9)
+        return builtin_interfaces.msg.Duration(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
     def from_msg(cls, msg):
