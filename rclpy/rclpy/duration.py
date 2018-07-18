@@ -13,12 +13,10 @@
 # limitations under the License.
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.duration import Duration
 
 
-class Time:
+class Duration:
 
-    # TODO(dhood): specify clock type
     def __init__(self, *, seconds=0, nanoseconds=0):
         if seconds < 0:
             raise ValueError('Seconds value must not be negative')
@@ -26,25 +24,8 @@ class Time:
             raise ValueError('Nanoseconds value must not be negative')
         total_nanoseconds = seconds * 1e9
         total_nanoseconds += nanoseconds
-        self.time_handle = _rclpy.rclpy_create_time_point(int(total_nanoseconds))
+        self.duration_handle = _rclpy.rclpy_create_duration(int(total_nanoseconds))
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_get_time_point_nanoseconds(self.time_handle)
-
-    def __add__(self, other):
-        if isinstance(other, Duration):
-            # TODO(dhood): overflow checking
-            return Time(nanoseconds=self.nanoseconds + other.nanoseconds)
-        else:
-            return NotImplemented
-
-    def __radd__(self, other):
-        return self.__add__(other)
-
-    def __sub__(self, other):
-        if isinstance(other, Time):
-            # TODO(dhood): underflow checking
-            return Duration(nanoseconds=(self.nanoseconds - other.nanoseconds))
-        else:
-            return NotImplemented
+        return _rclpy.rclpy_get_duration_nanoseconds(self.duration_handle)

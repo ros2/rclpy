@@ -14,6 +14,7 @@
 
 import unittest
 
+from rclpy.duration import Duration
 from rclpy.time import Time
 
 
@@ -30,3 +31,27 @@ class TestTime(unittest.TestCase):
             time = Time(seconds=-1)
         with self.assertRaises(ValueError):
             time = Time(nanoseconds=-1)
+
+    def test_time_operators(self):
+        time1 = Time(nanoseconds=1)
+        time2 = time1
+        assert time2.nanoseconds == 1
+
+        with self.assertRaises(TypeError):
+            time2 = time1 + time2
+        duration = Duration(nanoseconds=1)
+        with self.assertRaises(TypeError):
+            time2 = time1 - duration
+        with self.assertRaises(TypeError):
+            time2 = duration - time1
+
+        time3 = time1 + duration
+        assert isinstance(time3, Time)
+        assert time3.nanoseconds == 2
+        time3 = duration + time1
+        assert isinstance(time3, Time)
+        assert time3.nanoseconds == 2
+
+        diff = time3 - time1
+        assert isinstance(diff, Duration)
+        assert diff.nanoseconds == 1

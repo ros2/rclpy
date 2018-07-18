@@ -3042,6 +3042,61 @@ rclpy_get_time_point_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromUnsignedLongLong(time_point->nanoseconds);
 }
 
+/// Create a duration
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises RuntimeError on initialization failure
+ * Raises TypeError if argument of invalid type
+ * Raises ValueError if argument cannot be converted to uint64_t
+ *
+ * \param[in] nanoseconds unsigned PyLong object storing the nanoseconds value
+ *   of the duration in a 64-bit unsigned integer
+ * \return Capsule of the pointer to the created rcl_duration_t * structure, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  unsigned PY_LONG_LONG nanoseconds;
+
+  if (!PyArg_ParseTuple(args, "K", &nanoseconds)) {
+    return NULL;
+  }
+
+  rcl_duration_t * duration = (rcl_duration_t *) PyMem_Malloc(sizeof(rcl_duration_t));
+
+  duration->nanoseconds = nanoseconds;
+
+  return PyCapsule_New(duration, "rcl_duration_t", NULL);
+}
+
+/// Returns the nanoseconds value of the duration
+/**
+ * Raises ValueError if pyduration is not a duration capsule
+ * Raises RuntimeError if the time point valule cannot be retrieved
+ *
+ * \param[in] pyduration Capsule pointing to the duration
+ * \return NULL on failure:
+ *         PyLong integer in nanoseconds on success
+ */
+static PyObject *
+rclpy_get_duration_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyduration;
+  if (!PyArg_ParseTuple(args, "O", &pyduration)) {
+    return NULL;
+  }
+
+  rcl_duration_t * duration = (rcl_duration_t *)PyCapsule_GetPointer(
+    pyduration, "rcl_duration_t");
+  if (!duration) {
+    return NULL;
+  }
+
+  return PyLong_FromUnsignedLongLong(duration->nanoseconds);
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -3302,6 +3357,16 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_time_point_nanoseconds", rclpy_get_time_point_nanoseconds, METH_VARARGS,
     "Get the nanoseconds value of a time point."
+  },
+
+  {
+    "rclpy_create_duration", rclpy_create_duration, METH_VARARGS,
+    "Create a duration."
+  },
+
+  {
+    "rclpy_get_duration_nanoseconds", rclpy_get_duration_nanoseconds, METH_VARARGS,
+    "Get the nanoseconds value of a duration."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
