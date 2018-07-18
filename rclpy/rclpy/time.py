@@ -18,11 +18,14 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class Time:
 
     # TODO(dhood): specify clock type
-    # TODO(dhood): convenience functions so not always ns
-    def __init__(self, nanoseconds):
+    def __init__(self, *, seconds=0, nanoseconds=0):
+        if seconds < 0:
+            raise ValueError('Seconds value must not be negative')
         if nanoseconds < 0:
             raise ValueError('Nanoseconds value must not be negative')
-        self.time_handle = _rclpy.rclpy_create_time_point(nanoseconds)
+        total_nanoseconds = seconds * 1e9
+        total_nanoseconds += nanoseconds
+        self.time_handle = _rclpy.rclpy_create_time_point(int(total_nanoseconds))
 
     @property
     def nanoseconds(self):

@@ -20,10 +20,13 @@ from rclpy.time import Time
 class TestTime(unittest.TestCase):
 
     def test_time_construction(self):
-        time = Time(0)
+        time = Time()
         assert time.nanoseconds == 0
 
-        with self.assertRaises(TypeError):
-            time = Time(1.5)
+        time = Time(seconds=1, nanoseconds=5e8)
+        assert time.nanoseconds == 1500000000
+
         with self.assertRaises(ValueError):
-            time = Time(-1)
+            time = Time(seconds=-1)
+        with self.assertRaises(ValueError):
+            time = Time(nanoseconds=-1)
