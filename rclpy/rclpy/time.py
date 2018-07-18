@@ -13,30 +13,39 @@
 # limitations under the License.
 
 import builtin_interfaces
+from rclpy.clock import ClockType
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class Time:
 
-    # TODO(dhood): specify clock type
-    def __init__(self, *, seconds=0, nanoseconds=0):
+    def __init__(self, *, seconds=0, nanoseconds=0, clock_type=ClockType.SYSTEM_TIME):
+        if not isinstance(clock_type, ClockType):
+            raise TypeError('Clock type must be a ClockType enum')
         if seconds < 0:
             raise ValueError('Seconds value must not be negative')
         if nanoseconds < 0:
             raise ValueError('Nanoseconds value must not be negative')
         total_nanoseconds = seconds * 1e9
         total_nanoseconds += nanoseconds
-        self.time_handle = _rclpy.rclpy_create_time_point(int(total_nanoseconds))
+        self._time_handle = _rclpy.rclpy_create_time_point(int(total_nanoseconds), clock_type)
+        self._clock_type = clock_type
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_time_point_get_nanoseconds(self.time_handle)
+        return _rclpy.rclpy_time_point_get_nanoseconds(self._time_handle)
+
+    @property
+    def clock_type(self):
+        return self._clock_type
 
     def __add__(self, other):
         if isinstance(other, Duration):
             # TODO(dhood): overflow checking
-            return Time(nanoseconds=self.nanoseconds + other.nanoseconds)
+            return Time(
+                nanoseconds=(self.nanoseconds + other.nanoseconds),
+                clock_type=self.clock_type)
         else:
             return NotImplemented
 
@@ -45,6 +54,8 @@ class Time:
 
     def __sub__(self, other):
         if isinstance(other, Time):
+            if self.clock_type != other.clock_type:
+                raise TypeError("Can't subtract times with different clock types")
             # TODO(dhood): underflow checking
             return Duration(nanoseconds=(self.nanoseconds - other.nanoseconds))
         else:
@@ -58,4 +69,5 @@ class Time:
     def from_msg(cls, msg):
         if not isinstance(msg, builtin_interfaces.msg.Time):
             raise TypeError('Must pass a builtin_interfaces.msg.Time object')
-        return cls(seconds=msg.sec, nanoseconds=msg.nanosec)
+        # TODO(dhood): using ROS time follows rclcpp, but how do we know for sure?
+        return cls(seconds=msg.sec, nanoseconds=msg.nanosec, clock_type=ClockType.ROS_TIME)

@@ -2994,6 +2994,7 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
  *
  * \param[in] nanoseconds unsigned PyLong object storing the nanoseconds value
  *   of the time point in a 64-bit unsigned integer
+ * \param[in] clock_type enum of type ClockType
  * \return Capsule of the pointer to the created rcl_time_point_t * structure, or
  * \return NULL on failure
  */
@@ -3001,17 +3002,16 @@ static PyObject *
 rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
 {
   unsigned PY_LONG_LONG nanoseconds;
+  unsigned PY_LONG_LONG clock_type;
 
-  if (!PyArg_ParseTuple(args, "K", &nanoseconds)) {
+  if (!PyArg_ParseTuple(args, "KK", &nanoseconds, &clock_type)) {
     return NULL;
   }
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
 
   time_point->nanoseconds = nanoseconds;
-
-  // TODO(dhood): Allow clock type to be specified
-  time_point->clock_type = RCL_SYSTEM_TIME;
+  time_point->clock_type = clock_type;
 
   return PyCapsule_New(time_point, "rcl_time_point_t", NULL);
 }
@@ -3100,7 +3100,7 @@ rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
 /// Create a clock
 /**
  * This function creates a Clock object of the specified type
- * \param[in] pyclock_type enum of type ClockType
+ * \param[in] clock_type enum of type ClockType
  * \return NULL on failure
  *         Capsule to an rcl_clock_t object
  */

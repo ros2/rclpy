@@ -25,11 +25,11 @@ class Duration:
             raise ValueError('Nanoseconds value must not be negative')
         total_nanoseconds = seconds * 1e9
         total_nanoseconds += nanoseconds
-        self.duration_handle = _rclpy.rclpy_create_duration(int(total_nanoseconds))
+        self._duration_handle = _rclpy.rclpy_create_duration(int(total_nanoseconds))
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_duration_get_nanoseconds(self.duration_handle)
+        return _rclpy.rclpy_duration_get_nanoseconds(self._duration_handle)
 
     def to_msg(self):
         # TODO(dhood): break into sec and nanosec

@@ -15,7 +15,6 @@
 from enum import IntEnum
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.time import Time
 
 
 class ClockType(IntEnum):
@@ -37,10 +36,17 @@ class Clock:
             raise TypeError('Clock type must be a ClockType enum')
         if clock_type is ClockType.ROS_TIME:
             raise NotImplementedError
-        self.clock_handle = _rclpy.rclpy_create_clock(clock_type)
-        self.clock_type = clock_type
+        self._clock_handle = _rclpy.rclpy_create_clock(clock_type)
+        self._clock_type = clock_type
+
+    @property
+    def clock_type(self):
+        return self._clock_type
 
     def now(self):
-        time_handle = _rclpy.rclpy_clock_get_now(self.clock_handle)
+        from rclpy.time import Time
+        time_handle = _rclpy.rclpy_clock_get_now(self._clock_handle)
         # TODO(dhood): Return a python object from the C extension
-        return Time(nanoseconds=_rclpy.rclpy_time_point_get_nanoseconds(time_handle))
+        return Time(
+            nanoseconds=_rclpy.rclpy_time_point_get_nanoseconds(time_handle),
+            clock_type=self.clock_type)

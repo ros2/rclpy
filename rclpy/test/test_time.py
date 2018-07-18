@@ -14,6 +14,7 @@
 
 import unittest
 
+from rclpy.clock import ClockType
 from rclpy.duration import Duration
 from rclpy.time import Time
 
@@ -26,27 +27,25 @@ class TestTime(unittest.TestCase):
         time = Time()
         assert time.nanoseconds == 0
 
-        time = Time(seconds=1, nanoseconds=5e8)
+        time = Time(seconds=1, nanoseconds=5e8, clock_type=ClockType.SYSTEM_TIME)
         assert time.nanoseconds == 1500000000
+        assert time.clock_type == ClockType.SYSTEM_TIME
 
         with self.assertRaises(ValueError):
             time = Time(seconds=-1)
         with self.assertRaises(ValueError):
             time = Time(nanoseconds=-1)
+        with self.assertRaises(TypeError):
+            time = Time(clock_type='SYSTEM_TIME')
 
     def test_time_operators(self):
-        time1 = Time(nanoseconds=1)
+        time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
         time2 = time1
         assert time2.nanoseconds == 1
+        assert time2.clock_type == ClockType.STEADY_TIME
 
-        with self.assertRaises(TypeError):
-            time2 = time1 + time2
+        # Addition of time and duration
         duration = Duration(nanoseconds=1)
-        with self.assertRaises(TypeError):
-            time2 = time1 - duration
-        with self.assertRaises(TypeError):
-            time2 = duration - time1
-
         time3 = time1 + duration
         assert isinstance(time3, Time)
         assert time3.nanoseconds == 2
@@ -54,13 +53,27 @@ class TestTime(unittest.TestCase):
         assert isinstance(time3, Time)
         assert time3.nanoseconds == 2
 
+        # Subtraction of times with the same clock type
         diff = time3 - time1
         assert isinstance(diff, Duration)
         assert diff.nanoseconds == 1
 
+        # Subtraction of times with different clock types
+        time4 = Time(nanoseconds=1, clock_type=ClockType.SYSTEM_TIME)
+        with self.assertRaises(TypeError):
+            diff = time1 - time4
+
+        # Invalid combinations
+        with self.assertRaises(TypeError):
+            time2 = time1 + time2
+        with self.assertRaises(TypeError):
+            time2 = time1 - duration
+        with self.assertRaises(TypeError):
+            time2 = duration - time1
+
     def test_time_message_conversions(self):
-        time1 = Time(nanoseconds=1)
-        time2 = Time(nanoseconds=2)
+        time1 = Time(nanoseconds=1, clock_type=ClockType.ROS_TIME)
+        time2 = Time(nanoseconds=2, clock_type=ClockType.ROS_TIME)
         builtins_msg = Builtins()
         builtins_msg.time_value = time1.to_msg()
 
