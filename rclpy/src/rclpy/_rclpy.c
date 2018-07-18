@@ -3022,8 +3022,9 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Returns the nanoseconds value of the time point
 /**
+ * On failure, an exception is raised and NULL is returned if:
+ *
  * Raises ValueError if pytime_point is not a time point capsule
- * Raises RuntimeError if the time point valule cannot be retrieved
  *
  * \param[in] pytime_point Capsule pointing to the time point
  * \return NULL on failure:
@@ -3081,8 +3082,9 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Returns the nanoseconds value of the duration
 /**
+ * On failure, an exception is raised and NULL is returned if:
+ *
  * Raises ValueError if pyduration is not a duration capsule
- * Raises RuntimeError if the duration value cannot be retrieved
  *
  * \param[in] pyduration Capsule pointing to the duration
  * \return NULL on failure:
@@ -3107,6 +3109,11 @@ rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create a clock
 /**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises RuntimeError on initialization failure
+ * Raises TypeError if argument of invalid type
+ *
  * This function creates a Clock object of the specified type
  * \param[in] clock_type enum of type ClockType
  * \return NULL on failure
@@ -3141,6 +3148,8 @@ rclpy_create_clock(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Returns the current value of the clock
 /**
+ * On failure, an exception is raised and NULL is returned if:
+ *
  * Raises ValueError if pyclock is not a clock capsule
  * Raises RuntimeError if the clock's value cannot be retrieved
  *
