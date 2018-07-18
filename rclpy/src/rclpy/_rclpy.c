@@ -3009,6 +3009,10 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
+  if (NULL == time_point) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
+    return NULL;
+  }
 
   time_point->nanoseconds = nanoseconds;
   time_point->clock_type = clock_type;
@@ -3065,6 +3069,10 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_duration_t * duration = (rcl_duration_t *) PyMem_Malloc(sizeof(rcl_duration_t));
+  if (NULL == duration) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for duration.");
+    return NULL;
+  }
 
   duration->nanoseconds = nanoseconds;
 
@@ -3114,6 +3122,10 @@ rclpy_create_clock(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_clock_t * clock = (rcl_clock_t *)PyMem_Malloc(sizeof(rcl_clock_t));
+  if (NULL == clock) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for clock.");
+    return NULL;
+  }
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_clock_init(clock_type, clock, &allocator);
   if (ret != RCL_RET_OK) {
@@ -3151,6 +3163,10 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
+  if (NULL == time_point) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
+    return NULL;
+  }
 
   rcl_ret_t ret = rcl_clock_get_now(clock, time_point);
 
