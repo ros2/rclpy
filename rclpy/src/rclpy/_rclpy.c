@@ -2984,6 +2984,13 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   return pyqos_profile;
 }
 
+/// Destructor for a time point
+void
+_rclpy_destroy_time_point(PyObject * pycapsule)
+{
+  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rcl_time_point_t"));
+}
+
 /// Create a time point
 /**
  * On failure, an exception is raised and NULL is returned if:
@@ -3017,7 +3024,7 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
   time_point->nanoseconds = nanoseconds;
   time_point->clock_type = clock_type;
 
-  return PyCapsule_New(time_point, "rcl_time_point_t", NULL);
+  return PyCapsule_New(time_point, "rcl_time_point_t", _rclpy_destroy_time_point);
 }
 
 /// Returns the nanoseconds value of the time point
@@ -3045,6 +3052,13 @@ rclpy_time_point_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   return PyLong_FromUnsignedLongLong(time_point->nanoseconds);
+}
+
+/// Destructor for a duration
+void
+_rclpy_destroy_duration(PyObject * pycapsule)
+{
+  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rcl_duration_t"));
 }
 
 /// Create a duration
@@ -3077,7 +3091,7 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
 
   duration->nanoseconds = nanoseconds;
 
-  return PyCapsule_New(duration, "rcl_duration_t", NULL);
+  return PyCapsule_New(duration, "rcl_duration_t", _rclpy_destroy_duration);
 }
 
 /// Returns the nanoseconds value of the duration
@@ -3105,6 +3119,13 @@ rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   return PyLong_FromUnsignedLongLong(duration->nanoseconds);
+}
+
+/// Destructor for a clock
+void
+_rclpy_destroy_clock(PyObject * pycapsule)
+{
+  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rcl_clock_t"));
 }
 
 /// Create a clock
@@ -3143,7 +3164,7 @@ rclpy_create_clock(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  return PyCapsule_New(clock, "rcl_clock_t", NULL);
+  return PyCapsule_New(clock, "rcl_clock_t", _rclpy_destroy_clock);
 }
 
 /// Returns the current value of the clock
@@ -3187,7 +3208,7 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  return PyCapsule_New(time_point, "rcl_time_point_t", NULL);
+  return PyCapsule_New(time_point, "rcl_time_point_t", _rclpy_destroy_time_point);
 }
 
 /// Define the public methods of this module
