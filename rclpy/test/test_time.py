@@ -81,15 +81,20 @@ class TestTime(unittest.TestCase):
 
     def test_time_message_conversions(self):
         time1 = Time(nanoseconds=1, clock_type=ClockType.ROS_TIME)
-        time2 = Time(nanoseconds=2, clock_type=ClockType.ROS_TIME)
         builtins_msg = Builtins()
         builtins_msg.time_value = time1.to_msg()
 
-        diff = time2 - Time.from_msg(builtins_msg.time_value)
-        assert isinstance(diff, Duration)
-        assert diff.nanoseconds == 1
-
-        builtins_msg.duration_value = diff.to_msg()
-        time2 = time1 + Duration.from_msg(builtins_msg.duration_value)
+        # Default clock type resulting from from_msg will be ROS time
+        time2 = Time.from_msg(builtins_msg.time_value)
         assert isinstance(time2, Time)
-        assert time2.nanoseconds == 2
+        assert time2.clock_type == ClockType.ROS_TIME
+        # TODO(dhood): assert time1 == time2
+        # Clock type can be specified if appropriate
+        time3 = Time.from_msg(builtins_msg.time_value, clock_type=ClockType.SYSTEM_TIME)
+        assert time3.clock_type == ClockType.SYSTEM_TIME
+
+        duration = Duration(nanoseconds=1)
+        builtins_msg.duration_value = duration.to_msg()
+        duration2 = Duration.from_msg(builtins_msg.duration_value)
+        assert isinstance(duration2, Duration)
+        assert duration2.nanoseconds == 1

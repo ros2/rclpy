@@ -72,8 +72,7 @@ class Time:
         return builtin_interfaces.msg.Time(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
-    def from_msg(cls, msg):
+    def from_msg(cls, msg, clock_type=ClockType.ROS_TIME):
         if not isinstance(msg, builtin_interfaces.msg.Time):
             raise TypeError('Must pass a builtin_interfaces.msg.Time object')
-        # TODO(dhood): using ROS time follows rclcpp, but how do we know for sure?
-        return cls(seconds=msg.sec, nanoseconds=msg.nanosec, clock_type=ClockType.ROS_TIME)
+        return cls(seconds=msg.sec, nanoseconds=msg.nanosec, clock_type=clock_type)
