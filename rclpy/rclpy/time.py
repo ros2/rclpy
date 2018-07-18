@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+import builtin_interfaces
 from rclpy.duration import Duration
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class Time:
@@ -48,3 +49,13 @@ class Time:
             return Duration(nanoseconds=(self.nanoseconds - other.nanoseconds))
         else:
             return NotImplemented
+
+    def to_msg(self):
+        # TODO(dhood): break into sec and nanosec
+        return builtin_interfaces.msg.Time(nanosec=self.nanoseconds)
+
+    @classmethod
+    def from_msg(cls, msg):
+        if not isinstance(msg, builtin_interfaces.msg.Time):
+            raise TypeError('Must pass a builtin_interfaces.msg.Time object')
+        return cls(seconds=msg.sec, nanoseconds=msg.nanosec)

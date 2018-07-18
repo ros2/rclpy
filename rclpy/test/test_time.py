@@ -17,6 +17,8 @@ import unittest
 from rclpy.duration import Duration
 from rclpy.time import Time
 
+from std_msgs.msg import Header
+
 
 class TestTime(unittest.TestCase):
 
@@ -53,5 +55,15 @@ class TestTime(unittest.TestCase):
         assert time3.nanoseconds == 2
 
         diff = time3 - time1
+        assert isinstance(diff, Duration)
+        assert diff.nanoseconds == 1
+
+    def test_time_message_conversions(self):
+        time1 = Time(nanoseconds=1)
+        time2 = Time(nanoseconds=2)
+        header = Header()
+        header.stamp = time1.to_msg()
+
+        diff = time2 - Time.from_msg(header.stamp)
         assert isinstance(diff, Duration)
         assert diff.nanoseconds == 1
