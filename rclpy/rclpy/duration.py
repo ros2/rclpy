@@ -31,6 +31,9 @@ class Duration:
     def nanoseconds(self):
         return _rclpy.rclpy_duration_get_nanoseconds(self._duration_handle)
 
+    def __repr__(self):
+        return 'Duration(nanoseconds={0})'.format(self.nanoseconds)
+
     def __eq__(self, other):
         if isinstance(other, Duration):
             return self.nanoseconds == other.nanoseconds

@@ -43,6 +43,9 @@ class Clock:
     def clock_type(self):
         return self._clock_type
 
+    def __repr__(self):
+        return 'Clock(clock_type={0})'.format(self.clock_type.name)
+
     def now(self):
         from rclpy.time import Time
         time_handle = _rclpy.rclpy_clock_get_now(self._clock_handle)

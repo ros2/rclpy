@@ -41,7 +41,8 @@ class Time:
         return self._clock_type
 
     def __repr__(self):
-        return repr((self.nanoseconds, self.clock_type))
+        return 'Time(nanoseconds={0}, clock_type={1})'.format(
+            self.nanoseconds, self.clock_type.name)
 
     def __add__(self, other):
         if isinstance(other, Duration):
