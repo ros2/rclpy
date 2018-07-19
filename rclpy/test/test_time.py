@@ -31,12 +31,34 @@ class TestTime(unittest.TestCase):
         assert time.nanoseconds == 1500000000
         assert time.clock_type == ClockType.SYSTEM_TIME
 
+        with self.assertRaises(OverflowError):
+            time = Time(nanoseconds=2**64)
+        time = Time(nanoseconds=2**64 - 1)
+        assert time.nanoseconds == 2**64 - 1
+
         with self.assertRaises(ValueError):
             time = Time(seconds=-1)
         with self.assertRaises(ValueError):
             time = Time(nanoseconds=-1)
         with self.assertRaises(TypeError):
             time = Time(clock_type='SYSTEM_TIME')
+
+    def test_duration_construction(self):
+        duration = Duration()
+        assert duration.nanoseconds == 0
+
+        duration = Duration(seconds=1, nanoseconds=5e8)
+        assert duration.nanoseconds == 1500000000
+
+        with self.assertRaises(OverflowError):
+            duration = Duration(nanoseconds=2**64)
+        duration = Duration(nanoseconds=2**64 - 1)
+        assert duration.nanoseconds == 2**64 - 1
+
+        with self.assertRaises(ValueError):
+            duration = Duration(seconds=-1)
+        with self.assertRaises(ValueError):
+            duration = Duration(nanoseconds=-1)
 
     def test_time_operators(self):
         # Check that modifying the original doesn't affect a copy
@@ -62,6 +84,9 @@ class TestTime(unittest.TestCase):
         assert isinstance(time3, Time)
         assert time3.nanoseconds == 0
         assert time3.clock_type == ClockType.STEADY_TIME
+
+        with self.assertRaises(OverflowError):
+            Duration(nanoseconds=2**64 - 1) + Time(nanoseconds=1)
 
         # Subtraction of times with the same clock type
         diff = time1 - time3

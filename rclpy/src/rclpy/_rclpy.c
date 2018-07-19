@@ -2997,7 +2997,7 @@ _rclpy_destroy_time_point(PyObject * pycapsule)
  *
  * Raises RuntimeError on initialization failure
  * Raises TypeError if argument of invalid type
- * Raises ValueError if argument cannot be converted to uint64_t
+ * Raises OverflowError if nanoseconds argument cannot be converted to uint64_t
  *
  * \param[in] nanoseconds unsigned PyLong object storing the nanoseconds value
  *   of the time point in a 64-bit unsigned integer
@@ -3008,10 +3008,15 @@ _rclpy_destroy_time_point(PyObject * pycapsule)
 static PyObject *
 rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  unsigned PY_LONG_LONG nanoseconds;
+  PyObject * pylong_nanoseconds;
   unsigned PY_LONG_LONG clock_type;
 
-  if (!PyArg_ParseTuple(args, "KK", &nanoseconds, &clock_type)) {
+  if (!PyArg_ParseTuple(args, "OK", &pylong_nanoseconds, &clock_type)) {
+    return NULL;
+  }
+
+  unsigned PY_LONG_LONG nanoseconds = PyLong_AsUnsignedLongLong(pylong_nanoseconds);
+  if ((unsigned PY_LONG_LONG)-1 == nanoseconds && PyErr_Occurred()) {
     return NULL;
   }
 
@@ -3067,7 +3072,7 @@ _rclpy_destroy_duration(PyObject * pycapsule)
  *
  * Raises RuntimeError on initialization failure
  * Raises TypeError if argument of invalid type
- * Raises ValueError if argument cannot be converted to uint64_t
+ * Raises OverflowError if nanoseconds argument cannot be converted to uint64_t
  *
  * \param[in] nanoseconds unsigned PyLong object storing the nanoseconds value
  *   of the duration in a 64-bit unsigned integer
@@ -3077,9 +3082,14 @@ _rclpy_destroy_duration(PyObject * pycapsule)
 static PyObject *
 rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  unsigned PY_LONG_LONG nanoseconds;
+  PyObject * pylong_nanoseconds;
 
-  if (!PyArg_ParseTuple(args, "K", &nanoseconds)) {
+  if (!PyArg_ParseTuple(args, "O", &pylong_nanoseconds)) {
+    return NULL;
+  }
+
+  unsigned PY_LONG_LONG nanoseconds = PyLong_AsUnsignedLongLong(pylong_nanoseconds);
+  if ((unsigned PY_LONG_LONG)-1 == nanoseconds && PyErr_Occurred()) {
     return NULL;
   }
 

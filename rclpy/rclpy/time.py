@@ -27,9 +27,13 @@ class Time:
             raise ValueError('Seconds value must not be negative')
         if nanoseconds < 0:
             raise ValueError('Nanoseconds value must not be negative')
-        total_nanoseconds = seconds * 1e9
-        total_nanoseconds += nanoseconds
-        self._time_handle = _rclpy.rclpy_create_time_point(int(total_nanoseconds), clock_type)
+        total_nanoseconds = int(seconds * 1e9)
+        total_nanoseconds += int(nanoseconds)
+        try:
+            self._time_handle = _rclpy.rclpy_create_time_point(total_nanoseconds, clock_type)
+        except OverflowError as e:
+            raise OverflowError(
+                'Total nanoseconds value is too large to store in C time point.') from e
         self._clock_type = clock_type
 
     @property

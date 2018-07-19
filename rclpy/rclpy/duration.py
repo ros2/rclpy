@@ -23,9 +23,13 @@ class Duration:
             raise ValueError('Seconds value must not be negative')
         if nanoseconds < 0:
             raise ValueError('Nanoseconds value must not be negative')
-        total_nanoseconds = seconds * 1e9
-        total_nanoseconds += nanoseconds
-        self._duration_handle = _rclpy.rclpy_create_duration(int(total_nanoseconds))
+        total_nanoseconds = int(seconds * 1e9)
+        total_nanoseconds += int(nanoseconds)
+        try:
+            self._duration_handle = _rclpy.rclpy_create_duration(total_nanoseconds)
+        except OverflowError as e:
+            raise OverflowError(
+                'Total nanoseconds value is too large to store in C time point.') from e
 
     @property
     def nanoseconds(self):
