@@ -128,6 +128,38 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             time1 <= duration
 
+    def test_duration_comparators(self):
+        duration1 = Duration(nanoseconds=1)
+        duration2 = Duration(nanoseconds=2)
+        self.assertFalse(duration1 == duration2)
+        self.assertTrue(duration1 != duration2)
+        self.assertFalse(duration1 > duration2)
+        self.assertFalse(duration1 >= duration2)
+        self.assertTrue(duration1 < duration2)
+        self.assertTrue(duration1 <= duration2)
+
+        duration1 = Duration(nanoseconds=5e9)
+        duration2 = Duration(seconds=5)
+        self.assertTrue(duration1 == duration2)
+
+        # Invalid combinations
+        duration1 = Duration(nanoseconds=1)
+        with self.assertRaises(TypeError):
+            duration1 == 1
+        time = Time()
+        with self.assertRaises(TypeError):
+            duration1 == time
+        with self.assertRaises(TypeError):
+            duration1 != time
+        with self.assertRaises(TypeError):
+            duration1 > time
+        with self.assertRaises(TypeError):
+            duration1 >= time
+        with self.assertRaises(TypeError):
+            duration1 < time
+        with self.assertRaises(TypeError):
+            duration1 <= time
+
     def test_time_message_conversions(self):
         time1 = Time(nanoseconds=1, clock_type=ClockType.ROS_TIME)
         builtins_msg = Builtins()
@@ -141,7 +173,9 @@ class TestTime(unittest.TestCase):
         time3 = Time.from_msg(builtins_msg.time_value, clock_type=ClockType.SYSTEM_TIME)
         assert time3.clock_type == ClockType.SYSTEM_TIME
 
+    def test_duration_message_conversions(self):
         duration = Duration(nanoseconds=1)
+        builtins_msg = Builtins()
         builtins_msg.duration_value = duration.to_msg()
         duration2 = Duration.from_msg(builtins_msg.duration_value)
         assert isinstance(duration2, Duration)

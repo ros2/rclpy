@@ -31,6 +31,34 @@ class Duration:
     def nanoseconds(self):
         return _rclpy.rclpy_duration_get_nanoseconds(self._duration_handle)
 
+    def __eq__(self, other):
+        if isinstance(other, Duration):
+            return self.nanoseconds == other.nanoseconds
+        raise TypeError("Can't compare duration with object of type: ", type(other))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        if isinstance(other, Duration):
+            return self.nanoseconds < other.nanoseconds
+        return NotImplemented
+
+    def __le__(self, other):
+        if isinstance(other, Duration):
+            return self.nanoseconds <= other.nanoseconds
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, Duration):
+            return self.nanoseconds > other.nanoseconds
+        return NotImplemented
+
+    def __ge__(self, other):
+        if isinstance(other, Duration):
+            return self.nanoseconds >= other.nanoseconds
+        return NotImplemented
+
     def to_msg(self):
         seconds = int(self.nanoseconds * 1e-9)
         nanoseconds = int(self.nanoseconds % 1e9)
