@@ -50,10 +50,12 @@ class Time:
 
     def __add__(self, other):
         if isinstance(other, Duration):
-            # TODO(dhood): overflow checking
-            return Time(
-                nanoseconds=(self.nanoseconds + other.nanoseconds),
-                clock_type=self.clock_type)
+            try:
+                return Time(
+                    nanoseconds=(self.nanoseconds + other.nanoseconds),
+                    clock_type=self.clock_type)
+            except OverflowError as e:
+                raise OverflowError('Addition leads to overflow in C storage.') from e
         else:
             return NotImplemented
 
@@ -64,13 +66,17 @@ class Time:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't subtract times with different clock types")
-            # TODO(dhood): underflow checking
-            return Duration(nanoseconds=(self.nanoseconds - other.nanoseconds))
+            try:
+                return Duration(nanoseconds=(self.nanoseconds - other.nanoseconds))
+            except ValueError as e:
+                raise ValueError('Subtraction leads to negative duration.') from e
         if isinstance(other, Duration):
-            # TODO(dhood): underflow checking
-            return Time(
-                nanoseconds=(self.nanoseconds - other.nanoseconds),
-                clock_type=self.clock_type)
+            try:
+                return Time(
+                    nanoseconds=(self.nanoseconds - other.nanoseconds),
+                    clock_type=self.clock_type)
+            except ValueError as e:
+                raise ValueError('Subtraction leads to negative time.') from e
         else:
             return NotImplemented
 

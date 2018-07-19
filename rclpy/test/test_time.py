@@ -88,10 +88,16 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(OverflowError):
             Duration(nanoseconds=2**64 - 1) + Time(nanoseconds=1)
 
+        with self.assertRaises(ValueError):
+            Time(nanoseconds=1) - Duration(nanoseconds=2)
+
         # Subtraction of times with the same clock type
         diff = time1 - time3
         assert isinstance(diff, Duration)
         assert diff.nanoseconds == 1
+
+        with self.assertRaises(ValueError):
+            Time(nanoseconds=1) - Time(nanoseconds=2)
 
         # Subtraction of times with different clock types
         time4 = Time(nanoseconds=1, clock_type=ClockType.SYSTEM_TIME)
