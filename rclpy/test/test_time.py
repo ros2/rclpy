@@ -94,13 +94,6 @@ class TestTime(unittest.TestCase):
         time2 = Time(seconds=5)
         self.assertTrue(time1 == time2)
 
-        # Supported combinations with other types
-        time1 = Time(nanoseconds=1)
-        self.assertFalse(time1 == 1)
-        duration = Duration()
-        self.assertFalse(time1 == duration)
-        self.assertTrue(time1 != duration)
-
         # Times with different clock types
         time1 = Time(nanoseconds=1, clock_type=ClockType.SYSTEM_TIME)
         time2 = Time(nanoseconds=2, clock_type=ClockType.STEADY_TIME)
@@ -118,6 +111,14 @@ class TestTime(unittest.TestCase):
             time1 <= time2
 
         # Invalid combinations
+        time1 = Time(nanoseconds=1)
+        with self.assertRaises(TypeError):
+            time1 == 1
+        duration = Duration()
+        with self.assertRaises(TypeError):
+            time1 == duration
+        with self.assertRaises(TypeError):
+            time1 != duration
         with self.assertRaises(TypeError):
             time1 > duration
         with self.assertRaises(TypeError):
