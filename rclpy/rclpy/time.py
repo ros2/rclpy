@@ -40,6 +40,9 @@ class Time:
     def clock_type(self):
         return self._clock_type
 
+    def __repr__(self):
+        return repr((self.nanoseconds, self.clock_type))
+
     def __add__(self, other):
         if isinstance(other, Duration):
             # TODO(dhood): overflow checking
@@ -65,6 +68,47 @@ class Time:
                 clock_type=self.clock_type)
         else:
             return NotImplemented
+
+    def __eq__(self, other):
+        if isinstance(other, Time):
+            if self.clock_type != other.clock_type:
+                raise TypeError("Can't compare times with different clock types")
+            return self.nanoseconds == other.nanoseconds
+        return NotImplemented
+
+    def __ne__(self, other):
+        is_equal = self.__eq__(other)
+        if is_equal is NotImplemented:
+            return is_equal
+        return not is_equal
+
+    def __lt__(self, other):
+        if isinstance(other, Time):
+            if self.clock_type != other.clock_type:
+                raise TypeError("Can't compare times with different clock types")
+            return self.nanoseconds < other.nanoseconds
+        return NotImplemented
+
+    def __le__(self, other):
+        if isinstance(other, Time):
+            if self.clock_type != other.clock_type:
+                raise TypeError("Can't compare times with different clock types")
+            return self.nanoseconds <= other.nanoseconds
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, Time):
+            if self.clock_type != other.clock_type:
+                raise TypeError("Can't compare times with different clock types")
+            return self.nanoseconds > other.nanoseconds
+        return NotImplemented
+
+    def __ge__(self, other):
+        if isinstance(other, Time):
+            if self.clock_type != other.clock_type:
+                raise TypeError("Can't compare times with different clock types")
+            return self.nanoseconds >= other.nanoseconds
+        return NotImplemented
 
     def to_msg(self):
         seconds = int(self.nanoseconds * 1e-9)

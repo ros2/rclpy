@@ -47,8 +47,7 @@ class TestClock(unittest.TestCase):
         # Unless there is a date change during the test, system time have increased between these
         # calls.
         now2 = clock.now()
-        # TODO(dhood): use comparators when implemented
-        assert (now2 - now).nanoseconds > 0
+        assert now2 > now
 
         # Steady time should always return increasing values
         clock = Clock(clock_type=ClockType.STEADY_TIME)
@@ -56,5 +55,5 @@ class TestClock(unittest.TestCase):
         now2 = now
         for i in range(10):
             now2 = clock.now()
-            assert (now2 - now).nanoseconds > 0
+            assert now2 > now
             now = now2

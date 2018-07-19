@@ -79,6 +79,54 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             time2 = duration - time1
 
+    def test_time_comparators(self):
+        # Times with the same clock type
+        time1 = Time(nanoseconds=1)
+        time2 = Time(nanoseconds=2)
+        self.assertFalse(time1 == time2)
+        self.assertTrue(time1 != time2)
+        self.assertFalse(time1 > time2)
+        self.assertFalse(time1 >= time2)
+        self.assertTrue(time1 < time2)
+        self.assertTrue(time1 <= time2)
+
+        time1 = Time(nanoseconds=5e9)
+        time2 = Time(seconds=5)
+        self.assertTrue(time1 == time2)
+
+        # Supported combinations with other types
+        time1 = Time(nanoseconds=1)
+        self.assertFalse(time1 == 1)
+        duration = Duration()
+        self.assertFalse(time1 == duration)
+        self.assertTrue(time1 != duration)
+
+        # Times with different clock types
+        time1 = Time(nanoseconds=1, clock_type=ClockType.SYSTEM_TIME)
+        time2 = Time(nanoseconds=2, clock_type=ClockType.STEADY_TIME)
+        with self.assertRaises(TypeError):
+            time1 == time2
+        with self.assertRaises(TypeError):
+            time1 != time2
+        with self.assertRaises(TypeError):
+            time1 > time2
+        with self.assertRaises(TypeError):
+            time1 >= time2
+        with self.assertRaises(TypeError):
+            time1 < time2
+        with self.assertRaises(TypeError):
+            time1 <= time2
+
+        # Invalid combinations
+        with self.assertRaises(TypeError):
+            time1 > duration
+        with self.assertRaises(TypeError):
+            time1 >= duration
+        with self.assertRaises(TypeError):
+            time1 < duration
+        with self.assertRaises(TypeError):
+            time1 <= duration
+
     def test_time_message_conversions(self):
         time1 = Time(nanoseconds=1, clock_type=ClockType.ROS_TIME)
         builtins_msg = Builtins()
@@ -87,8 +135,7 @@ class TestTime(unittest.TestCase):
         # Default clock type resulting from from_msg will be ROS time
         time2 = Time.from_msg(builtins_msg.time_value)
         assert isinstance(time2, Time)
-        assert time2.clock_type == ClockType.ROS_TIME
-        # TODO(dhood): assert time1 == time2
+        assert time1 == time2
         # Clock type can be specified if appropriate
         time3 = Time.from_msg(builtins_msg.time_value, clock_type=ClockType.SYSTEM_TIME)
         assert time3.clock_type == ClockType.SYSTEM_TIME
