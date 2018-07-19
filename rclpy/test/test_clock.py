@@ -28,8 +28,8 @@ class TestClock(unittest.TestCase):
         with self.assertRaises(TypeError):
             clock = Clock(clock_type='STEADY_TIME')
 
-        with self.assertRaises(NotImplementedError):
-            clock = Clock(clock_type=ClockType.ROS_TIME)
+        clock = Clock(clock_type=ClockType.ROS_TIME)
+        assert clock.clock_type == ClockType.ROS_TIME
         clock = Clock(clock_type=ClockType.STEADY_TIME)
         assert clock.clock_type == ClockType.STEADY_TIME
         clock = Clock(clock_type=ClockType.SYSTEM_TIME)

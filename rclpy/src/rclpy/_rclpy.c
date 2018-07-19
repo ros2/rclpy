@@ -3246,6 +3246,101 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
   return PyCapsule_New(time_point, "rcl_time_point_t", _rclpy_destroy_time_point);
 }
 
+/// Returns if a clock using ROS time has the ROS time override enabled.
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises ValueError if pyclock is not a clock capsule
+ * Raises RuntimeError if the clock's ROS time override state cannot be retrieved
+ *
+ * \param[in] pyclock Capsule pointing to the clock
+ * \return NULL on failure
+ *         True if enabled
+ *         False if not enabled
+ */
+static PyObject *
+rclpy_clock_get_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclock;
+  if (!PyArg_ParseTuple(args, "O", &pyclock)) {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(
+    pyclock, "rcl_clock_t");
+  if (!clock) {
+    return NULL;
+  }
+
+  bool is_enabled;
+  rcl_ret_t ret = rcl_is_enabled_ros_time_override(clock, &is_enabled);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get if ROS time override is enabled for clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+
+  if (is_enabled) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
+}
+
+/// Set the ROS time override for a clock using ROS time.
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises ValueError if pyclock is not a clock capsule, or
+ * pytime_point is not a time point capsule
+ * Raises RuntimeError if the clock's ROS time override cannot be set
+ *
+ * \param[in] pyclock Capsule pointing to the clock to set
+ * \param[in] pytime_point Capsule pointing to the time point
+ * \return NULL on failure
+ *         None on success
+ */
+static PyObject *
+rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclock;
+  PyObject * pytime_point;
+  if (!PyArg_ParseTuple(args, "OO", &pyclock, &pytime_point)) {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(
+    pyclock, "rcl_clock_t");
+  if (!clock) {
+    return NULL;
+  }
+
+  rcl_time_point_t * time_point = (rcl_time_point_t *)PyCapsule_GetPointer(
+    pytime_point, "rcl_time_point_t");
+  if (!time_point) {
+    return NULL;
+  }
+
+  // TODO(dhood): Move to separate function
+  rcl_ret_t ret2 = rcl_enable_ros_time_override(clock);
+  if (ret2 != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to enable ROS time override for clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+
+  rcl_ret_t ret = rcl_set_ros_time_override(clock, time_point->nanoseconds);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to set ROS time override for clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -3526,6 +3621,16 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_clock_get_now", rclpy_clock_get_now, METH_VARARGS,
     "Get the current value of a clock."
+  },
+
+  {
+    "rclpy_clock_get_ros_time_override_is_enabled", rclpy_clock_get_ros_time_override_is_enabled,
+    METH_VARARGS, "Get if a clock using ROS time has the ROS time override enabled."
+  },
+
+  {
+    "rclpy_clock_set_ros_time_override", rclpy_clock_set_ros_time_override, METH_VARARGS,
+    "Set the current time of a clock using ROS time."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
