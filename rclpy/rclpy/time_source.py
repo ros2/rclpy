@@ -74,5 +74,5 @@ class TimeSource:
 
     def _set_clock(self, time, clock):
         # TODO(dhood): clock jump notifications
-        # if clock.ros_time_is_active:
-        clock.set_ros_time_override(time)
+        if clock.ros_time_is_active:
+            clock.set_ros_time_override(time)

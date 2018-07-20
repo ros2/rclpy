@@ -50,8 +50,7 @@ class TestTimeSource(unittest.TestCase):
         time_source.attach_clock(clock)
 
         # When using sim time, ROS time should look like the messages received on /clock
-        # Receiving messages will currently cause the clock to have ROS time override enabled
-        # TODO(dhood): Remove the automatic use of sim time.
+        clock.ros_time_is_active = True
 
         # Publish to the clock topic
         clock_pub = self.node.create_publisher(builtin_interfaces.msg.Time, CLOCK_TOPIC)

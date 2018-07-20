@@ -3288,6 +3288,50 @@ rclpy_clock_get_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObjec
   }
 }
 
+/// Set if a clock using ROS time has the ROS time override enabled.
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises ValueError if pyclock is not a clock capsule
+ * Raises RuntimeError if the clock's ROS time override cannot be set
+ *
+ * \param[in] pyclock Capsule pointing to the clock to set
+ * \param[in] enabled Override state to set
+ * \return NULL on failure
+ *         None on success
+ */
+static PyObject *
+rclpy_clock_set_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclock;
+  PyObject * pyenabled;
+  if (!PyArg_ParseTuple(args, "OO", &pyclock, &pyenabled)) {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(
+    pyclock, "rcl_clock_t");
+  if (!clock) {
+    return NULL;
+  }
+
+  bool enabled = PyObject_IsTrue(pyenabled);
+
+  rcl_ret_t ret;
+  if (enabled) {
+    ret = rcl_enable_ros_time_override(clock);
+  } else {
+    ret = rcl_disable_ros_time_override(clock);
+  }
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to set ROS time override for clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
 /// Set the ROS time override for a clock using ROS time.
 /**
  * On failure, an exception is raised and NULL is returned if:
@@ -3319,15 +3363,6 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_time_point_t * time_point = (rcl_time_point_t *)PyCapsule_GetPointer(
     pytime_point, "rcl_time_point_t");
   if (!time_point) {
-    return NULL;
-  }
-
-  // TODO(dhood): Move to separate function
-  rcl_ret_t ret2 = rcl_enable_ros_time_override(clock);
-  if (ret2 != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to enable ROS time override for clock: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
     return NULL;
   }
 
@@ -3626,6 +3661,11 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_clock_get_ros_time_override_is_enabled", rclpy_clock_get_ros_time_override_is_enabled,
     METH_VARARGS, "Get if a clock using ROS time has the ROS time override enabled."
+  },
+
+  {
+    "rclpy_clock_set_ros_time_override_is_enabled", rclpy_clock_set_ros_time_override_is_enabled,
+    METH_VARARGS, "Set if a clock using ROS time has the ROS time override enabled."
   },
 
   {

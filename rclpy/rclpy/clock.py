@@ -48,6 +48,14 @@ class Clock:
             raise RuntimeError('Only valid for clocks using ROS_TIME')
         return _rclpy.rclpy_clock_get_ros_time_override_is_enabled(self._clock_handle)
 
+    @ros_time_is_active.setter
+    def ros_time_is_active(self, enabled):
+        # TODO(dhood): Move to ROS_TIME-specific subclass?
+        from rclpy.time import Time
+        if self.clock_type != ClockType.ROS_TIME:
+            raise RuntimeError('Only valid for clocks using ROS_TIME')
+        _rclpy.rclpy_clock_set_ros_time_override_is_enabled(self._clock_handle, enabled)
+
     def __repr__(self):
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
