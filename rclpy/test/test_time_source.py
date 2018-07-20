@@ -34,12 +34,30 @@ class TestTimeSource(unittest.TestCase):
         self.node.destroy_node()
         rclpy.shutdown()
 
+    def publish_clock_messages(self):
+        clock_pub = self.node.create_publisher(builtin_interfaces.msg.Time, CLOCK_TOPIC)
+        cycle_count = 0
+        time_msg = builtin_interfaces.msg.Time()
+        while rclpy.ok() and cycle_count < 5:
+            time_msg.sec = cycle_count
+            clock_pub.publish(time_msg)
+            cycle_count += 1
+            rclpy.spin_once(self.node, timeout_sec=1)
+            # TODO(dhood): use rate once available
+            time.sleep(1)
+
     def test_time_source_not_using_sim_time(self):
         time_source = TimeSource(node=self.node)
         clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
 
         # When not using sim time, ROS time should look like system time
+        now = clock.now()
+        system_now = Clock(clock_type=ClockType.SYSTEM_TIME).now()
+        assert (system_now.nanoseconds - now.nanoseconds) < 1e9
+
+        # Presence of clock publisher should not affect the clock
+        self.publish_clock_messages()
         now = clock.now()
         system_now = Clock(clock_type=ClockType.SYSTEM_TIME).now()
         assert (system_now.nanoseconds - now.nanoseconds) < 1e9
@@ -52,16 +70,6 @@ class TestTimeSource(unittest.TestCase):
         # When using sim time, ROS time should look like the messages received on /clock
         clock.ros_time_is_active = True
 
-        # Publish to the clock topic
-        clock_pub = self.node.create_publisher(builtin_interfaces.msg.Time, CLOCK_TOPIC)
-        cycle_count = 0
-        time_msg = builtin_interfaces.msg.Time()
-        while rclpy.ok() and cycle_count < 5:
-            time_msg.sec = cycle_count
-            clock_pub.publish(time_msg)
-            cycle_count += 1
-            rclpy.spin_once(self.node, timeout_sec=1)
-            # TODO(dhood): use rate once available
-            time.sleep(1)
+        self.publish_clock_messages()
         assert clock.now() > Time(seconds=0, clock_type=ClockType.ROS_TIME)
         assert clock.now() <= Time(seconds=5, clock_type=ClockType.ROS_TIME)
