@@ -50,6 +50,7 @@ class TestTimeSource(unittest.TestCase):
         time_source = TimeSource(node=self.node)
         clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
+        self.assertFalse(clock.ros_time_is_active)
 
         # When not using sim time, ROS time should look like system time
         now = clock.now()
@@ -67,9 +68,11 @@ class TestTimeSource(unittest.TestCase):
         clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
 
-        # When using sim time, ROS time should look like the messages received on /clock
+        # Check attribute getting/setting
         clock.ros_time_is_active = True
+        self.assertTrue(clock.ros_time_is_active)
 
+        # When using sim time, ROS time should look like the messages received on /clock
         self.publish_clock_messages()
         assert clock.now() > Time(seconds=0, clock_type=ClockType.ROS_TIME)
         assert clock.now() <= Time(seconds=5, clock_type=ClockType.ROS_TIME)
