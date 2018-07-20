@@ -15,7 +15,6 @@
 import builtin_interfaces.msg
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
-from rclpy.node import Node
 from rclpy.time import Time
 
 CLOCK_TOPIC = '/clock'
@@ -32,6 +31,7 @@ class TimeSource:
             self.attach_node(node)
 
     def attach_node(self, node):
+        from rclpy.node import Node
         if not isinstance(node, Node):
             raise TypeError('Node must be of type rclpy.node.Node')
         # Remove an existing node.
