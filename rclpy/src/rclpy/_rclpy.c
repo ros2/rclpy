@@ -1194,20 +1194,33 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
+  rcl_clock_t * clock = (rcl_clock_t *) PyMem_Malloc(sizeof(rcl_clock_t));
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_clock_init(RCL_STEADY_TIME, clock, &allocator);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to create clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    PyMem_Free(clock);
+    return NULL;
+  }
+
   rcl_timer_t * timer = (rcl_timer_t *) PyMem_Malloc(sizeof(rcl_timer_t));
   *timer = rcl_get_zero_initialized_timer();
 
-  rcl_ret_t ret = rcl_timer_init(timer, period_nsec, NULL, rcl_get_default_allocator());
+  ret = rcl_timer_init(timer, clock, period_nsec, NULL, allocator);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to create subscriptions: %s", rcl_get_error_string_safe());
+      "Failed to create timer: %s", rcl_get_error_string_safe());
     rcl_reset_error();
     PyMem_Free(timer);
+    PyMem_Free(clock);
     return NULL;
   }
-  PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(timer, "rcl_timer_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
+  PyObject * pylist = PyList_New(3);
+  PyList_SET_ITEM(pylist, 0, PyCapsule_New(clock, "rcl_clock_t", NULL));
+  PyList_SET_ITEM(pylist, 1, PyCapsule_New(timer, "rcl_timer_t", NULL));
+  PyList_SET_ITEM(pylist, 2, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
 
   return pylist;
 }
@@ -2062,6 +2075,16 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
     ret = rcl_timer_fini(timer);
     PyMem_Free(timer);
+
+    rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pyentity, "rcl_clock_t");
+    rcl_ret_t ret_clock = rcl_clock_fini(clock);
+    PyMem_Free(timer);
+    if (ret_clock != RCL_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError,
+        "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string_safe());
+      rcl_reset_error();
+      return NULL;
+    }
   } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
     rcl_guard_condition_t * guard_condition = (rcl_guard_condition_t *)PyCapsule_GetPointer(
       pyentity, "rcl_guard_condition_t");
