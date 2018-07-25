@@ -2078,7 +2078,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
 
     rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pyentity, "rcl_clock_t");
     rcl_ret_t ret_clock = rcl_clock_fini(clock);
-    PyMem_Free(timer);
+    PyMem_Free(clock);
     if (ret_clock != RCL_RET_OK) {
       PyErr_Format(PyExc_RuntimeError,
         "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string_safe());
