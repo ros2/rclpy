@@ -61,29 +61,24 @@ class TestTime(unittest.TestCase):
             duration = Duration(nanoseconds=-1)
 
     def test_time_operators(self):
-        # Check that modifying the original doesn't affect a copy
-        time1 = Time(nanoseconds=2, clock_type=ClockType.SYSTEM_TIME)
-        time2 = time1
         time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
-        assert time2.nanoseconds == 2
-        assert time2.clock_type == ClockType.SYSTEM_TIME
 
         # Addition/subtraction of time and duration
         duration = Duration(nanoseconds=1)
-        time3 = time1 + duration
-        assert isinstance(time3, Time)
-        assert time3.nanoseconds == 2
-        assert time3.clock_type == ClockType.STEADY_TIME
+        time2 = time1 + duration
+        assert isinstance(time2, Time)
+        assert time2.nanoseconds == 2
+        assert time2.clock_type == ClockType.STEADY_TIME
 
-        time3 = duration + time1
-        assert isinstance(time3, Time)
-        assert time3.nanoseconds == 2
-        assert time3.clock_type == ClockType.STEADY_TIME
+        time2 = duration + time1
+        assert isinstance(time2, Time)
+        assert time2.nanoseconds == 2
+        assert time2.clock_type == ClockType.STEADY_TIME
 
-        time3 = time1 - duration
-        assert isinstance(time3, Time)
-        assert time3.nanoseconds == 0
-        assert time3.clock_type == ClockType.STEADY_TIME
+        time2 = time1 - duration
+        assert isinstance(time2, Time)
+        assert time2.nanoseconds == 0
+        assert time2.clock_type == ClockType.STEADY_TIME
 
         with self.assertRaises(OverflowError):
             Duration(nanoseconds=2**64 - 1) + Time(nanoseconds=1)
@@ -92,23 +87,24 @@ class TestTime(unittest.TestCase):
             Time(nanoseconds=1) - Duration(nanoseconds=2)
 
         # Subtraction of times with the same clock type
-        diff = time1 - time3
+        diff = time1 - time2
         assert isinstance(diff, Duration)
         assert diff.nanoseconds == 1
 
+        # Subtraction can't result in a negative duration
         with self.assertRaises(ValueError):
             Time(nanoseconds=1) - Time(nanoseconds=2)
 
         # Subtraction of times with different clock types
-        time4 = Time(nanoseconds=1, clock_type=ClockType.SYSTEM_TIME)
         with self.assertRaises(TypeError):
-            diff = time1 - time4
+            Time(nanoseconds=2, clock_type=ClockType.SYSTEM_TIME) - \
+                Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
 
-        # Invalid combinations
+        # Invalid arithmetic combinations
         with self.assertRaises(TypeError):
-            time2 = time1 + time2
+            time1 + time2
         with self.assertRaises(TypeError):
-            time2 = duration - time1
+            duration - time1
 
     def test_time_comparators(self):
         # Times with the same clock type
