@@ -3016,7 +3016,7 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   unsigned PY_LONG_LONG nanoseconds = PyLong_AsUnsignedLongLong(pylong_nanoseconds);
-  if ((unsigned PY_LONG_LONG)-1 == nanoseconds && PyErr_Occurred()) {
+  if (PyErr_Occurred()) {
     return NULL;
   }
 
@@ -3089,7 +3089,7 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   unsigned PY_LONG_LONG nanoseconds = PyLong_AsUnsignedLongLong(pylong_nanoseconds);
-  if ((unsigned PY_LONG_LONG)-1 == nanoseconds && PyErr_Occurred()) {
+  if (PyErr_Occurred()) {
     return NULL;
   }
 
