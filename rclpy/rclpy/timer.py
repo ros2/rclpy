@@ -19,7 +19,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class WallTimer:
 
     def __init__(self, callback, callback_group, timer_period_ns):
-        [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(timer_period_ns)
+        [self.timer_handle, self.timer_pointer, _] = _rclpy.rclpy_create_timer(timer_period_ns)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group
