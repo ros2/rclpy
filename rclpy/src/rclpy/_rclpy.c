@@ -1182,6 +1182,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
  *
  * \param[in] period_nsec unsigned PyLong object storing the period of the
  *   timer in nanoseconds in a 64-bit unsigned integer
+ * \param[in] clock pycapsule containing an rcl_clock_t
  * \return a list of the capsule and the memory address
  * \return NULL on failure
  */
@@ -1189,38 +1190,32 @@ static PyObject *
 rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
 {
   unsigned PY_LONG_LONG period_nsec;
+  PyObject * pyclock;
 
-  if (!PyArg_ParseTuple(args, "K", &period_nsec)) {
+  if (!PyArg_ParseTuple(args, "KO", &period_nsec, &pyclock)) {
     return NULL;
   }
 
-  rcl_clock_t * clock = (rcl_clock_t *) PyMem_Malloc(sizeof(rcl_clock_t));
-  rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_clock_init(RCL_STEADY_TIME, clock, &allocator);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to create clock: %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-    PyMem_Free(clock);
+  rcl_clock_t * clock = (rcl_clock_t *) PyCapsule_GetPointer(pyclock, "rcl_clock_t");
+  if (NULL == clock) {
     return NULL;
   }
 
   rcl_timer_t * timer = (rcl_timer_t *) PyMem_Malloc(sizeof(rcl_timer_t));
   *timer = rcl_get_zero_initialized_timer();
 
-  ret = rcl_timer_init(timer, clock, period_nsec, NULL, allocator);
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_timer_init(timer, clock, period_nsec, NULL, allocator);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create timer: %s", rcl_get_error_string_safe());
     rcl_reset_error();
     PyMem_Free(timer);
-    PyMem_Free(clock);
     return NULL;
   }
-  PyObject * pylist = PyList_New(3);
+  PyObject * pylist = PyList_New(2);
   PyList_SET_ITEM(pylist, 0, PyCapsule_New(timer, "rcl_timer_t", NULL));
   PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
-  PyList_SET_ITEM(pylist, 2, PyCapsule_New(clock, "rcl_clock_t", NULL));
 
   return pylist;
 }
@@ -2046,6 +2041,20 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Destructor for a clock
+void
+_rclpy_destroy_clock(PyObject * pycapsule)
+{
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pycapsule, "rcl_clock_t");
+  rcl_ret_t ret_clock = rcl_clock_fini(clock);
+  PyMem_Free(clock);
+  if (ret_clock != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+  }
+}
+
 /// Destroy an rcl entity
 /**
  * Raises RuntimeError on failure
@@ -2073,25 +2082,11 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(node);
   } else if (PyCapsule_IsValid(pyentity, "rcl_timer_t")) {
     rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
-    rcl_clock_t * clock = 0;
-    ret = rcl_timer_clock(timer, &clock);
-    if (ret != RCL_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError,
-        "Failed to get 'rcl_clock_t' from timer: %s", rcl_get_error_string_safe());
-      rcl_reset_error();
-      return NULL;
-    }
-    rcl_ret_t ret_clock = rcl_clock_fini(clock);
-    if (ret_clock != RCL_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError,
-        "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string_safe());
-      rcl_reset_error();
-      return NULL;
-    }
-
     ret = rcl_timer_fini(timer);
     PyMem_Free(timer);
-    PyMem_Free(clock);
+  } else if (PyCapsule_IsValid(pyentity, "rcl_clock_t")) {
+    PyCapsule_SetDestructor(pyentity, NULL);
+    _rclpy_destroy_clock(pyentity);
   } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
     rcl_guard_condition_t * guard_condition = (rcl_guard_condition_t *)PyCapsule_GetPointer(
       pyentity, "rcl_guard_condition_t");
@@ -3159,20 +3154,6 @@ rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   return PyLong_FromUnsignedLongLong(duration->nanoseconds);
-}
-
-/// Destructor for a clock
-void
-_rclpy_destroy_clock(PyObject * pycapsule)
-{
-  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pycapsule, "rcl_clock_t");
-  rcl_ret_t ret_clock = rcl_clock_fini(clock);
-  PyMem_Free(clock);
-  if (ret_clock != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-  }
 }
 
 /// Create a clock

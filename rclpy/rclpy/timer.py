@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.clock import Clock
+from rclpy.clock import ClockType
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -19,7 +21,10 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class WallTimer:
 
     def __init__(self, callback, callback_group, timer_period_ns):
-        [self.timer_handle, self.timer_pointer, _] = _rclpy.rclpy_create_timer(timer_period_ns)
+        # TODO(sloretz) Allow passing clocks in via timer constructor
+        self._clock = Clock(clock_type=ClockType.STEADY_TIME)
+        [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(
+            timer_period_ns, self._clock._clock_handle)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group
