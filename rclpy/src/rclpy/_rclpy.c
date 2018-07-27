@@ -2087,6 +2087,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (PyCapsule_IsValid(pyentity, "rcl_clock_t")) {
     PyCapsule_SetDestructor(pyentity, NULL);
     _rclpy_destroy_clock(pyentity);
+    ret = RCL_RET_OK;
   } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
     rcl_guard_condition_t * guard_condition = (rcl_guard_condition_t *)PyCapsule_GetPointer(
       pyentity, "rcl_guard_condition_t");
