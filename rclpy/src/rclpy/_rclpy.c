@@ -3244,8 +3244,9 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
     PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
     return NULL;
   }
+  time_point->clock_type = clock->type;
 
-  rcl_ret_t ret = rcl_clock_get_now(clock, time_point);
+  rcl_ret_t ret = rcl_clock_get_now(clock, &time_point->nanoseconds);
 
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
