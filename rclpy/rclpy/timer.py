@@ -24,7 +24,7 @@ class WallTimer:
         # TODO(sloretz) Allow passing clocks in via timer constructor
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(
-            timer_period_ns, self._clock._clock_handle)
+            self._clock._clock_handle, timer_period_ns)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group

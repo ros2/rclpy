@@ -1180,9 +1180,9 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
  * Raises TypeError if argument of invalid type
  * Raises ValueError if argument cannot be converted to uint64_t
  *
+ * \param[in] clock pycapsule containing an rcl_clock_t
  * \param[in] period_nsec unsigned PyLong object storing the period of the
  *   timer in nanoseconds in a 64-bit unsigned integer
- * \param[in] clock pycapsule containing an rcl_clock_t
  * \return a list of the capsule and the memory address
  * \return NULL on failure
  */
@@ -1192,7 +1192,7 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG period_nsec;
   PyObject * pyclock;
 
-  if (!PyArg_ParseTuple(args, "KO", &period_nsec, &pyclock)) {
+  if (!PyArg_ParseTuple(args, "OK", &pyclock, &period_nsec)) {
     return NULL;
   }
 
