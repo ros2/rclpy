@@ -32,6 +32,10 @@ class WallTimer:
         self._executor_event = False
 
     @property
+    def clock(self):
+        return self._clock
+
+    @property
     def timer_period_ns(self):
         val = _rclpy.rclpy_get_timer_period(self.timer_handle)
         self._timer_period_ns = val
