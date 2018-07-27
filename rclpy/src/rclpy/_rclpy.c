@@ -2047,7 +2047,7 @@ _rclpy_destroy_clock(PyObject * pycapsule)
 {
   rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pycapsule, "rcl_clock_t");
   if (NULL == clock) {
-    // Exception raised
+    // exception was set by PyCapsule_GetPointer
     return;
   }
 
