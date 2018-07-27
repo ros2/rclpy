@@ -247,6 +247,8 @@ class Node:
         for tmr in self.timers:
             if tmr.timer_handle == timer.timer_handle:
                 _rclpy.rclpy_destroy_entity(tmr.timer_handle)
+                # TODO(sloretz) Store clocks on node and destroy them separately
+                _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
                 self.timers.remove(tmr)
                 return True
         return False
@@ -279,6 +281,8 @@ class Node:
         while self.timers:
             tmr = self.timers.pop()
             _rclpy.rclpy_destroy_entity(tmr.timer_handle)
+            # TODO(sloretz) Store clocks on node and destroy them separately
+            _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
         while self.guards:
             gc = self.guards.pop()
             _rclpy.rclpy_destroy_entity(gc.guard_handle)
