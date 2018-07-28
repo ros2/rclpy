@@ -1180,6 +1180,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
  * Raises TypeError if argument of invalid type
  * Raises ValueError if argument cannot be converted to uint64_t
  *
+ * \param[in] clock pycapsule containing an rcl_clock_t
  * \param[in] period_nsec unsigned PyLong object storing the period of the
  *   timer in nanoseconds in a 64-bit unsigned integer
  * \return a list of the capsule and the memory address
@@ -1189,18 +1190,25 @@ static PyObject *
 rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
 {
   unsigned PY_LONG_LONG period_nsec;
+  PyObject * pyclock;
 
-  if (!PyArg_ParseTuple(args, "K", &period_nsec)) {
+  if (!PyArg_ParseTuple(args, "OK", &pyclock, &period_nsec)) {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *) PyCapsule_GetPointer(pyclock, "rcl_clock_t");
+  if (NULL == clock) {
     return NULL;
   }
 
   rcl_timer_t * timer = (rcl_timer_t *) PyMem_Malloc(sizeof(rcl_timer_t));
   *timer = rcl_get_zero_initialized_timer();
 
-  rcl_ret_t ret = rcl_timer_init(timer, period_nsec, NULL, rcl_get_default_allocator());
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_timer_init(timer, clock, period_nsec, NULL, allocator);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to create subscriptions: %s", rcl_get_error_string_safe());
+      "Failed to create timer: %s", rcl_get_error_string_safe());
     rcl_reset_error();
     PyMem_Free(timer);
     return NULL;
@@ -2033,6 +2041,25 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Destructor for a clock
+void
+_rclpy_destroy_clock(PyObject * pycapsule)
+{
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pycapsule, "rcl_clock_t");
+  if (NULL == clock) {
+    // exception was set by PyCapsule_GetPointer
+    return;
+  }
+
+  rcl_ret_t ret_clock = rcl_clock_fini(clock);
+  PyMem_Free(clock);
+  if (ret_clock != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+  }
+}
+
 /// Destroy an rcl entity
 /**
  * Raises RuntimeError on failure
@@ -2062,6 +2089,10 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
     ret = rcl_timer_fini(timer);
     PyMem_Free(timer);
+  } else if (PyCapsule_IsValid(pyentity, "rcl_clock_t")) {
+    PyCapsule_SetDestructor(pyentity, NULL);
+    _rclpy_destroy_clock(pyentity);
+    ret = RCL_RET_OK;
   } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
     rcl_guard_condition_t * guard_condition = (rcl_guard_condition_t *)PyCapsule_GetPointer(
       pyentity, "rcl_guard_condition_t");
@@ -3131,20 +3162,6 @@ rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromUnsignedLongLong(duration->nanoseconds);
 }
 
-/// Destructor for a clock
-void
-_rclpy_destroy_clock(PyObject * pycapsule)
-{
-  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pycapsule, "rcl_clock_t");
-  rcl_ret_t ret_clock = rcl_clock_fini(clock);
-  PyMem_Free(clock);
-  if (ret_clock != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string_safe());
-    rcl_reset_error();
-  }
-}
-
 /// Create a clock
 /**
  * On failure, an exception is raised and NULL is returned if:
@@ -3214,8 +3231,9 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
     PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
     return NULL;
   }
+  time_point->clock_type = clock->type;
 
-  rcl_ret_t ret = rcl_clock_get_now(clock, time_point);
+  rcl_ret_t ret = rcl_clock_get_now(clock, &time_point->nanoseconds);
 
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
