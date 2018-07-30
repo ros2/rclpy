@@ -39,10 +39,12 @@ class TimeSource:
     def ros_time_is_active(self, enabled):
         self._ros_time_is_active = enabled
         for clock in self._associated_clocks:
-            clock._set_ros_time_is_active(True)
+            clock._set_ros_time_is_active(enabled)
+        if enabled:
+            self._subscribe_to_clock_topic()
 
     def _subscribe_to_clock_topic(self):
-        if self._clock_sub is not None and self._node is not None:
+        if self._clock_sub is None and self._node is not None:
             self._clock_sub = self._node.create_subscription(
                 builtin_interfaces.msg.Time,
                 CLOCK_TOPIC,
@@ -57,7 +59,8 @@ class TimeSource:
         if self._node is not None:
             self.detach_node()
         self._node = node
-        self._subscribe_to_clock_topic()
+        if self.ros_time_is_active:
+            self._subscribe_to_clock_topic()
 
     def detach_node(self):
         # Remove the subscription to the clock topic.

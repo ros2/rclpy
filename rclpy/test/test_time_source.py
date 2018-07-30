@@ -70,6 +70,7 @@ class TestTimeSource(unittest.TestCase):
         clock2._set_ros_time_is_active(True)
         time_source.attach_clock(clock2)
         self.assertFalse(clock2.ros_time_is_active)
+        assert time_source._clock_sub is None
 
     def test_time_source_using_sim_time(self):
         time_source = TimeSource(node=self.node)
@@ -83,6 +84,9 @@ class TestTimeSource(unittest.TestCase):
         time_source.ros_time_is_active = True
         self.assertTrue(time_source.ros_time_is_active)
         self.assertTrue(clock.ros_time_is_active)
+
+        # A subscriber should have been created
+        assert time_source._clock_sub is not None
 
         # When using sim time, ROS time should look like the messages received on /clock
         self.publish_clock_messages()
