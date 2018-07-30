@@ -92,3 +92,17 @@ class TestTimeSource(unittest.TestCase):
         self.publish_clock_messages()
         assert clock.now() > Time(seconds=0, clock_type=ClockType.ROS_TIME)
         assert clock.now() <= Time(seconds=5, clock_type=ClockType.ROS_TIME)
+
+        # Check that attached clocks get the cached message
+        clock2 = Clock(clock_type=ClockType.ROS_TIME)
+        time_source.attach_clock(clock2)
+        assert clock2.now() > Time(seconds=0, clock_type=ClockType.ROS_TIME)
+        assert clock2.now() <= Time(seconds=5, clock_type=ClockType.ROS_TIME)
+
+        # Check detaching the node
+        time_source.detach_node()
+        node2 = rclpy.create_node('TestTimeSource2', namespace='/rclpy')
+        time_source.attach_node(node2)
+        node2.destroy_node()
+        assert time_source._node == node2
+        assert time_source._clock_sub is not None
