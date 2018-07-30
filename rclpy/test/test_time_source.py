@@ -50,7 +50,6 @@ class TestTimeSource(unittest.TestCase):
         time_source = TimeSource(node=self.node)
         clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
-        self.assertFalse(clock.ros_time_is_active)
 
         # When not using sim time, ROS time should look like system time
         now = clock.now()
@@ -59,17 +58,31 @@ class TestTimeSource(unittest.TestCase):
 
         # Presence of clock publisher should not affect the clock
         self.publish_clock_messages()
+        self.assertFalse(clock.ros_time_is_active)
         now = clock.now()
         system_now = Clock(clock_type=ClockType.SYSTEM_TIME).now()
         assert (system_now.nanoseconds - now.nanoseconds) < 1e9
+
+        # Whether or not an attached clock is using ROS time should be determined by the time
+        # source managing it.
+        self.assertFalse(time_source.ros_time_is_active)
+        clock2 = Clock(clock_type=ClockType.ROS_TIME)
+        clock2.ros_time_is_active = True
+        time_source.attach_clock(clock2)
+        self.assertFalse(clock2.ros_time_is_active)
+        
 
     def test_time_source_using_sim_time(self):
         time_source = TimeSource(node=self.node)
         clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
 
-        # Check attribute getting/setting
-        clock.ros_time_is_active = True
+        # Setting ROS time active on a time source should also cause attached clocks' use of ROS
+        # time to be set to active.
+        self.assertFalse(time_source.ros_time_is_active)
+        self.assertFalse(clock.ros_time_is_active)
+        time_source.ros_time_is_active = True
+        self.assertTrue(time_source.ros_time_is_active)
         self.assertTrue(clock.ros_time_is_active)
 
         # When using sim time, ROS time should look like the messages received on /clock

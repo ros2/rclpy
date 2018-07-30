@@ -27,8 +27,27 @@ class TimeSource:
         self._node = None
         self._associated_clocks = []
         self._last_time_set = None
+        self._ros_time_is_active = False
         if node is not None:
             self.attach_node(node)
+
+    @property
+    def ros_time_is_active(self):
+        return self._ros_time_is_active
+
+    @ros_time_is_active.setter
+    def ros_time_is_active(self, enabled):
+        self._ros_time_is_active = enabled
+        for clock in self._associated_clocks:
+            clock.ros_time_is_active = True
+
+    def _subscribe_to_clock_topic(self):
+        if self._clock_sub is not None and self._node is not None:
+            self._clock_sub = self._node.create_subscription(
+                builtin_interfaces.msg.Time,
+                CLOCK_TOPIC,
+                self.clock_callback
+            )
 
     def attach_node(self, node):
         from rclpy.node import Node
@@ -37,14 +56,8 @@ class TimeSource:
         # Remove an existing node.
         if self._node is not None:
             self.detach_node()
-
-        # Create a subscription to the clock topic using the node.
-        self._clock_sub = node.create_subscription(
-            builtin_interfaces.msg.Time,
-            CLOCK_TOPIC,
-            self.clock_callback
-        )
         self._node = node
+        self._subscribe_to_clock_topic()
 
     def detach_node(self):
         # Remove the subscription to the clock topic.
@@ -63,6 +76,7 @@ class TimeSource:
             raise ValueError('Only clocks with type ROS_TIME can be attached.')
         if self._last_time_set is not None:
             self._set_clock(self._last_time_set, clock)
+        clock.ros_time_is_active = self.ros_time_is_active
         self._associated_clocks.append(clock)
 
     def clock_callback(self, msg):
@@ -74,5 +88,4 @@ class TimeSource:
 
     def _set_clock(self, time, clock):
         # TODO(dhood): clock jump notifications
-        if clock.ros_time_is_active:
-            clock.set_ros_time_override(time)
+        clock.set_ros_time_override(time)
