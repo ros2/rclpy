@@ -66,9 +66,8 @@ class TimeSource:
         # Remove the subscription to the clock topic.
         if self._clock_sub is not None:
             if self._node is None:
-                print('Unable to destroy previously created clock subscription')
-            else:
-                self._node.destroy_subscription(self._clock_sub)
+                raise RuntimeError('Unable to destroy previously created clock subscription')
+            self._node.destroy_subscription(self._clock_sub)
         self._clock_sub = None
         self._node = None
 
