@@ -67,10 +67,9 @@ class TestTimeSource(unittest.TestCase):
         # source managing it.
         self.assertFalse(time_source.ros_time_is_active)
         clock2 = Clock(clock_type=ClockType.ROS_TIME)
-        clock2.ros_time_is_active = True
+        clock2._set_ros_time_is_active(True)
         time_source.attach_clock(clock2)
         self.assertFalse(clock2.ros_time_is_active)
-        
 
     def test_time_source_using_sim_time(self):
         time_source = TimeSource(node=self.node)

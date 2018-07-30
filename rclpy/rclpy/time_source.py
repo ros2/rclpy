@@ -39,7 +39,7 @@ class TimeSource:
     def ros_time_is_active(self, enabled):
         self._ros_time_is_active = enabled
         for clock in self._associated_clocks:
-            clock.ros_time_is_active = True
+            clock._set_ros_time_is_active(True)
 
     def _subscribe_to_clock_topic(self):
         if self._clock_sub is not None and self._node is not None:
@@ -76,7 +76,7 @@ class TimeSource:
             raise ValueError('Only clocks with type ROS_TIME can be attached.')
         if self._last_time_set is not None:
             self._set_clock(self._last_time_set, clock)
-        clock.ros_time_is_active = self.ros_time_is_active
+        clock._set_ros_time_is_active(self.ros_time_is_active)
         self._associated_clocks.append(clock)
 
     def clock_callback(self, msg):

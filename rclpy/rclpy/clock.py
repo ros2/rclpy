@@ -48,8 +48,8 @@ class Clock:
             raise RuntimeError('Only valid for clocks using ROS_TIME')
         return _rclpy.rclpy_clock_get_ros_time_override_is_enabled(self._clock_handle)
 
-    @ros_time_is_active.setter
-    def ros_time_is_active(self, enabled):
+    def _set_ros_time_is_active(self, enabled):
+        # This is not public because it is only to be called by a TimeSource managing the Clock
         # TODO(dhood): Move to ROS_TIME-specific subclass?
         if self.clock_type != ClockType.ROS_TIME:
             raise RuntimeError('Only valid for clocks using ROS_TIME')
