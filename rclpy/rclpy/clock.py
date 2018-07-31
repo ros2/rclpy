@@ -60,20 +60,14 @@ class ROSClock(Clock):
 
     @property
     def ros_time_is_active(self):
-        if self.clock_type != ClockType.ROS_TIME:
-            raise RuntimeError('Only valid for clocks using ROS_TIME')
         return _rclpy.rclpy_clock_get_ros_time_override_is_enabled(self._clock_handle)
 
     def _set_ros_time_is_active(self, enabled):
         # This is not public because it is only to be called by a TimeSource managing the Clock
-        if self.clock_type != ClockType.ROS_TIME:
-            raise RuntimeError('Only valid for clocks using ROS_TIME')
         _rclpy.rclpy_clock_set_ros_time_override_is_enabled(self._clock_handle, enabled)
 
     def set_ros_time_override(self, time):
         from rclpy.time import Time
-        if self.clock_type != ClockType.ROS_TIME:
-            raise RuntimeError('Only valid for clocks using ROS_TIME')
         if not isinstance(time, Time):
             TypeError(
                 'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
