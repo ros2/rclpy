@@ -14,8 +14,7 @@
 
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.client import Client
-from rclpy.clock import Clock
-from rclpy.clock import ClockType
+from rclpy.clock import ROSClock
 from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import NoTypeSupportImportedException
@@ -83,8 +82,9 @@ class Node:
             raise RuntimeError('rclpy_create_node failed for unknown reason')
         self._logger = get_logger(_rclpy.rclpy_get_node_logger_name(self.handle))
 
-        # Clock that has support for ROS time (uses sim time if parameter has been set on the node)
-        self._clock = Clock(clock_type=ClockType.ROS_TIME)
+        # Clock that has support for ROS time.
+        # TODO(dhood): use sim time if parameter has been set on the node.
+        self._clock = ROSClock()
         self._time_source = TimeSource(node=self)
         self._time_source.attach_clock(self._clock)
 

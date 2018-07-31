@@ -19,6 +19,7 @@ import builtin_interfaces.msg
 import rclpy
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
+from rclpy.clock import ROSClock
 from rclpy.time import Time
 from rclpy.time_source import CLOCK_TOPIC
 from rclpy.time_source import TimeSource
@@ -46,9 +47,26 @@ class TestTimeSource(unittest.TestCase):
             # TODO(dhood): use rate once available
             time.sleep(1)
 
+    def test_time_source_attach_clock(self):
+        time_source = TimeSource(node=self.node)
+
+        # ROSClock is a specialization of Clock with ROS time methods.
+        time_source.attach_clock(ROSClock())
+
+        # A clock of type ROS_TIME can be attached. It will be converted to a ROSClock for storage.
+        time_source.attach_clock(Clock(clock_type=ClockType.ROS_TIME))
+
+        assert all((isinstance(clock, ROSClock) for clock in time_source._associated_clocks))
+
+        with self.assertRaises(ValueError):
+            time_source.attach_clock(Clock(clock_type=ClockType.SYSTEM_TIME))
+
+        with self.assertRaises(ValueError):
+            time_source.attach_clock(Clock(clock_type=ClockType.STEADY_TIME))
+
     def test_time_source_not_using_sim_time(self):
         time_source = TimeSource(node=self.node)
-        clock = Clock(clock_type=ClockType.ROS_TIME)
+        clock = ROSClock()
         time_source.attach_clock(clock)
 
         # When not using sim time, ROS time should look like system time
@@ -66,7 +84,7 @@ class TestTimeSource(unittest.TestCase):
         # Whether or not an attached clock is using ROS time should be determined by the time
         # source managing it.
         self.assertFalse(time_source.ros_time_is_active)
-        clock2 = Clock(clock_type=ClockType.ROS_TIME)
+        clock2 = ROSClock()
         clock2._set_ros_time_is_active(True)
         time_source.attach_clock(clock2)
         self.assertFalse(clock2.ros_time_is_active)
@@ -74,7 +92,7 @@ class TestTimeSource(unittest.TestCase):
 
     def test_time_source_using_sim_time(self):
         time_source = TimeSource(node=self.node)
-        clock = Clock(clock_type=ClockType.ROS_TIME)
+        clock = ROSClock()
         time_source.attach_clock(clock)
 
         # Setting ROS time active on a time source should also cause attached clocks' use of ROS

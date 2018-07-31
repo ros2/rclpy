@@ -41,20 +41,6 @@ class Clock:
     def clock_type(self):
         return self._clock_type
 
-    @property
-    def ros_time_is_active(self):
-        # TODO(dhood): Move to ROS_TIME-specific subclass?
-        if self.clock_type != ClockType.ROS_TIME:
-            raise RuntimeError('Only valid for clocks using ROS_TIME')
-        return _rclpy.rclpy_clock_get_ros_time_override_is_enabled(self._clock_handle)
-
-    def _set_ros_time_is_active(self, enabled):
-        # This is not public because it is only to be called by a TimeSource managing the Clock
-        # TODO(dhood): Move to ROS_TIME-specific subclass?
-        if self.clock_type != ClockType.ROS_TIME:
-            raise RuntimeError('Only valid for clocks using ROS_TIME')
-        _rclpy.rclpy_clock_set_ros_time_override_is_enabled(self._clock_handle, enabled)
-
     def __repr__(self):
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
@@ -66,8 +52,25 @@ class Clock:
             nanoseconds=_rclpy.rclpy_time_point_get_nanoseconds(time_handle),
             clock_type=self.clock_type)
 
+
+class ROSClock(Clock):
+
+    def __init__(self):
+        super(ROSClock, self).__init__(clock_type=ClockType.ROS_TIME)
+
+    @property
+    def ros_time_is_active(self):
+        if self.clock_type != ClockType.ROS_TIME:
+            raise RuntimeError('Only valid for clocks using ROS_TIME')
+        return _rclpy.rclpy_clock_get_ros_time_override_is_enabled(self._clock_handle)
+
+    def _set_ros_time_is_active(self, enabled):
+        # This is not public because it is only to be called by a TimeSource managing the Clock
+        if self.clock_type != ClockType.ROS_TIME:
+            raise RuntimeError('Only valid for clocks using ROS_TIME')
+        _rclpy.rclpy_clock_set_ros_time_override_is_enabled(self._clock_handle, enabled)
+
     def set_ros_time_override(self, time):
-        # TODO(dhood): Move to ROS_TIME-specific subclass?
         from rclpy.time import Time
         if self.clock_type != ClockType.ROS_TIME:
             raise RuntimeError('Only valid for clocks using ROS_TIME')

@@ -15,6 +15,7 @@
 import builtin_interfaces.msg
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
+from rclpy.clock import ROSClock
 from rclpy.time import Time
 
 CLOCK_TOPIC = '/clock'
@@ -76,6 +77,8 @@ class TimeSource:
             raise TypeError('Clock must be of type rclpy.clock.Clock')
         if not clock.clock_type == ClockType.ROS_TIME:
             raise ValueError('Only clocks with type ROS_TIME can be attached.')
+        # "Cast" to ROSClock subclass so ROS time methods can be used.
+        clock.__class__ = ROSClock
         if self._last_time_set is not None:
             self._set_clock(self._last_time_set, clock)
         clock._set_ros_time_is_active(self.ros_time_is_active)
