@@ -3304,8 +3304,8 @@ static PyObject *
 rclpy_clock_set_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pyclock;
-  PyObject * pyenabled;
-  if (!PyArg_ParseTuple(args, "OO", &pyclock, &pyenabled)) {
+  bool enabled;
+  if (!PyArg_ParseTuple(args, "Op", &pyclock, &enabled)) {
     return NULL;
   }
 
@@ -3314,8 +3314,6 @@ rclpy_clock_set_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObjec
   if (!clock) {
     return NULL;
   }
-
-  bool enabled = PyObject_IsTrue(pyenabled);
 
   rcl_ret_t ret;
   if (enabled) {
