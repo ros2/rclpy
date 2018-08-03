@@ -53,11 +53,7 @@ class TestTimeSource(unittest.TestCase):
         # ROSClock is a specialization of Clock with ROS time methods.
         time_source.attach_clock(ROSClock())
 
-        # A clock of type ROS_TIME can be attached. It will be converted to a ROSClock for storage.
-        time_source.attach_clock(Clock(clock_type=ClockType.ROS_TIME))
-
-        assert all((isinstance(clock, ROSClock) for clock in time_source._associated_clocks))
-
+        # Other clock types are not supported.
         with self.assertRaises(ValueError):
             time_source.attach_clock(Clock(clock_type=ClockType.SYSTEM_TIME))
 

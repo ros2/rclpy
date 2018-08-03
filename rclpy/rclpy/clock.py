@@ -31,11 +31,16 @@ class ClockType(IntEnum):
 
 class Clock:
 
-    def __init__(self, *, clock_type=ClockType.SYSTEM_TIME):
+    def __new__(cls, *, clock_type=ClockType.SYSTEM_TIME):
         if not isinstance(clock_type, ClockType):
             raise TypeError('Clock type must be a ClockType enum')
+        if clock_type is ClockType.ROS_TIME:
+            self = super().__new__(ROSClock)
+        else:
+            self = super().__new__(cls)
         self._clock_handle = _rclpy.rclpy_create_clock(clock_type)
         self._clock_type = clock_type
+        return self
 
     @property
     def clock_type(self):
@@ -54,9 +59,6 @@ class Clock:
 
 
 class ROSClock(Clock):
-
-    def __init__(self):
-        super(ROSClock, self).__init__(clock_type=ClockType.ROS_TIME)
 
     @property
     def ros_time_is_active(self):
