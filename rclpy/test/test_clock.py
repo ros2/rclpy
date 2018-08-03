@@ -17,6 +17,7 @@ import unittest
 
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
+from rclpy.clock import ROSClock
 from rclpy.time import Time
 
 
@@ -28,12 +29,18 @@ class TestClock(unittest.TestCase):
         with self.assertRaises(TypeError):
             clock = Clock(clock_type='STEADY_TIME')
 
-        with self.assertRaises(NotImplementedError):
-            clock = Clock(clock_type=ClockType.ROS_TIME)
         clock = Clock(clock_type=ClockType.STEADY_TIME)
         assert clock.clock_type == ClockType.STEADY_TIME
         clock = Clock(clock_type=ClockType.SYSTEM_TIME)
         assert clock.clock_type == ClockType.SYSTEM_TIME
+        # A subclass ROSClock is returned if ROS_TIME is specified.
+        clock = Clock(clock_type=ClockType.ROS_TIME)
+        assert clock.clock_type == ClockType.ROS_TIME
+        assert isinstance(clock, ROSClock)
+
+        # Direct instantiation of a ROSClock is also possible.
+        clock = ROSClock()
+        assert clock.clock_type == ClockType.ROS_TIME
 
     def test_clock_now(self):
         # System time should be roughly equal to time.time()

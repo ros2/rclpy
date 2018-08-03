@@ -16,6 +16,7 @@ import unittest
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
+from rclpy.clock import ClockType
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 from test_msgs.msg import Primitives
@@ -42,6 +43,7 @@ class TestNode(unittest.TestCase):
             self.node.handle = 'garbage'
         self.assertEqual(self.node.get_name(), TEST_NODE)
         self.assertEqual(self.node.get_namespace(), TEST_NAMESPACE)
+        self.assertEqual(self.node.get_clock().clock_type, ClockType.ROS_TIME)
 
     def test_create_publisher(self):
         self.node.create_publisher(Primitives, 'chatter')
