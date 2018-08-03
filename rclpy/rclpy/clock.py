@@ -60,6 +60,9 @@ class Clock:
 
 class ROSClock(Clock):
 
+    def __new__(cls):
+        return super().__new__(Clock, clock_type=ClockType.ROS_TIME)
+
     @property
     def ros_time_is_active(self):
         return _rclpy.rclpy_clock_get_ros_time_override_is_enabled(self._clock_handle)

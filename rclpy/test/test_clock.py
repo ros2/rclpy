@@ -38,6 +38,10 @@ class TestClock(unittest.TestCase):
         assert clock.clock_type == ClockType.ROS_TIME
         assert isinstance(clock, ROSClock)
 
+        # Direct instantiation of a ROSClock is also possible.
+        clock = ROSClock()
+        assert clock.clock_type == ClockType.ROS_TIME
+
     def test_clock_now(self):
         # System time should be roughly equal to time.time()
         # There will still be differences between them, with the bound depending on the scheduler.
