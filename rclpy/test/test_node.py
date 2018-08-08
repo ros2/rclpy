@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import unittest
+from unittest.mock import Mock
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
@@ -127,6 +128,52 @@ class TestNode(unittest.TestCase):
         self.assertEqual(node_logger.name, expected_name)
         node_logger.set_level(rclpy.logging.LoggingSeverity.INFO)
         node_logger.debug('test')
+
+    def test_initially_no_executor(self):
+        node = rclpy.create_node('my_node')
+        try:
+            assert node.executor is None
+        finally:
+            node.destroy_node()
+
+    def test_set_executor_adds_node_to_it(self):
+        node = rclpy.create_node('my_node')
+        executor = Mock()
+        executor.add_node.return_value = True
+        try:
+            node.executor = executor
+            assert id(executor) == id(node.executor)
+        finally:
+            node.destroy_node()
+        executor.add_node.assert_called_once_with(node)
+
+    def test_set_executor_removes_node_from_old_executor(self):
+        node = rclpy.create_node('my_node')
+        old_executor = Mock()
+        old_executor.add_node.return_value = True
+        new_executor = Mock()
+        new_executor.add_node.return_value = True
+        try:
+            node.executor = old_executor
+            assert id(old_executor) == id(node.executor)
+            node.executor = new_executor
+            assert id(new_executor) == id(node.executor)
+        finally:
+            node.destroy_node()
+        old_executor.remove_node.assert_called_once_with(node)
+        new_executor.remove_node.assert_not_called()
+
+    def test_set_executor_clear_executor(self):
+        node = rclpy.create_node('my_node')
+        executor = Mock()
+        executor.add_node.return_value = True
+        try:
+            node.executor = executor
+            assert id(executor) == id(node.executor)
+            node.executor = None
+            assert node.executor is None
+        finally:
+            node.destroy_node()
 
 
 class TestCreateNode(unittest.TestCase):
