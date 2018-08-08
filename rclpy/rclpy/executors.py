@@ -188,7 +188,7 @@ class Executor:
         """Stop managing this node's callbacks."""
         with self._nodes_lock:
             try:
-                self._nodes.add(node)
+                self._nodes.remove(node)
             except KeyError:
                 pass
             else:
