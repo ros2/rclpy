@@ -57,6 +57,29 @@ class TestExecutor(unittest.TestCase):
         finally:
             executor.shutdown()
 
+    def test_remove_node(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+
+        got_callback = False
+
+        def timer_callback():
+            nonlocal got_callback
+            got_callback = True
+
+        try:
+            tmr = self.node.create_timer(0.1, timer_callback)
+            try:
+                executor.add_node(self.node)
+                executor.remove_node(self.node)
+                executor.spin_once(timeout_sec=0.2)
+            finally:
+                self.node.destroy_timer(tmr)
+        finally:
+            executor.shutdown()
+
+        assert not got_callback
+
     def test_multi_threaded_executor_executes(self):
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor()
