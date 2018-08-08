@@ -40,7 +40,7 @@ class TestExecutor(unittest.TestCase):
 
         tmr = self.node.create_timer(0.1, timer_callback)
 
-        executor.add_node(self.node)
+        assert executor.add_node(self.node)
         executor.spin_once(timeout_sec=1.23)
         # TODO(sloretz) redesign test, sleeping to workaround race condition between test cleanup
         # and MultiThreadedExecutor thread pool
@@ -229,6 +229,12 @@ class TestExecutor(unittest.TestCase):
         trigger.do_yield = False
         rclpy.spin_once(self.node, timeout_sec=0)
         self.assertTrue(did_return)
+
+    def test_executor_add_node(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor()
+        assert executor.add_node(self.node)
+        assert not executor.add_node(self.node)
 
 
 if __name__ == '__main__':
