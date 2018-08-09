@@ -56,7 +56,9 @@ class Parameter:
         return cls(rcl_param.name, type_, value)
 
     def __init__(self, name, type_, value):
-        assert isinstance(type_, Parameter.Type)
+        if not isinstance(type_, Parameter.Type):
+            raise TypeError("type must be an instance of '{}'".format(repr(Parameter.Type)))
+
         self._type = type_
         self._name = name
         self._value = value

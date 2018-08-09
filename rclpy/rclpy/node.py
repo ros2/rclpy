@@ -141,7 +141,8 @@ class Node:
         return self._logger
 
     def get_parameters(self, names):
-        assert all(isinstance(name, str) for name in names)
+        if not all(isinstance(name, str) for name in names):
+            raise TypeError('All names must be instances of type str')
         return [self.get_parameter(name) for name in names]
 
     def get_parameter(self, name):
@@ -152,7 +153,8 @@ class Node:
     def set_parameters(self, parameter_list):
         results = []
         for param in parameter_list:
-            assert isinstance(param, Parameter)
+            if not isinstance(param, Parameter):
+                raise TypeError("parameter must be instance of type '{}'".format(repr(Parameter)))
             results.append(self.set_parameters_atomically([param]))
         return results
 
