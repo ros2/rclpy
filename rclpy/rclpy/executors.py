@@ -17,6 +17,7 @@ import inspect
 import multiprocessing
 from threading import Condition
 from threading import Lock
+from threading import RLock
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.task import Task
@@ -111,7 +112,7 @@ class Executor:
     def __init__(self):
         super().__init__()
         self._nodes = set()
-        self._nodes_lock = Lock()
+        self._nodes_lock = RLock()
         # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
         self._tasks = []
         self._tasks_lock = Lock()
@@ -182,6 +183,7 @@ class Executor:
         with self._nodes_lock:
             if node not in self._nodes:
                 self._nodes.add(node)
+                node.executor = self
                 # Rebuild the wait set so it includes this new node
                 _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
                 return True

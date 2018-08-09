@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import weakref
+
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.client import Client
 from rclpy.clock import ROSClock
@@ -87,6 +89,25 @@ class Node:
         self._clock = ROSClock()
         self._time_source = TimeSource(node=self)
         self._time_source.attach_clock(self._clock)
+
+        self.__executor_weakref = None
+
+    @property
+    def executor(self):
+        """Get the executor if the node has been added to one, else return None."""
+        if self.__executor_weakref:
+            return self.__executor_weakref()
+
+    @executor.setter
+    def executor(self, new_executor):
+        """Set or change the executor the node belongs to."""
+        current_executor = self.executor
+        if current_executor is not None:
+            current_executor.remove_node(self)
+        if new_executor is None:
+            self.__executor_weakref = None
+        elif new_executor.add_node(self):
+            self.__executor_weakref = weakref.ref(new_executor)
 
     @property
     def handle(self):
