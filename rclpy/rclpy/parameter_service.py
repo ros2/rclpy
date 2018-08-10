@@ -14,7 +14,7 @@
 
 from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTypes
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
-from rclpy.parameter import Parameter
+from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
 
 
 class ParameterService:
@@ -71,7 +71,7 @@ class ParameterService:
     def _list_parameters_callback(self, request, response):
         names_with_prefixes = []
         for name in self._node._parameters.keys():
-            if '.' in name:
+            if PARAMETER_SEPARATOR_STRING in name:
                 names_with_prefixes.append(name)
                 continue
             elif request.prefixes:
@@ -81,24 +81,25 @@ class ParameterService:
         if 1 == request.depth:
             return response
 
-        if not 0 == request.depth:
-            # A depth of zero indicates infinite depth
+        if not request.DEPTH_RECURSIVE == request.depth:
             names_with_prefixes = filter(
-                lambda name: name.count('.') + 1 <= request.depth, names_with_prefixes
+                lambda name:
+                    name.count(PARAMETER_SEPARATOR_STRING) < request.depth, names_with_prefixes
             )
         for name in names_with_prefixes:
             if request.prefixes:
                 for prefix in request.prefixes:
-                    prefix_with_trailing_dot = '%s.' % (prefix)
-                    if name.startswith(prefix_with_trailing_dot):
+                    if name.startswith(prefix + PARAMETER_SEPARATOR_STRING):
                         response.result.names.append(name)
-                        full_prefix = '.'.join(name.split('.')[0:-1])
+                        full_prefix = PARAMETER_SEPARATOR_STRING.join(
+                            name.split(PARAMETER_SEPARATOR_STRING)[0:-1])
                         if full_prefix not in response.result.prefixes:
                             response.result.prefixes.append(full_prefix)
                         if prefix not in response.result.prefixes:
                             response.result.prefixes.append(prefix)
             else:
-                prefix = '.'.join(name.split('.')[0:-1])
+                prefix = PARAMETER_SEPARATOR_STRING.join(
+                    name.split(PARAMETER_SEPARATOR_STRING)[0:-1])
                 if prefix not in response.result.prefixes:
                     response.result.prefixes.append(prefix)
                 response.result.names.append(name)

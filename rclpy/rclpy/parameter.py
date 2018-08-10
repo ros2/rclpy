@@ -16,6 +16,8 @@ from enum import Enum
 
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType, ParameterValue
 
+PARAMETER_SEPARATOR_STRING = '.'
+
 
 class Parameter:
 
