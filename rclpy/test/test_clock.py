@@ -16,9 +16,17 @@ import time
 import unittest
 
 from rclpy.clock import Clock
+from rclpy.clock import ClockChange
 from rclpy.clock import ClockType
+from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
+from rclpy.duration import Duration
 from rclpy.time import Time
+from rclpy.time_source import TimeJump
+
+
+def do_nothing(jump_info):
+    pass
 
 
 class TestClock(unittest.TestCase):
@@ -64,3 +72,57 @@ class TestClock(unittest.TestCase):
             now2 = clock.now()
             assert now2 > now
             now = now2
+
+    def test_get_triggered_no_callbacks(self):
+        jump_info = TimeJump(ClockChange.ROS_TIME_ACTIVATED, Duration())
+        assert [] == list(ROSClock().get_triggered_callback_handlers(jump_info))
+
+    def test_get_triggered_no_callbacks_match_clock_change(self):
+        jump_info = TimeJump(ClockChange.ROS_TIME_ACTIVATED, Duration())
+        assert [] == list(ROSClock().get_triggered_callback_handlers(jump_info))
+
+    def test_get_triggered_callbacks_time_jump(self):
+        one_second = Duration(seconds=1)
+        half_second = Duration(seconds=0.5)
+        negative_half_second = Duration(seconds=-0.5)
+        negative_one_second = Duration(seconds=-1)
+
+        threshold1 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_half_second, on_clock_change=False)
+        threshold2 = JumpThreshold(
+            min_forward=half_second, min_backward=negative_one_second, on_clock_change=False)
+
+        forward_jump_info = TimeJump(ClockChange.ROS_TIME_NO_CHANGE, Duration(seconds=0.75))
+        backward_jump_info = TimeJump(ClockChange.ROS_TIME_NO_CHANGE, Duration(seconds=-0.75))
+
+        clock = ROSClock()
+        handler1 = clock.create_jump_callback(threshold1, pre_callback=do_nothing)
+        handler2 = clock.create_jump_callback(threshold2, pre_callback=do_nothing)
+
+        assert [handler2] == list(clock.get_triggered_callback_handlers(forward_jump_info))
+        assert [handler1] == list(clock.get_triggered_callback_handlers(backward_jump_info))
+
+    def test_get_triggered_callbacks_clock_change(self):
+        one_second = Duration(seconds=1)
+        negative_one_second = Duration(seconds=-1)
+
+        threshold1 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_one_second, on_clock_change=False)
+        threshold2 = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
+        threshold3 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_one_second, on_clock_change=True)
+
+        clock_change1 = TimeJump(ClockChange.ROS_TIME_ACTIVATED, Duration())
+        clock_change2 = TimeJump(ClockChange.ROS_TIME_DEACTIVATED, Duration())
+        no_change1 = TimeJump(ClockChange.ROS_TIME_NO_CHANGE, Duration())
+        no_change2 = TimeJump(ClockChange.SYSTEM_TIME_NO_CHANGE, Duration())
+
+        clock = ROSClock()
+        handler1 = clock.create_jump_callback(threshold1, pre_callback=do_nothing)  # noqa
+        handler2 = clock.create_jump_callback(threshold2, pre_callback=do_nothing)
+        handler3 = clock.create_jump_callback(threshold3, pre_callback=do_nothing)
+
+        assert [handler2, handler3] == list(clock.get_triggered_callback_handlers(clock_change1))
+        assert [handler2, handler3] == list(clock.get_triggered_callback_handlers(clock_change2))
+        assert [] == list(clock.get_triggered_callback_handlers(no_change1))
+        assert [] == list(clock.get_triggered_callback_handlers(no_change2))
