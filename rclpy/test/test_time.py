@@ -55,9 +55,14 @@ class TestTime(unittest.TestCase):
         duration = Duration(nanoseconds=2**63 - 1)
         assert duration.nanoseconds == 2**63 - 1
 
-        duration = Duration(seconds=-1)
+        assert Duration(seconds=-1).nanoseconds == -1 * 1000 * 1000 * 1000
         with self.assertRaises(ValueError):
             duration = Duration(nanoseconds=-1)
+
+        assert Duration(seconds=-2**63 / 1e9).nanoseconds == -2**63
+        with self.assertRaises(OverflowError):
+            # Much smaller number because float to integer conversion of seconds is imprecise
+            duration = Duration(seconds=-2**63 / 1e9 - 1)
 
     def test_time_operators(self):
         time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
