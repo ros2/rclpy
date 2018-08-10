@@ -19,8 +19,6 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class Duration:
 
     def __init__(self, *, seconds=0, nanoseconds=0):
-        if nanoseconds < 0:
-            raise ValueError('Nanoseconds value must not be negative')
         total_nanoseconds = int(seconds * 1e9)
         total_nanoseconds += int(nanoseconds)
         try:
