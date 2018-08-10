@@ -31,6 +31,34 @@ class Parameter:
         DOUBLE_ARRAY = ParameterType.PARAMETER_DOUBLE_ARRAY
         STRING_ARRAY = ParameterType.PARAMETER_STRING_ARRAY
 
+        def check(self, parameter_value):
+            if Parameter.Type.NOT_SET == self:
+                return parameter_value is None
+            if Parameter.Type.BOOL == self:
+                return isinstance(parameter_value, bool)
+            if Parameter.Type.INTEGER == self:
+                return isinstance(parameter_value, int)
+            if Parameter.Type.DOUBLE == self:
+                return isinstance(parameter_value, float)
+            if Parameter.Type.STRING == self:
+                return isinstance(parameter_value, str)
+            if Parameter.Type.BYTE_ARRAY == self:
+                return isinstance(parameter_value, list) and \
+                    all(isinstance(v, bytes) and len(v) == 1 for v in parameter_value)
+            if Parameter.Type.BOOL_ARRAY == self:
+                return isinstance(parameter_value, list) and \
+                    all(isinstance(v, bool) for v in parameter_value)
+            if Parameter.Type.INTEGER_ARRAY == self:
+                return isinstance(parameter_value, list) and \
+                    all(isinstance(v, int) for v in parameter_value)
+            if Parameter.Type.DOUBLE_ARRAY == self:
+                return isinstance(parameter_value, list) and \
+                    all(isinstance(v, float) for v in parameter_value)
+            if Parameter.Type.STRING_ARRAY == self:
+                return isinstance(parameter_value, list) and \
+                    all(isinstance(v, str) for v in parameter_value)
+            return False
+
     @classmethod
     def from_rcl_interface_parameter(cls, rcl_param):
         value = None
@@ -55,9 +83,12 @@ class Parameter:
             value = rcl_param.value.string_array_value
         return cls(rcl_param.name, type_, value)
 
-    def __init__(self, name, type_, value):
+    def __init__(self, name, type_, value=None):
         if not isinstance(type_, Parameter.Type):
             raise TypeError("type must be an instance of '{}'".format(repr(Parameter.Type)))
+
+        if not type_.check(value):
+            raise ValueError("Type '{}' and value '{}' do not agree".format(type_, value))
 
         self._type = type_
         self._name = name

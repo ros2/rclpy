@@ -189,6 +189,10 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
+    def test_node_cannot_set_invalid_parameters(self):
+        with self.assertRaises(TypeError):
+            self.node.set_parameters([42])
+
     def test_node_set_parameters_atomically(self):
         result = self.node.set_parameters_atomically([
             Parameter('foo', Parameter.Type.INTEGER, 42),

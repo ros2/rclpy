@@ -25,9 +25,9 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(p.value, True)
 
     def test_create_bytes_parameter(self):
-        p = Parameter('myparam', Parameter.Type.BYTE_ARRAY, b'pvalue')
+        p = Parameter('myparam', Parameter.Type.BYTE_ARRAY, [b'p', b'v', b'a', b'l', b'u', b'e'])
         self.assertEqual(p.name, 'myparam')
-        self.assertEqual(p.value, b'pvalue')
+        self.assertEqual(p.value, [b'p', b'v', b'a', b'l', b'u', b'e'])
 
     def test_create_float_parameter(self):
         p = Parameter('myparam', Parameter.Type.DOUBLE, 2.41)
@@ -60,8 +60,18 @@ class TestParameter(unittest.TestCase):
         p = Parameter('myparam', Parameter.Type.STRING_ARRAY, ['hello', 'world'])
         self.assertEqual(p.value, ['hello', 'world'])
 
+    def test_create_not_set_parameter(self):
+        p = Parameter('myparam', Parameter.Type.NOT_SET)
+        self.assertIsNone(p.value)
+
+    def test_value_and_type_must_agree(self):
+        with self.assertRaises(ValueError):
+            Parameter('myparam', Parameter.Type.NOT_SET, 42)
+        with self.assertRaises(ValueError):
+            Parameter('myparam', Parameter.Type.BOOL_ARRAY, 42)
+
     def test_error_on_illegal_value_type(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(TypeError):
             Parameter('illegaltype', 'mytype', 'myvalue')
 
 
