@@ -56,13 +56,16 @@ class TestTime(unittest.TestCase):
         assert duration.nanoseconds == 2**63 - 1
 
         assert Duration(seconds=-1).nanoseconds == -1 * 1000 * 1000 * 1000
-        with self.assertRaises(ValueError):
-            duration = Duration(nanoseconds=-1)
+        assert Duration(nanoseconds=-1).nanoseconds == -1
 
         assert Duration(seconds=-2**63 / 1e9).nanoseconds == -2**63
         with self.assertRaises(OverflowError):
             # Much smaller number because float to integer conversion of seconds is imprecise
             duration = Duration(seconds=-2**63 / 1e9 - 1)
+
+        assert Duration(nanoseconds=-2**63).nanoseconds == -2**63
+        with self.assertRaises(OverflowError):
+            Duration(nanoseconds=-2**63 - 1)
 
     def test_time_operators(self):
         time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
@@ -95,9 +98,8 @@ class TestTime(unittest.TestCase):
         assert isinstance(diff, Duration)
         assert diff.nanoseconds == 1
 
-        # Subtraction can't result in a negative duration
-        with self.assertRaises(ValueError):
-            Time(nanoseconds=1) - Time(nanoseconds=2)
+        # Subtraction resulting in a negative duration
+        assert (Time(nanoseconds=1) - Time(nanoseconds=2)).nanoseconds == -1
 
         # Subtraction of times with different clock types
         with self.assertRaises(TypeError):
