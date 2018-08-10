@@ -3106,21 +3106,16 @@ _rclpy_destroy_duration(PyObject * pycapsule)
  * Raises OverflowError if nanoseconds argument cannot be converted to uint64_t
  *
  * \param[in] nanoseconds unsigned PyLong object storing the nanoseconds value
- *   of the duration in a 64-bit unsigned integer
+ *   of the duration in a 64-bit signed integer
  * \return Capsule of the pointer to the created rcl_duration_t * structure, or
  * \return NULL on failure
  */
 static PyObject *
 rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pylong_nanoseconds;
+  PY_LONG_LONG nanoseconds;
 
-  if (!PyArg_ParseTuple(args, "O", &pylong_nanoseconds)) {
-    return NULL;
-  }
-
-  unsigned PY_LONG_LONG nanoseconds = PyLong_AsUnsignedLongLong(pylong_nanoseconds);
-  if (PyErr_Occurred()) {
+  if (!PyArg_ParseTuple(args, "L", &nanoseconds)) {
     return NULL;
   }
 
@@ -3159,7 +3154,7 @@ rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  return PyLong_FromUnsignedLongLong(duration->nanoseconds);
+  return PyLong_FromLongLong(duration->nanoseconds);
 }
 
 /// Create a clock

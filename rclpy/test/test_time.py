@@ -51,14 +51,18 @@ class TestTime(unittest.TestCase):
         assert duration.nanoseconds == 1500000000
 
         with self.assertRaises(OverflowError):
-            duration = Duration(nanoseconds=2**64)
-        duration = Duration(nanoseconds=2**64 - 1)
-        assert duration.nanoseconds == 2**64 - 1
+            duration = Duration(nanoseconds=2**63)
+        duration = Duration(nanoseconds=2**63 - 1)
+        assert duration.nanoseconds == 2**63 - 1
 
-        with self.assertRaises(ValueError):
-            duration = Duration(seconds=-1)
+        assert Duration(seconds=-1).nanoseconds == -1 * 1000 * 1000 * 1000
         with self.assertRaises(ValueError):
             duration = Duration(nanoseconds=-1)
+
+        assert Duration(seconds=-2**63 / 1e9).nanoseconds == -2**63
+        with self.assertRaises(OverflowError):
+            # Much smaller number because float to integer conversion of seconds is imprecise
+            duration = Duration(seconds=-2**63 / 1e9 - 1)
 
     def test_time_operators(self):
         time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
@@ -81,7 +85,7 @@ class TestTime(unittest.TestCase):
         assert time2.clock_type == ClockType.STEADY_TIME
 
         with self.assertRaises(OverflowError):
-            Duration(nanoseconds=2**64 - 1) + Time(nanoseconds=1)
+            Duration(nanoseconds=1) + Time(nanoseconds=2**64 - 1)
 
         with self.assertRaises(ValueError):
             Time(nanoseconds=1) - Duration(nanoseconds=2)
