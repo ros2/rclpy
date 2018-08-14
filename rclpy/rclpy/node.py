@@ -61,7 +61,7 @@ class Node:
 
     def __init__(
         self, node_name, *, cli_args=None, namespace=None, use_global_arguments=True,
-        start_parameter_services=True
+        start_parameter_services=True, initial_parameters=[]
     ):
         self._handle = None
         self._parameters = {}
@@ -103,6 +103,15 @@ class Node:
 
         self._parameter_event_publisher = self.create_publisher(
             ParameterEvent, 'parameter_events', qos_profile=qos_profile_parameter_events)
+
+        for param in _rclpy.rclpy_get_node_parameters(Parameter, self.handle):
+            self._parameters[param.name] = param
+        for param in initial_parameters:
+            if not isinstance(param, Parameter):
+                raise TypeError(
+                    'initial_parameters must be a list of {}'.format(repr(Parameter))
+                )
+            self._parameters[param.name] = param
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
