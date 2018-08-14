@@ -21,6 +21,7 @@
 #include <rcl/rcl.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
+#include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/strdup.h>
 #include <rcutils/types.h>
 #include <rmw/error_handling.h>
@@ -3369,6 +3370,213 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Populate an rcl_params_t with parameters parsed from arguments.
+/**
+ * On failure a Python exception is raised and false is returned if:
+ *
+ * Raises RuntimeError if param_files cannot be extracted from arguments.
+ * Raises RuntimeError if yaml files do not parse succesfully.
+ *
+ * \param[in] args The arguments to parse for parameter files
+ * \param[in] allocator Allocator to use for allocating and deallocating within the function.
+ * \param[out] params An initialized rcl params struct to place parsed parameters into.
+ *
+ * Returns true when parameters are parsed successfully (including the trivial case)
+ *         false when there was an error during parsing and a Python exception was raised.
+ *
+ */
+static bool _parse_param_files(
+  const rcl_arguments_t * args, rcl_allocator_t allocator,
+  rcl_params_t * params)
+{
+  char ** param_files;
+  int param_files_count = rcl_arguments_get_param_files_count(args);
+  rcl_ret_t ret;
+  if (param_files_count > 0) {
+    ret = rcl_arguments_get_param_files(args, allocator, &param_files);
+    if (RCL_RET_OK != ret) {
+      PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
+        rcl_get_error_string_safe());
+      return false;
+    }
+    for (int i = 0; i < param_files_count; i++) {
+      if (!rcl_parse_yaml_file(param_files[i], params)) {
+        /* failure to parse will automatically fini the params struct */
+        PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
+        return false;
+      }
+      allocator.deallocate(param_files[i], allocator.state);
+    }
+  }
+  return true;
+}
+
+/// Create an rclpy.parameter.Parameter from an rcl_variant_t
+/**
+ * On failure a Python exception is raised and false is returned if:
+ *
+ * Raises ValueError if the variant points to no data.
+ *
+ * \param[in] name The name of the parameter
+ * \param[in] variant The variant object to create a Parameter from
+ * \param[in] parameter_cls The PythonObject for the Parameter class.
+ * \param[in] parameter_cls The PythonObject for the Parameter.Type class.
+ *
+ * Returns a pointer to an rclpy.parameter.Parameter with the name, type, and value from
+ * the variant or NULL when raising a python exception.
+ */
+static PyObject * _parameter_from_rcl_variant(
+  const char * name, rcl_variant_t * variant, PyObject * parameter_cls,
+  PyObject * parameter_type_cls)
+{
+  int type_enum_value;
+  PyObject * value;
+  if (variant->bool_value) {
+    type_enum_value = 1;
+    value = variant->bool_value ? Py_True : Py_False;
+  } else if (variant->integer_value) {
+    type_enum_value = 2;
+    value = PyLong_FromLong(*(variant->integer_value));
+  } else if (variant->double_value) {
+    type_enum_value = 3;
+    value = PyFloat_FromDouble(*(variant->double_value));
+  } else if (variant->string_value) {
+    type_enum_value = 4;
+    value = PyUnicode_FromString(variant->string_value);
+  } else if (variant->byte_array_value) {
+    type_enum_value = 5;
+    value = PyList_New(variant->byte_array_value->size);
+    for (size_t i = 0; i < variant->byte_array_value->size; i++) {
+      PyList_SetItem(value, i, PyBytes_FromFormat("%u", variant->byte_array_value->values[i]));
+    }
+  } else if (variant->bool_array_value) {
+    type_enum_value = 6;
+    value = PyList_New(variant->bool_array_value->size);
+    for (size_t i = 0; i < variant->bool_array_value->size; i++) {
+      PyList_SetItem(value, i, variant->bool_array_value->values[i] ? Py_True : Py_False);
+    }
+  } else if (variant->integer_array_value) {
+    type_enum_value = 7;
+    value = PyList_New(variant->integer_array_value->size);
+    for (size_t i = 0; i < variant->integer_array_value->size; i++) {
+      PyList_SetItem(value, i, PyLong_FromLong(variant->integer_array_value->values[i]));
+    }
+  } else if (variant->double_array_value) {
+    type_enum_value = 8;
+    value = PyList_New(variant->double_array_value->size);
+    for (size_t i = 0; i < variant->double_array_value->size; i++) {
+      PyList_SetItem(value, i, PyFloat_FromDouble(variant->double_array_value->values[i]));
+    }
+  } else if (variant->string_array_value) {
+    type_enum_value = 9;
+    value = PyList_New(variant->string_array_value->size);
+    for (size_t i = 0; i < variant->string_array_value->size; i++) {
+      PyList_SetItem(value, i, PyUnicode_FromString(variant->string_array_value->data[i]));
+    }
+  }
+
+  PyObject * type = PyObject_CallObject(parameter_type_cls, Py_BuildValue("(i)", type_enum_value));
+  PyObject * param = PyObject_CallObject(parameter_cls, Py_BuildValue("sOO", name, type, value));
+
+  Py_DECREF(type);
+  return param;
+}
+
+/// Get a list of parameters for the current node from rcl_yaml_param_parser
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises ValueError if the argument is not a node handle.
+ * Raises RuntimeError if the parameters file fails to parse
+ *
+ * \param[in] parameter_cls The rclpy.parameter.Parameter class object.
+ * \param[in] node_handle Capsule pointing to the node handle
+ * \return NULL on failure
+ *         A list of rclpy.parameter.Parameter on success (may be empty).
+ *
+ */
+static PyObject *
+rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * parameter_cls;
+  PyObject * node_capsule;
+  if (!PyArg_ParseTuple(args, "OO", &parameter_cls, &node_capsule)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(node_capsule, "rcl_node_t");
+  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  const rcl_allocator_t allocator = node_options->allocator;
+  if (!node) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to retrieve rcl node from capsule");
+    return NULL;
+  }
+
+  rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
+  if (NULL == params) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to allocate initial parameters");
+    return NULL;
+  }
+
+  if (node_options->use_global_arguments) {
+    if (!_parse_param_files(rcl_get_global_arguments(), allocator, params)) {
+      return NULL;
+    }
+  }
+
+  if (!_parse_param_files(&(node_options->arguments), allocator, params)) {
+    return NULL;
+  }
+
+  int node_index = -1;
+  const char * node_namespace = rcl_node_get_namespace(node);
+  char * node_name_with_namespace;
+  if ('/' == node_namespace[strlen(node_namespace) - 1]) {
+    node_name_with_namespace = rcutils_format_string(allocator, "%s%s",
+        node_namespace, rcl_node_get_name(node));
+  } else {
+    node_name_with_namespace = rcutils_format_string(allocator, "%s/%s",
+        node_namespace, rcl_node_get_name(node));
+  }
+
+  char * fully_qualified_param_node_name;
+  for (size_t i = 0; i < params->num_nodes; i++) {
+    if (params->node_names[i][0] != '/') {
+      fully_qualified_param_node_name = rcutils_format_string(allocator,
+          "/%s", params->node_names[i]);
+    } else {
+      fully_qualified_param_node_name = params->node_names[i];
+    }
+    if (0 == strcmp(fully_qualified_param_node_name, node_name_with_namespace)) {
+      node_index = i;
+    }
+    if (params->node_names[i][0] != '/') {
+      allocator.deallocate(fully_qualified_param_node_name, allocator.state);
+    }
+  }
+  allocator.deallocate(node_name_with_namespace, allocator.state);
+
+  if (-1 == node_index) {
+    /* No parameters for current node.*/
+    rcl_yaml_node_struct_fini(params);
+    return PyList_New(0);
+  }
+
+  PyObject * parameter_type_cls = PyObject_GetAttrString(parameter_cls, "Type");
+  rcl_node_params_t node_params = params->params[node_index];
+  PyObject * parameter_list = PyList_New(node_params.num_params);
+  for (size_t i = 0; i < node_params.num_params; i++) {
+    PyList_SetItem(parameter_list, i, _parameter_from_rcl_variant(
+        node_params.parameter_names[i], &(node_params.parameter_values[i]),
+        parameter_cls, parameter_type_cls));
+  }
+
+  Py_DECREF(parameter_type_cls);
+  rcl_yaml_node_struct_fini(params);
+  return parameter_list;
+}
+
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -3596,6 +3804,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_node_names", rclpy_get_node_names, METH_VARARGS,
     "Get node names list from graph API."
+  },
+  {
+    "rclpy_get_node_parameters", rclpy_get_node_parameters, METH_VARARGS,
+    "Get the initial parameters for a node from the command line."
   },
   {
     "rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,
