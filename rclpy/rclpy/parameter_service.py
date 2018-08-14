@@ -15,6 +15,7 @@
 from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTypes
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
 from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
+from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
 
 
 class ParameterService:
@@ -23,29 +24,32 @@ class ParameterService:
         self._node = node
         nodename = node.get_name()
 
-        describe_parameters_service_name = '/'.join((nodename, 'describe_parameters'))
+        describe_parameters_service_name = \
+            TOPIC_SEPARATOR_STRING.join((nodename, 'describe_parameters'))
         node.create_service(
             DescribeParameters, describe_parameters_service_name,
             self._describe_parameters_callback
         )
-        get_parameters_service_name = '/'.join((nodename, 'get_parameters'))
+        get_parameters_service_name = TOPIC_SEPARATOR_STRING.join((nodename, 'get_parameters'))
         node.create_service(
             GetParameters, get_parameters_service_name, self._get_parameters_callback
         )
-        get_parameter_types_service_name = '/'.join((nodename, 'get_parameter_types'))
+        get_parameter_types_service_name = \
+            TOPIC_SEPARATOR_STRING.join((nodename, 'get_parameter_types'))
         node.create_service(
             GetParameterTypes, get_parameter_types_service_name,
             self._get_parameter_types_callback
         )
-        list_parameters_service_name = '/'.join((nodename, 'list_parameters'))
+        list_parameters_service_name = TOPIC_SEPARATOR_STRING.join((nodename, 'list_parameters'))
         node.create_service(
             ListParameters, list_parameters_service_name, self._list_parameters_callback
         )
-        set_parameters_service_name = '/'.join((nodename, 'set_parameters'))
+        set_parameters_service_name = TOPIC_SEPARATOR_STRING.join((nodename, 'set_parameters'))
         node.create_service(
             SetParameters, set_parameters_service_name, self._set_parameters_callback
         )
-        set_parameters_atomically_service_name = '/'.join((nodename, 'set_parameters_atomically'))
+        set_parameters_atomically_service_name = \
+            TOPIC_SEPARATOR_STRING.join((nodename, 'set_parameters_atomically'))
         node.create_service(
             SetParametersAtomically, set_parameters_atomically_service_name,
             self._set_parameters_atomically_callback
