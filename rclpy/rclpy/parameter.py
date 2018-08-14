@@ -92,7 +92,7 @@ class Parameter:
         if not type_.check(value):
             raise ValueError("Type '{}' and value '{}' do not agree".format(type_, value))
 
-        self._type = type_
+        self._type_ = type_
         self._name = name
         self._value = value
 
@@ -100,35 +100,35 @@ class Parameter:
     def name(self):
         return self._name
 
-    @property  # noqa: A003
-    def type(self):
-        return self._type
+    @property
+    def type_(self):
+        return self._type_
 
     @property
     def value(self):
         return self._value
 
     def get_descriptor(self):
-        return ParameterDescriptor(name=self.name, type=self.type.value)
+        return ParameterDescriptor(name=self.name, type=self.type_.value)
 
     def get_parameter_value(self):
-        parameter_value = ParameterValue(type=self.type.value)
-        if Parameter.Type.BOOL == self.type:
+        parameter_value = ParameterValue(type=self.type_.value)
+        if Parameter.Type.BOOL == self.type_:
             parameter_value.bool_value = self.value
-        elif Parameter.Type.INTEGER == self.type:
+        elif Parameter.Type.INTEGER == self.type_:
             parameter_value.integer_value = self.value
-        elif Parameter.Type.DOUBLE == self.type:
+        elif Parameter.Type.DOUBLE == self.type_:
             parameter_value.double_value = self.value
-        elif Parameter.Type.STRING == self.type:
+        elif Parameter.Type.STRING == self.type_:
             parameter_value.string_value = self.value
-        elif Parameter.Type.BYTE_ARRAY == self.type:
+        elif Parameter.Type.BYTE_ARRAY == self.type_:
             parameter_value.byte_array_value = self.value
-        elif Parameter.Type.BOOL_ARRAY == self.type:
+        elif Parameter.Type.BOOL_ARRAY == self.type_:
             parameter_value.bool_array_value = self.value
-        elif Parameter.Type.INTEGER_ARRAY == self.type:
+        elif Parameter.Type.INTEGER_ARRAY == self.type_:
             parameter_value.integer_array_value = self.value
-        elif Parameter.Type.DOUBLE_ARRAY == self.type:
+        elif Parameter.Type.DOUBLE_ARRAY == self.type_:
             parameter_value.double_array_value = self.value
-        elif Parameter.Type.STRING_ARRAY == self.type:
+        elif Parameter.Type.STRING_ARRAY == self.type_:
             parameter_value.string_array_value = self.value
         return parameter_value

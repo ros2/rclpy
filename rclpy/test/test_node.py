@@ -210,7 +210,7 @@ class TestNode(unittest.TestCase):
 
     def test_node_get_parameter_returns_parameter_not_set(self):
         self.assertIsInstance(self.node.get_parameter('unset'), Parameter)
-        self.assertEqual(self.node.get_parameter('unset').type, Parameter.Type.NOT_SET)
+        self.assertEqual(self.node.get_parameter('unset').type_, Parameter.Type.NOT_SET)
 
     def test_node_has_parameter_services(self):
         service_names_and_types = self.node.get_service_names_and_types()
