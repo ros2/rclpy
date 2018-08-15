@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import multiprocessing
-import os
-import platform
+# TODO(mikaelarguedas) comment back in if we reenable 1kHz test for some platforms
+# import os
+# import platform
 import sys
 import time
 import traceback
@@ -153,9 +154,10 @@ def test_timer_zero_callbacks100hertz():
 # on every platform at high frequency
 # TODO(sloretz) Reenable on arm when executor performance is good enough
 def test_timer_zero_callbacks1000hertz():
-    if os.name == 'nt' or platform.machine() == 'aarch64':
-        raise SkipTest
-    func_launch(func_zero_callback, ['0.001'], 'received callbacks when not expected')
+    # if os.name == 'nt' or platform.machine() == 'aarch64':
+    #     raise SkipTest
+    # func_launch(func_zero_callback, ['0.001'], 'received callbacks when not expected')
+    raise SkipTest
 
 
 def test_timer_number_callbacks10hertz():
@@ -168,10 +170,11 @@ def test_timer_number_callbacks100hertz():
 
 
 def test_timer_number_callbacks1000hertz():
-    if os.name == 'nt' or platform.machine() == 'aarch64':
-        raise SkipTest
-    func_launch(
-        func_number_callbacks, ['0.001'], "didn't receive the expected number of callbacks")
+    # if os.name == 'nt' or platform.machine() == 'aarch64':
+    #     raise SkipTest
+    # func_launch(
+    #     func_number_callbacks, ['0.001'], "didn't receive the expected number of callbacks")
+    raise SkipTest
 
 
 def test_timer_cancel_reset_10hertz():
@@ -185,7 +188,8 @@ def test_timer_cancel_reset_100hertz():
 
 
 def test_timer_cancel_reset_1000hertz():
-    if os.name == 'nt' or platform.machine() == 'aarch64':
-        raise SkipTest
-    func_launch(
-        func_cancel_reset_timer, ['0.001'], "didn't receive the expected number of callbacks")
+    # if os.name == 'nt' or platform.machine() == 'aarch64':
+    #     raise SkipTest
+    # func_launch(
+    #     func_cancel_reset_timer, ['0.001'], "didn't receive the expected number of callbacks")
+    raise SkipTest
