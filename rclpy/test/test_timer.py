@@ -15,11 +15,12 @@
 import multiprocessing
 import os
 import platform
-import pytest
 import sys
 import time
 import traceback
 from unittest.case import SkipTest
+
+import pytest
 
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
