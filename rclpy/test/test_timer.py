@@ -20,6 +20,8 @@ import time
 import traceback
 from unittest.case import SkipTest
 
+import pytest
+
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
 
@@ -152,6 +154,7 @@ def test_timer_zero_callbacks100hertz():
 # TODO(mikaelarguedas) reenable these once timer have consistent behaviour
 # on every platform at high frequency
 # TODO(sloretz) Reenable on arm when executor performance is good enough
+@pytest.mark.skip(reason='1kHz tests are too prone to flakiness')
 def test_timer_zero_callbacks1000hertz():
     if os.name == 'nt' or platform.machine() == 'aarch64':
         raise SkipTest
@@ -167,6 +170,7 @@ def test_timer_number_callbacks100hertz():
         func_number_callbacks, ['0.01'], "didn't receive the expected number of callbacks")
 
 
+@pytest.mark.skip(reason='1kHz tests are too prone to flakiness')
 def test_timer_number_callbacks1000hertz():
     if os.name == 'nt' or platform.machine() == 'aarch64':
         raise SkipTest
@@ -184,6 +188,7 @@ def test_timer_cancel_reset_100hertz():
         func_cancel_reset_timer, ['0.01'], "didn't receive the expected number of callbacks")
 
 
+@pytest.mark.skip(reason='1kHz tests are too prone to flakiness')
 def test_timer_cancel_reset_1000hertz():
     if os.name == 'nt' or platform.machine() == 'aarch64':
         raise SkipTest
