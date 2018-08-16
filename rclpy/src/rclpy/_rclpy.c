@@ -2191,21 +2191,19 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Clear all the pointers of a given wait set field
+/// Clear all the pointers in the wait set
 /**
- * Raises RuntimeError if the entity type is unknown or any rcl error occurs
+ * Raises RuntimeError if any rcl error occurs
  *
- * \param[in] entity_type string defining the entity ["subscription, client, service"]
  * \param[in] pywait_set Capsule pointing to the wait set structure
  * \return NULL
  */
 static PyObject *
 rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  const char * entity_type;
   PyObject * pywait_set;
 
-  if (!PyArg_ParseTuple(args, "zO", &entity_type, &pywait_set)) {
+  if (!PyArg_ParseTuple(args, "O", &pywait_set)) {
     return NULL;
   }
 
@@ -2213,26 +2211,10 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   if (!wait_set) {
     return NULL;
   }
-  rcl_ret_t ret;
-  if (0 == strcmp(entity_type, "subscription")) {
-    ret = rcl_wait_set_clear_subscriptions(wait_set);
-  } else if (0 == strcmp(entity_type, "client")) {
-    ret = rcl_wait_set_clear_clients(wait_set);
-  } else if (0 == strcmp(entity_type, "service")) {
-    ret = rcl_wait_set_clear_services(wait_set);
-  } else if (0 == strcmp(entity_type, "timer")) {
-    ret = rcl_wait_set_clear_timers(wait_set);
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    ret = rcl_wait_set_clear_guard_conditions(wait_set);
-  } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError,
-      "'%s' is not a known entity", entity_type);
-    return NULL;
-  }
+  rcl_ret_t ret = rcl_wait_set_clear(wait_set);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to clear '%s' from wait set: %s", entity_type, rcl_get_error_string_safe());
+      "Failed to clear  wait set: %s", rcl_get_error_string_safe());
     rcl_reset_error();
     return NULL;
   }
