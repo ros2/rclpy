@@ -49,7 +49,10 @@ def shutdown():
     _shutdown()
 
 
-def create_node(node_name, *, cli_args=None, namespace=None, use_global_arguments=True):
+def create_node(
+    node_name, *, cli_args=None, namespace=None, use_global_arguments=True,
+    start_parameter_services=True
+):
     """
     Create an instance of :class:`rclpy.node.Node`.
 
@@ -64,7 +67,8 @@ def create_node(node_name, *, cli_args=None, namespace=None, use_global_argument
     from rclpy.node import Node
     return Node(
         node_name, cli_args=cli_args, namespace=namespace,
-        use_global_arguments=use_global_arguments)
+        use_global_arguments=use_global_arguments,
+        start_parameter_services=start_parameter_services)
 
 
 def spin_once(node, *, timeout_sec=None):

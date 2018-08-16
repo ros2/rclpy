@@ -16,6 +16,8 @@ from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+TOPIC_SEPARATOR_STRING = '/'
+
 
 def validate_topic_name(name, *, is_service=False):
     """
