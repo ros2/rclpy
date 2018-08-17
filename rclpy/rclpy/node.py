@@ -358,7 +358,6 @@ class Node:
         if self.handle is None:
             return ret
 
-        # TODO: is this needed/desired?
         # Drop extra reference to parameter event publisher.
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
