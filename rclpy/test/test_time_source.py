@@ -102,6 +102,9 @@ class TestTimeSource(unittest.TestCase):
         # A subscriber should have been created
         assert time_source._clock_sub is not None
 
+        # Before any messages have been received on the /clock topic, now() should return 0
+        assert clock.now() == Time(seconds=0, clock_type=ClockType.ROS_TIME)
+
         # When using sim time, ROS time should look like the messages received on /clock
         self.publish_clock_messages()
         assert clock.now() > Time(seconds=0, clock_type=ClockType.ROS_TIME)
