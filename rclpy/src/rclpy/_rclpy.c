@@ -3399,6 +3399,10 @@ _parse_param_files(
     if (RCL_RET_OK != ret) {
       PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
         rcl_get_error_string_safe());
+      /* We fini here because later calls in this function may fini the struct
+       * on error so the calling code has no idea whether fini has already been
+       * called. */
+      rcl_yaml_node_struct_fini(params);
       return false;
     }
     for (int i = 0; i < param_files_count; i++) {
