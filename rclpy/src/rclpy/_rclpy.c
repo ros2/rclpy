@@ -3468,7 +3468,6 @@ static PyObject * _parameter_from_rcl_variant(
       return NULL;
     }
     for (size_t i = 0; i < variant->byte_array_value->size; i++) {
-
       member_value = PyBytes_FromFormat("%u", variant->byte_array_value->values[i]);
       if (NULL == member_value) {
         Py_DECREF(value);
