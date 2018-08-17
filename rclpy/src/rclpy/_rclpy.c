@@ -3433,9 +3433,11 @@ static PyObject * _parameter_from_rcl_variant(
 {
   int type_enum_value;
   PyObject * value;
+  PyObject * member_value;
   if (variant->bool_value) {
     type_enum_value = 1;
     value = variant->bool_value ? Py_True : Py_False;
+    Py_INCREF(value);
   } else if (variant->integer_value) {
     type_enum_value = 2;
     value = PyLong_FromLong(*(variant->integer_value));
@@ -3455,7 +3457,9 @@ static PyObject * _parameter_from_rcl_variant(
     type_enum_value = 6;
     value = PyList_New(variant->bool_array_value->size);
     for (size_t i = 0; i < variant->bool_array_value->size; i++) {
-      PyList_SetItem(value, i, variant->bool_array_value->values[i] ? Py_True : Py_False);
+      member_value = variant->bool_array_value->values[i] ? Py_True : Py_False;
+      Py_INCREF(member_value)
+      PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->integer_array_value) {
     type_enum_value = 7;
