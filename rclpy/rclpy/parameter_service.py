@@ -122,6 +122,6 @@ class ParameterService:
         return response
 
     def _set_parameters_atomically_callback(self, request, response):
-        response.results = self._node.set_parameters_atomically([
+        response.result = self._node.set_parameters_atomically([
             Parameter.from_rcl_interface_parameter(p) for p in request.parameters])
         return response
