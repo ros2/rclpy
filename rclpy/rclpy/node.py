@@ -61,7 +61,7 @@ class Node:
 
     def __init__(
         self, node_name, *, cli_args=None, namespace=None, use_global_arguments=True,
-        start_parameter_services=True, initial_parameters=[]
+        start_parameter_services=True, initial_parameters=None
     ):
         self._handle = None
         self._parameters = {}
@@ -112,6 +112,13 @@ class Node:
                     'initial_parameters must be a list of {}'.format(repr(Parameter))
                 )
             self._parameters[param.name] = param
+
+        node_parameters = _rclpy.rclpy_get_node_parameters(Parameter, self.handle)
+        # use the set_parameters API so parameter events are publish.
+        if node_parameters:
+            self.set_parameters(node_parameters)
+        if initial_parameters is not None:
+            self.set_parameters(initial_parameters)
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
