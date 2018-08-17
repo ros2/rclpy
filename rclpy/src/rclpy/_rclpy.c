@@ -3540,13 +3540,12 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(node_capsule, "rcl_node_t");
-  const rcl_node_options_t * node_options = rcl_node_get_options(node);
-  const rcl_allocator_t allocator = node_options->allocator;
   if (!node) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to retrieve rcl node from capsule");
     return NULL;
   }
 
+  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  const rcl_allocator_t allocator = node_options->allocator;
   rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
   if (NULL == params) {
     PyErr_Format(PyExc_RuntimeError, "Failed to allocate initial parameters");
