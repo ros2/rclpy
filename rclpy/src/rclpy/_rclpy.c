@@ -3622,18 +3622,21 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     return PyList_New(0);
   }
 
+  rcl_node_params_t node_params = params->params[node_index];
+  PyObject * parameter_list = PyList_New(node_params.num_params);
+  if (NULL == parameter_list) {
+    rcl_yaml_node_struct_fini(params);
+    return NULL;
+  }
   if (!PyObject_HasAttrString(parameter_cls, "Type")) {
     PyErr_Format(PyExc_RuntimeError, "Parameter class is missing 'Type' attribute");
+    rcl_yaml_node_struct_fini(params);
     return NULL;
   }
   PyObject * parameter_type_cls = PyObject_GetAttrString(parameter_cls, "Type");
   if (NULL == parameter_type_cls) {
-    PyErr_Format(PyExc_RuntimeError, "Error getting 'Type' attribute from Parameter class");
-    return NULL;
-  }
-  rcl_node_params_t node_params = params->params[node_index];
-  PyObject * parameter_list = PyList_New(node_params.num_params);
-  if (NULL == parameter_list) {
+    /* PyObject_GetAttrString raises AttributeError on failure. */
+    rcl_yaml_node_struct_fini(params);
     return NULL;
   }
   PyObject * param;
@@ -3642,6 +3645,8 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
       node_params.parameter_names[i], &(node_params.parameter_values[i]),
       parameter_cls, parameter_type_cls);
     if (NULL == param) {
+      Py_DECREF(parameter_type_cls);
+      rcl_yaml_node_struct_fini(params);
       return NULL;
     }
     PyList_SET_ITEM(parameter_list, i, param);
