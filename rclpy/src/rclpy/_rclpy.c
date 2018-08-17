@@ -3385,7 +3385,8 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
  *         false when there was an error during parsing and a Python exception was raised.
  *
  */
-static bool _parse_param_files(
+static bool
+_parse_param_files(
   const rcl_arguments_t * args, rcl_allocator_t allocator,
   rcl_params_t * params)
 {
