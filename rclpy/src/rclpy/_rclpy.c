@@ -3392,6 +3392,7 @@ static bool _parse_param_files(
   char ** param_files;
   int param_files_count = rcl_arguments_get_param_files_count(args);
   rcl_ret_t ret;
+  bool successful = true;
   if (param_files_count > 0) {
     ret = rcl_arguments_get_param_files(args, allocator, &param_files);
     if (RCL_RET_OK != ret) {
@@ -3400,15 +3401,16 @@ static bool _parse_param_files(
       return false;
     }
     for (int i = 0; i < param_files_count; i++) {
-      if (!rcl_parse_yaml_file(param_files[i], params)) {
+      if (successfull && !rcl_parse_yaml_file(param_files[i], params)) {
         /* failure to parse will automatically fini the params struct */
         PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
-        return false;
+        successful = false;
       }
       allocator.deallocate(param_files[i], allocator.state);
     }
+    allocator.deallocate(param_files, allocator.state);
   }
-  return true;
+  return successful;
 }
 
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
