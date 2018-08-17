@@ -3442,12 +3442,21 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->integer_value) {
     type_enum_value = 2;
     value = PyLong_FromLong(*(variant->integer_value));
+    if (NULL == value) {
+      return NULL;
+    }
   } else if (variant->double_value) {
     type_enum_value = 3;
     value = PyFloat_FromDouble(*(variant->double_value));
+    if (NULL == value) {
+      return NULL;
+    }
   } else if (variant->string_value) {
     type_enum_value = 4;
     value = PyUnicode_FromString(variant->string_value);
+    if (NULL == value) {
+      return NULL;
+    }
   } else if (variant->byte_array_value) {
     type_enum_value = 5;
     value = PyList_New(variant->byte_array_value->size);
@@ -3458,6 +3467,7 @@ static PyObject * _parameter_from_rcl_variant(
 
       member_value = PyBytes_FromFormat("%u", variant->byte_array_value->values[i]);
       if (NULL == member_value) {
+        Py_DECREF(value);
         return NULL;
       }
       PyList_SET_ITEM(value, i, member_value);
@@ -3480,7 +3490,12 @@ static PyObject * _parameter_from_rcl_variant(
       return NULL;
     }
     for (size_t i = 0; i < variant->integer_array_value->size; i++) {
-      PyList_SET_ITEM(value, i, PyLong_FromLong(variant->integer_array_value->values[i]));
+      member_value = PyLong_FromLong(variant->integer_array_value->values[i]);
+      if (NULL == member_value) {
+        Py_DECREF(value);
+        return NULL;
+      }
+      PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->double_array_value) {
     type_enum_value = 8;
@@ -3489,7 +3504,12 @@ static PyObject * _parameter_from_rcl_variant(
       return NULL;
     }
     for (size_t i = 0; i < variant->double_array_value->size; i++) {
-      PyList_SET_ITEM(value, i, PyFloat_FromDouble(variant->double_array_value->values[i]));
+      member_value = PyFloat_FromDouble(variant->double_array_value->values[i]);
+      if (NULL == member_value) {
+        Py_DECREF(value);
+        return NULL;
+      }
+      PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->string_array_value) {
     type_enum_value = 9;
@@ -3498,7 +3518,12 @@ static PyObject * _parameter_from_rcl_variant(
       return NULL;
     }
     for (size_t i = 0; i < variant->string_array_value->size; i++) {
-      PyList_SET_ITEM(value, i, PyUnicode_FromString(variant->string_array_value->data[i]));
+      member_value = PyUnicode_FromString(variant->string_array_value->data[i]);
+      if (NULL == member_value) {
+        Py_DECREF(value);
+        return NULL;
+      }
+      PyList_SET_ITEM(value, i, member_value);
     }
   }
 
