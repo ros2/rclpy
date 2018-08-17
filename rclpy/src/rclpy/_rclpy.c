@@ -3450,12 +3450,23 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->byte_array_value) {
     type_enum_value = 5;
     value = PyList_New(variant->byte_array_value->size);
+    if (NULL == value) {
+      return NULL;
+    }
     for (size_t i = 0; i < variant->byte_array_value->size; i++) {
-      PyList_SetItem(value, i, PyBytes_FromFormat("%u", variant->byte_array_value->values[i]));
+
+      member_value = PyBytes_FromFormat("%u", variant->byte_array_value->values[i]);
+      if (NULL == member_value) {
+        return NULL;
+      }
+      PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->bool_array_value) {
     type_enum_value = 6;
     value = PyList_New(variant->bool_array_value->size);
+    if (NULL == value) {
+      return NULL;
+    }
     for (size_t i = 0; i < variant->bool_array_value->size; i++) {
       member_value = variant->bool_array_value->values[i] ? Py_True : Py_False;
       Py_INCREF(member_value)
@@ -3464,26 +3475,44 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->integer_array_value) {
     type_enum_value = 7;
     value = PyList_New(variant->integer_array_value->size);
+    if (NULL == value) {
+      return NULL;
+    }
     for (size_t i = 0; i < variant->integer_array_value->size; i++) {
-      PyList_SetItem(value, i, PyLong_FromLong(variant->integer_array_value->values[i]));
+      PyList_SET_ITEM(value, i, PyLong_FromLong(variant->integer_array_value->values[i]));
     }
   } else if (variant->double_array_value) {
     type_enum_value = 8;
     value = PyList_New(variant->double_array_value->size);
+    if (NULL == value) {
+      return NULL;
+    }
     for (size_t i = 0; i < variant->double_array_value->size; i++) {
-      PyList_SetItem(value, i, PyFloat_FromDouble(variant->double_array_value->values[i]));
+      PyList_SET_ITEM(value, i, PyFloat_FromDouble(variant->double_array_value->values[i]));
     }
   } else if (variant->string_array_value) {
     type_enum_value = 9;
     value = PyList_New(variant->string_array_value->size);
+    if (NULL == value) {
+      return NULL;
+    }
     for (size_t i = 0; i < variant->string_array_value->size; i++) {
-      PyList_SetItem(value, i, PyUnicode_FromString(variant->string_array_value->data[i]));
+      PyList_SET_ITEM(value, i, PyUnicode_FromString(variant->string_array_value->data[i]));
     }
   }
 
-  PyObject * type = PyObject_CallObject(parameter_type_cls, Py_BuildValue("(i)", type_enum_value));
-  PyObject * param = PyObject_CallObject(parameter_cls, Py_BuildValue("sOO", name, type, value));
-
+  PyObject * args = Py_BuildValue("(i)", type_enum_value);
+  if (NULL == args) {
+    return NULL;
+  }
+  PyObject * type = PyObject_CallObject(parameter_type_cls, args);
+  Py_DECREF(args);
+  args = Py_BuildValue("sOO", name, type, value);
+  if (NULL == args) {
+    return NULL;
+  }
+  PyObject * param = PyObject_CallObject(parameter_cls, args);
+  Py_DECREF(args);
   Py_DECREF(type);
   return param;
 }
@@ -3568,13 +3597,29 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     return PyList_New(0);
   }
 
+  if (!PyObject_HasAttrString(parameter_cls, "Type")) {
+    PyErr_Format(PyExc_RuntimeError, "Parameter class is missing 'Type' attribute");
+    return NULL;
+  }
   PyObject * parameter_type_cls = PyObject_GetAttrString(parameter_cls, "Type");
+  if (NULL == parameter_type_cls) {
+    PyErr_Format(PyExc_RuntimeError, "Error getting 'Type' attribute from Parameter class");
+    return NULL;
+  }
   rcl_node_params_t node_params = params->params[node_index];
   PyObject * parameter_list = PyList_New(node_params.num_params);
+  if (NULL == parameter_list) {
+    return NULL;
+  }
+  PyObject * param;
   for (size_t i = 0; i < node_params.num_params; i++) {
-    PyList_SetItem(parameter_list, i, _parameter_from_rcl_variant(
-        node_params.parameter_names[i], &(node_params.parameter_values[i]),
-        parameter_cls, parameter_type_cls));
+    param = _parameter_from_rcl_variant(
+      node_params.parameter_names[i], &(node_params.parameter_values[i]),
+      parameter_cls, parameter_type_cls);
+    if (NULL == param) {
+      return NULL;
+    }
+    PyList_SET_ITEM(parameter_list, i, param);
   }
 
   Py_DECREF(parameter_type_cls);
