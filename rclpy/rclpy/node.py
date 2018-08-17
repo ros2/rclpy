@@ -173,12 +173,12 @@ class Node:
             parameter_event = ParameterEvent()
             for param in parameter_list:
                 if Parameter.Type.NOT_SET == param.type_:
-                    if Parameter.Type.NOT_SET != self.get_parameter(param.name):
+                    if Parameter.Type.NOT_SET != self.get_parameter(param.name).type_:
                         # Parameter deleted. (Parameter had value and new value is not set)
                         parameter_event.deleted_parameters.append(param.get_rcl_parameter())
                         del self._parameters[param.name]
                 else:
-                    if Parameter.Type.NOT_SET == self.get_parameter(param.name):
+                    if Parameter.Type.NOT_SET == self.get_parameter(param.name).type_:
                         #  Parameter is new. (Parameter had no value and new value is set)
                         parameter_event.new_parameters.append(param.get_rcl_parameter())
                     else:
