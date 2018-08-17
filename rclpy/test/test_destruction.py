@@ -107,10 +107,10 @@ def func_destroy_entities():
     timer  # noqa
     assert 1 == len(node.timers)
     pub1 = node.create_publisher(Primitives, 'pub1_topic')
-    assert 1 == len(node.publishers)
+    assert 2 == len(node.publishers)
     pub2 = node.create_publisher(Primitives, 'pub2_topic')
     pub2  # noqa
-    assert 2 == len(node.publishers)
+    assert 3 == len(node.publishers)
     sub1 = node.create_subscription(
         Primitives, 'sub1_topic', lambda msg: print('Received %r' % msg))
     assert 1 == len(node.subscriptions)
@@ -120,7 +120,7 @@ def func_destroy_entities():
     assert 2 == len(node.subscriptions)
 
     assert node.destroy_publisher(pub1) is True
-    assert 1 == len(node.publishers)
+    assert 2 == len(node.publishers)
 
     assert node.destroy_subscription(sub1) is True
     assert 1 == len(node.subscriptions)
