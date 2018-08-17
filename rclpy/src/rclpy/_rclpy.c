@@ -3401,7 +3401,7 @@ static bool _parse_param_files(
       return false;
     }
     for (int i = 0; i < param_files_count; i++) {
-      if (successfull && !rcl_parse_yaml_file(param_files[i], params)) {
+      if (successful && !rcl_parse_yaml_file(param_files[i], params)) {
         /* failure to parse will automatically fini the params struct */
         PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
         successful = false;
@@ -3469,7 +3469,7 @@ static PyObject * _parameter_from_rcl_variant(
     }
     for (size_t i = 0; i < variant->bool_array_value->size; i++) {
       member_value = variant->bool_array_value->values[i] ? Py_True : Py_False;
-      Py_INCREF(member_value)
+      Py_INCREF(member_value);
       PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->integer_array_value) {
