@@ -185,7 +185,7 @@ class Node:
                         # Parameter changed. (Parameter had a value and new value is set)
                         parameter_event.changed_parameters.append(param.get_rcl_parameter())
                     self._parameters[param.name] = param
-                self._parameter_event_publisher.publish(parameter_event)
+            self._parameter_event_publisher.publish(parameter_event)
 
         return result
 
