@@ -3436,7 +3436,6 @@ static PyObject * _parameter_from_rcl_variant(
   const char * name, rcl_variant_t * variant, PyObject * parameter_cls,
   PyObject * parameter_type_cls)
 {
-
   /* Default to 0 (not set) to suppress warnings. A python error will raise if
    * type and value don't agree */
   int type_enum_value = 0;
