@@ -170,6 +170,9 @@ class Node:
                 self._parameters[param.name] = param
         return result
 
+    def set_parameters_callback(self, callback):
+        self._parameters_callback = callback
+
     def _validate_topic_or_service_name(self, topic_or_service_name, *, is_service=False):
         name = self.get_name()
         namespace = self.get_namespace()
