@@ -134,5 +134,5 @@ class Parameter:
             parameter_value.string_array_value = self.value
         return parameter_value
 
-    def get_rcl_parameter(self):
+    def to_rcl_interface_parameter(self):
         return RCLParameter(name=self.name, value=self.get_parameter_value())

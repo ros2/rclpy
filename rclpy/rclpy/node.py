@@ -175,15 +175,17 @@ class Node:
                 if Parameter.Type.NOT_SET == param.type_:
                     if Parameter.Type.NOT_SET != self.get_parameter(param.name).type_:
                         # Parameter deleted. (Parameter had value and new value is not set)
-                        parameter_event.deleted_parameters.append(param.get_rcl_parameter())
+                        parameter_event.deleted_parameters.append(
+                            param.to_rcl_interface_parameter())
                         del self._parameters[param.name]
                 else:
                     if Parameter.Type.NOT_SET == self.get_parameter(param.name).type_:
                         #  Parameter is new. (Parameter had no value and new value is set)
-                        parameter_event.new_parameters.append(param.get_rcl_parameter())
+                        parameter_event.new_parameters.append(param.to_rcl_interface_parameter())
                     else:
                         # Parameter changed. (Parameter had a value and new value is set)
-                        parameter_event.changed_parameters.append(param.get_rcl_parameter())
+                        parameter_event.changed_parameters.append(
+                            param.to_rcl_interface_parameter())
                     self._parameters[param.name] = param
             self._parameter_event_publisher.publish(parameter_event)
 
