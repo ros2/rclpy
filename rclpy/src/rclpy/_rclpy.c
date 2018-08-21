@@ -3443,7 +3443,7 @@ static PyObject * _parameter_from_rcl_variant(
   PyObject * member_value;
   if (variant->bool_value) {
     type_enum_value = 1;
-    value = variant->bool_value ? Py_True : Py_False;
+    value = *(variant->bool_value) ? Py_True : Py_False;
     Py_INCREF(value);
   } else if (variant->integer_value) {
     type_enum_value = 2;
