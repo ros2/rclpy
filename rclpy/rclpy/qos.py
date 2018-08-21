@@ -174,8 +174,6 @@ qos_profile_sensor_data = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_sensor_data')
 qos_profile_services_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_services_default')
-# NOTE(mikaelarguedas) the following are defined but not used because
-# parameters are not implemented in Python yet
 qos_profile_parameters = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameters')
 qos_profile_parameter_events = _rclpy.rclpy_get_rmw_qos_profile(
