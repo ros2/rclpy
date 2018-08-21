@@ -3447,7 +3447,7 @@ static PyObject * _parameter_from_rcl_variant(
     Py_INCREF(value);
   } else if (variant->integer_value) {
     type_enum_value = 2;
-    value = PyLong_FromLong(*(variant->integer_value));
+    value = PyLong_FromLongLong(*(variant->integer_value));
     if (NULL == value) {
       return NULL;
     }
@@ -3495,7 +3495,7 @@ static PyObject * _parameter_from_rcl_variant(
       return NULL;
     }
     for (size_t i = 0; i < variant->integer_array_value->size; i++) {
-      member_value = PyLong_FromLong(variant->integer_array_value->values[i]);
+      member_value = PyLong_FromLongLong(variant->integer_array_value->values[i]);
       if (NULL == member_value) {
         Py_DECREF(value);
         return NULL;
