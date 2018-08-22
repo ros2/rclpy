@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix executor.remove_node() (`#217 <https://github.com/ros2/rclpy/issues/217>`_)
+* executor.add_node() returns a bool (`#216 <https://github.com/ros2/rclpy/issues/216>`_)
+* Contributors: Mikael Arguedas, Shane Loretz
+
 0.5.3 (2018-07-17)
 ------------------
 * use test_msgs instead of std_msgs (`#204 <https://github.com/ros2/rclpy/issues/204>`_)
