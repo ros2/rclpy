@@ -3370,70 +3370,22 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Populate an rcl_params_t with parameters parsed from arguments.
-/**
- * On failure a Python exception is raised and false is returned if:
- *
- * Raises RuntimeError if param_files cannot be extracted from arguments.
- * Raises RuntimeError if yaml files do not parse succesfully.
- *
- * \param[in] args The arguments to parse for parameter files
- * \param[in] allocator Allocator to use for allocating and deallocating within the function.
- * \param[out] params An initialized rcl params struct to place parsed parameters into.
- *
- * Returns true when parameters are parsed successfully (including the trivial case)
- *         false when there was an error during parsing and a Python exception was raised.
- *
- */
-static bool
-_parse_param_files(
-  const rcl_arguments_t * args, rcl_allocator_t allocator,
-  rcl_params_t * params)
-{
-  char ** param_files;
-  int param_files_count = rcl_arguments_get_param_files_count(args);
-  rcl_ret_t ret;
-  bool successful = true;
-  if (param_files_count > 0) {
-    ret = rcl_arguments_get_param_files(args, allocator, &param_files);
-    if (RCL_RET_OK != ret) {
-      PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
-        rcl_get_error_string_safe());
-      /* We fini here because later calls in this function may fini the struct
-       * on error so the calling code has no idea whether fini has already been
-       * called. */
-      rcl_yaml_node_struct_fini(params);
-      return false;
-    }
-    for (int i = 0; i < param_files_count; i++) {
-      if (successful && !rcl_parse_yaml_file(param_files[i], params)) {
-        /* failure to parse will automatically fini the params struct */
-        PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
-        successful = false;
-      }
-      allocator.deallocate(param_files[i], allocator.state);
-    }
-    allocator.deallocate(param_files, allocator.state);
-  }
-  return successful;
-}
-
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
 /**
  * On failure a Python exception is raised and false is returned if:
  *
  * Raises ValueError if the variant points to no data.
  *
- * \param[in] name The name of the parameter
- * \param[in] variant The variant object to create a Parameter from
+ * \param[in] name The name of the parameter as a Python unicode string.
+ * \param[in] variant The variant object to create a Parameter from.
  * \param[in] parameter_cls The PythonObject for the Parameter class.
- * \param[in] parameter_cls The PythonObject for the Parameter.Type class.
+ * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
  *
  * Returns a pointer to an rclpy.parameter.Parameter with the name, type, and value from
  * the variant or NULL when raising a python exception.
  */
 static PyObject * _parameter_from_rcl_variant(
-  const char * name, rcl_variant_t * variant, PyObject * parameter_cls,
+  PyObject * name, rcl_variant_t * variant, PyObject * parameter_cls,
   PyObject * parameter_type_cls)
 {
   /* Default to 0 (not set) to suppress warnings. A python error will raise if
@@ -3538,7 +3490,7 @@ static PyObject * _parameter_from_rcl_variant(
   }
   PyObject * type = PyObject_CallObject(parameter_type_cls, args);
   Py_DECREF(args);
-  args = Py_BuildValue("sOO", name, type, value);
+  args = Py_BuildValue("OOO", name, type, value);
   if (NULL == args) {
     return NULL;
   }
@@ -3546,6 +3498,142 @@ static PyObject * _parameter_from_rcl_variant(
   Py_DECREF(args);
   Py_DECREF(type);
   return param;
+}
+
+/// Populate a Python dict with a dict of node parameters by node name
+/**
+ * On failure a Python exception is raised and false is returned
+ *
+ * \param[in] name The name of the parameter
+ * \param[in] variant The variant object to create a Parameter from
+ * \param[in] parameter_cls The PythonObject for the Parameter class.
+ * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
+ * \param[out] node_params_dict The PythonObject to populate with node names and parameters.
+ *
+ * Returns true when parameters are set successfully
+ *         false when there was an error during parsing.
+ */
+static bool
+_populate_node_parameters_from_rcl_params(
+  const rcl_params_t * params, rcl_allocator_t allocator, PyObject * parameter_cls,
+  PyObject * parameter_type_cls, PyObject * node_params_dict)
+{
+  for (size_t i = 0; i < params->num_nodes; i++) {
+    PyObject * py_node_name;
+    if (params->node_names[i][0] != '/') {
+      py_node_name = PyUnicode_FromString(rcutils_format_string(allocator,
+        "/%s", params->node_names[i]));
+    } else {
+      py_node_name = PyUnicode_FromString(params->node_names[i]);
+    }
+    if (NULL == py_node_name) {
+      return false;
+    }
+    PyObject * parameter_dict;
+    if (!PyDict_Contains(node_params_dict, py_node_name)) {
+      parameter_dict = PyDict_New();
+      if (NULL == parameter_dict) {
+        Py_DECREF(py_node_name);
+        return false;
+      }
+      if (-1 == PyDict_SetItem(node_params_dict, py_node_name, parameter_dict)) {
+        Py_DECREF(py_node_name);
+        return false;
+      }
+    } else {
+      parameter_dict = PyDict_GetItem(node_params_dict, py_node_name);
+      if (NULL == parameter_dict) {
+        Py_DECREF(py_node_name);
+        return false;
+      }
+      /* This was a borrowed reference. INCREF'd so we can unconditionally DECREF below. */
+      Py_INCREF(parameter_dict);
+    }
+    rcl_node_params_t node_params = params->params[i];
+    for (size_t ii = 0; ii < node_params.num_params; ii++) {
+      PyObject * py_param_name = PyUnicode_FromString(node_params.parameter_names[ii]);
+      if (NULL == py_param_name) {
+        Py_DECREF(py_node_name);
+        Py_DECREF(parameter_dict);
+        return false;
+      }
+      PyObject * py_param = _parameter_from_rcl_variant(py_param_name,
+          &node_params.parameter_values[ii], parameter_cls, parameter_type_cls);
+      if (NULL == py_param) {
+        Py_DECREF(py_node_name);
+        Py_DECREF(parameter_dict);
+        Py_DECREF(py_param_name);
+        return false;
+      }
+      if (-1 == PyDict_SetItem(parameter_dict, py_param_name, py_param)) {
+        Py_DECREF(py_node_name);
+        Py_DECREF(py_param_name);
+        Py_DECREF(parameter_dict);
+        Py_DECREF(py_param);
+        return false;
+      }
+      Py_DECREF(py_param_name);
+      Py_DECREF(py_param);
+    }
+    Py_DECREF(py_node_name);
+    Py_DECREF(parameter_dict);
+  }
+  return true;
+}
+
+/// Populate a Python dict with node parameters parsed from arguments files
+/**
+ * On failure a Python exception is raised and false is returned if:
+ *
+ * Raises RuntimeError if param_files cannot be extracted from arguments.
+ * Raises RuntimeError if yaml files do not parse succesfully.
+ *
+ * \param[in] args The arguments to parse for parameter files
+ * \param[in] allocator Allocator to use for allocating and deallocating within the function.
+ * \param[out] params_by_node_name A Python dict object to place parsed parameters into.
+ *
+ * Returns true when parameters are parsed successfully (including the trivial case)
+ *         false when there was an error during parsing and a Python exception was raised.
+ *
+ */
+static bool
+_parse_param_files(
+  const rcl_arguments_t * args, rcl_allocator_t allocator, PyObject * parameter_cls,
+  PyObject * parameter_type_cls, PyObject * params_by_node_name)
+{
+  char ** param_files;
+  int param_files_count = rcl_arguments_get_param_files_count(args);
+  rcl_ret_t ret;
+  bool successful = true;
+  if (param_files_count > 0) {
+    ret = rcl_arguments_get_param_files(args, allocator, &param_files);
+    if (RCL_RET_OK != ret) {
+      PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
+        rcl_get_error_string_safe());
+      return false;
+    }
+    for (int i = 0; i < param_files_count; i++) {
+      if (successful) {
+        rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
+        if (!rcl_parse_yaml_file(param_files[i], params)) {
+          /* failure to parse will automatically fini the params struct */
+          PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
+          successful = false;
+        } else {
+          if (!_populate_node_parameters_from_rcl_params(
+            params, allocator, parameter_cls, parameter_type_cls, params_by_node_name)) {
+            PyErr_Format(PyExc_RuntimeError, "Unable to populate params dict from file: %s", param_files[i]);
+            rcl_yaml_node_struct_fini(params);
+            return false;
+          }
+        }
+        rcl_yaml_node_struct_fini(params);
+      }
+      allocator.deallocate(param_files[i], allocator.state);
+    }
+    allocator.deallocate(param_files, allocator.state);
+  }
+  return successful;
 }
 
 /// Get a list of parameters for the current node from rcl_yaml_param_parser
@@ -3575,25 +3663,43 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  const rcl_node_options_t * node_options = rcl_node_get_options(node);
-  const rcl_allocator_t allocator = node_options->allocator;
-  rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
-  if (NULL == params) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to allocate initial parameters");
+  PyObject * params_by_node_name = PyDict_New();
+  if (NULL == params_by_node_name) {
     return NULL;
   }
 
+  if (!PyObject_HasAttrString(parameter_cls, "Type")) {
+    PyErr_Format(PyExc_RuntimeError, "Parameter class is missing 'Type' attribute");
+    Py_DECREF(params_by_node_name);
+    return NULL;
+  }
+  PyObject * parameter_type_cls = PyObject_GetAttrString(parameter_cls, "Type");
+  if (NULL == parameter_type_cls) {
+    /* PyObject_GetAttrString raises AttributeError on failure. */
+    Py_DECREF(params_by_node_name);
+    return NULL;
+  }
+
+  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  const rcl_allocator_t allocator = node_options->allocator;
+
   if (node_options->use_global_arguments) {
-    if (!_parse_param_files(rcl_get_global_arguments(), allocator, params)) {
+    if (!_parse_param_files(rcl_get_global_arguments(), allocator, parameter_cls,
+        parameter_type_cls, params_by_node_name)) {
+      Py_DECREF(parameter_type_cls);
+      Py_DECREF(params_by_node_name);
       return NULL;
     }
   }
 
-  if (!_parse_param_files(&(node_options->arguments), allocator, params)) {
+  if (!_parse_param_files(&(node_options->arguments), allocator, parameter_cls,
+      parameter_type_cls, params_by_node_name)) {
+    Py_DECREF(parameter_type_cls);
+    Py_DECREF(params_by_node_name);
     return NULL;
   }
+  Py_DECREF(parameter_type_cls);
 
-  int node_index = -1;
   const char * node_namespace = rcl_node_get_namespace(node);
   char * node_name_with_namespace;
   if ('/' == node_namespace[strlen(node_namespace) - 1]) {
@@ -3604,62 +3710,38 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
         node_namespace, rcl_node_get_name(node));
   }
 
-  char * fully_qualified_param_node_name;
-  for (size_t i = 0; i < params->num_nodes; i++) {
-    if (params->node_names[i][0] != '/') {
-      fully_qualified_param_node_name = rcutils_format_string(allocator,
-          "/%s", params->node_names[i]);
-    } else {
-      fully_qualified_param_node_name = params->node_names[i];
-    }
-    if (0 == strcmp(fully_qualified_param_node_name, node_name_with_namespace)) {
-      node_index = i;
-    }
-    if (params->node_names[i][0] != '/') {
-      allocator.deallocate(fully_qualified_param_node_name, allocator.state);
-    }
+  PyObject * py_node_name_with_namespace = PyUnicode_FromString(node_name_with_namespace);
+  if (NULL == py_node_name_with_namespace) {
+    allocator.deallocate(node_name_with_namespace, allocator.state);
+    Py_DECREF(params_by_node_name);
+    return NULL;
   }
   allocator.deallocate(node_name_with_namespace, allocator.state);
 
-  if (-1 == node_index) {
+
+  if (!PyDict_Contains(params_by_node_name, py_node_name_with_namespace)) {
     /* No parameters for current node.*/
-    rcl_yaml_node_struct_fini(params);
+    Py_DECREF(params_by_node_name);
+    Py_DECREF(py_node_name_with_namespace);
     return PyList_New(0);
   }
-
-  rcl_node_params_t node_params = params->params[node_index];
-  PyObject * parameter_list = PyList_New(node_params.num_params);
-  if (NULL == parameter_list) {
-    rcl_yaml_node_struct_fini(params);
+  PyObject * node_params = PyDict_GetItem(params_by_node_name, py_node_name_with_namespace);
+  if (NULL == node_params) {
+    Py_DECREF(params_by_node_name);
+    Py_DECREF(py_node_name_with_namespace);
     return NULL;
   }
-  if (!PyObject_HasAttrString(parameter_cls, "Type")) {
-    PyErr_Format(PyExc_RuntimeError, "Parameter class is missing 'Type' attribute");
-    rcl_yaml_node_struct_fini(params);
+  PyObject * node_param_list = PyDict_Values(node_params);
+  if (NULL == node_param_list) {
+    Py_DECREF(parameter_type_cls);
+    Py_DECREF(params_by_node_name);
+    Py_DECREF(py_node_name_with_namespace);
     return NULL;
-  }
-  PyObject * parameter_type_cls = PyObject_GetAttrString(parameter_cls, "Type");
-  if (NULL == parameter_type_cls) {
-    /* PyObject_GetAttrString raises AttributeError on failure. */
-    rcl_yaml_node_struct_fini(params);
-    return NULL;
-  }
-  PyObject * param;
-  for (size_t i = 0; i < node_params.num_params; i++) {
-    param = _parameter_from_rcl_variant(
-      node_params.parameter_names[i], &(node_params.parameter_values[i]),
-      parameter_cls, parameter_type_cls);
-    if (NULL == param) {
-      Py_DECREF(parameter_type_cls);
-      rcl_yaml_node_struct_fini(params);
-      return NULL;
-    }
-    PyList_SET_ITEM(parameter_list, i, param);
   }
 
   Py_DECREF(parameter_type_cls);
-  rcl_yaml_node_struct_fini(params);
-  return parameter_list;
+  Py_DECREF(params_by_node_name);
+  return node_param_list;
 }
 
 
