@@ -65,3 +65,42 @@ class InvalidServiceNameException(NameValidationException):
 
     def __init__(self, name, error_msg, invalid_index, *args):
         NameValidationException.__init__(self, 'service name', name, error_msg, invalid_index)
+
+
+class AlreadyInitalizedException(Exception):
+    """Raised when the rclpy.init() has already been."""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'rclpy.init() has already been called', *args)
+
+
+class InterruptedException(Exception, KeyboardInterrupt):
+    """Raised when operation has been interrupted , e.g. due to shutdown"""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'rclpy operation interrupted', *args)
+
+class TimeMovedBackwardsException(InterruptedException):
+    """Raised when time has moved backwards"""
+
+    def __init__(self, time):
+        self.time = time
+        super(TimeMovedBackwardsException, self).__init__('Time has moved backwards')
+
+class InternalException(Exception):
+    """Raised when transport error occurs while using rclpy"""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'rclpy internal exception occured', *args)
+
+
+class AccessDeniedException(Exception):
+    """Raised when node does not have permissions"""
+
+    def __init__(self, name, error_msg, invalid_index, *args):
+            msg = """\
+        Access Denied for node: {error_msg}:
+          '{name}'
+           {indent}^\
+        """.format(name=name, error_msg=error_msg, indent=' ' * invalid_index)
+            Exception.__init__(self, msg)
