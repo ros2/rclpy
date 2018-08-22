@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.4 (2018-08-22)
+------------------
 * Fix executor.remove_node() (`#217 <https://github.com/ros2/rclpy/issues/217>`_)
 * executor.add_node() returns a bool (`#216 <https://github.com/ros2/rclpy/issues/216>`_)
 * Contributors: Mikael Arguedas, Shane Loretz
