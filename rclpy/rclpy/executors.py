@@ -180,15 +180,18 @@ class Executor:
         :rtype: bool
         """
         with self._nodes_lock:
-            self._nodes.add(node)
-            # Rebuild the wait set so it includes this new node
-            _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+            if node not in self._nodes:
+                self._nodes.add(node)
+                # Rebuild the wait set so it includes this new node
+                _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+                return True
+            return False
 
     def remove_node(self, node):
         """Stop managing this node's callbacks."""
         with self._nodes_lock:
             try:
-                self._nodes.add(node)
+                self._nodes.remove(node)
             except KeyError:
                 pass
             else:
