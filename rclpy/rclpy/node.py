@@ -176,7 +176,7 @@ class Node:
                     if Parameter.Type.NOT_SET != self.get_parameter(param.name).type_:
                         # Parameter deleted. (Parameter had value and new value is not set)
                         parameter_event.deleted_parameters.append(
-                            param.to_rcl_interface_parameter())
+                            param.to_parameter_msg())
                     # Delete any unset parameters regardless of their previous value.
                     # We don't currently store NOT_SET parameters so this is an extra precaution.
                     if param.name in self._parameters:
@@ -184,11 +184,11 @@ class Node:
                 else:
                     if Parameter.Type.NOT_SET == self.get_parameter(param.name).type_:
                         #  Parameter is new. (Parameter had no value and new value is set)
-                        parameter_event.new_parameters.append(param.to_rcl_interface_parameter())
+                        parameter_event.new_parameters.append(param.to_parameter_msg())
                     else:
                         # Parameter changed. (Parameter had a value and new value is set)
                         parameter_event.changed_parameters.append(
-                            param.to_rcl_interface_parameter())
+                            param.to_parameter_msg())
                     self._parameters[param.name] = param
             self._parameter_event_publisher.publish(parameter_event)
 
