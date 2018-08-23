@@ -61,7 +61,7 @@ def create_node(
     :param namespace: The namespace to which relative topic and service names will be prefixed.
     :param use_global_arguments: False if the node should ignore process-wide command line args.
     :param start_parameter_services: False if the node should not create parameter services.
-    :param initial_parameters: A list fo rclpy.parameter.Parameters to be set during node creation.
+    :param initial_parameters: A list of rclpy.parameter.Parameters to be set during node creation.
     :return: An instance of a node
     :rtype: :class:`rclpy.node.Node`
     """
