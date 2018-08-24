@@ -3659,7 +3659,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(node_capsule, "rcl_node_t");
-  if (!node) {
+  if (NULL == node) {
     return NULL;
   }
 
@@ -3675,7 +3675,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
   PyObject * parameter_type_cls = PyObject_GetAttrString(parameter_cls, "Type");
   if (NULL == parameter_type_cls) {
-    /* PyObject_GetAttrString raises AttributeError on failure. */
+    // PyObject_GetAttrString raises AttributeError on failure.
     Py_DECREF(params_by_node_name);
     return NULL;
   }
@@ -3720,9 +3720,8 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
   allocator.deallocate(node_name_with_namespace, allocator.state);
 
-
   if (!PyDict_Contains(params_by_node_name, py_node_name_with_namespace)) {
-    /* No parameters for current node.*/
+    // No parameters for current node.
     Py_DECREF(params_by_node_name);
     Py_DECREF(py_node_name_with_namespace);
     return PyDict_New();
