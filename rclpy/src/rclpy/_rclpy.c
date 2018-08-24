@@ -3372,7 +3372,7 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
 /**
- * On failure a Python exception is raised and false is returned if:
+ * On failure a Python exception is raised and NULL is returned if:
  *
  * Raises ValueError if the variant points to no data.
  *
