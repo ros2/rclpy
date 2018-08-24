@@ -14,7 +14,7 @@
 
 import weakref
 
-from rcl_interfaces.msg import SetParametersResult
+from rcl_interfaces.msg import ParameterEvent, SetParametersResult
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.client import Client
 from rclpy.clock import ROSClock
@@ -28,7 +28,8 @@ from rclpy.logging import get_logger
 from rclpy.parameter import Parameter
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
-from rclpy.qos import qos_profile_default, qos_profile_services_default
+from rclpy.qos import qos_profile_default, qos_profile_parameter_events
+from rclpy.qos import qos_profile_services_default
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
@@ -100,6 +101,9 @@ class Node:
 
         self.__executor_weakref = None
 
+        self._parameter_event_publisher = self.create_publisher(
+            ParameterEvent, 'parameter_events', qos_profile=qos_profile_parameter_events)
+
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
 
@@ -166,8 +170,28 @@ class Node:
             result = SetParametersResult(successful=True)
 
         if result.successful:
+            parameter_event = ParameterEvent()
             for param in parameter_list:
-                self._parameters[param.name] = param
+                if Parameter.Type.NOT_SET == param.type_:
+                    if Parameter.Type.NOT_SET != self.get_parameter(param.name).type_:
+                        # Parameter deleted. (Parameter had value and new value is not set)
+                        parameter_event.deleted_parameters.append(
+                            param.to_parameter_msg())
+                    # Delete any unset parameters regardless of their previous value.
+                    # We don't currently store NOT_SET parameters so this is an extra precaution.
+                    if param.name in self._parameters:
+                        del self._parameters[param.name]
+                else:
+                    if Parameter.Type.NOT_SET == self.get_parameter(param.name).type_:
+                        #  Parameter is new. (Parameter had no value and new value is set)
+                        parameter_event.new_parameters.append(param.to_parameter_msg())
+                    else:
+                        # Parameter changed. (Parameter had a value and new value is set)
+                        parameter_event.changed_parameters.append(
+                            param.to_parameter_msg())
+                    self._parameters[param.name] = param
+            self._parameter_event_publisher.publish(parameter_event)
+
         return result
 
     def set_parameters_callback(self, callback):
@@ -341,6 +365,10 @@ class Node:
         ret = True
         if self.handle is None:
             return ret
+
+        # Drop extra reference to parameter event publisher.
+        # It will be destroyed with other publishers below.
+        self._parameter_event_publisher = None
 
         while self.publishers:
             pub = self.publishers.pop()

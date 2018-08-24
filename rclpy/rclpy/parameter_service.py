@@ -117,11 +117,11 @@ class ParameterService:
 
     def _set_parameters_callback(self, request, response):
         for p in request.parameters:
-            param = Parameter.from_rcl_interface_parameter(p)
+            param = Parameter.from_parameter_msg(p)
             response.results.append(self._node.set_parameters_atomically([param]))
         return response
 
     def _set_parameters_atomically_callback(self, request, response):
-        response.results = self._node.set_parameters_atomically([
-            Parameter.from_rcl_interface_parameter(p) for p in request.parameters])
+        response.result = self._node.set_parameters_atomically([
+            Parameter.from_parameter_msg(p) for p in request.parameters])
         return response

@@ -14,6 +14,7 @@
 
 from enum import Enum
 
+from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType, ParameterValue
 
 PARAMETER_SEPARATOR_STRING = '.'
@@ -62,28 +63,28 @@ class Parameter:
             return False
 
     @classmethod
-    def from_rcl_interface_parameter(cls, rcl_param):
+    def from_parameter_msg(cls, param_msg):
         value = None
-        type_ = Parameter.Type(value=rcl_param.value.type)
+        type_ = Parameter.Type(value=param_msg.value.type)
         if Parameter.Type.BOOL == type_:
-            value = rcl_param.value.bool_value
+            value = param_msg.value.bool_value
         elif Parameter.Type.INTEGER == type_:
-            value = rcl_param.value.integer_value
+            value = param_msg.value.integer_value
         elif Parameter.Type.DOUBLE == type_:
-            value = rcl_param.value.double_value
+            value = param_msg.value.double_value
         elif Parameter.Type.STRING == type_:
-            value = rcl_param.value.string_value
+            value = param_msg.value.string_value
         elif Parameter.Type.BYTE_ARRAY == type_:
-            value = rcl_param.value.byte_array_value
+            value = param_msg.value.byte_array_value
         elif Parameter.Type.BOOL_ARRAY == type_:
-            value = rcl_param.value.bool_array_value
+            value = param_msg.value.bool_array_value
         elif Parameter.Type.INTEGER_ARRAY == type_:
-            value = rcl_param.value.integer_array_value
+            value = param_msg.value.integer_array_value
         elif Parameter.Type.DOUBLE_ARRAY == type_:
-            value = rcl_param.value.double_array_value
+            value = param_msg.value.double_array_value
         elif Parameter.Type.STRING_ARRAY == type_:
-            value = rcl_param.value.string_array_value
-        return cls(rcl_param.name, type_, value)
+            value = param_msg.value.string_array_value
+        return cls(param_msg.name, type_, value)
 
     def __init__(self, name, type_, value=None):
         if not isinstance(type_, Parameter.Type):
@@ -132,3 +133,6 @@ class Parameter:
         elif Parameter.Type.STRING_ARRAY == self.type_:
             parameter_value.string_array_value = self.value
         return parameter_value
+
+    def to_parameter_msg(self):
+        return ParameterMsg(name=self.name, value=self.get_parameter_value())
