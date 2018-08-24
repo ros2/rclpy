@@ -3645,10 +3645,9 @@ _parse_param_files(
  * Raises RuntimeError if the parameters file fails to parse
  *
  * \param[in] parameter_cls The rclpy.parameter.Parameter class object.
- * \param[in] node_handle Capsule pointing to the node handle
+ * \param[in] node_capsule Capsule pointing to the node handle
  * \return NULL on failure
- *         A list of rclpy.parameter.Parameter on success (may be empty).
- *
+ *         A dict mapping parameter names to rclpy.parameter.Parameter on success (may be empty).
  */
 static PyObject *
 rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
@@ -3726,7 +3725,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     /* No parameters for current node.*/
     Py_DECREF(params_by_node_name);
     Py_DECREF(py_node_name_with_namespace);
-    return PyList_New(0);
+    return PyDict_New();
   }
   PyObject * node_params = PyDict_GetItem(params_by_node_name, py_node_name_with_namespace);
   if (NULL == node_params) {
@@ -3734,17 +3733,12 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     Py_DECREF(py_node_name_with_namespace);
     return NULL;
   }
-  PyObject * node_param_list = PyDict_Values(node_params);
-  if (NULL == node_param_list) {
-    Py_DECREF(parameter_type_cls);
-    Py_DECREF(params_by_node_name);
-    Py_DECREF(py_node_name_with_namespace);
-    return NULL;
-  }
+  // PyDict_GetItem is a borrowed reference. INCREF so we can return a new one.
+  Py_INCREF(node_params);
 
   Py_DECREF(parameter_type_cls);
   Py_DECREF(params_by_node_name);
-  return node_param_list;
+  return node_params;
 }
 
 
