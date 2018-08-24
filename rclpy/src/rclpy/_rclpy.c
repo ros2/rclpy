@@ -261,7 +261,7 @@ _rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
 /// Parse a sequence of strings into rcl_arguments_t struct
 /* Raises TypeError of pyargs is not a sequence
  * Raises OverflowError if len(pyargs) > INT_MAX
- * \param[in] pyargs a python sequence of strings
+ * \param[in] pyargs a Python sequence of strings
  * \param[out] parsed_args a zero initialized pointer to rcl_arguments_t
  */
 rcl_ret_t
@@ -3382,13 +3382,13 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
  *
  * Returns a pointer to an rclpy.parameter.Parameter with the name, type, and value from
- * the variant or NULL when raising a python exception.
+ * the variant or NULL when raising a Python exception.
  */
 static PyObject * _parameter_from_rcl_variant(
   PyObject * name, rcl_variant_t * variant, PyObject * parameter_cls,
   PyObject * parameter_type_cls)
 {
-  /* Default to 0 (not set) to suppress warnings. A python error will raise if
+  /* Default to 0 (not set) to suppress warnings. A Python error will raise if
    * type and value don't agree */
   int type_enum_value = 0;
   PyObject * value;
@@ -3997,7 +3997,7 @@ static PyMethodDef rclpy_methods[] = {
 
   {
     "rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
-    "Convert a QoSPolicy python object into a rmw_qos_profile_t."
+    "Convert a QoSPolicy Python object into a rmw_qos_profile_t."
   },
 
   {
