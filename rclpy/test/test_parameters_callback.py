@@ -36,11 +36,10 @@ class TestParametersCallback(unittest.TestCase):
         self.node.destroy_node()
 
     def test_set_callback_accepting_all(self):
-        global callback_called
         callback_called = False
 
         def callback(parameter_list):
-            global callback_called
+            nonlocal callback_called
             callback_called = True
             return SetParametersResult(successful=True)
         self.node.set_parameters_callback(callback)
@@ -52,11 +51,10 @@ class TestParametersCallback(unittest.TestCase):
         assert 'Hello' == self.node.get_parameter('foo').value
 
     def test_set_callback_rejecting_all(self):
-        global callback_called
         callback_called = False
 
         def callback(parameter_list):
-            global callback_called
+            nonlocal callback_called
             callback_called = True
             return SetParametersResult(successful=False)
         self.node.set_parameters_callback(callback)
@@ -68,11 +66,10 @@ class TestParametersCallback(unittest.TestCase):
         assert Parameter.Type.NOT_SET == self.node.get_parameter('foo').type_
 
     def test_set_callback_accepting_even_integers(self):
-        global callback_called
         callback_called = False
 
         def callback(parameter_list):
-            global callback_called
+            nonlocal callback_called
             callback_called = True
             r = SetParametersResult(successful=True)
             for p in parameter_list:
