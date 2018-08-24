@@ -3486,17 +3486,22 @@ static PyObject * _parameter_from_rcl_variant(
 
   PyObject * args = Py_BuildValue("(i)", type_enum_value);
   if (NULL == args) {
+    Py_DECREF(value);
     return NULL;
   }
   PyObject * type = PyObject_CallObject(parameter_type_cls, args);
   Py_DECREF(args);
   args = Py_BuildValue("OOO", name, type, value);
   if (NULL == args) {
+    Py_DECREF(type);
+    Py_DECREF(value);
     return NULL;
   }
+  Py_DECREF(value);
+  Py_DECREF(type);
+
   PyObject * param = PyObject_CallObject(parameter_cls, args);
   Py_DECREF(args);
-  Py_DECREF(type);
   return param;
 }
 
