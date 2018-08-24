@@ -3521,8 +3521,8 @@ _populate_node_parameters_from_rcl_params(
   for (size_t i = 0; i < params->num_nodes; i++) {
     PyObject * py_node_name;
     if (params->node_names[i][0] != '/') {
-      py_node_name = PyUnicode_FromString(rcutils_format_string(allocator,
-        "/%s", params->node_names[i]));
+      py_node_name = PyUnicode_FromString(
+        rcutils_format_string(allocator, "/%s", params->node_names[i]));
     } else {
       py_node_name = PyUnicode_FromString(params->node_names[i]);
     }
@@ -3621,8 +3621,10 @@ _parse_param_files(
           successful = false;
         } else {
           if (!_populate_node_parameters_from_rcl_params(
-            params, allocator, parameter_cls, parameter_type_cls, params_by_node_name)) {
-            PyErr_Format(PyExc_RuntimeError, "Unable to populate params dict from file: %s", param_files[i]);
+              params, allocator, parameter_cls, parameter_type_cls, params_by_node_name))
+          {
+            PyErr_Format(PyExc_RuntimeError,
+              "Failed to fill params dict from file: %s", param_files[i]);
             rcl_yaml_node_struct_fini(params);
             return false;
           }
@@ -3685,7 +3687,8 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
 
   if (node_options->use_global_arguments) {
     if (!_parse_param_files(rcl_get_global_arguments(), allocator, parameter_cls,
-        parameter_type_cls, params_by_node_name)) {
+      parameter_type_cls, params_by_node_name))
+    {
       Py_DECREF(parameter_type_cls);
       Py_DECREF(params_by_node_name);
       return NULL;
@@ -3693,7 +3696,8 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (!_parse_param_files(&(node_options->arguments), allocator, parameter_cls,
-      parameter_type_cls, params_by_node_name)) {
+    parameter_type_cls, params_by_node_name))
+  {
     Py_DECREF(parameter_type_cls);
     Py_DECREF(params_by_node_name);
     return NULL;
