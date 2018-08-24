@@ -3603,38 +3603,37 @@ _parse_param_files(
 {
   char ** param_files;
   int param_files_count = rcl_arguments_get_param_files_count(args);
-  rcl_ret_t ret;
   bool successful = true;
-  if (param_files_count > 0) {
-    ret = rcl_arguments_get_param_files(args, allocator, &param_files);
-    if (RCL_RET_OK != ret) {
-      PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
-        rcl_get_error_string_safe());
-      return false;
-    }
-    for (int i = 0; i < param_files_count; i++) {
-      if (successful) {
-        rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
-        if (!rcl_parse_yaml_file(param_files[i], params)) {
-          /* failure to parse will automatically fini the params struct */
-          PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
-          successful = false;
-        } else {
-          if (!_populate_node_parameters_from_rcl_params(
-              params, allocator, parameter_cls, parameter_type_cls, params_by_node_name))
-          {
-            PyErr_Format(PyExc_RuntimeError,
-              "Failed to fill params dict from file: %s", param_files[i]);
-            rcl_yaml_node_struct_fini(params);
-            return false;
-          }
-        }
-        rcl_yaml_node_struct_fini(params);
-      }
-      allocator.deallocate(param_files[i], allocator.state);
-    }
-    allocator.deallocate(param_files, allocator.state);
+  if (param_files_count <= 0) {
+    return successful;
   }
+  if (RCL_RET_OK != rcl_arguments_get_param_files(args, allocator, &param_files)) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
+      rcl_get_error_string_safe());
+    return false;
+  }
+  for (int i = 0; i < param_files_count; i++) {
+    if (successful) {
+      rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
+      if (!rcl_parse_yaml_file(param_files[i], params)) {
+        // failure to parse will automatically fini the params struct
+        PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
+        successful = false;
+      } else {
+        if (!_populate_node_parameters_from_rcl_params(
+            params, allocator, parameter_cls, parameter_type_cls, params_by_node_name))
+        {
+          PyErr_Format(PyExc_RuntimeError,
+            "Failed to fill params dict from file: %s", param_files[i]);
+          rcl_yaml_node_struct_fini(params);
+          return false;
+        }
+      }
+      rcl_yaml_node_struct_fini(params);
+    }
+    allocator.deallocate(param_files[i], allocator.state);
+  }
+  allocator.deallocate(param_files, allocator.state);
   return successful;
 }
 
