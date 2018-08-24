@@ -114,10 +114,15 @@ class Node:
             self._parameters[param.name] = param
 
         node_parameters = _rclpy.rclpy_get_node_parameters(Parameter, self.handle)
-        # use the set_parameters API so parameter events are publish.
-        if node_parameters:
+        # Combine parameters from params files with those from the node constructor and
+        # use the set_parameters API so parameter events are published.
+        if node_parameters and initial_parameters:
+            params_by_name = {p.name: p for p in node_parameters}
+            params_by_name.update({p.name: p for p in initial_parameters})
+            self.set_parameters(params_by_name.values())
+        elif node_parameters:
             self.set_parameters(node_parameters)
-        if initial_parameters is not None:
+        elif initial_parameters:
             self.set_parameters(initial_parameters)
 
         if start_parameter_services:
