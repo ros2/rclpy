@@ -104,15 +104,6 @@ class Node:
         self._parameter_event_publisher = self.create_publisher(
             ParameterEvent, 'parameter_events', qos_profile=qos_profile_parameter_events)
 
-        for param in _rclpy.rclpy_get_node_parameters(Parameter, self.handle):
-            self._parameters[param.name] = param
-        for param in initial_parameters:
-            if not isinstance(param, Parameter):
-                raise TypeError(
-                    'initial_parameters must be a list of {}'.format(repr(Parameter))
-                )
-            self._parameters[param.name] = param
-
         node_parameters = _rclpy.rclpy_get_node_parameters(Parameter, self.handle)
         # Combine parameters from params files with those from the node constructor and
         # use the set_parameters_atomically API so a parameter event is published.
