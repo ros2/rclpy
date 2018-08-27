@@ -401,8 +401,8 @@ class Executor:
                     'service': (services, 'service_handle'),
                     'timer': (timers, 'timer_handle'),
                 }
+                _rclpy.rclpy_wait_set_clear_entities(wait_set)
                 for entity, (handles, handle_name) in entities.items():
-                    _rclpy.rclpy_wait_set_clear_entities(entity, wait_set)
                     for h in handles:
                         _rclpy.rclpy_wait_set_add_entity(
                             entity, wait_set, h.__getattribute__(handle_name)
