@@ -2214,7 +2214,7 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_wait_set_clear(wait_set);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-      "Failed to clear  wait set: %s", rcl_get_error_string_safe());
+      "Failed to clear wait set: %s", rcl_get_error_string_safe());
     rcl_reset_error();
     return NULL;
   }
