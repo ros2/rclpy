@@ -14,8 +14,6 @@
 
 from enum import IntEnum
 
-import weakref
-
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -59,31 +57,40 @@ class JumpThreshold:
         self.min_backward = min_backward
         self.on_clock_change = on_clock_change
 
-    def exceeded(self, jump_info):
-        """Return true if the time jump should trigger a callback with this threshold."""
-        clock_type_changes = (ClockChange.ROS_TIME_ACTIVATED, ClockChange.ROS_TIME_DEACTIVATED)
-        if self.on_clock_change and jump_info.clock_change in clock_type_changes:
-            return True
-        elif self.min_forward is not None and jump_info.delta >= self.min_forward:
-            return True
-        elif self.min_backward is not None and jump_info.delta <= self.min_backward:
-            return True
-        return False
 
+class JumpHandle:
 
-class JumpHandler:
-
-    def __init__(self, *, threshold, pre_callback, post_callback):
+    def __init__(self, *, clock, threshold, pre_callback, post_callback):
         """
-        Initialize an instance of JumpHandler.
+        Register a clock jump callback
 
-        :param threshold: Criteria for activating time jump.
+        :param clock: Clock that time jump callback is registered to
         :param pre_callback: Callback to be called before new time is set.
-        :param post_callback: Callback to be called after new time is set.
+        :param post_callback: Callback to be called after new time is set, accepting a dictionary
+            with keys "clock_source_changed" and "delta".
         """
-        self.threshold = threshold
-        self.pre_callback = pre_callback
-        self.post_callback = post_callback
+        if pre_callback is None and post_callback is None:
+            raise ValueError('One of pre_callback or post_callback must be callable')
+        if pre_callback is not None and not callable(pre_callback):
+            raise ValueError('pre_callback must be callable if given')
+        if post_callback is not None and not callable(post_callback):
+            raise ValueError('post_callback must be callable if given')
+        self._clock = clock
+        self._pre_callback = pre_callback
+        self._post_callback = post_callback
+
+       _rclpy.rclpy_add_clock_callback(
+            clock, self, threshold.on_clock_change, threshold.min_forward.nanoseconds,
+            threshold.min_backward.nanosecond)
+
+    def unregister(self):
+        """Removes a jump callback from the clock."""
+        if self._clock is not None:
+            _rclpy.rclpy_remove_clock_callback(self._clock, self)
+            self._clock = None
+
+    def __del__(self):
+        self.unregister()
 
 
 class Clock:
@@ -97,7 +104,6 @@ class Clock:
             self = super().__new__(cls)
         self._clock_handle = _rclpy.rclpy_create_clock(clock_type)
         self._clock_type = clock_type
-        self._active_jump_handlers = []
         return self
 
     @property
@@ -115,19 +121,6 @@ class Clock:
             nanoseconds=_rclpy.rclpy_time_point_get_nanoseconds(time_handle),
             clock_type=self.clock_type)
 
-    def get_triggered_callback_handlers(self, jump_info):
-        """Yield time jump callbacks that would be triggered by the given jump info."""
-        to_remove = []
-        for idx, handler_weakref in enumerate(self._active_jump_handlers):
-            handler = handler_weakref()
-            if handler is None:
-                to_remove.append(idx)
-            elif handler.threshold.exceeded(jump_info):
-                yield handler
-        # Remove invalid jump handlers
-        for idx in reversed(to_remove):
-            del self._active_jump_handlers[idx]
-
     def create_jump_callback(self, threshold, *, pre_callback=None, post_callback=None):
         """
         Create callback handler for clock time jumps.
@@ -138,18 +131,11 @@ class Clock:
 
         :param threshold: Criteria for activating time jump.
         :param pre_callback: Callback to be called before new time is set.
-        :param post_callback: Callback to be called after new time is set.
+        :param post_callback: Callback to be called after new time is set accepting
         :rtype: :class:`rclpy.clock.JumpHandler`
         """
-        if pre_callback is None and post_callback is None:
-            raise ValueError('One of pre_callback or post_callback must be callable')
-        if pre_callback is not None and not callable(pre_callback):
-            raise ValueError('pre_callback must be callable if given')
-        if post_callback is not None and not callable(post_callback):
-            raise ValueError('post_callback must be callable if given')
-        handler = JumpHandler(
+        handler = JumpHandle(
             threshold=threshold, pre_callback=pre_callback, post_callback=post_callback)
-        self._active_jump_handlers.append(weakref.ref(handler))
         return handler
 
 
