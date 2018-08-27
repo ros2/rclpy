@@ -22,6 +22,7 @@
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
 #include <rcl_yaml_param_parser/parser.h>
+#include <rcl_interfaces/msg/parameter_type__struct.h>
 #include <rcutils/strdup.h>
 #include <rcutils/types.h>
 #include <rmw/error_handling.h>
@@ -3388,35 +3389,35 @@ static PyObject * _parameter_from_rcl_variant(
   PyObject * name, rcl_variant_t * variant, PyObject * parameter_cls,
   PyObject * parameter_type_cls)
 {
-  /* Default to 0 (not set) to suppress warnings. A Python error will raise if
+  /* Default to NOT_SET to suppress warnings. A Python error will raise if
    * type and value don't agree */
-  int type_enum_value = 0;
+  int type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_NOT_SET;
   PyObject * value;
   PyObject * member_value;
   if (variant->bool_value) {
-    type_enum_value = 1;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL;
     value = *(variant->bool_value) ? Py_True : Py_False;
     Py_INCREF(value);
   } else if (variant->integer_value) {
-    type_enum_value = 2;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER;
     value = PyLong_FromLongLong(*(variant->integer_value));
     if (NULL == value) {
       return NULL;
     }
   } else if (variant->double_value) {
-    type_enum_value = 3;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE;
     value = PyFloat_FromDouble(*(variant->double_value));
     if (NULL == value) {
       return NULL;
     }
   } else if (variant->string_value) {
-    type_enum_value = 4;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING;
     value = PyUnicode_FromString(variant->string_value);
     if (NULL == value) {
       return NULL;
     }
   } else if (variant->byte_array_value) {
-    type_enum_value = 5;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BYTE_ARRAY;
     value = PyList_New(variant->byte_array_value->size);
     if (NULL == value) {
       return NULL;
@@ -3430,7 +3431,7 @@ static PyObject * _parameter_from_rcl_variant(
       PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->bool_array_value) {
-    type_enum_value = 6;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL_ARRAY;
     value = PyList_New(variant->bool_array_value->size);
     if (NULL == value) {
       return NULL;
@@ -3441,7 +3442,7 @@ static PyObject * _parameter_from_rcl_variant(
       PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->integer_array_value) {
-    type_enum_value = 7;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER_ARRAY;
     value = PyList_New(variant->integer_array_value->size);
     if (NULL == value) {
       return NULL;
@@ -3455,7 +3456,7 @@ static PyObject * _parameter_from_rcl_variant(
       PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->double_array_value) {
-    type_enum_value = 8;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE_ARRAY;
     value = PyList_New(variant->double_array_value->size);
     if (NULL == value) {
       return NULL;
@@ -3469,7 +3470,7 @@ static PyObject * _parameter_from_rcl_variant(
       PyList_SET_ITEM(value, i, member_value);
     }
   } else if (variant->string_array_value) {
-    type_enum_value = 9;
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING_ARRAY;
     value = PyList_New(variant->string_array_value->size);
     if (NULL == value) {
       return NULL;
