@@ -3304,6 +3304,10 @@ rclpy_clock_set_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObjec
     rcl_reset_error();
     return NULL;
   }
+  if (PyErr_Occurred()) {
+    // Time jump callbacks could have raised
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -3348,6 +3352,11 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_reset_error();
     return NULL;
   }
+
+  if (PyErr_Occurred()) {
+    // Time jump callbacks could have raised
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -3374,11 +3383,28 @@ _rclpy_on_time_jump(
       return;
     }
     // Build python dictionary with time jump info
-    int clock_changed = time_jump.clock_change == RCL_ROS_TIME_ACTIVATED ||
-      time_jump.clock_change == RCL_ROS_TIME_DEACTIVATED;
-    Py_LONG_LONG delta = time_jump.delta.nanoseconds;
+    const char * clock_change;
+    switch (time_jump->clock_change) {
+      case RCL_ROS_TIME_NO_CHANGE:
+        clock_change = "RCL_ROS_TIME_NO_CHANGE";
+        break;
+      case RCL_ROS_TIME_ACTIVATED:
+        clock_change = "RCL_ROS_TIME_ACTIVATED";
+        break;
+      case RCL_ROS_TIME_DEACTIVATED:
+        clock_change = "RCL_ROS_TIME_DEACTIVATED";
+        break;
+      case RCL_SYSTEM_TIME_NO_CHANGE:
+        clock_change = "RCL_SYSTEM_TIME_NO_CHANGE";
+        break;
+      default:
+        PyErr_Format(PyExc_RuntimeError, "Unknown time jump type");
+        Py_DECREF(pycallback);
+        return;
+    }
+    PY_LONG_LONG delta = time_jump->delta.nanoseconds;
     PyObject * pyjump_info = Py_BuildValue(
-      "{zpzL}", "clock_source_changed", clock_changed, "delta", delta);
+      "{zzzL}", "clock_change", clock_change, "delta", delta);
     if (NULL == pyjump_info) {
       Py_DECREF(pycallback);
       return;
@@ -3466,8 +3492,7 @@ rclpy_remove_clock_callback(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pyclock;
   PyObject * pyjump_handle;
-  if (!PyArg_ParseTuple(args, "OO", &pyclock, &pyjump_handle))
-  {
+  if (!PyArg_ParseTuple(args, "OO", &pyclock, &pyjump_handle)) {
     return NULL;
   }
 
