@@ -65,7 +65,6 @@ class TimeJump:
     def __init__(self, clock_change, delta):
         if not isinstance(clock_change, ClockChange):
             raise TypeError('clock_change must be an instance of rclpy.clock.ClockChange')
-        # Access through read only properties because same instance is given to all clock callbacks
         self._clock_change = clock_change
         self._delta = delta
 
