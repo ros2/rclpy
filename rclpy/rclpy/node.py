@@ -411,6 +411,9 @@ class Node:
     def get_node_names(self):
         return _rclpy.rclpy_get_node_names(self.handle)
 
+    def get_node_names_and_namespaces(self):
+        return _rclpy.rclpy_get_node_names_and_namespaces(self.handle)
+
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
         validate_topic_name(fq_topic_name)

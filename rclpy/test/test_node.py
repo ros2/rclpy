@@ -97,6 +97,10 @@ class TestNode(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names()
 
+    def test_node_names_and_namespaces(self):
+        # test that it doesn't raise
+        self.node.get_node_names_and_namespaces()
+
     def test_count_publishers_subscribers(self):
         short_topic_name = 'chatter'
         fq_topic_name = '%s/%s' % (TEST_NAMESPACE, short_topic_name)
