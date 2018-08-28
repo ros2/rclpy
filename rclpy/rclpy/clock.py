@@ -152,6 +152,9 @@ class Clock:
         A callback takes a single argument of an instance of :class:`rclpy.clock.TimeJump`.
         A callback should execute as quick as possible and must not block when called.
 
+        Callbacks must not raise an exception.
+        If a callback raises then no time jump callbacks added after it will be called.
+
         :param threshold: Criteria for activating time jump.
         :param pre_callback: Callback to be called before new time is set.
         :param post_callback: Callback to be called after new time is set accepting

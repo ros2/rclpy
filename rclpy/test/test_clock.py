@@ -17,7 +17,6 @@ import unittest
 from unittest.mock import Mock
 
 from rclpy.clock import Clock
-from rclpy.clock import ClockChange
 from rclpy.clock import ClockType
 from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
@@ -124,32 +123,57 @@ class TestClock(unittest.TestCase):
         pre_callback2.assert_not_called()
         post_callback2.assert_not_called()
 
-        # avoid flake8 warnings about unused variables
-        del handler1
-        del handler2
+        handler1.unregister()
+        handler2.unregister()
 
+    def test_triggered_clock_change_callbacks(self):
+        one_second = Duration(seconds=1)
+        negative_one_second = Duration(seconds=-1)
 
-#    def test_triggered_clock_change_callbacks(self):
-#        one_second = Duration(seconds=1)
-#        negative_one_second = Duration(seconds=-1)
-#
-#        threshold1 = JumpThreshold(
-#            min_forward=one_second, min_backward=negative_one_second, on_clock_change=False)
-#        threshold2 = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
-#        threshold3 = JumpThreshold(
-#            min_forward=one_second, min_backward=negative_one_second, on_clock_change=True)
-#
-#        clock_change1 = TimeJump(ClockChange.ROS_TIME_ACTIVATED, Duration())
-#        clock_change2 = TimeJump(ClockChange.ROS_TIME_DEACTIVATED, Duration())
-#        no_change1 = TimeJump(ClockChange.ROS_TIME_NO_CHANGE, Duration())
-#        no_change2 = TimeJump(ClockChange.SYSTEM_TIME_NO_CHANGE, Duration())
-#
-#        clock = ROSClock()
-#        handler1 = clock.create_jump_callback(threshold1, pre_callback=do_nothing)  # noqa
-#        handler2 = clock.create_jump_callback(threshold2, pre_callback=do_nothing)
-#        handler3 = clock.create_jump_callback(threshold3, pre_callback=do_nothing)
-#
-#        assert [handler2, handler3] == list(clock.get_triggered_callback_handlers(clock_change1))
-#        assert [handler2, handler3] == list(clock.get_triggered_callback_handlers(clock_change2))
-#        assert [] == list(clock.get_triggered_callback_handlers(no_change1))
-#        assert [] == list(clock.get_triggered_callback_handlers(no_change2))
+        threshold1 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_one_second, on_clock_change=False)
+        threshold2 = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
+        threshold3 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_one_second, on_clock_change=True)
+
+        pre_callback1 = Mock()
+        post_callback1 = Mock()
+        pre_callback2 = Mock()
+        post_callback2 = Mock()
+        pre_callback3 = Mock()
+        post_callback3 = Mock()
+
+        clock = ROSClock()
+        handler1 = clock.create_jump_callback(
+            threshold1, pre_callback=pre_callback1, post_callback=post_callback1)
+        handler2 = clock.create_jump_callback(
+            threshold2, pre_callback=pre_callback2, post_callback=post_callback2)
+        handler3 = clock.create_jump_callback(
+            threshold3, pre_callback=pre_callback3, post_callback=post_callback3)
+
+        clock._set_ros_time_is_active(True)
+        pre_callback1.assert_not_called()
+        post_callback1.assert_not_called()
+        pre_callback2.assert_called()
+        post_callback2.assert_called()
+        pre_callback2.assert_called()
+        post_callback2.assert_called()
+
+        pre_callback1.reset_mock()
+        post_callback1.reset_mock()
+        pre_callback2.reset_mock()
+        post_callback2.reset_mock()
+        pre_callback3.reset_mock()
+        post_callback3.reset_mock()
+
+        clock._set_ros_time_is_active(True)
+        pre_callback1.assert_not_called()
+        post_callback1.assert_not_called()
+        pre_callback2.assert_not_called()
+        post_callback2.assert_not_called()
+        pre_callback2.assert_not_called()
+        post_callback2.assert_not_called()
+
+        handler1.unregister()
+        handler2.unregister()
+        handler3.unregister()

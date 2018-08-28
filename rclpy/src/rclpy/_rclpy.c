@@ -3305,7 +3305,7 @@ rclpy_clock_set_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObjec
     return NULL;
   }
   if (PyErr_Occurred()) {
-    // Time jump callbacks could have raised
+    // Time jump callbacks raised
     return NULL;
   }
   Py_RETURN_NONE;
@@ -3354,7 +3354,7 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (PyErr_Occurred()) {
-    // Time jump callbacks could have raised
+    // Time jump callbacks raised
     return NULL;
   }
   Py_RETURN_NONE;
@@ -3367,19 +3367,26 @@ _rclpy_on_time_jump(
   bool before_jump,
   void * user_data)
 {
+  if (PyErr_Occurred()) {
+    // An earlier time jump callback already raised an exception
+    return;
+  }
   PyObject * pyjump_handle = user_data;
   if (before_jump) {
     // Call pre jump callback with no arguments
     PyObject * pycallback = PyObject_GetAttrString(pyjump_handle, "_pre_callback");
-    if (NULL == pycallback) {
+    if (NULL == pycallback || Py_None == pycallback) {
+      // raised or callback is None
       return;
     }
+    // May set exception
     PyObject_CallObject(pycallback, NULL);
     Py_DECREF(pycallback);
   } else {
     // Call post jump callback with JumpInfo as an argument
     PyObject * pycallback = PyObject_GetAttrString(pyjump_handle, "_post_callback");
-    if (NULL == pycallback) {
+    if (NULL == pycallback || Py_None == pycallback) {
+      // raised or callback is None
       return;
     }
     // Build python dictionary with time jump info
@@ -3415,6 +3422,7 @@ _rclpy_on_time_jump(
       Py_DECREF(pycallback);
       return;
     }
+    // May set exception
     PyObject_CallObject(pycallback, pyargs);
     Py_DECREF(pyjump_info);
     Py_DECREF(pyargs);

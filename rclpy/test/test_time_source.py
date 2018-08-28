@@ -156,7 +156,6 @@ class TestTimeSource(unittest.TestCase):
 
         pre_cb.assert_called()
         post_cb.assert_called()
-        assert pre_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_NO_CHANGE
         assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_NO_CHANGE
 
     def test_backwards_jump(self):
@@ -176,7 +175,6 @@ class TestTimeSource(unittest.TestCase):
 
         pre_cb.assert_called()
         post_cb.assert_called()
-        assert pre_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_NO_CHANGE
         assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_NO_CHANGE
 
     def test_clock_change(self):
@@ -194,7 +192,6 @@ class TestTimeSource(unittest.TestCase):
         time_source.ros_time_is_active = False
         pre_cb.assert_called()
         post_cb.assert_called()
-        assert pre_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_DEACTIVATED
         assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_DEACTIVATED
 
         pre_cb.reset_mock()
@@ -203,5 +200,33 @@ class TestTimeSource(unittest.TestCase):
         time_source.ros_time_is_active = True
         pre_cb.assert_called()
         post_cb.assert_called()
-        assert pre_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_ACTIVATED
         assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_ACTIVATED
+
+    def test_no_pre_callback(self):
+        time_source = TimeSource(node=self.node)
+        clock = ROSClock()
+        time_source.attach_clock(clock)
+        time_source.ros_time_is_active = True
+
+        post_cb = Mock()
+        threshold = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
+        handler = clock.create_jump_callback(  # noqa
+            threshold, pre_callback=None, post_callback=post_cb)
+
+        time_source.ros_time_is_active = False
+        post_cb.assert_called_once()
+        assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_DEACTIVATED
+
+    def test_no_post_callback(self):
+        time_source = TimeSource(node=self.node)
+        clock = ROSClock()
+        time_source.attach_clock(clock)
+        time_source.ros_time_is_active = True
+
+        pre_cb = Mock()
+        threshold = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
+        handler = clock.create_jump_callback(  # noqa
+            threshold, pre_callback=pre_cb, post_callback=None)
+
+        time_source.ros_time_is_active = False
+        pre_cb.assert_called_once()
