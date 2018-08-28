@@ -148,10 +148,7 @@ class Clock:
         Create callback handler for clock time jumps.
 
         The callbacks must remain valid as long as the returned JumpHandler is valid.
-        A callback takes a single argument of an instance of :class:`rclpy.clock.TimeJump`.
         A callback should execute as quick as possible and must not block when called.
-
-        Callbacks must not raise an exception.
         If a callback raises then no time jump callbacks added after it will be called.
 
         :param threshold: Criteria for activating time jump.
