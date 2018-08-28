@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import builtin_interfaces.msg
+from rclpy.clock import ClockType
 from rclpy.clock import ROSClock
 from rclpy.time import Time
 
@@ -25,7 +26,8 @@ class TimeSource:
         self._clock_sub = None
         self._node = None
         self._associated_clocks = []
-        self._last_time_set = None
+        # Zero time is a special value that means time is uninitialzied
+        self._last_time_set = Time(clock_type=ClockType.ROS_TIME)
         self._ros_time_is_active = False
         if node is not None:
             self.attach_node(node)
@@ -36,6 +38,8 @@ class TimeSource:
 
     @ros_time_is_active.setter
     def ros_time_is_active(self, enabled):
+        if self._ros_time_is_active == enabled:
+            return
         self._ros_time_is_active = enabled
         for clock in self._associated_clocks:
             clock._set_ros_time_is_active(enabled)
@@ -73,8 +77,8 @@ class TimeSource:
     def attach_clock(self, clock):
         if not isinstance(clock, ROSClock):
             raise ValueError('Only clocks with type ROS_TIME can be attached.')
-        if self._last_time_set is not None:
-            self._set_clock(self._last_time_set, clock)
+
+        clock.set_ros_time_override(self._last_time_set)
         clock._set_ros_time_is_active(self.ros_time_is_active)
         self._associated_clocks.append(clock)
 
@@ -83,8 +87,4 @@ class TimeSource:
         time_from_msg = Time.from_msg(msg)
         self._last_time_set = time_from_msg
         for clock in self._associated_clocks:
-            self._set_clock(time_from_msg, clock)
-
-    def _set_clock(self, time, clock):
-        # TODO(dhood): clock jump notifications
-        clock.set_ros_time_override(time)
+            clock.set_ros_time_override(time_from_msg)

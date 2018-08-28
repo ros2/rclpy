@@ -3304,6 +3304,10 @@ rclpy_clock_set_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObjec
     rcl_reset_error();
     return NULL;
   }
+  if (PyErr_Occurred()) {
+    // Time jump callbacks raised
+    return NULL;
+  }
   Py_RETURN_NONE;
 }
 
@@ -3345,6 +3349,172 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to set ROS time override for clock: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+
+  if (PyErr_Occurred()) {
+    // Time jump callbacks raised
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+/// Called when a time jump occurs.
+void
+_rclpy_on_time_jump(
+  const struct rcl_time_jump_t * time_jump,
+  bool before_jump,
+  void * user_data)
+{
+  if (PyErr_Occurred()) {
+    // An earlier time jump callback already raised an exception
+    return;
+  }
+  PyObject * pyjump_handle = user_data;
+  if (before_jump) {
+    // Call pre jump callback with no arguments
+    PyObject * pycallback = PyObject_GetAttrString(pyjump_handle, "_pre_callback");
+    if (NULL == pycallback || Py_None == pycallback) {
+      // raised or callback is None
+      return;
+    }
+    // May set exception
+    PyObject_CallObject(pycallback, NULL);
+    Py_DECREF(pycallback);
+  } else {
+    // Call post jump callback with JumpInfo as an argument
+    PyObject * pycallback = PyObject_GetAttrString(pyjump_handle, "_post_callback");
+    if (NULL == pycallback || Py_None == pycallback) {
+      // raised or callback is None
+      return;
+    }
+    // Build python dictionary with time jump info
+    const char * clock_change;
+    switch (time_jump->clock_change) {
+      case RCL_ROS_TIME_NO_CHANGE:
+        clock_change = "RCL_ROS_TIME_NO_CHANGE";
+        break;
+      case RCL_ROS_TIME_ACTIVATED:
+        clock_change = "RCL_ROS_TIME_ACTIVATED";
+        break;
+      case RCL_ROS_TIME_DEACTIVATED:
+        clock_change = "RCL_ROS_TIME_DEACTIVATED";
+        break;
+      case RCL_SYSTEM_TIME_NO_CHANGE:
+        clock_change = "RCL_SYSTEM_TIME_NO_CHANGE";
+        break;
+      default:
+        PyErr_Format(PyExc_RuntimeError, "Unknown time jump type %d", time_jump->clock_change);
+        Py_DECREF(pycallback);
+        return;
+    }
+    PY_LONG_LONG delta = time_jump->delta.nanoseconds;
+    PyObject * pyjump_info = Py_BuildValue(
+      "{zzzL}", "clock_change", clock_change, "delta", delta);
+    if (NULL == pyjump_info) {
+      Py_DECREF(pycallback);
+      return;
+    }
+    PyObject * pyargs = PyTuple_Pack(1, pyjump_info);
+    if (NULL == pyargs) {
+      Py_DECREF(pyjump_info);
+      Py_DECREF(pycallback);
+      return;
+    }
+    // May set exception
+    PyObject_CallObject(pycallback, pyargs);
+    Py_DECREF(pyjump_info);
+    Py_DECREF(pyargs);
+    Py_DECREF(pycallback);
+  }
+}
+
+/// Add a time jump callback to a clock.
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises ValueError if pyclock is not a clock capsule, or
+ * any argument is invalid
+ * Raises RuntimeError if the callback cannot be added
+ *
+ * \param[in] pyclock Capsule pointing to the clock to set
+ * \param[in] pyjump_handle Instance of rclpy.clock.JumpHandle
+ * \param[in] on_clock_change True if callback should be called when ROS time is toggled
+ * \param[in] min_forward minimum nanoseconds to trigger forward jump callback
+ * \param[in] min_backward minimum negative nanoseconds to trigger backward jump callback
+ * \return NULL on failure
+ *         None on success
+ */
+static PyObject *
+rclpy_add_clock_callback(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclock;
+  PyObject * pyjump_handle;
+  int on_clock_change;
+  PY_LONG_LONG min_forward;
+  PY_LONG_LONG min_backward;
+  if (!PyArg_ParseTuple(args, "OOpLL", &pyclock, &pyjump_handle, &on_clock_change, &min_forward,
+    &min_backward))
+  {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(
+    pyclock, "rcl_clock_t");
+  if (!clock) {
+    return NULL;
+  }
+
+  rcl_jump_threshold_t threshold;
+  threshold.on_clock_change = on_clock_change;
+  threshold.min_forward.nanoseconds = min_forward;
+  threshold.min_backward.nanoseconds = min_backward;
+
+  rcl_ret_t ret = rcl_clock_add_jump_callback(
+    clock, threshold, _rclpy_on_time_jump, pyjump_handle);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to add time jump callback: %s", rcl_get_error_string_safe());
+    rcl_reset_error();
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+/// Remove a time jump callback from a clock.
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises ValueError if pyclock is not a clock capsule, or
+ * any argument is invalid
+ * Raises RuntimeError if the callback cannot be added
+ *
+ * \param[in] pyclock Capsule pointing to the clock to set
+ * \param[in] pyjump_handle Instance of rclpy.clock.JumpHandle
+ * \return NULL on failure
+ *         None on success
+ */
+static PyObject *
+rclpy_remove_clock_callback(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyclock;
+  PyObject * pyjump_handle;
+  if (!PyArg_ParseTuple(args, "OO", &pyclock, &pyjump_handle)) {
+    return NULL;
+  }
+
+  rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(
+    pyclock, "rcl_clock_t");
+  if (!clock) {
+    return NULL;
+  }
+
+  rcl_ret_t ret = rcl_clock_remove_jump_callback(
+    clock, _rclpy_on_time_jump, pyjump_handle);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to remove time jump callback: %s", rcl_get_error_string_safe());
     rcl_reset_error();
     return NULL;
   }
@@ -3646,6 +3816,16 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_clock_set_ros_time_override", rclpy_clock_set_ros_time_override, METH_VARARGS,
     "Set the current time of a clock using ROS time."
+  },
+
+  {
+    "rclpy_add_clock_callback", rclpy_add_clock_callback, METH_VARARGS,
+    "Add a time jump callback to a clock."
+  },
+
+  {
+    "rclpy_remove_clock_callback", rclpy_remove_clock_callback, METH_VARARGS,
+    "Remove a time jump callback from a clock."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
