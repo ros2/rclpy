@@ -33,13 +33,13 @@ class ClockType(IntEnum):
 
 class ClockChange(IntEnum):
 
-    # The time type before and after the jump is ROS_TIME
+    # ROS time is active and will continue to be active
     ROS_TIME_NO_CHANGE = 1
-    # The time type switched to ROS_TIME from SYSTEM_TIME
+    # ROS time is being activated
     ROS_TIME_ACTIVATED = 2
-    # The time type switched to SYSTEM_TIME from ROS_TIME
+    # ROS TIME is being deactivated, the clock will report system time after the jump
     ROS_TIME_DEACTIVATED = 3
-    # The time type before and after the jump is SYSTEM_TIME
+    # ROS time is inactive and the clock will keep reporting system time
     SYSTEM_TIME_NO_CHANGE = 4
 
 
