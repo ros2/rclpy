@@ -156,8 +156,8 @@ class TestClock(unittest.TestCase):
         post_callback1.assert_not_called()
         pre_callback2.assert_called()
         post_callback2.assert_called()
-        pre_callback2.assert_called()
-        post_callback2.assert_called()
+        pre_callback3.assert_called()
+        post_callback3.assert_called()
 
         pre_callback1.reset_mock()
         post_callback1.reset_mock()
@@ -171,8 +171,8 @@ class TestClock(unittest.TestCase):
         post_callback1.assert_not_called()
         pre_callback2.assert_not_called()
         post_callback2.assert_not_called()
-        pre_callback2.assert_not_called()
-        post_callback2.assert_not_called()
+        pre_callback3.assert_not_called()
+        post_callback3.assert_not_called()
 
         handler1.unregister()
         handler2.unregister()
