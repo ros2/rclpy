@@ -156,25 +156,25 @@ class Clock:
         :param post_callback: Callback to be called after new time is set accepting
         :rtype: :class:`rclpy.clock.JumpHandler`
         """
-        original_callback = post_callback
-
-        def callback_shim(jump_dict):
-            nonlocal original_callback
-            clock_change = None
-            if 'RCL_ROS_TIME_NO_CHANGE' == jump_dict['clock_change']:
-                clock_change = ClockChange.ROS_TIME_NO_CHANGE
-            elif 'RCL_ROS_TIME_ACTIVATED' == jump_dict['clock_change']:
-                clock_change = ClockChange.ROS_TIME_ACTIVATED
-            elif 'RCL_ROS_TIME_DEACTIVATED' == jump_dict['clock_change']:
-                clock_change = ClockChange.ROS_TIME_DEACTIVATED
-            elif 'RCL_SYSTEM_TIME_NO_CHANGE' == jump_dict['clock_change']:
-                clock_change = ClockChange.SYSTEM_TIME_NO_CHANGE
-            else:
-                raise ValueError('Unknown clock jump type ' + repr(clock_change))
-            duration = Duration(nanoseconds=jump_dict['delta'])
-            original_callback(TimeJump(clock_change, duration))
-
         if post_callback is not None and callable(post_callback):
+            original_callback = post_callback
+
+            def callback_shim(jump_dict):
+                nonlocal original_callback
+                clock_change = None
+                if 'RCL_ROS_TIME_NO_CHANGE' == jump_dict['clock_change']:
+                    clock_change = ClockChange.ROS_TIME_NO_CHANGE
+                elif 'RCL_ROS_TIME_ACTIVATED' == jump_dict['clock_change']:
+                    clock_change = ClockChange.ROS_TIME_ACTIVATED
+                elif 'RCL_ROS_TIME_DEACTIVATED' == jump_dict['clock_change']:
+                    clock_change = ClockChange.ROS_TIME_DEACTIVATED
+                elif 'RCL_SYSTEM_TIME_NO_CHANGE' == jump_dict['clock_change']:
+                    clock_change = ClockChange.SYSTEM_TIME_NO_CHANGE
+                else:
+                    raise ValueError('Unknown clock jump type ' + repr(clock_change))
+                duration = Duration(nanoseconds=jump_dict['delta'])
+                original_callback(TimeJump(clock_change, duration))
+
             post_callback = callback_shim
 
         handler = JumpHandle(
