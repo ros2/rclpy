@@ -3405,7 +3405,7 @@ _rclpy_on_time_jump(
         clock_change = "RCL_SYSTEM_TIME_NO_CHANGE";
         break;
       default:
-        PyErr_Format(PyExc_RuntimeError, "Unknown time jump type");
+        PyErr_Format(PyExc_RuntimeError, "Unknown time jump type %d", time_jump->clock_change);
         Py_DECREF(pycallback);
         return;
     }
