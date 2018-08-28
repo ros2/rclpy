@@ -177,10 +177,9 @@ class Clock:
 
             post_callback = callback_shim
 
-        handler = JumpHandle(
+        return JumpHandle(
             clock=self._clock_handle, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback)
-        return handler
 
 
 class ROSClock(Clock):
