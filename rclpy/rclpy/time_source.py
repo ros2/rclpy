@@ -41,10 +41,10 @@ class TimeSource:
         if self._ros_time_is_active == enabled:
             return
         self._ros_time_is_active = enabled
-        if enabled:
-            self._subscribe_to_clock_topic()
         for clock in self._associated_clocks:
             clock._set_ros_time_is_active(enabled)
+        if enabled:
+            self._subscribe_to_clock_topic()
 
     def _subscribe_to_clock_topic(self):
         if self._clock_sub is None and self._node is not None:
