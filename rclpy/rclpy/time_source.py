@@ -80,12 +80,12 @@ class TimeSource:
             raise ValueError('Only clocks with type ROS_TIME can be attached.')
 
         self._set_clock(self._last_time_set, clock)
-
+        clock._set_ros_time_is_active(self.ros_time_is_active)
         self._associated_clocks.append(clock)
 
     def clock_callback(self, msg):
-        time_from_msg = Time.from_msg(msg)
         # Cache the last message in case a new clock is attached.
+        time_from_msg = Time.from_msg(msg)
         self._last_time_set = time_from_msg
         for clock in self._associated_clocks:
             self._set_clock(time_from_msg, clock)
