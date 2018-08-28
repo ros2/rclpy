@@ -3825,7 +3825,7 @@ static PyMethodDef rclpy_methods[] = {
 
   {
     "rclpy_remove_clock_callback", rclpy_remove_clock_callback, METH_VARARGS,
-    "remove a time jump callback from a clock."
+    "Remove a time jump callback from a clock."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
