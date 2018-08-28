@@ -44,8 +44,7 @@ class TimeSource:
         if enabled:
             self._subscribe_to_clock_topic()
         for clock in self._associated_clocks:
-            # Set time and trigger any time jump callbacks on clock change
-            self._set_clock(self._last_time_set, clock)
+            clock._set_ros_time_is_active(enabled)
 
     def _subscribe_to_clock_topic(self):
         if self._clock_sub is None and self._node is not None:
@@ -79,7 +78,7 @@ class TimeSource:
         if not isinstance(clock, ROSClock):
             raise ValueError('Only clocks with type ROS_TIME can be attached.')
 
-        self._set_clock(self._last_time_set, clock)
+        clock.set_ros_time_override(self._last_time_set)
         clock._set_ros_time_is_active(self.ros_time_is_active)
         self._associated_clocks.append(clock)
 
@@ -88,8 +87,4 @@ class TimeSource:
         time_from_msg = Time.from_msg(msg)
         self._last_time_set = time_from_msg
         for clock in self._associated_clocks:
-            self._set_clock(time_from_msg, clock)
-
-    def _set_clock(self, time, clock):
-        clock._set_ros_time_is_active(self.ros_time_is_active)
-        clock.set_ros_time_override(time)
+            clock.set_ros_time_override(time_from_msg)
