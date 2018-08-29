@@ -14,10 +14,13 @@
 
 import time
 import unittest
+from unittest.mock import Mock
 
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
+from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
+from rclpy.duration import Duration
 from rclpy.time import Time
 
 
@@ -64,3 +67,113 @@ class TestClock(unittest.TestCase):
             now2 = clock.now()
             assert now2 > now
             now = now2
+
+    def test_ros_time_is_active(self):
+        clock = ROSClock()
+        clock._set_ros_time_is_active(True)
+        assert clock.ros_time_is_active
+        clock._set_ros_time_is_active(False)
+        assert not clock.ros_time_is_active
+
+    def test_triggered_time_jump_callbacks(self):
+        one_second = Duration(seconds=1)
+        half_second = Duration(seconds=0.5)
+        negative_half_second = Duration(seconds=-0.5)
+        negative_one_second = Duration(seconds=-1)
+
+        threshold1 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_half_second, on_clock_change=False)
+        threshold2 = JumpThreshold(
+            min_forward=half_second, min_backward=negative_one_second, on_clock_change=False)
+
+        pre_callback1 = Mock()
+        post_callback1 = Mock()
+        pre_callback2 = Mock()
+        post_callback2 = Mock()
+
+        clock = ROSClock()
+        handler1 = clock.create_jump_callback(
+            threshold1, pre_callback=pre_callback1, post_callback=post_callback1)
+        handler2 = clock.create_jump_callback(
+            threshold2, pre_callback=pre_callback2, post_callback=post_callback2)
+
+        clock.set_ros_time_override(Time(seconds=1))
+        clock._set_ros_time_is_active(True)
+        pre_callback1.assert_not_called()
+        post_callback1.assert_not_called()
+        pre_callback2.assert_not_called()
+        post_callback2.assert_not_called()
+
+        # forward jump
+        clock.set_ros_time_override(Time(seconds=1.75))
+        pre_callback1.assert_not_called()
+        post_callback1.assert_not_called()
+        pre_callback2.assert_called()
+        post_callback2.assert_called()
+
+        pre_callback1.reset_mock()
+        post_callback1.reset_mock()
+        pre_callback2.reset_mock()
+        post_callback2.reset_mock()
+
+        # backwards jump
+        clock.set_ros_time_override(Time(seconds=1))
+        pre_callback1.assert_called()
+        post_callback1.assert_called()
+        pre_callback2.assert_not_called()
+        post_callback2.assert_not_called()
+
+        handler1.unregister()
+        handler2.unregister()
+
+    def test_triggered_clock_change_callbacks(self):
+        one_second = Duration(seconds=1)
+        negative_one_second = Duration(seconds=-1)
+
+        threshold1 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_one_second, on_clock_change=False)
+        threshold2 = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
+        threshold3 = JumpThreshold(
+            min_forward=one_second, min_backward=negative_one_second, on_clock_change=True)
+
+        pre_callback1 = Mock()
+        post_callback1 = Mock()
+        pre_callback2 = Mock()
+        post_callback2 = Mock()
+        pre_callback3 = Mock()
+        post_callback3 = Mock()
+
+        clock = ROSClock()
+        handler1 = clock.create_jump_callback(
+            threshold1, pre_callback=pre_callback1, post_callback=post_callback1)
+        handler2 = clock.create_jump_callback(
+            threshold2, pre_callback=pre_callback2, post_callback=post_callback2)
+        handler3 = clock.create_jump_callback(
+            threshold3, pre_callback=pre_callback3, post_callback=post_callback3)
+
+        clock._set_ros_time_is_active(True)
+        pre_callback1.assert_not_called()
+        post_callback1.assert_not_called()
+        pre_callback2.assert_called()
+        post_callback2.assert_called()
+        pre_callback3.assert_called()
+        post_callback3.assert_called()
+
+        pre_callback1.reset_mock()
+        post_callback1.reset_mock()
+        pre_callback2.reset_mock()
+        post_callback2.reset_mock()
+        pre_callback3.reset_mock()
+        post_callback3.reset_mock()
+
+        clock._set_ros_time_is_active(True)
+        pre_callback1.assert_not_called()
+        post_callback1.assert_not_called()
+        pre_callback2.assert_not_called()
+        post_callback2.assert_not_called()
+        pre_callback3.assert_not_called()
+        post_callback3.assert_not_called()
+
+        handler1.unregister()
+        handler2.unregister()
+        handler3.unregister()
