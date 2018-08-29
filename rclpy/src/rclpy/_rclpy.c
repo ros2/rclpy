@@ -3633,8 +3633,6 @@ _parse_param_files(
         if (!_populate_node_parameters_from_rcl_params(
             params, allocator, parameter_cls, parameter_type_cls, params_by_node_name))
         {
-          PyErr_Format(PyExc_RuntimeError,
-            "Failed to fill params dict from file: %s", param_files[i]);
           rcl_yaml_node_struct_fini(params);
           successful = false;
         }
