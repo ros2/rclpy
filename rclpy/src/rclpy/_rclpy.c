@@ -3422,7 +3422,7 @@ static PyObject * _parameter_from_rcl_variant(
     if (NULL == value) {
       return NULL;
     }
-    for (size_t i = 0; i < variant->byte_array_value->size; i++) {
+    for (size_t i = 0; i < variant->byte_array_value->size; ++i) {
       member_value = PyBytes_FromFormat("%u", variant->byte_array_value->values[i]);
       if (NULL == member_value) {
         Py_DECREF(value);
@@ -3436,7 +3436,7 @@ static PyObject * _parameter_from_rcl_variant(
     if (NULL == value) {
       return NULL;
     }
-    for (size_t i = 0; i < variant->bool_array_value->size; i++) {
+    for (size_t i = 0; i < variant->bool_array_value->size; ++i) {
       member_value = variant->bool_array_value->values[i] ? Py_True : Py_False;
       Py_INCREF(member_value);
       PyList_SET_ITEM(value, i, member_value);
@@ -3447,7 +3447,7 @@ static PyObject * _parameter_from_rcl_variant(
     if (NULL == value) {
       return NULL;
     }
-    for (size_t i = 0; i < variant->integer_array_value->size; i++) {
+    for (size_t i = 0; i < variant->integer_array_value->size; ++i) {
       member_value = PyLong_FromLongLong(variant->integer_array_value->values[i]);
       if (NULL == member_value) {
         Py_DECREF(value);
@@ -3461,7 +3461,7 @@ static PyObject * _parameter_from_rcl_variant(
     if (NULL == value) {
       return NULL;
     }
-    for (size_t i = 0; i < variant->double_array_value->size; i++) {
+    for (size_t i = 0; i < variant->double_array_value->size; ++i) {
       member_value = PyFloat_FromDouble(variant->double_array_value->values[i]);
       if (NULL == member_value) {
         Py_DECREF(value);
@@ -3475,7 +3475,7 @@ static PyObject * _parameter_from_rcl_variant(
     if (NULL == value) {
       return NULL;
     }
-    for (size_t i = 0; i < variant->string_array_value->size; i++) {
+    for (size_t i = 0; i < variant->string_array_value->size; ++i) {
       member_value = PyUnicode_FromString(variant->string_array_value->data[i]);
       if (NULL == member_value) {
         Py_DECREF(value);
@@ -3524,7 +3524,7 @@ _populate_node_parameters_from_rcl_params(
   const rcl_params_t * params, rcl_allocator_t allocator, PyObject * parameter_cls,
   PyObject * parameter_type_cls, PyObject * node_params_dict)
 {
-  for (size_t i = 0; i < params->num_nodes; i++) {
+  for (size_t i = 0; i < params->num_nodes; ++i) {
     PyObject * py_node_name;
     if (params->node_names[i][0] != '/') {
       py_node_name = PyUnicode_FromString(
@@ -3543,6 +3543,7 @@ _populate_node_parameters_from_rcl_params(
         return false;
       }
       if (-1 == PyDict_SetItem(node_params_dict, py_node_name, parameter_dict)) {
+        Py_DECREF(parameter_dict);
         Py_DECREF(py_node_name);
         return false;
       }
@@ -3550,13 +3551,14 @@ _populate_node_parameters_from_rcl_params(
       parameter_dict = PyDict_GetItem(node_params_dict, py_node_name);
       if (NULL == parameter_dict) {
         Py_DECREF(py_node_name);
+        PyErr_Format(PyExc_RuntimeError, "Error reading node_paramters from internal dict");
         return false;
       }
       /* This was a borrowed reference. INCREF'd so we can unconditionally DECREF below. */
       Py_INCREF(parameter_dict);
     }
     rcl_node_params_t node_params = params->params[i];
-    for (size_t ii = 0; ii < node_params.num_params; ii++) {
+    for (size_t ii = 0; ii < node_params.num_params; ++ii) {
       PyObject * py_param_name = PyUnicode_FromString(node_params.parameter_names[ii]);
       if (NULL == py_param_name) {
         Py_DECREF(py_node_name);
@@ -3596,6 +3598,8 @@ _populate_node_parameters_from_rcl_params(
  *
  * \param[in] args The arguments to parse for parameter files
  * \param[in] allocator Allocator to use for allocating and deallocating within the function.
+ * \param[in] parameter_cls The PythonObject for the Parameter class.
+ * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
  * \param[out] params_by_node_name A Python dict object to place parsed parameters into.
  *
  * Returns true when parameters are parsed successfully (including the trivial case)
@@ -3618,7 +3622,7 @@ _parse_param_files(
       rcl_get_error_string_safe());
     return false;
   }
-  for (int i = 0; i < param_files_count; i++) {
+  for (int i = 0; i < param_files_count; ++i) {
     if (successful) {
       rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
       if (!rcl_parse_yaml_file(param_files[i], params)) {
@@ -3632,7 +3636,7 @@ _parse_param_files(
           PyErr_Format(PyExc_RuntimeError,
             "Failed to fill params dict from file: %s", param_files[i]);
           rcl_yaml_node_struct_fini(params);
-          return false;
+          successful = false;
         }
       }
       rcl_yaml_node_struct_fini(params);
@@ -3719,12 +3723,11 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * py_node_name_with_namespace = PyUnicode_FromString(node_name_with_namespace);
+  allocator.deallocate(node_name_with_namespace, allocator.state);
   if (NULL == py_node_name_with_namespace) {
-    allocator.deallocate(node_name_with_namespace, allocator.state);
     Py_DECREF(params_by_node_name);
     return NULL;
   }
-  allocator.deallocate(node_name_with_namespace, allocator.state);
 
   if (!PyDict_Contains(params_by_node_name, py_node_name_with_namespace)) {
     // No parameters for current node.
@@ -3733,15 +3736,13 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     return PyDict_New();
   }
   PyObject * node_params = PyDict_GetItem(params_by_node_name, py_node_name_with_namespace);
+  Py_DECREF(py_node_name_with_namespace);
   if (NULL == node_params) {
     Py_DECREF(params_by_node_name);
-    Py_DECREF(py_node_name_with_namespace);
     return NULL;
   }
   // PyDict_GetItem is a borrowed reference. INCREF so we can return a new one.
   Py_INCREF(node_params);
-
-  Py_DECREF(parameter_type_cls);
   Py_DECREF(params_by_node_name);
   return node_params;
 }
