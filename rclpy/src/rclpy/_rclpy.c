@@ -2834,7 +2834,6 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 
-
 /// Get the list of topics discovered by the provided node
 /**
  * Raises ValueError if pynode is not a node capsule
