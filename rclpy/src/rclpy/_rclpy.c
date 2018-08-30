@@ -3541,10 +3541,11 @@ static PyObject * _parameter_from_rcl_variant(
   PyObject * name, rcl_variant_t * variant, PyObject * parameter_cls,
   PyObject * parameter_type_cls)
 {
-  /* Default to NOT_SET to suppress warnings. A Python error will raise if
-   * type and value don't agree */
+
+  // Default to NOT_SET and a value of Py_None to suppress warnings.
+  // A Python error will raise if type and value don't agree.
   int type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_NOT_SET;
-  PyObject * value;
+  PyObject * value = Py_None;
   PyObject * member_value;
   if (variant->bool_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL;
@@ -3635,6 +3636,9 @@ static PyObject * _parameter_from_rcl_variant(
       }
       PyList_SET_ITEM(value, i, member_value);
     }
+  } else {
+    // INCREF Py_None if no other value was set.
+    Py_INCREF(value);
   }
 
   PyObject * args = Py_BuildValue("(i)", type_enum_value);
