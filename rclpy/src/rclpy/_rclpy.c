@@ -3541,7 +3541,6 @@ static PyObject * _parameter_from_rcl_variant(
   PyObject * name, rcl_variant_t * variant, PyObject * parameter_cls,
   PyObject * parameter_type_cls)
 {
-
   // Default to NOT_SET and a value of Py_None to suppress warnings.
   // A Python error will raise if type and value don't agree.
   int type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_NOT_SET;
