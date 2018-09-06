@@ -2701,10 +2701,11 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
  *  Raises RuntimeError  if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node
- * \return Python list of strings
+ * \return Python list of tuples where each tuple contains the two strings:
+ *   the node name and node namespace
  */
 static PyObject *
-rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode;
 
@@ -2719,7 +2720,9 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
   }
   rcutils_string_array_t node_names =
     rcutils_get_zero_initialized_string_array();
-  rcl_ret_t ret = rcl_get_node_names(node, allocator, &node_names);
+  rcutils_string_array_t node_namespaces =
+    rcutils_get_zero_initialized_string_array();
+  rcl_ret_t ret = rcl_get_node_names(node, allocator, &node_names, &node_namespaces);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to get_node_names: %s", rcl_get_error_string_safe());
@@ -2727,29 +2730,42 @@ rclpy_get_node_names(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pynode_names = PyList_New(node_names.size);
+  PyObject * pynode_names_and_namespaces = PyList_New(node_names.size);
   size_t idx;
   for (idx = 0; idx < node_names.size; ++idx) {
-    if (node_names.data[idx]) {
-      PyList_SetItem(
-        pynode_names, idx, PyUnicode_FromString(node_names.data[idx]));
-    } else {
-      Py_INCREF(Py_None);
-      PyList_SetItem(pynode_names, idx, Py_None);
-    }
+    PyObject * pytuple = PyTuple_New(2);
+    PyTuple_SetItem(
+      pytuple, 0,
+      PyUnicode_FromString(node_names.data[idx]));
+    PyTuple_SetItem(
+      pytuple, 1,
+      PyUnicode_FromString(node_namespaces.data[idx]));
+    PyList_SetItem(
+      pynode_names_and_namespaces, idx,
+      pytuple);
   }
 
   ret = rcutils_string_array_fini(&node_names);
   if (ret != RCUTILS_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to destroy node_names: %s", rcl_get_error_string_safe());
-    Py_DECREF(pynode_names);
+    Py_DECREF(pynode_names_and_namespaces);
     rcl_reset_error();
     return NULL;
   }
 
-  return pynode_names;
+  ret = rcutils_string_array_fini(&node_namespaces);
+  if (ret != RCUTILS_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to destroy node_namespaces: %s", rcl_get_error_string_safe());
+    Py_DECREF(pynode_names_and_namespaces);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  return pynode_names_and_namespaces;
 }
+
 
 /// Get the list of topics discovered by the provided node
 /**
@@ -4126,8 +4142,8 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_get_node_names", rclpy_get_node_names, METH_VARARGS,
-    "Get node names list from graph API."
+    "rclpy_get_node_names_and_namespaces", rclpy_get_node_names_and_namespaces, METH_VARARGS,
+    "Get node names and namespaces list from graph API."
   },
   {
     "rclpy_get_node_parameters", rclpy_get_node_parameters, METH_VARARGS,

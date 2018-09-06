@@ -409,7 +409,11 @@ class Node:
         return _rclpy.rclpy_get_service_names_and_types(self.handle)
 
     def get_node_names(self):
-        return _rclpy.rclpy_get_node_names(self.handle)
+        names_ns = _rclpy.rclpy_get_node_names_and_namespaces(self.handle)
+        return [n[0] for n in names_ns]
+
+    def get_node_names_and_namespaces(self):
+        return _rclpy.rclpy_get_node_names_and_namespaces(self.handle)
 
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
