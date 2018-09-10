@@ -41,7 +41,7 @@ class Time:
         return _rclpy.rclpy_time_point_get_nanoseconds(self._time_handle)
 
     def seconds_nanoseconds(self):
-        nanoseconds = self.nanoseconds()
+        nanoseconds = self.nanoseconds
         return (int(nanoseconds / 1e9), nanoseconds % 1e9)
 
     @property
