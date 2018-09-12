@@ -213,3 +213,8 @@ class TestTime(unittest.TestCase):
         duration2 = Duration.from_msg(builtins_msg.duration_value)
         assert isinstance(duration2, Duration)
         assert duration2.nanoseconds == 1
+
+    def test_seconds_nanoseconds(self):
+        assert (1, int(5e8)) == Time(seconds=1, nanoseconds=5e8).seconds_nanoseconds()
+        assert (1, int(5e8)) == Time(seconds=0, nanoseconds=15e8).seconds_nanoseconds()
+        assert (0, 0) == Time().seconds_nanoseconds()
