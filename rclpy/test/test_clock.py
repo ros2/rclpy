@@ -14,6 +14,7 @@
 
 import time
 import unittest
+from unittest.mock import Mock
 
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
@@ -22,7 +23,7 @@ from rclpy.clock import ROSClock
 from rclpy.duration import Duration
 from rclpy.time import Time
 
-from .mock_compat import Mock
+from .mock_compat import *  # noqa
 
 
 class TestClock(unittest.TestCase):

@@ -12,26 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import Mock as _standard_mock
+import types
+from unittest.mock import Mock
 
 
-if hasattr(_standard_mock, 'assert_called_once'):
-    # Python 3.6+
-    Mock = _standard_mock
-else:
+if not hasattr(Mock, 'assert_called_once'):
     # Python 3.5
 
-    class Mock(_standard_mock):
-        """Add methods added in python 3.6 for python 3.5 compatibility."""
+    def assert_called_once(self, *args, **kwargs):
+        if len(args) or len(kwargs):
+            return self.assert_called_once_with(*args, **kwargs)
+        else:
+            return 1 == self.call_count
 
-        def assert_called_once(self, *args, **kwargs):
-            if len(args) or len(kwargs):
-                return self.assert_called_once_with(*args, **kwargs)
-            else:
-                return 1 == self.call_count
+    def assert_called(self, *args, **kwargs):
+        if len(args) or len(kwargs):
+            return self.assert_called_with(*args, **kwargs)
+        else:
+            return self.call_count > 0
 
-        def assert_called(self, *args, **kwargs):
-            if len(args) or len(kwargs):
-                return self.assert_called_with(*args, **kwargs)
-            else:
-                return self.call_count > 0
+    # Monkey patch methods onto Mock type
+    Mock.assert_called_once = types.MethodType(assert_called_once, None, Mock)
+    Mock.assert_called = types.MethodType(assert_called, None, Mock)
