@@ -23,7 +23,7 @@ from rclpy.clock import ROSClock
 from rclpy.duration import Duration
 from rclpy.time import Time
 
-from .mock_compat import *  # noqa
+from .mock_compat import __name__ as _  # noqa: ignore=F401
 
 
 class TestClock(unittest.TestCase):

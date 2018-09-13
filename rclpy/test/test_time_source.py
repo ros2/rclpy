@@ -28,7 +28,7 @@ from rclpy.time import Time
 from rclpy.time_source import CLOCK_TOPIC
 from rclpy.time_source import TimeSource
 
-from .mock_compat import *  # noqa
+from .mock_compat import __name__ as _  # noqa: ignore=F401
 
 
 class TestTimeSource(unittest.TestCase):
