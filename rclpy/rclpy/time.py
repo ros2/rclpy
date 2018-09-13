@@ -40,6 +40,16 @@ class Time:
     def nanoseconds(self):
         return _rclpy.rclpy_time_point_get_nanoseconds(self._time_handle)
 
+    def seconds_nanoseconds(self):
+        """
+        Get time as separate seconds and nanoseconds components.
+
+        :returns: 2-tuple seconds and nanoseconds
+        :rtype: tuple(int, int)
+        """
+        nanoseconds = self.nanoseconds
+        return (int(nanoseconds / 1e9), nanoseconds % 1e9)
+
     @property
     def clock_type(self):
         return self._clock_type
