@@ -14,7 +14,6 @@
 
 import time
 import unittest
-from unittest.mock import Mock
 
 import builtin_interfaces.msg
 import rclpy
@@ -27,6 +26,8 @@ from rclpy.duration import Duration
 from rclpy.time import Time
 from rclpy.time_source import CLOCK_TOPIC
 from rclpy.time_source import TimeSource
+
+from .mock_compat import Mock
 
 
 class TestTimeSource(unittest.TestCase):
