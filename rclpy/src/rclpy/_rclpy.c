@@ -3798,17 +3798,18 @@ _parse_param_files(
       rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
       if (!rcl_parse_yaml_file(param_files[i], params)) {
         // failure to parse will automatically fini the params struct
-        PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file: %s", param_files[i]);
+        PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file '%s': %s",
+          param_files[i], rcl_get_error_string_safe());
+        rcl_reset_error();
         successful = false;
       } else {
         if (!_populate_node_parameters_from_rcl_params(
             params, allocator, parameter_cls, parameter_type_cls, params_by_node_name))
         {
-          rcl_yaml_node_struct_fini(params);
           successful = false;
         }
+        rcl_yaml_node_struct_fini(params);
       }
-      rcl_yaml_node_struct_fini(params);
     }
     allocator.deallocate(param_files[i], allocator.state);
   }
