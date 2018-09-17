@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import types
 from unittest.mock import Mock
 
 
@@ -32,5 +31,5 @@ if not hasattr(Mock, 'assert_called_once'):
             return self.call_count > 0
 
     # Monkey patch methods onto Mock type
-    Mock.assert_called_once = types.MethodType(assert_called_once, None, Mock)
-    Mock.assert_called = types.MethodType(assert_called, None, Mock)
+    Mock.assert_called_once = assert_called_once
+    Mock.assert_called = assert_called
