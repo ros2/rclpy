@@ -2431,14 +2431,20 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pysubscription;
   PyObject * pymsg_type;
+  PyObject * pyraw;
 
-  if (!PyArg_ParseTuple(args, "OO", &pysubscription, &pymsg_type)) {
+  if (!PyArg_ParseTuple(args, "OOO", &pysubscription, &pymsg_type, &pyraw)) {
     return NULL;
   }
   if (!PyCapsule_CheckExact(pysubscription)) {
     PyErr_Format(PyExc_TypeError, "Argument pysubscription is not a valid PyCapsule");
     return NULL;
   }
+  bool raw = false;
+  if (PyObject_IsTrue(pyraw) == 1) {
+    raw = true;
+  }
+
   rcl_subscription_t * subscription =
     (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, "rcl_subscription_t");
 
@@ -2460,7 +2466,30 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return PyErr_NoMemory();
   }
 
-  rcl_ret_t ret = rcl_take(subscription, taken_msg, NULL);
+  rcl_ret_t ret;
+  if (raw) {
+    destroy_ros_message(taken_msg);
+    Py_DECREF(pymetaclass);
+
+    // TODO: Help wanted: How should I allocate the rcl_serialized_message_t correctly?
+    // rclpy doesn't appear to have a helper for that yet, and rclcpp's implementation
+    // seems like overkill for this
+    rcl_serialized_message_t msg;
+    msg.buffer = malloc(100);
+    msg.buffer_length = 0;
+    msg.buffer_capacity = 100;
+
+    ret = rcl_take_serialized_message(subscription, &msg, NULL);
+    if (ret != RMW_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError,
+        "Failed to take_serialized from a subscription: %s", rcl_get_error_string_safe());
+      rcl_reset_error();
+      return NULL;
+    }
+    return PyBytes_FromStringAndSize(msg.buffer, msg.buffer_length);
+  } else {
+    ret = rcl_take(subscription, taken_msg, NULL);
+  }
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
