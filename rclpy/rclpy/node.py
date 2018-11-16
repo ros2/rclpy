@@ -417,6 +417,15 @@ class Node:
         self._handle = None
         return ret
 
+    def get_publisher_names_and_types_by_node(self, node_name, node_namespace, no_demangle=False):
+        return _rclpy.rclpy_get_publisher_names_and_types_by_node(self.handle, no_demangle, node_name, node_namespace)
+
+    def get_subscriber_names_and_types_by_node(self, node_name, node_namespace, no_demangle=False):
+        return _rclpy.rclpy_get_subscriber_names_and_types_by_node(self.handle, no_demangle, node_name, node_namespace)
+
+    def get_service_names_and_types_by_node(self, node_name, node_namespace):
+        return _rclpy.rclpy_get_service_names_and_types_by_node(self.handle, node_name, node_namespace)
+
     def get_topic_names_and_types(self, no_demangle=False):
         return _rclpy.rclpy_get_topic_names_and_types(self.handle, no_demangle)
 
