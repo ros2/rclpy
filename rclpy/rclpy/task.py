@@ -47,8 +47,8 @@ class Future:
     def __del__(self):
         if self._exception is not None and not self._exception_fetched:
             print(
-                'The following exception was never retrieved: ' +
-                str(self._exception), file=sys.stderr)
+                'The following exception was never retrieved: ' + str(self._exception),
+                file=sys.stderr)
 
     def __await__(self):
         # Yield if the task is not finished

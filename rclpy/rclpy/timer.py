@@ -15,12 +15,14 @@
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.utilities import get_default_context
 
 
 # TODO(mikaelarguedas) create a Timer or ROSTimer once we can specify custom time sources
 class WallTimer:
 
-    def __init__(self, callback, callback_group, timer_period_ns):
+    def __init__(self, callback, callback_group, timer_period_ns, context=None):
+        self._context = get_default_context() if context is None else context
         # TODO(sloretz) Allow passing clocks in via timer constructor
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         [self.timer_handle, self.timer_pointer] = _rclpy.rclpy_create_timer(

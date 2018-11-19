@@ -14,17 +14,17 @@
 
 import sys
 
+from rclpy.utilities import get_default_context
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa
-from rclpy.utilities import ok
 from rclpy.utilities import shutdown as _shutdown
 from rclpy.utilities import try_shutdown  # noqa
 
 
-def init(*, args=None):
+def init(*, args=None, context=None):
+    context = get_default_context if context is None else context
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
-    return rclpy_implementation.rclpy_init(
-        args if args is not None else sys.argv)
+    return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context)
 
 
 # The global spin functions need an executor to do the work
@@ -97,7 +97,7 @@ def spin_once(node, *, timeout_sec=None):
         executor.remove_node(node)
 
 
-def spin(node):
+def spin(node, executor=None):
     """
     Execute work blocking until the library is shutdown.
 
@@ -105,29 +105,32 @@ def spin(node):
     This method blocks.
 
     :param node: A node to add to the executor to check for work.
+    :param executor: The executor to use, of the global executor if None is passed.
     :return: Always returns None regardless whether work executes or timeout expires.
     :rtype: None
     """
-    executor = get_global_executor()
+    executor = get_global_executor() if executor is None else executor
     try:
         executor.add_node(node)
-        while ok():
+        while executor.context.ok():
             executor.spin_once()
     finally:
         executor.remove_node(node)
 
 
-def spin_until_future_complete(node, future):
+def spin_until_future_complete(node, future, executor=None):
     """
     Execute work until the future is complete.
 
     Callbacks and other work will be executed in a SingleThreadedExecutor until future.done()
     returns True or rclpy is shutdown.
 
+    :param node: A node to add to the executor to check for work.
     :param future: The future object to wait on.
+    :param executor: The executor to use, of the global executor if None is passed.
     :type future: rclpy.task.Future
     """
-    executor = get_global_executor()
+    executor = get_global_executor() if executor is None else executor
     try:
         executor.add_node(node)
         executor.spin_until_future_complete(future)

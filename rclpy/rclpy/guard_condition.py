@@ -13,12 +13,15 @@
 # limitations under the License.
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.utilities import get_default_context
 
 
 class GuardCondition:
 
-    def __init__(self, callback, callback_group):
-        self.guard_handle, self.guard_pointer = _rclpy.rclpy_create_guard_condition()
+    def __init__(self, callback, callback_group, context=None):
+        self._context = get_default_context() if context is None else context
+        self.guard_handle, self.guard_pointer = \
+            _rclpy.rclpy_create_guard_condition(self._context.handle)
         self.callback = callback
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
