@@ -2,6 +2,33 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2018-11-19)
+------------------
+* Updated to use new error handling API from rcutils (`#245 <https://github.com/ros2/rclpy/issues/245>`_)
+* Added library path hook for platforms other than Windows. (`#243 <https://github.com/ros2/rclpy/issues/243>`_)
+* Avoided use of MethodType when monkey patching for tests (`#239 <https://github.com/ros2/rclpy/issues/239>`_)
+* Fixed repeated fini-ing on failure to parse yaml params (`#238 <https://github.com/ros2/rclpy/issues/238>`_)
+* Added methods on Mock class for Python 3.5 compatibility (`#237 <https://github.com/ros2/rclpy/issues/237>`_)
+* Added getter for tuple with seconds and nanoseconds (`#235 <https://github.com/ros2/rclpy/issues/235>`_)
+* Added new method to get node names and namespaces (`#233 <https://github.com/ros2/rclpy/issues/233>`_)
+* Fixed warning when parameter value is uninitialized. (`#234 <https://github.com/ros2/rclpy/issues/234>`_)
+* Added initial node parameters from a parameters yaml files and constructor arguments. (`#225 <https://github.com/ros2/rclpy/issues/225>`_)
+* Added callbacks when time jumps (`#222 <https://github.com/ros2/rclpy/issues/222>`_)
+* Updated to use consolidated rcl_wait_set_clear() (`#230 <https://github.com/ros2/rclpy/issues/230>`_)
+* Added parameter events publishing (`#226 <https://github.com/ros2/rclpy/issues/226>`_)
+* Added Node API method for setting the parameters_callback. (`#228 <https://github.com/ros2/rclpy/issues/228>`_)
+* Added test for when sim time is active but unset (`#229 <https://github.com/ros2/rclpy/issues/229>`_)
+* Added node parameters and parameter services (`#214 <https://github.com/ros2/rclpy/issues/214>`_)
+* Disabled 1kHz test on all platforms (`#223 <https://github.com/ros2/rclpy/issues/223>`_)
+* Updated to allow duration to be initialized with negative nanoseconds (`#221 <https://github.com/ros2/rclpy/issues/221>`_)
+* Updated to allow Duration to be negative (`#220 <https://github.com/ros2/rclpy/issues/220>`_)
+* Added a reference to its executor on Node (`#218 <https://github.com/ros2/rclpy/issues/218>`_)
+* Fixed executor.remove_node() (`#217 <https://github.com/ros2/rclpy/issues/217>`_)
+* Fixed bool return value for executor.add_node() (`#216 <https://github.com/ros2/rclpy/issues/216>`_)
+* Added TimeSource and support for ROS time (`#210 <https://github.com/ros2/rclpy/issues/210>`_)
+* Added Time, Duration, Clock wrapping rcl (`#209 <https://github.com/ros2/rclpy/issues/209>`_)
+* Contributors: Dirk Thomas, Michael Carroll, Mikael Arguedas, Shane Loretz, Steven! Ragnarök, William Woodall, dhood
+
 0.5.3 (2018-07-17)
 ------------------
 * use test_msgs instead of std_msgs (`#204 <https://github.com/ros2/rclpy/issues/204>`_)
@@ -35,4 +62,60 @@ Changelog for package rclpy
   * Signed-off-by: Ethan Gao <ethan.gao@linux.intel.com>
 * Added a sleep to workaround race condition in MultiThreadedExecutor test. (`#168 <https://github.com/ros2/rclpy/issues/168>`_)
 * Disable 1kHz timer tests on the ARM architectures. (`#169 <https://github.com/ros2/rclpy/issues/169>`_)
+  * Publish parameter events.
+  Adds a parameter event publisher to rclpy nodes.
+  * Increase base number of publishers for testing.
+  Because every node has a parameter events publisher bump the number of
+  expected publishers in a couple of cases.
+  * Remove comment now that parameter services are implemented.
+  * Delete NOT_SET parameters if present regardless of prior type.
+  * Use ParameterMsg rather than RCLParameter for msg type name.
+  * Publish parameter events.
+  Adds a parameter event publisher to rclpy nodes.
+  * Increase base number of publishers for testing.
+  Because every node has a parameter events publisher bump the number of
+  expected publishers in a couple of cases.
+  * Remove comment now that parameter services are implemented.
+  * Delete NOT_SET parameters if present regardless of prior type.
+  * Use ParameterMsg rather than RCLParameter for msg type name.
+  * Publish parameter events.
+  Adds a parameter event publisher to rclpy nodes.
+  * Increase base number of publishers for testing.
+  Because every node has a parameter events publisher bump the number of
+  expected publishers in a couple of cases.
+  * Remove comment now that parameter services are implemented.
+  * Delete NOT_SET parameters if present regardless of prior type.
+  * Use ParameterMsg rather than RCLParameter for msg type name.
+  * Publish parameter events.
+  Adds a parameter event publisher to rclpy nodes.
+  * Increase base number of publishers for testing.
+  Because every node has a parameter events publisher bump the number of
+  expected publishers in a couple of cases.
+  * Remove comment now that parameter services are implemented.
+  * Delete NOT_SET parameters if present regardless of prior type.
+  * Use ParameterMsg rather than RCLParameter for msg type name.
+  * Publish parameter events.
+  Adds a parameter event publisher to rclpy nodes.
+  * Increase base number of publishers for testing.
+  Because every node has a parameter events publisher bump the number of
+  expected publishers in a couple of cases.
+  * Remove comment now that parameter services are implemented.
+  * Delete NOT_SET parameters if present regardless of prior type.
+  * Use ParameterMsg rather than RCLParameter for msg type name.
+  * Publish parameter events.
+  Adds a parameter event publisher to rclpy nodes.
+  * Increase base number of publishers for testing.
+  Because every node has a parameter events publisher bump the number of
+  expected publishers in a couple of cases.
+  * Remove comment now that parameter services are implemented.
+  * Delete NOT_SET parameters if present regardless of prior type.
+  * Use ParameterMsg rather than RCLParameter for msg type name.
+  * Publish parameter events.
+  Adds a parameter event publisher to rclpy nodes.
+  * Increase base number of publishers for testing.
+  Because every node has a parameter events publisher bump the number of
+  expected publishers in a couple of cases.
+  * Remove comment now that parameter services are implemented.
+  * Delete NOT_SET parameters if present regardless of prior type.
+  * Use ParameterMsg rather than RCLParameter for msg type name.
 * Contributors: Dirk Thomas, Ethan Gao, Michael Carroll, Mikael Arguedas, Nick Medveditskov, Shane Loretz, Tully Foote, William Woodall, dhood
