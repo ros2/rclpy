@@ -2251,23 +2251,23 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   if (0 == strcmp(entity_type, "subscription")) {
     rcl_subscription_t * subscription =
       (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, "rcl_subscription_t");
-    ret = rcl_wait_set_add_subscription(wait_set, subscription);
+    ret = rcl_wait_set_add_subscription(wait_set, subscription, NULL);
   } else if (0 == strcmp(entity_type, "client")) {
     rcl_client_t * client =
       (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
-    ret = rcl_wait_set_add_client(wait_set, client);
+    ret = rcl_wait_set_add_client(wait_set, client, NULL);
   } else if (0 == strcmp(entity_type, "service")) {
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
-    ret = rcl_wait_set_add_service(wait_set, service);
+    ret = rcl_wait_set_add_service(wait_set, service, NULL);
   } else if (0 == strcmp(entity_type, "timer")) {
     rcl_timer_t * timer =
       (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
-    ret = rcl_wait_set_add_timer(wait_set, timer);
+    ret = rcl_wait_set_add_timer(wait_set, timer, NULL);
   } else if (0 == strcmp(entity_type, "guard_condition")) {
     rcl_guard_condition_t * guard_condition =
       (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, "rcl_guard_condition_t");
-    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition);
+    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition, NULL);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
