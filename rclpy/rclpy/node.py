@@ -71,6 +71,7 @@ class Node:
         self.services = []
         self.timers = []
         self.guards = []
+        self.waitables = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
 
@@ -212,6 +213,14 @@ class Node:
         validate_topic_name(topic_or_service_name, is_service=is_service)
         expanded_topic_or_service_name = expand_topic_name(topic_or_service_name, name, namespace)
         validate_full_topic_name(expanded_topic_or_service_name, is_service=is_service)
+
+    def add_waitable(self, waitable):
+        """Add a class which itself is capable of add things to the wait set."""
+        self.waitables.append(waitable)
+
+    def remove_waitable(self, waitable):
+        """Remove a class which itself is capable of add things to the wait set."""
+        self.waitables.remove(waitable)
 
     def create_publisher(self, msg_type, topic, *, qos_profile=qos_profile_default):
         # this line imports the typesupport for the message module if not already done

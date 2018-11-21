@@ -24,6 +24,7 @@ from rclpy.task import Task
 from rclpy.timer import WallTimer
 from rclpy.utilities import ok
 from rclpy.utilities import timeout_sec_to_nsec
+from rclpy.waitable import NumberOfEntities
 
 # TODO(wjwwood): make _rclpy_wait(...) thread-safe
 # Executor.spin_once() ends up calling _rclpy_wait(...), which right now is
@@ -370,12 +371,14 @@ class Executor:
             timers = []
             clients = []
             services = []
+            waitables = []
             for node in nodes:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
                 timers.extend(filter(self.can_execute, node.timers))
                 clients.extend(filter(self.can_execute, node.clients))
                 services.extend(filter(self.can_execute, node.services))
                 node_guards = filter(self.can_execute, node.guards)
+                waitables.extend(filter(self.can_execute, node.waitables))
                 # retrigger a guard condition that was triggered but not handled
                 for gc in node_guards:
                     if gc._executor_triggered:
@@ -384,15 +387,22 @@ class Executor:
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
+            node_entity_count = NumberOfEntities(
+                len(subscriptions), len(guards), len(timers), len(clients), len(services))
+            executor_entity_count = NumberOfEntities(0, 2, 0, 0, 0)
+            entity_count = node_entity_count + executor_entity_count
+            for waitable in waitables:
+                entity_count += waitable.get_num_entities()
+
             # Construct a wait set
             with _WaitSet() as wait_set:
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
-                    len(subscriptions),
-                    len(guards) + 2,
-                    len(timers),
-                    len(clients),
-                    len(services))
+                    entity_count.num_subscriptions,
+                    entity_count.num_guard_conditions,
+                    entity_count.num_timers,
+                    entity_count.num_clients,
+                    entity_count.num_services)
 
                 entities = {
                     'subscription': (subscriptions, 'subscription_handle'),
@@ -407,6 +417,8 @@ class Executor:
                         _rclpy.rclpy_wait_set_add_entity(
                             entity, wait_set, h.__getattribute__(handle_name)
                         )
+                for waitable in waitables():
+                    waitable.add_to_wait_set(wait_set)
                 (sigint_gc, sigint_gc_handle) = _rclpy.rclpy_get_sigint_guard_condition()
                 try:
                     _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
@@ -474,6 +486,13 @@ class Executor:
                                 srv, node, self._take_service, self._execute_service)
                             yielded_work = True
                             yield handler, srv, node
+
+                for wt in node.waitables:
+                    if wt.is_ready(wait_set):
+                        handler = self._make_handler(
+                            wt, node, lambda e: wt.take_data(), wt.execute)
+                        yielded_work = True
+                        yield handler, wt, node
 
             # Check timeout timer
             if (
