@@ -2284,6 +2284,76 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromSize_t(index);
 }
 
+/// Check if an entity in the wait set is ready by its index
+/**
+ * This must be called after waiting on the wait set.
+ * Raises RuntimeError if the entity type is unknown
+ * Raises IndexError if the given index is beyond the number of entities in the set
+ *
+ * \param[in] entity_type string defining the entity ["subscription, client, service"]
+ * \param[in] pywait_set Capsule pointing to the wait set structure
+ * \param[in] pyindex location in the wait set of the entity to check
+ * \return True if the entity at the index in the wait set is not NULL
+ */
+static PyObject *
+rclpy_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  const char * entity_type;
+  PyObject * pywait_set;
+  PyObject * pyindex;
+  size_t index;
+
+  if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pywait_set, &pyindex)) {
+    return NULL;
+  }
+
+  index = PyLong_AsSize_t(pyindex);
+  if (PyErr_Occurred()) {
+    // Error already set
+    return NULL;
+  }
+
+  rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyCapsule_GetPointer(pywait_set, "rcl_wait_set_t");
+  if (!wait_set) {
+    return NULL;
+  }
+  void ** entities = NULL;
+  size_t num_entities = 0;
+  if (0 == strcmp(entity_type, "subscription")) {
+    entities = (void *)wait_set->subscriptions;
+    num_entities = wait_set->size_of_subscriptions;
+  } else if (0 == strcmp(entity_type, "client")) {
+    entities = (void *)wait_set->clients;
+    num_entities = wait_set->size_of_clients;
+  } else if (0 == strcmp(entity_type, "service")) {
+    entities = (void *)wait_set->services;
+    num_entities = wait_set->size_of_services;
+  } else if (0 == strcmp(entity_type, "timer")) {
+    entities = (void *)wait_set->timers;
+    num_entities = wait_set->size_of_timers;
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    entities = (void *)wait_set->guard_conditions;
+    num_entities = wait_set->size_of_guard_conditions;
+  } else {
+    PyErr_Format(PyExc_RuntimeError,
+      "'%s' is not a known entity", entity_type);
+    return NULL;
+  }
+
+  if (NULL == entities) {
+    PyErr_Format(PyExc_RuntimeError, "Wait set '%s' isn't allocated", entity_type);
+    return NULL;
+  }
+  if (index >= num_entities) {
+    PyErr_Format(PyExc_IndexError, "%s index too big %zu >= %zu", entity_type, index, num_entities);
+    return NULL;
+  }
+  if (NULL != entities[index]) {
+    Py_RETURN_TRUE;
+  }
+  Py_RETURN_FALSE;
+}
+
 /// Destroy the wait set structure
 /**
  * Raises RuntimeError if the wait set could not be destroyed
@@ -4057,6 +4127,11 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_wait_set_add_entity", rclpy_wait_set_add_entity, METH_VARARGS,
     "rclpy_wait_set_add_entity."
+  },
+
+  {
+    "rclpy_wait_set_is_ready", rclpy_wait_set_is_ready, METH_VARARGS,
+    "rclpy_wait_set_is_ready."
   },
 
   {
