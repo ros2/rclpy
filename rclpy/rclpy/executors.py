@@ -417,7 +417,7 @@ class Executor:
                         _rclpy.rclpy_wait_set_add_entity(
                             entity, wait_set, h.__getattribute__(handle_name)
                         )
-                for waitable in waitables():
+                for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
                 (sigint_gc, sigint_gc_handle) = _rclpy.rclpy_get_sigint_guard_condition()
                 try:
