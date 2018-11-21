@@ -2231,7 +2231,7 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] entity_type string defining the entity ["subscription, client, service"]
  * \param[in] pywait_set Capsule pointing to the wait set structure
  * \param[in] pyentity Capsule pointing to the entity to add
- * \return None
+ * \return Index in waitset entity was added at
  */
 static PyObject *
 rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
@@ -2239,6 +2239,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   const char * entity_type;
   PyObject * pywait_set;
   PyObject * pyentity;
+  size_t index;
 
   if (!PyArg_ParseTuple(args, "zOO", &entity_type, &pywait_set, &pyentity)) {
     return NULL;
@@ -2251,23 +2252,23 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
   if (0 == strcmp(entity_type, "subscription")) {
     rcl_subscription_t * subscription =
       (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, "rcl_subscription_t");
-    ret = rcl_wait_set_add_subscription(wait_set, subscription, NULL);
+    ret = rcl_wait_set_add_subscription(wait_set, subscription, &index);
   } else if (0 == strcmp(entity_type, "client")) {
     rcl_client_t * client =
       (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
-    ret = rcl_wait_set_add_client(wait_set, client, NULL);
+    ret = rcl_wait_set_add_client(wait_set, client, &index);
   } else if (0 == strcmp(entity_type, "service")) {
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
-    ret = rcl_wait_set_add_service(wait_set, service, NULL);
+    ret = rcl_wait_set_add_service(wait_set, service, &index);
   } else if (0 == strcmp(entity_type, "timer")) {
     rcl_timer_t * timer =
       (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
-    ret = rcl_wait_set_add_timer(wait_set, timer, NULL);
+    ret = rcl_wait_set_add_timer(wait_set, timer, &index);
   } else if (0 == strcmp(entity_type, "guard_condition")) {
     rcl_guard_condition_t * guard_condition =
       (rcl_guard_condition_t *)PyCapsule_GetPointer(pyentity, "rcl_guard_condition_t");
-    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition, NULL);
+    ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition, &index);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
@@ -2280,7 +2281,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_reset_error();
     return NULL;
   }
-  Py_RETURN_NONE;
+  return PyLong_FromSize_t(index);
 }
 
 /// Destroy the wait set structure
