@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+import time
 import unittest
 
 import rclpy
@@ -40,42 +41,41 @@ class ClientWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.subscription = _rclpy.rclpy_create_subscription(
-            node.handle, EmptyMsg, 'test_topic', qos_profile_default.get_c_qos_profile())[0]
-        self.subscription_index = None
-        self.subscription_is_ready = False
+        self.client = _rclpy.rclpy_create_client(
+            node.handle, EmptySrv, 'test_client', qos_profile_default.get_c_qos_profile())[0]
+        self.client_index = None
+        self.client_is_ready = False
 
         self.node = node
         self.future = None
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('subscription', wait_set, self.subscription_index):
-            self.subscription_is_ready = True
-        return self.subscription_is_ready
+        if _rclpy.rclpy_wait_set_is_ready('client', wait_set, self.client_index):
+            self.client_is_ready = True
+        return self.client_is_ready
 
     def take_data(self):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
-        if self.subscription_is_ready:
-            self.subscription_is_ready = False
-            return _rclpy.rclpy_take(self.subscription, EmptyMsg)
+        if self.client_is_ready:
+            self.client_is_ready = False
+            return _rclpy.rclpy_take_response(self.client, EmptySrv.Response)
         return None
 
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
         test_data = {}
-        if isinstance(taken_data, EmptyMsg):
-            test_data['timer'] = taken_data
+        if isinstance(taken_data[1], EmptySrv.Response):
+            test_data['client'] = taken_data[1]
         self.future.set_result(test_data)
 
     def get_num_entities(self):
         """Return number of each type of entity used."""
-        return NumberOfEntities(1, 0, 0, 0, 0)
+        return NumberOfEntities(0, 0, 0, 1, 0)
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.subscription_index = _rclpy.rclpy_wait_set_add_entity(
-            'timer', wait_set, self.subscription)
+        self.client_index = _rclpy.rclpy_wait_set_add_entity('client', wait_set, self.client)
 
 
 class ServerWaitable(Waitable):
@@ -84,10 +84,7 @@ class ServerWaitable(Waitable):
         super().__init__(ReentrantCallbackGroup())
 
         self.server = _rclpy.rclpy_create_service(
-                node.handle,
-                EmptySrv,
-                'test_server',
-                qos_profile_default.get_c_qos_profile())[0]
+            node.handle, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())[0]
         self.server_index = None
         self.server_is_ready = False
 
@@ -110,9 +107,8 @@ class ServerWaitable(Waitable):
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
         test_data = {}
-        if isinstance(taken_data, tuple):
-            if isintance(taken_data[0], EmptySrv.Request):
-                test_data['server'] = taken_data[0]
+        if isinstance(taken_data[0], EmptySrv.Request):
+            test_data['server'] = taken_data[0]
         self.future.set_result(test_data)
 
     def get_num_entities(self):
@@ -121,8 +117,7 @@ class ServerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.server_index = _rclpy.rclpy_wait_set_add_entity(
-            'service', wait_set, self.server)
+        self.server_index = _rclpy.rclpy_wait_set_add_entity('service', wait_set, self.server)
 
 
 class TimerWaitable(Waitable):
@@ -166,8 +161,7 @@ class TimerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.timer_index = _rclpy.rclpy_wait_set_add_entity(
-            'timer', wait_set, self.timer)
+        self.timer_index = _rclpy.rclpy_wait_set_add_entity('timer', wait_set, self.timer)
 
 
 class SubscriptionWaitable(Waitable):
@@ -287,17 +281,31 @@ class TestWaitable(unittest.TestCase):
     def tearDown(self):
         self.node.remove_waitable(self.waitable)
 
+    def test_waitable_with_client(self):
+        self.waitable = ClientWaitable(self.node)
+        self.node.add_waitable(self.waitable)
+
+        server = self.node.create_service(EmptySrv, 'test_client', lambda req, resp: resp)
+
+        while not _rclpy.rclpy_service_server_is_available(self.node.handle, self.waitable.client):
+            time.sleep(0.1)
+
+        thr = self.start_spin_thread(self.waitable)
+        _rclpy.rclpy_send_request(self.waitable.client, EmptySrv.Request())
+        thr.join()
+
+        assert self.waitable.future.done()
+        assert isinstance(self.waitable.future.result()['client'], EmptySrv.Response)
+        self.node.destroy_service(server)
+
     def test_waitable_with_server(self):
         self.waitable = ServerWaitable(self.node)
         self.node.add_waitable(self.waitable)
         client = self.node.create_client(EmptySrv, 'test_server')
 
         thr = self.start_spin_thread(self.waitable)
-        client.call(EmptySrv.Request())
+        client.call_async(EmptySrv.Request())
         thr.join()
-
-        import sys
-        sys.stderr.write(repr(self.waitable.future.result()) + '\n')
 
         assert self.waitable.future.done()
         assert isinstance(self.waitable.future.result()['server'], EmptySrv.Request)
@@ -336,3 +344,26 @@ class TestWaitable(unittest.TestCase):
 
         assert self.waitable.future.done()
         assert self.waitable.future.result()['guard_condition']
+
+
+class TestNumberOfEntities(unittest.TestCase):
+
+    def test_add(self):
+        n1 = NumberOfEntities(1, 2, 3, 4, 5)
+        n2 = NumberOfEntities(10, 20, 30, 40, 50)
+        n = n1 + n2
+        assert n.num_subscriptions == 11
+        assert n.num_guard_conditions == 22
+        assert n.num_timers == 33
+        assert n.num_clients == 44
+        assert n.num_services == 55
+
+    def test_add_assign(self):
+        n1 = NumberOfEntities(1, 2, 3, 4, 5)
+        n2 = NumberOfEntities(10, 20, 30, 40, 50)
+        n1 += n2
+        assert n1.num_subscriptions == 11
+        assert n1.num_guard_conditions == 22
+        assert n1.num_timers == 33
+        assert n1.num_clients == 44
+        assert n1.num_services == 55
