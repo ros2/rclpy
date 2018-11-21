@@ -17,10 +17,10 @@ class NumberOfEntities:
 
     __slots__ = [
         'num_subscriptions',
-        'num_services',
-        'num_clients',
+        'num_guard_conditions',
         'num_timers',
-        'num_guard_conditions']
+        'num_clients',
+        'num_services']
 
     def __init__(self, num_subs=0, num_gcs=0, num_timers=0, num_clients=0, num_services=0):
         self.num_subscriptions = num_subs
@@ -36,6 +36,11 @@ class NumberOfEntities:
             right = getattr(other, attr)
             setattr(result, attr, left + right)
         return result
+
+    def __repr__(self):
+        return '<{0}({1}, {2}, {3}, {4}, {5})>'.format(
+            self.__class__.__name__, self.num_subscriptions, self.num_guard_conditions,
+            self.num_timers, self.num_clients, self.num_services)
 
 
 class Waitable:

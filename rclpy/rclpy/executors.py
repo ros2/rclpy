@@ -437,10 +437,19 @@ class Executor:
                 finally:
                     _rclpy.rclpy_destroy_entity(sigint_gc)
 
-            # Mark all guards as triggered before yielding any handlers since they're auto-taken
-            for gc in guards:
-                if gc.guard_pointer in guards_ready:
-                    gc._executor_triggered = True
+                # Mark all guards as triggered before yielding since they're auto-taken
+                for gc in guards:
+                    if gc.guard_pointer in guards_ready:
+                        gc._executor_triggered = True
+
+                # Check waitables before wait set is destroyed
+                for node in nodes:
+                    for wt in node.waitables:
+                        if wt.is_ready(wait_set):
+                            handler = self._make_handler(
+                                wt, node, lambda e: e.take_data(), lambda e, a: e.execute(a))
+                            yielded_work = True
+                            yield handler, wt, node
 
             # Process ready entities one node at a time
             for node in nodes:
@@ -486,13 +495,6 @@ class Executor:
                                 srv, node, self._take_service, self._execute_service)
                             yielded_work = True
                             yield handler, srv, node
-
-                for wt in node.waitables:
-                    if wt.is_ready(wait_set):
-                        handler = self._make_handler(
-                            wt, node, lambda e: wt.take_data(), wt.execute)
-                        yielded_work = True
-                        yield handler, wt, node
 
             # Check timeout timer
             if (
