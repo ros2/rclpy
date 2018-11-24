@@ -23,11 +23,8 @@
 #include <rcl/validate_topic_name.h>
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcl_interfaces/msg/parameter_type__struct.h>
-<<<<<<< 52dc2dba062dd5828e093e8ca174e3147a37ad37
 #include <rcutils/format_string.h>
-=======
 #include <rcutils/allocator.h>
->>>>>>> Fixed allocation to use rmw allocatior rather than fixed size buffer
 #include <rcutils/strdup.h>
 #include <rcutils/types.h>
 #include <rmw/error_handling.h>
