@@ -2428,9 +2428,9 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] rcl subscription pointer pointing to the subscription to process the message
  * \return Python byte array with the raw serialized message contents
  */
- static PyObject *
- rclpy_take_raw(rcl_subscription_t * subscription)
- {
+static PyObject *
+rclpy_take_raw(rcl_subscription_t * subscription)
+{
   // Create a serialized message object
   rcl_serialized_message_t msg = rmw_get_zero_initialized_serialized_message();
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
@@ -2457,7 +2457,7 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
     }
     return NULL;
   }
-  PyObject* python_bytes = PyBytes_FromStringAndSize(msg.buffer, msg.buffer_length);
+  PyObject * python_bytes = PyBytes_FromStringAndSize(msg.buffer, msg.buffer_length);
   rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
   if (r_fini != RMW_RET_OK) {
     PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
