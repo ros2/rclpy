@@ -23,11 +23,17 @@
 #include <rcl/validate_topic_name.h>
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcl_interfaces/msg/parameter_type__struct.h>
+<<<<<<< 52dc2dba062dd5828e093e8ca174e3147a37ad37
 #include <rcutils/format_string.h>
+=======
+#include <rcutils/allocator.h>
+>>>>>>> Fixed allocation to use rmw allocatior rather than fixed size buffer
 #include <rcutils/strdup.h>
 #include <rcutils/types.h>
 #include <rmw/error_handling.h>
 #include <rmw/rmw.h>
+#include <rmw/serialized_message.h>
+#include <rmw/types.h>
 #include <rmw/validate_full_topic_name.h>
 #include <rmw/validate_namespace.h>
 #include <rmw/validate_node_name.h>
@@ -2471,22 +2477,39 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     destroy_ros_message(taken_msg);
     Py_DECREF(pymetaclass);
 
-    // TODO: Help wanted: How should I allocate the rcl_serialized_message_t correctly?
-    // rclpy doesn't appear to have a helper for that yet, and rclcpp's implementation
-    // seems like overkill for this
-    rcl_serialized_message_t msg;
-    msg.buffer = malloc(100);
-    msg.buffer_length = 0;
-    msg.buffer_capacity = 100;
+    // Create a serialized message object
+    // Not 100% sure that 0u is the best size, but it will do
+    rcl_serialized_message_t msg = rmw_get_zero_initialized_serialized_message();
+    rcutils_allocator_t allocator = rcutils_get_default_allocator();
+    ret = rmw_serialized_message_init(&msg, 0u, &allocator);
+    if (ret != RCL_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError,
+        "Failed to initialize message: %s", rcl_get_error_string_safe());
+      rcl_reset_error();
+      rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
+      if (r_fini != RMW_RET_OK) {
+        PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
+      }
+      return NULL;
+    }
 
     ret = rcl_take_serialized_message(subscription, &msg, NULL);
     if (ret != RMW_RET_OK) {
       PyErr_Format(PyExc_RuntimeError,
         "Failed to take_serialized from a subscription: %s", rcl_get_error_string_safe());
       rcl_reset_error();
+      rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
+      if (r_fini != RMW_RET_OK) {
+        PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
+      }
       return NULL;
     }
-    return PyBytes_FromStringAndSize(msg.buffer, msg.buffer_length);
+    PyObject* python_bytes = PyBytes_FromStringAndSize(msg.buffer, msg.buffer_length);
+    rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
+    if (r_fini != RMW_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
+    }
+    return python_bytes;
   } else {
     ret = rcl_take(subscription, taken_msg, NULL);
   }
