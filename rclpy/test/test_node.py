@@ -66,6 +66,30 @@ class TestNode(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
             self.node.create_subscription(Primitives, 'foo/{bad_sub}', lambda msg: print(msg))
 
+    def raw_subscription_callback(self, msg):
+        print('Raw subscription callback: %s length %d' % (msg, len(msg)))
+        self.raw_subscription_msg = msg
+
+    def test_create_raw_subscription(self):
+        primitives_pub = self.node.create_publisher(Primitives, 'raw_subscription_test')
+        self.raw_subscription_msg = None  # None=No result yet
+        self.node.create_subscription(
+            Primitives,
+            'raw_subscription_test',
+            self.raw_subscription_callback,
+            raw=True
+        )
+        primitives_msg = Primitives()
+        cycle_count = 0
+        while rclpy.ok() and cycle_count < 5 and self.raw_subscription_msg is None:
+            primitives_pub.publish(primitives_msg)
+            cycle_count += 1
+            rclpy.spin_once(self.node, timeout_sec=1)
+        self.assertIsNotNone(self.raw_subscription_msg, 'raw subscribe timed out')
+        self.assertIs(type(self.raw_subscription_msg), bytes, 'raw subscribe did not return bytes')
+        # The length might be implementation dependant, but shouldn't be zero
+        self.assertNotEqual(len(self.raw_subscription_msg), 0, 'raw subscribe invalid length')
+
     def test_create_client(self):
         self.node.create_client(GetParameters, 'get/parameters')
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not contain characters'):
