@@ -1426,7 +1426,7 @@ rclpy_call_timer(PyObject * Py_UNUSED(self), PyObject * args)
  * The change in period will take effect after the next timer call
  *
  * Raises ValueError if pytimer is not a timer capsule
- * Raises RuntimeError if the timer perioud could not be changed
+ * Raises RuntimeError if the timer period could not be changed
  *
  * \param[in] pytimer Capsule pointing to the timer
  * \param[in] period_nsec unsigned PyLongLong containing the new period in nanoseconds
