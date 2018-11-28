@@ -135,7 +135,6 @@ rclpy_create_context(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   return PyCapsule_New(context, "rcl_context_t", _rclpy_context_capsule_destructor);
 }
 
-
 /// Create a sigint guard condition
 /**
  * A successful call will return a list with two elements:
@@ -467,26 +466,29 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 {
   // Expect two arguments, one is a list of strings and the other is a context.
   PyObject * pyargs;
+  PyObject * pyseqlist;
   PyObject * pycontext;
   if (!PyArg_ParseTuple(args, "OO", &pyargs, &pycontext)) {
     // Exception raised
     return NULL;
   }
 
-  pyargs = PySequence_List(pyargs);
-  if (NULL == pyargs) {
+  pyseqlist = PySequence_List(pyargs);
+  if (NULL == pyseqlist) {
     // Exception raised
     return NULL;
   }
-  Py_ssize_t pysize_num_args = PyList_Size(pyargs);
+  Py_ssize_t pysize_num_args = PyList_Size(pyseqlist);
   if (pysize_num_args > INT_MAX) {
     PyErr_Format(PyExc_OverflowError, "Too many arguments");
+    Py_DECREF(pyseqlist);
     return NULL;
   }
   int num_args = (int)pysize_num_args;
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
   if (NULL == context) {
+    Py_DECREF(pyseqlist);
     return NULL;
   }
 
@@ -497,13 +499,13 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
     if (NULL == arg_values) {
       PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
-      Py_DECREF(pyargs);
+      Py_DECREF(pyseqlist);
       return NULL;
     }
 
     for (int i = 0; i < num_args; ++i) {
       // Returns borrowed reference, do not decref
-      PyObject * pyarg = PyList_GetItem(pyargs, i);
+      PyObject * pyarg = PyList_GetItem(pyseqlist, i);
       if (NULL == pyarg) {
         have_args = false;
         break;
@@ -541,7 +543,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 #pragma warning(pop)
 #endif
   }
-  Py_DECREF(pyargs);
+  Py_DECREF(pyseqlist);
 
   // Register our signal handler that will forward to the original one.
   g_original_signal_handler = signal(SIGINT, catch_function);
@@ -4205,7 +4207,7 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
+    "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_VARARGS,
     "Create a guard_condition triggered when sigint is received."
   },
   {
@@ -4345,12 +4347,12 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_ok", rclpy_ok, METH_NOARGS,
+    "rclpy_ok", rclpy_ok, METH_VARARGS,
     "rclpy_ok."
   },
 
   {
-    "rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
+    "rclpy_shutdown", rclpy_shutdown, METH_VARARGS,
     "rclpy_shutdown."
   },
 
