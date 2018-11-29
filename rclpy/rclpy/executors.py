@@ -112,7 +112,7 @@ class Executor:
     :param context: The context to be associated with, or None for the default global context.
     """
 
-    def __init__(self, context):
+    def __init__(self, *, context=None):
         super().__init__()
         self._context = get_default_context() if context is None else context
         self._nodes = set()
@@ -549,6 +549,9 @@ class Executor:
 class SingleThreadedExecutor(Executor):
     """Runs callbacks in the thread which calls :func:`SingleThreadedExecutor.spin`."""
 
+    def __init__(self, *, context=None):
+        super().__init__(context=context)
+
     def spin_once(self, timeout_sec=None):
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
@@ -563,7 +566,7 @@ class SingleThreadedExecutor(Executor):
 class MultiThreadedExecutor(Executor):
     """Runs callbacks in a pool of threads."""
 
-    def __init__(self, num_threads=None):
+    def __init__(self, num_threads=None, *, context=None):
         """
         Initialize the executor.
 
@@ -572,7 +575,7 @@ class MultiThreadedExecutor(Executor):
                       of threads defaults to 1.
         :type num_threads: int
         """
-        super().__init__()
+        super().__init__(context=context)
         if num_threads is None:
             try:
                 num_threads = multiprocessing.cpu_count()

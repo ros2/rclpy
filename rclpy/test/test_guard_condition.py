@@ -22,16 +22,18 @@ class TestGuardCondition(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        rclpy.init()
-        cls.node = rclpy.create_node('TestGuardCondition', namespace='/rclpy/test')
-        cls.executor = SingleThreadedExecutor()
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
+        cls.node = rclpy.create_node(
+            'TestGuardCondition', namespace='/rclpy/test', context=cls.context)
+        cls.executor = SingleThreadedExecutor(context=cls.context)
         cls.executor.add_node(cls.node)
 
     @classmethod
     def tearDownClass(cls):
         cls.executor.shutdown()
         cls.node.destroy_node()
-        rclpy.shutdown()
+        rclpy.shutdown(context=cls.context)
 
     def test_trigger(self):
         called = False

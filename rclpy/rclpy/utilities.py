@@ -22,13 +22,17 @@ g_default_context = None
 g_context_lock = threading.Lock()
 
 
-def get_default_context():
+def get_default_context(*, shutting_down=False):
     """Return the global default context singleton."""
     global g_context_lock
     with g_context_lock:
         global g_default_context
         if g_default_context is None:
             g_default_context = Context()
+        if shutting_down:
+            old_context = g_default_context
+            g_default_context = None
+            return old_context
         return g_default_context
 
 
@@ -39,19 +43,19 @@ def remove_ros_args(args=None):
         args if args is not None else sys.argv)
 
 
-def ok(context=None):
+def ok(*, context=None):
     if context is None:
         context = get_default_context()
     return context.ok()
 
 
-def shutdown(context=None):
+def shutdown(*, context=None):
     if context is None:
-        context = get_default_context()
+        context = get_default_context(shutting_down=True)
     return context.shutdown()
 
 
-def try_shutdown(context=None):
+def try_shutdown(*, context=None):
     """Shutdown rclpy if not already shutdown."""
     if context is None:
         context = get_default_context()

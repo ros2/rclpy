@@ -16,6 +16,7 @@ import sys
 
 from rclpy.utilities import get_default_context
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa
+from rclpy.utilities import ok  # noqa: forwarding to this module
 from rclpy.utilities import shutdown as _shutdown
 from rclpy.utilities import try_shutdown  # noqa
 
@@ -41,22 +42,23 @@ def get_global_executor():
     return __executor
 
 
-def shutdown():
+def shutdown(*, context=None):
     global __executor
     if __executor is not None:
         __executor.shutdown()
         __executor = None
-    _shutdown()
+    _shutdown(context=context)
 
 
 def create_node(
-    node_name, *, cli_args=None, namespace=None, use_global_arguments=True,
+    node_name, *, context=None, cli_args=None, namespace=None, use_global_arguments=True,
     start_parameter_services=True, initial_parameters=None
 ):
     """
     Create an instance of :class:`rclpy.node.Node`.
 
-    :param node_name: A unique name to give to this node
+    :param node_name: A unique name to give to this node.
+    :param context: The context to be associated with, or None for the default global context.
     :param cli_args: A list of strings of command line args to be used only by this node.
     :param namespace: The namespace to which relative topic and service names will be prefixed.
     :param use_global_arguments: False if the node should ignore process-wide command line args.
@@ -68,7 +70,7 @@ def create_node(
     # imported locally to avoid loading extensions on module import
     from rclpy.node import Node
     return Node(
-        node_name, cli_args=cli_args, namespace=namespace,
+        node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
         start_parameter_services=start_parameter_services,
         initial_parameters=initial_parameters)

@@ -23,14 +23,15 @@ class TestParametersCallback(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        rclpy.init()
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
 
     @classmethod
     def tearDownClass(cls):
-        rclpy.shutdown()
+        rclpy.shutdown(context=cls.context)
 
     def setUp(self):
-        self.node = rclpy.create_node('parameters_callback_node')
+        self.node = rclpy.create_node('parameters_callback_node', context=self.context)
 
     def tearDown(self):
         self.node.destroy_node()

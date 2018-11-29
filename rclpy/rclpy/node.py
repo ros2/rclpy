@@ -318,7 +318,7 @@ class Node:
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
         if callback_group is None:
             callback_group = self._default_callback_group
-        timer = WallTimer(callback, callback_group, timer_period_nsec)
+        timer = WallTimer(callback, callback_group, timer_period_nsec, context=self.context)
 
         self.timers.append(timer)
         callback_group.add_entity(timer)
@@ -327,7 +327,7 @@ class Node:
     def create_guard_condition(self, callback, callback_group=None):
         if callback_group is None:
             callback_group = self._default_callback_group
-        guard = GuardCondition(callback, callback_group)
+        guard = GuardCondition(callback, callback_group, context=self.context)
 
         self.guards.append(guard)
         callback_group.add_entity(guard)

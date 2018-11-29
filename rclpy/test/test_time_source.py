@@ -34,22 +34,24 @@ from .mock_compat import __name__ as _  # noqa: ignore=F401
 class TestTimeSource(unittest.TestCase):
 
     def setUp(self):
-        rclpy.init()
-        self.node = rclpy.create_node('TestTimeSource', namespace='/rclpy')
+        self.context = rclpy.context.Context()
+        rclpy.init(context=self.context)
+        self.node = rclpy.create_node('TestTimeSource', namespace='/rclpy', context=self.context)
 
     def tearDown(self):
         self.node.destroy_node()
-        rclpy.shutdown()
+        rclpy.shutdown(context=self.context)
 
     def publish_clock_messages(self):
         clock_pub = self.node.create_publisher(builtin_interfaces.msg.Time, CLOCK_TOPIC)
         cycle_count = 0
         time_msg = builtin_interfaces.msg.Time()
-        while rclpy.ok() and cycle_count < 5:
+        while rclpy.ok(context=self.context) and cycle_count < 5:
             time_msg.sec = cycle_count
             clock_pub.publish(time_msg)
             cycle_count += 1
-            rclpy.spin_once(self.node, timeout_sec=1)
+            executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+            rclpy.spin_once(self.node, timeout_sec=1, executor=executor)
             # TODO(dhood): use rate once available
             time.sleep(1)
 
@@ -57,11 +59,12 @@ class TestTimeSource(unittest.TestCase):
         clock_pub = self.node.create_publisher(builtin_interfaces.msg.Time, CLOCK_TOPIC)
         cycle_count = 0
         time_msg = builtin_interfaces.msg.Time()
-        while rclpy.ok() and cycle_count < 5:
+        while rclpy.ok(context=self.context) and cycle_count < 5:
             time_msg.sec = 6 - cycle_count
             clock_pub.publish(time_msg)
             cycle_count += 1
-            rclpy.spin_once(self.node, timeout_sec=1)
+            executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+            rclpy.spin_once(self.node, timeout_sec=1, executor=executor)
             time.sleep(1)
 
     def test_time_source_attach_clock(self):
@@ -135,7 +138,7 @@ class TestTimeSource(unittest.TestCase):
 
         # Check detaching the node
         time_source.detach_node()
-        node2 = rclpy.create_node('TestTimeSource2', namespace='/rclpy')
+        node2 = rclpy.create_node('TestTimeSource2', namespace='/rclpy', context=self.context)
         time_source.attach_node(node2)
         node2.destroy_node()
         assert time_source._node == node2

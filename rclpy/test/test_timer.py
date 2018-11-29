@@ -38,9 +38,10 @@ def run_catch_report_raise(func, *args, **kwargs):
 def func_zero_callback(args):
     period = float(args[0])
 
-    rclpy.init()
-    node = rclpy.create_node('test_timer_no_callback')
-    executor = SingleThreadedExecutor()
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_timer_no_callback', context=context)
+    executor = SingleThreadedExecutor(context=context)
     executor.add_node(node)
     # The first spin_once() takes slighly longer, just long enough for 1ms timer tests to fail
     executor.spin_once(timeout_sec=0)
@@ -51,7 +52,7 @@ def func_zero_callback(args):
 
     node.destroy_timer(timer)
     executor.shutdown()
-    rclpy.shutdown()
+    rclpy.shutdown(context=context)
     assert len(callbacks) == 0, \
         "shouldn't have received any callback, received %d" % len(callbacks)
 
@@ -61,9 +62,10 @@ def func_zero_callback(args):
 def func_number_callbacks(args):
     period = float(args[0])
 
-    rclpy.init()
-    node = rclpy.create_node('test_timer_no_callback')
-    executor = SingleThreadedExecutor()
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_timer_no_callback', context=context)
+    executor = SingleThreadedExecutor(context=context)
     executor.add_node(node)
     # The first spin_once() takes slighly longer, just long enough for 1ms timer tests to fail
     executor.spin_once(timeout_sec=0)
@@ -72,12 +74,12 @@ def func_number_callbacks(args):
     timer = node.create_timer(period, lambda: callbacks.append(len(callbacks)))
     begin_time = time.time()
 
-    while rclpy.ok() and time.time() - begin_time < 4.5 * period:
+    while rclpy.ok(context=context) and time.time() - begin_time < 4.5 * period:
         executor.spin_once(timeout_sec=period / 10)
 
     node.destroy_timer(timer)
     executor.shutdown()
-    rclpy.shutdown()
+    rclpy.shutdown(context=context)
     assert len(callbacks) == 4, 'should have received 4 callbacks, received %s' % str(callbacks)
 
     return True
@@ -86,9 +88,10 @@ def func_number_callbacks(args):
 def func_cancel_reset_timer(args):
     period = float(args[0])
 
-    rclpy.init()
-    node = rclpy.create_node('test_timer_no_callback')
-    executor = SingleThreadedExecutor()
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_timer_no_callback', context=context)
+    executor = SingleThreadedExecutor(context=context)
     executor.add_node(node)
     # The first spin_once() takes slighly longer, just long enough for 1ms timer tests to fail
     executor.spin_once(timeout_sec=0)
@@ -99,7 +102,7 @@ def func_cancel_reset_timer(args):
 
     assert not timer.is_canceled()
 
-    while rclpy.ok() and time.time() - begin_time < 2.5 * period:
+    while rclpy.ok(context=context) and time.time() - begin_time < 2.5 * period:
         executor.spin_once(timeout_sec=period / 10)
 
     assert len(callbacks) == 2, 'should have received 2 callbacks, received %d' % len(callbacks)
@@ -109,7 +112,7 @@ def func_cancel_reset_timer(args):
     assert timer.is_canceled()
     callbacks = []
     begin_time = time.time()
-    while rclpy.ok() and time.time() - begin_time < 2.5 * period:
+    while rclpy.ok(context=context) and time.time() - begin_time < 2.5 * period:
         executor.spin_once(timeout_sec=period / 10)
 
     assert timer.is_canceled()
@@ -119,14 +122,14 @@ def func_cancel_reset_timer(args):
     timer.reset()
     assert not timer.is_canceled()
     begin_time = time.time()
-    while rclpy.ok() and time.time() - begin_time < 2.5 * period:
+    while rclpy.ok(context=context) and time.time() - begin_time < 2.5 * period:
         executor.spin_once(timeout_sec=period / 10)
 
     assert not timer.is_canceled()
     assert len(callbacks) == 2, 'should have received 2 callbacks, received %d' % len(callbacks)
     node.destroy_timer(timer)
     executor.shutdown()
-    rclpy.shutdown()
+    rclpy.shutdown(context=context)
 
     return True
 
