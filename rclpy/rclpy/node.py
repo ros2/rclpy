@@ -184,6 +184,11 @@ class Node:
 
         if result.successful:
             parameter_event = ParameterEvent()
+            # Add fully qualified path of node to parameter event
+            if self.get_namespace() == '/':
+                parameter_event.node = self.get_namespace() + self.get_name()
+            else:
+                parameter_event.node = self.get_namespace() + '/' + self.get_name()
             for param in parameter_list:
                 if Parameter.Type.NOT_SET == param.type_:
                     if Parameter.Type.NOT_SET != self.get_parameter(param.name).type_:
@@ -203,6 +208,7 @@ class Node:
                         parameter_event.changed_parameters.append(
                             param.to_parameter_msg())
                     self._parameters[param.name] = param
+            parameter_event.stamp = self._clock.now().to_msg()
             self._parameter_event_publisher.publish(parameter_event)
 
         return result
