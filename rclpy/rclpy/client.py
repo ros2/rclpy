@@ -17,14 +17,14 @@ import time
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.task import Future
-import rclpy.utilities
 
 
 class Client:
     def __init__(
-            self, node_handle, client_handle, client_pointer,
+            self, node_handle, context, client_handle, client_pointer,
             srv_type, srv_name, qos_profile, callback_group):
         self.node_handle = node_handle
+        self.context = context
         self.client_handle = client_handle
         self.client_pointer = client_pointer
         self.srv_type = srv_type
@@ -102,7 +102,7 @@ class Client:
         sleep_time = 0.25
         if timeout_sec is None:
             timeout_sec = float('inf')
-        while rclpy.utilities.ok() and not self.service_is_ready() and timeout_sec > 0.0:
+        while self.context.ok() and not self.service_is_ready() and timeout_sec > 0.0:
             time.sleep(sleep_time)
             timeout_sec -= sleep_time
 

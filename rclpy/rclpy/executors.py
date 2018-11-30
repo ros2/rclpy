@@ -22,7 +22,7 @@ from threading import RLock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.task import Task
 from rclpy.timer import WallTimer
-from rclpy.utilities import ok
+from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
 
@@ -108,17 +108,20 @@ class Executor:
 
     A custom executor must define :func:`Executor.spin_once`. If the executor has any cleanup then
     it should also define :func:`Executor.shutdown`.
+
+    :param context: The context to be associated with, or None for the default global context.
     """
 
-    def __init__(self):
+    def __init__(self, *, context=None):
         super().__init__()
+        self._context = get_default_context() if context is None else context
         self._nodes = set()
         self._nodes_lock = RLock()
         # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
         self._tasks = []
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
-        gc, gc_handle = _rclpy.rclpy_create_guard_condition()
+        gc, gc_handle = _rclpy.rclpy_create_guard_condition(self._context.handle)
         self._guard_condition = gc
         self._guard_condition_handle = gc_handle
         # True if shutdown has been called
@@ -128,6 +131,10 @@ class Executor:
         self._cb_iter = None
         self._last_args = None
         self._last_kwargs = None
+
+    @property
+    def context(self):
+        return self._context
 
     def create_task(self, callback, *args, **kwargs):
         """
@@ -212,12 +219,12 @@ class Executor:
 
     def spin(self):
         """Execute callbacks until shutdown."""
-        while ok():
+        while self._context.ok():
             self.spin_once()
 
     def spin_until_future_complete(self, future):
         """Execute until a given future is done."""
-        while ok() and not future.done():
+        while self._context.ok() and not future.done():
             self.spin_once()
 
     def spin_once(self, timeout_sec=None):
@@ -419,7 +426,8 @@ class Executor:
                         )
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
-                (sigint_gc, sigint_gc_handle) = _rclpy.rclpy_get_sigint_guard_condition()
+                (sigint_gc, sigint_gc_handle) = \
+                    _rclpy.rclpy_get_sigint_guard_condition(self._context.handle)
                 try:
                     _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
                     _rclpy.rclpy_wait_set_add_entity(
@@ -541,6 +549,9 @@ class Executor:
 class SingleThreadedExecutor(Executor):
     """Runs callbacks in the thread which calls :func:`SingleThreadedExecutor.spin`."""
 
+    def __init__(self, *, context=None):
+        super().__init__(context=context)
+
     def spin_once(self, timeout_sec=None):
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
@@ -555,7 +566,7 @@ class SingleThreadedExecutor(Executor):
 class MultiThreadedExecutor(Executor):
     """Runs callbacks in a pool of threads."""
 
-    def __init__(self, num_threads=None):
+    def __init__(self, num_threads=None, *, context=None):
         """
         Initialize the executor.
 
@@ -564,7 +575,7 @@ class MultiThreadedExecutor(Executor):
                       of threads defaults to 1.
         :type num_threads: int
         """
-        super().__init__()
+        super().__init__(context=context)
         if num_threads is None:
             try:
                 num_threads = multiprocessing.cpu_count()

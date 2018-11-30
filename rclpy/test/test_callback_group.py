@@ -25,13 +25,14 @@ class TestCallbackGroup(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        rclpy.init()
-        cls.node = rclpy.create_node('TestCallbackGroup', namespace='/rclpy')
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
+        cls.node = rclpy.create_node('TestCallbackGroup', namespace='/rclpy', context=cls.context)
 
     @classmethod
     def tearDownClass(cls):
         cls.node.destroy_node()
-        rclpy.shutdown()
+        rclpy.shutdown(context=cls.context)
 
     def test_reentrant_group(self):
         self.assertIsNotNone(self.node.handle)

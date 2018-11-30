@@ -76,6 +76,65 @@ static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
   return ptr;
 }
 
+void
+_rclpy_context_capsule_destructor(PyObject * capsule)
+{
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(capsule, "rcl_context_t");
+  if (NULL == context) {
+    return;
+  }
+  if (NULL != context->impl) {
+    rcl_ret_t ret;
+    if (rcl_context_is_valid(context)) {
+      // shutdown first, if still valid
+      ret = rcl_shutdown(context);
+      if (RCL_RET_OK != ret) {
+        fprintf(stderr,
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "failed to shutdown rcl_context_t (%d) during PyCapsule destructor: %s\n",
+          ret,
+          rcl_get_error_string().str);
+        rcl_reset_error();
+      }
+    }
+    ret = rcl_context_fini(context);
+    if (RCL_RET_OK != ret) {
+      fprintf(stderr,
+        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+        "failed to fini rcl_context_t (%d) during PyCapsule destructor: %s\n",
+        ret,
+        rcl_get_error_string().str);
+      rcl_reset_error();
+    }
+  }
+  PyMem_FREE(context);
+}
+
+/// Create a rcl_context_t.
+/**
+ * A successful call will return a Capsule with the pointer to the created
+ * rcl_context_t structure.
+ *
+ * The returned context is zero-initialized for use with rclpy_init().
+ *
+ * Raises RuntimeError if creating the context fails.
+ *
+ * \return a list with the capsule and memory location, or
+ * \return NULL on failure
+ */
+static PyObject *
+rclpy_create_context(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  rcl_context_t * context = (rcl_context_t *)PyMem_Malloc(sizeof(rcl_context_t));
+  if (NULL == context) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for context");
+    return NULL;
+  }
+  *context = rcl_get_zero_initialized_context();
+  // if it fails, error is set and NULL is returned as it should
+  return PyCapsule_New(context, "rcl_context_t", _rclpy_context_capsule_destructor);
+}
+
 /// Create a sigint guard condition
 /**
  * A successful call will return a list with two elements:
@@ -89,14 +148,25 @@ static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
  * \return NULL on failure
  */
 static PyObject *
-rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 {
+  PyObject * pycontext;
+
+  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
+    return NULL;
+  }
+
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (NULL == context) {
+    return NULL;
+  }
+
   rcl_guard_condition_t * sigint_gc =
     (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
   *sigint_gc = rcl_get_zero_initialized_guard_condition();
   rcl_guard_condition_options_t sigint_gc_options = rcl_guard_condition_get_default_options();
 
-  rcl_ret_t ret = rcl_guard_condition_init(sigint_gc, sigint_gc_options);
+  rcl_ret_t ret = rcl_guard_condition_init(sigint_gc, context, sigint_gc_options);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create guard_condition: %s", rcl_get_error_string().str);
@@ -127,14 +197,25 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
  * \return NULL on failure
  */
 static PyObject *
-rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 {
+  PyObject * pycontext;
+
+  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
+    return NULL;
+  }
+
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (NULL == context) {
+    return NULL;
+  }
+
   rcl_guard_condition_t * gc =
     (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
   *gc = rcl_get_zero_initialized_guard_condition();
   rcl_guard_condition_options_t gc_options = rcl_guard_condition_get_default_options();
 
-  rcl_ret_t ret = rcl_guard_condition_init(gc, gc_options);
+  rcl_ret_t ret = rcl_guard_condition_init(gc, context, gc_options);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create guard_condition: %s", rcl_get_error_string().str);
@@ -383,24 +464,33 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  // Expect one argument which is a list of strings
+  // Expect two arguments, one is a list of strings and the other is a context.
   PyObject * pyargs;
-  if (!PyArg_ParseTuple(args, "O", &pyargs)) {
+  PyObject * pyseqlist;
+  PyObject * pycontext;
+  if (!PyArg_ParseTuple(args, "OO", &pyargs, &pycontext)) {
     // Exception raised
     return NULL;
   }
 
-  pyargs = PySequence_List(pyargs);
-  if (NULL == pyargs) {
+  pyseqlist = PySequence_List(pyargs);
+  if (NULL == pyseqlist) {
     // Exception raised
     return NULL;
   }
-  Py_ssize_t pysize_num_args = PyList_Size(pyargs);
+  Py_ssize_t pysize_num_args = PyList_Size(pyseqlist);
   if (pysize_num_args > INT_MAX) {
     PyErr_Format(PyExc_OverflowError, "Too many arguments");
+    Py_DECREF(pyseqlist);
     return NULL;
   }
   int num_args = (int)pysize_num_args;
+
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (NULL == context) {
+    Py_DECREF(pyseqlist);
+    return NULL;
+  }
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
   const char ** arg_values = NULL;
@@ -409,13 +499,13 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
     if (NULL == arg_values) {
       PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
-      Py_DECREF(pyargs);
+      Py_DECREF(pyseqlist);
       return NULL;
     }
 
     for (int i = 0; i < num_args; ++i) {
       // Returns borrowed reference, do not decref
-      PyObject * pyarg = PyList_GetItem(pyargs, i);
+      PyObject * pyarg = PyList_GetItem(pyseqlist, i);
       if (NULL == pyarg) {
         have_args = false;
         break;
@@ -426,10 +516,18 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (have_args) {
-    rcl_ret_t ret = rcl_init(num_args, arg_values, allocator);
-    if (ret != RCL_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+    rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
+    rcl_ret_t ret = rcl_init_options_init(&init_options, allocator);
+    if (RCL_RET_OK != ret) {
+      PyErr_Format(
+        PyExc_RuntimeError, "Failed to initialize init_options: %s", rcl_get_error_string().str);
       rcl_reset_error();
+    } else {
+      ret = rcl_init(num_args, arg_values, &init_options, context);
+      if (ret != RCL_RET_OK) {
+        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+        rcl_reset_error();
+      }
     }
   }
   if (NULL != arg_values) {
@@ -445,7 +543,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 #pragma warning(pop)
 #endif
   }
-  Py_DECREF(pyargs);
+  Py_DECREF(pyseqlist);
 
   // Register our signal handler that will forward to the original one.
   g_original_signal_handler = signal(SIGINT, catch_function);
@@ -473,12 +571,18 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret;
   const char * node_name;
   const char * namespace_;
+  PyObject * pycontext;
   PyObject * py_cli_args;
   int use_global_arguments;
 
-  if (
-    !PyArg_ParseTuple(args, "ssOp", &node_name, &namespace_, &py_cli_args, &use_global_arguments))
+  if (!PyArg_ParseTuple(
+      args, "ssOOp", &node_name, &namespace_, &pycontext, &py_cli_args, &use_global_arguments))
   {
+    return NULL;
+  }
+
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (NULL == context) {
     return NULL;
   }
 
@@ -495,7 +599,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_node_options_t options = rcl_node_get_default_options();
   options.use_global_arguments = use_global_arguments;
   options.arguments = arguments;
-  ret = rcl_node_init(node, node_name, namespace_, &options);
+  ret = rcl_node_init(node, node_name, namespace_, context, &options);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError,
@@ -1194,8 +1298,14 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
 {
   unsigned PY_LONG_LONG period_nsec;
   PyObject * pyclock;
+  PyObject * pycontext;
 
-  if (!PyArg_ParseTuple(args, "OK", &pyclock, &period_nsec)) {
+  if (!PyArg_ParseTuple(args, "OOK", &pyclock, &pycontext, &period_nsec)) {
+    return NULL;
+  }
+
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (NULL == context) {
     return NULL;
   }
 
@@ -1208,7 +1318,7 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
   *timer = rcl_get_zero_initialized_timer();
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_timer_init(timer, clock, period_nsec, NULL, allocator);
+  rcl_ret_t ret = rcl_timer_init(timer, clock, context, period_nsec, NULL, allocator);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to create timer: %s", rcl_get_error_string().str);
@@ -2733,9 +2843,20 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
  * \return True if rcl is running properly, False otherwise
  */
 static PyObject *
-rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_ok(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  bool ok = rcl_ok();
+  PyObject * pycontext;
+
+  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
+    return NULL;
+  }
+
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (NULL == context) {
+    return NULL;
+  }
+
+  bool ok = rcl_context_is_valid(context);
   if (ok) {
     Py_RETURN_TRUE;
   } else {
@@ -2750,9 +2871,20 @@ rclpy_ok(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
  * \return None
  */
 static PyObject *
-rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  rcl_ret_t ret = rcl_shutdown();
+  PyObject * pycontext;
+
+  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
+    return NULL;
+  }
+
+  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (NULL == context) {
+    return NULL;
+  }
+
+  rcl_ret_t ret = rcl_shutdown(context);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to shutdown: %s", rcl_get_error_string().str);
@@ -3936,8 +4068,9 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   const rcl_allocator_t allocator = node_options->allocator;
 
   if (node_options->use_global_arguments) {
-    if (!_parse_param_files(rcl_get_global_arguments(), allocator, parameter_cls,
-      parameter_type_cls, params_by_node_name))
+    if (!_parse_param_files(
+        &(node->context->global_arguments), allocator, parameter_cls,
+        parameter_type_cls, params_by_node_name))
     {
       Py_DECREF(parameter_type_cls);
       Py_DECREF(params_by_node_name);
@@ -3993,12 +4126,16 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
+    "rclpy_create_context", rclpy_create_context, METH_VARARGS,
+    "Create a rcl context."
+  },
+  {
     "rclpy_init", rclpy_init, METH_VARARGS,
     "Initialize RCL."
   },
   {
     "rclpy_remove_ros_args", rclpy_remove_ros_args, METH_VARARGS,
-    "Remove ROS-specific arguments from argument vector"
+    "Remove ROS-specific arguments from argument vector."
   },
   {
     "rclpy_create_node", rclpy_create_node, METH_VARARGS,
@@ -4070,7 +4207,7 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_NOARGS,
+    "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_VARARGS,
     "Create a guard_condition triggered when sigint is received."
   },
   {
@@ -4210,12 +4347,12 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_ok", rclpy_ok, METH_NOARGS,
+    "rclpy_ok", rclpy_ok, METH_VARARGS,
     "rclpy_ok."
   },
 
   {
-    "rclpy_shutdown", rclpy_shutdown, METH_NOARGS,
+    "rclpy_shutdown", rclpy_shutdown, METH_VARARGS,
     "rclpy_shutdown."
   },
 

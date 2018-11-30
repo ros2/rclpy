@@ -24,12 +24,13 @@ from rclpy.executors import SingleThreadedExecutor
 class TestExecutor(unittest.TestCase):
 
     def setUp(self):
-        rclpy.init()
-        self.node = rclpy.create_node('TestExecutor', namespace='/rclpy')
+        self.context = rclpy.context.Context()
+        rclpy.init(context=self.context)
+        self.node = rclpy.create_node('TestExecutor', namespace='/rclpy', context=self.context)
 
     def tearDown(self):
         self.node.destroy_node()
-        rclpy.shutdown()
+        rclpy.shutdown(context=self.context)
 
     def func_execution(self, executor):
         got_callback = False
@@ -51,7 +52,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_single_threaded_executor_executes(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         try:
             self.assertTrue(self.func_execution(executor))
         finally:
@@ -59,7 +60,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_remove_node(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
 
         got_callback = False
 
@@ -82,7 +83,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_multi_threaded_executor_executes(self):
         self.assertIsNotNone(self.node.handle)
-        executor = MultiThreadedExecutor()
+        executor = MultiThreadedExecutor(context=self.context)
         try:
             self.assertTrue(self.func_execution(executor))
         finally:
@@ -90,13 +91,13 @@ class TestExecutor(unittest.TestCase):
 
     def test_add_node_to_executor(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
         self.assertIn(self.node, executor.get_nodes())
 
     def test_executor_spin_non_blocking(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
         start = time.monotonic()
         executor.spin_once(timeout_sec=0)
@@ -105,7 +106,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_coroutine_timer(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         called1 = False
@@ -133,7 +134,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_coroutine_guard_condition(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         called1 = False
@@ -162,7 +163,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_create_task_coroutine(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         async def coroutine():
@@ -177,7 +178,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_create_task_normal_function(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         def func():
@@ -192,7 +193,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_create_task_dependent_coroutines(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         async def coro1():
@@ -245,17 +246,18 @@ class TestExecutor(unittest.TestCase):
 
         timer = self.node.create_timer(0.1, timer_callback)
 
-        rclpy.spin_once(self.node, timeout_sec=0.5)
+        executor = SingleThreadedExecutor(context=self.context)
+        rclpy.spin_once(self.node, timeout_sec=0.5, executor=executor)
         self.assertTrue(did_callback)
 
         timer.cancel()
         trigger.do_yield = False
-        rclpy.spin_once(self.node, timeout_sec=0)
+        rclpy.spin_once(self.node, timeout_sec=0, executor=executor)
         self.assertTrue(did_return)
 
     def test_executor_add_node(self):
         self.assertIsNotNone(self.node.handle)
-        executor = SingleThreadedExecutor()
+        executor = SingleThreadedExecutor(context=self.context)
         assert executor.add_node(self.node)
         assert not executor.add_node(self.node)
 

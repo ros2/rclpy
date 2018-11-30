@@ -16,9 +16,24 @@ import sys
 import threading
 
 from rclpy.constants import S_TO_NS
+from rclpy.context import Context
+
+g_default_context = None
+g_context_lock = threading.Lock()
 
 
-g_shutdown_lock = threading.Lock()
+def get_default_context(*, shutting_down=False):
+    """Return the global default context singleton."""
+    global g_context_lock
+    with g_context_lock:
+        global g_default_context
+        if g_default_context is None:
+            g_default_context = Context()
+        if shutting_down:
+            old_context = g_default_context
+            g_default_context = None
+            return old_context
+        return g_default_context
 
 
 def remove_ros_args(args=None):
@@ -28,27 +43,23 @@ def remove_ros_args(args=None):
         args if args is not None else sys.argv)
 
 
-def ok():
-    # imported locally to avoid loading extensions on module import
-    from rclpy.impl.implementation_singleton import rclpy_implementation
-    with g_shutdown_lock:
-        return rclpy_implementation.rclpy_ok()
+def ok(*, context=None):
+    if context is None:
+        context = get_default_context()
+    return context.ok()
 
 
-def shutdown():
-    # imported locally to avoid loading extensions on module import
-    from rclpy.impl.implementation_singleton import rclpy_implementation
-    with g_shutdown_lock:
-        return rclpy_implementation.rclpy_shutdown()
+def shutdown(*, context=None):
+    if context is None:
+        context = get_default_context(shutting_down=True)
+    return context.shutdown()
 
 
-def try_shutdown():
+def try_shutdown(*, context=None):
     """Shutdown rclpy if not already shutdown."""
-    # imported locally to avoid loading extensions on module import
-    from rclpy.impl.implementation_singleton import rclpy_implementation
-    with g_shutdown_lock:
-        if rclpy_implementation.rclpy_ok():
-            return rclpy_implementation.rclpy_shutdown()
+    if context is None:
+        context = get_default_context()
+    return context.try_shutdown()
 
 
 def get_rmw_implementation_identifier():

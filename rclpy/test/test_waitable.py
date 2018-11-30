@@ -127,7 +127,9 @@ class TimerWaitable(Waitable):
 
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         period_nanoseconds = 10000
-        self.timer = _rclpy.rclpy_create_timer(self._clock._clock_handle, period_nanoseconds)[0]
+        self.timer = _rclpy.rclpy_create_timer(
+            self._clock._clock_handle, node.context.handle, period_nanoseconds
+        )[0]
         self.timer_index = None
         self.timer_is_ready = False
 
@@ -169,7 +171,7 @@ class SubscriptionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.guard_condition = _rclpy.rclpy_create_guard_condition()[0]
+        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)[0]
         self.guard_condition_index = None
         self.guard_is_ready = False
 
@@ -216,7 +218,7 @@ class GuardConditionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.guard_condition = _rclpy.rclpy_create_guard_condition()[0]
+        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)[0]
         self.guard_condition_index = None
         self.guard_is_ready = False
 
@@ -257,16 +259,17 @@ class TestWaitable(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        rclpy.init()
-        cls.node = rclpy.create_node('TestWaitable', namespace='/rclpy/test')
-        cls.executor = SingleThreadedExecutor()
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
+        cls.node = rclpy.create_node('TestWaitable', namespace='/rclpy/test', context=cls.context)
+        cls.executor = SingleThreadedExecutor(context=cls.context)
         cls.executor.add_node(cls.node)
 
     @classmethod
     def tearDownClass(cls):
         cls.executor.shutdown()
         cls.node.destroy_node()
-        rclpy.shutdown()
+        rclpy.shutdown(context=cls.context)
 
     def start_spin_thread(self, waitable):
         waitable.future = Future(executor=self.executor)

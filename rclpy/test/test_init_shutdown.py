@@ -28,20 +28,22 @@ def run_catch_report_raise(func, *args, **kwargs):
 
 def func_init():
     import rclpy
+    context = rclpy.context.Context()
     try:
-        rclpy.init()
+        rclpy.init(context=context)
     except RuntimeError:
         return False
 
-    rclpy.shutdown()
+    rclpy.shutdown(context=context)
     return True
 
 
 def func_init_shutdown():
     import rclpy
+    context = rclpy.context.Context()
     try:
-        rclpy.init()
-        rclpy.shutdown()
+        rclpy.init(context=context)
+        rclpy.shutdown(context=context)
         return True
     except RuntimeError:
         return False
@@ -49,11 +51,21 @@ def func_init_shutdown():
 
 def func_init_shutdown_sequence():
     import rclpy
-    rclpy.init()
-    rclpy.shutdown()
     try:
+        # local
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
+        rclpy.shutdown(context=context)
+        context = rclpy.context.Context()  # context cannot be reused but should not interfere
+        rclpy.init(context=context)
+        rclpy.shutdown(context=context)
+
+        # global
         rclpy.init()
         rclpy.shutdown()
+        rclpy.init()
+        rclpy.shutdown()
+
         return True
     except RuntimeError:
         return False
@@ -61,22 +73,24 @@ def func_init_shutdown_sequence():
 
 def func_double_init():
     import rclpy
-    rclpy.init()
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
     try:
-        rclpy.init()
+        rclpy.init(context=context)
     except RuntimeError:
-        rclpy.shutdown()
         return True
-    rclpy.shutdown()
+    finally:
+        rclpy.shutdown(context=context)
     return False
 
 
 def func_double_shutdown():
     import rclpy
-    rclpy.init()
-    rclpy.shutdown()
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    rclpy.shutdown(context=context)
     try:
-        rclpy.shutdown()
+        rclpy.shutdown(context=context)
     except RuntimeError:
         return True
 
@@ -86,8 +100,9 @@ def func_double_shutdown():
 def func_create_node_without_init():
     import rclpy
     from rclpy.exceptions import NotInitializedException
+    context = rclpy.context.Context()
     try:
-        rclpy.create_node('foo')
+        rclpy.create_node('foo', context=context)
     except NotInitializedException:
         return True
     return False
