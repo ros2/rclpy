@@ -2972,7 +2972,10 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
 
 
 static rmw_ret_t
-__convert_names_and_types(rcl_names_and_types_t topic_names_and_types, PyObject** pytopic_names_and_types_ptr){
+__convert_names_and_types(
+  rcl_names_and_types_t topic_names_and_types,
+  PyObject ** pytopic_names_and_types_ptr)
+{
   PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.names.size);
   *pytopic_names_and_types_ptr = pytopic_names_and_types;
   size_t i;
@@ -2999,7 +3002,7 @@ __convert_names_and_types(rcl_names_and_types_t topic_names_and_types, PyObject*
   ret = rcl_names_and_types_fini(&topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-                 "Failed to destroy topic_names_and_types: %s", rcl_get_error_string().str);
+      "Failed to destroy topic_names_and_types: %s", rcl_get_error_string().str);
     Py_DECREF(pytopic_names_and_types);
     rcl_reset_error();
   }
@@ -3036,10 +3039,11 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
   rcl_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret =
-    rcl_get_service_names_and_types_by_node(node, &allocator, node_name, node_namespace, &topic_names_and_types);
+    rcl_get_service_names_and_types_by_node(node, &allocator, node_name, node_namespace,
+      &topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-                 "Failed to get_service_names_and_types: %s", rcl_get_error_string().str);
+      "Failed to get_service_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
   }
@@ -3084,10 +3088,11 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
   rcl_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret =
-    rcl_get_subscriber_names_and_types_by_node(node, &allocator, no_demangle, node_name, node_namespace, &topic_names_and_types);
+    rcl_get_subscriber_names_and_types_by_node(node, &allocator, no_demangle, node_name,
+      node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-                 "Failed to get_subscriber_names_and_types: %s", rcl_get_error_string().str);
+      "Failed to get_subscriber_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
   }
@@ -3132,10 +3137,11 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
   rcl_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret =
-    rcl_get_publisher_names_and_types_by_node(node, &allocator, no_demangle, node_name, node_namespace, &topic_names_and_types);
+    rcl_get_publisher_names_and_types_by_node(node, &allocator, no_demangle, node_name,
+      node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
-                 "Failed to get_publisher_names_and_types: %s", rcl_get_error_string().str);
+      "Failed to get_publisher_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
   }
@@ -4544,15 +4550,18 @@ static PyMethodDef rclpy_methods[] = {
     "Get the initial parameters for a node from the command line."
   },
   {
-    "rclpy_get_subscriber_names_and_types_by_node", rclpy_get_subscriber_names_and_types_by_node, METH_VARARGS,
+    "rclpy_get_subscriber_names_and_types_by_node", rclpy_get_subscriber_names_and_types_by_node,
+    METH_VARARGS,
     "Get subscriber list of specified node from graph API."
   },
   {
-    "rclpy_get_publisher_names_and_types_by_node", rclpy_get_publisher_names_and_types_by_node, METH_VARARGS,
+    "rclpy_get_publisher_names_and_types_by_node", rclpy_get_publisher_names_and_types_by_node,
+    METH_VARARGS,
     "Get publisher list of specified node from graph API."
   },
   {
-    "rclpy_get_service_names_and_types_by_node", rclpy_get_service_names_and_types_by_node, METH_VARARGS,
+    "rclpy_get_service_names_and_types_by_node", rclpy_get_service_names_and_types_by_node,
+    METH_VARARGS,
     "Get service list of specified node from graph API."
   },
   {
