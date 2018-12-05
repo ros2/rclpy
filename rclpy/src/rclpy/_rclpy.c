@@ -2989,6 +2989,7 @@ __convert_names_and_types(
       PyUnicode_FromString(topic_names_and_types.names.data[i]));
     PyObject * types_list = PyList_New(topic_names_and_types.types[i].size);
     if (!types_list) {
+      Py_DECREF(pytuple);
       return false;
     }
     size_t j;
