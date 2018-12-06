@@ -3226,17 +3226,36 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.names.size);
-  if (!pytopic_names_and_types) {
-    __cleanup_names_and_types(&topic_names_and_types);
+  size_t i;
+  for (i = 0; i < topic_names_and_types.names.size; ++i) {
+    PyObject * pytuple = PyTuple_New(2);
+    PyTuple_SetItem(
+      pytuple, 0,
+      PyUnicode_FromString(topic_names_and_types.names.data[i]));
+    PyObject * types_list = PyList_New(topic_names_and_types.types[i].size);
+    size_t j;
+    for (j = 0; j < topic_names_and_types.types[i].size; ++j) {
+      PyList_SetItem(
+        types_list, j,
+        PyUnicode_FromString(topic_names_and_types.types[i].data[j]));
+    }
+    PyTuple_SetItem(
+      pytuple, 1,
+      types_list);
+    PyList_SetItem(
+      pytopic_names_and_types, i,
+      pytuple);
+  }
+
+  ret = rcl_names_and_types_fini(&topic_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to destroy topic_names_and_types: %s", rcl_get_error_string().str);
+    Py_DECREF(pytopic_names_and_types);
+    rcl_reset_error();
     return NULL;
   }
 
-  if (!__convert_names_and_types(topic_names_and_types, pytopic_names_and_types)) {
-    __cleanup_names_and_types(&topic_names_and_types);
-    Py_DECREF(pytopic_names_and_types);
-    return NULL;
-  }
-  __cleanup_names_and_types(&topic_names_and_types);
   return pytopic_names_and_types;
 }
 
@@ -3275,17 +3294,36 @@ rclpy_get_service_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pyservice_names_and_types = PyList_New(service_names_and_types.names.size);
-  if (!pyservice_names_and_types) {
-    __cleanup_names_and_types(&service_names_and_types);
+  size_t i;
+  for (i = 0; i < service_names_and_types.names.size; ++i) {
+    PyObject * pytuple = PyTuple_New(2);
+    PyTuple_SetItem(
+      pytuple, 0,
+      PyUnicode_FromString(service_names_and_types.names.data[i]));
+    PyObject * types_list = PyList_New(service_names_and_types.types[i].size);
+    size_t j;
+    for (j = 0; j < service_names_and_types.types[i].size; ++j) {
+      PyList_SetItem(
+        types_list, j,
+        PyUnicode_FromString(service_names_and_types.types[i].data[j]));
+    }
+    PyTuple_SetItem(
+      pytuple, 1,
+      types_list);
+    PyList_SetItem(
+      pyservice_names_and_types, i,
+      pytuple);
+  }
+
+  ret = rcl_names_and_types_fini(&service_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to destroy service_names_and_types: %s", rcl_get_error_string().str);
+    Py_DECREF(pyservice_names_and_types);
+    rcl_reset_error();
     return NULL;
   }
 
-  if (!__convert_names_and_types(service_names_and_types, pyservice_names_and_types)) {
-    __cleanup_names_and_types(&service_names_and_types);
-    Py_DECREF(pyservice_names_and_types);
-    return NULL;
-  }
-  __cleanup_names_and_types(&service_names_and_types);
   return pyservice_names_and_types;
 }
 
