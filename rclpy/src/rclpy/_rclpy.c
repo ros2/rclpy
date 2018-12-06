@@ -2984,7 +2984,7 @@ __convert_names_and_types(
     if (!pytuple) {
       return false;
     }
-    PyList_SET_ITEM(
+    PyTuple_SET_ITEM(
       pytuple, 0,
       PyUnicode_FromString(topic_names_and_types.names.data[i]));
     PyObject * types_list = PyList_New(topic_names_and_types.types[i].size);
@@ -2998,7 +2998,7 @@ __convert_names_and_types(
         types_list, j,
         PyUnicode_FromString(topic_names_and_types.types[i].data[j]));
     }
-    PyList_SET_ITEM(
+    PyTuple_SET_ITEM(
       pytuple, 1,
       types_list);
     PyList_SET_ITEM(
