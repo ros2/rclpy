@@ -2970,6 +2970,223 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
   return pynode_names_and_namespaces;
 }
 
+/**
+ * Convert names and types to PyObject.
+ */
+bool
+__convert_names_and_types(
+  rcl_names_and_types_t topic_names_and_types,
+  PyObject * pytopic_names_and_types)
+{
+  size_t i;
+  for (i = 0; i < topic_names_and_types.names.size; ++i) {
+    PyObject * pytuple = PyTuple_New(2);
+    if (!pytuple) {
+      return false;
+    }
+    PyTuple_SET_ITEM(
+      pytuple, 0,
+      PyUnicode_FromString(topic_names_and_types.names.data[i]));
+    PyObject * types_list = PyList_New(topic_names_and_types.types[i].size);
+    if (!types_list) {
+      Py_DECREF(pytuple);
+      return false;
+    }
+    size_t j;
+    for (j = 0; j < topic_names_and_types.types[i].size; ++j) {
+      PyList_SET_ITEM(
+        types_list, j,
+        PyUnicode_FromString(topic_names_and_types.types[i].data[j]));
+    }
+    PyTuple_SET_ITEM(
+      pytuple, 1,
+      types_list);
+    PyList_SET_ITEM(
+      pytopic_names_and_types, i,
+      pytuple);
+  }
+  return true;
+}
+
+/**
+ * Cleanup names and types.
+ */
+bool __cleanup_names_and_types(rcl_names_and_types_t * names_and_types)
+{
+  if (!names_and_types) {
+    return true;
+  }
+  rcl_ret_t ret = rcl_names_and_types_fini(names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to destroy topic_names_and_types: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return false;
+  }
+  return true;
+}
+
+/// Get the list of service topics discovered by the provided node for the remote node name
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RuntimeError if there is an rcl error
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] node_name of a remote node to get publishers for
+ * \return Python list of tuples where each tuple contains the two strings:
+ *   the topic name and topic type
+ */
+static PyObject *
+rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  char * node_name;
+  char * node_namespace;
+
+  if (!PyArg_ParseTuple(args, "Oss", &pynode, &node_name, &node_namespace)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  rcl_names_and_types_t service_names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret =
+    rcl_get_service_names_and_types_by_node(node, &allocator, node_name, node_namespace,
+      &service_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get_service_names_and_types: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * pyservice_names_and_types = PyList_New(service_names_and_types.names.size);
+  if (!pyservice_names_and_types) {
+    __cleanup_names_and_types(&service_names_and_types);
+    return NULL;
+  }
+
+  if (!__convert_names_and_types(service_names_and_types, pyservice_names_and_types)) {
+    __cleanup_names_and_types(&service_names_and_types);
+    Py_DECREF(pyservice_names_and_types);
+    return NULL;
+  }
+
+  __cleanup_names_and_types(&service_names_and_types);
+  return pyservice_names_and_types;
+}
+
+/// Get the list of published topics discovered by the provided node for the remote node name
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RuntimeError if there is an rcl error
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] no_demangle if true topic names and types returned will not be demangled
+ * \param[in] node_name of a remote node to get publishers for
+ * \return Python list of tuples where each tuple contains the two strings:
+ *   the topic name and topic type
+ */
+static PyObject *
+rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  PyObject * pyno_demangle;
+  char * node_name;
+  char * node_namespace;
+  if (!PyArg_ParseTuple(args, "OOss", &pynode, &pyno_demangle, &node_name, &node_namespace)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+  bool no_demangle = PyObject_IsTrue(pyno_demangle);
+  rcl_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret =
+    rcl_get_subscriber_names_and_types_by_node(node, &allocator, no_demangle, node_name,
+      node_namespace, &topic_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get_subscriber_names_and_types: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.names.size);
+  if (!pytopic_names_and_types) {
+    __cleanup_names_and_types(&topic_names_and_types);
+    return NULL;
+  }
+
+  if (!__convert_names_and_types(topic_names_and_types, pytopic_names_and_types)) {
+    __cleanup_names_and_types(&topic_names_and_types);
+    Py_DECREF(pytopic_names_and_types);
+    return NULL;
+  }
+  __cleanup_names_and_types(&topic_names_and_types);
+  return pytopic_names_and_types;
+}
+
+/// Get the list of published topics discovered by the provided node for the remote node name
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RuntimeError if there is an rcl error
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] no_demangle if true topic names and types returned will not be demangled
+ * \param[in] node_name of a remote node to get publishers for
+ * \return Python list of tuples where each tuple contains the two strings:
+ *   the topic name and topic type
+ */
+static PyObject *
+rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  PyObject * pyno_demangle;
+  char * node_name;
+  char * node_namespace;
+  if (!PyArg_ParseTuple(args, "OOss", &pynode, &pyno_demangle, &node_name, &node_namespace)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+  bool no_demangle = PyObject_IsTrue(pyno_demangle);
+  rcl_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret =
+    rcl_get_publisher_names_and_types_by_node(node, &allocator, no_demangle, node_name,
+      node_namespace, &topic_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get_publisher_names_and_types: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.names.size);
+  if (!pytopic_names_and_types) {
+    __cleanup_names_and_types(&topic_names_and_types);
+    return NULL;
+  }
+
+  if (!__convert_names_and_types(topic_names_and_types, pytopic_names_and_types)) {
+    __cleanup_names_and_types(&topic_names_and_types);
+    Py_DECREF(pytopic_names_and_types);
+    return NULL;
+  }
+  __cleanup_names_and_types(&topic_names_and_types);
+  return pytopic_names_and_types;
+}
 
 /// Get the list of topics discovered by the provided node
 /**
@@ -4363,6 +4580,21 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_node_parameters", rclpy_get_node_parameters, METH_VARARGS,
     "Get the initial parameters for a node from the command line."
+  },
+  {
+    "rclpy_get_subscriber_names_and_types_by_node", rclpy_get_subscriber_names_and_types_by_node,
+    METH_VARARGS,
+    "Get subscriber list of specified node from graph API."
+  },
+  {
+    "rclpy_get_publisher_names_and_types_by_node", rclpy_get_publisher_names_and_types_by_node,
+    METH_VARARGS,
+    "Get publisher list of specified node from graph API."
+  },
+  {
+    "rclpy_get_service_names_and_types_by_node", rclpy_get_service_names_and_types_by_node,
+    METH_VARARGS,
+    "Get service list of specified node from graph API."
   },
   {
     "rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,
