@@ -52,7 +52,7 @@ def shutdown(*, context=None):
 
 def create_node(
     node_name, *, context=None, cli_args=None, namespace=None, use_global_arguments=True,
-    start_parameter_services=True, initial_parameters=None
+    start_parameter_services=True, initial_parameters=None, start_logger_level_service=True
 ):
     """
     Create an instance of :class:`rclpy.node.Node`.

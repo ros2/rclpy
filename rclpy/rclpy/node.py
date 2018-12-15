@@ -24,6 +24,7 @@ from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.logger_level_service import LoggerLevelService
 from rclpy.logging import get_logger
 from rclpy.parameter import Parameter
 from rclpy.parameter_service import ParameterService
@@ -61,7 +62,7 @@ class Node:
 
     def __init__(
         self, node_name, *, context=None, cli_args=None, namespace=None, use_global_arguments=True,
-        start_parameter_services=True, initial_parameters=None
+        start_parameter_services=True, initial_parameters=None, start_logger_level_service=True
     ):
         self._handle = None
         self._context = get_default_context() if context is None else context
@@ -75,6 +76,7 @@ class Node:
         self.waitables = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
+        self._logger_level_callback = None
 
         namespace = namespace or ''
         if not self._context.ok():
@@ -115,6 +117,9 @@ class Node:
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
+
+        if start_logger_level_service:
+            self._logger_level_service = LoggerLevelService(self)
 
     @property
     def executor(self):
