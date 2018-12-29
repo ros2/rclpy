@@ -24,51 +24,52 @@ class TestCreateNode(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        rclpy.init()
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
 
     @classmethod
     def tearDownClass(cls):
-        rclpy.shutdown()
+        rclpy.shutdown(context=cls.context)
 
     def test_create_node(self):
         node_name = 'create_node_test'
-        rclpy.create_node(node_name).destroy_node()
+        rclpy.create_node(node_name, context=self.context).destroy_node()
 
     def test_create_node_with_namespace(self):
         node_name = 'create_node_test'
         namespace = '/ns'
-        rclpy.create_node(node_name, namespace=namespace).destroy_node()
+        rclpy.create_node(node_name, namespace=namespace, context=self.context).destroy_node()
 
     def test_create_node_with_empty_namespace(self):
         node_name = 'create_node_test'
         namespace = ''
-        node = rclpy.create_node(node_name, namespace=namespace)
+        node = rclpy.create_node(node_name, namespace=namespace, context=self.context)
         self.assertEqual('/', node.get_namespace())
         node.destroy_node()
 
     def test_create_node_with_relative_namespace(self):
         node_name = 'create_node_test'
         namespace = 'ns'
-        node = rclpy.create_node(node_name, namespace=namespace)
+        node = rclpy.create_node(node_name, namespace=namespace, context=self.context)
         self.assertEqual('/ns', node.get_namespace())
         node.destroy_node()
 
     def test_create_node_invalid_name(self):
         node_name = 'create_node_test_invalid_name?'
         with self.assertRaisesRegex(InvalidNodeNameException, 'must not contain characters'):
-            rclpy.create_node(node_name)
+            rclpy.create_node(node_name, context=self.context)
 
     def test_create_node_invalid_relative_namespace(self):
         node_name = 'create_node_test_invalid_namespace'
         namespace = 'invalid_namespace?'
         with self.assertRaisesRegex(InvalidNamespaceException, 'must not contain characters'):
-            rclpy.create_node(node_name, namespace=namespace)
+            rclpy.create_node(node_name, namespace=namespace, context=self.context)
 
     def test_create_node_invalid_namespace(self):
         node_name = 'create_node_test_invalid_namespace'
         namespace = '/invalid_namespace?'
         with self.assertRaisesRegex(InvalidNamespaceException, 'must not contain characters'):
-            rclpy.create_node(node_name, namespace=namespace)
+            rclpy.create_node(node_name, namespace=namespace, context=self.context)
 
 
 if __name__ == '__main__':

@@ -32,13 +32,14 @@ class TestNode(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        rclpy.init()
-        cls.node = rclpy.create_node(TEST_NODE, namespace=TEST_NAMESPACE)
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
+        cls.node = rclpy.create_node(TEST_NODE, namespace=TEST_NAMESPACE, context=cls.context)
 
     @classmethod
     def tearDownClass(cls):
         cls.node.destroy_node()
-        rclpy.shutdown()
+        rclpy.shutdown(context=cls.context)
 
     def test_accessors(self):
         self.assertIsNotNone(self.node.handle)
@@ -160,14 +161,14 @@ class TestNode(unittest.TestCase):
         node_logger.debug('test')
 
     def test_initially_no_executor(self):
-        node = rclpy.create_node('my_node')
+        node = rclpy.create_node('my_node', context=self.context)
         try:
             assert node.executor is None
         finally:
             node.destroy_node()
 
     def test_set_executor_adds_node_to_it(self):
-        node = rclpy.create_node('my_node')
+        node = rclpy.create_node('my_node', context=self.context)
         executor = Mock()
         executor.add_node.return_value = True
         try:
@@ -178,7 +179,7 @@ class TestNode(unittest.TestCase):
         executor.add_node.assert_called_once_with(node)
 
     def test_set_executor_removes_node_from_old_executor(self):
-        node = rclpy.create_node('my_node')
+        node = rclpy.create_node('my_node', context=self.context)
         old_executor = Mock()
         old_executor.add_node.return_value = True
         new_executor = Mock()
@@ -194,7 +195,7 @@ class TestNode(unittest.TestCase):
         new_executor.remove_node.assert_not_called()
 
     def test_set_executor_clear_executor(self):
-        node = rclpy.create_node('my_node')
+        node = rclpy.create_node('my_node', context=self.context)
         executor = Mock()
         executor.add_node.return_value = True
         try:
@@ -273,25 +274,30 @@ class TestNode(unittest.TestCase):
 class TestCreateNode(unittest.TestCase):
 
     def test_use_global_arguments(self):
-        rclpy.init(args=['process_name', '__node:=global_node_name'])
+        context = rclpy.context.Context()
+        rclpy.init(args=['process_name', '__node:=global_node_name'], context=context)
         try:
-            node1 = rclpy.create_node('my_node', namespace='/my_ns', use_global_arguments=True)
-            node2 = rclpy.create_node('my_node', namespace='/my_ns', use_global_arguments=False)
+            node1 = rclpy.create_node(
+                'my_node', namespace='/my_ns', use_global_arguments=True, context=context)
+            node2 = rclpy.create_node(
+                'my_node', namespace='/my_ns', use_global_arguments=False, context=context)
             self.assertEqual('global_node_name', node1.get_name())
             self.assertEqual('my_node', node2.get_name())
             node1.destroy_node()
             node2.destroy_node()
         finally:
-            rclpy.shutdown()
+            rclpy.shutdown(context=context)
 
     def test_node_arguments(self):
-        rclpy.init()
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
         try:
-            node = rclpy.create_node('my_node', namespace='/my_ns', cli_args=['__ns:=/foo/bar'])
+            node = rclpy.create_node(
+                'my_node', namespace='/my_ns', cli_args=['__ns:=/foo/bar'], context=context)
             self.assertEqual('/foo/bar', node.get_namespace())
             node.destroy_node()
         finally:
-            rclpy.shutdown()
+            rclpy.shutdown(context=context)
 
 
 if __name__ == '__main__':

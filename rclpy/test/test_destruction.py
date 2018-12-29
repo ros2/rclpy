@@ -28,22 +28,24 @@ def run_catch_report_raise(func, *args, **kwargs):
 
 def func_destroy_node():
     import rclpy
-    rclpy.init()
-    node = rclpy.create_node('test_node1')
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_node1', context=context)
     ret = True
     try:
         node.destroy_node()
     except RuntimeError:
         ret = False
     finally:
-        rclpy.shutdown()
+        rclpy.shutdown(context=context)
     return ret
 
 
 def func_destroy_node_twice():
     import rclpy
-    rclpy.init()
-    node = rclpy.create_node('test_node2')
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_node2', context=context)
     assert node.destroy_node() is True
     assert node.destroy_node() is True
     return True
@@ -51,8 +53,9 @@ def func_destroy_node_twice():
 
 def func_destroy_corrupted_node():
     import rclpy
-    rclpy.init()
-    node = rclpy.create_node('test_node2')
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_node2', context=context)
     assert node.destroy_node() is True
     org_handle = node._handle
     node._handle = 'garbage'
@@ -64,15 +67,16 @@ def func_destroy_corrupted_node():
         node._handle = org_handle
         node.destroy_node()
     finally:
-        rclpy.shutdown()
+        rclpy.shutdown(context=context)
     return ret
 
 
 def func_destroy_timers():
     import rclpy
-    rclpy.init()
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
 
-    node = rclpy.create_node('test_node3')
+    node = rclpy.create_node('test_node3', context=context)
 
     timer1 = node.create_timer(0.1, None)
     timer2 = node.create_timer(1, None)
@@ -92,16 +96,17 @@ def func_destroy_timers():
         assert node.handle is None
         ret = True
     finally:
-        rclpy.shutdown()
+        rclpy.shutdown(context=context)
     return ret
 
 
 def func_destroy_entities():
     import rclpy
     from test_msgs.msg import Primitives
-    rclpy.init()
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
 
-    node = rclpy.create_node('test_node4')
+    node = rclpy.create_node('test_node4', context=context)
 
     timer = node.create_timer(0.1, None)
     timer  # noqa
@@ -136,14 +141,15 @@ def func_destroy_entities():
         assert node.handle is None
         ret = True
     finally:
-        rclpy.shutdown()
+        rclpy.shutdown(context=context)
     return ret
 
 
 def func_corrupt_node_handle():
     import rclpy
-    rclpy.init()
-    node = rclpy.create_node('test_node5')
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_node5', context=context)
     try:
         node.handle = 'garbage'
         ret = False
@@ -151,7 +157,7 @@ def func_corrupt_node_handle():
         node.destroy_node()
         ret = True
     finally:
-        rclpy.shutdown()
+        rclpy.shutdown(context=context)
     return ret
 
 

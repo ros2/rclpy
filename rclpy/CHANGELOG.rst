@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.1 (2018-12-07)
+------------------
+* Added node graph functions (`#247 <https://github.com/ros2/rclpy/issues/247>`_)
+* Filled ParameterEvent.msg with timestamp and node path name (`#252 <https://github.com/ros2/rclpy/issues/252>`_)
+* Fixed spelling in documentation (`#251 <https://github.com/ros2/rclpy/issues/251>`_)
+* Added Waitaible and wait set APIs (`#250 <https://github.com/ros2/rclpy/issues/250>`_)
+* Updated rcl_wait_set_add\_* calls (`#248 <https://github.com/ros2/rclpy/issues/248>`_)
+* Contributors: Brian, Dirk Thomas, Jacob Perron, Ross Desmond, Shane Loretz, Tully Foote, William Woodall
+
 0.6.0 (2018-11-19)
 ------------------
 * Updated to use new error handling API from rcutils (`#245 <https://github.com/ros2/rclpy/issues/245>`_)

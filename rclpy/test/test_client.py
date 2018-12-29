@@ -17,6 +17,7 @@ import unittest
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
+import rclpy.executors
 
 
 # TODO(sloretz) Reduce fudge once wait_for_service uses node graph events
@@ -27,13 +28,14 @@ class TestClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        rclpy.init()
-        cls.node = rclpy.create_node('TestClient')
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
+        cls.node = rclpy.create_node('TestClient', context=cls.context)
 
     @classmethod
     def tearDownClass(cls):
         cls.node.destroy_node()
-        rclpy.shutdown()
+        rclpy.shutdown(context=cls.context)
 
     def test_wait_for_service_5sec(self):
         cli = self.node.create_client(GetParameters, 'get/parameters')
@@ -79,8 +81,9 @@ class TestClient(unittest.TestCase):
             self.assertTrue(cli.wait_for_service(timeout_sec=20))
             future1 = cli.call_async(GetParameters.Request())
             future2 = cli.call_async(GetParameters.Request())
-            rclpy.spin_until_future_complete(self.node, future1)
-            rclpy.spin_until_future_complete(self.node, future2)
+            executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+            rclpy.spin_until_future_complete(self.node, future1, executor=executor)
+            rclpy.spin_until_future_complete(self.node, future2, executor=executor)
             self.assertTrue(future1.result() is not None)
             self.assertTrue(future2.result() is not None)
         finally:
