@@ -21,6 +21,7 @@ import rclpy
 from rclpy.clock import ClockType
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
 from test_msgs.msg import Primitives
 
@@ -72,6 +73,8 @@ class TestNode(unittest.TestCase):
         self.raw_subscription_msg = msg
 
     def test_create_raw_subscription(self):
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
         primitives_pub = self.node.create_publisher(Primitives, 'raw_subscription_test')
         self.raw_subscription_msg = None  # None=No result yet
         self.node.create_subscription(
@@ -82,14 +85,16 @@ class TestNode(unittest.TestCase):
         )
         primitives_msg = Primitives()
         cycle_count = 0
-        while rclpy.ok() and cycle_count < 5 and self.raw_subscription_msg is None:
+        while cycle_count < 5 and self.raw_subscription_msg is None:
             primitives_pub.publish(primitives_msg)
             cycle_count += 1
-            rclpy.spin_once(self.node, timeout_sec=1)
+            executor.spin_once(timeout_sec=1)
         self.assertIsNotNone(self.raw_subscription_msg, 'raw subscribe timed out')
         self.assertIs(type(self.raw_subscription_msg), bytes, 'raw subscribe did not return bytes')
         # The length might be implementation dependant, but shouldn't be zero
         self.assertNotEqual(len(self.raw_subscription_msg), 0, 'raw subscribe invalid length')
+
+        executor.shutdown()
 
     def test_create_client(self):
         self.node.create_client(GetParameters, 'get/parameters')

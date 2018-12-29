@@ -2638,7 +2638,7 @@ rclpy_take_raw(rcl_subscription_t * subscription)
     }
     return NULL;
   }
-  PyObject * python_bytes = PyBytes_FromStringAndSize(msg.buffer, msg.buffer_length);
+  PyObject * python_bytes = PyBytes_FromStringAndSize((char *)(msg.buffer), msg.buffer_length);
   rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
   if (r_fini != RMW_RET_OK) {
     PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);

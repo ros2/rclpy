@@ -193,7 +193,7 @@ class SubscriptionWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.subscription_is_ready:
             self.subscription_is_ready = False
-            return _rclpy.rclpy_take(self.subscription, EmptyMsg)
+            return _rclpy.rclpy_take(self.subscription, EmptyMsg, False)
         return None
 
     async def execute(self, taken_data):
