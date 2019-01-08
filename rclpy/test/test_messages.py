@@ -41,7 +41,7 @@ class TestMessages(unittest.TestCase):
 
     def test_invalid_string_raises(self):
         msg = Primitives()
-        msg.string_value = '🐢'
+        msg.string_value = 'ñu'
         pub = self.node.create_publisher(Primitives, 'chatter')
         with self.assertRaises(UnicodeEncodeError):
             pub.publish(msg)
