@@ -409,7 +409,8 @@ class Executor:
                     entity_count.num_guard_conditions,
                     entity_count.num_timers,
                     entity_count.num_clients,
-                    entity_count.num_services)
+                    entity_count.num_services,
+                    self._context.handle)
 
                 entities = {
                     'subscription': (subscriptions, 'subscription_handle'),
