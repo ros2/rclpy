@@ -2642,6 +2642,8 @@ rclpy_take_raw(rcl_subscription_t * subscription)
   rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
   if (r_fini != RMW_RET_OK) {
     PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
+    Py_DECREF(python_bytes);
+    return NULL;
   }
   return python_bytes;
 }
