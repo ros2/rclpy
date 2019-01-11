@@ -42,6 +42,7 @@ from rclpy.validate_topic_name import validate_topic_name
 
 HIDDEN_NODE_PREFIX = '_'
 
+
 def check_for_type_support(msg_type):
     try:
         ts = msg_type.__class__._TYPE_SUPPORT
