@@ -40,6 +40,8 @@ from rclpy.validate_namespace import validate_namespace
 from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_topic_name import validate_topic_name
 
+HIDDEN_NODE_PREFIX = '_'
+
 
 def check_for_type_support(msg_type):
     try:
