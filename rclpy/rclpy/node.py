@@ -140,6 +140,10 @@ class Node:
         return self._context
 
     @property
+    def default_callback_group(self):
+        return self._default_callback_group
+
+    @property
     def handle(self):
         return self._handle
 
@@ -254,7 +258,7 @@ class Node:
             self, msg_type, topic, callback, *, qos_profile=qos_profile_default,
             callback_group=None, raw=False):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         # this line imports the typesupport for the message module if not already done
         check_for_type_support(msg_type)
         failed = False
@@ -277,7 +281,7 @@ class Node:
             self, srv_type, srv_name, *, qos_profile=qos_profile_services_default,
             callback_group=None):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         check_for_type_support(srv_type)
         failed = False
         try:
@@ -302,7 +306,7 @@ class Node:
             self, srv_type, srv_name, callback, *, qos_profile=qos_profile_services_default,
             callback_group=None):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         check_for_type_support(srv_type)
         failed = False
         try:
@@ -325,7 +329,7 @@ class Node:
     def create_timer(self, timer_period_sec, callback, callback_group=None):
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         timer = WallTimer(callback, callback_group, timer_period_nsec, context=self.context)
 
         self.timers.append(timer)
@@ -334,7 +338,7 @@ class Node:
 
     def create_guard_condition(self, callback, callback_group=None):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
 
         self.guards.append(guard)

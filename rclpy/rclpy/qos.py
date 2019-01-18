@@ -15,6 +15,7 @@
 from enum import IntEnum
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 
 
 class QoSProfile:
@@ -178,3 +179,5 @@ qos_profile_parameters = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameters')
 qos_profile_parameter_events = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events')
+qos_profile_action_status_default = _rclpy_action.rclpy_action_get_rmw_qos_profile(
+    'rcl_action_qos_profile_status_default')

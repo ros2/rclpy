@@ -29,4 +29,5 @@ For example, you might use it like this:
 from rclpy.impl import _import
 
 rclpy_implementation = _import('._rclpy')
+rclpy_action_implementation = _import('._rclpy_action')
 rclpy_logging_implementation = _import('._rclpy_logging')
