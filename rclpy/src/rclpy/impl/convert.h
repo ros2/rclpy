@@ -33,4 +33,14 @@ rclpy_convert_to_py_qos_policy(void * profile)
   return pyqos_profile;
 }
 
+static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
+{
+  PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
+  if (!pyattr) {
+    return NULL;
+  }
+  void * ptr = PyCapsule_GetPointer(pyattr, NULL);
+  Py_DECREF(pyattr);
+  return ptr;
+}
 #endif  // RCLPY_IMPL_CONVERT_H_

@@ -70,17 +70,6 @@ typedef void destroy_ros_message_signature (void *);
 typedef bool convert_from_py_signature (PyObject *, void *);
 typedef PyObject * convert_to_py_signature (void *);
 
-static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
-{
-  PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
-  if (!pyattr) {
-    return NULL;
-  }
-  void * ptr = PyCapsule_GetPointer(pyattr, NULL);
-  Py_DECREF(pyattr);
-  return ptr;
-}
-
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
