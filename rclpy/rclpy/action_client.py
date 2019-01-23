@@ -14,15 +14,43 @@
 
 # import threading
 import time
+import uuid
 
-import rclpy
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 # TODO(jacobperron): Move check_for_type_support to it's own module (e.g. type_support)
 from rclpy.node import check_for_type_support
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.task import Future
-from rclpy.waitable import NumberOfEntities, Waitable
+from rclpy.waitable import Waitable
+
+from unique_identifier_msgs.msg import UUID
+
+
+class ClientGoalHandle():
+    """Goal handle for working with Action Clients."""
+
+    def __init__(self, goal_id, goal_response):
+        if not isinstance(goal_id, UUID):
+            raise TypeError("Expected UUID, but given {}".format(type(goal_id)))
+
+        self._goal_id = goal_id
+        self._goal_response = goal_response
+
+    def __eq__(self, other):
+        return self._goal_id == other.goal_id
+
+    @property
+    def goal_id(self):
+        return self._goal_id
+
+    @property
+    def goal_response(self):
+        return self._goal_response
+
+    @property
+    def accepted(self):
+        return self._goal_response.accepted
 
 
 class ActionClient(Waitable):
@@ -79,9 +107,13 @@ class ActionClient(Waitable):
         self._pending_goal_requests = {}
         self._pending_cancel_requests = {}
         self._pending_result_requests = {}
+        self._feedback_callbacks = {}
 
         callback_group.add_entity(self)
         self.node.add_waitable(self)
+
+    def _generate_random_uuid(self):
+        return UUID(uuid=uuid.uuid4().bytes)
 
     def _remove_pending_request(self, future, pending_requests):
         """
@@ -91,16 +123,22 @@ class ActionClient(Waitable):
         :param future: a future returned from :meth:`call_async`
         :type future: rclpy.task.Future
         """
-        for seq, req_future in pending_requests.items():
+        for seq, (req_future, goal_id) in pending_requests.items():
             if future == req_future:
                 try:
                     del pending_requests[seq]
                 except KeyError:
                     pass
-                break
+                return goal_id
+        return None
 
     def _remove_pending_goal_request(self, future):
-        self._remove_pending_request(future, self._pending_goal_requests)
+        goal_id = self._remove_pending_request(future, self._pending_goal_requests)
+        # The goal is done, so remove any user registered callback for feedback
+        # TODO(jacobperron): Move conversion function to general-use package
+        goal_uuid = uuid.UUID(bytes=bytes(goal_id.uuid))
+        if goal_uuid in self._feedback_callbacks:
+            del self._feedback_callbacks[goal_uuid]
 
     def _remove_pending_cancel_request(self, future):
         self._remove_pending_request(future, self._pending_cancel_requests)
@@ -128,9 +166,9 @@ class ActionClient(Waitable):
             data['feedback'] = feedback_msg
 
         if self._is_status_ready:
-           status_msg  = _rclpy_action.rclpy_action_take_status(
+            status_msg = _rclpy_action.rclpy_action_take_status(
                 self.client_handle, self.action_type.GoalStatusMessage)
-           data['status'] = status_msg
+            data['status'] = status_msg
 
         if self._is_goal_response_ready:
             sequence_number, goal_response = _rclpy_action.rclpy_action_take_goal_response(
@@ -138,9 +176,9 @@ class ActionClient(Waitable):
             data['goal'] = (sequence_number, goal_response)
 
         if self._is_cancel_response_ready:
-           sequence_number, cancel_response  = _rclpy_action.rclpy_action_take_cancel_response(
+            sequence_number, cancel_response = _rclpy_action.rclpy_action_take_cancel_response(
                 self.client_handle, self.action_type.CancelGoalService.Response)
-           data['cancel'] = (sequence_number, cancel_response)
+            data['cancel'] = (sequence_number, cancel_response)
 
         if self._is_result_response_ready:
             sequence_number, result_response = _rclpy_action.rclpy_action_take_result_response(
@@ -153,10 +191,28 @@ class ActionClient(Waitable):
 
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
+        if 'feedback' in taken_data:
+            feedback_msg = taken_data['feedback']
+            goal_uuid = uuid.UUID(bytes=bytes(feedback_msg.action_goal_id.uuid))
+            # Call a registered callback if there is one
+            if goal_uuid in self._feedback_callbacks:
+                self._feedback_callbacks[goal_uuid](feedback_msg)
+
+        if 'status' in taken_data:
+            pass
+
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
-            self._pending_goal_requests[sequence_number].set_result(goal_response)
-        # TODO(jacobperron): implement
+            goal_handle = ClientGoalHandle(
+                self._pending_goal_requests[sequence_number][1],  # goal ID
+                goal_response)
+            self._pending_goal_requests[sequence_number][0].set_result(goal_handle)
+
+        if 'cancel' in taken_data:
+            pass
+
+        if 'result' in taken_data:
+            pass
 
     def get_num_entities(self):
         """Return number of each type of entity used."""
@@ -181,22 +237,28 @@ class ActionClient(Waitable):
             time.sleep(0.1)
         return future.result()
 
-    def send_goal_async(self, goal, feedback_callback=None):
+    def send_goal_async(self, goal, feedback_callback=None, goal_uuid=None):
         """
-        Send a goal and asyncronously get the result.
+        Send a goal and asynchronously get the result.
 
         :param goal: The goal request
         :return: a Future instance to a goal handle that completes when the goal request
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
         """
+        goal.action_goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         sequence_number = _rclpy_action.rclpy_action_send_goal_request(self.client_handle, goal)
         if sequence_number in self._pending_goal_requests:
             raise RuntimeError(
                 'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
 
+        if feedback_callback is not None:
+            # TODO(jacobperron): Move conversion function to a general-use package
+            goal_uuid = uuid.UUID(bytes=bytes(goal.action_goal_id.uuid))
+            self._feedback_callbacks[goal_uuid] = feedback_callback
+
         future = Future()
-        self._pending_goal_requests[sequence_number] = future
+        self._pending_goal_requests[sequence_number] = (future, goal.action_goal_id)
         future.add_done_callback(self._remove_pending_goal_request)
 
         return future
@@ -208,19 +270,44 @@ class ActionClient(Waitable):
         Do not call this method in a callback or a deadlock may occur.
 
         :param goal_handle: Handle to the goal to cancel.
-        :return: The result response.
+        :return: The cancel response.
         """
         pass
 
     def cancel_goal_async(self, goal_handle):
         """
-        Send a cancel request for an active goal and asyncronously get the result.
+        Send a cancel request for an active goal and asynchronously get the result.
 
         :param goal_handle: Handle to the goal to cancel.
         :return: a Future instance that completes when the cancel request has been processed.
         :rtype: :class:`rclpy.task.Future` instance
         """
+        if not isinstance(goal_handle, ClientGoalHandle):
+            raise TypeError(
+                "Expected type ClientGoalHandle but received {}".format(type(goal_handle)))
+
+    def get_result(self, goal_handle):
+        """
+        Request the result for an active goal and wait for the response.
+
+        Do not call this method in a callback or a deadlock may occur.
+
+        :param goal_handle: Handle to the goal to get the result for.
+        :return: The result response.
+        """
         pass
+
+    def get_result_goal_async(self, goal_handle):
+        """
+        Request the result for an active goal asynchronously.
+
+        :param goal_handle: Handle to the goal to cancel.
+        :return: a Future instance that completes when the get result request has been processed.
+        :rtype: :class:`rclpy.task.Future` instance
+        """
+        if not isinstance(goal_handle, ClientGoalHandle):
+            raise TypeError(
+                "Expected type ClientGoalHandle but received {}".format(type(goal_handle)))
 
     def server_is_ready(self):
         """

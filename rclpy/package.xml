@@ -21,6 +21,7 @@
   <depend>rcl</depend>
   <depend>rcl_action</depend>
   <depend>rcl_yaml_param_parser</depend>
+  <depend>unique_identifier_msgs</depend>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>builtin_interfaces</exec_depend>
