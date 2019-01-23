@@ -1,5 +1,5 @@
-#ifndef RCLPY_IMPL_CONVERT_H_
-#define RCLPY_IMPL_CONVERT_H_
+#ifndef RCLPY_IMPL_COMMON_H_
+#define RCLPY_IMPL_COMMON_H_
 
 #include <Python.h>
 
@@ -33,7 +33,8 @@ rclpy_convert_to_py_qos_policy(void * profile)
   return pyqos_profile;
 }
 
-static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
+static void *
+get_capsule_pointer(PyObject * pymetaclass, const char * attr)
 {
   PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
   if (!pyattr) {
@@ -43,4 +44,4 @@ static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
   Py_DECREF(pyattr);
   return ptr;
 }
-#endif  // RCLPY_IMPL_CONVERT_H_
+#endif  // RCLPY_IMPL_COMMON_H_
