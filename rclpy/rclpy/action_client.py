@@ -15,13 +15,13 @@
 # import threading
 import time
 
+import rclpy
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
-# from rclpy.task import Future
-
 # TODO(jacobperron): Move check_for_type_support to it's own module (e.g. type_support)
 from rclpy.node import check_for_type_support
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
+from rclpy.task import Future
 from rclpy.waitable import Waitable
 
 
@@ -63,6 +63,7 @@ class ActionClient(Waitable):
         # Import the typesupport for the action module if not already done
         check_for_type_support(action_type)
         self.node = node
+        self.action_type = action_type
         self.client_handle = _rclpy_action.rclpy_action_create_client(
             node.handle,
             action_type,
@@ -73,33 +74,104 @@ class ActionClient(Waitable):
             feedback_sub_qos_profile,
             status_sub_qos_profile
         )
+        self._is_ready = False
+        self._pending_goal_requests = {}
+        self._pending_cancel_requests = {}
+        self._pending_result_requests = {}
 
+        callback_group.add_entity(self)
         self.node.add_waitable(self)
+
+    def _remove_pending_request(self, future, pending_requests):
+        """
+        Remove a future from the list of pending requests.
+
+        This prevents a future from receiving a request and executing its done callbacks.
+        :param future: a future returned from :meth:`call_async`
+        :type future: rclpy.task.Future
+        """
+        for seq, req_future in pending_requests.items():
+            if future == req_future:
+                try:
+                    del pending_requests[seq]
+                except KeyError:
+                    pass
+                break
+
+    def _remove_pending_goal_request(self, future):
+        self._remove_pending_request(future, self._pending_goal_requests)
+
+    def _remove_pending_cancel_request(self, future):
+        self._remove_pending_request(future, self._pending_cancel_requests)
+
+    def _remove_pending_result_request(self, future):
+        self._remove_pending_request(future, self._pending_result_requests)
 
     # Start Waitable API
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        # TODO: Return tuple of ready flags and use them in take_data() accordingly
-        return _rclpy_action.rclpy_action_wait_set_is_ready(self.client_handle, wait_set)
+        ready_entities = _rclpy_action.rclpy_action_wait_set_is_ready(self.client_handle, wait_set)
+        self._is_feedback_ready = ready_entities[0]
+        self._is_status_ready = ready_entities[1]
+        self._is_goal_response_ready = ready_entities[2]
+        self._is_cancel_response_ready = ready_entities[3]
+        self._is_result_response_ready = ready_entities[4]
+        return any(ready_entities)
 
     def take_data(self):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
-        raise NotImplementedError('Must be implemented by subclass')
+        print("take data")
+        data = {}
+        if self._is_feedback_ready:
+            feedback_msg = _rclpy_action.rclpy_action_take_feedback(
+                self.client_handle, self.action_type.Feedback)
+            data['feedback'] = feedback_msg
+
+        if self._is_status_ready:
+           status_msg  = _rclpy_action.rclpy_action_take_status(
+                self.client_handle, self.action_type.GoalStatusMessage)
+           data['status'] = status_msg
+
+        if self._is_goal_response_ready:
+            sequence_number, goal_response = _rclpy_action.rclpy_action_take_goal_response(
+                self.client_handle, self.action_type.GoalRequestService.Response)
+            data['goal'] = (sequence_number, goal_response)
+
+        if self._is_cancel_response_ready:
+           sequence_number, cancel_response  = _rclpy_action.rclpy_action_take_cancel_response(
+                self.client_handle, self.action_type.CancelGoalService.Response)
+           data['cancel'] = (sequence_number, cancel_response)
+
+        if self._is_result_response_ready:
+            sequence_number, result_response = _rclpy_action.rclpy_action_take_result_response(
+                self.client_handle, self.action_type.GoalResultService.Response)
+            data['result'] = (sequence_number, result_response)
+
+        print("end take data")
+        if not any(data):
+            return None
+        return data
 
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
-        raise NotImplementedError('Must be implemented by subclass')
+        print("execute")
+        # print("TAKEN DATA {}".format(taken_data))
+        if 'goal' in taken_data:
+            sequence_number, goal_response = taken_data['goal']
+            self._pending_goal_requests[sequence_number].set_result(goal_response)
+        # TODO(jacobperron): implement
+        print("end execute")
 
     def get_num_entities(self):
         """Return number of each type of entity used."""
-        return _rclpy_action.rclpy_action_wait_set_get_num_entities(self.client_handle, wait_set)
+        return _rclpy_action.rclpy_action_wait_set_get_num_entities(self.client_handle)
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
         _rclpy_action.rclpy_action_wait_set_add(self.client_handle, wait_set)
     # End Waitable API
 
-    def send_goal(self, goal):
+    def send_goal(self, goal, **kwargs):
         """
         Send a goal and wait for the result.
 
@@ -108,10 +180,12 @@ class ActionClient(Waitable):
         :param goal: The goal request
         :return: The result response
         """
-        pass
+        future = self.send_goal_async(goal, kwargs)
+        while self.node.context.ok() and not future.done():
+            time.sleep(0.1)
+        return future.result()
 
-
-    def send_goal_async(self, goal):
+    def send_goal_async(self, goal, feedback_callback=None):
         """
         Send a goal and asyncronously get the result.
 
@@ -120,7 +194,18 @@ class ActionClient(Waitable):
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        pass
+        print("send goal")
+        sequence_number = _rclpy_action.rclpy_action_send_goal_request(self.client_handle, goal)
+        if sequence_number in self._pending_goal_requests:
+            raise RuntimeError(
+                'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
+
+        future = Future()
+        self._pending_goal_requests[sequence_number] = future
+        future.add_done_callback(self._remove_pending_goal_request)
+        print("end send goal")
+
+        return future
 
     def cancel_goal(self, goal_handle):
         """
@@ -172,10 +257,12 @@ class ActionClient(Waitable):
         return self.server_is_ready()
 
     def destroy(self):
+        """Destroy the underlying action client handle."""
         if self.client_handle is None:
             return
         _rclpy_action.rclpy_action_destroy_entity(self.client_handle, self.node.handle)
         self.client_handle = None
 
     def __del__(self):
+        """Destroy the underlying action client handle."""
         self.destroy()
