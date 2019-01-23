@@ -79,6 +79,15 @@ class TestActionClient(unittest.TestCase):
         )
         ac.destroy()
 
+    def test_get_num_entities(self):
+        ac = ActionClient(self.node, Fibonacci, 'fibonacci')
+        num_entities = ac.get_num_entities()
+        self.assertEqual(num_entities.num_subscriptions, 2)
+        self.assertEqual(num_entities.num_guard_conditions, 0)
+        self.assertEqual(num_entities.num_timers, 0)
+        self.assertEqual(num_entities.num_clients, 3)
+        self.assertEqual(num_entities.num_services, 0)
+
     def test_wait_for_server_nowait(self):
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
@@ -113,8 +122,9 @@ class TestActionClient(unittest.TestCase):
             ac.destroy()
 
     def test_send_goal_async(self):
-        ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
+        ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=5.0))
             goal = Fibonacci.Goal()
             future = ac.send_goal_async(goal)
             rclpy.spin_until_future_complete(self.node, future, self.executor)

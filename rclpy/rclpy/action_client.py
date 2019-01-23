@@ -22,7 +22,7 @@ from rclpy.node import check_for_type_support
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.task import Future
-from rclpy.waitable import Waitable
+from rclpy.waitable import NumberOfEntities, Waitable
 
 
 class ActionClient(Waitable):
@@ -74,6 +74,7 @@ class ActionClient(Waitable):
             feedback_sub_qos_profile,
             status_sub_qos_profile
         )
+
         self._is_ready = False
         self._pending_goal_requests = {}
         self._pending_cancel_requests = {}
@@ -120,7 +121,6 @@ class ActionClient(Waitable):
 
     def take_data(self):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
-        print("take data")
         data = {}
         if self._is_feedback_ready:
             feedback_msg = _rclpy_action.rclpy_action_take_feedback(
@@ -147,20 +147,16 @@ class ActionClient(Waitable):
                 self.client_handle, self.action_type.GoalResultService.Response)
             data['result'] = (sequence_number, result_response)
 
-        print("end take data")
         if not any(data):
             return None
         return data
 
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
-        print("execute")
-        # print("TAKEN DATA {}".format(taken_data))
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
             self._pending_goal_requests[sequence_number].set_result(goal_response)
         # TODO(jacobperron): implement
-        print("end execute")
 
     def get_num_entities(self):
         """Return number of each type of entity used."""
@@ -194,7 +190,6 @@ class ActionClient(Waitable):
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        print("send goal")
         sequence_number = _rclpy_action.rclpy_action_send_goal_request(self.client_handle, goal)
         if sequence_number in self._pending_goal_requests:
             raise RuntimeError(
@@ -203,7 +198,6 @@ class ActionClient(Waitable):
         future = Future()
         self._pending_goal_requests[sequence_number] = future
         future.add_done_callback(self._remove_pending_goal_request)
-        print("end send goal")
 
         return future
 
@@ -261,6 +255,7 @@ class ActionClient(Waitable):
         if self.client_handle is None:
             return
         _rclpy_action.rclpy_action_destroy_entity(self.client_handle, self.node.handle)
+        self.node.remove_waitable(self)
         self.client_handle = None
 
     def __del__(self):
