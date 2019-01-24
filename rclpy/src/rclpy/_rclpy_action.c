@@ -550,7 +550,7 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   destroy_ros_message(raw_ros_request); \
   if (ret != RCL_RET_OK) { \
     PyErr_Format(PyExc_RuntimeError, \
-      "Failed to send Type request: %s", rcl_get_error_string().str); \
+      "Failed to send " #Type " request: %s", rcl_get_error_string().str); \
     rcl_reset_error(); \
     return NULL; \
   } \
@@ -718,6 +718,56 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
   TAKE_SERVICE_RESPONSE(cancel)
 }
 
+#define TAKE_MESSAGE(Type) \
+  PyObject * pyaction_client; \
+  PyObject * pymsg_type; \
+  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pymsg_type)) { \
+    return NULL; \
+  } \
+  rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer( \
+    pyaction_client, "rcl_action_client_t"); \
+  if (!action_client) { \
+    return NULL; \
+  } \
+  PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__"); \
+  create_ros_message_signature * create_ros_message = get_capsule_pointer( \
+    pymetaclass, "_CREATE_ROS_MESSAGE"); \
+  assert(create_ros_message != NULL && \
+    "unable to retrieve create_ros_message function, type_support mustn't have been imported"); \
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer( \
+    pymetaclass, "_DESTROY_ROS_MESSAGE"); \
+  assert(destroy_ros_message != NULL && \
+    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported"); \
+  void * taken_msg = create_ros_message(); \
+  if (!taken_msg) { \
+    Py_DECREF(pymetaclass); \
+    return PyErr_NoMemory(); \
+  } \
+  rcl_ret_t ret = rcl_action_take_ ## Type(action_client, taken_msg); \
+  if (ret != RCL_RET_OK) { \
+    if (ret != RCL_RET_ACTION_CLIENT_TAKE_FAILED) { \
+      /* if take failed, just do nothing */ \
+      destroy_ros_message(taken_msg); \
+      Py_DECREF(pymetaclass); \
+      Py_RETURN_NONE; \
+    } \
+    PyErr_Format(PyExc_RuntimeError, \
+      "Failed to take " #Type " with an action client: %s", rcl_get_error_string().str); \
+    rcl_reset_error(); \
+    destroy_ros_message(taken_msg); \
+    Py_DECREF(pymetaclass); \
+    return NULL; \
+  } \
+  convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY"); \
+  Py_DECREF(pymetaclass); \
+  PyObject * pytaken_msg = convert_to_py(taken_msg); \
+  destroy_ros_message(taken_msg); \
+  if (!pytaken_msg) { \
+    /* the function has set the Python error */ \
+    return NULL; \
+  } \
+  return pytaken_msg; \
+
 /// Take a feedback message from a given action client.
 /**
  * \param[in] pyaction_client Capsule pointing to the action client to process the message.
@@ -729,66 +779,7 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_take_feedback(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pyaction_client;
-  PyObject * pyfeedback_type;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyfeedback_type)) {
-    return NULL;
-  }
-
-  rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer(
-    pyaction_client, "rcl_action_client_t");
-  if (!action_client) {
-    return NULL;
-  }
-
-  PyObject * pymetaclass = PyObject_GetAttrString(pyfeedback_type, "__class__");
-
-  create_ros_message_signature * create_ros_message = get_capsule_pointer(
-    pymetaclass, "_CREATE_ROS_MESSAGE");
-  assert(create_ros_message != NULL &&
-    "unable to retrieve create_ros_message function, type_support mustn't have been imported");
-
-  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(
-    pymetaclass, "_DESTROY_ROS_MESSAGE");
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
-  void * taken_feedback = create_ros_message();
-  if (!taken_feedback) {
-    Py_DECREF(pymetaclass);
-    return PyErr_NoMemory();
-  }
-
-  rcl_ret_t ret = rcl_action_take_feedback(action_client, taken_feedback);
-
-  if (ret != RCL_RET_OK) {
-    if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
-      // if take failed, just do nothing
-      destroy_ros_message(taken_feedback);
-      Py_DECREF(pymetaclass);
-      Py_RETURN_NONE;
-    }
-
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to take feedback with an action client: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    destroy_ros_message(taken_feedback);
-    Py_DECREF(pymetaclass);
-    return NULL;
-  }
-
-  convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
-  Py_DECREF(pymetaclass);
-
-  PyObject * pytaken_feedback = convert_to_py(taken_feedback);
-  destroy_ros_message(taken_feedback);
-  if (!pytaken_feedback) {
-    // the function has set the Python error
-    return NULL;
-  }
-
-  return pytaken_feedback;
+  TAKE_MESSAGE(feedback)
 }
 
 /// Take a status message from a given action client.
@@ -802,14 +793,7 @@ rclpy_action_take_feedback(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_take_status(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pyaction_client;
-  PyObject * pystatus_type;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pystatus_type)) {
-    return NULL;
-  }
-  // TODO
-  Py_RETURN_NONE;
+  TAKE_MESSAGE(status)
 }
 
 /// Define the public methods of this module

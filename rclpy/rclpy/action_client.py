@@ -16,10 +16,12 @@
 import time
 import uuid
 
+from action_msgs.msg import GoalStatus
 from action_msgs.srv import CancelGoal
 
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
-# TODO(jacobperron): Move check_for_type_support to it's own module (e.g. type_support)
+# TODO(jacobperron): Move check_for_type_support to its own module (e.g. type_support)
+#                    Do after Crystal patch release since this breaks API
 from rclpy.node import check_for_type_support
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
@@ -38,9 +40,13 @@ class ClientGoalHandle():
 
         self._goal_id = goal_id
         self._goal_response = goal_response
+        self._status = GoalStatus.STATUS_UNKNOWN
 
     def __eq__(self, other):
         return self._goal_id == other.goal_id
+
+    def __repr__(self):
+        return 'ClientGoalHandle <{}>'.format(self.goal_id.uuid)
 
     @property
     def goal_id(self):
@@ -53,6 +59,10 @@ class ClientGoalHandle():
     @property
     def accepted(self):
         return self._goal_response.accepted
+
+    @property
+    def status(self):
+        return self._status
 
 
 class ActionClient(Waitable):
@@ -106,8 +116,9 @@ class ActionClient(Waitable):
         )
 
         self._is_ready = False
-        self._sequence_number_to_goal_id = {}
+        self._goal_handles = {}
         self._pending_goal_requests = {}
+        self._sequence_number_to_goal_id = {}  # goal request sequence number
         self._pending_cancel_requests = {}
         self._pending_result_requests = {}
         self._feedback_callbacks = {}
@@ -199,13 +210,31 @@ class ActionClient(Waitable):
                 self._feedback_callbacks[goal_uuid](feedback_msg)
 
         if 'status' in taken_data:
-            pass
+            # Update the status of all goal handles maintained by this Action Client
+            for status_msg in taken_data['status'].status_list:
+                goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
+                status = status_msg.status
+                if goal_uuid in self._goal_handles:
+                    self._goal_handles[goal_uuid]._status = status
+                    # Remove "done" goals from the list
+                    if (GoalStatus.STATUS_SUCCEEDED == status or
+                            GoalStatus.STATUS_CANCELED == status or
+                            GoalStatus.STATUS_ABORTED == status):
+                        del self._goal_handles[goal_uuid]
 
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
             goal_handle = ClientGoalHandle(
                 self._sequence_number_to_goal_id[sequence_number],
                 goal_response)
+
+            if goal_handle.accepted:
+                goal_uuid = bytes(goal_handle.goal_id.uuid)
+                if goal_uuid in self._goal_handles:
+                    raise RuntimeError(
+                        'Two goals were accepted with the same ID ({})'.format(goal_handle))
+                self._goal_handles[goal_uuid] = goal_handle
+
             self._pending_goal_requests[sequence_number].set_result(goal_handle)
 
         if 'cancel' in taken_data:
@@ -341,7 +370,6 @@ class ActionClient(Waitable):
         future.add_done_callback(self._remove_pending_result_request)
 
         return future
-
 
     def server_is_ready(self):
         """
