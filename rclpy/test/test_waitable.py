@@ -153,7 +153,7 @@ class TimerWaitable(Waitable):
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
         test_data = {}
-        if taken_data is 'timer':
+        if 'timer' == taken_data:
             test_data['timer'] = taken_data
         self.future.set_result(test_data)
 
@@ -241,7 +241,7 @@ class GuardConditionWaitable(Waitable):
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
         test_data = {}
-        if taken_data is 'guard_condition':
+        if 'guard_condition' == taken_data:
             test_data['guard_condition'] = True
         self.future.set_result(test_data)
 
