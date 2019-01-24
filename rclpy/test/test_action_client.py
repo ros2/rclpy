@@ -110,6 +110,7 @@ class TestActionClient(unittest.TestCase):
         self.assertEqual(num_entities.num_timers, 0)
         self.assertEqual(num_entities.num_clients, 3)
         self.assertEqual(num_entities.num_services, 0)
+        ac.destroy()
 
     def test_wait_for_server_nowait(self):
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
@@ -148,8 +149,7 @@ class TestActionClient(unittest.TestCase):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
-            goal = Fibonacci.Goal()
-            future = ac.send_goal_async(goal)
+            future = ac.send_goal_async(Fibonacci.Goal())
             rclpy.spin_until_future_complete(self.node, future, self.executor)
             self.assertTrue(future.done())
             goal_handle = future.result()
@@ -163,7 +163,7 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
 
             # Send a goal and then publish feedback
-            goal_uuid = UUID(uuid=uuid.uuid4().bytes)
+            goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
             future = ac.send_goal_async(
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
@@ -183,7 +183,7 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
 
             # Publish feedback before goal has been accepted
-            goal_uuid = UUID(uuid=uuid.uuid4().bytes)
+            goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
             self.mock_action_server.publish_feedback(goal_uuid)
             self.timed_spin(1.0)
             self.assertEqual(self.feedback, None)
@@ -206,7 +206,7 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
 
             # Send a goal and then publish feedback
-            first_goal_uuid = UUID(uuid=uuid.uuid4().bytes)
+            first_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
             future = ac.send_goal_async(
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
@@ -214,7 +214,7 @@ class TestActionClient(unittest.TestCase):
             rclpy.spin_until_future_complete(self.node, future, self.executor)
 
             # Send another goal, but without a feedback callback
-            second_goal_uuid = UUID(uuid=uuid.uuid4().bytes)
+            second_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
             future = ac.send_goal_async(
                 Fibonacci.Goal(),
                 goal_uuid=second_goal_uuid)
@@ -237,7 +237,7 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
 
             # Send a goal and then publish feedback
-            goal_uuid = UUID(uuid=uuid.uuid4().bytes)
+            goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
             future = ac.send_goal_async(
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
@@ -245,7 +245,7 @@ class TestActionClient(unittest.TestCase):
             rclpy.spin_until_future_complete(self.node, future, self.executor)
 
             # Publish feedback for a non-existent goal ID
-            self.mock_action_server.publish_feedback(UUID(uuid=uuid.uuid4().bytes))
+            self.mock_action_server.publish_feedback(UUID(uuid=list(uuid.uuid4().bytes)))
             self.timed_spin(1.0)
             self.assertEqual(self.feedback, None)
         finally:
@@ -254,10 +254,28 @@ class TestActionClient(unittest.TestCase):
     def test_send_goal_async_no_server(self):
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
-            goal = Fibonacci.Goal()
-            future = ac.send_goal_async(goal)
+            future = ac.send_goal_async(Fibonacci.Goal())
             self.assertFalse(rclpy.spin_once(self.node, executor=self.executor, timeout_sec=2.0))
             self.assertFalse(future.done())
+        finally:
+            ac.destroy()
+
+    def test_send_cancel_async(self):
+        ac = ActionClient(self.node, Fibonacci, 'fibonacci')
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send a goal
+            goal_future = ac.send_goal_async(Fibonacci.Goal())
+            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            self.assertTrue(goal_future.done())
+            goal_handle = goal_future.result()
+
+            # Cancel the goal
+            cancel_future = ac.cancel_goal_async(goal_handle)
+            rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
+            self.assertTrue(cancel_future.done())
+            self.assertEqual(cancel_future.result().goals_canceling[0].goal_id, goal_handle.goal_id)
         finally:
             ac.destroy()
 

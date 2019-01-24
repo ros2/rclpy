@@ -507,6 +507,118 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_FALSE;
 }
 
+#define SEND_SERVICE_REQUEST(Type) \
+  PyObject * pyaction_client; \
+  PyObject * pyrequest; \
+  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyrequest)) { \
+    return NULL; \
+  } \
+  rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer( \
+    pyaction_client, "rcl_action_client_t"); \
+  if (!action_client) { \
+    return NULL; \
+  } \
+  PyObject * pyrequest_type = PyObject_GetAttrString(pyrequest, "__class__"); \
+  assert(pyrequest_type != NULL); \
+  PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__"); \
+  assert(pymetaclass != NULL); \
+  create_ros_message_signature * create_ros_message = get_capsule_pointer( \
+    pymetaclass, "_CREATE_ROS_MESSAGE"); \
+  assert(create_ros_message != NULL && \
+    "unable to retrieve create_ros_message function, type_support must not have been imported"); \
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer( \
+    pymetaclass, "_DESTROY_ROS_MESSAGE"); \
+  assert(destroy_ros_message != NULL && \
+    "unable to retrieve destroy_ros_message function, type_support must not have been imported"); \
+  convert_from_py_signature * convert_from_py = get_capsule_pointer( \
+    pymetaclass, "_CONVERT_FROM_PY"); \
+  assert(convert_from_py != NULL && \
+    "unable to retrieve convert_from_py function, type_support must not have been imported"); \
+  Py_DECREF(pymetaclass); \
+  void * raw_ros_request = create_ros_message(); \
+  if (!raw_ros_request) { \
+    return PyErr_NoMemory(); \
+  } \
+  if (!convert_from_py(pyrequest, raw_ros_request)) { \
+    /* the function has set the Python error */ \
+    destroy_ros_message(raw_ros_request); \
+    return NULL; \
+  } \
+  int64_t sequence_number; \
+  rcl_ret_t ret = rcl_action_send_ ## Type ## _request( \
+    action_client, raw_ros_request, &sequence_number); \
+  destroy_ros_message(raw_ros_request); \
+  if (ret != RCL_RET_OK) { \
+    PyErr_Format(PyExc_RuntimeError, \
+      "Failed to send Type request: %s", rcl_get_error_string().str); \
+    rcl_reset_error(); \
+    return NULL; \
+  } \
+  return PyLong_FromLongLong(sequence_number);
+
+#define TAKE_SERVICE_RESPONSE(Type) \
+  PyObject * pyaction_client; \
+  PyObject * pyresponse_type; \
+  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyresponse_type)) { \
+    return NULL; \
+  } \
+  rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer( \
+    pyaction_client, "rcl_action_client_t"); \
+  if (!action_client) { \
+    return NULL; \
+  } \
+  PyObject * pymetaclass = PyObject_GetAttrString(pyresponse_type, "__class__"); \
+  create_ros_message_signature * create_ros_message = get_capsule_pointer( \
+    pymetaclass, "_CREATE_ROS_MESSAGE"); \
+  assert(create_ros_message != NULL && \
+    "unable to retrieve create_ros_message function, type_support mustn't have been imported"); \
+  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer( \
+    pymetaclass, "_DESTROY_ROS_MESSAGE"); \
+  assert(destroy_ros_message != NULL && \
+    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported"); \
+  void * taken_response = create_ros_message(); \
+  if (!taken_response) { \
+    /* the function has set the Python error */ \
+    Py_DECREF(pymetaclass); \
+    return NULL; \
+  } \
+  rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t)); \
+  rcl_ret_t ret = rcl_action_take_ ## Type ## _response(action_client, header, taken_response); \
+  int64_t sequence = header->sequence_number; \
+  PyMem_Free(header); \
+  /* Create the tuple to return */ \
+  PyObject * pytuple = PyTuple_New(2); \
+  if (!pytuple) { \
+    return NULL; \
+  } \
+  if (ret != RCL_RET_OK) { \
+    Py_INCREF(Py_None); \
+    PyTuple_SET_ITEM(pytuple, 0, Py_None); \
+    Py_INCREF(Py_None); \
+    PyTuple_SET_ITEM(pytuple, 1, Py_None); \
+    Py_DECREF(pymetaclass); \
+    destroy_ros_message(taken_response); \
+    return pytuple; \
+  } \
+  convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY"); \
+  Py_DECREF(pymetaclass); \
+  PyObject * pytaken_response = convert_to_py(taken_response); \
+  destroy_ros_message(taken_response); \
+  if (!pytaken_response) { \
+    /* the function has set the Python error */ \
+    Py_DECREF(pytuple); \
+    return NULL; \
+  } \
+  PyObject * pysequence = PyLong_FromLongLong(sequence); \
+  if (!pysequence) { \
+    Py_DECREF(pytaken_response); \
+    Py_DECREF(pytuple); \
+    return NULL; \
+  } \
+  PyTuple_SET_ITEM(pytuple, 0, pysequence); \
+  PyTuple_SET_ITEM(pytuple, 1, pytaken_response); \
+  return pytuple; \
+
 /// Send an action goal request.
 /**
  * Raises ValueError if pyaction_client does not have the correct capsule type.
@@ -520,64 +632,7 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_send_goal_request(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pyaction_client;
-  PyObject * pyrequest;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyrequest)) {
-    return NULL;
-  }
-
-  rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer(
-    pyaction_client, "rcl_action_client_t");
-  if (!action_client) {
-    return NULL;
-  }
-
-  PyObject * pyrequest_type = PyObject_GetAttrString(pyrequest, "__class__");
-  assert(pyrequest_type != NULL);
-
-  PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__");
-  assert(pymetaclass != NULL);
-
-  create_ros_message_signature * create_ros_message = get_capsule_pointer(
-    pymetaclass, "_CREATE_ROS_MESSAGE");
-  assert(create_ros_message != NULL &&
-    "unable to retrieve create_ros_message function, type_support mustn't have been imported");
-
-  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(
-    pymetaclass, "_DESTROY_ROS_MESSAGE");
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
-  convert_from_py_signature * convert_from_py = get_capsule_pointer(
-    pymetaclass, "_CONVERT_FROM_PY");
-  assert(convert_from_py != NULL &&
-    "unable to retrieve convert_from_py function, type_support mustn't have been imported");
-
-  Py_DECREF(pymetaclass);
-
-  void * raw_ros_request = create_ros_message();
-  if (!raw_ros_request) {
-    return PyErr_NoMemory();
-  }
-
-  if (!convert_from_py(pyrequest, raw_ros_request)) {
-    // the function has set the Python error
-    destroy_ros_message(raw_ros_request);
-    return NULL;
-  }
-
-  int64_t sequence_number;
-  rcl_ret_t ret = rcl_action_send_goal_request(action_client, raw_ros_request, &sequence_number);
-  destroy_ros_message(raw_ros_request);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to send goal request: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  return PyLong_FromLongLong(sequence_number);
+  SEND_SERVICE_REQUEST(goal)
 }
 
 /// Take an action goal response.
@@ -594,78 +649,7 @@ rclpy_action_send_goal_request(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_take_goal_response(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pyaction_client;
-  PyObject * pyresponse_type;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyresponse_type)) {
-    return NULL;
-  }
-
-  rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer(
-    pyaction_client, "rcl_action_client_t");
-  if (!action_client) {
-    return NULL;
-  }
-
-  PyObject * pymetaclass = PyObject_GetAttrString(pyresponse_type, "__class__");
-
-  create_ros_message_signature * create_ros_message = get_capsule_pointer(
-    pymetaclass, "_CREATE_ROS_MESSAGE");
-  assert(create_ros_message != NULL &&
-    "unable to retrieve create_ros_message function, type_support mustn't have been imported");
-
-  destroy_ros_message_signature * destroy_ros_message = get_capsule_pointer(
-    pymetaclass, "_DESTROY_ROS_MESSAGE");
-  assert(destroy_ros_message != NULL &&
-    "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
-
-  void * taken_response = create_ros_message();
-  if (!taken_response) {
-    // the function has set the Python error
-    Py_DECREF(pymetaclass);
-    return NULL;
-  }
-  rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
-  rcl_ret_t ret = rcl_action_take_goal_response(action_client, header, taken_response);
-  int64_t sequence = header->sequence_number;
-  PyMem_Free(header);
-
-  // Create the tuple to return
-  PyObject * pytuple = PyTuple_New(2);
-  if (!pytuple) {
-    return NULL;
-  }
-
-  if (ret != RCL_RET_OK) {
-    Py_INCREF(Py_None);
-    PyTuple_SET_ITEM(pytuple, 0, Py_None);
-    Py_INCREF(Py_None);
-    PyTuple_SET_ITEM(pytuple, 1, Py_None);
-    Py_DECREF(pymetaclass);
-    destroy_ros_message(taken_response);
-    return pytuple;
-  }
-
-  convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
-  Py_DECREF(pymetaclass);
-
-  PyObject * pytaken_response = convert_to_py(taken_response);
-  destroy_ros_message(taken_response);
-  if (!pytaken_response) {
-    // the function has set the Python error
-    Py_DECREF(pytuple);
-    return NULL;
-  }
-
-  PyObject * pysequence = PyLong_FromLongLong(sequence);
-  if (!pysequence) {
-    Py_DECREF(pytaken_response);
-    Py_DECREF(pytuple);
-    return NULL;
-  }
-  PyTuple_SET_ITEM(pytuple, 0, pysequence);
-  PyTuple_SET_ITEM(pytuple, 1, pytaken_response);
-  return pytuple;
+  TAKE_SERVICE_RESPONSE(goal)
 }
 
 /// Send an action result request.
@@ -681,16 +665,7 @@ rclpy_action_take_goal_response(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_send_result_request(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  // TODO: Consider using a macro to generate 'send_X_request'
-  PyObject * pyaction_client;
-  PyObject * pyresult_request;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyresult_request)) {
-    return NULL;
-  }
-  // TODO
-  // return PyLong_FromLongLong(sequence_number);
-  return NULL;
+  SEND_SERVICE_REQUEST(result);
 }
 
 /// Take an action result response.
@@ -707,21 +682,7 @@ rclpy_action_send_result_request(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_take_result_response(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  // TODO: Consider using a macro to generate 'take_X_response'
-  PyObject * pyaction_client;
-  PyObject * pyresult_response_type;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyresult_response_type)) {
-    return NULL;
-  }
-  // TODO
-  // Create the tuple to return
-  PyObject * pytuple = PyTuple_New(2);
-  if (!pytuple) {
-    return NULL;
-  }
-  // TODO
-  return pytuple;
+  TAKE_SERVICE_RESPONSE(result);
 }
 
 /// Send an action cancel request.
@@ -737,15 +698,7 @@ rclpy_action_take_result_response(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_send_cancel_request(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pyaction_client;
-  PyObject * pycancel_request;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pycancel_request)) {
-    return NULL;
-  }
-  // TODO
-  // return PyLong_FromLongLong(sequence_number);
-  return NULL;
+  SEND_SERVICE_REQUEST(cancel)
 }
 
 /// Take an action cancel response.
@@ -762,20 +715,7 @@ rclpy_action_send_cancel_request(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pyaction_client;
-  PyObject * pycancel_response_type;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pycancel_response_type)) {
-    return NULL;
-  }
-  // TODO
-  // Create the tuple to return
-  PyObject * pytuple = PyTuple_New(2);
-  if (!pytuple) {
-    return NULL;
-  }
-  // TODO
-  return pytuple;
+  TAKE_SERVICE_RESPONSE(cancel)
 }
 
 /// Take a feedback message from a given action client.

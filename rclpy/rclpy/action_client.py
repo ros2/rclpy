@@ -16,6 +16,8 @@
 import time
 import uuid
 
+from action_msgs.srv import CancelGoal
+
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 # TODO(jacobperron): Move check_for_type_support to it's own module (e.g. type_support)
 from rclpy.node import check_for_type_support
@@ -104,6 +106,7 @@ class ActionClient(Waitable):
         )
 
         self._is_ready = False
+        self._sequence_number_to_goal_id = {}
         self._pending_goal_requests = {}
         self._pending_cancel_requests = {}
         self._pending_result_requests = {}
@@ -113,7 +116,7 @@ class ActionClient(Waitable):
         self.node.add_waitable(self)
 
     def _generate_random_uuid(self):
-        return UUID(uuid=uuid.uuid4().bytes)
+        return UUID(uuid=list(uuid.uuid4().bytes))
 
     def _remove_pending_request(self, future, pending_requests):
         """
@@ -123,22 +126,19 @@ class ActionClient(Waitable):
         :param future: a future returned from :meth:`call_async`
         :type future: rclpy.task.Future
         """
-        for seq, (req_future, goal_id) in pending_requests.items():
+        for seq, req_future in pending_requests.items():
             if future == req_future:
                 try:
                     del pending_requests[seq]
                 except KeyError:
                     pass
-                return goal_id
+                return seq
         return None
 
     def _remove_pending_goal_request(self, future):
-        goal_id = self._remove_pending_request(future, self._pending_goal_requests)
-        # The goal is done, so remove any user registered callback for feedback
-        # TODO(jacobperron): Move conversion function to general-use package
-        goal_uuid = uuid.UUID(bytes=bytes(goal_id.uuid))
-        if goal_uuid in self._feedback_callbacks:
-            del self._feedback_callbacks[goal_uuid]
+        self._remove_pending_request(future, self._pending_goal_requests)
+        if seq in self._sequence_number_to_goal_id:
+            del self._sequence_number_to_goal_id[seq]
 
     def _remove_pending_cancel_request(self, future):
         self._remove_pending_request(future, self._pending_cancel_requests)
@@ -204,12 +204,13 @@ class ActionClient(Waitable):
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
             goal_handle = ClientGoalHandle(
-                self._pending_goal_requests[sequence_number][1],  # goal ID
+                self._sequence_number_to_goal_id[sequence_number],
                 goal_response)
-            self._pending_goal_requests[sequence_number][0].set_result(goal_handle)
+            self._pending_goal_requests[sequence_number].set_result(goal_handle)
 
         if 'cancel' in taken_data:
-            pass
+            sequence_number, cancel_response = taken_data['cancel']
+            self._pending_cancel_requests[sequence_number].set_result(cancel_response)
 
         if 'result' in taken_data:
             pass
@@ -258,7 +259,8 @@ class ActionClient(Waitable):
             self._feedback_callbacks[goal_uuid] = feedback_callback
 
         future = Future()
-        self._pending_goal_requests[sequence_number] = (future, goal.action_goal_id)
+        self._pending_goal_requests[sequence_number] = future
+        self._sequence_number_to_goal_id[sequence_number] = goal.action_goal_id
         future.add_done_callback(self._remove_pending_goal_request)
 
         return future
@@ -285,6 +287,20 @@ class ActionClient(Waitable):
         if not isinstance(goal_handle, ClientGoalHandle):
             raise TypeError(
                 "Expected type ClientGoalHandle but received {}".format(type(goal_handle)))
+        cancel_request = CancelGoal.Request()
+        cancel_request.goal_info.goal_id = goal_handle.goal_id
+        sequence_number = _rclpy_action.rclpy_action_send_cancel_request(
+            self.client_handle,
+            cancel_request)
+        if sequence_number in self._pending_cancel_requests:
+            raise RuntimeError(
+                'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
+
+        future = Future()
+        self._pending_cancel_requests[sequence_number] = future
+        future.add_done_callback(self._remove_pending_cancel_request)
+
+        return future
 
     def get_result(self, goal_handle):
         """
