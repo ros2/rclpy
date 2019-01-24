@@ -51,7 +51,8 @@ get_capsule_pointer(PyObject * pymetaclass, const char * attr)
 {
   PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
   if (!pyattr) {
-    return NULL;
+    return PyErr_Format(PyExc_AttributeError,
+             "Failed to get attribute '%s' in get_capsule_pointer()", attr);
   }
   void * ptr = PyCapsule_GetPointer(pyattr, NULL);
   Py_DECREF(pyattr);

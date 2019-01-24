@@ -135,8 +135,13 @@ class ActionClient(Waitable):
         Remove a future from the list of pending requests.
 
         This prevents a future from receiving a request and executing its done callbacks.
-        :param future: a future returned from :meth:`call_async`
+        :param future: a future returned from one of :meth:`send_goal_async`,
+            :meth:`cancel_goal_async`, or :meth:`get_result_async`.
         :type future: rclpy.task.Future
+        :param pending_requests: The list of pending requests.
+        :type pending_requests: dict
+        :return: The sequence number associated with the removed future, or
+            None if the future was not found in the list.
         """
         for seq, req_future in pending_requests.items():
             if future == req_future:
@@ -160,7 +165,7 @@ class ActionClient(Waitable):
 
     # Start Waitable API
     def is_ready(self, wait_set):
-        """Return True if entities are ready in the wait set."""
+        """Return True if one or more entities are ready in the wait set."""
         ready_entities = _rclpy_action.rclpy_action_wait_set_is_ready(self.client_handle, wait_set)
         self._is_feedback_ready = ready_entities[0]
         self._is_status_ready = ready_entities[1]
@@ -202,7 +207,12 @@ class ActionClient(Waitable):
         return data
 
     async def execute(self, taken_data):
-        """Execute work after data has been taken from a ready wait set."""
+        """
+        Execute work after data has been taken from a ready wait set.
+
+        This will set results for Future objects for any received service responses and
+        call any user-defined callbacks (e.g. feedback).
+        """
         if 'feedback' in taken_data:
             feedback_msg = taken_data['feedback']
             goal_uuid = uuid.UUID(bytes=bytes(feedback_msg.action_goal_id.uuid))
@@ -247,7 +257,7 @@ class ActionClient(Waitable):
             self._pending_result_requests[sequence_number].set_result(result_response)
 
     def get_num_entities(self):
-        """Return number of each type of entity used."""
+        """Return number of each type of entity used in the wait set."""
         return _rclpy_action.rclpy_action_wait_set_get_num_entities(self.client_handle)
 
     def add_to_wait_set(self, wait_set):
@@ -261,8 +271,12 @@ class ActionClient(Waitable):
 
         Do not call this method in a callback or a deadlock may occur.
 
-        :param goal: The goal request
-        :return: The result response
+        See :meth:`send_goal_async` for more info about keyword arguments.
+
+        :param goal: The goal request.
+        :type goal: action_type.Goal
+        :return: The result response.
+        :rtype: action_type.Result
         """
         future = self.send_goal_async(goal, kwargs)
         while self.node.context.ok() and not future.done():
@@ -273,7 +287,16 @@ class ActionClient(Waitable):
         """
         Send a goal and asynchronously get the result.
 
-        :param goal: The goal request
+        The result of the returned Future is set to a ClientGoalHandle when receipt of the goal
+        is acknowledged by an action server.
+
+        :param goal: The goal request.
+        :type goal: action_type.Goal
+        :param feedback_callback: Callback function for feedback associated with the goal.
+        :type feedback_callback: function
+        :param goal_uuid: Universally unique identifier for the goal.
+            If None, then a random UUID is generated.
+        :type: unique_identifier_msgs.UUID
         :return: a Future instance to a goal handle that completes when the goal request
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
@@ -303,6 +326,7 @@ class ActionClient(Waitable):
         Do not call this method in a callback or a deadlock may occur.
 
         :param goal_handle: Handle to the goal to cancel.
+        :type goal_handle: :class:`ClientGoalHandle`
         :return: The cancel response.
         """
         pass
@@ -312,6 +336,7 @@ class ActionClient(Waitable):
         Send a cancel request for an active goal and asynchronously get the result.
 
         :param goal_handle: Handle to the goal to cancel.
+        :type goal_handle: :class:`ClientGoalHandle`
         :return: a Future instance that completes when the cancel request has been processed.
         :rtype: :class:`rclpy.task.Future` instance
         """
@@ -341,6 +366,7 @@ class ActionClient(Waitable):
         Do not call this method in a callback or a deadlock may occur.
 
         :param goal_handle: Handle to the goal to get the result for.
+        :type goal_handle: :class:`ClientGoalHandle`
         :return: The result response.
         """
         pass
@@ -350,6 +376,7 @@ class ActionClient(Waitable):
         Request the result for an active goal asynchronously.
 
         :param goal_handle: Handle to the goal to cancel.
+        :type goal_handle: :class:`ClientGoalHandle`
         :return: a Future instance that completes when the get result request has been processed.
         :rtype: :class:`rclpy.task.Future` instance
         """
