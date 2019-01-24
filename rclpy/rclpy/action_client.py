@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import threading
 import time
+import threading
 import uuid
 
 from action_msgs.msg import GoalStatus
@@ -273,15 +273,36 @@ class ActionClient(Waitable):
 
         See :meth:`send_goal_async` for more info about keyword arguments.
 
+        Unlike :meth:`send_goal_async`, this method returns the final result of the
+        action (not a goal handle).
+
         :param goal: The goal request.
         :type goal: action_type.Goal
         :return: The result response.
         :rtype: action_type.Result
         """
-        future = self.send_goal_async(goal, kwargs)
-        while self.node.context.ok() and not future.done():
-            time.sleep(0.1)
-        return future.result()
+        event = threading.Event()
+
+        def unblock(future):
+            nonlocal event
+            event.set()
+
+        print("sending goal {} with args {}".format(goal, kwargs))
+        send_goal_future = self.send_goal_async(goal, kwargs)
+        send_goal_future.add_done_callback(unblock)
+
+        print('waiting for goal reponse...')
+        event.wait()
+        print('goal reponse received')
+        if send_goal_future.exception() is not None:
+            raise send_goal_future.exception()
+
+        goal_handle = send_goal_future.result()
+
+        print('waiting for get result')
+        result = self.get_result(goal_handle)
+
+        return result
 
     def send_goal_async(self, goal, feedback_callback=None, goal_uuid=None):
         """
@@ -301,6 +322,7 @@ class ActionClient(Waitable):
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
         """
+        print("sending goal")
         goal.action_goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         sequence_number = _rclpy_action.rclpy_action_send_goal_request(self.client_handle, goal)
         if sequence_number in self._pending_goal_requests:
@@ -316,6 +338,7 @@ class ActionClient(Waitable):
         self._pending_goal_requests[sequence_number] = future
         self._sequence_number_to_goal_id[sequence_number] = goal.action_goal_id
         future.add_done_callback(self._remove_pending_goal_request)
+        print("goal sent")
 
         return future
 
@@ -329,7 +352,19 @@ class ActionClient(Waitable):
         :type goal_handle: :class:`ClientGoalHandle`
         :return: The cancel response.
         """
-        pass
+        event = threading.Event()
+
+        def unblock(future):
+            nonlocal event
+            event.set()
+
+        future = self.cancel_goal_async(goal_handle)
+        future.add_done_callback(unblock)
+
+        event.wait()
+        if future.exception() is not None:
+            raise future.exception()
+        return future.result()
 
     def cancel_goal_async(self, goal_handle):
         """
@@ -369,7 +404,19 @@ class ActionClient(Waitable):
         :type goal_handle: :class:`ClientGoalHandle`
         :return: The result response.
         """
-        pass
+        event = threading.Event()
+
+        def unblock(future):
+            nonlocal event
+            event.set()
+
+        future = self.get_result_async(goal_handle)
+        future.add_done_callback(unblock)
+
+        event.wait()
+        if future.exception() is not None:
+            raise future.exception()
+        return future.result()
 
     def get_result_async(self, goal_handle):
         """
