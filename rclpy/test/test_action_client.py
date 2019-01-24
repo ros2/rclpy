@@ -279,6 +279,23 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
+    def test_get_result_async(self):
+        ac = ActionClient(self.node, Fibonacci, 'fibonacci')
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send a goal
+            goal_future = ac.send_goal_async(Fibonacci.Goal())
+            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            self.assertTrue(goal_future.done())
+            goal_handle = goal_future.result()
+
+            # Get the goal result
+            result_future = ac.get_result_async(goal_handle)
+            rclpy.spin_until_future_complete(self.node, result_future, self.executor)
+            self.assertTrue(result_future.done())
+        finally:
+            ac.destroy()
 
 if __name__ == '__main__':
     unittest.main()

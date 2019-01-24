@@ -34,7 +34,7 @@ class ClientGoalHandle():
 
     def __init__(self, goal_id, goal_response):
         if not isinstance(goal_id, UUID):
-            raise TypeError("Expected UUID, but given {}".format(type(goal_id)))
+            raise TypeError('Expected UUID, but given {}'.format(type(goal_id)))
 
         self._goal_id = goal_id
         self._goal_response = goal_response
@@ -136,7 +136,7 @@ class ActionClient(Waitable):
         return None
 
     def _remove_pending_goal_request(self, future):
-        self._remove_pending_request(future, self._pending_goal_requests)
+        seq = self._remove_pending_request(future, self._pending_goal_requests)
         if seq in self._sequence_number_to_goal_id:
             del self._sequence_number_to_goal_id[seq]
 
@@ -213,7 +213,8 @@ class ActionClient(Waitable):
             self._pending_cancel_requests[sequence_number].set_result(cancel_response)
 
         if 'result' in taken_data:
-            pass
+            sequence_number, result_response = taken_data['result']
+            self._pending_result_requests[sequence_number].set_result(result_response)
 
     def get_num_entities(self):
         """Return number of each type of entity used."""
@@ -286,7 +287,8 @@ class ActionClient(Waitable):
         """
         if not isinstance(goal_handle, ClientGoalHandle):
             raise TypeError(
-                "Expected type ClientGoalHandle but received {}".format(type(goal_handle)))
+                'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
+
         cancel_request = CancelGoal.Request()
         cancel_request.goal_info.goal_id = goal_handle.goal_id
         sequence_number = _rclpy_action.rclpy_action_send_cancel_request(
@@ -313,7 +315,7 @@ class ActionClient(Waitable):
         """
         pass
 
-    def get_result_goal_async(self, goal_handle):
+    def get_result_async(self, goal_handle):
         """
         Request the result for an active goal asynchronously.
 
@@ -323,7 +325,23 @@ class ActionClient(Waitable):
         """
         if not isinstance(goal_handle, ClientGoalHandle):
             raise TypeError(
-                "Expected type ClientGoalHandle but received {}".format(type(goal_handle)))
+                'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
+
+        result_request = self.action_type.GoalResultService.Request()
+        result_request.action_goal_id = goal_handle.goal_id
+        sequence_number = _rclpy_action.rclpy_action_send_result_request(
+            self.client_handle,
+            result_request)
+        if sequence_number in self._pending_result_requests:
+            raise RuntimeError(
+                'Sequence ({}) conflicts with pending result request'.format(sequence_number))
+
+        future = Future()
+        self._pending_result_requests[sequence_number] = future
+        future.add_done_callback(self._remove_pending_result_request)
+
+        return future
+
 
     def server_is_ready(self):
         """
