@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: Review/complete documentation
+// TODO(jacobperron): Review/complete documentation
 
 #include <Python.h>
 
-#include "./impl/common.h"
-
 #include <rcl/error_handling.h>
 #include <rcl_action/rcl_action.h>
+
+#include "./impl/common.h"
 
 typedef void * create_ros_message_signature (void);
 typedef void destroy_ros_message_signature (void *);
@@ -353,7 +353,7 @@ rclpy_action_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
   if (PyCapsule_IsValid(py ## Profile, "rmw_qos_profile_t")) { \
     void * p = PyCapsule_GetPointer(py ## Profile, "rmw_qos_profile_t"); \
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p; \
-    Options.Profile = *qos_profile; \
+    Options.Profile = * qos_profile; \
     PyMem_Free(p); \
     if (PyCapsule_SetPointer(py ## Profile, Py_None)) { \
       /* exception set by PyCapsule_SetPointer */ \
@@ -497,8 +497,8 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   bool is_available = false;
   rcl_ret_t ret = rcl_action_server_is_available(node, action_client, &is_available);
   if (RCL_RET_OK != ret) {
-     PyErr_Format(PyExc_RuntimeError,
-        "Failed to check if action server is available: %s", rcl_get_error_string().str);
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to check if action server is available: %s", rcl_get_error_string().str);
   }
 
   if (is_available) {
@@ -510,7 +510,7 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 #define SEND_SERVICE_REQUEST(Type) \
   PyObject * pyaction_client; \
   PyObject * pyrequest; \
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyrequest)) { \
+  if (!PyArg_ParseTuple(args, "OO", & pyaction_client, & pyrequest)) { \
     return NULL; \
   } \
   rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer( \
@@ -546,7 +546,7 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   } \
   int64_t sequence_number; \
   rcl_ret_t ret = rcl_action_send_ ## Type ## _request( \
-    action_client, raw_ros_request, &sequence_number); \
+    action_client, raw_ros_request, & sequence_number); \
   destroy_ros_message(raw_ros_request); \
   if (ret != RCL_RET_OK) { \
     PyErr_Format(PyExc_RuntimeError, \
@@ -559,7 +559,7 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 #define TAKE_SERVICE_RESPONSE(Type) \
   PyObject * pyaction_client; \
   PyObject * pyresponse_type; \
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pyresponse_type)) { \
+  if (!PyArg_ParseTuple(args, "OO", & pyaction_client, & pyresponse_type)) { \
     return NULL; \
   } \
   rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer( \
@@ -721,7 +721,7 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
 #define TAKE_MESSAGE(Type) \
   PyObject * pyaction_client; \
   PyObject * pymsg_type; \
-  if (!PyArg_ParseTuple(args, "OO", &pyaction_client, &pymsg_type)) { \
+  if (!PyArg_ParseTuple(args, "OO", & pyaction_client, & pymsg_type)) { \
     return NULL; \
   } \
   rcl_action_client_t * action_client = (rcl_action_client_t *)PyCapsule_GetPointer( \

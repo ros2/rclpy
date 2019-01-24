@@ -275,7 +275,9 @@ class TestActionClient(unittest.TestCase):
             cancel_future = ac.cancel_goal_async(goal_handle)
             rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
             self.assertTrue(cancel_future.done())
-            self.assertEqual(cancel_future.result().goals_canceling[0].goal_id, goal_handle.goal_id)
+            self.assertEqual(
+                cancel_future.result().goals_canceling[0].goal_id,
+                goal_handle.goal_id)
         finally:
             ac.destroy()
 
@@ -296,6 +298,7 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(result_future.done())
         finally:
             ac.destroy()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -14,8 +14,8 @@
 
 from enum import IntEnum
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class QoSProfile:

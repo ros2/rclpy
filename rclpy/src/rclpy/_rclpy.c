@@ -14,8 +14,6 @@
 
 #include <Python.h>
 
-#include "./impl/common.h"
-
 #include <rcl/error_handling.h>
 #include <rcl/expand_topic_name.h>
 #include <rcl/graph.h>
@@ -39,6 +37,8 @@
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #include <signal.h>
+
+#include "./impl/common.h"
 
 static rcl_guard_condition_t * g_sigint_gc_handle;
 

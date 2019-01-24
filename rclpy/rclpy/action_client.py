@@ -81,7 +81,8 @@ class ActionClient(Waitable):
         feedback_sub_qos_profile=qos_profile_default,
         status_sub_qos_profile=qos_profile_action_status_default
     ):
-        """Constructor.
+        """
+        Constructor.
 
         :param node: The ROS node to add the action client to.
         :param action_type: Type of the action.
