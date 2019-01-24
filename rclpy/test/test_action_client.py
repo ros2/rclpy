@@ -67,12 +67,14 @@ class TestActionClient(unittest.TestCase):
         cls.executor = SingleThreadedExecutor(context=cls.context)
         cls.node = rclpy.create_node('TestActionClient', context=cls.context)
         cls.mock_action_server = MockActionServer(cls.node)
-        cls.feedback = None
 
     @classmethod
     def tearDownClass(cls):
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
+
+    def setUp(self):
+        self.feedback = None
 
     def feedback_callback(self, feedback):
         self.feedback = feedback
@@ -255,7 +257,7 @@ class TestActionClient(unittest.TestCase):
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
             future = ac.send_goal_async(Fibonacci.Goal())
-            self.assertFalse(rclpy.spin_once(self.node, executor=self.executor, timeout_sec=2.0))
+            self.timed_spin(2.0)
             self.assertFalse(future.done())
         finally:
             ac.destroy()
