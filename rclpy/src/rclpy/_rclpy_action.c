@@ -19,11 +19,6 @@
 
 #include "./impl/common.h"
 
-typedef void * create_ros_message_signature (void);
-typedef void destroy_ros_message_signature (void *);
-typedef bool convert_from_py_signature (PyObject *, void *);
-typedef PyObject * convert_to_py_signature (void *);
-
 /// Destroy an rcl_action entity.
 /**
  * Raises RuntimeError on failure.
@@ -59,8 +54,11 @@ rclpy_action_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(action_server);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", PyCapsule_GetName(pyentity));
-    return NULL;
+    const char * entity_name = PyCapsule_GetName(pyentity);
+    if (!entity_name) {
+      return NULL;
+    }
+    return PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", entity_name);
   }
 
   if (ret != RCL_RET_OK) {
@@ -91,7 +89,7 @@ static PyObject *
 rclpy_action_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 {
   const char * pyrmw_profile;
-  if (!PyArg_ParseTuple(args, "z", &pyrmw_profile)) {
+  if (!PyArg_ParseTuple(args, "s", &pyrmw_profile)) {
     return NULL;
   }
 
@@ -139,8 +137,11 @@ rclpy_action_wait_set_add(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_action_wait_set_add_action_server(wait_set, action_server, NULL);
   } else {
     ret = RCL_RET_ERROR;  // to avoid linter warning
-    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", PyCapsule_GetName(pyentity));
-    return NULL;
+    const char * entity_name = PyCapsule_GetName(pyentity);
+    if (!entity_name) {
+      return NULL;
+    }
+    return PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", entity_name);
   }
 
   if (RCL_RET_OK != ret) {
@@ -157,7 +158,12 @@ rclpy_action_wait_set_add(PyObject * Py_UNUSED(self), PyObject * args)
 /**
  * \param[in] pyentity Capsule pointer to an action entity
  *   (rcl_action_client_t or rcl_action_server_t).
- * \return NumberOfEntities object.
+ * \return Tuple containing the number of wait set entities:
+ *   (num_subscriptions,
+ *    num_guard_conditions,
+ *    num_timers,
+ *    num_clients,
+ *    num_services)
  */
 static PyObject *
 rclpy_action_wait_set_get_num_entities(PyObject * Py_UNUSED(self), PyObject * args)
@@ -199,8 +205,11 @@ rclpy_action_wait_set_get_num_entities(PyObject * Py_UNUSED(self), PyObject * ar
       &num_services);
   } else {
     ret = RCL_RET_ERROR;  // to avoid linter warning
-    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", PyCapsule_GetName(pyentity));
-    return NULL;
+    const char * entity_name = PyCapsule_GetName(pyentity);
+    if (!entity_name) {
+      return NULL;
+    }
+    return PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", entity_name);
   }
 
   if (RCL_RET_OK != ret) {
@@ -212,26 +221,16 @@ rclpy_action_wait_set_get_num_entities(PyObject * Py_UNUSED(self), PyObject * ar
     return NULL;
   }
 
-  // Convert rcl result into Python NumberOfEntities object to return
-  PyObject * pywaitable_module = PyImport_ImportModule("rclpy.waitable");
-  PyObject * pynum_of_entities_class = PyObject_GetAttrString(
-    pywaitable_module, "NumberOfEntities");
-  PyObject * pynum_of_entities = PyObject_CallObject(pynum_of_entities_class, NULL);
-  assert(NULL != pynum_of_entities);
-
-  PyObject_SetAttrString(
-    pynum_of_entities,
-    "num_subscriptions",
-    PyLong_FromSize_t(num_subscriptions));
-  PyObject_SetAttrString(
-    pynum_of_entities,
-    "num_guard_conditions",
-    PyLong_FromSize_t(num_guard_conditions));
-  PyObject_SetAttrString(pynum_of_entities, "num_timers", PyLong_FromSize_t(num_timers));
-  PyObject_SetAttrString(pynum_of_entities, "num_clients", PyLong_FromSize_t(num_clients));
-  PyObject_SetAttrString(pynum_of_entities, "num_services", PyLong_FromSize_t(num_services));
-
-  return pynum_of_entities;
+  PyObject * result_tuple = PyTuple_Pack(5,
+      PyLong_FromSize_t(num_subscriptions),
+      PyLong_FromSize_t(num_guard_conditions),
+      PyLong_FromSize_t(num_timers),
+      PyLong_FromSize_t(num_clients),
+      PyLong_FromSize_t(num_services));
+  if (!result_tuple) {
+    return PyErr_Format(PyExc_RuntimeError, "Failed to create new tuple object");
+  }
+  return result_tuple;
 }
 
 /// Check if an action entity has any ready wait set entities.
@@ -295,13 +294,16 @@ rclpy_action_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    PyObject * result_list = PyList_New(5);
-    PyList_SET_ITEM(result_list, 0, PyBool_FromLong(is_feedback_ready));
-    PyList_SET_ITEM(result_list, 1, PyBool_FromLong(is_status_ready));
-    PyList_SET_ITEM(result_list, 2, PyBool_FromLong(is_goal_response_ready));
-    PyList_SET_ITEM(result_list, 3, PyBool_FromLong(is_cancel_response_ready));
-    PyList_SET_ITEM(result_list, 4, PyBool_FromLong(is_result_response_ready));
-    return result_list;
+    PyObject * result_tuple = PyTuple_Pack(5,
+        PyBool_FromLong(is_feedback_ready),
+        PyBool_FromLong(is_status_ready),
+        PyBool_FromLong(is_goal_response_ready),
+        PyBool_FromLong(is_cancel_response_ready),
+        PyBool_FromLong(is_result_response_ready));
+    if (!result_tuple) {
+      return PyErr_Format(PyExc_RuntimeError, "Failed to create result tuple for action client");
+    }
+    return result_tuple;
   } else if (PyCapsule_IsValid(pyentity, "rcl_action_server_t")) {
     rcl_action_server_t * action_server =
       (rcl_action_server_t *)PyCapsule_GetPointer(pyentity, "rcl_action_server_t");
@@ -324,21 +326,30 @@ rclpy_action_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    PyObject * result_list = PyList_New(4);
-    PyList_SET_ITEM(result_list, 0, PyBool_FromLong(is_goal_request_ready));
-    PyList_SET_ITEM(result_list, 1, PyBool_FromLong(is_cancel_request_ready));
-    PyList_SET_ITEM(result_list, 2, PyBool_FromLong(is_result_request_ready));
-    PyList_SET_ITEM(result_list, 3, PyBool_FromLong(is_goal_expired));
-    return result_list;
+    PyObject * result_tuple = PyTuple_Pack(4,
+        PyBool_FromLong(is_goal_request_ready),
+        PyBool_FromLong(is_cancel_request_ready),
+        PyBool_FromLong(is_result_request_ready),
+        PyBool_FromLong(is_goal_expired));
+    if (!result_tuple) {
+      return PyErr_Format(PyExc_RuntimeError, "Failed to create result tuple for action server");
+    }
+    return result_tuple;
   } else {
-    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", PyCapsule_GetName(pyentity));
-    return NULL;
+    const char * entity_name = PyCapsule_GetName(pyentity);
+    if (!entity_name) {
+      return NULL;
+    }
+    return PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", entity_name);
   }
 }
 
 #define OPTIONS_COPY_QOS_PROFILE(Options, Profile) \
-  if (PyCapsule_IsValid(py ## Profile, "rmw_qos_profile_t")) { \
+  { \
     void * p = PyCapsule_GetPointer(py ## Profile, "rmw_qos_profile_t"); \
+    if (!p) { \
+      return NULL; \
+    } \
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p; \
     Options.Profile = * qos_profile; \
     PyMem_Free(p); \
@@ -364,11 +375,16 @@ rclpy_action_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] pynode Capsule pointing to the node to add the action client to.
  * \param[in] pyaction_type Action module associated with the action client.
  * \param[in] pyaction_name Python object containing the action name.
- * \param[in] pygoal_service_qos QoSProfile Python object for the goal service.
- * \param[in] pyresult_service_qos QoSProfile Python object for the result service.
- * \param[in] pycancel_service_qos QoSProfile Python object for the cancel service.
- * \param[in] pyfeedback_qos QoSProfile Python object for the feedback subscriber.
- * \param[in] pystatus_qos QoSProfile Python object for the status subscriber.
+ * \param[in] pygoal_service_qos Capsule pointing to a rmw_qos_profile_t object
+ *   for the goal service.
+ * \param[in] pyresult_service_qos Capsule pointing to a rmw_qos_profile_t object
+ *   for the result service.
+ * \param[in] pycancel_service_qos Capsule pointing to a rmw_qos_profile_t object
+ *   for the cancel service.
+ * \param[in] pyfeedback_qos Capsule pointing to a rmw_qos_profile_t object
+ *   for the feedback subscriber.
+ * \param[in] pystatus_qos Capsule pointing to a rmw_qos_profile_t object for the
+ *   status subscriber.
  * \return Capsule named 'rcl_action_client_t', or
  * \return NULL on failure.
  */
@@ -404,7 +420,10 @@ rclpy_action_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return PyErr_Format(PyExc_TypeError, "Argument pyaction_name is not a PyUnicode object");
   }
 
-  char * action_name = (char *)PyUnicode_1BYTE_DATA(pyaction_name);
+  const char * action_name = PyUnicode_AsUTF8(pyaction_name);
+  if (!action_name) {
+    return NULL;
+  }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
   if (!node) {
@@ -417,12 +436,14 @@ rclpy_action_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+  Py_DECREF(pymetaclass);
   if (!pyts) {
     return PyErr_Format(PyExc_AttributeError, "Action type has no '_TYPE_SUPPORT' attribute");
   }
 
   rosidl_action_type_support_t * ts =
     (rosidl_action_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
+  Py_DECREF(pyts);
   if (!ts) {
     return NULL;
   }
@@ -437,6 +458,9 @@ rclpy_action_create_client(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_action_client_t * action_client =
     (rcl_action_client_t *)PyMem_Malloc(sizeof(rcl_action_client_t));
+  if (!action_client) {
+    return PyErr_NoMemory();
+  }
   *action_client = rcl_action_get_zero_initialized_client();
   rcl_ret_t ret = rcl_action_client_init(
     action_client,
@@ -492,8 +516,8 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   bool is_available = false;
   rcl_ret_t ret = rcl_action_server_is_available(node, action_client, &is_available);
   if (RCL_RET_OK != ret) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to check if action server is available: %s", rcl_get_error_string().str);
+    return PyErr_Format(PyExc_RuntimeError,
+             "Failed to check if action server is available: %s", rcl_get_error_string().str);
   }
 
   if (is_available) {
@@ -519,6 +543,7 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
              "Action " #Type " request type has no '__class__' attribute"); \
   } \
   PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__"); \
+  Py_DECREF(pyrequest_type); \
   if (!pymetaclass) { \
     return PyErr_Format(PyExc_AttributeError, \
              "Action " #Type " request type's metaclass has no '__class__' attribute"); \
@@ -588,12 +613,17 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL; \
   } \
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t)); \
+  if (!header) { \
+    Py_DECREF(pymetaclass); \
+    return PyErr_NoMemory(); \
+  } \
   rcl_ret_t ret = rcl_action_take_ ## Type ## _response(action_client, header, taken_response); \
   int64_t sequence = header->sequence_number; \
   PyMem_Free(header); \
   /* Create the tuple to return */ \
   PyObject * pytuple = PyTuple_New(2); \
   if (!pytuple) { \
+    Py_DECREF(pymetaclass); \
     return NULL; \
   } \
   if (ret != RCL_RET_OK) { \
@@ -747,9 +777,10 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
     pymetaclass, "_DESTROY_ROS_MESSAGE"); \
   assert(destroy_ros_message != NULL && \
     "unable to retrieve destroy_ros_message function, type_support must not have been imported"); \
+  convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY"); \
+  Py_DECREF(pymetaclass); \
   void * taken_msg = create_ros_message(); \
   if (!taken_msg) { \
-    Py_DECREF(pymetaclass); \
     return PyErr_NoMemory(); \
   } \
   rcl_ret_t ret = rcl_action_take_ ## Type(action_client, taken_msg); \
@@ -757,18 +788,14 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
     if (ret != RCL_RET_ACTION_CLIENT_TAKE_FAILED) { \
       /* if take failed, just do nothing */ \
       destroy_ros_message(taken_msg); \
-      Py_DECREF(pymetaclass); \
       Py_RETURN_NONE; \
     } \
     PyErr_Format(PyExc_RuntimeError, \
       "Failed to take " #Type " with an action client: %s", rcl_get_error_string().str); \
     rcl_reset_error(); \
     destroy_ros_message(taken_msg); \
-    Py_DECREF(pymetaclass); \
     return NULL; \
   } \
-  convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY"); \
-  Py_DECREF(pymetaclass); \
   PyObject * pytaken_msg = convert_to_py(taken_msg); \
   destroy_ros_message(taken_msg); \
   if (!pytaken_msg) { \

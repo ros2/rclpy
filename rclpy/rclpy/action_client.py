@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import threading
+import time
 import uuid
 
 from action_msgs.msg import GoalStatus
@@ -26,7 +26,7 @@ from rclpy.node import check_for_type_support
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.task import Future
-from rclpy.waitable import Waitable
+from rclpy.waitable import NumberOfEntities, Waitable
 
 from unique_identifier_msgs.msg import UUID
 
@@ -109,11 +109,11 @@ class ActionClient(Waitable):
             node.handle,
             action_type,
             action_name,
-            goal_service_qos_profile,
-            result_service_qos_profile,
-            cancel_service_qos_profile,
-            feedback_sub_qos_profile,
-            status_sub_qos_profile
+            goal_service_qos_profile.get_c_qos_profile(),
+            result_service_qos_profile.get_c_qos_profile(),
+            cancel_service_qos_profile.get_c_qos_profile(),
+            feedback_sub_qos_profile.get_c_qos_profile(),
+            status_sub_qos_profile.get_c_qos_profile()
         )
 
         self._is_ready = False
@@ -258,7 +258,13 @@ class ActionClient(Waitable):
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
-        return _rclpy_action.rclpy_action_wait_set_get_num_entities(self.client_handle)
+        num_entities = _rclpy_action.rclpy_action_wait_set_get_num_entities(self.client_handle)
+        return NumberOfEntities(
+            num_entities[0],
+            num_entities[1],
+            num_entities[2],
+            num_entities[3],
+            num_entities[4])
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
@@ -287,19 +293,15 @@ class ActionClient(Waitable):
             nonlocal event
             event.set()
 
-        print("sending goal {} with args {}".format(goal, kwargs))
         send_goal_future = self.send_goal_async(goal, kwargs)
         send_goal_future.add_done_callback(unblock)
 
-        print('waiting for goal reponse...')
         event.wait()
-        print('goal reponse received')
         if send_goal_future.exception() is not None:
             raise send_goal_future.exception()
 
         goal_handle = send_goal_future.result()
 
-        print('waiting for get result')
         result = self.get_result(goal_handle)
 
         return result
@@ -322,7 +324,6 @@ class ActionClient(Waitable):
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        print("sending goal")
         goal.action_goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         sequence_number = _rclpy_action.rclpy_action_send_goal_request(self.client_handle, goal)
         if sequence_number in self._pending_goal_requests:
@@ -338,7 +339,6 @@ class ActionClient(Waitable):
         self._pending_goal_requests[sequence_number] = future
         self._sequence_number_to_goal_id[sequence_number] = goal.action_goal_id
         future.add_done_callback(self._remove_pending_goal_request)
-        print("goal sent")
 
         return future
 

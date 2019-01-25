@@ -65,11 +65,6 @@ static void catch_function(int signo)
   }
 }
 
-typedef void * create_ros_message_signature (void);
-typedef void destroy_ros_message_signature (void *);
-typedef bool convert_from_py_signature (PyObject *, void *);
-typedef PyObject * convert_to_py_signature (void *);
-
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {

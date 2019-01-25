@@ -18,6 +18,11 @@
 
 #include <rmw/types.h>
 
+typedef void * create_ros_message_signature (void);
+typedef void destroy_ros_message_signature (void *);
+typedef bool convert_from_py_signature (PyObject *, void *);
+typedef PyObject * convert_to_py_signature (void *);
+
 /// Convert a C rmw_qos_profile_t into a Python QoSProfile object
 /**
  * \param[in] void pointer to a rmw_qos_profile_t structure
