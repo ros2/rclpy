@@ -53,6 +53,7 @@ class Waitable:
     def __init__(self, callback_group):
         # A callback group to control whein this entity can execute (used by Executor)
         self.callback_group = callback_group
+        self.callback_group.add_entity(self)
         # Flag set by executor when a handler has been created but not executed (used by Executor)
         self._executor_event = False
 
