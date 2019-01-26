@@ -476,7 +476,7 @@ class ActionClient(Waitable):
 
     def destroy(self):
         """Destroy the underlying action client handle."""
-        if self.client_handle is None:
+        if self.client_handle is None or self.node.handle is None:
             return
         _rclpy_action.rclpy_action_destroy_entity(self.client_handle, self.node.handle)
         self.node.remove_waitable(self)
