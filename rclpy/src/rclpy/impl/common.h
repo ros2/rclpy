@@ -38,33 +38,73 @@ rclpy_convert_to_py_qos_policy(void * profile)
 
   PyObject * pyqos_policy_class = PyObject_GetAttrString(pyqos_module, "QoSProfile");
   if (!pyqos_policy_class) {
-    return PyErr_Format(PyExc_RuntimeError,
-             "Failed to find the class 'QosProfile' in the module 'rclpy.qos'");
+    return NULL;
   }
 
   PyObject * pyqos_profile = PyObject_CallObject(pyqos_policy_class, NULL);
   Py_DECREF(pyqos_policy_class);
   if (!pyqos_profile) {
-    return PyErr_Format(PyExc_RuntimeError, "Failed to call object QosProfile");
+    return NULL;
   }
 
   rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)profile;
 
-  // A success returns 0, and a failure returns -1
-  int set_ret = 0;
-  set_ret += PyObject_SetAttrString(pyqos_profile,
-      "depth", PyLong_FromSize_t(qos_profile->depth));
-  set_ret += PyObject_SetAttrString(pyqos_profile,
-      "history", PyLong_FromUnsignedLong(qos_profile->history));
-  set_ret += PyObject_SetAttrString(pyqos_profile,
-      "reliability", PyLong_FromUnsignedLong(qos_profile->reliability));
-  set_ret += PyObject_SetAttrString(pyqos_profile,
-      "durability", PyLong_FromUnsignedLong(qos_profile->durability));
-  set_ret += PyObject_SetAttrString(pyqos_profile,
-      "avoid_ros_namespace_conventions",
-      PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions));
+  PyObject * pyqos_depth = PyLong_FromSize_t(qos_profile->depth);
+  if (!pyqos_depth) {
+    Py_DECREF(pyqos_profile);
+    return NULL;
+  }
 
-  if (set_ret < 0) {
+  PyObject * pyqos_history = PyLong_FromUnsignedLong(qos_profile->history);
+  if (!pyqos_history) {
+    Py_DECREF(pyqos_profile);
+    Py_DECREF(pyqos_depth);
+    return NULL;
+  }
+
+  PyObject * pyqos_reliability = PyLong_FromUnsignedLong(qos_profile->reliability);
+  if (!pyqos_reliability) {
+    Py_DECREF(pyqos_profile);
+    Py_DECREF(pyqos_depth);
+    Py_DECREF(pyqos_history);
+    return NULL;
+  }
+
+  PyObject * pyqos_durability = PyLong_FromUnsignedLong(qos_profile->durability);
+  if (!pyqos_durability) {
+    Py_DECREF(pyqos_profile);
+    Py_DECREF(pyqos_depth);
+    Py_DECREF(pyqos_history);
+    Py_DECREF(pyqos_reliability);
+    return NULL;
+  }
+
+  PyObject * pyqos_avoid_ros_namespace_conventions =
+    PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions);
+  if (!pyqos_avoid_ros_namespace_conventions) {
+    Py_DECREF(pyqos_profile);
+    Py_DECREF(pyqos_depth);
+    Py_DECREF(pyqos_history);
+    Py_DECREF(pyqos_reliability);
+    Py_DECREF(pyqos_durability);
+    return NULL;
+  }
+
+  // A success returns 0, and a failure returns -1
+  int set_result = 0;
+  set_result += PyObject_SetAttrString(pyqos_profile, "depth", pyqos_depth);
+  set_result += PyObject_SetAttrString(pyqos_profile, "history", pyqos_history);
+  set_result += PyObject_SetAttrString(pyqos_profile, "reliability", pyqos_reliability);
+  set_result += PyObject_SetAttrString(pyqos_profile, "durability", pyqos_durability);
+  set_result += PyObject_SetAttrString(pyqos_profile,
+      "avoid_ros_namespace_conventions", pyqos_avoid_ros_namespace_conventions);
+
+  if (0 != set_result) {
+    Py_DECREF(pyqos_depth);
+    Py_DECREF(pyqos_history);
+    Py_DECREF(pyqos_reliability);
+    Py_DECREF(pyqos_durability);
+    Py_DECREF(pyqos_avoid_ros_namespace_conventions);
     Py_DECREF(pyqos_profile);
     return NULL;
   }
@@ -76,8 +116,7 @@ get_capsule_pointer(PyObject * pymetaclass, const char * attr)
 {
   PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
   if (!pyattr) {
-    return PyErr_Format(PyExc_AttributeError,
-             "Failed to get attribute '%s' in get_capsule_pointer()", attr);
+    return NULL;
   }
   void * ptr = PyCapsule_GetPointer(pyattr, NULL);
   Py_DECREF(pyattr);

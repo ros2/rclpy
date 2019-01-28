@@ -82,23 +82,23 @@ rclpy_action_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
  *
  * This function takes a string defining a rmw_qos_profile_t and returns the
  * corresponding Python QoSProfile object.
- * \param[in] pyrmw_profile String with the name of the profile to load.
+ * \param[in] rmw_profile String with the name of the profile to load.
  * \return QoSProfile object.
  */
 static PyObject *
 rclpy_action_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  const char * pyrmw_profile;
-  if (!PyArg_ParseTuple(args, "s", &pyrmw_profile)) {
+  const char * rmw_profile;
+  if (!PyArg_ParseTuple(args, "s", &rmw_profile)) {
     return NULL;
   }
 
   PyObject * pyqos_profile = NULL;
-  if (0 == strcmp(pyrmw_profile, "rcl_action_qos_profile_status_default")) {
+  if (0 == strcmp(rmw_profile, "rcl_action_qos_profile_status_default")) {
     pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rcl_action_qos_profile_status_default);
   } else {
     return PyErr_Format(PyExc_RuntimeError,
-             "Requested unknown rmw_qos_profile: '%s'", pyrmw_profile);
+             "Requested unknown rmw_qos_profile: '%s'", rmw_profile);
   }
   return pyqos_profile;
 }
@@ -221,14 +221,22 @@ rclpy_action_wait_set_get_num_entities(PyObject * Py_UNUSED(self), PyObject * ar
     return NULL;
   }
 
-  PyObject * result_tuple = PyTuple_Pack(5,
-      PyLong_FromSize_t(num_subscriptions),
-      PyLong_FromSize_t(num_guard_conditions),
-      PyLong_FromSize_t(num_timers),
-      PyLong_FromSize_t(num_clients),
-      PyLong_FromSize_t(num_services));
+  PyObject * result_tuple = PyTuple_New(5);
   if (!result_tuple) {
-    return PyErr_Format(PyExc_RuntimeError, "Failed to create new tuple object");
+    return NULL;
+  }
+
+  // PyTuple_SetItem() returns 0 on success
+  int set_result = 0;
+  set_result += PyTuple_SetItem(result_tuple, 0, PyLong_FromSize_t(num_subscriptions));
+  set_result += PyTuple_SetItem(result_tuple, 1, PyLong_FromSize_t(num_guard_conditions));
+  set_result += PyTuple_SetItem(result_tuple, 2, PyLong_FromSize_t(num_timers));
+  set_result += PyTuple_SetItem(result_tuple, 3, PyLong_FromSize_t(num_clients));
+  set_result += PyTuple_SetItem(result_tuple, 4, PyLong_FromSize_t(num_services));
+
+  if (0 != set_result) {
+    Py_DECREF(result_tuple);
+    return NULL;
   }
   return result_tuple;
 }
@@ -294,14 +302,21 @@ rclpy_action_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    PyObject * result_tuple = PyTuple_Pack(5,
-        PyBool_FromLong(is_feedback_ready),
-        PyBool_FromLong(is_status_ready),
-        PyBool_FromLong(is_goal_response_ready),
-        PyBool_FromLong(is_cancel_response_ready),
-        PyBool_FromLong(is_result_response_ready));
+    PyObject * result_tuple = PyTuple_New(5);
     if (!result_tuple) {
-      return PyErr_Format(PyExc_RuntimeError, "Failed to create result tuple for action client");
+      return NULL;
+    }
+
+    // PyTuple_SetItem() returns 0 on success
+    int set_result = 0;
+    set_result += PyTuple_SetItem(result_tuple, 0, PyBool_FromLong(is_feedback_ready));
+    set_result += PyTuple_SetItem(result_tuple, 1, PyBool_FromLong(is_status_ready));
+    set_result += PyTuple_SetItem(result_tuple, 2, PyBool_FromLong(is_goal_response_ready));
+    set_result += PyTuple_SetItem(result_tuple, 3, PyBool_FromLong(is_cancel_response_ready));
+    set_result += PyTuple_SetItem(result_tuple, 4, PyBool_FromLong(is_result_response_ready));
+    if (0 != set_result) {
+      Py_DECREF(result_tuple);
+      return NULL;
     }
     return result_tuple;
   } else if (PyCapsule_IsValid(pyentity, "rcl_action_server_t")) {
@@ -326,13 +341,20 @@ rclpy_action_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    PyObject * result_tuple = PyTuple_Pack(4,
-        PyBool_FromLong(is_goal_request_ready),
-        PyBool_FromLong(is_cancel_request_ready),
-        PyBool_FromLong(is_result_request_ready),
-        PyBool_FromLong(is_goal_expired));
+    PyObject * result_tuple = PyTuple_New(4);
     if (!result_tuple) {
-      return PyErr_Format(PyExc_RuntimeError, "Failed to create result tuple for action server");
+      return NULL;
+    }
+
+    // PyTuple_SetItem() returns 0 on success
+    int set_result = 0;
+    set_result += PyTuple_SetItem(result_tuple, 0, PyBool_FromLong(is_goal_request_ready));
+    set_result += PyTuple_SetItem(result_tuple, 1, PyBool_FromLong(is_cancel_request_ready));
+    set_result += PyTuple_SetItem(result_tuple, 2, PyBool_FromLong(is_result_request_ready));
+    set_result += PyTuple_SetItem(result_tuple, 3, PyBool_FromLong(is_goal_expired));
+    if (0 != set_result) {
+      Py_DECREF(result_tuple);
+      return NULL;
     }
     return result_tuple;
   } else {
@@ -416,10 +438,6 @@ rclpy_action_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (!PyUnicode_Check(pyaction_name)) {
-    return PyErr_Format(PyExc_TypeError, "Argument pyaction_name is not a PyUnicode object");
-  }
-
   const char * action_name = PyUnicode_AsUTF8(pyaction_name);
   if (!action_name) {
     return NULL;
@@ -432,13 +450,13 @@ rclpy_action_create_client(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pymetaclass = PyObject_GetAttrString(pyaction_type, "__class__");
   if (!pymetaclass) {
-    return PyErr_Format(PyExc_AttributeError, "Action type has no '__class__' attribute");
+    return NULL;
   }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
   Py_DECREF(pymetaclass);
   if (!pyts) {
-    return PyErr_Format(PyExc_AttributeError, "Action type has no '_TYPE_SUPPORT' attribute");
+    return NULL;
   }
 
   rosidl_action_type_support_t * ts =
@@ -539,14 +557,12 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   } \
   PyObject * pyrequest_type = PyObject_GetAttrString(pyrequest, "__class__"); \
   if (!pyrequest_type) { \
-    return PyErr_Format(PyExc_AttributeError, \
-             "Action " #Type " request type has no '__class__' attribute"); \
+    return NULL; \
   } \
   PyObject * pymetaclass = PyObject_GetAttrString(pyrequest_type, "__class__"); \
   Py_DECREF(pyrequest_type); \
   if (!pymetaclass) { \
-    return PyErr_Format(PyExc_AttributeError, \
-             "Action " #Type " request type's metaclass has no '__class__' attribute"); \
+    return NULL; \
   } \
   create_ros_message_signature * create_ros_message = get_capsule_pointer( \
     pymetaclass, "_CREATE_ROS_MESSAGE"); \
@@ -595,8 +611,7 @@ rclpy_action_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   } \
   PyObject * pymetaclass = PyObject_GetAttrString(pyresponse_type, "__class__"); \
   if (!pymetaclass) { \
-    return PyErr_Format(PyExc_AttributeError, \
-             "Action " #Type " response type has no '__class__' attribute"); \
+    return NULL; \
   } \
   create_ros_message_signature * create_ros_message = get_capsule_pointer( \
     pymetaclass, "_CREATE_ROS_MESSAGE"); \
@@ -766,8 +781,7 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
   } \
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__"); \
   if (!pymetaclass) { \
-    return PyErr_Format(PyExc_AttributeError, \
-             "Action " #Type " message type has no '__class__' attribute"); \
+    return NULL; \
   } \
   create_ros_message_signature * create_ros_message = get_capsule_pointer( \
     pymetaclass, "_CREATE_ROS_MESSAGE"); \
@@ -798,11 +812,7 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
   } \
   PyObject * pytaken_msg = convert_to_py(taken_msg); \
   destroy_ros_message(taken_msg); \
-  if (!pytaken_msg) { \
-    /* the function has set the Python error */ \
-    return NULL; \
-  } \
-  return pytaken_msg; \
+  return pytaken_msg;
 
 /// Take a feedback message from a given action client.
 /**
