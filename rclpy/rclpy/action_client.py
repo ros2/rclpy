@@ -149,7 +149,9 @@ class ActionClient(Waitable):
                     del pending_requests[seq]
                 except KeyError:
                     pass
-                return seq
+                else:
+                    self.remove_future(future)
+                    return seq
         return None
 
     def _remove_pending_goal_request(self, future):
@@ -339,6 +341,8 @@ class ActionClient(Waitable):
         self._pending_goal_requests[sequence_number] = future
         self._sequence_number_to_goal_id[sequence_number] = goal.action_goal_id
         future.add_done_callback(self._remove_pending_goal_request)
+        # Add future so executor is aware
+        self.add_future(future)
 
         return future
 
@@ -391,6 +395,8 @@ class ActionClient(Waitable):
         future = Future()
         self._pending_cancel_requests[sequence_number] = future
         future.add_done_callback(self._remove_pending_cancel_request)
+        # Add future so executor is aware
+        self.add_future(future)
 
         return future
 
@@ -443,6 +449,8 @@ class ActionClient(Waitable):
         future = Future()
         self._pending_result_requests[sequence_number] = future
         future.add_done_callback(self._remove_pending_result_request)
+        # Add future so executor is aware
+        self.add_future(future)
 
         return future
 
