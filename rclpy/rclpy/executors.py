@@ -454,7 +454,8 @@ class Executor:
                 # Check waitables before wait set is destroyed
                 for node in nodes:
                     for wt in node.waitables:
-                        if wt.is_ready(wait_set):
+                        # Only check waitables that were added to the wait set
+                        if wt in waitables and wt.is_ready(wait_set):
                             handler = self._make_handler(
                                 wt, node, lambda e: e.take_data(), lambda e, a: e.execute(a))
                             yielded_work = True
