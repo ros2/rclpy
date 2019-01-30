@@ -171,7 +171,9 @@ class ActionClient(Waitable):
     # Start Waitable API
     def is_ready(self, wait_set):
         """Return True if one or more entities are ready in the wait set."""
-        ready_entities = _rclpy_action.rclpy_action_wait_set_is_ready(self._client_handle, wait_set)
+        ready_entities = _rclpy_action.rclpy_action_wait_set_is_ready(
+            self._client_handle,
+            wait_set)
         self._is_feedback_ready = ready_entities[0]
         self._is_status_ready = ready_entities[1]
         self._is_goal_response_ready = ready_entities[2]
@@ -256,7 +258,6 @@ class ActionClient(Waitable):
                             GoalStatus.STATUS_CANCELED == status or
                             GoalStatus.STATUS_ABORTED == status):
                         del self._goal_handles[goal_uuid]
-
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
@@ -460,7 +461,9 @@ class ActionClient(Waitable):
 
         :return: True if an action server is ready, False otherwise.
         """
-        return _rclpy_action.rclpy_action_server_is_available(self._node.handle, self._client_handle)
+        return _rclpy_action.rclpy_action_server_is_available(
+                self._node.handle,
+                self._client_handle)
 
     def wait_for_server(self, timeout_sec=None):
         """
