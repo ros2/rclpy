@@ -46,7 +46,10 @@ class ClientGoalHandle():
         return self._goal_id == other.goal_id
 
     def __repr__(self):
-        return 'ClientGoalHandle <{}>'.format(self.goal_id.uuid)
+        return 'ClientGoalHandle <id={0}, accepted={1}, status={2}>'.format(
+                self.goal_id.uuid,
+                self.accepted,
+                self.status)
 
     @property
     def goal_id(self):
@@ -179,14 +182,6 @@ class ActionClient(Waitable):
     def take_data(self):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         data = {}
-        if self._is_feedback_ready:
-            data['feedback'] = _rclpy_action.rclpy_action_take_feedback(
-                self._client_handle, self._action_type.Feedback)
-
-        if self._is_status_ready:
-            data['status'] = _rclpy_action.rclpy_action_take_status(
-                self._client_handle, self._action_type.GoalStatusMessage)
-
         if self._is_goal_response_ready:
             data['goal'] = _rclpy_action.rclpy_action_take_goal_response(
                 self._client_handle, self._action_type.GoalRequestService.Response)
@@ -199,6 +194,14 @@ class ActionClient(Waitable):
             data['result'] = _rclpy_action.rclpy_action_take_result_response(
                 self._client_handle, self._action_type.GoalResultService.Response)
 
+        if self._is_feedback_ready:
+            data['feedback'] = _rclpy_action.rclpy_action_take_feedback(
+                self._client_handle, self._action_type.Feedback)
+
+        if self._is_status_ready:
+            data['status'] = _rclpy_action.rclpy_action_take_status(
+                self._client_handle, self._action_type.GoalStatusMessage)
+
         if not any(data):
             return None
         return data
@@ -210,26 +213,6 @@ class ActionClient(Waitable):
         This will set results for Future objects for any received service responses and
         call any user-defined callbacks (e.g. feedback).
         """
-        if 'feedback' in taken_data:
-            feedback_msg = taken_data['feedback']
-            goal_uuid = uuid.UUID(bytes=bytes(feedback_msg.action_goal_id.uuid))
-            # Call a registered callback if there is one
-            if goal_uuid in self._feedback_callbacks:
-                self._feedback_callbacks[goal_uuid](feedback_msg)
-
-        if 'status' in taken_data:
-            # Update the status of all goal handles maintained by this Action Client
-            for status_msg in taken_data['status'].status_list:
-                goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
-                status = status_msg.status
-                if goal_uuid in self._goal_handles:
-                    self._goal_handles[goal_uuid]._status = status
-                    # Remove "done" goals from the list
-                    if (GoalStatus.STATUS_SUCCEEDED == status or
-                            GoalStatus.STATUS_CANCELED == status or
-                            GoalStatus.STATUS_ABORTED == status):
-                        del self._goal_handles[goal_uuid]
-
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
             goal_handle = ClientGoalHandle(
@@ -252,6 +235,28 @@ class ActionClient(Waitable):
         if 'result' in taken_data:
             sequence_number, result_response = taken_data['result']
             self._pending_result_requests[sequence_number].set_result(result_response)
+
+        if 'feedback' in taken_data:
+            feedback_msg = taken_data['feedback']
+            goal_uuid = uuid.UUID(bytes=bytes(feedback_msg.action_goal_id.uuid))
+            # Call a registered callback if there is one
+            if goal_uuid in self._feedback_callbacks:
+                self._feedback_callbacks[goal_uuid](feedback_msg)
+
+        if 'status' in taken_data:
+            # Update the status of all goal handles maintained by this Action Client
+            for status_msg in taken_data['status'].status_list:
+                goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
+                status = status_msg.status
+
+                if goal_uuid in self._goal_handles:
+                    self._goal_handles[goal_uuid]._status = status
+                    # Remove "done" goals from the list
+                    if (GoalStatus.STATUS_SUCCEEDED == status or
+                            GoalStatus.STATUS_CANCELED == status or
+                            GoalStatus.STATUS_ABORTED == status):
+                        del self._goal_handles[goal_uuid]
+
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
