@@ -18,7 +18,8 @@ import uuid
 
 import rclpy
 from rclpy.action import ActionClient
-from rclpy.executors import SingleThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 
 from test_msgs.action import Fibonacci
 
@@ -250,6 +251,30 @@ class TestActionClient(unittest.TestCase):
             self.mock_action_server.publish_feedback(UUID(uuid=list(uuid.uuid4().bytes)))
             self.timed_spin(1.0)
             self.assertEqual(self.feedback, None)
+        finally:
+            ac.destroy()
+
+    def test_send_goal_multiple(self):
+        ac = ActionClient(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            callback_group=ReentrantCallbackGroup())
+        executor = MultiThreadedExecutor(context=self.context)
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            future_0 = ac.send_goal_async(Fibonacci.Goal())
+            future_1 = ac.send_goal_async(Fibonacci.Goal())
+            future_2 = ac.send_goal_async(Fibonacci.Goal())
+            rclpy.spin_until_future_complete(self.node, future_0, executor)
+            rclpy.spin_until_future_complete(self.node, future_1, executor)
+            rclpy.spin_until_future_complete(self.node, future_2, executor)
+            self.assertTrue(future_0.done())
+            self.assertTrue(future_1.done())
+            self.assertTrue(future_2.done())
+            self.assertTrue(future_0.result().accepted)
+            self.assertTrue(future_1.result().accepted)
+            self.assertTrue(future_2.result().accepted)
         finally:
             ac.destroy()
 
