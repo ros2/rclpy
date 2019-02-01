@@ -37,6 +37,7 @@ rclpy_convert_to_py_qos_policy(void * profile)
   }
 
   PyObject * pyqos_policy_class = PyObject_GetAttrString(pyqos_module, "QoSProfile");
+  Py_DECREF(pyqos_module);
   if (!pyqos_policy_class) {
     return NULL;
   }
@@ -99,12 +100,13 @@ rclpy_convert_to_py_qos_policy(void * profile)
   set_result += PyObject_SetAttrString(pyqos_profile,
       "avoid_ros_namespace_conventions", pyqos_avoid_ros_namespace_conventions);
 
+  Py_DECREF(pyqos_depth);
+  Py_DECREF(pyqos_history);
+  Py_DECREF(pyqos_reliability);
+  Py_DECREF(pyqos_durability);
+  Py_DECREF(pyqos_avoid_ros_namespace_conventions);
+
   if (0 != set_result) {
-    Py_DECREF(pyqos_depth);
-    Py_DECREF(pyqos_history);
-    Py_DECREF(pyqos_reliability);
-    Py_DECREF(pyqos_durability);
-    Py_DECREF(pyqos_avoid_ros_namespace_conventions);
     Py_DECREF(pyqos_profile);
     return NULL;
   }
