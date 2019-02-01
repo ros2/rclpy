@@ -299,7 +299,7 @@ class TestActionClient(unittest.TestCase):
             goal_handle = goal_future.result()
 
             # Cancel the goal
-            cancel_future = ac.cancel_goal_async(goal_handle)
+            cancel_future = goal_handle.cancel_goal_async()
             rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
             self.assertTrue(cancel_future.done())
             self.assertEqual(
@@ -320,7 +320,7 @@ class TestActionClient(unittest.TestCase):
             goal_handle = goal_future.result()
 
             # Get the goal result
-            result_future = ac.get_result_async(goal_handle)
+            result_future = goal_handle.get_result_async()
             rclpy.spin_until_future_complete(self.node, result_future, self.executor)
             self.assertTrue(result_future.done())
         finally:

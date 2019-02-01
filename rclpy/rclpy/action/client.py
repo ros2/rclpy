@@ -33,16 +33,17 @@ from unique_identifier_msgs.msg import UUID
 class ClientGoalHandle():
     """Goal handle for working with Action Clients."""
 
-    def __init__(self, goal_id, goal_response):
-        if not isinstance(goal_id, UUID):
-            raise TypeError('Expected UUID, but given {}'.format(type(goal_id)))
-
+    def __init__(self, action_server, goal_id, goal_response):
+        self._action_server = action_server
         self._goal_id = goal_id
         self._goal_response = goal_response
         self._status = GoalStatus.STATUS_UNKNOWN
 
     def __eq__(self, other):
         return self._goal_id == other.goal_id
+
+    def __ne__(self, other):
+        return self._goal_id != other.goal_id
 
     def __repr__(self):
         return 'ClientGoalHandle <id={0}, accepted={1}, status={2}>'.format(
@@ -55,8 +56,8 @@ class ClientGoalHandle():
         return self._goal_id
 
     @property
-    def goal_response(self):
-        return self._goal_response
+    def stamp(self):
+        return self._goal_response.stamp
 
     @property
     def accepted(self):
@@ -65,6 +66,44 @@ class ClientGoalHandle():
     @property
     def status(self):
         return self._status
+
+    def cancel_goal(self):
+        """
+        Send a cancel request for the goal and wait for the response.
+
+        Do not call this method in a callback or a deadlock may occur.
+
+        :return: The cancel response.
+        """
+        return self._action_server._cancel_goal(self)
+
+    def cancel_goal_async(self):
+        """
+        Asynchronous request for the goal be canceled.
+
+        :return: a Future instance that completes when the server responds.
+        :rtype: :class:`rclpy.task.Future` instance
+        """
+        return self._action_server._cancel_goal_async(self)
+
+    def get_result(self):
+        """
+        Request the result for the goal and wait for the response.
+
+        Do not call this method in a callback or a deadlock may occur.
+
+        :return: The result response.
+        """
+        return self._action_server._get_result(self)
+
+    def get_result_async(self):
+        """
+        Asynchronously request the goal result.
+
+        :return: a Future instance that completes when the result is ready.
+        :rtype: :class:`rclpy.task.Future` instance
+        """
+        return self._action_server._get_result_async(self)
 
 
 class ActionClient(Waitable):
@@ -145,7 +184,7 @@ class ActionClient(Waitable):
 
         This prevents a future from receiving a request and executing its done callbacks.
         :param future: a future returned from one of :meth:`send_goal_async`,
-            :meth:`cancel_goal_async`, or :meth:`get_result_async`.
+            :meth:`_cancel_goal_async`, or :meth:`_get_result_async`.
         :type future: rclpy.task.Future
         :param pending_requests: The list of pending requests.
         :type pending_requests: dict
@@ -224,6 +263,7 @@ class ActionClient(Waitable):
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
             goal_handle = ClientGoalHandle(
+                self,
                 self._sequence_number_to_goal_id[sequence_number],
                 goal_response)
 
@@ -306,7 +346,7 @@ class ActionClient(Waitable):
 
         goal_handle = send_goal_future.result()
 
-        result = self.get_result(goal_handle)
+        result = self._get_result(goal_handle)
 
         return result
 
@@ -348,7 +388,7 @@ class ActionClient(Waitable):
 
         return future
 
-    def cancel_goal(self, goal_handle):
+    def _cancel_goal(self, goal_handle):
         """
         Send a cancel request for an active goal and wait for the response.
 
@@ -364,7 +404,7 @@ class ActionClient(Waitable):
             nonlocal event
             event.set()
 
-        future = self.cancel_goal_async(goal_handle)
+        future = self._cancel_goal_async(goal_handle)
         future.add_done_callback(unblock)
 
         event.wait()
@@ -372,7 +412,7 @@ class ActionClient(Waitable):
             raise future.exception()
         return future.result()
 
-    def cancel_goal_async(self, goal_handle):
+    def _cancel_goal_async(self, goal_handle):
         """
         Send a cancel request for an active goal and asynchronously get the result.
 
@@ -402,7 +442,7 @@ class ActionClient(Waitable):
 
         return future
 
-    def get_result(self, goal_handle):
+    def _get_result(self, goal_handle):
         """
         Request the result for an active goal and wait for the response.
 
@@ -418,7 +458,7 @@ class ActionClient(Waitable):
             nonlocal event
             event.set()
 
-        future = self.get_result_async(goal_handle)
+        future = self._get_result_async(goal_handle)
         future.add_done_callback(unblock)
 
         event.wait()
@@ -426,7 +466,7 @@ class ActionClient(Waitable):
             raise future.exception()
         return future.result()
 
-    def get_result_async(self, goal_handle):
+    def _get_result_async(self, goal_handle):
         """
         Request the result for an active goal asynchronously.
 
