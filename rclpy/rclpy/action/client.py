@@ -33,8 +33,8 @@ from unique_identifier_msgs.msg import UUID
 class ClientGoalHandle():
     """Goal handle for working with Action Clients."""
 
-    def __init__(self, action_server, goal_id, goal_response):
-        self._action_server = action_server
+    def __init__(self, action_client, goal_id, goal_response):
+        self._action_client = action_client
         self._goal_id = goal_id
         self._goal_response = goal_response
         self._status = GoalStatus.STATUS_UNKNOWN
@@ -75,7 +75,7 @@ class ClientGoalHandle():
 
         :return: The cancel response.
         """
-        return self._action_server._cancel_goal(self)
+        return self._action_client._cancel_goal(self)
 
     def cancel_goal_async(self):
         """
@@ -84,7 +84,7 @@ class ClientGoalHandle():
         :return: a Future instance that completes when the server responds.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        return self._action_server._cancel_goal_async(self)
+        return self._action_client._cancel_goal_async(self)
 
     def get_result(self):
         """
@@ -94,7 +94,7 @@ class ClientGoalHandle():
 
         :return: The result response.
         """
-        return self._action_server._get_result(self)
+        return self._action_client._get_result(self)
 
     def get_result_async(self):
         """
@@ -103,7 +103,7 @@ class ClientGoalHandle():
         :return: a Future instance that completes when the result is ready.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        return self._action_server._get_result_async(self)
+        return self._action_client._get_result_async(self)
 
 
 class ActionClient(Waitable):
