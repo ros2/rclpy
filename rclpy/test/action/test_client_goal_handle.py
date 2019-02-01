@@ -15,7 +15,7 @@
 import unittest
 import uuid
 
-from rclpy.action_client import ClientGoalHandle
+from rclpy.action.client import ClientGoalHandle
 
 from test_msgs.action import Fibonacci
 

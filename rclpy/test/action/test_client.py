@@ -17,7 +17,7 @@ import unittest
 import uuid
 
 import rclpy
-from rclpy.action_client import ActionClient
+from rclpy.action import ActionClient
 from rclpy.executors import SingleThreadedExecutor
 
 from test_msgs.action import Fibonacci

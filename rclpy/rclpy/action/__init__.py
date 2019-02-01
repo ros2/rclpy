@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.action_client import ActionClient  # noqa
+from .client import ActionClient  # noqa
