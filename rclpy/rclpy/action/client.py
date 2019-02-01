@@ -20,12 +20,10 @@ from action_msgs.msg import GoalStatus
 from action_msgs.srv import CancelGoal
 
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
-# TODO(jacobperron): Move check_for_type_support to its own module (e.g. type_support)
-#                    Do after Crystal patch release since this breaks API
-from rclpy.node import check_for_type_support
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
 from rclpy.task import Future
+from rclpy.type_support import check_for_type_support
 from rclpy.waitable import NumberOfEntities, Waitable
 
 from unique_identifier_msgs.msg import UUID
