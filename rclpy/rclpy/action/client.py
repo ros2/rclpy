@@ -19,6 +19,7 @@ import uuid
 from action_msgs.msg import GoalStatus
 from action_msgs.srv import CancelGoal
 
+from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
@@ -118,11 +119,18 @@ class ActionClient(Waitable):
         )
 
         self._is_ready = False
+
+        # key: UUID in bytes, value: ClientGoalHandle
         self._goal_handles = {}
+        # key: goal request sequence_number, value: Future for goal response
         self._pending_goal_requests = {}
-        self._sequence_number_to_goal_id = {}  # goal request sequence number
+        # key: goal request sequence_number, value: UUID
+        self._sequence_number_to_goal_id = {}
+        # key: cancel request sequence number, value: Future for cancel response
         self._pending_cancel_requests = {}
+        # key: result request sequence number, value: Future for result response
         self._pending_result_requests = {}
+        # key: UUID in bytes, value: callback function
         self._feedback_callbacks = {}
 
         callback_group.add_entity(self)
@@ -144,7 +152,7 @@ class ActionClient(Waitable):
         :return: The sequence number associated with the removed future, or
             None if the future was not found in the list.
         """
-        for seq, req_future in pending_requests.items():
+        for seq, req_future in list(pending_requests.items()):
             if future == req_future:
                 try:
                     del pending_requests[seq]
@@ -202,7 +210,7 @@ class ActionClient(Waitable):
             data['status'] = _rclpy_action.rclpy_action_take_status(
                 self._client_handle, self._action_type.GoalStatusMessage)
 
-        if not any(data):
+        if not data:
             return None
         return data
 
@@ -238,10 +246,10 @@ class ActionClient(Waitable):
 
         if 'feedback' in taken_data:
             feedback_msg = taken_data['feedback']
-            goal_uuid = uuid.UUID(bytes=bytes(feedback_msg.action_goal_id.uuid))
+            goal_uuid = bytes(feedback_msg.action_goal_id.uuid)
             # Call a registered callback if there is one
             if goal_uuid in self._feedback_callbacks:
-                self._feedback_callbacks[goal_uuid](feedback_msg)
+                await await_or_execute(self._feedback_callbacks[goal_uuid], feedback_msg)
 
         if 'status' in taken_data:
             # Update the status of all goal handles maintained by this Action Client
@@ -260,12 +268,7 @@ class ActionClient(Waitable):
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
         num_entities = _rclpy_action.rclpy_action_wait_set_get_num_entities(self._client_handle)
-        return NumberOfEntities(
-            num_entities[0],
-            num_entities[1],
-            num_entities[2],
-            num_entities[3],
-            num_entities[4])
+        return NumberOfEntities(*num_entities)
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
@@ -333,7 +336,7 @@ class ActionClient(Waitable):
 
         if feedback_callback is not None:
             # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid = uuid.UUID(bytes=bytes(goal.action_goal_id.uuid))
+            goal_uuid = bytes(goal.action_goal_id.uuid)
             self._feedback_callbacks[goal_uuid] = feedback_callback
 
         future = Future()
