@@ -15,6 +15,7 @@
 import threading
 import time
 import uuid
+import weakref
 
 from action_msgs.msg import GoalStatus
 from action_msgs.srv import CancelGoal
@@ -159,7 +160,7 @@ class ActionClient(Waitable):
 
         self._is_ready = False
 
-        # key: UUID in bytes, value: ClientGoalHandle
+        # key: UUID in bytes, value: weak reference to ClientGoalHandle
         self._goal_handles = {}
         # key: goal request sequence_number, value: Future for goal response
         self._pending_goal_requests = {}
@@ -272,7 +273,7 @@ class ActionClient(Waitable):
                 if goal_uuid in self._goal_handles:
                     raise RuntimeError(
                         'Two goals were accepted with the same ID ({})'.format(goal_handle))
-                self._goal_handles[goal_uuid] = goal_handle
+                self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
 
             self._pending_goal_requests[sequence_number].set_result(goal_handle)
 
@@ -298,11 +299,16 @@ class ActionClient(Waitable):
                 status = status_msg.status
 
                 if goal_uuid in self._goal_handles:
-                    self._goal_handles[goal_uuid]._status = status
-                    # Remove "done" goals from the list
-                    if (GoalStatus.STATUS_SUCCEEDED == status or
-                            GoalStatus.STATUS_CANCELED == status or
-                            GoalStatus.STATUS_ABORTED == status):
+                    goal_handle = self._goal_handles[goal_uuid]()
+                    if goal_handle is not None:
+                        goal_handle._status = status
+                        # Remove "done" goals from the list
+                        if (GoalStatus.STATUS_SUCCEEDED == status or
+                                GoalStatus.STATUS_CANCELED == status or
+                                GoalStatus.STATUS_ABORTED == status):
+                            del self._goal_handles[goal_uuid]
+                    else:
+                        # Weak reference is None
                         del self._goal_handles[goal_uuid]
 
     def get_num_entities(self):
