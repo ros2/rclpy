@@ -130,10 +130,10 @@ class TestActionClient(unittest.TestCase):
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
             start = time.monotonic()
-            self.assertFalse(ac.wait_for_server(timeout_sec=2.0))
+            self.assertFalse(ac.wait_for_server(timeout_sec=1.0))
             end = time.monotonic()
-            self.assertGreater(2.0, end - start - TIME_FUDGE)
-            self.assertLess(2.0, end - start + TIME_FUDGE)
+            self.assertGreater(1.0, end - start - TIME_FUDGE)
+            self.assertLess(1.0, end - start + TIME_FUDGE)
         finally:
             ac.destroy()
 
@@ -141,7 +141,7 @@ class TestActionClient(unittest.TestCase):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             start = time.monotonic()
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
             end = time.monotonic()
             self.assertGreater(0.0, end - start - TIME_FUDGE)
             self.assertLess(0.0, end - start + TIME_FUDGE)
@@ -151,7 +151,7 @@ class TestActionClient(unittest.TestCase):
     def test_send_goal_async(self):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
             future = ac.send_goal_async(Fibonacci.Goal())
             rclpy.spin_until_future_complete(self.node, future, self.executor)
             self.assertTrue(future.done())
@@ -163,7 +163,7 @@ class TestActionClient(unittest.TestCase):
     def test_send_goal_async_with_feedback_after_goal(self):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
 
             # Send a goal and then publish feedback
             goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
@@ -183,7 +183,7 @@ class TestActionClient(unittest.TestCase):
     def test_send_goal_async_with_feedback_before_goal(self):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
 
             # Publish feedback before goal has been accepted
             goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
@@ -206,7 +206,7 @@ class TestActionClient(unittest.TestCase):
     def test_send_goal_async_with_feedback_for_another_goal(self):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
 
             # Send a goal and then publish feedback
             first_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
@@ -237,7 +237,7 @@ class TestActionClient(unittest.TestCase):
     def test_send_goal_async_with_feedback_for_not_a_goal(self):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
 
             # Send a goal and then publish feedback
             goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
@@ -262,7 +262,7 @@ class TestActionClient(unittest.TestCase):
             callback_group=ReentrantCallbackGroup())
         executor = MultiThreadedExecutor(context=self.context)
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
             future_0 = ac.send_goal_async(Fibonacci.Goal())
             future_1 = ac.send_goal_async(Fibonacci.Goal())
             future_2 = ac.send_goal_async(Fibonacci.Goal())
@@ -282,7 +282,7 @@ class TestActionClient(unittest.TestCase):
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
             future = ac.send_goal_async(Fibonacci.Goal())
-            self.timed_spin(2.0)
+            self.timed_spin(1.0)
             self.assertFalse(future.done())
         finally:
             ac.destroy()
@@ -290,7 +290,7 @@ class TestActionClient(unittest.TestCase):
     def test_send_cancel_async(self):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
 
             # Send a goal
             goal_future = ac.send_goal_async(Fibonacci.Goal())
@@ -311,7 +311,7 @@ class TestActionClient(unittest.TestCase):
     def test_get_result_async(self):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
-            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.assertTrue(ac.wait_for_server(timeout_sec=1.0))
 
             # Send a goal
             goal_future = ac.send_goal_async(Fibonacci.Goal())
