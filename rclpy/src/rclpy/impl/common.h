@@ -124,4 +124,93 @@ get_capsule_pointer(PyObject * pymetaclass, const char * attr)
   Py_DECREF(pyattr);
   return ptr;
 }
+
+static void *
+rclpy_create_from_py(PyObject * pymessage, destroy_ros_message_signature ** destroy_ros_message)
+{
+  PyObject * pymetaclass = PyObject_GetAttrString(pymessage, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
+
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(
+    pymetaclass, "_CREATE_ROS_MESSAGE");
+  if (!create_ros_message) {
+    Py_DECREF(pymetaclass);
+    return NULL;
+  }
+
+  *destroy_ros_message = get_capsule_pointer(
+    pymetaclass, "_DESTROY_ROS_MESSAGE");
+  Py_DECREF(pymetaclass);
+  if (!destroy_ros_message) {
+    return NULL;
+  }
+
+  void * message = create_ros_message();
+  if (!message) {
+    return PyErr_NoMemory();
+  }
+  return message;
+}
+
+/// Convert a ROS message from a Python type to a C type.
+/**
+ * Raises AttributeError if the Python message type is missing a required attribute.
+ * Raises MemoryError on a memory allocation failure.
+ *
+ * \param[in] pymessage The Python message to convert from.
+ * \param[out] destroy_ros_message The destructor function for finalizing the returned message.
+ * \return The C version of the input ROS message.
+ */
+static void *
+rclpy_convert_from_py(PyObject * pymessage, destroy_ros_message_signature ** destroy_ros_message)
+{
+  void * message = rclpy_create_from_py(pymessage, destroy_ros_message);
+  if (!message) {
+    return NULL;
+  }
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pymessage, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
+
+  convert_from_py_signature * convert = get_capsule_pointer(
+    pymetaclass, "_CONVERT_FROM_PY");
+  Py_DECREF(pymetaclass);
+  if (!convert) {
+    return NULL;
+  }
+
+  if (!convert(pymessage, message)) {
+    (**destroy_ros_message)(message);
+    return NULL;
+  }
+  return message;
+}
+
+/// Convert a ROS message from a C type to a Python type.
+/**
+ * Raises AttributeError if the Python type is missing a required attribute.
+ *
+ * \param[in] message The C message to convert to a Python type
+ * \param[in] pyclass An instance of the Python type to convert to.
+ * \return The Python version of the input ROS message.
+ */
+static PyObject *
+rclpy_convert_to_py(void * message, PyObject * pyclass)
+{
+  PyObject * pymetaclass = PyObject_GetAttrString(pyclass, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
+  convert_to_py_signature * convert = get_capsule_pointer(
+    pymetaclass, "_CONVERT_TO_PY");
+  Py_DECREF(pymetaclass);
+  if (!convert) {
+    return NULL;
+  }
+  return convert(message);
+}
 #endif  // RCLPY__IMPL__COMMON_H_
