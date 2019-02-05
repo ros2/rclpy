@@ -38,6 +38,8 @@
 
 #include <signal.h>
 
+#include "./impl/common.h"
+
 static rcl_guard_condition_t * g_sigint_gc_handle;
 
 #ifdef _WIN32
@@ -61,22 +63,6 @@ static void catch_function(int signo)
   if (NULL != g_original_signal_handler) {
     g_original_signal_handler(signo);
   }
-}
-
-typedef void * create_ros_message_signature (void);
-typedef void destroy_ros_message_signature (void *);
-typedef bool convert_from_py_signature (PyObject *, void *);
-typedef PyObject * convert_to_py_signature (void *);
-
-static void * get_capsule_pointer(PyObject * pymetaclass, const char * attr)
-{
-  PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
-  if (!pyattr) {
-    return NULL;
-  }
-  void * ptr = PyCapsule_GetPointer(pyattr, NULL);
-  Py_DECREF(pyattr);
-  return ptr;
 }
 
 void
@@ -3417,34 +3403,6 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   qos_profile->durability = pyqos_durability;
   qos_profile->avoid_ros_namespace_conventions = avoid_ros_namespace_conventions;
   PyObject * pyqos_profile = PyCapsule_New(qos_profile, "rmw_qos_profile_t", NULL);
-  return pyqos_profile;
-}
-
-/// Convert a C rmw_qos_profile_t into a Python QoSProfile object
-/**
- * \param[in] void pointer to a rmw_qos_profile_t structure
- * \return QoSProfile object
- */
-static PyObject *
-rclpy_convert_to_py_qos_policy(void * profile)
-{
-  PyObject * pyqos_module = PyImport_ImportModule("rclpy.qos");
-  PyObject * pyqos_policy_class = PyObject_GetAttrString(pyqos_module, "QoSProfile");
-  PyObject * pyqos_profile = NULL;
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)profile;
-  pyqos_profile = PyObject_CallObject(pyqos_policy_class, NULL);
-  assert(pyqos_profile != NULL);
-
-  PyObject_SetAttrString(pyqos_profile, "depth", PyLong_FromSize_t(qos_profile->depth));
-  PyObject_SetAttrString(pyqos_profile, "history", PyLong_FromUnsignedLong(qos_profile->history));
-  PyObject_SetAttrString(pyqos_profile, "reliability",
-    PyLong_FromUnsignedLong(qos_profile->reliability));
-  PyObject_SetAttrString(pyqos_profile, "durability",
-    PyLong_FromUnsignedLong(qos_profile->durability));
-  PyObject_SetAttrString(pyqos_profile, "avoid_ros_namespace_conventions",
-    PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions));
-
-  assert(pyqos_profile != NULL);
   return pyqos_profile;
 }
 

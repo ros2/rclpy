@@ -13,6 +13,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rcl REQUIRED)
+find_package(rcl_action REQUIRED)
 find_package(rcl_yaml_param_parser REQUIRED)
 find_package(rcutils REQUIRED)
 find_package(rmw REQUIRED)
@@ -79,6 +80,17 @@ configure_python_c_extension_library(rclpy)
 ament_target_dependencies(rclpy
   "rcl"
   "rcl_yaml_param_parser"
+  "rcutils"
+)
+
+add_library(
+  rclpy_action
+  SHARED src/rclpy/_rclpy_action.c
+)
+configure_python_c_extension_library(rclpy_action)
+ament_target_dependencies(rclpy_action
+  "rcl"
+  "rcl_action"
   "rcutils"
 )
 
