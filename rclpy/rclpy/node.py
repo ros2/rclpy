@@ -20,7 +20,6 @@ from rclpy.client import Client
 from rclpy.clock import ROSClock
 from rclpy.constants import S_TO_NS
 from rclpy.exceptions import NotInitializedException
-from rclpy.exceptions import NoTypeSupportImportedException
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -34,6 +33,7 @@ from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
 from rclpy.timer import WallTimer
+from rclpy.type_support import check_for_type_support
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
@@ -41,22 +41,6 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_topic_name import validate_topic_name
 
 HIDDEN_NODE_PREFIX = '_'
-
-
-def check_for_type_support(msg_type):
-    try:
-        ts = msg_type.__class__._TYPE_SUPPORT
-    except AttributeError as e:
-        e.args = (
-            e.args[0] +
-            ' This might be a ROS 1 message type but it should be a ROS 2 message type.'
-            ' Make sure to source your ROS 2 workspace after your ROS 1 workspace.',
-            *e.args[1:])
-        raise
-    if ts is None:
-        msg_type.__class__.__import_type_support__()
-    if msg_type.__class__._TYPE_SUPPORT is None:
-        raise NoTypeSupportImportedException()
 
 
 class Node:
@@ -138,6 +122,10 @@ class Node:
     @property
     def context(self):
         return self._context
+
+    @property
+    def default_callback_group(self):
+        return self._default_callback_group
 
     @property
     def handle(self):
@@ -254,7 +242,7 @@ class Node:
             self, msg_type, topic, callback, *, qos_profile=qos_profile_default,
             callback_group=None, raw=False):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         # this line imports the typesupport for the message module if not already done
         check_for_type_support(msg_type)
         failed = False
@@ -277,7 +265,7 @@ class Node:
             self, srv_type, srv_name, *, qos_profile=qos_profile_services_default,
             callback_group=None):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         check_for_type_support(srv_type)
         failed = False
         try:
@@ -302,7 +290,7 @@ class Node:
             self, srv_type, srv_name, callback, *, qos_profile=qos_profile_services_default,
             callback_group=None):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         check_for_type_support(srv_type)
         failed = False
         try:
@@ -325,7 +313,7 @@ class Node:
     def create_timer(self, timer_period_sec, callback, callback_group=None):
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         timer = WallTimer(callback, callback_group, timer_period_nsec, context=self.context)
 
         self.timers.append(timer)
@@ -334,7 +322,7 @@ class Node:
 
     def create_guard_condition(self, callback, callback_group=None):
         if callback_group is None:
-            callback_group = self._default_callback_group
+            callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
 
         self.guards.append(guard)

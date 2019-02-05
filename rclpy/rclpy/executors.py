@@ -287,6 +287,11 @@ class Executor:
     async def _execute_guard_condition(self, gc, _):
         await await_or_execute(gc.callback)
 
+    async def _execute_waitable(self, waitable, data):
+        for future in waitable._futures:
+            future._set_executor(self)
+        await waitable.execute(data)
+
     def _make_handler(self, entity, node, take_from_wait_list, call_coroutine):
         """
         Make a handler that performs work on an entity.
@@ -454,9 +459,10 @@ class Executor:
                 # Check waitables before wait set is destroyed
                 for node in nodes:
                     for wt in node.waitables:
-                        if wt.is_ready(wait_set):
+                        # Only check waitables that were added to the wait set
+                        if wt in waitables and wt.is_ready(wait_set):
                             handler = self._make_handler(
-                                wt, node, lambda e: e.take_data(), lambda e, a: e.execute(a))
+                                wt, node, lambda e: e.take_data(), self._execute_waitable)
                             yielded_work = True
                             yield handler, wt, node
 
