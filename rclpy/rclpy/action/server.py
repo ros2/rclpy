@@ -13,17 +13,17 @@
 # limitations under the License.
 
 from enum import Enum
+import functools
 import threading
-import time
 
 from action_msgs.msg import GoalInfo, GoalStatus
 
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
-from rclpy.type_support import check_for_type_support
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_default, qos_profile_services_default
-from rclpy.task import Future, Task
+from rclpy.task import Future
+from rclpy.type_support import check_for_type_support
 from rclpy.waitable import NumberOfEntities, Waitable
 
 
@@ -77,21 +77,22 @@ class ServerGoalHandle:
         self._goal_info = goal_info
         self._goal_request = goal_request
         self._cancel_requested = False
-        self._result = None
+        self._result_future = Future()
+        action_server.add_future(self._result_future)
         self._lock = threading.Lock()
 
     def __eq__(self, other):
-        return self.id == other.id
+        return self.goal_id == other.goal_id
 
     def __ne__(self, other):
-        return self.id != other.id
+        return self.goal_id != other.goal_id
 
     @property
     def request(self):
         return self._goal_request
 
     @property
-    def id(self):
+    def goal_id(self):
         return self._goal_info.goal_id
 
     @property
@@ -102,6 +103,8 @@ class ServerGoalHandle:
     @property
     def status(self):
         with self._lock:
+            if self._handle is None:
+                return GoalStatus.STATUS_UNKNOWN
             return _rclpy_action.rclpy_action_goal_handle_get_status(self._handle)
 
     def _notify_cancel_requested(self):
@@ -110,6 +113,7 @@ class ServerGoalHandle:
 
     def _update_state(self, event):
         with self._lock:
+            # Ignore updates for already destructed goal handles
             if self._handle is None:
                 return
 
@@ -126,6 +130,7 @@ class ServerGoalHandle:
 
     def publish_feedback(self, feedback_msg):
         with self._lock:
+            # Ignore for already destructed goal handles
             if self._handle is None:
                 return
             _rclpy_action.rclpy_action_publish_feedback(self._action_sever._handle, feedback_msg)
@@ -142,6 +147,7 @@ class ServerGoalHandle:
     def destroy(self):
         if self._handle is None:
             return
+        self._action_server.remove_future(self._result_future)
         _rclpy_action.rclpy_action_destroy_server_goal_handle(self._handle)
         self._handle = None
 
@@ -238,7 +244,7 @@ class ActionServer(Waitable):
         # Call user goal callback
         response = await await_or_execute(self._goal_callback, goal_request)
         accepted = ((GoalResponse.ACCEPT_AND_EXECUTE == response) or
-            (GoalResponse.ACCEPT_AND_DEFER == response))
+                    (GoalResponse.ACCEPT_AND_DEFER == response))
 
         if accepted:
             # TODO: lock on new goal creation to avoid multiple goals with same ID being accepted
@@ -253,7 +259,7 @@ class ActionServer(Waitable):
                     'Failed to accept new goal with ID {0}: {1}'.format(goal_uuid.uuid, e))
                 accepted = False
             else:
-              self._goal_handles[bytes(goal_uuid.uuid)] = goal_handle
+                self._goal_handles[bytes(goal_uuid.uuid)] = goal_handle
 
         # Send response
         response_msg = self._action_type.GoalRequestService.Response()
@@ -282,7 +288,8 @@ class ActionServer(Waitable):
         self._node.get_logger().debug(
             'Goal with ID {0} finished with state {1}'.format(goal_uuid.uuid, goal_handle.status))
         # Set result
-        goal_handle._result = execute_result
+        execute_result.action_status = goal_handle.status
+        goal_handle._result_future.set_result(execute_result)
 
     async def _execute_cancel_request(self, request_header_and_message):
         request_header, cancel_request = request_header_and_message
@@ -315,6 +322,38 @@ class ActionServer(Waitable):
             self._handle,
             request_header,
             cancel_response,
+        )
+
+    async def _execute_get_result_request(self, request_header_and_message):
+        request_header, result_request = request_header_and_message
+        goal_uuid = result_request.action_goal_id.uuid
+
+        self._node.get_logger().debug(
+            'Result request received for goal with ID: {0}'.format(goal_uuid))
+
+        # If no goal with the requested ID exists, then return UNKNOWN status
+        if bytes(goal_uuid) not in self._goal_handles:
+            self._node.get_logger().debug(
+                'Sending result response for unknown goal ID: {0}'.format(goal_uuid))
+            result_response = self._action_type.Result()
+            result_response.status = GoalStatus.STATUS_UNKNOWN
+            _rclpy_action.rclpy_action_send_result_response(
+                self._handle,
+                request_header,
+                result_response,
+            )
+            return
+
+        # There is an accepted goal matching the goal ID, register a callback to send the
+        # response as soon as it's ready
+        self._goal_handles[bytes(goal_uuid)]._result_future.add_done_callback(
+            functools.partial(self._send_result_response, request_header))
+
+    def _send_result_response(self, request_header, future):
+        _rclpy_action.rclpy_action_send_result_response(
+            self._handle,
+            request_header,
+            future.result(),
         )
 
     # Start Waitable API
@@ -367,13 +406,7 @@ class ActionServer(Waitable):
             await self._execute_cancel_request(taken_data['cancel'])
 
         if 'result' in taken_data:
-            sequence_number, result_request = taken_data['result']
-            # If there is an accepted goal matching the goal ID, then schedule the
-            # response for sending as soon as it's ready
-            # future = Future()
-            # future.add_done_callback()
-            # self.add_future(future)
-            # TODO(jacobperron): Do something
+            await self._execute_get_result_request(taken_data['result'])
 
         if 'expired' in taken_data:
             expired_goals = taken_data['expired']
