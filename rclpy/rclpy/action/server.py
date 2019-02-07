@@ -96,6 +96,13 @@ class ServerGoalHandle:
         return self._goal_info.goal_id
 
     @property
+    def is_active(self):
+        with self._lock:
+            if self._handle is None:
+                return False
+            return _rclpy_action.rclpy_action_goal_handle_is_active(self._handle)
+
+    @property
     def is_cancel_requested(self):
         with self._lock:
             return self._cancel_requested
@@ -122,18 +129,13 @@ class ServerGoalHandle:
             if not _rclpy_action.rclpy_action_goal_handle_is_active(self._handle):
                 self._action_server.notify_goal_done()
 
-    def is_active(self):
-        with self._lock:
-            if self._handle is None:
-                return False
-            return _rclpy_action.rclpy_action_goal_handle_is_active(self._handle)
 
     def publish_feedback(self, feedback_msg):
         with self._lock:
             # Ignore for already destructed goal handles
             if self._handle is None:
                 return
-            _rclpy_action.rclpy_action_publish_feedback(self._action_sever._handle, feedback_msg)
+            _rclpy_action.rclpy_action_publish_feedback(self._action_server._handle, feedback_msg)
 
     def set_succeeded(self):
         self._update_state(GoalEvent.SET_SUCCEEDED)
@@ -288,7 +290,7 @@ class ActionServer(Waitable):
         # Call user execute callback
         execute_result = await await_or_execute(self._execute_callback, goal_handle)
         # If user did not trigger a terminal state, assume success
-        if goal_handle.is_active():
+        if goal_handle.is_active:
             self._node.get_logger().warn(
                 'Goal state not set, assuming success. Goal ID: {0}'.format(goal_uuid.uuid))
             goal_handle.set_succeeded()
