@@ -1461,6 +1461,37 @@ rclpy_action_goal_handle_is_active(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 static PyObject *
+rclpy_action_server_goal_exists(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyaction_server;
+  PyObject * pygoal_info;
+
+  if (!PyArg_ParseTuple(args, "OO", &pyaction_server, &pygoal_info)) {
+    return NULL;
+  }
+
+  rcl_action_server_t * action_server = (rcl_action_server_t *)PyCapsule_GetPointer(
+    pyaction_server, "rcl_action_server_t");
+  if (!action_server) {
+    return NULL;
+  }
+
+  destroy_ros_message_signature * destroy_ros_message = NULL;
+  rcl_action_goal_info_t * goal_info = rclpy_convert_from_py(pygoal_info, &destroy_ros_message);
+  if (!goal_info) {
+    return NULL;
+  }
+
+  bool exists = rcl_action_server_goal_exists(action_server, goal_info);
+  destroy_ros_message(goal_info);
+
+  if (exists) {
+    Py_RETURN_TRUE;
+  }
+  Py_RETURN_FALSE;
+}
+
+static PyObject *
 rclpy_action_goal_handle_get_status(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pygoal_handle;
@@ -1735,7 +1766,11 @@ static PyMethodDef rclpy_action_methods[] = {
   },
   {
     "rclpy_action_goal_handle_is_active", rclpy_action_goal_handle_is_active, METH_VARARGS,
-    "Check if goal is active."
+    "Check if a goal is active."
+  },
+  {
+    "rclpy_action_server_goal_exists", rclpy_action_server_goal_exists, METH_VARARGS,
+    "Check if a goal being tracked by an action server."
   },
   {
     "rclpy_action_goal_handle_get_status", rclpy_action_goal_handle_get_status, METH_VARARGS,

@@ -120,7 +120,7 @@ class ServerGoalHandle:
             _rclpy_action.rclpy_action_update_goal_state(self._handle, event.value)
             # If it's a terminal state, then also notify the action server
             if not _rclpy_action.rclpy_action_goal_handle_is_active(self._handle):
-                _rclpy_action.rclpy_action_notify_goal_done(self._action_server._handle)
+                self._action_server.notify_goal_done()
 
     def is_active(self):
         with self._lock:
@@ -207,6 +207,8 @@ class ActionServer(Waitable):
 
         super().__init__(callback_group)
 
+        self._lock = threading.Lock()
+
         self.register_goal_callback(goal_callback)
         self.register_cancel_callback(cancel_callback)
         self.register_execute_callback(execute_callback)
@@ -230,9 +232,6 @@ class ActionServer(Waitable):
 
         # key: UUID in bytes, value: GoalHandle
         self._goal_handles = {}
-        self._pending_cancel_requests = {}
-        self._pending_result_requests = {}
-        # self._feedback_callbacks = {}
 
         callback_group.add_entity(self)
         self._node.add_waitable(self)
@@ -240,24 +239,28 @@ class ActionServer(Waitable):
     async def _execute_goal_request(self, request_header_and_message):
         request_header, goal_request = request_header_and_message
         goal_uuid = goal_request.action_goal_id
+        goal_info = GoalInfo()
+        goal_info.goal_id = goal_uuid
+        goal_info.stamp = self._node.get_clock().now().to_msg()
 
         self._node.get_logger().debug('New goal request with ID: {0}'.format(goal_uuid.uuid))
 
-        # TODO: Check if goal ID is already being tracked by this action server
+        # Check if goal ID is already being tracked by this action server
+        with self._lock:
+            goal_id_exists = _rclpy_action.rclpy_action_server_goal_exists(self._handle, goal_info)
 
-        # Call user goal callback
-        response = await await_or_execute(self._goal_callback, goal_request)
-        accepted = ((GoalResponse.ACCEPT_AND_EXECUTE == response) or
-                    (GoalResponse.ACCEPT_AND_DEFER == response))
+        accepted = False
+        if not goal_id_exists:
+            # Call user goal callback
+            response = await await_or_execute(self._goal_callback, goal_request)
+            accepted = ((GoalResponse.ACCEPT_AND_EXECUTE == response) or
+                        (GoalResponse.ACCEPT_AND_DEFER == response))
 
         if accepted:
-            # TODO: lock on new goal creation to avoid multiple goals with same ID being accepted
-            goal_info = GoalInfo()
-            goal_info.goal_id = goal_uuid
-            goal_info.stamp = self._node.get_clock().now().to_msg()
             # Create a goal handle
             try:
-                goal_handle = ServerGoalHandle(self, goal_info, goal_request)
+                with self._lock:
+                    goal_handle = ServerGoalHandle(self, goal_info, goal_request)
             except RuntimeError as e:
                 self._node.get_logger().error(
                     'Failed to accept new goal with ID {0}: {1}'.format(goal_uuid.uuid, e))
@@ -300,9 +303,10 @@ class ActionServer(Waitable):
 
         self._node.get_logger().debug('Cancel request received: {0}'.format(cancel_request))
 
-        # Get list of goals that are requested to be canceled
-        cancel_response = _rclpy_action.rclpy_action_process_cancel_request(
-            self._handle, cancel_request, self._action_type.CancelGoalService.Response)
+        with self._lock:
+            # Get list of goals that are requested to be canceled
+            cancel_response = _rclpy_action.rclpy_action_process_cancel_request(
+                self._handle, cancel_request, self._action_type.CancelGoalService.Response)
 
         for goal_info in cancel_response.goals_canceling:
             goal_uuid = bytes(goal_info.goal_id.uuid)
@@ -368,7 +372,8 @@ class ActionServer(Waitable):
     # Start Waitable API
     def is_ready(self, wait_set):
         """Return True if one or more entities are ready in the wait set."""
-        ready_entities = _rclpy_action.rclpy_action_wait_set_is_ready(self._handle, wait_set)
+        with self._lock:
+            ready_entities = _rclpy_action.rclpy_action_wait_set_is_ready(self._handle, wait_set)
         self._is_goal_request_ready = ready_entities[0]
         self._is_cancel_request_ready = ready_entities[1]
         self._is_result_request_ready = ready_entities[2]
@@ -379,28 +384,32 @@ class ActionServer(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         data = {}
         if self._is_goal_request_ready:
-            data['goal'] = _rclpy_action.rclpy_action_take_goal_request(
-                self._handle,
-                self._action_type.GoalRequestService.Request,
-            )
+            with self._lock:
+                data['goal'] = _rclpy_action.rclpy_action_take_goal_request(
+                    self._handle,
+                    self._action_type.GoalRequestService.Request,
+                )
 
         if self._is_cancel_request_ready:
-            data['cancel'] = _rclpy_action.rclpy_action_take_cancel_request(
-                self._handle,
-                self._action_type.CancelGoalService.Request,
-            )
+            with self._lock:
+                data['cancel'] = _rclpy_action.rclpy_action_take_cancel_request(
+                    self._handle,
+                    self._action_type.CancelGoalService.Request,
+                )
 
         if self._is_result_request_ready:
-            data['result'] = _rclpy_action.rclpy_action_take_result_request(
-                self._handle,
-                self._action_type.GoalResultService.Request,
-            )
+            with self._lock:
+                data['result'] = _rclpy_action.rclpy_action_take_result_request(
+                    self._handle,
+                    self._action_type.GoalResultService.Request,
+                )
 
         if self._is_goal_expired:
-            data['expired'] = _rclpy_action.rclpy_action_expire_goals(
-                self._handle,
-                len(self._goal_handles),
-            )
+            with self._lock:
+                data['expired'] = _rclpy_action.rclpy_action_expire_goals(
+                    self._handle,
+                    len(self._goal_handles),
+                )
 
         if not any(data):
             return None
@@ -437,8 +446,13 @@ class ActionServer(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        _rclpy_action.rclpy_action_wait_set_add(self._handle, wait_set)
+        with self._lock:
+            _rclpy_action.rclpy_action_wait_set_add(self._handle, wait_set)
     # End Waitable API
+
+    def notify_goal_done(self):
+        with self._lock:
+            _rclpy_action.rclpy_action_notify_goal_done(self._handle)
 
     def register_goal_callback(self, goal_callback):
         """

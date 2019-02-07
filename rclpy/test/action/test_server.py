@@ -188,6 +188,56 @@ class TestActionServer(unittest.TestCase):
         self.assertFalse(future.result().accepted)
         action_server.destroy()
 
+    def test_multi_goal_accept(self):
+        executor = MultiThreadedExecutor(context=self.context)
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            callback_group=ReentrantCallbackGroup(),
+        )
+
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        future0 = self.mock_action_client.send_goal(goal_msg)
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        future1 = self.mock_action_client.send_goal(goal_msg)
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        future2 = self.mock_action_client.send_goal(goal_msg)
+
+        rclpy.spin_until_future_complete(self.node, future0, executor)
+        rclpy.spin_until_future_complete(self.node, future1, executor)
+        rclpy.spin_until_future_complete(self.node, future2, executor)
+
+        self.assertTrue(future0.result().accepted)
+        self.assertTrue(future1.result().accepted)
+        self.assertTrue(future2.result().accepted)
+        action_server.destroy()
+
+    def test_duplicate_goal(self):
+        executor = MultiThreadedExecutor(context=self.context)
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            callback_group=ReentrantCallbackGroup(),
+        )
+
+        # Send a goal with the same ID twice
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        future0 = self.mock_action_client.send_goal(goal_msg)
+        future1 = self.mock_action_client.send_goal(goal_msg)
+
+        rclpy.spin_until_future_complete(self.node, future0, executor)
+        rclpy.spin_until_future_complete(self.node, future1, executor)
+
+        # Exactly one of the goals should be accepted
+        self.assertNotEqual(future0.result().accepted, future1.result().accepted)
+        action_server.destroy()
+
     def test_cancel_goal_accept(self):
 
         def execute_callback(goal_handle):
