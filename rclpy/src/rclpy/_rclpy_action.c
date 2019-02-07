@@ -569,10 +569,11 @@ rclpy_action_create_server(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pycancel_service_qos;
   PyObject * pyfeedback_topic_qos;
   PyObject * pystatus_topic_qos;
+  double result_timeout = 0.0;
 
   int parse_tuple_result = PyArg_ParseTuple(
     args,
-    "OOOOOOOOO",
+    "OOOOOOOOOd",
     &pynode,
     &pyclock,
     &pyaction_type,
@@ -581,7 +582,8 @@ rclpy_action_create_server(PyObject * Py_UNUSED(self), PyObject * args)
     &pyresult_service_qos,
     &pycancel_service_qos,
     &pyfeedback_topic_qos,
-    &pystatus_topic_qos);
+    &pystatus_topic_qos,
+    &result_timeout);
 
   if (!parse_tuple_result) {
     return NULL;
@@ -627,6 +629,7 @@ rclpy_action_create_server(PyObject * Py_UNUSED(self), PyObject * args)
   OPTIONS_COPY_QOS_PROFILE(action_server_ops, cancel_service_qos);
   OPTIONS_COPY_QOS_PROFILE(action_server_ops, feedback_topic_qos);
   OPTIONS_COPY_QOS_PROFILE(action_server_ops, status_topic_qos);
+  action_server_ops.result_timeout.nanoseconds = RCL_S_TO_NS(result_timeout);
 
   rcl_action_server_t * action_server =
     (rcl_action_server_t *)PyMem_Malloc(sizeof(rcl_action_server_t));
@@ -1542,6 +1545,78 @@ rclpy_action_process_cancel_request(PyObject * Py_UNUSED(self), PyObject * args)
   return pycancel_response;
 }
 
+static PyObject *
+rclpy_action_expire_goals(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyaction_server;
+  int64_t max_num_goals;
+
+  if (!PyArg_ParseTuple(args, "Ol", &pyaction_server, &max_num_goals)) {
+    return NULL;
+  }
+
+  rcl_action_server_t * action_server = (rcl_action_server_t *)PyCapsule_GetPointer(
+    pyaction_server, "rcl_action_server_t");
+  if (!action_server) {
+    return NULL;
+  }
+
+  rcl_action_goal_info_t * expired_goals =
+    (rcl_action_goal_info_t *)malloc(sizeof(rcl_action_goal_info_t) * max_num_goals);
+  if (!expired_goals) {
+    return PyErr_NoMemory();
+  }
+  size_t num_expired;
+  rcl_ret_t ret = rcl_action_expire_goals(
+    action_server, expired_goals, max_num_goals, &num_expired);
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to expire goals: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    free(expired_goals);
+    return NULL;
+  }
+
+  // Get Python GoalInfo type
+  PyObject * pyaction_msgs_module = PyImport_ImportModule("action_msgs.msg");
+  if (!pyaction_msgs_module) {
+    free(expired_goals);
+    return NULL;
+  }
+  PyObject * pygoal_info_class = PyObject_GetAttrString(pyaction_msgs_module, "GoalInfo");
+  Py_DECREF(pyaction_msgs_module);
+  if (!pygoal_info_class) {
+    free(expired_goals);
+    return NULL;
+  }
+  PyObject * pygoal_info_type = PyObject_CallObject(pygoal_info_class, NULL);
+  Py_DECREF(pygoal_info_class);
+  if (!pygoal_info_type) {
+    free(expired_goals);
+    return NULL;
+  }
+
+  // Create a tuple of GoalInfo instances to return
+  PyObject * result_tuple = PyTuple_New(num_expired);
+  if (!result_tuple) {
+    free(expired_goals);
+    return NULL;
+  }
+  // PyTuple_SetItem() returns 0 on success
+  int set_result = 0;
+  for (size_t i = 0; i < num_expired; ++i) {
+    PyObject * pygoal_info = rclpy_convert_to_py(&(expired_goals[i]), pygoal_info_type);
+    set_result += PyTuple_SetItem(result_tuple, i, pygoal_info);
+  }
+
+  free(expired_goals);
+  Py_DECREF(pygoal_info_type);
+  if (0 != set_result) {
+    Py_DECREF(result_tuple);
+    return NULL;
+  }
+  return result_tuple;
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_action_methods[] = {
   {
@@ -1669,6 +1744,10 @@ static PyMethodDef rclpy_action_methods[] = {
   {
     "rclpy_action_process_cancel_request", rclpy_action_process_cancel_request, METH_VARARGS,
     "Process a cancel request to determine what goals should be canceled."
+  },
+  {
+    "rclpy_action_expire_goals", rclpy_action_expire_goals, METH_VARARGS,
+    "Expire goals associated with an action server."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */

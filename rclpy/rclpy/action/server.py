@@ -179,7 +179,8 @@ class ActionServer(Waitable):
         result_service_qos_profile=qos_profile_services_default,
         cancel_service_qos_profile=qos_profile_services_default,
         feedback_pub_qos_profile=qos_profile_default,
-        status_pub_qos_profile=qos_profile_action_status_default
+        status_pub_qos_profile=qos_profile_action_status_default,
+        result_timeout=900
     ):
         """
         Constructor.
@@ -198,6 +199,8 @@ class ActionServer(Waitable):
         :param cancel_service_qos_profile: QoS profile for the cancel service.
         :param feedback_pub_qos_profile: QoS profile for the feedback publisher.
         :param status_pub_qos_profile: QoS profile for the status publisher.
+        :param result_timeout: Goals that have results longer than this number of seconds
+            are discarded.
         """
         if callback_group is None:
             callback_group = node.default_callback_group
@@ -222,6 +225,7 @@ class ActionServer(Waitable):
             cancel_service_qos_profile.get_c_qos_profile(),
             feedback_pub_qos_profile.get_c_qos_profile(),
             status_pub_qos_profile.get_c_qos_profile(),
+            result_timeout,
         )
 
         # key: UUID in bytes, value: GoalHandle
@@ -349,6 +353,11 @@ class ActionServer(Waitable):
         self._goal_handles[bytes(goal_uuid)]._result_future.add_done_callback(
             functools.partial(self._send_result_response, request_header))
 
+    async def _execute_expire_goals(self, expired_goals):
+        for goal in expired_goals:
+            goal_uuid = bytes(goal.goal_id.uuid)
+            del self._goal_handles[goal_uuid]
+
     def _send_result_response(self, request_header, future):
         _rclpy_action.rclpy_action_send_result_response(
             self._handle,
@@ -370,23 +379,28 @@ class ActionServer(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         data = {}
         if self._is_goal_request_ready:
-            take_result = _rclpy_action.rclpy_action_take_goal_request(
-                self._handle, self._action_type.GoalRequestService.Request)
-            data['goal'] = take_result
+            data['goal'] = _rclpy_action.rclpy_action_take_goal_request(
+                self._handle,
+                self._action_type.GoalRequestService.Request,
+            )
 
         if self._is_cancel_request_ready:
-            take_result = _rclpy_action.rclpy_action_take_cancel_request(
-                self._handle, self._action_type.CancelGoalService.Request)
-            data['cancel'] = take_result
+            data['cancel'] = _rclpy_action.rclpy_action_take_cancel_request(
+                self._handle,
+                self._action_type.CancelGoalService.Request,
+            )
 
         if self._is_result_request_ready:
-            take_result = _rclpy_action.rclpy_action_take_result_request(
-                self._handle, self._action_type.GoalResultService.Request)
-            data['result'] = take_result
+            data['result'] = _rclpy_action.rclpy_action_take_result_request(
+                self._handle,
+                self._action_type.GoalResultService.Request,
+            )
 
         if self._is_goal_expired:
-            expired_goals = _rclpy_action.rclpy_action_expire_goals(self._handle)
-            data['expired'] = expired_goals
+            data['expired'] = _rclpy_action.rclpy_action_expire_goals(
+                self._handle,
+                len(self._goal_handles),
+            )
 
         if not any(data):
             return None
@@ -409,8 +423,7 @@ class ActionServer(Waitable):
             await self._execute_get_result_request(taken_data['result'])
 
         if 'expired' in taken_data:
-            expired_goals = taken_data['expired']
-            # TODO(jacobperron): Do something
+            await self._execute_expire_goals(taken_data['expired'])
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""

@@ -115,6 +115,7 @@ class TestActionServer(unittest.TestCase):
             cancel_service_qos_profile=rclpy.qos.qos_profile_default,
             feedback_pub_qos_profile=rclpy.qos.qos_profile_default,
             status_pub_qos_profile=rclpy.qos.qos_profile_default,
+            result_timeout=300,
         )
         action_server.destroy()
 
@@ -307,6 +308,7 @@ class TestActionServer(unittest.TestCase):
         action_server.destroy()
 
     def test_send_result_aborted(self):
+
         def execute_callback(goal_handle):
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
@@ -333,6 +335,79 @@ class TestActionServer(unittest.TestCase):
         result = get_result_future.result()
         self.assertEqual(result.action_status, GoalStatus.STATUS_ABORTED)
         self.assertEqual(result.sequence, [1, 1, 2, 3, 5])
+        action_server.destroy()
+
+    def test_expire_goals_none(self):
+
+        # 1 second timeout
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            result_timeout=1,
+        )
+
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+
+        self.assertEqual(1, len(action_server._goal_handles))
+
+        # After less than one second there should still be a goal handle
+        self.timed_spin(0.5)
+        self.assertEqual(1, len(action_server._goal_handles))
+        action_server.destroy()
+
+    def test_expire_goals_one(self):
+
+        # 1 second timeout
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            result_timeout=1,
+        )
+
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+
+        self.assertEqual(1, len(action_server._goal_handles))
+
+        # After two seconds the internal goal handle should be destroyed
+        self.timed_spin(2.1)
+        self.assertEqual(0, len(action_server._goal_handles))
+        action_server.destroy()
+
+    def test_expire_goals_multi(self):
+        # 1 second timeout
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            result_timeout=1,
+        )
+
+        # Send multiple goals
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        self.mock_action_client.send_goal(goal_msg)
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        self.mock_action_client.send_goal(goal_msg)
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        self.mock_action_client.send_goal(goal_msg)
+        self.timed_spin(0.5)
+
+        self.assertEqual(3, len(action_server._goal_handles))
+
+        # After two seconds the internal goal handles should be destroyed
+        self.timed_spin(2.1)
+        self.assertEqual(0, len(action_server._goal_handles))
         action_server.destroy()
 
 
