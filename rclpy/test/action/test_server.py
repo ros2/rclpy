@@ -460,6 +460,32 @@ class TestActionServer(unittest.TestCase):
         self.assertEqual(0, len(action_server._goal_handles))
         action_server.destroy()
 
+    def test_feedback(self):
+
+        def execute_with_feedback(goal_handle):
+            feedback_msg = Fibonacci.Feedback()
+            feedback_msg.sequence = [1, 1, 2, 3]
+            goal_handle.publish_feedback(feedback_msg)
+            goal_handle.set_succeeded()
+            return Fibonacci.Result()
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=execute_with_feedback,
+        )
+
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_future = self.mock_action_client.send_goal(goal_msg)
+
+        rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+
+        self.assertIsNotNone(self.mock_action_client.feedback_msg)
+        self.assertEqual([1, 1, 2, 3], self.mock_action_client.feedback_msg.sequence)
+        action_server.destroy()
+
 
 if __name__ == '__main__':
     unittest.main()
