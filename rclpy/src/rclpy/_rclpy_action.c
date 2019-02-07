@@ -1297,7 +1297,7 @@ convert_from_py_goal_event(const int64_t pyevent)
   // The number of objects in the decref list
   size_t num_to_decref = 0;
 
-  PyObject * pyaction_server_module = PyImport_ImportModule("rclpy.action_server");
+  PyObject * pyaction_server_module = PyImport_ImportModule("rclpy.action.server");
   if (!pyaction_server_module) {
     return -1;
   }
