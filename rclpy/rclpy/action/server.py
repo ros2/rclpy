@@ -129,7 +129,6 @@ class ServerGoalHandle:
             if not _rclpy_action.rclpy_action_goal_handle_is_active(self._handle):
                 self._action_server.notify_goal_done()
 
-
     def publish_feedback(self, feedback_msg):
         with self._lock:
             # Ignore for already destructed goal handles
