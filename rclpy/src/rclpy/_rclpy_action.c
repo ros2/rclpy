@@ -1184,17 +1184,50 @@ rclpy_action_take_feedback(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Publish a status message from a given action server.
 /**
- * Raises AttributeError if there is an issue parsing the pystatus_msg.
  * Raises RuntimeError on failure while publishing a status message.
  *
  * \param[in] pyaction_server Capsule pointing to the action server to publish the message.
- * \param[in] pystatus_msg The status message to publish.
  * \return None
  */
 static PyObject *
 rclpy_action_publish_status(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PUBLISH_MESSAGE(status)
+  PyObject * pyaction_server;
+
+  if (!PyArg_ParseTuple(args, "O", &pyaction_server)) {
+    return NULL;
+  }
+
+  rcl_action_server_t * action_server = (rcl_action_server_t *)PyCapsule_GetPointer(
+    pyaction_server, "rcl_action_server_t");
+  if (!action_server) {
+    return NULL;
+  }
+
+  rcl_action_goal_status_array_t status_message =
+    rcl_action_get_zero_initialized_goal_status_array();
+  rcl_ret_t ret = rcl_action_get_goal_status_array(action_server, &status_message);
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed get goal status array: %s",
+      rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  ret = rcl_action_publish_status(action_server, &status_message);
+
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed publish goal status array: %s",
+      rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
 }
 
 /// Take a status message from a given action client.

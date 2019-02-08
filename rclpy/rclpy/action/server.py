@@ -124,7 +124,12 @@ class ServerGoalHandle:
             if self._handle is None:
                 return
 
+            # Update state
             _rclpy_action.rclpy_action_update_goal_state(self._handle, event.value)
+
+            # Publish state change
+            _rclpy_action.rclpy_action_publish_status(self._action_server._handle)
+
             # If it's a terminal state, then also notify the action server
             if not _rclpy_action.rclpy_action_goal_handle_is_active(self._handle):
                 self._action_server.notify_goal_done()
@@ -134,6 +139,11 @@ class ServerGoalHandle:
             # Ignore for already destructed goal handles
             if self._handle is None:
                 return
+
+            # Ensure the feedback message contains metadata about this goal
+            feedback_msg.action_goal_id = self.goal_id
+
+            # Publish
             _rclpy_action.rclpy_action_publish_feedback(self._action_server._handle, feedback_msg)
 
     def set_succeeded(self):
