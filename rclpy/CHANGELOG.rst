@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.2 (2019-02-08)
+------------------
+* Added Waitable to callback group (`#265 <https://github.com/ros2/rclpy/issues/265>`_)
+* Fixed flake8 error (`#263 <https://github.com/ros2/rclpy/issues/263>`_)
+* Added HIDDEN_NODE_PREFIX definition to node.py (`#259 <https://github.com/ros2/rclpy/issues/259>`_)
+* Added rclpy raw subscriptions (`#242 <https://github.com/ros2/rclpy/issues/242>`_)
+* Added a test for invalid string checks on publishing (`#256 <https://github.com/ros2/rclpy/issues/256>`_)
+* Contributors: AAlon, Jacob Perron, Joseph Duchesne, Michel Hidalgo, Shane Loretz
+
 0.6.1 (2018-12-07)
 ------------------
 * Added node graph functions (`#247 <https://github.com/ros2/rclpy/issues/247>`_)
