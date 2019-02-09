@@ -789,17 +789,16 @@ rclpy_count_subscribers(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_get_validation_error_for_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * topic_name_py;
+  PyObject * pytopic_name;
 
-  if (!PyArg_ParseTuple(args, "O", &topic_name_py)) {
+  if (!PyArg_ParseTuple(args, "O", &pytopic_name)) {
     return NULL;
   }
 
-  if (!PyUnicode_Check(topic_name_py)) {
-    PyErr_Format(PyExc_TypeError, "Argument topic_name is not a PyUnicode object");
+  const char * topic_name = PyUnicode_AsUTF8(pytopic_name);
+  if (!topic_name) {
     return NULL;
   }
-  char * topic_name = (char *)PyUnicode_1BYTE_DATA(topic_name_py);
 
   int validation_result;
   size_t invalid_index;
@@ -841,17 +840,16 @@ rclpy_get_validation_error_for_topic_name(PyObject * Py_UNUSED(self), PyObject *
 static PyObject *
 rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * topic_name_py;
+  PyObject * pytopic_name;
 
-  if (!PyArg_ParseTuple(args, "O", &topic_name_py)) {
+  if (!PyArg_ParseTuple(args, "O", &pytopic_name)) {
     return NULL;
   }
 
-  if (!PyUnicode_Check(topic_name_py)) {
-    PyErr_Format(PyExc_TypeError, "Argument topic_name is not a PyUnicode object");
+  const char * topic_name = PyUnicode_AsUTF8(pytopic_name);
+  if (!topic_name) {
     return NULL;
   }
-  char * topic_name = (char *)PyUnicode_1BYTE_DATA(topic_name_py);
 
   int validation_result;
   size_t invalid_index;
@@ -891,17 +889,16 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
 static PyObject *
 rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * namespace_py;
+  PyObject * pynamespace;
 
-  if (!PyArg_ParseTuple(args, "O", &namespace_py)) {
+  if (!PyArg_ParseTuple(args, "O", &pynamespace)) {
     return NULL;
   }
 
-  if (!PyUnicode_Check(namespace_py)) {
-    PyErr_Format(PyExc_TypeError, "Argument namespace_ is not a PyUnicode object");
+  const char * namespace_ = PyUnicode_AsUTF8(pynamespace);
+  if (!namespace_) {
     return NULL;
   }
-  char * namespace_ = (char *)PyUnicode_1BYTE_DATA(namespace_py);
 
   int validation_result;
   size_t invalid_index;
@@ -941,17 +938,16 @@ rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * 
 static PyObject *
 rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * node_name_py;
+  PyObject * pynode_name;
 
-  if (!PyArg_ParseTuple(args, "O", &node_name_py)) {
+  if (!PyArg_ParseTuple(args, "O", &pynode_name)) {
     return NULL;
   }
 
-  if (!PyUnicode_Check(node_name_py)) {
-    PyErr_Format(PyExc_TypeError, "Argument node_name is not a PyUnicode object");
+  const char * node_name = PyUnicode_AsUTF8(pynode_name);
+  if (!node_name) {
     return NULL;
   }
-  char * node_name = (char *)PyUnicode_1BYTE_DATA(node_name_py);
 
   int validation_result;
   size_t invalid_index;
@@ -1070,31 +1066,28 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
 static PyObject *
 rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * topic_name;
-  PyObject * node_name_py;
-  PyObject * node_namespace_py;
+  PyObject * pytopic_name;
+  PyObject * pynode_name;
+  PyObject * pynode_namespace;
 
-  if (!PyArg_ParseTuple(args, "OOO", &topic_name, &node_name_py, &node_namespace_py)) {
+  if (!PyArg_ParseTuple(args, "OOO", &pytopic_name, &pynode_name, &pynode_namespace)) {
     return NULL;
   }
 
-  if (!PyUnicode_Check(topic_name)) {
-    PyErr_Format(PyExc_TypeError, "Argument topic_name is not a PyUnicode object");
+  const char * topic = PyUnicode_AsUTF8(pytopic_name);
+  if (!topic) {
     return NULL;
   }
-  char * topic = (char *)PyUnicode_1BYTE_DATA(topic_name);
 
-  if (!PyUnicode_Check(node_name_py)) {
-    PyErr_Format(PyExc_TypeError, "Argument node_name is not a PyUnicode object");
+  const char * node_name = PyUnicode_AsUTF8(pynode_name);
+  if (!node_name) {
     return NULL;
   }
-  char * node_name = (char *)PyUnicode_1BYTE_DATA(node_name_py);
 
-  if (!PyUnicode_Check(node_namespace_py)) {
-    PyErr_Format(PyExc_TypeError, "Argument node_namespace is not a PyUnicode object");
+  const char * node_namespace = PyUnicode_AsUTF8(pynode_namespace);
+  if (!node_namespace) {
     return NULL;
   }
-  char * node_namespace = (char *)PyUnicode_1BYTE_DATA(node_namespace_py);
 
   char * expanded_topic = _expand_topic_name_with_exceptions(topic, node_name, node_namespace);
 
@@ -1141,12 +1134,10 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (!PyUnicode_Check(pytopic)) {
-    PyErr_Format(PyExc_TypeError, "Argument pytopic is not a PyUnicode object");
+  const char * topic = PyUnicode_AsUTF8(pytopic);
+  if (!topic) {
     return NULL;
   }
-
-  char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
   if (!node) {
@@ -1651,12 +1642,10 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (!PyUnicode_Check(pytopic)) {
-    PyErr_Format(PyExc_TypeError, "Argument pytopic is not a PyUnicode object");
+  const char * topic = PyUnicode_AsUTF8(pytopic);
+  if (!topic) {
     return NULL;
   }
-
-  char * topic = (char *)PyUnicode_1BYTE_DATA(pytopic);
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
   if (!node) {
@@ -1741,12 +1730,10 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (!PyUnicode_Check(pyservice_name)) {
-    PyErr_Format(PyExc_TypeError, "Argument pyservice_name is not a PyUnicode object");
+  const char * service_name = PyUnicode_AsUTF8(pyservice_name);
+  if (!service_name) {
     return NULL;
   }
-
-  char * service_name = (char *)PyUnicode_1BYTE_DATA(pyservice_name);
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
   if (!node) {
@@ -1901,12 +1888,10 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (!PyUnicode_Check(pyservice_name)) {
-    PyErr_Format(PyExc_TypeError, "Argument pyservice_name is not a PyUnicode object");
+  const char * service_name = PyUnicode_AsUTF8(pyservice_name);
+  if (!service_name) {
     return NULL;
   }
-
-  char * service_name = (char *)PyUnicode_1BYTE_DATA(pyservice_name);
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
 
