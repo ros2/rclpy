@@ -152,7 +152,7 @@ class TestNode(unittest.TestCase):
         self.assertEqual(2, self.node.count_subscribers(fq_topic_name))
 
         # error cases
-        with self.assertRaisesRegex(TypeError, 'Argument topic_name is not a'):
+        with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
             self.node.count_subscribers(1)
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.count_subscribers('42')
