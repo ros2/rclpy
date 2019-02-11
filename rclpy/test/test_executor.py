@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import threading
 import time
 import unittest
 
@@ -220,6 +221,44 @@ class TestExecutor(unittest.TestCase):
         executor.spin_once(timeout_sec=1)
         self.assertTrue(future2.done())
         self.assertEqual('Sentinel Result 2', future2.result())
+
+    def test_create_task_during_spin(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        future = None
+
+        def spin_until_task_done(executor):
+            nonlocal future
+            while future is None or not future.done():
+                try:
+                    executor.spin_once()
+                finally:
+                    executor.shutdown()
+                    break
+
+        # Start spinning in a separate thread
+        thr = threading.Thread(target=spin_until_task_done, args=(executor, ), daemon=True)
+        thr.start()
+
+        # Sleep in this thread to give the executor a chance to reach the loop in
+        # '_wait_for_ready_callbacks()'
+        time.sleep(1)
+
+        def func():
+            return 'Sentinel Result'
+
+        # Create a task
+        future = executor.create_task(func)
+
+        thr.join(timeout=0.5)
+        # If the join timed out, remove the node to cause the spin thread to stop
+        if thr.is_alive():
+            executor.remove_node(self.node)
+
+        self.assertTrue(future.done())
+        self.assertEqual('Sentinel Result', future.result())
 
     def test_global_executor_completes_async_task(self):
         self.assertIsNotNone(self.node.handle)
