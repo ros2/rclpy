@@ -231,7 +231,7 @@ class TestExecutor(unittest.TestCase):
 
         def spin_until_task_done(executor):
             nonlocal future
-            while future is None or future.done():
+            while future is None or not future.done():
                 try:
                     executor.spin_once()
                 finally:
@@ -241,6 +241,10 @@ class TestExecutor(unittest.TestCase):
         # Start spinning in a separate thread
         thr = threading.Thread(target=spin_until_task_done, args=(executor, ), daemon=True)
         thr.start()
+
+        # Sleep in this thread to give the executor a chance to reach the loop in
+        # '_wait_for_ready_callbacks()'
+        time.sleep(1)
 
         def func():
             return 'Sentinel Result'
