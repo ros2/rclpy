@@ -72,10 +72,25 @@ function(configure_python_c_extension_library _library_name)
   )
 endfunction()
 
+add_library(rclpy_common
+  SHARED src/rclpy_common/src/common.c
+)
+target_include_directories(rclpy_common
+  PUBLIC src/rclpy_common/include
+)
+configure_python_c_extension_library(rclpy_common)
+ament_target_dependencies(rclpy_common
+  "rmw"
+)
+
 add_library(
   rclpy
   SHARED src/rclpy/_rclpy.c
 )
+target_link_libraries(rclpy
+  rclpy_common
+)
+
 configure_python_c_extension_library(rclpy)
 ament_target_dependencies(rclpy
   "rcl"
@@ -87,6 +102,10 @@ add_library(
   rclpy_action
   SHARED src/rclpy/_rclpy_action.c
 )
+target_link_libraries(rclpy_action
+  rclpy_common
+)
+
 configure_python_c_extension_library(rclpy_action)
 ament_target_dependencies(rclpy_action
   "rcl"

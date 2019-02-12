@@ -38,7 +38,7 @@
 
 #include <signal.h>
 
-#include "./impl/common.h"
+#include "rclpy_common/common.h"
 
 static rcl_guard_condition_t * g_sigint_gc_handle;
 
