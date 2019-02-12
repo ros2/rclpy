@@ -502,8 +502,6 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
       // Borrows a pointer, do not free arg_values[i]
       arg_values[i] = PyUnicode_AsUTF8(pyarg);
       if (NULL == arg_values[i]) {
-        PyErr_Format(
-          PyExc_RuntimeError, "Bad arguments string encoding (not UTF8)");
         have_args = false;
         break;
       }
