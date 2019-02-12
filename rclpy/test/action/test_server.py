@@ -82,10 +82,8 @@ class TestActionServer(unittest.TestCase):
 
     def timed_spin(self, duration):
         start_time = time.time()
-        current_time = start_time
-        while (current_time - start_time) < duration:
+        while (time.time() - start_time) < duration:
             rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
-            current_time = time.time()
 
     def execute_goal_callback(self, goal_handle):
         goal_handle.set_succeeded()
