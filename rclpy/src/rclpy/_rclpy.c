@@ -501,6 +501,10 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
       }
       // Borrows a pointer, do not free arg_values[i]
       arg_values[i] = PyUnicode_AsUTF8(pyarg);
+      if (NULL == arg_values[i]) {
+        have_args = false;
+        break;
+      }
     }
   }
 

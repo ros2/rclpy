@@ -33,9 +33,23 @@ def func_init():
         rclpy.init(context=context)
     except RuntimeError:
         return False
-
     rclpy.shutdown(context=context)
     return True
+
+
+def func_init_with_non_utf8_arguments():
+    import rclpy
+    context = rclpy.context.Context()
+    # Embed non decodable characters e.g. due to
+    # wrong locale settings.
+    # See PEP-383 for further reference.
+    args = ['my-node.py', 'Ragnar\udcc3\udcb6k']
+    try:
+        rclpy.init(context=context, args=args)
+    except UnicodeEncodeError:
+        return True
+    rclpy.shutdown(context=context)
+    return False
 
 
 def func_init_shutdown():
@@ -122,6 +136,10 @@ def func_launch(function, message):
 
 def test_init():
     func_launch(func_init, 'failed to initialize rclpy')
+
+
+def test_init_with_non_utf8_arguments():
+    func_launch(func_init_with_non_utf8_arguments, 'handled non UTF-8 arguments')
 
 
 def test_init_shutdown():
