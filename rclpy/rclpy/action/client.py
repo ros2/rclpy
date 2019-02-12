@@ -300,7 +300,7 @@ class ActionClient(Waitable):
 
         if 'feedback' in taken_data:
             feedback_msg = taken_data['feedback']
-            goal_uuid = bytes(feedback_msg.action_goal_id.uuid)
+            goal_uuid = bytes(feedback_msg.goal_id.uuid)
             # Call a registered callback if there is one
             if goal_uuid in self._feedback_callbacks:
                 await await_or_execute(self._feedback_callbacks[goal_uuid], feedback_msg)
@@ -387,7 +387,7 @@ class ActionClient(Waitable):
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        goal.action_goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
+        goal.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         sequence_number = _rclpy_action.rclpy_action_send_goal_request(self._client_handle, goal)
         if sequence_number in self._pending_goal_requests:
             raise RuntimeError(
@@ -395,12 +395,12 @@ class ActionClient(Waitable):
 
         if feedback_callback is not None:
             # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid = bytes(goal.action_goal_id.uuid)
+            goal_uuid = bytes(goal.goal_id.uuid)
             self._feedback_callbacks[goal_uuid] = feedback_callback
 
         future = Future()
         self._pending_goal_requests[sequence_number] = future
-        self._sequence_number_to_goal_id[sequence_number] = goal.action_goal_id
+        self._sequence_number_to_goal_id[sequence_number] = goal.goal_id
         future.add_done_callback(self._remove_pending_goal_request)
         # Add future so executor is aware
         self.add_future(future)
@@ -499,7 +499,7 @@ class ActionClient(Waitable):
                 'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
 
         result_request = self._action_type.GoalResultService.Request()
-        result_request.action_goal_id = goal_handle.goal_id
+        result_request.goal_id = goal_handle.goal_id
         sequence_number = _rclpy_action.rclpy_action_send_result_request(
             self._client_handle,
             result_request)
