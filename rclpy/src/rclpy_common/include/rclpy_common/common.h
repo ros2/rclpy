@@ -18,6 +18,8 @@
 
 #include <rmw/types.h>
 
+#include "rclpy_common/visibility_control.h"
+
 typedef void * create_ros_message_signature (void);
 typedef void destroy_ros_message_signature (void *);
 typedef bool convert_from_py_signature (PyObject *, void *);
@@ -28,12 +30,15 @@ typedef PyObject * convert_to_py_signature (void *);
  * \param[in] void pointer to a rmw_qos_profile_t structure
  * \return QoSProfile object
  */
+RCLPY_COMMON_PUBLIC
 PyObject *
 rclpy_convert_to_py_qos_policy(void * profile);
 
+RCLPY_COMMON_PUBLIC
 void *
 get_capsule_pointer(PyObject * pymetaclass, const char * attr);
 
+RCLPY_COMMON_PUBLIC
 void *
 rclpy_create_from_py(PyObject * pymessage, destroy_ros_message_signature ** destroy_ros_message);
 
@@ -46,6 +51,7 @@ rclpy_create_from_py(PyObject * pymessage, destroy_ros_message_signature ** dest
  * \param[out] destroy_ros_message The destructor function for finalizing the returned message.
  * \return The C version of the input ROS message.
  */
+RCLPY_COMMON_PUBLIC
 void *
 rclpy_convert_from_py(PyObject * pymessage, destroy_ros_message_signature ** destroy_ros_message);
 
@@ -57,6 +63,7 @@ rclpy_convert_from_py(PyObject * pymessage, destroy_ros_message_signature ** des
  * \param[in] pyclass An instance of the Python type to convert to.
  * \return The Python version of the input ROS message.
  */
+RCLPY_COMMON_PUBLIC
 PyObject *
 rclpy_convert_to_py(void * message, PyObject * pyclass);
 
