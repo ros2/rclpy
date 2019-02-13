@@ -83,13 +83,18 @@ target_include_directories(rclpy_common
   src/rclpy_common/include
   ${PythonExtra_INCLUDE_DIRS}
 )
+ament_target_dependencies(rclpy_common
+  "rmw"
+)
+
+# Causes the visibility macros to use dllexport rather than dllimport,
+# which is appropriate when building the dll but not consuming it.
+target_compile_definitions(rclpy_common PRIVATE "RCLPY_COMMON_BUILDING_DLL")
+
 install(TARGETS rclpy_common
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
-)
-ament_target_dependencies(rclpy_common
-  "rmw"
 )
 
 add_library(
