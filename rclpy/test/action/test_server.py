@@ -346,7 +346,7 @@ class TestActionServer(unittest.TestCase):
         action_server.destroy()
         executor.shutdown()
 
-    def test_send_result_succeeded(self):
+    def test_execute_set_succeeded(self):
 
         def execute_callback(goal_handle):
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
@@ -377,7 +377,7 @@ class TestActionServer(unittest.TestCase):
         self.assertEqual(result.sequence, [1, 1, 2, 3, 5])
         action_server.destroy()
 
-    def test_send_result_aborted(self):
+    def test_execute_set_aborted(self):
 
         def execute_callback(goal_handle):
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
@@ -404,6 +404,37 @@ class TestActionServer(unittest.TestCase):
         get_result_future = self.mock_action_client.get_result(goal_uuid)
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result = get_result_future.result()
+        self.assertEqual(result.action_status, GoalStatus.STATUS_ABORTED)
+        self.assertEqual(result.sequence, [1, 1, 2, 3, 5])
+        action_server.destroy()
+
+    def test_execute_no_terminal_state(self):
+
+        def execute_callback(goal_handle):
+            # Do not set the goal handles state
+            result = Fibonacci.Result()
+            result.sequence.extend([1, 1, 2, 3, 5])
+            return result
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=execute_callback,
+        )
+
+        goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = goal_uuid
+        goal_future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+        goal_handle = goal_future.result()
+        self.assertTrue(goal_handle.accepted)
+
+        get_result_future = self.mock_action_client.get_result(goal_uuid)
+        rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
+        result = get_result_future.result()
+        # Goal status should default to STATUS_ABORTED
         self.assertEqual(result.action_status, GoalStatus.STATUS_ABORTED)
         self.assertEqual(result.sequence, [1, 1, 2, 3, 5])
         action_server.destroy()
