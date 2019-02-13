@@ -277,7 +277,11 @@ class ActionServer(Waitable):
         if not goal_id_exists:
             # Call user goal callback
             response = await await_or_execute(self._goal_callback, goal_request)
-            accepted = GoalResponse.ACCEPT == response
+            if not isinstance(response, GoalResponse):
+                self._node.get_logger().warn(
+                    'Goal request callback did not return a GoalResponse type. Rejecting goal.')
+            else:
+                accepted = GoalResponse.ACCEPT == response
 
         if accepted:
             # Create a goal handle

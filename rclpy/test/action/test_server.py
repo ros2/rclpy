@@ -203,6 +203,28 @@ class TestActionServer(unittest.TestCase):
         self.assertFalse(future.result().accepted)
         action_server.destroy()
 
+    def test_goal_callback_invalid_return(self):
+
+        def goal_callback(goal):
+            return 'Invalid return type'
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            goal_callback=goal_callback,
+            handle_accepted_callback=lambda gh: None,
+        )
+
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, self.executor)
+        # An invalid return type in the goal callback should translate to a rejected goal
+        self.assertFalse(future.result().accepted)
+        action_server.destroy()
+
     def test_multi_goal_accept(self):
         executor = MultiThreadedExecutor(context=self.context)
         action_server = ActionServer(
