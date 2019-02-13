@@ -298,7 +298,9 @@ class TestExecutor(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         assert executor.add_node(self.node)
+        assert id(executor) == id(self.node.executor)
         assert not executor.add_node(self.node)
+        assert id(executor) == id(self.node.executor)
 
 
 if __name__ == '__main__':

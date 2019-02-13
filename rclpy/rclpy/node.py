@@ -112,11 +112,14 @@ class Node:
     def executor(self, new_executor):
         """Set or change the executor the node belongs to."""
         current_executor = self.executor
+        if current_executor == new_executor:
+            return
         if current_executor is not None:
             current_executor.remove_node(self)
         if new_executor is None:
             self.__executor_weakref = None
-        elif new_executor.add_node(self):
+        else:
+            new_executor.add_node(self)
             self.__executor_weakref = weakref.ref(new_executor)
 
     @property
