@@ -107,6 +107,7 @@ class TestActionServer(unittest.TestCase):
             execute_callback=self.execute_goal_callback,
             callback_group=ReentrantCallbackGroup(),
             goal_callback=lambda req: GoalResponse.REJECT,
+            handle_accepted_callback=lambda gh: None,
             cancel_callback=lambda req: CancelResponse.REJECT,
             goal_service_qos_profile=rclpy.qos.qos_profile_default,
             result_service_qos_profile=rclpy.qos.qos_profile_default,
@@ -141,7 +142,16 @@ class TestActionServer(unittest.TestCase):
             nonlocal goal_order
             self.assertEqual(goal.action_goal_id, goal_uuid)
             self.assertEqual(goal.order, goal_order)
-            return GoalResponse.ACCEPT_AND_EXECUTE
+            return GoalResponse.ACCEPT
+
+        handle_accepted_callback_triggered = False
+
+        def handle_accepted_callback(goal_handle):
+            nonlocal handle_accepted_callback_triggered
+            handle_accepted_callback_triggered = True
+            self.assertEqual(goal_handle.status, GoalStatus.STATUS_ACCEPTED)
+            self.assertEqual(goal_handle.goal_id, goal_uuid)
+            self.assertEqual(goal_handle.request.order, goal_order)
 
         action_server = ActionServer(
             self.node,
@@ -149,6 +159,7 @@ class TestActionServer(unittest.TestCase):
             'fibonacci',
             execute_callback=self.execute_goal_callback,
             goal_callback=goal_callback,
+            handle_accepted_callback=handle_accepted_callback,
         )
 
         goal_msg = Fibonacci.Goal()
@@ -157,6 +168,7 @@ class TestActionServer(unittest.TestCase):
         future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, self.executor)
         self.assertTrue(future.result().accepted)
+        self.assertTrue(handle_accepted_callback_triggered)
         action_server.destroy()
 
     def test_single_goal_reject(self):
@@ -170,12 +182,17 @@ class TestActionServer(unittest.TestCase):
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 
+        def handle_accepted_callback(goal_handle):
+            # Since the goal is rejected, we don't expect this function to be called
+            self.assertFalse(True)
+
         action_server = ActionServer(
             self.node,
             Fibonacci,
             'fibonacci',
             execute_callback=self.execute_goal_callback,
             goal_callback=goal_callback,
+            handle_accepted_callback=handle_accepted_callback,
         )
 
         goal_msg = Fibonacci.Goal()
@@ -194,6 +211,7 @@ class TestActionServer(unittest.TestCase):
             'fibonacci',
             execute_callback=self.execute_goal_callback,
             callback_group=ReentrantCallbackGroup(),
+            handle_accepted_callback=lambda gh: None,
         )
 
         goal_msg = Fibonacci.Goal()
@@ -221,6 +239,7 @@ class TestActionServer(unittest.TestCase):
             'fibonacci',
             execute_callback=self.execute_goal_callback,
             callback_group=ReentrantCallbackGroup(),
+            handle_accepted_callback=lambda gh: None,
         )
 
         # Send a goal with the same ID twice
@@ -255,6 +274,7 @@ class TestActionServer(unittest.TestCase):
             'fibonacci',
             callback_group=ReentrantCallbackGroup(),
             execute_callback=execute_callback,
+            handle_accepted_callback=lambda gh: None,
             cancel_callback=cancel_callback,
         )
 
@@ -300,6 +320,7 @@ class TestActionServer(unittest.TestCase):
             'fibonacci',
             callback_group=ReentrantCallbackGroup(),
             execute_callback=execute_callback,
+            handle_accepted_callback=lambda gh: None,
             cancel_callback=cancel_callback,
         )
 
@@ -328,6 +349,7 @@ class TestActionServer(unittest.TestCase):
     def test_send_result_succeeded(self):
 
         def execute_callback(goal_handle):
+            self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
             goal_handle.set_succeeded()
@@ -358,6 +380,7 @@ class TestActionServer(unittest.TestCase):
     def test_send_result_aborted(self):
 
         def execute_callback(goal_handle):
+            self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
             goal_handle.set_aborted()

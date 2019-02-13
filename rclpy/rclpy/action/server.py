@@ -30,12 +30,8 @@ from rclpy.waitable import NumberOfEntities, Waitable
 class GoalResponse(Enum):
     """Possible goal responses."""
 
-    # Reject the goal.
     REJECT = 1
-    # Accept the goal and start executing it right away.
-    ACCEPT_AND_EXECUTE = 2
-    # Accept the goal and defer execution until a later time.
-    ACCEPT_AND_DEFER = 3
+    ACCEPT = 2
 
 
 class CancelResponse(Enum):
@@ -134,6 +130,10 @@ class ServerGoalHandle:
             if not _rclpy_action.rclpy_action_goal_handle_is_active(self._handle):
                 self._action_server.notify_goal_done()
 
+    def execute(self, execute_callback=None):
+        self._update_state(GoalEvent.EXECUTE)
+        self._action_server.notify_execute(self, execute_callback)
+
     def publish_feedback(self, feedback_msg):
         with self._lock:
             # Ignore for already destructed goal handles
@@ -163,9 +163,14 @@ class ServerGoalHandle:
         self._handle = None
 
 
+def default_handle_accepted_callback(goal_handle):
+    """Execute the goal."""
+    goal_handle.execute()
+
+
 def default_goal_callback(goal_request):
     """Accept all goals."""
-    return GoalResponse.ACCEPT_AND_EXECUTE
+    return GoalResponse.ACCEPT
 
 
 def default_cancel_callback(cancel_request):
@@ -185,6 +190,7 @@ class ActionServer(Waitable):
         *,
         callback_group=None,
         goal_callback=default_goal_callback,
+        handle_accepted_callback=default_handle_accepted_callback,
         cancel_callback=default_cancel_callback,
         goal_service_qos_profile=qos_profile_services_default,
         result_service_qos_profile=qos_profile_services_default,
@@ -201,9 +207,13 @@ class ActionServer(Waitable):
         :param action_name: Name of the action.
             Used as part of the underlying topic and service names.
         :param execute_callback: Callback function for processing accepted goals.
+            This is called if when :class:`ServerGoalHandle.execute()` is called for
+            a goal handle that is being tracked by this action server.
         :param callback_group: Callback group to add the action server to.
             If None, then the node's default callback group is used.
         :param goal_callback: Callback function for handling new goal requests.
+        :param handle_accepted_callback: Callback function for handling newly accepted goals.
+            Passes an instance of `ServerGoalHandle` as an argument.
         :param cancel_callback: Callback function for handling cancel requests.
         :param goal_service_qos_profile: QoS profile for the goal service.
         :param result_service_qos_profile: QoS profile for the result service.
@@ -220,6 +230,7 @@ class ActionServer(Waitable):
 
         self._lock = threading.Lock()
 
+        self.register_handle_accepted_callback(handle_accepted_callback)
         self.register_goal_callback(goal_callback)
         self.register_cancel_callback(cancel_callback)
         self.register_execute_callback(execute_callback)
@@ -246,6 +257,8 @@ class ActionServer(Waitable):
 
         callback_group.add_entity(self)
         self._node.add_waitable(self)
+        # import rclpy
+        # self._node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     async def _execute_goal_request(self, request_header_and_message):
         request_header, goal_request = request_header_and_message
@@ -264,8 +277,7 @@ class ActionServer(Waitable):
         if not goal_id_exists:
             # Call user goal callback
             response = await await_or_execute(self._goal_callback, goal_request)
-            accepted = ((GoalResponse.ACCEPT_AND_EXECUTE == response) or
-                        (GoalResponse.ACCEPT_AND_DEFER == response))
+            accepted = GoalResponse.ACCEPT == response
 
         if accepted:
             # Create a goal handle
@@ -295,16 +307,25 @@ class ActionServer(Waitable):
 
         self._node.get_logger().debug('New goal accepted: {0}'.format(goal_uuid.uuid))
 
-        goal_handle._update_state(GoalEvent.EXECUTE)
-        # Call user execute callback
-        execute_result = await await_or_execute(self._execute_callback, goal_handle)
-        # If user did not trigger a terminal state, assume success
+        # Provide the user a reference to the goal handle
+        await await_or_execute(self._handle_accepted_callback, goal_handle)
+
+    async def _execute_goal(self, execute_callback, goal_handle):
+        goal_uuid = goal_handle.goal_id.uuid
+        self._node.get_logger().debug('Executing goal with ID {0}'.format(goal_uuid))
+
+        # Execute user callback
+        execute_result = await await_or_execute(execute_callback, goal_handle)
+
+        # If user did not trigger a terminal state, assume aborted
         if goal_handle.is_active:
             self._node.get_logger().warn(
-                'Goal state not set, assuming success. Goal ID: {0}'.format(goal_uuid.uuid))
-            goal_handle.set_succeeded()
+                'Goal state not set, assuming aborted. Goal ID: {0}'.format(goal_uuid))
+            goal_handle.set_aborted()
+
         self._node.get_logger().debug(
-            'Goal with ID {0} finished with state {1}'.format(goal_uuid.uuid, goal_handle.status))
+            'Goal with ID {0} finished with state {1}'.format(goal_uuid, goal_handle.status))
+
         # Set result
         execute_result.action_status = goal_handle.status
         goal_handle._result_future.set_result(execute_result)
@@ -461,9 +482,40 @@ class ActionServer(Waitable):
             _rclpy_action.rclpy_action_wait_set_add(self._handle, wait_set)
     # End Waitable API
 
+    def notify_execute(self, goal_handle, execute_callback):
+        # Use provided callback, defaulting to a previously registered callback
+        if execute_callback is None:
+            if self._execute_callback is None:
+                return
+            execute_callback = self._execute_callback
+
+        # Schedule user callback for execution
+        self._node.executor.create_task(self._execute_goal, execute_callback, goal_handle)
+
     def notify_goal_done(self):
         with self._lock:
             _rclpy_action.rclpy_action_notify_goal_done(self._handle)
+
+    def register_handle_accepted_callback(self, handle_accepted_callback):
+        """
+        Register a callback for handling newly accepted goals.
+
+        The provided function is called whenever a new goal has been accepted by this
+        action server.
+        The function should expect an instance of :class:`ServerGoalHandle` as an argument, which
+        represents a handle to the goal that was accepted.
+        The goal handle can be used to interact with the goal, e.g. publish feedback,
+        update the status, or execute a deferred goal.
+
+        There can only be one handle accepted callback per :class:`ActionServer`, therefore
+        calling this function will replace any previously registered callback.
+
+        :param goal_callback: Callback function, if `None`, then unregisters any previously
+            registered callback.
+        """
+        if handle_accepted_callback is None:
+            handle_accepted_callback = default_handle_accepted_callback
+        self._handle_accepted_callback = handle_accepted_callback
 
     def register_goal_callback(self, goal_callback):
         """
@@ -480,6 +532,8 @@ class ActionServer(Waitable):
         :param goal_callback: Callback function, if `None`, then unregisters any previously
             registered callback.
         """
+        if goal_callback is None:
+            goal_callback = default_goal_callback
         self._goal_callback = goal_callback
 
     def register_cancel_callback(self, cancel_callback):
@@ -497,6 +551,8 @@ class ActionServer(Waitable):
         :param cancel_callback: Callback function, if `None`, then unregisters any previously
             registered callback.
         """
+        if cancel_callback is None:
+            cancel_callback = default_cancel_callback
         self._cancel_callback = cancel_callback
 
     def register_execute_callback(self, execute_callback):
@@ -512,9 +568,10 @@ class ActionServer(Waitable):
         There can only be one execute callback per :class:`ActionServer`, therefore calling this
         function will replace any previously registered callback.
 
-        :param execute_callback: Callback function, if `None`, then unregisters any previously
-            registered callback.
+        :param execute_callback: Callback function. Must not be `None`.
         """
+        if not callable(execute_callback):
+            raise TypeError('Failed to register goal execution callback: not callable')
         self._execute_callback = execute_callback
 
     def destroy(self):
