@@ -75,10 +75,19 @@ endfunction()
 add_library(rclpy_common
   SHARED src/rclpy_common/src/common.c
 )
-target_include_directories(rclpy_common
-  PUBLIC src/rclpy_common/include
+target_link_libraries(rclpy_common
+  ${PythonExtra_LIBRARIES}
 )
-configure_python_c_extension_library(rclpy_common)
+target_include_directories(rclpy_common
+  PUBLIC
+  src/rclpy_common/include
+  ${PythonExtra_INCLUDE_DIRS}
+)
+install(TARGETS rclpy_common
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 ament_target_dependencies(rclpy_common
   "rmw"
 )
