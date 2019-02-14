@@ -100,8 +100,7 @@ class ServerGoalHandle:
 
     @property
     def is_cancel_requested(self):
-        with self._lock:
-            return self._cancel_requested
+        return GoalStatus.STATUS_CANCELING == self.status
 
     @property
     def status(self):
@@ -109,10 +108,6 @@ class ServerGoalHandle:
             if self._handle is None:
                 return GoalStatus.STATUS_UNKNOWN
             return _rclpy_action.rclpy_action_goal_handle_get_status(self._handle)
-
-    def _notify_cancel_requested(self):
-        with self._lock:
-            self._cancel_requested = True
 
     def _update_state(self, event):
         with self._lock:
@@ -131,7 +126,11 @@ class ServerGoalHandle:
                 self._action_server.notify_goal_done()
 
     def execute(self, execute_callback=None):
-        self._update_state(GoalEvent.EXECUTE)
+        # It's possible that there has been a request to cancel the goal prior to executing.
+        # In this case we want to avoid the illegal state transition to EXECUTING
+        # but still call the users execute callback to let them handle canceling the goal.
+        if not self.is_cancel_requested:
+            self._update_state(GoalEvent.EXECUTE)
         self._action_server.notify_execute(self, execute_callback)
 
     def publish_feedback(self, feedback_msg):
@@ -354,10 +353,9 @@ class ActionServer(Waitable):
             goal_handle = self._goal_handles[goal_uuid]
             response = await await_or_execute(self._cancel_callback, goal_handle)
 
-            accepted = CancelResponse.ACCEPT == response
-            if accepted:
+            if CancelResponse.ACCEPT == response:
                 # Notify goal handle
-                goal_handle._notify_cancel_requested()
+                goal_handle._update_state(GoalEvent.CANCEL)
             else:
                 # Remove from response
                 cancel_response.goals_canceling.remove(goal_info)

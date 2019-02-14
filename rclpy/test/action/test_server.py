@@ -368,6 +368,65 @@ class TestActionServer(unittest.TestCase):
         action_server.destroy()
         executor.shutdown()
 
+    def test_cancel_defered_goal(self):
+        server_goal_handle = None
+
+        def handle_accepted_callback(gh):
+            nonlocal server_goal_handle
+            server_goal_handle = gh
+
+        def cancel_callback(request):
+            return CancelResponse.ACCEPT
+
+        def execute_callback(gh):
+            # The goal should already be in state CANCELING
+            self.assertTrue(gh.is_cancel_requested)
+            gh.set_canceled()
+            return Fibonacci.Result()
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            callback_group=ReentrantCallbackGroup(),
+            execute_callback=execute_callback,
+            handle_accepted_callback=handle_accepted_callback,
+            cancel_callback=cancel_callback,
+        )
+
+        goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_msg = Fibonacci.Goal()
+        goal_msg.action_goal_id = goal_uuid
+        goal_future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+        send_goal_response = goal_future.result()
+        self.assertTrue(send_goal_response.accepted)
+        self.assertIsNotNone(server_goal_handle)
+        self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_ACCEPTED)
+
+        # Cancel the goal, before execution
+        cancel_srv = CancelGoal.Request()
+        cancel_srv.goal_info.goal_id = goal_uuid
+        cancel_srv.goal_info.stamp.sec = 0
+        cancel_srv.goal_info.stamp.nanosec = 0
+        cancel_future = self.mock_action_client.cancel_goal(cancel_srv)
+        rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
+        cancel_result = cancel_future.result()
+        self.assertEqual(len(cancel_result.goals_canceling), 1)
+
+        self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_CANCELING)
+
+        # Execute the goal
+        server_goal_handle.execute()
+
+        # Get the result and exepect it to have canceled status
+        get_result_future = self.mock_action_client.get_result(goal_uuid)
+        rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
+        result = get_result_future.result()
+        self.assertEqual(result.action_status, GoalStatus.STATUS_CANCELED)
+        self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_CANCELED)
+        action_server.destroy()
+
     def test_execute_set_succeeded(self):
 
         def execute_callback(goal_handle):
