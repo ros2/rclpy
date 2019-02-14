@@ -155,11 +155,13 @@ class ServerGoalHandle:
         self._update_state(GoalEvent.SET_CANCELED)
 
     def destroy(self):
-        if self._handle is None:
-            return
+        with self._lock:
+            if self._handle is None:
+                return
+            _rclpy_action.rclpy_action_destroy_server_goal_handle(self._handle)
+            self._handle = None
+
         self._action_server.remove_future(self._result_future)
-        _rclpy_action.rclpy_action_destroy_server_goal_handle(self._handle)
-        self._handle = None
 
 
 def default_handle_accepted_callback(goal_handle):
@@ -219,8 +221,8 @@ class ActionServer(Waitable):
         :param cancel_service_qos_profile: QoS profile for the cancel service.
         :param feedback_pub_qos_profile: QoS profile for the feedback publisher.
         :param status_pub_qos_profile: QoS profile for the status publisher.
-        :param result_timeout: Goals that have results longer than this number of seconds
-            are discarded.
+        :param result_timeout: How long in seconds a result is kept by the server after a goal
+            reaches a terminal state.
         """
         if callback_group is None:
             callback_group = node.default_callback_group
@@ -264,7 +266,6 @@ class ActionServer(Waitable):
         goal_uuid = goal_request.action_goal_id
         goal_info = GoalInfo()
         goal_info.goal_id = goal_uuid
-        goal_info.stamp = self._node.get_clock().now().to_msg()
 
         self._node.get_logger().debug('New goal request with ID: {0}'.format(goal_uuid.uuid))
 
@@ -283,6 +284,9 @@ class ActionServer(Waitable):
                 accepted = GoalResponse.ACCEPT == response
 
         if accepted:
+            # Stamp time of acceptance
+            goal_info.stamp = self._node.get_clock().now().to_msg()
+
             # Create a goal handle
             try:
                 with self._lock:
@@ -297,7 +301,7 @@ class ActionServer(Waitable):
         # Send response
         response_msg = self._action_type.GoalRequestService.Response()
         response_msg.accepted = accepted
-        response_msg.stamp = self._node.get_clock().now().to_msg()
+        response_msg.stamp = goal_info.stamp
         _rclpy_action.rclpy_action_send_goal_response(
             self._handle,
             request_header,
@@ -445,7 +449,7 @@ class ActionServer(Waitable):
                     len(self._goal_handles),
                 )
 
-        if not any(data):
+        if not data:
             return None
         return data
 

@@ -1663,6 +1663,7 @@ rclpy_action_expire_goals(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * result_tuple = PyTuple_New(num_expired);
   if (!result_tuple) {
     free(expired_goals);
+    Py_DECREF(pygoal_info_type);
     return NULL;
   }
   // PyTuple_SetItem() returns 0 on success
