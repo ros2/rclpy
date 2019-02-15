@@ -11,24 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifndef RCLPY__IMPL__COMMON_H_
-#define RCLPY__IMPL__COMMON_H_
 
-#include <Python.h>
+#include "rclpy_common/common.h"
 
-#include <rmw/types.h>
-
-typedef void * create_ros_message_signature (void);
-typedef void destroy_ros_message_signature (void *);
-typedef bool convert_from_py_signature (PyObject *, void *);
-typedef PyObject * convert_to_py_signature (void *);
-
-/// Convert a C rmw_qos_profile_t into a Python QoSProfile object
-/**
- * \param[in] void pointer to a rmw_qos_profile_t structure
- * \return QoSProfile object
- */
-static PyObject *
+PyObject *
 rclpy_convert_to_py_qos_policy(void * profile)
 {
   PyObject * pyqos_module = PyImport_ImportModule("rclpy.qos");
@@ -113,7 +99,7 @@ rclpy_convert_to_py_qos_policy(void * profile)
   return pyqos_profile;
 }
 
-static void *
+void *
 get_capsule_pointer(PyObject * pymetaclass, const char * attr)
 {
   PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
@@ -124,4 +110,75 @@ get_capsule_pointer(PyObject * pymetaclass, const char * attr)
   Py_DECREF(pyattr);
   return ptr;
 }
-#endif  // RCLPY__IMPL__COMMON_H_
+
+void *
+rclpy_create_from_py(PyObject * pymessage, destroy_ros_message_signature ** destroy_ros_message)
+{
+  PyObject * pymetaclass = PyObject_GetAttrString(pymessage, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
+
+  create_ros_message_signature * create_ros_message = get_capsule_pointer(
+    pymetaclass, "_CREATE_ROS_MESSAGE");
+  if (!create_ros_message) {
+    Py_DECREF(pymetaclass);
+    return NULL;
+  }
+
+  *destroy_ros_message = get_capsule_pointer(
+    pymetaclass, "_DESTROY_ROS_MESSAGE");
+  Py_DECREF(pymetaclass);
+  if (!destroy_ros_message) {
+    return NULL;
+  }
+
+  void * message = create_ros_message();
+  if (!message) {
+    return PyErr_NoMemory();
+  }
+  return message;
+}
+
+void *
+rclpy_convert_from_py(PyObject * pymessage, destroy_ros_message_signature ** destroy_ros_message)
+{
+  void * message = rclpy_create_from_py(pymessage, destroy_ros_message);
+  if (!message) {
+    return NULL;
+  }
+
+  PyObject * pymetaclass = PyObject_GetAttrString(pymessage, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
+
+  convert_from_py_signature * convert = get_capsule_pointer(
+    pymetaclass, "_CONVERT_FROM_PY");
+  Py_DECREF(pymetaclass);
+  if (!convert) {
+    return NULL;
+  }
+
+  if (!convert(pymessage, message)) {
+    (**destroy_ros_message)(message);
+    return NULL;
+  }
+  return message;
+}
+
+PyObject *
+rclpy_convert_to_py(void * message, PyObject * pyclass)
+{
+  PyObject * pymetaclass = PyObject_GetAttrString(pyclass, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
+  convert_to_py_signature * convert = get_capsule_pointer(
+    pymetaclass, "_CONVERT_TO_PY");
+  Py_DECREF(pymetaclass);
+  if (!convert) {
+    return NULL;
+  }
+  return convert(message);
+}
