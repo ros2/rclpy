@@ -17,7 +17,7 @@
 #include <rcl/error_handling.h>
 #include <rcl_action/rcl_action.h>
 
-#include "./impl/common.h"
+#include "rclpy_common/common.h"
 
 /// Destroy an rcl_action entity.
 /**
