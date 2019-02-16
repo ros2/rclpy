@@ -34,13 +34,16 @@ class MockActionServer():
 
     def __init__(self, node):
         self.goal_srv = node.create_service(
-            Fibonacci.GoalRequestService, '/fibonacci/_action/send_goal', self.goal_callback)
+            Fibonacci.Impl.SendGoalService, '/fibonacci/_action/send_goal',
+            self.goal_callback)
         self.cancel_srv = node.create_service(
-            Fibonacci.CancelGoalService, '/fibonacci/_action/cancel_goal', self.cancel_callback)
+            Fibonacci.Impl.CancelGoalService, '/fibonacci/_action/cancel_goal',
+            self.cancel_callback)
         self.result_srv = node.create_service(
-            Fibonacci.GoalResultService, '/fibonacci/_action/get_result', self.result_callback)
+            Fibonacci.Impl.GetResultService, '/fibonacci/_action/get_result',
+            self.result_callback)
         self.feedback_pub = node.create_publisher(
-            Fibonacci.Feedback, '/fibonacci/_action/feedback')
+            Fibonacci.Impl.FeedbackMessage, '/fibonacci/_action/feedback')
 
     def goal_callback(self, request, response):
         response.accepted = True
@@ -54,9 +57,9 @@ class MockActionServer():
         return response
 
     def publish_feedback(self, goal_id):
-        feedback = Fibonacci.Feedback()
-        feedback.action_goal_id = goal_id
-        self.feedback_pub.publish(feedback)
+        feedback_message = Fibonacci.Impl.FeedbackMessage()
+        feedback_message.goal_id = goal_id
+        self.feedback_pub.publish(feedback_message)
 
 
 class TestActionClient(unittest.TestCase):
