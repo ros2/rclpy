@@ -398,7 +398,7 @@ class ActionClient(Waitable):
 
         if feedback_callback is not None:
             # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid = bytes(request.goal_id)
+            goal_uuid = bytes(request.goal_id.uuid)
             self._feedback_callbacks[goal_uuid] = feedback_callback
 
         future = Future()
