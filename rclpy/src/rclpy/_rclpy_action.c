@@ -629,7 +629,7 @@ rclpy_action_create_server(PyObject * Py_UNUSED(self), PyObject * args)
   OPTIONS_COPY_QOS_PROFILE(action_server_ops, cancel_service_qos);
   OPTIONS_COPY_QOS_PROFILE(action_server_ops, feedback_topic_qos);
   OPTIONS_COPY_QOS_PROFILE(action_server_ops, status_topic_qos);
-  action_server_ops.result_timeout.nanoseconds = RCL_S_TO_NS(result_timeout);
+  action_server_ops.result_timeout.nanoseconds = (rcl_duration_value_t)RCL_S_TO_NS(result_timeout);
 
   rcl_action_server_t * action_server =
     (rcl_action_server_t *)PyMem_Malloc(sizeof(rcl_action_server_t));
