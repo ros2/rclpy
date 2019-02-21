@@ -1446,7 +1446,7 @@ rclpy_action_update_goal_state(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pygoal_handle;
   int64_t pyevent;
 
-  if (!PyArg_ParseTuple(args, "Ol", &pygoal_handle, &pyevent)) {
+  if (!PyArg_ParseTuple(args, "OL", &pygoal_handle, &pyevent)) {
     return NULL;
   }
 
@@ -1615,7 +1615,7 @@ rclpy_action_expire_goals(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pyaction_server;
   int64_t max_num_goals;
 
-  if (!PyArg_ParseTuple(args, "Ol", &pyaction_server, &max_num_goals)) {
+  if (!PyArg_ParseTuple(args, "OL", &pyaction_server, &max_num_goals)) {
     return NULL;
   }
 
