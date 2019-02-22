@@ -258,8 +258,6 @@ class ActionServer(Waitable):
 
         callback_group.add_entity(self)
         self._node.add_waitable(self)
-        # import rclpy
-        # self._node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
     async def _execute_goal_request(self, request_header_and_message):
         request_header, goal_request = request_header_and_message
