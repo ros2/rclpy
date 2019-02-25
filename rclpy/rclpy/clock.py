@@ -132,6 +132,10 @@ class Clock:
     def clock_type(self):
         return self._clock_type
 
+    @property
+    def handle(self):
+        return self._clock_handle
+
     def __repr__(self):
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
