@@ -4,10 +4,11 @@ rclpy
 rclpy provides the canonical Python API for interacting with ROS 2.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 3
 
-   modules/modules
+   about
+   examples
+   api
 
 Indices and tables
 ==================

@@ -1,8 +1,0 @@
-Services
-========
-
-Client
-------
-
-Service
--------

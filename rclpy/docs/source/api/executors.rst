@@ -1,6 +1,6 @@
-``rclpy``
+Executors
 =========
 
-.. automodule:: rclpy
+.. automodule:: rclpy.executors
    :members:
    :undoc-members:
