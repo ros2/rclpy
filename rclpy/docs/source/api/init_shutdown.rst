@@ -1,5 +1,5 @@
-Initialization and Shutdown
-===========================
+Initialization, Shutdown, and Spinning
+======================================
 
 .. automodule:: rclpy
    :members:

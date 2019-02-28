@@ -13,10 +13,11 @@ API
    api/timers
    api/parameters
    api/logging
+   api/context
+   api/executors
+   api/utilities
    api/qos
 
 .. TODO(jacobperron): Document remaining API
    api/time
-   api/context
-   api/executor
    api/callback_groups
