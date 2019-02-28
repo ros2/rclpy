@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """
+A collection of functions for writing a ROS program.
+
 A typical ROS program consists of the following operations:
 
 #. Initialization
