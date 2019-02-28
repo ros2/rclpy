@@ -56,9 +56,10 @@ from rclpy.waitable import Waitable
 HIDDEN_NODE_PREFIX = '_'
 
 # Used for documentation purposes only
-MSG_TYPE = TypeVar('msg_type')
-SRV_REQ_TYPE = TypeVar('srv_type.Request')
-SRV_RES_TYPE = TypeVar('srv_type.Response')
+MSG_TYPE = TypeVar('Msg')
+SRV_TYPE = TypeVar('Srv')
+SRV_TYPE.Request = TypeVar('SrvRequest')
+SRV_TYPE.Response = TypeVar('SrvResponse')
 
 
 class Node:
@@ -456,7 +457,7 @@ class Node:
         self,
         srv_type,
         srv_name: str,
-        callback: Callable[[SRV_REQ_TYPE, SRV_RES_TYPE], SRV_RES_TYPE],
+        callback: Callable[[SRV_TYPE.Request, SRV_TYPE.Response], SRV_TYPE.Response],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: CallbackGroup = None

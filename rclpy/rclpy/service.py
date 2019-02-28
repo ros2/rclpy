@@ -12,13 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Callable
+from typing import TypeVar
+
+from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.qos import QoSProfile
+
+# Used for documentation purposes only
+SERVICE_SRV_TYPE = TypeVar('Srv')
+SERVICE_SRV_TYPE.Request = TypeVar('SrvRequest')
+SERVICE_SRV_TYPE.Response = TypeVar('SrvResponse')
 
 
 class Service:
     def __init__(
-            self, node_handle, service_handle, service_pointer,
-            srv_type, srv_name, callback, callback_group, qos_profile):
+        self,
+        node_handle,
+        service_handle,
+        service_pointer: int,
+        srv_type: SERVICE_SRV_TYPE,
+        srv_name: str,
+        callback: Callable[[SERVICE_SRV_TYPE.Request, SERVICE_SRV_TYPE.Response],
+                           SERVICE_SRV_TYPE.Request],
+        callback_group: CallbackGroup,
+        qos_profile: QoSProfile
+    ) -> None:
+        """
+        Create a container for a ROS service server.
+
+        :param node_handle: Capsule pointing to the ``rcl_node_t`` object for the node associated
+            with the service server.
+        :param context: The context associated with the service server.
+        :param service_handle: Capsule pointing to the underlying ``rcl_service_t`` object.
+        :param service_pointer: Memory address of the ``rcl_service_t`` implementation.
+        :param srv_type: The service type.
+        :param srv_name: The name of the service.
+        :param callback_group: The callback group for the service server. If ``None``, then the
+            nodes default callback group is used.
+        :param qos_profile: The quality of service profile to apply the service server.
+        """
         self.node_handle = node_handle
         self.service_handle = service_handle
         self.service_pointer = service_pointer
@@ -30,5 +63,11 @@ class Service:
         self._executor_event = False
         self.qos_profile = qos_profile
 
-    def send_response(self, response, header):
+    def send_response(self, response: SERVICE_SRV_TYPE.Response, header) -> None:
+        """
+        Send a service response.
+
+        :param response: The service response.
+        :param header: Capsule pointing to the service header from the original request.
+        """
         _rclpy.rclpy_send_response(self.service_handle, response, header)
