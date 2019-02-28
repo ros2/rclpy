@@ -43,6 +43,9 @@ class Client:
         """
         Create a container for a ROS service client.
 
+        .. warning:: Users should not create a service client with this constuctor, instead they
+           should call :meth:`.Node.create_client`.
+
         :param node_handle: Capsule pointing to the ``rcl_node_t`` object for the node associated
             with the service client.
         :param context: The context associated with the service client.

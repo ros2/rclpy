@@ -41,6 +41,9 @@ class Service:
         """
         Create a container for a ROS service server.
 
+        .. warning:: Users should not create a service server with this constuctor, instead they
+           should call :meth:`.Node.create_service`.
+
         :param node_handle: Capsule pointing to the ``rcl_node_t`` object for the node associated
             with the service server.
         :param context: The context associated with the service server.

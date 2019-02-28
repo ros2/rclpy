@@ -39,8 +39,8 @@ class Subscription:
         """
         Create a container for a ROS subscription.
 
-        .. warning:: Users should not create a publisher with this constuctor, instead they should
-           call :func:`rclpy.node.Node.create_subscription`.
+        .. warning:: Users should not create a subscription with this constuctor, instead they should
+           call :meth:`.Node.create_subscription`.
 
         :param subscription_handle: Capsule pointing to the underlying ``rcl_subscription_t``
             object.
