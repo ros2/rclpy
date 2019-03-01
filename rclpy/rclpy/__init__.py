@@ -44,9 +44,6 @@ import sys
 from typing import List
 
 from rclpy.context import Context
-from rclpy.executors import Executor
-from rclpy.executors import SingleThreadedExecutor
-from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.task import Future
 from rclpy.utilities import get_default_context
@@ -75,9 +72,11 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
 __executor = None
 
 
-def get_global_executor() -> Executor:
+def get_global_executor() -> 'Executor':  # noqa: F821
     global __executor
     if __executor is None:
+        # imported locally to avoid loading extensions on module import
+        from rclpy.executors import SingleThreadedExecutor
         __executor = SingleThreadedExecutor()
     return __executor
 
@@ -107,7 +106,7 @@ def create_node(
     use_global_arguments: bool = True,
     start_parameter_services: bool = True,
     initial_parameters: List[Parameter] = None
-) -> Node:
+) -> 'Node':  # noqa: F821
     """
     Create an instance of :class:`.Node`.
 
@@ -120,9 +119,11 @@ def create_node(
     :param use_global_arguments: ``False`` if the node should ignore process-wide command line
         arguments.
     :param start_parameter_services: ``False`` if the node should not create parameter services.
-    :param initial_parameters: A list of :class:`.Parameters` to be set during node creation.
+    :param initial_parameters: A list of :class:`.Parameter` to be set during node creation.
     :return: An instance of the newly created node.
     """
+    # imported locally to avoid loading extensions on module import
+    from rclpy.node import Node
     return Node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
@@ -130,7 +131,7 @@ def create_node(
         initial_parameters=initial_parameters)
 
 
-def spin_once(node: Node, *, executor: Executor = None, timeout_sec: float = None) -> None:
+def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:  # noqa: E501,F821
     """
     Execute one item of work or wait until a timeout expires.
 
@@ -153,7 +154,7 @@ def spin_once(node: Node, *, executor: Executor = None, timeout_sec: float = Non
         executor.remove_node(node)
 
 
-def spin(node: Node, executor: Executor = None) -> None:
+def spin(node: 'Node', executor: 'Executor' = None) -> None:  # noqa: F821
     """
     Execute work and block until the context associated with the executor is shutdown.
 
@@ -173,7 +174,11 @@ def spin(node: Node, executor: Executor = None) -> None:
         executor.remove_node(node)
 
 
-def spin_until_future_complete(node: Node, future: Future, executor: Executor = None) -> None:
+def spin_until_future_complete(
+    node: 'Node',  # noqa: F821
+    future: Future,
+    executor: 'Executor' = None  # noqa: F821
+) -> None:
     """
     Execute work until the future is complete.
 
