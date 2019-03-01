@@ -19,7 +19,7 @@ from rclpy.callback_groups import CallbackGroup
 from rclpy.qos import QoSProfile
 
 # For documentation only
-SUB_MSG_TYPE = TypeVar('Msg')
+MsgType = TypeVar('MsgType')
 
 
 class Subscription:
@@ -28,7 +28,7 @@ class Subscription:
          self,
          subscription_handle,
          subscription_pointer: int,
-         msg_type: SUB_MSG_TYPE,
+         msg_type: MsgType,
          topic: str,
          callback: Callable,
          callback_group: CallbackGroup,

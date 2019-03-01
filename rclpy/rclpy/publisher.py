@@ -17,7 +17,7 @@ from typing import TypeVar
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 
-PUB_MSG_TYPE = TypeVar('Msg')
+MsgType = TypeVar('MsgType')
 
 
 class Publisher:
@@ -25,7 +25,7 @@ class Publisher:
     def __init__(
         self,
         publisher_handle,
-        msg_type: PUB_MSG_TYPE,
+        msg_type: MsgType,
         topic: str,
         qos_profile: QoSProfile,
         node_handle
@@ -52,7 +52,7 @@ class Publisher:
         self.qos_profile = qos_profile
         self.node_handle = node_handle
 
-    def publish(self, msg: PUB_MSG_TYPE) -> None:
+    def publish(self, msg: MsgType) -> None:
         """
         Send a message to the topic for the publisher.
 

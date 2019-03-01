@@ -20,9 +20,9 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 
 # Used for documentation purposes only
-SERVICE_SRV_TYPE = TypeVar('Srv')
-SERVICE_SRV_TYPE.Request = TypeVar('SrvRequest')
-SERVICE_SRV_TYPE.Response = TypeVar('SrvResponse')
+SrvType = TypeVar('SrvType')
+SrvTypeRequest = TypeVar('SrvTypeRequest')
+SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
 class Service:
@@ -31,10 +31,9 @@ class Service:
         node_handle,
         service_handle,
         service_pointer: int,
-        srv_type: SERVICE_SRV_TYPE,
+        srv_type: SrvType,
         srv_name: str,
-        callback: Callable[[SERVICE_SRV_TYPE.Request, SERVICE_SRV_TYPE.Response],
-                           SERVICE_SRV_TYPE.Request],
+        callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
         callback_group: CallbackGroup,
         qos_profile: QoSProfile
     ) -> None:
@@ -66,7 +65,7 @@ class Service:
         self._executor_event = False
         self.qos_profile = qos_profile
 
-    def send_response(self, response: SERVICE_SRV_TYPE.Response, header) -> None:
+    def send_response(self, response: SrvTypeResponse, header) -> None:
         """
         Send a service response.
 

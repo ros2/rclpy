@@ -14,6 +14,7 @@
 
 from typing import Callable
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 
@@ -56,10 +57,10 @@ from rclpy.waitable import Waitable
 HIDDEN_NODE_PREFIX = '_'
 
 # Used for documentation purposes only
-MSG_TYPE = TypeVar('Msg')
-SRV_TYPE = TypeVar('Srv')
-SRV_TYPE.Request = TypeVar('SrvRequest')
-SRV_TYPE.Response = TypeVar('SrvResponse')
+MsgType = TypeVar('MsgType')
+SrvType = TypeVar('SrvType')
+SrvTypeRequest = TypeVar('SrvTypeRequest')
+SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
 class Node:
@@ -98,14 +99,14 @@ class Node:
         """
         self._handle = None
         self._context = get_default_context() if context is None else context
-        self._parameters = {}
-        self.publishers = []
-        self.subscriptions = []
-        self.clients = []
-        self.services = []
-        self.timers = []
-        self.guards = []
-        self.waitables = []
+        self._parameters = {}  # type: dict
+        self.publishers = []  # type: List[Publisher]
+        self.subscriptions = []  # type: List[Subscription]
+        self.clients = []  # type: List[Client]
+        self.services = []  # type: List[Service]
+        self.timers = []  # type: List[WallTimer]
+        self.guards = []  # type: List[GuardCondition]
+        self.waitables = []  # type: List[Waitable]
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
 
@@ -150,10 +151,11 @@ class Node:
             self._parameter_service = ParameterService(self)
 
     @property
-    def executor(self) -> Executor:
-        """Get the executor if the node has been added to one, else return None."""
+    def executor(self) -> Optional[Executor]:
+        """Get the executor if the node has been added to one, else return ``None``."""
         if self.__executor_weakref:
             return self.__executor_weakref()
+        return None
 
     @executor.setter
     def executor(self, new_executor: Executor) -> None:
@@ -375,7 +377,7 @@ class Node:
         self,
         msg_type,
         topic: str,
-        callback: Callable[[MSG_TYPE], None],
+        callback: Callable[[MsgType], None],
         *,
         qos_profile: QoSProfile = qos_profile_default,
         callback_group: CallbackGroup = None,
@@ -457,7 +459,7 @@ class Node:
         self,
         srv_type,
         srv_name: str,
-        callback: Callable[[SRV_TYPE.Request, SRV_TYPE.Response], SRV_TYPE.Response],
+        callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: CallbackGroup = None

@@ -14,6 +14,7 @@
 
 import threading
 import time
+from typing import Dict
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
@@ -23,9 +24,9 @@ from rclpy.qos import QoSProfile
 from rclpy.task import Future
 
 # Used for documentation purposes only
-CLIENT_SRV_TYPE = TypeVar('Srv')
-CLIENT_SRV_TYPE.Request = TypeVar('SrvRequest')
-CLIENT_SRV_TYPE.Response = TypeVar('SrvResponse')
+SrvType = TypeVar('SrvType')
+SrvTypeRequest = TypeVar('SrvTypeRequest')
+SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
 class Client:
@@ -35,7 +36,7 @@ class Client:
         context: Context,
         client_handle,
         client_pointer: int,
-        srv_type: CLIENT_SRV_TYPE,
+        srv_type: SrvType,
         srv_name: str,
         qos_profile: QoSProfile,
         callback_group: CallbackGroup
@@ -65,12 +66,12 @@ class Client:
         self.srv_name = srv_name
         self.qos_profile = qos_profile
         # Key is a sequence number, value is an instance of a Future
-        self._pending_requests = {}
+        self._pending_requests = {}  # type: Dict[int, Future]
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
 
-    def call(self, request: CLIENT_SRV_TYPE.Request) -> CLIENT_SRV_TYPE.Response:
+    def call(self, request: SrvTypeRequest) -> SrvTypeResponse:
         """
         Make a service request and wait for the result.
 
@@ -109,7 +110,7 @@ class Client:
                     pass
                 break
 
-    def call_async(self, request: CLIENT_SRV_TYPE.Request) -> Future:
+    def call_async(self, request: SrvTypeRequest) -> Future:
         """
         Make a service request and asyncronously get the result.
 
