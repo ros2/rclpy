@@ -14,10 +14,9 @@ API
    api/parameters
    api/logging
    api/context
-   api/executors
+   api/execution_and_callbacks
    api/utilities
    api/qos
 
 .. TODO(jacobperron): Document remaining API
    api/time
-   api/callback_groups

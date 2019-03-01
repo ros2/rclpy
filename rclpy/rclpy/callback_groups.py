@@ -17,57 +17,62 @@ import weakref
 
 
 class CallbackGroup:
-    """Control when callbacks are allowed to be executed."""
+    """
+    The base class for a callback group.
 
-    def __init__(self):
+    A callback group controls when callbacks are allowed to be executed.
+
+    This class should not be instantiated.
+    Instead, classes should extend it and implement :meth:`can_execute`,
+    :meth:`beginning_execution`, and :meth:`ending_execution`.
+    """
+
+    def __init__(self) -> None:
         super().__init__()
         self.entities = set()
 
-    def add_entity(self, entity):
+    def add_entity(self, entity) -> None:
         """
         Add an entity to the callback group.
 
-        :param entity: a subscription, timer, client, or service instance
-        :rtype: None
+        :param entity: a subscription, timer, client, service, or waitable instance.
         """
         self.entities.add(weakref.ref(entity))
 
-    def has_entity(self, entity):
+    def has_entity(self, entity) -> bool:
         """
         Determine if an entity has been added to this group.
 
-        :param entity: a subscription, timer, client, or service instance
-        :rtype: bool
+        :param entity: a subscription, timer, client, service, or waitable instance.
         """
         return weakref.ref(entity) in self.entities
 
-    def can_execute(self, entity):
+    def can_execute(self, entity) -> bool:
         """
-        Return true if an entity can be executed.
+        Determine if an entity can be executed.
 
-        :param entity: a subscription, timer, client, or service instance
-        :rtype: bool
-        """
-        raise NotImplementedError()
-
-    def beginning_execution(self, entity):
-        """
-        Get permission from the callback from the group to begin executing an entity.
-
-        Return true if the callback can be executed, false otherwise. If this returns True then
-        :func:`CallbackGroup.ending_execution` must be called after the callback has been executed.
-
-        :param entity: a subscription, timer, client, or service instance
-        :rtype: bool
+        :param entity: a subscription, timer, client, service, or waitable instance.
+        :return: ``True`` if the entity can be executed, ``False`` otherwise.
         """
         raise NotImplementedError()
 
-    def ending_execution(self, entity):
+    def beginning_execution(self, entity) -> bool:
+        """
+        Get permission for the callback from the group to begin executing an entity.
+
+        If this returns ``True`` then :meth:`CallbackGroup.ending_execution` must be called after
+        the callback has been executed.
+
+        :param entity: a subscription, timer, client, service, or waitable instance.
+        :return: ``True`` if the callback can be executed, ``False`` otherwise.
+        """
+        raise NotImplementedError()
+
+    def ending_execution(self, entity) -> None:
         """
         Notify group that a callback has finished executing.
 
-        :param entity: a subscription, timer, client, or service instance
-        :rtype: None
+        :param entity: a subscription, timer, client, service, or waitable instance.
         """
         raise NotImplementedError()
 

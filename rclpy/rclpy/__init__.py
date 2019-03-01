@@ -42,6 +42,7 @@ This will invalidate all entities derived from the context.
 
 import sys
 from typing import List
+from typing import TYPE_CHECKING
 
 from rclpy.context import Context
 from rclpy.parameter import Parameter
@@ -51,6 +52,11 @@ from rclpy.utilities import get_rmw_implementation_identifier  # noqa
 from rclpy.utilities import ok  # noqa: forwarding to this module
 from rclpy.utilities import shutdown as _shutdown
 from rclpy.utilities import try_shutdown  # noqa
+
+# Avoid loading extensions on module import
+if TYPE_CHECKING:
+    from rclpy.executors import Executor
+    from rclpy.node import Node
 
 
 def init(*, args: List[str] = None, context: Context = None) -> None:
@@ -72,7 +78,7 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
 __executor = None
 
 
-def get_global_executor() -> 'Executor':  # noqa: F821
+def get_global_executor() -> 'Executor':
     global __executor
     if __executor is None:
         # imported locally to avoid loading extensions on module import
@@ -106,7 +112,7 @@ def create_node(
     use_global_arguments: bool = True,
     start_parameter_services: bool = True,
     initial_parameters: List[Parameter] = None
-) -> 'Node':  # noqa: F821
+) -> 'Node':
     """
     Create an instance of :class:`.Node`.
 
@@ -131,7 +137,7 @@ def create_node(
         initial_parameters=initial_parameters)
 
 
-def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:  # noqa: E501,F821
+def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:
     """
     Execute one item of work or wait until a timeout expires.
 
@@ -154,7 +160,7 @@ def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float =
         executor.remove_node(node)
 
 
-def spin(node: 'Node', executor: 'Executor' = None) -> None:  # noqa: F821
+def spin(node: 'Node', executor: 'Executor' = None) -> None:
     """
     Execute work and block until the context associated with the executor is shutdown.
 
@@ -175,9 +181,9 @@ def spin(node: 'Node', executor: 'Executor' = None) -> None:  # noqa: F821
 
 
 def spin_until_future_complete(
-    node: 'Node',  # noqa: F821
+    node: 'Node',
     future: Future,
-    executor: 'Executor' = None  # noqa: F821
+    executor: 'Executor' = None
 ) -> None:
     """
     Execute work until the future is complete.

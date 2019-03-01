@@ -1,4 +1,0 @@
-Executors
-=========
-
-.. automodule:: rclpy.executors
