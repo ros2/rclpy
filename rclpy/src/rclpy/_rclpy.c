@@ -152,6 +152,10 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_guard_condition_t * sigint_gc =
     (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
+  if (!sigint_gc) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for sigint guard condition");
+    return NULL;
+  }
   *sigint_gc = rcl_get_zero_initialized_guard_condition();
   rcl_guard_condition_options_t sigint_gc_options = rcl_guard_condition_get_default_options();
 
@@ -163,11 +167,34 @@ rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(sigint_gc);
     return NULL;
   }
-  g_sigint_gc_handle = sigint_gc;
-  PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(sigint_gc, "rcl_guard_condition_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl));
 
+  PyObject * pylist = PyList_New(2);
+  if (!pylist) {
+    ret = rcl_guard_condition_fini(sigint_gc);
+    PyMem_Free(sigint_gc);
+    return NULL;
+  }
+
+  PyObject * pysigint_gc = PyCapsule_New(sigint_gc, "rcl_guard_condition_t", NULL);
+  if (!pysigint_gc) {
+    ret = rcl_guard_condition_fini(sigint_gc);
+    PyMem_Free(sigint_gc);
+    Py_DECREF(pylist);
+    return NULL;
+  }
+
+  PyObject * pysigint_gc_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl);
+  if (!pysigint_gc_impl_reference) {
+    ret = rcl_guard_condition_fini(sigint_gc);
+    PyMem_Free(sigint_gc);
+    Py_DECREF(pylist);
+    Py_DECREF(pysigint_gc);
+    return NULL;
+  }
+
+  g_sigint_gc_handle = sigint_gc;
+  PyList_SET_ITEM(pylist, 0, pysigint_gc);
+  PyList_SET_ITEM(pylist, 1, pysigint_gc_impl_reference);
   return pylist;
 }
 
@@ -201,6 +228,10 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_guard_condition_t * gc =
     (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
+  if (!gc) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for guard condition");
+    return NULL;
+  }
   *gc = rcl_get_zero_initialized_guard_condition();
   rcl_guard_condition_options_t gc_options = rcl_guard_condition_get_default_options();
 
@@ -212,11 +243,33 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(gc);
     return NULL;
   }
+
   PyObject * pylist = PyList_New(2);
+  if (!pylist) {
+    ret = rcl_guard_condition_fini(gc);
+    PyMem_Free(gc);
+    return NULL;
+  }
 
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(gc, "rcl_guard_condition_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&gc->impl));
+  PyObject * pygc = PyCapsule_New(gc, "rcl_guard_condition_t", NULL);
+  if (!pygc) {
+    ret = rcl_guard_condition_fini(gc);
+    PyMem_Free(gc);
+    Py_DECREF(pylist);
+    return NULL;
+  }
 
+  PyObject * pygc_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&gc->impl);
+  if (!pygc_impl_reference) {
+    ret = rcl_guard_condition_fini(gc);
+    PyMem_Free(gc);
+    Py_DECREF(pylist);
+    Py_DECREF(pygc);
+    return NULL;
+  }
+
+  PyList_SET_ITEM(pylist, 0, pygc);
+  PyList_SET_ITEM(pylist, 1, pygc_impl_reference);
   return pylist;
 }
 
@@ -379,8 +432,6 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret;
-  PyObject * result_list = NULL;
-
   rcl_allocator_t allocator = rcl_get_default_allocator();
   int num_args;
   char ** arg_values;
@@ -398,25 +449,41 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
     rcl_reset_error();
-  } else {
-    int nonros_argc = 0;
-    const char ** nonros_argv = NULL;
+    _rclpy_arg_list_fini(num_args, arg_values);
+    return NULL;
+  }
 
-    ret = rcl_remove_ros_arguments(
-      const_arg_values,
-      &parsed_args,
-      allocator,
-      &nonros_argc,
-      &nonros_argv);
+  int nonros_argc = 0;
+  const char ** nonros_argv = NULL;
 
-    if (RCL_RET_OK != ret) {
-      PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-    } else {
-      result_list = PyList_New(nonros_argc);
-      for (int ii = 0; ii < nonros_argc; ++ii) {
-        PyList_SET_ITEM(result_list, ii, PyUnicode_FromString(nonros_argv[ii]));
-      }
+  ret = rcl_remove_ros_arguments(
+    const_arg_values,
+    &parsed_args,
+    allocator,
+    &nonros_argc,
+    &nonros_argv);
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    _rclpy_arg_list_fini(num_args, arg_values);
+    return NULL;
+  }
+
+  PyObject * pyresult_list = PyList_New(nonros_argc);
+  if (!pyresult_list) {
+    goto cleanup;
+  }
+  for (int ii = 0; ii < nonros_argc; ++ii) {
+    PyObject * pynonros_argv_string = PyUnicode_FromString(nonros_argv[ii]);
+    if (!pynonros_argv_string) {
+      Py_DECREF(pyresult_list);
+      goto cleanup;
+    }
+    // Steals the reference to the item, so it will be destroyed with the list
+    PyList_SET_ITEM(pyresult_list, ii, pynonros_argv_string);
+  }
+
+cleanup:
 /* it was determined that the following warning is likely a front-end parsing issue in MSVC.
  * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
  */
@@ -424,27 +491,26 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
 #pragma warning(push)
 #pragma warning(disable: 4090)
 #endif
-      allocator.deallocate(nonros_argv, allocator.state);
+  allocator.deallocate(nonros_argv, allocator.state);
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
-    }
-
-    ret = rcl_arguments_fini(&parsed_args);
-    if (RCL_RET_OK != ret) {
-      PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-    }
-  }
 
   _rclpy_arg_list_fini(num_args, arg_values);
 
+  ret = rcl_arguments_fini(&parsed_args);
   if (PyErr_Occurred()) {
     return NULL;
   }
-  return result_list;
-}
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    Py_DECREF(pyresult_list);
+    return NULL;
+  }
 
+  return pyresult_list;
+}
 
 /// Initialize rcl with default options, ignoring parameters
 /**
@@ -588,6 +654,10 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyMem_Malloc(sizeof(rcl_node_t));
+  if (!node) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for node");
+    return NULL;
+  }
   *node = rcl_get_zero_initialized_node();
   rcl_node_options_t options = rcl_node_get_default_options();
   options.use_global_arguments = use_global_arguments;
@@ -777,7 +847,6 @@ rclpy_count_subscribers(PyObject * Py_UNUSED(self), PyObject * args)
   return _count_subscribers_publishers(args, "subscribers", rcl_count_subscribers);
 }
 
-
 /// Validate a topic name and return error message and index of invalidation.
 /**
  * Does not have to be a fully qualified topic name.
@@ -823,11 +892,25 @@ rclpy_get_validation_error_for_topic_name(PyObject * Py_UNUSED(self), PyObject *
 
   const char * validation_message = rcl_topic_name_validation_result_string(validation_result);
 
-  PyObject * result_list = PyList_New(2);
-  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
-  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+  PyObject * pyresult_list = PyList_New(2);
+  if (!pyresult_list) {
+    return NULL;
+  }
+  PyObject * pyvalidation_message = PyUnicode_FromString(validation_message);
+  if (!pyvalidation_message) {
+    Py_DECREF(pyresult_list);
+    return NULL;
+  }
+  PyObject * pyinvalid_index = PyLong_FromSize_t(invalid_index);
+  if (!pyinvalid_index) {
+    Py_DECREF(pyresult_list);
+    Py_DECREF(pyvalidation_message);
+    return NULL;
+  }
+  PyList_SET_ITEM(pyresult_list, 0, pyvalidation_message);
+  PyList_SET_ITEM(pyresult_list, 1, pyinvalid_index);
 
-  return result_list;
+  return pyresult_list;
 }
 
 /// Validate a full topic name and return error message and index of invalidation.
@@ -874,11 +957,25 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
 
   const char * validation_message = rmw_full_topic_name_validation_result_string(validation_result);
 
-  PyObject * result_list = PyList_New(2);
-  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
-  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+  PyObject * pyresult_list = PyList_New(2);
+  if (!pyresult_list) {
+    return NULL;
+  }
+  PyObject * pyvalidation_message = PyUnicode_FromString(validation_message);
+  if (!pyvalidation_message) {
+    Py_DECREF(pyresult_list);
+    return NULL;
+  }
+  PyObject * pyinvalid_index = PyLong_FromSize_t(invalid_index);
+  if (!pyinvalid_index) {
+    Py_DECREF(pyresult_list);
+    Py_DECREF(pyvalidation_message);
+    return NULL;
+  }
+  PyList_SET_ITEM(pyresult_list, 0, pyvalidation_message);
+  PyList_SET_ITEM(pyresult_list, 1, pyinvalid_index);
 
-  return result_list;
+  return pyresult_list;
 }
 
 /// Validate a namespace and return error message and index of invalidation.
@@ -923,11 +1020,25 @@ rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * 
 
   const char * validation_message = rmw_namespace_validation_result_string(validation_result);
 
-  PyObject * result_list = PyList_New(2);
-  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
-  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+  PyObject * pyresult_list = PyList_New(2);
+  if (!pyresult_list) {
+    return NULL;
+  }
+  PyObject * pyvalidation_message = PyUnicode_FromString(validation_message);
+  if (!pyvalidation_message) {
+    Py_DECREF(pyresult_list);
+    return NULL;
+  }
+  PyObject * pyinvalid_index = PyLong_FromSize_t(invalid_index);
+  if (!pyinvalid_index) {
+    Py_DECREF(pyresult_list);
+    Py_DECREF(pyvalidation_message);
+    return NULL;
+  }
+  PyList_SET_ITEM(pyresult_list, 0, pyvalidation_message);
+  PyList_SET_ITEM(pyresult_list, 1, pyinvalid_index);
 
-  return result_list;
+  return pyresult_list;
 }
 
 /// Validate a node name and return error message and index of invalidation.
@@ -972,11 +1083,25 @@ rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * 
 
   const char * validation_message = rmw_node_name_validation_result_string(validation_result);
 
-  PyObject * result_list = PyList_New(2);
-  PyList_SET_ITEM(result_list, 0, PyUnicode_FromString(validation_message));
-  PyList_SET_ITEM(result_list, 1, PyLong_FromSize_t(invalid_index));
+  PyObject * pyresult_list = PyList_New(2);
+  if (!pyresult_list) {
+    return NULL;
+  }
+  PyObject * pyvalidation_message = PyUnicode_FromString(validation_message);
+  if (!pyvalidation_message) {
+    Py_DECREF(pyresult_list);
+    return NULL;
+  }
+  PyObject * pyinvalid_index = PyLong_FromSize_t(invalid_index);
+  if (!pyinvalid_index) {
+    Py_DECREF(pyresult_list);
+    Py_DECREF(pyvalidation_message);
+    return NULL;
+  }
+  PyList_SET_ITEM(pyresult_list, 0, pyvalidation_message);
+  PyList_SET_ITEM(pyresult_list, 1, pyinvalid_index);
 
-  return result_list;
+  return pyresult_list;
 }
 
 static char *
@@ -1101,6 +1226,9 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * result = PyUnicode_FromString(expanded_topic);
+  if (!result) {
+    return NULL;
+  }
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
   allocator.deallocate(expanded_topic, allocator.state);
@@ -1149,11 +1277,22 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+  Py_DECREF(pymetaclass);
+  if (!pyts) {
+    return NULL;
+  }
 
   rosidl_message_type_support_t * ts =
     (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
+  Py_DECREF(pyts);
+  if (!ts) {
+    return NULL;
+  }
 
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
 
@@ -1161,6 +1300,8 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     publisher_ops.qos = *qos_profile;
+    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
+    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
     PyMem_Free(p);
     if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
       // exception set by PyCapsule_SetPointer
@@ -1169,6 +1310,10 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_publisher_t * publisher = (rcl_publisher_t *)PyMem_Malloc(sizeof(rcl_publisher_t));
+  if (!publisher) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for publisher");
+    return NULL;
+  }
   *publisher = rcl_get_zero_initialized_publisher();
 
   rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
@@ -1272,6 +1417,10 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_timer_t * timer = (rcl_timer_t *) PyMem_Malloc(sizeof(rcl_timer_t));
+  if (!timer) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for timer");
+    return NULL;
+  }
   *timer = rcl_get_zero_initialized_timer();
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -1283,9 +1432,27 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(timer);
     return NULL;
   }
+
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(timer, "rcl_timer_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&timer->impl));
+  if (!pylist) {
+    PyMem_Free(timer);
+    return NULL;
+  }
+  PyObject * pytimer = PyCapsule_New(timer, "rcl_timer_t", NULL);
+  if (!pytimer) {
+    PyMem_Free(timer);
+    Py_DECREF(pylist);
+    return NULL;
+  }
+  PyObject * pytimer_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&timer->impl);
+  if (!pytimer_impl_reference) {
+    PyMem_Free(timer);
+    Py_DECREF(pylist);
+    Py_DECREF(pytimer);
+    return NULL;
+  }
+  PyList_SET_ITEM(pylist, 0, pytimer);
+  PyList_SET_ITEM(pylist, 1, pytimer_impl_reference);
 
   return pylist;
 }
@@ -1574,6 +1741,9 @@ rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pytimer, "rcl_timer_t");
+  if (!timer) {
+    return NULL;
+  }
   int64_t elapsed_time;
   rcl_ret_t ret = rcl_timer_get_time_since_last_call(timer, &elapsed_time);
   if (ret != RCL_RET_OK) {
@@ -1630,11 +1800,22 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+  Py_DECREF(pymetaclass);
+  if (!pyts) {
+    return NULL;
+  }
 
   rosidl_message_type_support_t * ts =
     (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
+  Py_DECREF(pyts);
+  if (!ts) {
+    return NULL;
+  }
 
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
@@ -1642,6 +1823,8 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     subscription_ops.qos = *qos_profile;
+    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
+    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
     PyMem_Free(p);
     if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
       // exception set by PyCapsule_SetPointer
@@ -1651,6 +1834,10 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_subscription_t * subscription =
     (rcl_subscription_t *)PyMem_Malloc(sizeof(rcl_subscription_t));
+  if (!subscription) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for subscription");
+    return NULL;
+  }
   *subscription = rcl_get_zero_initialized_subscription();
 
   rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
@@ -1667,9 +1854,28 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(subscription);
     return NULL;
   }
+
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(subscription, "rcl_subscription_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl));
+  if (!pylist) {
+    PyMem_Free(subscription);
+    return NULL;
+  }
+  PyObject * pysubscription = PyCapsule_New(subscription, "rcl_subscription_t", NULL);
+  if (!pysubscription) {
+    PyMem_Free(subscription);
+    Py_DECREF(pylist);
+    return NULL;
+  }
+  PyObject * pysubscription_impl_reference =
+    PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl);
+  if (!pysubscription_impl_reference) {
+    PyMem_Free(subscription);
+    Py_DECREF(pylist);
+    Py_DECREF(pysubscription);
+    return NULL;
+  }
+  PyList_SET_ITEM(pylist, 0, pysubscription);
+  PyList_SET_ITEM(pylist, 1, pysubscription_impl_reference);
 
   return pylist;
 }
@@ -1718,12 +1924,22 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
   Py_DECREF(pymetaclass);
+  if (!pyts) {
+    return NULL;
+  }
 
   rosidl_service_type_support_t * ts =
     (rosidl_service_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
+  Py_DECREF(pyts);
+  if (!ts) {
+    return NULL;
+  }
 
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
@@ -1731,6 +1947,8 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     client_ops.qos = *qos_profile;
+    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
+    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
     PyMem_Free(p);
     if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
       // exception set by PyCapsule_SetPointer
@@ -1739,6 +1957,10 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_client_t * client = (rcl_client_t *)PyMem_Malloc(sizeof(rcl_client_t));
+  if (!client) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for client");
+    return NULL;
+  }
   *client = rcl_get_zero_initialized_client();
 
   rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
@@ -1756,8 +1978,25 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(client, "rcl_client_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&client->impl));
+  if (!pylist) {
+    PyMem_Free(client);
+    return NULL;
+  }
+  PyObject * pyclient = PyCapsule_New(client, "rcl_client_t", NULL);
+  if (!pyclient) {
+    PyMem_Free(client);
+    Py_DECREF(pylist);
+    return NULL;
+  }
+  PyObject * pyclient_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&client->impl);
+  if (!pyclient_impl_reference) {
+    PyMem_Free(client);
+    Py_DECREF(pylist);
+    Py_DECREF(pyclient);
+    return NULL;
+  }
+  PyList_SET_ITEM(pylist, 0, pyclient);
+  PyList_SET_ITEM(pylist, 1, pyclient_impl_reference);
 
   return pylist;
 }
@@ -1844,13 +2083,27 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
 
   PyObject * pymetaclass = PyObject_GetAttrString(pysrv_type, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+  Py_DECREF(pymetaclass);
+  if (!pyts) {
+    return NULL;
+  }
 
   rosidl_service_type_support_t * ts =
     (rosidl_service_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
+  Py_DECREF(pyts);
+  if (!ts) {
+    return NULL;
+  }
 
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
@@ -1858,6 +2111,8 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
     service_ops.qos = *qos_profile;
+    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
+    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
     PyMem_Free(p);
     if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
       // exception set by PyCapsule_SetPointer
@@ -1866,6 +2121,10 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_service_t * service = (rcl_service_t *)PyMem_Malloc(sizeof(rcl_service_t));
+  if (!service) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for service");
+    return NULL;
+  }
   *service = rcl_get_zero_initialized_service();
   rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
   if (ret != RCL_RET_OK) {
@@ -1881,9 +2140,27 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_reset_error();
     return NULL;
   }
+
   PyObject * pylist = PyList_New(2);
-  PyList_SET_ITEM(pylist, 0, PyCapsule_New(service, "rcl_service_t", NULL));
-  PyList_SET_ITEM(pylist, 1, PyLong_FromUnsignedLongLong((uint64_t)&service->impl));
+  if (!pylist) {
+    PyMem_Free(service);
+    return NULL;
+  }
+  PyObject * pyservice = PyCapsule_New(service, "rcl_service_t", NULL);
+  if (!pyservice) {
+    PyMem_Free(service);
+    Py_DECREF(pylist);
+    return NULL;
+  }
+  PyObject * pyservice_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&service->impl);
+  if (!pyservice_impl_reference) {
+    PyMem_Free(service);
+    Py_DECREF(pylist);
+    Py_DECREF(pyservice);
+    return NULL;
+  }
+  PyList_SET_ITEM(pylist, 0, pyservice);
+  PyList_SET_ITEM(pylist, 1, pyservice_impl_reference);
 
   return pylist;
 }
@@ -2149,6 +2426,10 @@ static PyObject *
 rclpy_get_zero_initialized_wait_set(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcl_wait_set_t * wait_set = (rcl_wait_set_t *)PyMem_Malloc(sizeof(rcl_wait_set_t));
+  if (!wait_set) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for wait set");
+    return NULL;
+  }
   *wait_set = rcl_get_zero_initialized_wait_set();
   PyObject * pywait_set = PyCapsule_New(wait_set, "rcl_wait_set_t", NULL);
 
@@ -2544,7 +2825,9 @@ rclpy_take_raw(rcl_subscription_t * subscription)
   rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
   if (r_fini != RMW_RET_OK) {
     PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
-    Py_DECREF(python_bytes);
+    if (python_bytes) {
+      Py_DECREF(python_bytes);
+    }
     return NULL;
   }
   return python_bytes;
@@ -2573,6 +2856,9 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_subscription_t * subscription =
     (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, "rcl_subscription_t");
+  if (!subscription) {
+    return NULL;
+  }
 
   if (PyObject_IsTrue(pyraw) == 1) {  // raw=True
     return rclpy_take_raw(subscription);
@@ -2643,6 +2929,10 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
+  if (!header) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for request header");
+    return NULL;
+  }
   rcl_ret_t ret = rcl_take_request(service, header, taken_request);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
@@ -2658,12 +2948,25 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
     PyObject * pytaken_request = rclpy_convert_to_py(taken_request, pyrequest_type);
     destroy_ros_message(taken_request);
     if (!pytaken_request) {
+      PyMem_Free(header);
       return NULL;
     }
 
     PyObject * pylist = PyList_New(2);
+    if (!pylist) {
+      PyMem_Free(header);
+      Py_DECREF(pytaken_request);
+      return NULL;
+    }
+    PyObject * pyheader = PyCapsule_New(header, "rmw_request_id_t", NULL);
+    if (!pyheader) {
+      PyMem_Free(header);
+      Py_DECREF(pytaken_request);
+      Py_DECREF(pylist);
+      return NULL;
+    }
     PyList_SET_ITEM(pylist, 0, pytaken_request);
-    PyList_SET_ITEM(pylist, 1, PyCapsule_New(header, "rmw_request_id_t", NULL));
+    PyList_SET_ITEM(pylist, 1, pyheader);
 
     return pylist;
   }
@@ -2703,6 +3006,10 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rmw_request_id_t * header = (rmw_request_id_t *)PyMem_Malloc(sizeof(rmw_request_id_t));
+  if (!header) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for response header");
+    return NULL;
+  }
   rcl_ret_t ret = rcl_take_response(client, header, taken_response);
   int64_t sequence = header->sequence_number;
   PyMem_Free(header);
@@ -2837,31 +3144,50 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pynode_names_and_namespaces = PyList_New(node_names.size);
+  if (!pynode_names_and_namespaces) {
+    goto cleanup;
+  }
   size_t idx;
   for (idx = 0; idx < node_names.size; ++idx) {
     PyObject * pytuple = PyTuple_New(2);
-    PyTuple_SetItem(
-      pytuple, 0,
-      PyUnicode_FromString(node_names.data[idx]));
-    PyTuple_SetItem(
-      pytuple, 1,
-      PyUnicode_FromString(node_namespaces.data[idx]));
-    PyList_SetItem(
-      pynode_names_and_namespaces, idx,
-      pytuple);
+    if (!pytuple) {
+      goto cleanup;
+    }
+    PyObject * pynode_name = PyUnicode_FromString(node_names.data[idx]);
+    if (!pynode_name) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
+    // Steals the reference
+    PyTuple_SET_ITEM(pytuple, 0, pynode_name);
+    PyObject * pynode_namespace = PyUnicode_FromString(node_namespaces.data[idx]);
+    if (!pynode_namespace) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
+    // Steals the reference
+    PyTuple_SET_ITEM(pytuple, 1, pynode_namespace);
+    // Steals the reference
+    PyList_SET_ITEM(pynode_names_and_namespaces, idx, pytuple);
   }
 
-  ret = rcutils_string_array_fini(&node_names);
-  if (ret != RCUTILS_RET_OK) {
+  rcutils_ret_t fini_names_ret;
+  rcutils_ret_t fini_namespaces_ret;
+cleanup:
+  fini_names_ret = rcutils_string_array_fini(&node_names);
+  fini_namespaces_ret = rcutils_string_array_fini(&node_namespaces);
+  if (PyErr_Occurred()) {
+    Py_XDECREF(pynode_names_and_namespaces);
+    return NULL;
+  }
+  if (fini_names_ret != RCUTILS_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to destroy node_names: %s", rcl_get_error_string().str);
     Py_DECREF(pynode_names_and_namespaces);
     rcl_reset_error();
     return NULL;
   }
-
-  ret = rcutils_string_array_fini(&node_namespaces);
-  if (ret != RCUTILS_RET_OK) {
+  if (fini_namespaces_ret != RCUTILS_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to destroy node_namespaces: %s", rcl_get_error_string().str);
     Py_DECREF(pynode_names_and_namespaces);
@@ -2886,26 +3212,29 @@ __convert_names_and_types(
     if (!pytuple) {
       return false;
     }
-    PyTuple_SET_ITEM(
-      pytuple, 0,
-      PyUnicode_FromString(topic_names_and_types.names.data[i]));
-    PyObject * types_list = PyList_New(topic_names_and_types.types[i].size);
-    if (!types_list) {
+    PyObject * pytopic_name = PyUnicode_FromString(topic_names_and_types.names.data[i]);
+    if (!pytopic_name) {
+      Py_DECREF(pytuple);
+      return false;
+    }
+    PyTuple_SET_ITEM(pytuple, 0, pytopic_name);
+    PyObject * pytypes_list = PyList_New(topic_names_and_types.types[i].size);
+    if (!pytypes_list) {
       Py_DECREF(pytuple);
       return false;
     }
     size_t j;
     for (j = 0; j < topic_names_and_types.types[i].size; ++j) {
-      PyList_SET_ITEM(
-        types_list, j,
-        PyUnicode_FromString(topic_names_and_types.types[i].data[j]));
+      PyObject * pytopic_type = PyUnicode_FromString(topic_names_and_types.types[i].data[j]);
+      if (!pytopic_type) {
+        Py_DECREF(pytuple);
+        Py_DECREF(pytypes_list);
+        return false;
+      }
+      PyList_SET_ITEM(pytypes_list, j, pytopic_type);
     }
-    PyTuple_SET_ITEM(
-      pytuple, 1,
-      types_list);
-    PyList_SET_ITEM(
-      pytopic_names_and_types, i,
-      pytuple);
+    PyTuple_SET_ITEM(pytuple, 1, pytypes_list);
+    PyList_SET_ITEM(pytopic_names_and_types, i, pytuple);
   }
   return true;
 }
@@ -3130,28 +3459,46 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.names.size);
+  if (!pytopic_names_and_types) {
+    goto cleanup;
+  }
   size_t i;
   for (i = 0; i < topic_names_and_types.names.size; ++i) {
     PyObject * pytuple = PyTuple_New(2);
-    PyTuple_SetItem(
-      pytuple, 0,
-      PyUnicode_FromString(topic_names_and_types.names.data[i]));
-    PyObject * types_list = PyList_New(topic_names_and_types.types[i].size);
+    if (!pytuple) {
+      goto cleanup;
+    }
+    PyObject * pytopic_name = PyUnicode_FromString(topic_names_and_types.names.data[i]);
+    if (!pytopic_name) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
+    PyTuple_SET_ITEM(pytuple, 0, pytopic_name);
+    PyObject * pytypes_list = PyList_New(topic_names_and_types.types[i].size);
+    if (!pytypes_list) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
     size_t j;
     for (j = 0; j < topic_names_and_types.types[i].size; ++j) {
-      PyList_SetItem(
-        types_list, j,
-        PyUnicode_FromString(topic_names_and_types.types[i].data[j]));
+      PyObject * pytopic_type = PyUnicode_FromString(topic_names_and_types.types[i].data[j]);
+      if (!pytopic_type) {
+        Py_DECREF(pytuple);
+        Py_DECREF(pytypes_list);
+        goto cleanup;
+      }
+      PyList_SET_ITEM(pytypes_list, j, pytopic_type);
     }
-    PyTuple_SetItem(
-      pytuple, 1,
-      types_list);
-    PyList_SetItem(
-      pytopic_names_and_types, i,
-      pytuple);
+    PyTuple_SET_ITEM(pytuple, 1, pytypes_list);
+    PyList_SET_ITEM(pytopic_names_and_types, i, pytuple);
   }
 
+cleanup:
   ret = rcl_names_and_types_fini(&topic_names_and_types);
+  if (PyErr_Occurred()) {
+    Py_XDECREF(pytopic_names_and_types);
+    return NULL;
+  }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to destroy topic_names_and_types: %s", rcl_get_error_string().str);
@@ -3198,28 +3545,48 @@ rclpy_get_service_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pyservice_names_and_types = PyList_New(service_names_and_types.names.size);
+  if (!pyservice_names_and_types) {
+    goto cleanup;
+  }
   size_t i;
   for (i = 0; i < service_names_and_types.names.size; ++i) {
     PyObject * pytuple = PyTuple_New(2);
-    PyTuple_SetItem(
-      pytuple, 0,
-      PyUnicode_FromString(service_names_and_types.names.data[i]));
-    PyObject * types_list = PyList_New(service_names_and_types.types[i].size);
+    if (!pytuple) {
+      goto cleanup;
+    }
+    PyObject * pyservice_name = PyUnicode_FromString(service_names_and_types.names.data[i]);
+    if (!pyservice_name) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
+    PyTuple_SetItem(pytuple, 0, pyservice_name);
+    PyObject * pytypes_list = PyList_New(service_names_and_types.types[i].size);
+    if (!pytypes_list) {
+      Py_DECREF(pytuple);
+      Py_DECREF(pyservice_name);
+      goto cleanup;
+    }
     size_t j;
     for (j = 0; j < service_names_and_types.types[i].size; ++j) {
-      PyList_SetItem(
-        types_list, j,
-        PyUnicode_FromString(service_names_and_types.types[i].data[j]));
+      PyObject * pyservice_type = PyUnicode_FromString(service_names_and_types.types[i].data[j]);
+      if (!pyservice_type) {
+        Py_DECREF(pytuple);
+        Py_DECREF(pyservice_name);
+        Py_DECREF(pytypes_list);
+        goto cleanup;
+      }
+      PyList_SetItem(pytypes_list, j, pyservice_type);
     }
-    PyTuple_SetItem(
-      pytuple, 1,
-      types_list);
-    PyList_SetItem(
-      pyservice_names_and_types, i,
-      pytuple);
+    PyTuple_SetItem(pytuple, 1, pytypes_list);
+    PyList_SetItem(pyservice_names_and_types, i, pytuple);
   }
 
+cleanup:
   ret = rcl_names_and_types_fini(&service_names_and_types);
+  if (PyErr_Occurred()) {
+    Py_XDECREF(pyservice_names_and_types);
+    return NULL;
+  }
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to destroy service_names_and_types: %s", rcl_get_error_string().str);
@@ -3262,6 +3629,10 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyMem_Malloc(sizeof(rmw_qos_profile_t));
+  if (!qos_profile) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for QoS profile");
+    return NULL;
+  }
   qos_profile->history = pyqos_history;
   qos_profile->depth = pyqos_depth;
   qos_profile->reliability = pyqos_reliability;
@@ -3690,8 +4061,13 @@ _rclpy_on_time_jump(
   if (before_jump) {
     // Call pre jump callback with no arguments
     PyObject * pycallback = PyObject_GetAttrString(pyjump_handle, "_pre_callback");
-    if (NULL == pycallback || Py_None == pycallback) {
-      // raised or callback is None
+    if (!pycallback) {
+      // Raised
+      return;
+    }
+    if (Py_None == pycallback) {
+      Py_DECREF(pycallback);
+      // Callback is None
       return;
     }
     // May set exception
@@ -3700,8 +4076,13 @@ _rclpy_on_time_jump(
   } else {
     // Call post jump callback with JumpInfo as an argument
     PyObject * pycallback = PyObject_GetAttrString(pyjump_handle, "_post_callback");
-    if (NULL == pycallback || Py_None == pycallback) {
-      // raised or callback is None
+    if (!pycallback) {
+      // Raised
+      return;
+    }
+    if (Py_None == pycallback) {
+      Py_DECREF(pycallback);
+      // Callback is None
       return;
     }
     // Build python dictionary with time jump info
@@ -3961,13 +4342,11 @@ static PyObject * _parameter_from_rcl_variant(
   PyObject * type = PyObject_CallObject(parameter_type_cls, args);
   Py_DECREF(args);
   args = Py_BuildValue("OOO", name, type, value);
-  if (NULL == args) {
-    Py_DECREF(type);
-    Py_DECREF(value);
-    return NULL;
-  }
   Py_DECREF(value);
   Py_DECREF(type);
+  if (NULL == args) {
+    return NULL;
+  }
 
   PyObject * param = PyObject_CallObject(parameter_cls, args);
   Py_DECREF(args);
