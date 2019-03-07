@@ -231,27 +231,40 @@ class ActionClient(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         data = {}
         if self._is_goal_response_ready:
-            data['goal'] = _rclpy_action.rclpy_action_take_goal_response(
+            taken_data = _rclpy_action.rclpy_action_take_goal_response(
                 self._client_handle, self._action_type.GoalRequestService.Response)
+            # If take fails, then we get (None, None)
+            if all(taken_data):
+                data['goal'] = taken_data
 
         if self._is_cancel_response_ready:
-            data['cancel'] = _rclpy_action.rclpy_action_take_cancel_response(
+            taken_data = _rclpy_action.rclpy_action_take_cancel_response(
                 self._client_handle, self._action_type.CancelGoalService.Response)
+            # If take fails, then we get (None, None)
+            if all(taken_data):
+                data['cancel'] = taken_data
 
         if self._is_result_response_ready:
-            data['result'] = _rclpy_action.rclpy_action_take_result_response(
+            taken_data = _rclpy_action.rclpy_action_take_result_response(
                 self._client_handle, self._action_type.GoalResultService.Response)
+            # If take fails, then we get (None, None)
+            if all(taken_data):
+                data['result'] = taken_data
 
         if self._is_feedback_ready:
-            data['feedback'] = _rclpy_action.rclpy_action_take_feedback(
+            taken_data = _rclpy_action.rclpy_action_take_feedback(
                 self._client_handle, self._action_type.Feedback)
+            # If take fails, then we get None
+            if taken_data is not None:
+                data['feedback'] = taken_data
 
         if self._is_status_ready:
-            data['status'] = _rclpy_action.rclpy_action_take_status(
+            taken_data = _rclpy_action.rclpy_action_take_status(
                 self._client_handle, self._action_type.GoalStatusMessage)
+            # If take fails, then we get None
+            if taken_data is not None:
+                data['status'] = taken_data
 
-        if not data:
-            return None
         return data
 
     async def execute(self, taken_data):
