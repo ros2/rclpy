@@ -421,24 +421,33 @@ class ActionServer(Waitable):
         data = {}
         if self._is_goal_request_ready:
             with self._lock:
-                data['goal'] = _rclpy_action.rclpy_action_take_goal_request(
+                taken_data = _rclpy_action.rclpy_action_take_goal_request(
                     self._handle,
                     self._action_type.GoalRequestService.Request,
                 )
+                # If take fails, then we get (None, None)
+                if all(taken_data):
+                    data['goal'] = taken_data
 
         if self._is_cancel_request_ready:
             with self._lock:
-                data['cancel'] = _rclpy_action.rclpy_action_take_cancel_request(
+                taken_data = _rclpy_action.rclpy_action_take_cancel_request(
                     self._handle,
                     self._action_type.CancelGoalService.Request,
                 )
+                # If take fails, then we get (None, None)
+                if all(taken_data):
+                    data['cancel'] = taken_data
 
         if self._is_result_request_ready:
             with self._lock:
-                data['result'] = _rclpy_action.rclpy_action_take_result_request(
+                taken_data = _rclpy_action.rclpy_action_take_result_request(
                     self._handle,
                     self._action_type.GoalResultService.Request,
                 )
+                # If take fails, then we get (None, None)
+                if all(taken_data):
+                    data['result'] = taken_data
 
         if self._is_goal_expired:
             with self._lock:
@@ -447,8 +456,6 @@ class ActionServer(Waitable):
                     len(self._goal_handles),
                 )
 
-        if not data:
-            return None
         return data
 
     async def execute(self, taken_data):
