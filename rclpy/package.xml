@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>rclpy</name>
-  <version>0.6.2</version>
+  <version>0.6.3</version>
   <description>Package containing the Python client.</description>
 
   <maintainer email="william@osrfoundation.org">William Woodall</maintainer>
@@ -19,7 +19,9 @@
 
   <depend>rmw_implementation</depend>
   <depend>rcl</depend>
+  <depend>rcl_action</depend>
   <depend>rcl_yaml_param_parser</depend>
+  <depend>unique_identifier_msgs</depend>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>builtin_interfaces</exec_depend>

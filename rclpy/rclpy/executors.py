@@ -149,6 +149,7 @@ class Executor:
         task = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
             self._tasks.append((task, None, None))
+            _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
         # Task inherits from Future
         return task
 
@@ -287,6 +288,11 @@ class Executor:
     async def _execute_guard_condition(self, gc, _):
         await await_or_execute(gc.callback)
 
+    async def _execute_waitable(self, waitable, data):
+        for future in waitable._futures:
+            future._set_executor(self)
+        await waitable.execute(data)
+
     def _make_handler(self, entity, node, take_from_wait_list, call_coroutine):
         """
         Make a handler that performs work on an entity.
@@ -358,20 +364,22 @@ class Executor:
         if nodes is None:
             nodes = self.get_nodes()
 
-        # Yield tasks in-progress before waiting for new work
-        tasks = None
-        with self._tasks_lock:
-            tasks = list(self._tasks)
-        if tasks:
-            for task, entity, node in reversed(tasks):
-                if not task.executing() and not task.done() and (node is None or node in nodes):
-                    yield task, entity, node
-            with self._tasks_lock:
-                # Get rid of any tasks that are done
-                self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
-
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
+            # Yield tasks in-progress before waiting for new work
+            tasks = None
+            with self._tasks_lock:
+                tasks = list(self._tasks)
+            if tasks:
+                for task, entity, node in reversed(tasks):
+                    if (not task.executing() and not task.done() and
+                            (node is None or node in nodes)):
+                        yielded_work = True
+                        yield task, entity, node
+                with self._tasks_lock:
+                    # Get rid of any tasks that are done
+                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
+
             # Gather entities that can be waited on
             subscriptions = []
             guards = []
@@ -453,9 +461,10 @@ class Executor:
                 # Check waitables before wait set is destroyed
                 for node in nodes:
                     for wt in node.waitables:
-                        if wt.is_ready(wait_set):
+                        # Only check waitables that were added to the wait set
+                        if wt in waitables and wt.is_ready(wait_set):
                             handler = self._make_handler(
-                                wt, node, lambda e: e.take_data(), lambda e, a: e.execute(a))
+                                wt, node, lambda e: e.take_data(), self._execute_waitable)
                             yielded_work = True
                             yield handler, wt, node
 

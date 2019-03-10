@@ -51,11 +51,19 @@ class Waitable:
     """
 
     def __init__(self, callback_group):
-        # A callback group to control whein this entity can execute (used by Executor)
+        # A callback group to control when this entity can execute (used by Executor)
         self.callback_group = callback_group
         self.callback_group.add_entity(self)
         # Flag set by executor when a handler has been created but not executed (used by Executor)
         self._executor_event = False
+        # List of Futures that have callbacks needing execution
+        self._futures = []
+
+    def add_future(self, future):
+        self._futures.append(future)
+
+    def remove_future(self, future):
+        self._futures.remove(future)
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""

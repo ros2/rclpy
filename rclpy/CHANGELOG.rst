@@ -2,6 +2,37 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.3 (2019-03-09)
+------------------
+* Backport Python Actions (`#282 <https://github.com/ros2/rclpy/issues/282>`_)
+  * Add Action Client (`#262 <https://github.com/ros2/rclpy/issues/262>`_)
+  * Add rclpy_action module
+  * Implement action client
+  * Move common conversion function and typedefs to shared header file (impl/common.h)
+  * Add tests using mock action server
+  * Add action module for aggregating action related submodules
+  * Extend Waitable API so executors are aware of Futures
+  * Move check_for_type_support() to its own module
+  * Fix Executor not executing tasks if there are no ready entities in the wait set (`#272 <https://github.com/ros2/rclpy/issues/272>`_)
+  * Fix Node's reference to executor (`#275 <https://github.com/ros2/rclpy/issues/275>`_)
+  * Abstract type conversions into functions (`#269 <https://github.com/ros2/rclpy/issues/269>`_)
+  * Abstract type conversions into functions
+  * Move common C functions to a shared library 'rclpy_common'
+  * Add ActionServer (`#270 <https://github.com/ros2/rclpy/issues/270>`_)
+  * Add Action server functions to extension module
+  * Separated service related macros into separate request and response calls
+  * Add server goal handle functions to extension module
+  * Update Action extension module to use conversion functions
+  * Add implementation of Python ActionServer
+  * Handles goal and cancel requests, responds, and calls user-defined functions for executing goals.
+  * Handle result requests
+  * Handle expired goals
+  * Publish goal status array and feedback
+  * Add `handle_accepted_callback` to ActionServer
+  * Enable test using MultiThreadedExecutor (`#280 <https://github.com/ros2/rclpy/issues/280>`_)
+  * Guard against failed take when taking action messages (`#281 <https://github.com/ros2/rclpy/issues/281>`_)
+* Contributors: Jacob Perron
+
 0.6.2 (2019-02-08)
 ------------------
 * Added Waitable to callback group (`#265 <https://github.com/ros2/rclpy/issues/265>`_)
