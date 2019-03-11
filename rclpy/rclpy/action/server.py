@@ -276,7 +276,7 @@ class ActionServer(Waitable):
             # Call user goal callback
             response = await await_or_execute(self._goal_callback, goal_request)
             if not isinstance(response, GoalResponse):
-                self._node.get_logger().warn(
+                self._node.get_logger().warning(
                     'Goal request callback did not return a GoalResponse type. Rejecting goal.')
             else:
                 accepted = GoalResponse.ACCEPT == response
@@ -324,7 +324,7 @@ class ActionServer(Waitable):
 
         # If user did not trigger a terminal state, assume aborted
         if goal_handle.is_active:
-            self._node.get_logger().warn(
+            self._node.get_logger().warning(
                 'Goal state not set, assuming aborted. Goal ID: {0}'.format(goal_uuid))
             goal_handle.set_aborted()
 
