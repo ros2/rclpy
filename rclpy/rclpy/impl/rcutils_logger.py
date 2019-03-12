@@ -337,10 +337,18 @@ class RcutilsLogger:
         from rclpy.logging import LoggingSeverity
         return self.log(message, LoggingSeverity.INFO, **kwargs)
 
-    def warn(self, message, **kwargs):
+    def warning(self, message, **kwargs):
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         from rclpy.logging import LoggingSeverity
         return self.log(message, LoggingSeverity.WARN, **kwargs)
+
+    def warn(self, message, **kwargs):
+        """
+        Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.
+
+        Deprecated in favor of :py:classmethod:RcutilsLogger.warning:.
+        """
+        return self.warning(message, **kwargs)
 
     def error(self, message, **kwargs):
         """Log a message with `ERROR` severity via :py:classmethod:RcutilsLogger.log:."""
