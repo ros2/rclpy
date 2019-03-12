@@ -74,7 +74,7 @@ class TestLogging(unittest.TestCase):
 
         # Logging at or above threshold expected to be logged
         self.assertTrue(rclpy.logging._root_logger.info('message_info'))
-        self.assertTrue(rclpy.logging._root_logger.warn('message_warn'))
+        self.assertTrue(rclpy.logging._root_logger.warning('message_warn'))
         self.assertTrue(rclpy.logging._root_logger.error('message_error'))
         self.assertTrue(rclpy.logging._root_logger.fatal('message_fatal'))
 
@@ -225,7 +225,7 @@ class TestLogging(unittest.TestCase):
         self.assertFalse(my_logger.debug('message_debug'))
 
         # Logging at or above threshold expected to be logged
-        self.assertTrue(my_logger.warn('message_warn'))
+        self.assertTrue(my_logger.warning('message_warn'))
         self.assertTrue(my_logger.error('message_err'))
         self.assertTrue(my_logger.fatal('message_fatal'))
 
