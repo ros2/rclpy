@@ -20,6 +20,7 @@ from threading import Lock
 from threading import RLock
 from typing import Any
 from typing import Callable
+from typing import Coroutine
 from typing import Generator
 from typing import List
 from typing import Optional
@@ -54,10 +55,6 @@ g_wait_set_spinning = False
 # For documentation purposes
 # TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
 WaitableEntityType = TypeVar('WaitableEntityType')
-# TODO(jacobperron): Coroutine availabe from typing module in Python 3.6
-# from typing import Coroutine
-Coroutine = TypeVar('Coroutine')
-# Coroutine = TypeVar('Coroutine')
 
 # Avoid import cycle
 if TYPE_CHECKING:
@@ -145,10 +142,10 @@ class Executor:
     def __init__(self, *, context: Context = None) -> None:
         super().__init__()
         self._context = get_default_context() if context is None else context
-        self._nodes = set()  # type: Set[Node]
+        self._nodes: Set[Node] = set()
         self._nodes_lock = RLock()
         # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
-        self._tasks = []  # type: List[Tuple[Task, Optional[WaitableEntityType], Optional[Node]]]
+        self._tasks: List[Tuple[Task, Optional[WaitableEntityType], Optional[Node]]] = []
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         gc, gc_handle = _rclpy.rclpy_create_guard_condition(self._context.handle)
@@ -412,12 +409,12 @@ class Executor:
                     self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
 
             # Gather entities that can be waited on
-            subscriptions = []  # type: List[Subscription]
-            guards = []  # type: List[GuardCondition]
-            timers = []  # type: List[WallTimer]
-            clients = []  # type: List[Client]
-            services = []  # type: List[Service]
-            waitables = []  # type: List[Waitable]
+            subscriptions: List[Subscription] = []
+            guards: List[GuardCondition] = []
+            timers: List[WallTimer] = []
+            clients: List[Client] = []
+            services: List[Service] = []
+            waitables: List[Waitable] = []
             for node in nodes:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
                 timers.extend(filter(self.can_execute, node.timers))

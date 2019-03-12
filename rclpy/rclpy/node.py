@@ -99,14 +99,14 @@ class Node:
         """
         self._handle = None
         self._context = get_default_context() if context is None else context
-        self._parameters = {}  # type: dict
-        self.publishers = []  # type: List[Publisher]
-        self.subscriptions = []  # type: List[Subscription]
-        self.clients = []  # type: List[Client]
-        self.services = []  # type: List[Service]
-        self.timers = []  # type: List[WallTimer]
-        self.guards = []  # type: List[GuardCondition]
-        self.waitables = []  # type: List[Waitable]
+        self._parameters: dict = {}
+        self.publishers: List[Publisher] = []
+        self.subscriptions: List[Subscription] = []
+        self.clients: List[Client] = []
+        self.services: List[Service] = []
+        self.timers: List[WallTimer] = []
+        self.guards: List[GuardCondition] = []
+        self.waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
 
