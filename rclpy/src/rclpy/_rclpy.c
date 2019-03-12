@@ -2925,7 +2925,7 @@ bool __cleanup_names_and_types(rcl_names_and_types_t * names_and_types)
   return true;
 }
 
-/// Get the list of service topics discovered by the provided node for the remote node name
+/// Get a list of service names and types associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
@@ -2979,7 +2979,7 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
   return pyservice_names_and_types;
 }
 
-/// Get the list of subscription topics discovered by the provided node for the remote node name
+/// Get a list of topic names and types having at least one subscription from the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
@@ -3034,7 +3034,7 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
   return pytopic_names_and_types;
 }
 
-/// Get the list of published topics discovered by the provided node for the remote node name
+/// Get a list of topic names and types having at least one publisher from the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
@@ -3089,7 +3089,7 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
   return pytopic_names_and_types;
 }
 
-/// Get the list of topics discovered by the provided node
+/// Get a list of topics associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
@@ -3160,7 +3160,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   return pytopic_names_and_types;
 }
 
-/// Get the list of services discovered by the provided node
+/// Get a list of services associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
