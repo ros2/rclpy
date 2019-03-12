@@ -2925,7 +2925,7 @@ bool __cleanup_names_and_types(rcl_names_and_types_t * names_and_types)
   return true;
 }
 
-/// Get the list of service topics discovered by the provided node for the remote node name
+/// Get a list of service names and types associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
@@ -2979,14 +2979,15 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
   return pyservice_names_and_types;
 }
 
-/// Get the list of published topics discovered by the provided node for the remote node name
+/// Get a list of topic names and types having at least one subscription from the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node
  * \param[in] no_demangle if true topic names and types returned will not be demangled
- * \param[in] node_name of a remote node to get publishers for
+ * \param[in] node_name of a remote node to get subscriptions for
+ * \param[in] node_namespace namespace of the remote node
  * \return Python list of tuples where each tuple contains the two strings:
  *   the topic name and topic type
  */
@@ -3033,7 +3034,7 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
   return pytopic_names_and_types;
 }
 
-/// Get the list of published topics discovered by the provided node for the remote node name
+/// Get a list of topic names and types having at least one publisher from the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
@@ -3041,6 +3042,7 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
  * \param[in] pynode Capsule pointing to the node
  * \param[in] no_demangle if true topic names and types returned will not be demangled
  * \param[in] node_name of a remote node to get publishers for
+ * \param[in] node_namespace namespace of the remote node
  * \return Python list of tuples where each tuple contains the two strings:
  *   the topic name and topic type
  */
@@ -3087,7 +3089,7 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
   return pytopic_names_and_types;
 }
 
-/// Get the list of topics discovered by the provided node
+/// Get a list of topics associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error
@@ -3158,7 +3160,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   return pytopic_names_and_types;
 }
 
-/// Get the list of services discovered by the provided node
+/// Get a list of services associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
  * Raises RuntimeError if there is an rcl error

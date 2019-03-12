@@ -6,9 +6,9 @@
   <description>Package containing the Python client.</description>
 
   <maintainer email="william@osrfoundation.org">William Woodall</maintainer>
-  
+
   <license>Apache License 2.0</license>
-  
+
   <author email="esteve@osrfoundation.org">Esteve Fernandez</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -33,6 +33,8 @@
   <test_depend>rcl_interfaces</test_depend>
   <test_depend>rosidl_generator_py</test_depend>
   <test_depend>test_msgs</test_depend>
+
+  <doc_depend>python3-sphinx</doc_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -18,13 +18,32 @@ import multiprocessing
 from threading import Condition
 from threading import Lock
 from threading import RLock
+from typing import Any
+from typing import Callable
+from typing import Coroutine
+from typing import Generator
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import TYPE_CHECKING
+from typing import TypeVar
+from typing import Union
 
+
+from rclpy.client import Client
+from rclpy.context import Context
+from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.service import Service
+from rclpy.subscription import Subscription
+from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.timer import WallTimer
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
+from rclpy.waitable import Waitable
 
 # TODO(wjwwood): make _rclpy_wait(...) thread-safe
 # Executor.spin_once() ends up calling _rclpy_wait(...), which right now is
@@ -32,6 +51,14 @@ from rclpy.waitable import NumberOfEntities
 # See, for example, https://github.com/ros2/rclpy/issues/192
 g_wait_set_spinning_lock = Lock()
 g_wait_set_spinning = False
+
+# For documentation purposes
+# TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
+WaitableEntityType = TypeVar('WaitableEntityType')
+
+# Avoid import cycle
+if TYPE_CHECKING:
+    from rclpy.node import Node
 
 
 class _WaitSet:
@@ -82,7 +109,7 @@ class _WorkTracker:
         return True
 
 
-async def await_or_execute(callback, *args):
+async def await_or_execute(callback: Union[Callable, Coroutine], *args) -> Any:
     """Await a callback if it is a coroutine, else execute it."""
     if inspect.iscoroutinefunction(callback):
         # Await a coroutine
@@ -100,25 +127,25 @@ class TimeoutException(Exception):
 
 class Executor:
     """
-    A base class for an executor.
+    The base class for an executor.
 
     An executor controls the threading model used to process callbacks. Callbacks are units of work
     like subscription callbacks, timer callbacks, service calls, and received client responses. An
     executor controls which threads callbacks get executed in.
 
-    A custom executor must define :func:`Executor.spin_once`. If the executor has any cleanup then
-    it should also define :func:`Executor.shutdown`.
+    A custom executor must define :meth:`spin_once`.
+    If the executor has any cleanup then it should also define :meth:`shutdown`.
 
-    :param context: The context to be associated with, or None for the default global context.
+    :param context: The context to be associated with, or ``None`` for the default global context.
     """
 
-    def __init__(self, *, context=None):
+    def __init__(self, *, context: Context = None) -> None:
         super().__init__()
         self._context = get_default_context() if context is None else context
-        self._nodes = set()
+        self._nodes: Set[Node] = set()
         self._nodes_lock = RLock()
         # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
-        self._tasks = []
+        self._tasks: List[Tuple[Task, Optional[WaitableEntityType], Optional[Node]]] = []
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         gc, gc_handle = _rclpy.rclpy_create_guard_condition(self._context.handle)
@@ -133,18 +160,17 @@ class Executor:
         self._last_kwargs = None
 
     @property
-    def context(self):
+    def context(self) -> Context:
+        """Get the context associated with the executor."""
         return self._context
 
-    def create_task(self, callback, *args, **kwargs):
+    def create_task(self, callback: Union[Callable, Coroutine], *args, **kwargs) -> Task:
         """
         Add a callback or coroutine to be executed during :meth:`spin` and return a Future.
 
         Arguments to this function are passed to the callback.
 
-        :param callback: A callback to be run in the executor
-        :type callback: callable or coroutine function
-        :rtype: :class:`rclpy.task.Future` instance
+        :param callback: A callback to be run in the executor.
         """
         task = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
@@ -153,15 +179,14 @@ class Executor:
         # Task inherits from Future
         return task
 
-    def shutdown(self, timeout_sec=None):
+    def shutdown(self, timeout_sec: float = None) -> bool:
         """
         Stop executing callbacks and wait for their completion.
 
-        Return true if all outstanding callbacks finished executing.
-
-        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
-        :type timeout_sec: float or None
-        :rtype: bool
+        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
+            timeot expires before all outstanding work is done.
         """
         self._is_shutdown = True
         if not self._work_tracker.wait(timeout_sec):
@@ -181,13 +206,12 @@ class Executor:
         if self._guard_condition is not None:
             _rclpy.rclpy_destroy_entity(self._guard_condition)
 
-    def add_node(self, node):
+    def add_node(self, node: 'Node') -> bool:
         """
         Add a node whose callbacks should be managed by this executor.
 
-        Return true if the node was added.
-
-        :rtype: bool
+        :param node: The node to add to the executor.
+        :return: ``True`` if the node was added, ``False`` otherwise.
         """
         with self._nodes_lock:
             if node not in self._nodes:
@@ -198,8 +222,12 @@ class Executor:
                 return True
             return False
 
-    def remove_node(self, node):
-        """Stop managing this node's callbacks."""
+    def remove_node(self, node: 'Node') -> None:
+        """
+        Stop managing this node's callbacks.
+
+        :param node: The node to remove from the executor.
+        """
         with self._nodes_lock:
             try:
                 self._nodes.remove(node)
@@ -209,34 +237,29 @@ class Executor:
                 # Rebuild the wait set so it doesn't include this node
                 _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
 
-    def get_nodes(self):
-        """
-        Return nodes which have been added to this executor.
-
-        :rtype: list
-        """
+    def get_nodes(self) -> List['Node']:
+        """Return nodes that have been added to this executor."""
         with self._nodes_lock:
             return list(self._nodes)
 
-    def spin(self):
+    def spin(self) -> None:
         """Execute callbacks until shutdown."""
         while self._context.ok():
             self.spin_once()
 
-    def spin_until_future_complete(self, future):
-        """Execute until a given future is done."""
+    def spin_until_future_complete(self, future: Future) -> None:
+        """Execute callbacks until a given future is done."""
         while self._context.ok() and not future.done():
             self.spin_once()
 
-    def spin_once(self, timeout_sec=None):
+    def spin_once(self, timeout_sec: float = None) -> None:
         """
         Wait for and execute a single callback.
 
-        A custom executor should use :func:`Executor.wait_for_ready_callbacks` to get work.
+        A custom executor should use :meth:`wait_for_ready_callbacks` to get work.
 
-        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
-        :type timeout_sec: float or None
-        :rtype: None
+        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
         """
         raise NotImplementedError
 
@@ -293,16 +316,20 @@ class Executor:
             future._set_executor(self)
         await waitable.execute(data)
 
-    def _make_handler(self, entity, node, take_from_wait_list, call_coroutine):
+    def _make_handler(
+        self,
+        entity: WaitableEntityType,
+        node: 'Node',
+        take_from_wait_list: Callable,
+        call_coroutine: Coroutine
+    ) -> Task:
         """
         Make a handler that performs work on an entity.
 
-        :param entity: An entity to wait on
-        :param take_from_wait_list: Makes the entity to stop appearing in the wait list
-        :type take_from_wait_list: callable
+        :param entity: An entity to wait on.
+        :param node: The node associated with the entity.
+        :param take_from_wait_list: Makes the entity to stop appearing in the wait list.
         :param call_coroutine: Does the work the entity is ready for
-        :type call_coroutine: coroutine function
-        :rtype: callable
         """
         # Mark this so it doesn't get added back to the wait list
         entity._executor_event = True
@@ -334,27 +361,28 @@ class Executor:
             self._tasks.append((task, entity, node))
         return task
 
-    def can_execute(self, entity):
+    def can_execute(self, entity: WaitableEntityType) -> bool:
         """
         Determine if a callback for an entity can be executed.
 
         :param entity: Subscription, Timer, Guard condition, etc
-        :returns: True if the entity callback can be executed
-        :rtype: bool
+        :returns: ``True`` if the entity callback can be executed, ``False`` otherwise.
         """
         return not entity._executor_event and entity.callback_group.can_execute(entity)
 
-    def _wait_for_ready_callbacks(self, timeout_sec=None, nodes=None):
+    def _wait_for_ready_callbacks(
+        self,
+        timeout_sec: float = None,
+        nodes: List['Node'] = None
+    ) -> Generator[Tuple[Task, WaitableEntityType, 'Node'], None, None]:
         """
-        Yield callbacks that are ready to be performed.
+        Yield callbacks that are ready to be executed.
 
-        Raises :class:`TimeoutException` on timeout.
+        :raise TimeoutException: on timeout.
 
-        :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
-        :type timeout_sec: float or None
-        :param nodes: A list of nodes to wait on. Wait on all nodes if None.
-        :type nodes: list or None
-        :rtype: Generator[(callable, entity, :class:`rclpy.node.Node`)]
+        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        :param nodes: A list of nodes to wait on. Wait on all nodes if ``None``.
         """
         timeout_timer = None
         timeout_nsec = timeout_sec_to_nsec(timeout_sec)
@@ -381,12 +409,12 @@ class Executor:
                     self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
 
             # Gather entities that can be waited on
-            subscriptions = []
-            guards = []
-            timers = []
-            clients = []
-            services = []
-            waitables = []
+            subscriptions: List[Subscription] = []
+            guards: List[GuardCondition] = []
+            timers: List[WallTimer] = []
+            clients: List[Client] = []
+            services: List[Service] = []
+            waitables: List[Waitable] = []
             for node in nodes:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
                 timers.extend(filter(self.can_execute, node.timers))
@@ -521,11 +549,15 @@ class Executor:
             ):
                 raise TimeoutException()
 
-    def wait_for_ready_callbacks(self, *args, **kwargs):
+    def wait_for_ready_callbacks(self, *args, **kwargs) -> Tuple[Task, WaitableEntityType, 'Node']:
         """
-        Reuse generator and return callbacks that are ready to be performed.
+        Return callbacks that are ready to be executed.
 
-        See :func:`Executor._wait_for_ready_callbacks` for documentation
+        The arguments to this function are passed to the internal method
+        :meth:`_wait_for_ready_callbacks` to get a generator for ready callbacks:
+
+        .. Including the docstring for the hidden function for reference
+        .. automethod:: _wait_for_ready_callbacks
         """
         global g_wait_set_spinning_lock
         global g_wait_set_spinning
@@ -557,12 +589,12 @@ class Executor:
 
 
 class SingleThreadedExecutor(Executor):
-    """Runs callbacks in the thread which calls :func:`SingleThreadedExecutor.spin`."""
+    """Runs callbacks in the thread that calls :meth:`Executor.spin`."""
 
-    def __init__(self, *, context=None):
+    def __init__(self, *, context: Context = None) -> None:
         super().__init__(context=context)
 
-    def spin_once(self, timeout_sec=None):
+    def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
         except TimeoutException:
@@ -574,17 +606,16 @@ class SingleThreadedExecutor(Executor):
 
 
 class MultiThreadedExecutor(Executor):
-    """Runs callbacks in a pool of threads."""
+    """
+    Runs callbacks in a pool of threads.
 
-    def __init__(self, num_threads=None, *, context=None):
-        """
-        Initialize the executor.
+    :param num_threads: number of worker threads in the pool. If ``None``, the number of threads
+        will use :func:`multiprocessing.cpu_count`. If that's not implemented the number of threads
+        defaults to 1.
+    :param context: The context associated with the executor.
+    """
 
-        :param num_threads: number of worker threads in the pool. If None the number of threads
-                      will use multiprocessing.cpu_count(). If that's not implemented the number
-                      of threads defaults to 1.
-        :type num_threads: int
-        """
+    def __init__(self, num_threads: int = None, *, context: Context = None) -> None:
         super().__init__(context=context)
         if num_threads is None:
             try:
@@ -593,7 +624,7 @@ class MultiThreadedExecutor(Executor):
                 num_threads = 1
         self._executor = ThreadPoolExecutor(num_threads)
 
-    def spin_once(self, timeout_sec=None):
+    def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
         except TimeoutException:

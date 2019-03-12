@@ -12,12 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Callable
+from typing import TypeVar
+
+from rclpy.callback_groups import CallbackGroup
+from rclpy.qos import QoSProfile
+
+# For documentation only
+MsgType = TypeVar('MsgType')
+
 
 class Subscription:
 
     def __init__(
-            self, subscription_handle, subscription_pointer,
-            msg_type, topic, callback, callback_group, qos_profile, node_handle, raw):
+         self,
+         subscription_handle,
+         subscription_pointer: int,
+         msg_type: MsgType,
+         topic: str,
+         callback: Callable,
+         callback_group: CallbackGroup,
+         qos_profile: QoSProfile,
+         node_handle,
+         raw: bool
+    ) -> None:
+        """
+        Create a container for a ROS subscription.
+
+        .. warning:: Users should not create a subscription with this constuctor, instead they
+           should call :meth:`.Node.create_subscription`.
+
+        :param subscription_handle: Capsule pointing to the underlying ``rcl_subscription_t``
+            object.
+        :param subscription_pointer: Memory address of the ``rcl_subscription_t`` implementation.
+        :param msg_type: The type of ROS messages the subscription will subscribe to.
+        :param topic: The name of the topic the subscription will subscribe to.
+        :param callback: A user-defined callback function that is called when a message is
+            received by the subscription.
+        :param callback_group: The callback group for the subscription. If ``None``, then the
+            nodes default callback group is used.
+        :param qos_profile: The quality of service profile to apply to the subscription.
+        :node_handle: Capsule pointing to the underlying ``rcl_node_t`` object for the node the
+            subscription is associated with.
+        :param raw: If ``True``, then received messages will be stored in raw binary
+            representation.
+        """
         self.node_handle = node_handle
         self.subscription_handle = subscription_handle
         self.subscription_pointer = subscription_pointer
