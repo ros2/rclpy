@@ -62,9 +62,8 @@ function(configure_python_c_extension_library _library_name)
     ${PythonExtra_LIBRARIES}
   )
 
-  target_include_directories(${_library_name}
-    PUBLIC
-    ${PythonExtra_INCLUDE_DIRS}
+  ament_target_dependencies(${_library_name}
+    "PythonExtra"
   )
 
   install(TARGETS ${_library_name}
@@ -81,10 +80,10 @@ target_link_libraries(rclpy_common
 target_include_directories(rclpy_common
   PUBLIC
   src/rclpy_common/include
-  ${PythonExtra_INCLUDE_DIRS}
 )
 ament_target_dependencies(rclpy_common
   "rmw"
+  "PythonExtra"
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
