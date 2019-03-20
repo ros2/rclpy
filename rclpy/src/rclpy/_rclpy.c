@@ -1927,6 +1927,7 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret = rcl_send_response(service, header, raw_ros_response);
+  PyMem_Free(header);
   destroy_ros_message(raw_ros_response);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
