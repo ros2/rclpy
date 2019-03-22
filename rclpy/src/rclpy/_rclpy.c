@@ -3143,6 +3143,8 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
+  rcutils_ret_t fini_names_ret;
+  rcutils_ret_t fini_namespaces_ret;
   PyObject * pynode_names_and_namespaces = PyList_New(node_names.size);
   if (!pynode_names_and_namespaces) {
     goto cleanup;
@@ -3171,8 +3173,6 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
     PyList_SET_ITEM(pynode_names_and_namespaces, idx, pytuple);
   }
 
-  rcutils_ret_t fini_names_ret;
-  rcutils_ret_t fini_namespaces_ret;
 cleanup:
   fini_names_ret = rcutils_string_array_fini(&node_names);
   fini_namespaces_ret = rcutils_string_array_fini(&node_namespaces);
