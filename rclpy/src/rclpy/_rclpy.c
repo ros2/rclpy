@@ -3559,11 +3559,10 @@ rclpy_get_service_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
       Py_DECREF(pytuple);
       goto cleanup;
     }
-    PyTuple_SetItem(pytuple, 0, pyservice_name);
+    PyTuple_SET_ITEM(pytuple, 0, pyservice_name);
     PyObject * pytypes_list = PyList_New(service_names_and_types.types[i].size);
     if (!pytypes_list) {
       Py_DECREF(pytuple);
-      Py_DECREF(pyservice_name);
       goto cleanup;
     }
     size_t j;
@@ -3575,10 +3574,10 @@ rclpy_get_service_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
         Py_DECREF(pytypes_list);
         goto cleanup;
       }
-      PyList_SetItem(pytypes_list, j, pyservice_type);
+      PyList_SET_ITEM(pytypes_list, j, pyservice_type);
     }
-    PyTuple_SetItem(pytuple, 1, pytypes_list);
-    PyList_SetItem(pyservice_names_and_types, i, pytuple);
+    PyTuple_SET_ITEM(pytuple, 1, pytypes_list);
+    PyList_SET_ITEM(pyservice_names_and_types, i, pytuple);
   }
 
 cleanup:
