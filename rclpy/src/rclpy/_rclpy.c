@@ -1435,17 +1435,23 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pylist = PyList_New(2);
   if (!pylist) {
+    ret = rcl_timer_fini(timer);
+    (void)ret;
     PyMem_Free(timer);
     return NULL;
   }
   PyObject * pytimer = PyCapsule_New(timer, "rcl_timer_t", NULL);
   if (!pytimer) {
+    ret = rcl_timer_fini(timer);
+    (void)ret;
     PyMem_Free(timer);
     Py_DECREF(pylist);
     return NULL;
   }
   PyObject * pytimer_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&timer->impl);
   if (!pytimer_impl_reference) {
+    ret = rcl_timer_fini(timer);
+    (void)ret;
     PyMem_Free(timer);
     Py_DECREF(pylist);
     Py_DECREF(pytimer);
@@ -1857,11 +1863,15 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pylist = PyList_New(2);
   if (!pylist) {
+    ret = rcl_subscription_fini(subscription, node);
+    (void)ret;
     PyMem_Free(subscription);
     return NULL;
   }
   PyObject * pysubscription = PyCapsule_New(subscription, "rcl_subscription_t", NULL);
   if (!pysubscription) {
+    ret = rcl_subscription_fini(subscription, node);
+    (void)ret;
     PyMem_Free(subscription);
     Py_DECREF(pylist);
     return NULL;
@@ -1869,6 +1879,8 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pysubscription_impl_reference =
     PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl);
   if (!pysubscription_impl_reference) {
+    ret = rcl_subscription_fini(subscription, node);
+    (void)ret;
     PyMem_Free(subscription);
     Py_DECREF(pylist);
     Py_DECREF(pysubscription);
@@ -1979,17 +1991,23 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   }
   PyObject * pylist = PyList_New(2);
   if (!pylist) {
+    ret = rcl_client_fini(client, node);
+    (void)ret;
     PyMem_Free(client);
     return NULL;
   }
   PyObject * pyclient = PyCapsule_New(client, "rcl_client_t", NULL);
   if (!pyclient) {
+    ret = rcl_client_fini(client, node);
+    (void)ret;
     PyMem_Free(client);
     Py_DECREF(pylist);
     return NULL;
   }
   PyObject * pyclient_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&client->impl);
   if (!pyclient_impl_reference) {
+    ret = rcl_client_fini(client, node);
+    (void)ret;
     PyMem_Free(client);
     Py_DECREF(pylist);
     Py_DECREF(pyclient);
@@ -2143,17 +2161,23 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pylist = PyList_New(2);
   if (!pylist) {
+    ret = rcl_service_fini(service, node);
+    (void)ret;
     PyMem_Free(service);
     return NULL;
   }
   PyObject * pyservice = PyCapsule_New(service, "rcl_service_t", NULL);
   if (!pyservice) {
+    ret = rcl_service_fini(service, node);
+    (void)ret;
     PyMem_Free(service);
     Py_DECREF(pylist);
     return NULL;
   }
   PyObject * pyservice_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&service->impl);
   if (!pyservice_impl_reference) {
+    ret = rcl_service_fini(service, node);
+    (void)ret;
     PyMem_Free(service);
     Py_DECREF(pylist);
     Py_DECREF(pyservice);
