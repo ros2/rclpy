@@ -315,7 +315,7 @@ class TestActionServer(unittest.TestCase):
         rclpy.spin_until_future_complete(self.node, cancel_future, executor)
         cancel_result = cancel_future.result()
         self.assertEqual(len(cancel_result.goals_canceling), 1)
-        self.assertEqual(cancel_result.goals_canceling[0].goal_id.uuid, goal_uuid.uuid)
+        assert all(cancel_result.goals_canceling[0].goal_id.uuid == goal_uuid.uuid)
 
         action_server.destroy()
         executor.shutdown()
@@ -452,7 +452,7 @@ class TestActionServer(unittest.TestCase):
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result_response = get_result_future.result()
         self.assertEqual(result_response.status, GoalStatus.STATUS_SUCCEEDED)
-        self.assertEqual(result_response.result.sequence, [1, 1, 2, 3, 5])
+        self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
         action_server.destroy()
 
     def test_execute_set_aborted(self):
@@ -483,7 +483,7 @@ class TestActionServer(unittest.TestCase):
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result_response = get_result_future.result()
         self.assertEqual(result_response.status, GoalStatus.STATUS_ABORTED)
-        self.assertEqual(result_response.result.sequence, [1, 1, 2, 3, 5])
+        self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
         action_server.destroy()
 
     def test_execute_no_terminal_state(self):
@@ -514,7 +514,7 @@ class TestActionServer(unittest.TestCase):
         result_response = get_result_future.result()
         # Goal status should default to STATUS_ABORTED
         self.assertEqual(result_response.status, GoalStatus.STATUS_ABORTED)
-        self.assertEqual(result_response.result.sequence, [1, 1, 2, 3, 5])
+        self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
         action_server.destroy()
 
     def test_expire_goals_none(self):
@@ -613,7 +613,9 @@ class TestActionServer(unittest.TestCase):
         rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
 
         self.assertIsNotNone(self.mock_action_client.feedback_msg)
-        self.assertEqual([1, 1, 2, 3], self.mock_action_client.feedback_msg.feedback.sequence)
+        self.assertEqual(
+            [1, 1, 2, 3],
+            self.mock_action_client.feedback_msg.feedback.sequence.tolist())
         action_server.destroy()
 
 
