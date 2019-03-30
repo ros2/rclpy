@@ -45,10 +45,10 @@ class GoalEvent(Enum):
     """Goal events that cause state transitions."""
 
     EXECUTE = 1
-    CANCEL = 2
-    SET_SUCCEEDED = 3
-    SET_ABORTED = 4
-    SET_CANCELED = 5
+    REQUEST_CANCEL = 2
+    SUCCEED = 3
+    ABORT = 4
+    CANCEL = 5
 
 
 class ServerGoalHandle:
@@ -149,14 +149,14 @@ class ServerGoalHandle:
             _rclpy_action.rclpy_action_publish_feedback(
                 self._action_server._handle, feedback_message)
 
-    def set_succeeded(self):
-        self._update_state(GoalEvent.SET_SUCCEEDED)
+    def succeed(self):
+        self._update_state(GoalEvent.SUCCEED)
 
-    def set_aborted(self):
-        self._update_state(GoalEvent.SET_ABORTED)
+    def abort(self):
+        self._update_state(GoalEvent.ABORT)
 
-    def set_canceled(self):
-        self._update_state(GoalEvent.SET_CANCELED)
+    def cancel(self):
+        self._update_state(GoalEvent.CANCEL)
 
     def destroy(self):
         with self._lock:
@@ -330,7 +330,7 @@ class ActionServer(Waitable):
         if goal_handle.is_active:
             self._node.get_logger().warning(
                 'Goal state not set, assuming aborted. Goal ID: {0}'.format(goal_uuid))
-            goal_handle.set_aborted()
+            goal_handle.abort()
 
         self._node.get_logger().debug(
             'Goal with ID {0} finished with state {1}'.format(goal_uuid, goal_handle.status))
@@ -363,7 +363,7 @@ class ActionServer(Waitable):
 
             if CancelResponse.ACCEPT == response:
                 # Notify goal handle
-                goal_handle._update_state(GoalEvent.CANCEL)
+                goal_handle._update_state(GoalEvent.REQUEST_CANCEL)
             else:
                 # Remove from response
                 cancel_response.goals_canceling.remove(goal_info)
