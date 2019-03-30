@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.4 (2019-03-29)
+------------------
+* Backport fix sigint guard condition lifecycle bug (`#298 <https://github.com/ros2/rclpy/issues/298>`_)
+* Contributors: Wei Liu
+
 0.6.3 (2019-03-09)
 ------------------
 * Backport Python Actions (`#282 <https://github.com/ros2/rclpy/issues/282>`_)
