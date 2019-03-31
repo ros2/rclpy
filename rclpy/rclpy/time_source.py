@@ -34,21 +34,6 @@ class TimeSource:
         if node is not None:
             self.attach_node(node)
 
-        use_sim_time_param = node.get_parameter('use_sim_time')
-        if use_sim_time_param.type_ != Parameter.Type.NOT_SET:
-            if use_sim_time_param.type_ == Parameter.Type.BOOL:
-                self._ros_time_is_active = use_sim_time_param.value
-            else:
-                node.get_logger().error(
-                    'Invalid type for parameter \'use_sim_time\' ' +
-                    str(use_sim_time_param.type_) + ' should be bool')
-        else:
-            node.get_logger().debug(
-                '\'use_sim_time\' parameter not set, \
-                    using wall time by default')
-
-        node.set_parameters_callback(self.on_parameter_event)
-
     @property
     def ros_time_is_active(self):
         return self._ros_time_is_active
@@ -65,6 +50,7 @@ class TimeSource:
         else:
             if self._clock_sub is not None and self._node is not None:
                 self._node.destroy_subscription(self._clock_sub)
+                self._clock_sub = None
 
     def _subscribe_to_clock_topic(self):
         if self._clock_sub is None and self._node is not None:
@@ -82,8 +68,20 @@ class TimeSource:
         if self._node is not None:
             self.detach_node()
         self._node = node
-        if self.ros_time_is_active:
-            self._subscribe_to_clock_topic()
+
+        use_sim_time_param = node.get_parameter('use_sim_time')
+        if use_sim_time_param.type_ != Parameter.Type.NOT_SET:
+            if use_sim_time_param.type_ == Parameter.Type.BOOL:
+                self.ros_time_is_active = use_sim_time_param.value
+            else:
+                node.get_logger().error(
+                    "Invalid type for parameter 'use_sim_time' {!r} should be bool"
+                    .format(use_sim_time_param.type_))
+        else:
+            node.get_logger().debug(
+                "'use_sim_time' parameter not set, using wall time by default")
+
+        node.set_parameters_callback(self._on_parameter_event)
 
     def detach_node(self):
         # Remove the subscription to the clock topic.
@@ -109,7 +107,7 @@ class TimeSource:
         for clock in self._associated_clocks:
             clock.set_ros_time_override(time_from_msg)
 
-    def on_parameter_event(self, parameter_list):
+    def _on_parameter_event(self, parameter_list):
         for parameter in parameter_list:
             if parameter.name == 'use_sim_time':
                 if parameter.type_ == Parameter.Type.BOOL:
@@ -117,5 +115,6 @@ class TimeSource:
                 else:
                     self._node.get_logger().error(
                         'use_sim_time parameter set to something besides a bool')
+                break
 
         return SetParametersResult(successful=True)
