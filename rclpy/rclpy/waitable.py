@@ -20,14 +20,19 @@ class NumberOfEntities:
         'num_guard_conditions',
         'num_timers',
         'num_clients',
-        'num_services']
+        'num_services',
+        'num_events']
 
-    def __init__(self, num_subs=0, num_gcs=0, num_timers=0, num_clients=0, num_services=0):
+    def __init__(
+        self, num_subs=0, num_gcs=0, num_timers=0,
+        num_clients=0, num_services=0, num_events=0
+    ):
         self.num_subscriptions = num_subs
         self.num_guard_conditions = num_gcs
         self.num_timers = num_timers
         self.num_clients = num_clients
         self.num_services = num_services
+        self.num_events = num_events
 
     def __add__(self, other):
         result = self.__class__()
@@ -38,9 +43,10 @@ class NumberOfEntities:
         return result
 
     def __repr__(self):
-        return '<{0}({1}, {2}, {3}, {4}, {5})>'.format(
-            self.__class__.__name__, self.num_subscriptions, self.num_guard_conditions,
-            self.num_timers, self.num_clients, self.num_services)
+        return '<{0}({1}, {2}, {3}, {4}, {5}, {6})>'.format(
+            self.__class__.__name__, self.num_subscriptions,
+            self.num_guard_conditions, self.num_timers, self.num_clients,
+            self.num_services, self.num_events)
 
 
 class Waitable:
