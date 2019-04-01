@@ -302,6 +302,47 @@ class TestExecutor(unittest.TestCase):
         assert not executor.add_node(self.node)
         assert id(executor) == id(self.node.executor)
 
+    def test_executor_spin_until_future_complete(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        def timer_callback():
+            pass
+        timer = self.node.create_timer(0.1, timer_callback)
+
+        from rclpy.task import Future
+
+        # Timeout
+        future = Future()
+        self.assertFalse(future.done())
+        start = time.monotonic()
+        executor.spin_until_future_complete(future=future, timeout_sec=1.0)
+        end = time.monotonic()
+        self.assertGreaterEqual(end - start, 1.0)
+        self.assertFalse(future.done())
+
+        # Future complete
+        future = Future()
+
+        def set_future_result():
+            nonlocal future
+            time.sleep(1.0)
+            future.set_result('finished')
+
+        self.assertFalse(future.done())
+
+        t = threading.Thread(target=set_future_result)
+        t.start()
+        start = time.monotonic()
+        executor.spin_until_future_complete(future=future, timeout_sec=2.0)
+        end = time.monotonic()
+        self.assertGreaterEqual(end - start, 1.0)
+        self.assertLessEqual(end - start, 2.0)
+        self.assertTrue(future.done())
+        self.assertEqual(future.result(), 'finished')
+        timer.cancel()
+
 
 if __name__ == '__main__':
     unittest.main()

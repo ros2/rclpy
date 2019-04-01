@@ -183,7 +183,8 @@ def spin(node: 'Node', executor: 'Executor' = None) -> None:
 def spin_until_future_complete(
     node: 'Node',
     future: Future,
-    executor: 'Executor' = None
+    executor: 'Executor' = None,
+    timeout_sec: float = None
 ) -> None:
     """
     Execute work until the future is complete.
@@ -194,6 +195,7 @@ def spin_until_future_complete(
     :param node: A node to add to the executor to check for work.
     :param future: The future object to wait on.
     :param executor: The executor to use, or the global executor if ``None``.
+    :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative. Don't wait if 0.
     """
     executor = get_global_executor() if executor is None else executor
     try:
