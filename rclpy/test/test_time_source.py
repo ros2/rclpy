@@ -24,6 +24,7 @@ from rclpy.clock import ClockType
 from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
 from rclpy.duration import Duration
+from rclpy.parameter import Parameter
 from rclpy.time import Time
 from rclpy.time_source import CLOCK_TOPIC
 from rclpy.time_source import TimeSource
@@ -66,6 +67,21 @@ class TestTimeSource(unittest.TestCase):
             executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
             rclpy.spin_once(self.node, timeout_sec=1, executor=executor)
             time.sleep(1)
+
+    def set_use_sim_time_parameter(self, value):
+        self.node.set_parameters(
+            [Parameter('use_sim_time', Parameter.Type.BOOL, value)])
+        executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+        cycle_count = 0
+        while rclpy.ok(context=self.context) and cycle_count < 5:
+            use_sim_time_param = self.node.get_parameter('use_sim_time')
+            cycle_count += 1
+            if use_sim_time_param.type_ == Parameter.Type.BOOL:
+                break
+
+            rclpy.spin_once(self.node, timeout_sec=1, executor=executor)
+            time.sleep(1)
+        return use_sim_time_param.value == value
 
     def test_time_source_attach_clock(self):
         time_source = TimeSource(node=self.node)
@@ -115,7 +131,7 @@ class TestTimeSource(unittest.TestCase):
         # time to be set to active.
         self.assertFalse(time_source.ros_time_is_active)
         self.assertFalse(clock.ros_time_is_active)
-        time_source.ros_time_is_active = True
+        assert self.set_use_sim_time_parameter(True)
         self.assertTrue(time_source.ros_time_is_active)
         self.assertTrue(clock.ros_time_is_active)
 
@@ -142,13 +158,13 @@ class TestTimeSource(unittest.TestCase):
         time_source.attach_node(node2)
         node2.destroy_node()
         assert time_source._node == node2
-        assert time_source._clock_sub is not None
+        assert time_source._clock_sub is None
 
     def test_forwards_jump(self):
         time_source = TimeSource(node=self.node)
         clock = ROSClock()
         time_source.attach_clock(clock)
-        time_source.ros_time_is_active = True
+        assert self.set_use_sim_time_parameter(True)
 
         pre_cb = Mock()
         post_cb = Mock()
@@ -168,7 +184,7 @@ class TestTimeSource(unittest.TestCase):
         time_source = TimeSource(node=self.node)
         clock = ROSClock()
         time_source.attach_clock(clock)
-        time_source.ros_time_is_active = True
+        assert self.set_use_sim_time_parameter(True)
 
         pre_cb = Mock()
         post_cb = Mock()
@@ -188,7 +204,7 @@ class TestTimeSource(unittest.TestCase):
         time_source = TimeSource(node=self.node)
         clock = ROSClock()
         time_source.attach_clock(clock)
-        time_source.ros_time_is_active = True
+        assert self.set_use_sim_time_parameter(True)
 
         pre_cb = Mock()
         post_cb = Mock()
@@ -196,7 +212,7 @@ class TestTimeSource(unittest.TestCase):
         handler = clock.create_jump_callback(
             threshold, pre_callback=pre_cb, post_callback=post_cb)
 
-        time_source.ros_time_is_active = False
+        assert self.set_use_sim_time_parameter(False)
         pre_cb.assert_called()
         post_cb.assert_called()
         assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_DEACTIVATED
@@ -204,7 +220,7 @@ class TestTimeSource(unittest.TestCase):
         pre_cb.reset_mock()
         post_cb.reset_mock()
 
-        time_source.ros_time_is_active = True
+        assert self.set_use_sim_time_parameter(True)
         pre_cb.assert_called()
         post_cb.assert_called()
         assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_ACTIVATED
@@ -214,14 +230,14 @@ class TestTimeSource(unittest.TestCase):
         time_source = TimeSource(node=self.node)
         clock = ROSClock()
         time_source.attach_clock(clock)
-        time_source.ros_time_is_active = True
+        assert self.set_use_sim_time_parameter(True)
 
         post_cb = Mock()
         threshold = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
         handler = clock.create_jump_callback(
             threshold, pre_callback=None, post_callback=post_cb)
 
-        time_source.ros_time_is_active = False
+        assert self.set_use_sim_time_parameter(False)
         post_cb.assert_called_once()
         assert post_cb.call_args[0][0].clock_change == ClockChange.ROS_TIME_DEACTIVATED
         handler.unregister()
@@ -230,13 +246,17 @@ class TestTimeSource(unittest.TestCase):
         time_source = TimeSource(node=self.node)
         clock = ROSClock()
         time_source.attach_clock(clock)
-        time_source.ros_time_is_active = True
+        assert self.set_use_sim_time_parameter(True)
 
         pre_cb = Mock()
         threshold = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
         handler = clock.create_jump_callback(
             threshold, pre_callback=pre_cb, post_callback=None)
 
-        time_source.ros_time_is_active = False
+        assert self.set_use_sim_time_parameter(False)
         pre_cb.assert_called_once()
         handler.unregister()
+
+
+if __name__ == '__main__':
+    unittest.main()
