@@ -249,7 +249,7 @@ class Executor:
             self.spin_once()
 
     def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
-        """Execute callbacks until a given future is done."""
+        """Execute callbacks until a given future is done or a timeout occurs."""
         if timeout_sec is None or timeout_sec < 0:
             while self._context.ok() and not future.done():
                 self.spin_once(timeout_sec=timeout_sec)

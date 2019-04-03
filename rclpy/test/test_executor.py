@@ -20,6 +20,7 @@ import unittest
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.task import Future
 
 
 class TestExecutor(unittest.TestCase):
@@ -302,45 +303,95 @@ class TestExecutor(unittest.TestCase):
         assert not executor.add_node(self.node)
         assert id(executor) == id(self.node.executor)
 
-    def test_executor_spin_until_future_complete(self):
+    def test_executor_spin_until_future_complete_timeout(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         def timer_callback():
             pass
-        timer = self.node.create_timer(0.1, timer_callback)
-
-        from rclpy.task import Future
+        timer = self.node.create_timer(0.003, timer_callback)
 
         # Timeout
         future = Future()
         self.assertFalse(future.done())
         start = time.monotonic()
-        executor.spin_until_future_complete(future=future, timeout_sec=1.0)
+        executor.spin_until_future_complete(future=future, timeout_sec=0.1)
         end = time.monotonic()
-        self.assertGreaterEqual(end - start, 1.0)
+        self.assertAlmostEqual(end - start, 0.1, places=2)
         self.assertFalse(future.done())
 
-        # Future complete
-        future = Future()
+        timer.cancel()
 
-        def set_future_result():
-            nonlocal future
-            time.sleep(1.0)
+    def test_excutor_spin_until_future_complete_future_done(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        def timer_callback():
+            pass
+        timer = self.node.create_timer(0.003, timer_callback)
+
+        def set_future_result(future):
+            time.sleep(0.1)
             future.set_result('finished')
 
+        # Future complete timeout_sec > 0
+        future = Future()
         self.assertFalse(future.done())
-
-        t = threading.Thread(target=set_future_result)
+        t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
         start = time.monotonic()
-        executor.spin_until_future_complete(future=future, timeout_sec=2.0)
+        executor.spin_until_future_complete(future=future, timeout_sec=0.2)
         end = time.monotonic()
-        self.assertGreaterEqual(end - start, 1.0)
-        self.assertLessEqual(end - start, 2.0)
+        self.assertAlmostEqual(end - start, 0.1, places=2)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
+
+        # Future complete timeout_sec = None
+        future = Future()
+        self.assertFalse(future.done())
+        t = threading.Thread(target=lambda: set_future_result(future))
+        t.start()
+        start = time.monotonic()
+        executor.spin_until_future_complete(future=future, timeout_sec=None)
+        end = time.monotonic()
+        self.assertAlmostEqual(end - start, 0.1, places=2)
+        self.assertTrue(future.done())
+        self.assertEqual(future.result(), 'finished')
+
+        # Future complete timeout < 0
+        future = Future()
+        self.assertFalse(future.done())
+        t = threading.Thread(target=lambda: set_future_result(future))
+        t.start()
+        start = time.monotonic()
+        executor.spin_until_future_complete(future=future, timeout_sec=-1)
+        end = time.monotonic()
+        self.assertAlmostEqual(end - start, 0.1, places=2)
+        self.assertTrue(future.done())
+        self.assertEqual(future.result(), 'finished')
+
+        timer.cancel()
+
+    def test_excutor_spin_until_future_complete_do_not_wait(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        def timer_callback():
+            pass
+        timer = self.node.create_timer(0.003, timer_callback)
+
+        # Do not wait timeout_sec = 0
+        future = Future()
+        self.assertFalse(future.done())
+        start = time.monotonic()
+        executor.spin_until_future_complete(future=future, timeout_sec=0)
+        end = time.monotonic()
+        self.assertAlmostEqual(end - start, 0.0, places=2)
+        self.assertFalse(future.done())
+
         timer.cancel()
 
 

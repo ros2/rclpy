@@ -195,11 +195,12 @@ def spin_until_future_complete(
     :param node: A node to add to the executor to check for work.
     :param future: The future object to wait on.
     :param executor: The executor to use, or the global executor if ``None``.
-    :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative. Don't wait if 0.
+    :param timeout_sec: Seconds to wait. Block until the future is complete
+        if ``None`` or negative. Don't wait if 0.
     """
     executor = get_global_executor() if executor is None else executor
     try:
         executor.add_node(node)
-        executor.spin_until_future_complete(future)
+        executor.spin_until_future_complete(future, timeout_sec)
     finally:
         executor.remove_node(node)
