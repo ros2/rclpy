@@ -82,6 +82,7 @@ target_include_directories(rclpy_common
   src/rclpy_common/include
 )
 ament_target_dependencies(rclpy_common
+  "rcl"
   "rmw"
   "PythonExtra"
 )

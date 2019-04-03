@@ -16,6 +16,7 @@
 
 #include <Python.h>
 
+#include <rcl/graph.h>  // rcl_names_and_types_t
 #include <rmw/types.h>
 
 #include "rclpy_common/visibility_control.h"
@@ -24,6 +25,28 @@ typedef void * create_ros_message_signature (void);
 typedef void destroy_ros_message_signature (void *);
 typedef bool convert_from_py_signature (PyObject *, void *);
 typedef PyObject * convert_to_py_signature (void *);
+
+
+/// Finalize names and types struct with error setting.
+/**
+ * \param[in] names_and_types The struct to finalize.
+ * \return `true` if finalized successfully, `false` otherwise.
+ *   If `false`, then a Python error is set.
+ */
+RCLPY_COMMON_PUBLIC
+bool
+rclpy_names_and_types_fini(rcl_names_and_types_t * names_and_types);
+
+/// Convert a C rcl_names_and_types_t into a Python list.
+/**
+ * \param names_and_types The names and types struct to convert.
+ * \return A PyList of PyTuples. The first element of each tuple is a string for the
+ *   name and the second element is a list of strings for the types.
+ * \return `NULL` if there is an error. No Python error is set.
+ */
+RCLPY_COMMON_PUBLIC
+PyObject *
+rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * topic_names_and_types);
 
 /// Convert a C rmw_qos_profile_t into a Python QoSProfile object
 /**
