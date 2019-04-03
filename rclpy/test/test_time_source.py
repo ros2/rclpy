@@ -16,7 +16,6 @@ import time
 import unittest
 from unittest.mock import Mock
 
-import builtin_interfaces.msg
 import rclpy
 from rclpy.clock import Clock
 from rclpy.clock import ClockChange
@@ -28,6 +27,7 @@ from rclpy.parameter import Parameter
 from rclpy.time import Time
 from rclpy.time_source import CLOCK_TOPIC
 from rclpy.time_source import TimeSource
+import rosgraph_msgs.msg
 
 from .mock_compat import __name__ as _  # noqa: ignore=F401
 
@@ -44,11 +44,11 @@ class TestTimeSource(unittest.TestCase):
         rclpy.shutdown(context=self.context)
 
     def publish_clock_messages(self):
-        clock_pub = self.node.create_publisher(builtin_interfaces.msg.Time, CLOCK_TOPIC)
+        clock_pub = self.node.create_publisher(rosgraph_msgs.msg.Clock, CLOCK_TOPIC)
         cycle_count = 0
-        time_msg = builtin_interfaces.msg.Time()
+        time_msg = rosgraph_msgs.msg.Clock()
         while rclpy.ok(context=self.context) and cycle_count < 5:
-            time_msg.sec = cycle_count
+            time_msg.clock.sec = cycle_count
             clock_pub.publish(time_msg)
             cycle_count += 1
             executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
@@ -57,11 +57,11 @@ class TestTimeSource(unittest.TestCase):
             time.sleep(1)
 
     def publish_reversed_clock_messages(self):
-        clock_pub = self.node.create_publisher(builtin_interfaces.msg.Time, CLOCK_TOPIC)
+        clock_pub = self.node.create_publisher(rosgraph_msgs.msg.Clock, CLOCK_TOPIC)
         cycle_count = 0
-        time_msg = builtin_interfaces.msg.Time()
+        time_msg = rosgraph_msgs.msg.Clock()
         while rclpy.ok(context=self.context) and cycle_count < 5:
-            time_msg.sec = 6 - cycle_count
+            time_msg.clock.sec = 6 - cycle_count
             clock_pub.publish(time_msg)
             cycle_count += 1
             executor = rclpy.executors.SingleThreadedExecutor(context=self.context)

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import builtin_interfaces.msg
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.clock import ClockType
 from rclpy.clock import ROSClock
 from rclpy.parameter import Parameter
 from rclpy.time import Time
+import rosgraph_msgs.msg
 
 CLOCK_TOPIC = '/clock'
 
@@ -55,7 +55,7 @@ class TimeSource:
     def _subscribe_to_clock_topic(self):
         if self._clock_sub is None and self._node is not None:
             self._clock_sub = self._node.create_subscription(
-                builtin_interfaces.msg.Time,
+                rosgraph_msgs.msg.Clock,
                 CLOCK_TOPIC,
                 self.clock_callback
             )
@@ -102,7 +102,7 @@ class TimeSource:
 
     def clock_callback(self, msg):
         # Cache the last message in case a new clock is attached.
-        time_from_msg = Time.from_msg(msg)
+        time_from_msg = Time.from_msg(msg.clock)
         self._last_time_set = time_from_msg
         for clock in self._associated_clocks:
             clock.set_ros_time_override(time_from_msg)
