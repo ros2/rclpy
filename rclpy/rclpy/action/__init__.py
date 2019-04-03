@@ -13,4 +13,7 @@
 # limitations under the License.
 
 from .client import ActionClient  # noqa
+from .graph import get_action_client_names_and_types_by_node  # noqa
+from .graph import get_action_names_and_types  # noqa
+from .graph import get_action_server_names_and_types_by_node  # noqa
 from .server import ActionServer, CancelResponse, GoalResponse  # noqa
