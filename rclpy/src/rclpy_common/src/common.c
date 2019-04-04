@@ -34,51 +34,43 @@ rclpy_convert_to_py_qos_policy(void * profile)
     return NULL;
   }
 
+  // start qos setting
   rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)profile;
+  PyObject * pyqos_depth = NULL;
+  PyObject * pyqos_history = NULL;
+  PyObject * pyqos_reliability = NULL;
+  PyObject * pyqos_durability = NULL;
+  PyObject * pyqos_avoid_ros_namespace_conventions = NULL;
+  int set_result = -1;
 
-  PyObject * pyqos_depth = PyLong_FromSize_t(qos_profile->depth);
+  pyqos_depth = PyLong_FromSize_t(qos_profile->depth);
   if (!pyqos_depth) {
-    Py_DECREF(pyqos_profile);
-    return NULL;
+    goto cleanup_qos_setting;
   }
 
-  PyObject * pyqos_history = PyLong_FromUnsignedLong(qos_profile->history);
+  pyqos_history = PyLong_FromUnsignedLong(qos_profile->history);
   if (!pyqos_history) {
-    Py_DECREF(pyqos_profile);
-    Py_DECREF(pyqos_depth);
-    return NULL;
+    goto cleanup_qos_setting;
   }
 
-  PyObject * pyqos_reliability = PyLong_FromUnsignedLong(qos_profile->reliability);
+  pyqos_reliability = PyLong_FromUnsignedLong(qos_profile->reliability);
   if (!pyqos_reliability) {
-    Py_DECREF(pyqos_profile);
-    Py_DECREF(pyqos_depth);
-    Py_DECREF(pyqos_history);
-    return NULL;
+    goto cleanup_qos_setting;
   }
 
-  PyObject * pyqos_durability = PyLong_FromUnsignedLong(qos_profile->durability);
+  pyqos_durability = PyLong_FromUnsignedLong(qos_profile->durability);
   if (!pyqos_durability) {
-    Py_DECREF(pyqos_profile);
-    Py_DECREF(pyqos_depth);
-    Py_DECREF(pyqos_history);
-    Py_DECREF(pyqos_reliability);
-    return NULL;
+    goto cleanup_qos_setting;
   }
 
-  PyObject * pyqos_avoid_ros_namespace_conventions =
+  pyqos_avoid_ros_namespace_conventions =
     PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions);
   if (!pyqos_avoid_ros_namespace_conventions) {
-    Py_DECREF(pyqos_profile);
-    Py_DECREF(pyqos_depth);
-    Py_DECREF(pyqos_history);
-    Py_DECREF(pyqos_reliability);
-    Py_DECREF(pyqos_durability);
-    return NULL;
+    goto cleanup_qos_setting;
   }
 
   // A success returns 0, and a failure returns -1
-  int set_result = 0;
+  set_result = 0;
   set_result += PyObject_SetAttrString(pyqos_profile, "depth", pyqos_depth);
   set_result += PyObject_SetAttrString(pyqos_profile, "history", pyqos_history);
   set_result += PyObject_SetAttrString(pyqos_profile, "reliability", pyqos_reliability);
@@ -86,11 +78,12 @@ rclpy_convert_to_py_qos_policy(void * profile)
   set_result += PyObject_SetAttrString(pyqos_profile,
       "avoid_ros_namespace_conventions", pyqos_avoid_ros_namespace_conventions);
 
-  Py_DECREF(pyqos_depth);
-  Py_DECREF(pyqos_history);
-  Py_DECREF(pyqos_reliability);
-  Py_DECREF(pyqos_durability);
-  Py_DECREF(pyqos_avoid_ros_namespace_conventions);
+cleanup_qos_setting:
+  if (pyqos_depth) {Py_DECREF(pyqos_depth);}
+  if (pyqos_history) {Py_DECREF(pyqos_history);}
+  if (pyqos_reliability) {Py_DECREF(pyqos_reliability);}
+  if (pyqos_durability) {Py_DECREF(pyqos_durability);}
+  if (pyqos_avoid_ros_namespace_conventions) {Py_DECREF(pyqos_avoid_ros_namespace_conventions);}
 
   if (0 != set_result) {
     Py_DECREF(pyqos_profile);
