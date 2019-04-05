@@ -36,34 +36,7 @@
 #include <rmw/validate_node_name.h>
 #include <rosidl_generator_c/message_type_support_struct.h>
 
-#include <signal.h>
-
 #include "rclpy_common/common.h"
-
-static rcl_guard_condition_t * g_sigint_gc_handle;
-
-#ifdef _WIN32
-_crt_signal_t g_original_signal_handler = NULL;
-#else
-sig_t g_original_signal_handler = NULL;
-#endif  // _WIN32
-
-/// Catch signals
-static void catch_function(int signo)
-{
-  (void) signo;
-  if (NULL != g_sigint_gc_handle) {
-    rcl_ret_t ret = rcl_trigger_guard_condition(g_sigint_gc_handle);
-    if (ret != RCL_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError,
-        "Failed to trigger guard_condition: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-    }
-  }
-  if (NULL != g_original_signal_handler) {
-    g_original_signal_handler(signo);
-  }
-}
 
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
@@ -122,80 +95,6 @@ rclpy_create_context(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   *context = rcl_get_zero_initialized_context();
   // if it fails, error is set and NULL is returned as it should
   return PyCapsule_New(context, "rcl_context_t", _rclpy_context_capsule_destructor);
-}
-
-/// Create a sigint guard condition
-/**
- * A successful call will return a list with two elements:
- *
- * - a Capsule with the pointer of the created rcl_guard_condition_t * structure
- * - an integer representing the memory address of the rcl_guard_condition_t
- *
- * Raises RuntimeError if initializing the guard condition fails
- *
- * \return a list with the capsule and memory location, or
- * \return NULL on failure
- */
-static PyObject *
-rclpy_get_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pycontext;
-
-  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
-    return NULL;
-  }
-
-  rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
-    return NULL;
-  }
-
-  rcl_guard_condition_t * sigint_gc =
-    (rcl_guard_condition_t *)PyMem_Malloc(sizeof(rcl_guard_condition_t));
-  if (!sigint_gc) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for sigint guard condition");
-    return NULL;
-  }
-  *sigint_gc = rcl_get_zero_initialized_guard_condition();
-  rcl_guard_condition_options_t sigint_gc_options = rcl_guard_condition_get_default_options();
-
-  rcl_ret_t ret = rcl_guard_condition_init(sigint_gc, context, sigint_gc_options);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to create guard_condition: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    PyMem_Free(sigint_gc);
-    return NULL;
-  }
-
-  PyObject * pylist = PyList_New(2);
-  if (!pylist) {
-    ret = rcl_guard_condition_fini(sigint_gc);
-    PyMem_Free(sigint_gc);
-    return NULL;
-  }
-
-  PyObject * pysigint_gc = PyCapsule_New(sigint_gc, "rcl_guard_condition_t", NULL);
-  if (!pysigint_gc) {
-    ret = rcl_guard_condition_fini(sigint_gc);
-    PyMem_Free(sigint_gc);
-    Py_DECREF(pylist);
-    return NULL;
-  }
-
-  PyObject * pysigint_gc_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&sigint_gc->impl);
-  if (!pysigint_gc_impl_reference) {
-    ret = rcl_guard_condition_fini(sigint_gc);
-    PyMem_Free(sigint_gc);
-    Py_DECREF(pylist);
-    Py_DECREF(pysigint_gc);
-    return NULL;
-  }
-
-  g_sigint_gc_handle = sigint_gc;
-  PyList_SET_ITEM(pylist, 0, pysigint_gc);
-  PyList_SET_ITEM(pylist, 1, pysigint_gc_impl_reference);
-  return pylist;
 }
 
 /// Create a general purpose guard condition
@@ -603,9 +502,6 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 #endif
   }
   Py_DECREF(pyseqlist);
-
-  // Register our signal handler that will forward to the original one.
-  g_original_signal_handler = signal(SIGINT, catch_function);
 
   if (PyErr_Occurred()) {
     return NULL;
@@ -2405,9 +2301,6 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
     rcl_guard_condition_t * guard_condition = (rcl_guard_condition_t *)PyCapsule_GetPointer(
       pyentity, "rcl_guard_condition_t");
-    if (g_sigint_gc_handle == guard_condition) {
-      g_sigint_gc_handle = NULL;
-    }
     ret = rcl_guard_condition_fini(guard_condition);
     PyMem_Free(guard_condition);
   } else {
@@ -3128,10 +3021,6 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_reset_error();
     return NULL;
   }
-
-  // Restore the original signal handler.
-  signal(SIGINT, g_original_signal_handler);
-  g_original_signal_handler = NULL;
 
   Py_RETURN_NONE;
 }
@@ -4626,11 +4515,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
     "Create a Timer."
-  },
-
-  {
-    "rclpy_get_sigint_guard_condition", rclpy_get_sigint_guard_condition, METH_VARARGS,
-    "Create a guard_condition triggered when sigint is received."
   },
   {
     "rclpy_create_guard_condition", rclpy_create_guard_condition, METH_VARARGS,

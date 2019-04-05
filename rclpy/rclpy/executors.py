@@ -37,6 +37,7 @@ from rclpy.context import Context
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
+from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
@@ -45,13 +46,6 @@ from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
-
-# TODO(wjwwood): make _rclpy_wait(...) thread-safe
-# Executor.spin_once() ends up calling _rclpy_wait(...), which right now is
-# not thread-safe, no matter if different wait sets are used or not.
-# See, for example, https://github.com/ros2/rclpy/issues/192
-g_wait_set_spinning_lock = Lock()
-g_wait_set_spinning = False
 
 # For documentation purposes
 # TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
@@ -167,6 +161,7 @@ class Executor:
         self._cb_iter = None
         self._last_args = None
         self._last_kwargs = None
+        self._sigint_gc = SignalHandlerGuardCondition(context)
 
     @property
     def context(self) -> Context:
@@ -217,11 +212,15 @@ class Executor:
         self._cb_iter = None
         self._last_args = None
         self._last_kwargs = None
+        self._sigint_gc.destroy()
+        self._sigint_gc = None
         return True
 
     def __del__(self):
         if self._guard_condition is not None:
             _rclpy.rclpy_destroy_entity(self._guard_condition)
+        if self._sigint_gc is not None:
+            self._sigint_gc.destroy()
 
     def add_node(self, node: 'Node') -> bool:
         """
@@ -497,26 +496,23 @@ class Executor:
                         )
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
-                (sigint_gc, sigint_gc_handle) = \
-                    _rclpy.rclpy_get_sigint_guard_condition(self._context.handle)
-                try:
-                    _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
-                    _rclpy.rclpy_wait_set_add_entity(
-                        'guard_condition', wait_set, self._guard_condition)
 
-                    # Wait for something to become ready
-                    _rclpy.rclpy_wait(wait_set, timeout_nsec)
-                    if self._is_shutdown:
-                        raise ShutdownException()
+                sigint_gc = self._sigint_gc.guard_handle
+                _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
+                _rclpy.rclpy_wait_set_add_entity(
+                    'guard_condition', wait_set, self._guard_condition)
 
-                    # get ready entities
-                    subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
-                    guards_ready = _rclpy.rclpy_get_ready_entities('guard_condition', wait_set)
-                    timers_ready = _rclpy.rclpy_get_ready_entities('timer', wait_set)
-                    clients_ready = _rclpy.rclpy_get_ready_entities('client', wait_set)
-                    services_ready = _rclpy.rclpy_get_ready_entities('service', wait_set)
-                finally:
-                    _rclpy.rclpy_destroy_entity(sigint_gc)
+                # Wait for something to become ready
+                _rclpy.rclpy_wait(wait_set, timeout_nsec)
+                if self._is_shutdown:
+                    raise ShutdownException()
+
+                # get ready entities
+                subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
+                guards_ready = _rclpy.rclpy_get_ready_entities('guard_condition', wait_set)
+                timers_ready = _rclpy.rclpy_get_ready_entities('timer', wait_set)
+                clients_ready = _rclpy.rclpy_get_ready_entities('client', wait_set)
+                services_ready = _rclpy.rclpy_get_ready_entities('service', wait_set)
 
                 # Mark all guards as triggered before yielding since they're auto-taken
                 for gc in guards:
@@ -595,33 +591,21 @@ class Executor:
         .. Including the docstring for the hidden function for reference
         .. automethod:: _wait_for_ready_callbacks
         """
-        global g_wait_set_spinning_lock
-        global g_wait_set_spinning
-        with g_wait_set_spinning_lock:
-            if g_wait_set_spinning:
-                raise RuntimeError(
-                    'Executor.wait_for_ready_callbacks() called concurrently in multiple threads')
-            g_wait_set_spinning = True
+        # if an old generator is done, this var makes the loop get a new one before returning
+        got_generator = False
+        while not got_generator:
+            if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
+                # Create a new generator
+                self._last_args = args
+                self._last_kwargs = kwargs
+                self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+                got_generator = True
 
-        try:
-            # if an old generator is done, this var makes the loop get a new one before returning
-            got_generator = False
-            while not got_generator:
-                if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
-                    # Create a new generator
-                    self._last_args = args
-                    self._last_kwargs = kwargs
-                    self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
-                    got_generator = True
-
-                try:
-                    return next(self._cb_iter)
-                except StopIteration:
-                    # Generator ran out of work
-                    self._cb_iter = None
-        finally:
-            with g_wait_set_spinning_lock:
-                g_wait_set_spinning = False
+            try:
+                return next(self._cb_iter)
+            except StopIteration:
+                # Generator ran out of work
+                self._cb_iter = None
 
 
 class SingleThreadedExecutor(Executor):
