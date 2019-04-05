@@ -125,6 +125,12 @@ class TimeoutException(Exception):
     pass
 
 
+class ShutdownException(Exception):
+    """Signal that executor was shut down."""
+
+    pass
+
+
 class Executor:
     """
     The base class for an executor.
@@ -154,6 +160,8 @@ class Executor:
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
+        # Protect against shutdown() being called in parallel in two threads
+        self._shutdown_lock = Lock()
         # State for wait_for_ready_callbacks to reuse generator
         self._cb_iter = None
         self._last_args = None
@@ -188,15 +196,23 @@ class Executor:
         :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
             timeot expires before all outstanding work is done.
         """
-        self._is_shutdown = True
+        with self._shutdown_lock:
+            if not self._is_shutdown:
+                self._is_shutdown = True
+                # Tell executor it's been shut down
+                _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+
         if not self._work_tracker.wait(timeout_sec):
             return False
+
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
             self._nodes = set()
-        _rclpy.rclpy_destroy_entity(self._guard_condition)
 
-        self._guard_condition = None
+        with self._shutdown_lock:
+            if self._guard_condition:
+                _rclpy.rclpy_destroy_entity(self._guard_condition)
+                self._guard_condition = None
         self._cb_iter = None
         self._last_args = None
         self._last_kwargs = None
@@ -379,6 +395,7 @@ class Executor:
         Yield callbacks that are ready to be executed.
 
         :raise TimeoutException: on timeout.
+        :raise ShutdownException: on if executor was shut down.
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
@@ -472,6 +489,8 @@ class Executor:
 
                     # Wait for something to become ready
                     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+                    if self._is_shutdown:
+                        raise ShutdownException()
 
                     # get ready entities
                     subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
@@ -597,6 +616,8 @@ class SingleThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except ShutdownException:
+            pass
         except TimeoutException:
             pass
         else:
@@ -627,6 +648,8 @@ class MultiThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except ShutdownException:
+            pass
         except TimeoutException:
             pass
         else:

@@ -19,6 +19,7 @@ import unittest
 
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import ShutdownException
 from rclpy.executors import SingleThreadedExecutor
 
 
@@ -56,6 +57,40 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         try:
             self.assertTrue(self.func_execution(executor))
+        finally:
+            executor.shutdown()
+
+    def test_executor_immediate_shutdown(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        try:
+            got_callback = False
+
+            def timer_callback():
+                nonlocal got_callback
+                got_callback = True
+
+            timer_period = 1
+            tmr = self.node.create_timer(timer_period, timer_callback)
+
+            def spin():
+                nonlocal executor
+                try:
+                    executor.spin()
+                except ShutdownException:
+                    pass
+
+            self.assertTrue(executor.add_node(self.node))
+            t = threading.Thread(target=spin, daemon=True)
+            start_time = time.monotonic()
+            t.start()
+            executor.shutdown()
+            t.join()
+            end_time = time.monotonic()
+
+            self.node.destroy_timer(tmr)
+            self.assertLess(end_time - start_time, timer_period / 2)
+            self.assertFalse(got_callback)
         finally:
             executor.shutdown()
 
