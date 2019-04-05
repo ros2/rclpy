@@ -302,6 +302,34 @@ class TestExecutor(unittest.TestCase):
         assert not executor.add_node(self.node)
         assert id(executor) == id(self.node.executor)
 
+    def test_executor_add_node_wakes_executor(self):
+        self.assertIsNotNone(self.node.handle)
+        got_callback = False
+
+        def timer_callback():
+            nonlocal got_callback
+            got_callback = True
+
+        timer_period = 0.1
+        tmr = self.node.create_timer(timer_period, timer_callback)
+
+        executor = SingleThreadedExecutor(context=self.context)
+        try:
+            # spin in background
+            t = threading.Thread(target=executor.spin_once, daemon=True)
+            t.start()
+            # sleep to make sure executor is blocked in rcl_wait
+            time.sleep(0.5)
+
+            self.assertTrue(executor.add_node(self.node))
+            # Make sure timer has time to trigger
+            time.sleep(timer_period)
+
+            self.assertTrue(got_callback)
+        finally:
+            executor.shutdown()
+            self.node.destroy_timer(tmr)
+
 
 if __name__ == '__main__':
     unittest.main()
