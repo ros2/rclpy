@@ -26,11 +26,7 @@ typedef struct rclpy_qos_profile
 void
 init_rclpy_qos_profile(rclpy_qos_profile_t * profile)
 {
-  profile->depth = NULL;
-  profile->history = NULL;
-  profile->reliability = NULL;
-  profile->durability = NULL;
-  profile->avoid_ros_namespace_conventions = NULL;
+  memset(profile, 0, sizeof(*profile));
 }
 
 void
