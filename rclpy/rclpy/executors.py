@@ -209,11 +209,12 @@ class Executor:
             if self._guard_condition:
                 _rclpy.rclpy_destroy_entity(self._guard_condition)
                 self._guard_condition = None
+            if self._sigint_gc:
+                self._sigint_gc.destroy()
+                self._sigint_gc = None
         self._cb_iter = None
         self._last_args = None
         self._last_kwargs = None
-        self._sigint_gc.destroy()
-        self._sigint_gc = None
         return True
 
     def __del__(self):
