@@ -260,11 +260,11 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     for (size_t i = 0; i < found_index; ++i) {
       new_gcs[i] = guard_conditions[i];
     }
+    // one less guard condition
+    --count_gcs;
     for (size_t i = found_index; i < count_gcs; ++i) {
       new_gcs[i] = guard_conditions[i + 1];
     }
-    // one less guard condition
-    --count_gcs;
     // Put sentinel at end
     new_gcs[count_gcs] = NULL;
 
