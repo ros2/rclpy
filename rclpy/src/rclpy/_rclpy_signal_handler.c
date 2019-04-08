@@ -191,11 +191,14 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
   // Figure out how big the list currently is
   size_t count_gcs = 0;
   bool found_gc = false;
+  // assumes guard condition was only added to list once
+  size_t found_index = 0;
 
   if (NULL != g_guard_conditions) {
     while (NULL != g_guard_conditions[count_gcs]) {
       if (gc == g_guard_conditions[count_gcs]) {
         found_gc = true;
+        found_index = count_gcs;
       }
       ++count_gcs;
     }
@@ -223,13 +226,11 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
       allocator.allocate(sizeof(rcl_guard_condition_t *) * (count_gcs), allocator.state);
 
     // Put remaining guard conditions in the list, ending with a sentinel of NULL
-    size_t offset = 0;
-    for (size_t i = 0; i < count_gcs; ++i) {
-      // assumes guard condition was only added to list once
-      if (g_guard_conditions[i + offset] == gc) {
-        offset = 1;
-      }
-      new_gcs[i] = g_guard_conditions[i + offset];
+    for (size_t i = 0; i < found_index; ++i) {
+      new_gcs[i] = g_guard_conditions[i];
+    }
+    for (size_t i = found_index; i < count_gcs; ++i) {
+      new_gcs[i] = g_guard_conditions[i + 1];
     }
     // one less guard condition
     --count_gcs;
