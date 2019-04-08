@@ -406,11 +406,13 @@ class Executor:
         if timeout_nsec > 0:
             timeout_timer = WallTimer(None, None, timeout_nsec)
 
-        if nodes is None:
-            nodes = self.get_nodes()
-
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
+            # Refresh "all" nodes in case executor was woken by a node being added or removed
+            nodes_to_use = nodes
+            if nodes is None:
+                nodes_to_use = self.get_nodes()
+
             # Yield tasks in-progress before waiting for new work
             tasks = None
             with self._tasks_lock:
@@ -418,7 +420,7 @@ class Executor:
             if tasks:
                 for task, entity, node in reversed(tasks):
                     if (not task.executing() and not task.done() and
-                            (node is None or node in nodes)):
+                            (node is None or node in nodes_to_use)):
                         yielded_work = True
                         yield task, entity, node
                 with self._tasks_lock:
@@ -432,7 +434,7 @@ class Executor:
             clients: List[Client] = []
             services: List[Service] = []
             waitables: List[Waitable] = []
-            for node in nodes:
+            for node in nodes_to_use:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
                 timers.extend(filter(self.can_execute, node.timers))
                 clients.extend(filter(self.can_execute, node.clients))
@@ -507,7 +509,7 @@ class Executor:
                         gc._executor_triggered = True
 
                 # Check waitables before wait set is destroyed
-                for node in nodes:
+                for node in nodes_to_use:
                     for wt in node.waitables:
                         # Only check waitables that were added to the wait set
                         if wt in waitables and wt.is_ready(wait_set):
@@ -517,7 +519,7 @@ class Executor:
                             yield handler, wt, node
 
             # Process ready entities one node at a time
-            for node in nodes:
+            for node in nodes_to_use:
                 for tmr in node.timers:
                     if tmr.timer_pointer in timers_ready:
                         # Check that a timer is ready to workaround rcl issue with cancelled timers
