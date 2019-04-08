@@ -101,11 +101,11 @@ static void catch_function(int signo)
   rcl_guard_condition_t ** guard_conditions;
   rcutils_atomic_load(&g_guard_conditions, guard_conditions);
   if (NULL == guard_conditions || NULL == guard_conditions[0]) {
+    call_original_signal_handler(signo);
     // There may have been another signal handler chaining to this one when we last tried to
     // restore the old signal handler.
     // Try to restore the old handler again.
     restore_original_signal_handler();
-    call_original_signal_handler(signo);
     return;
   }
 
