@@ -98,7 +98,8 @@ call_original_signal_handler(int signo)
  */
 static void catch_function(int signo)
 {
-  rcl_guard_condition_t ** guard_conditions = atomic_load(&g_guard_conditions);
+  rcl_guard_condition_t ** guard_conditions;
+  rcutils_atomic_load(&g_guard_conditions, guard_conditions);
   if (NULL == guard_conditions || NULL == guard_conditions[0]) {
     // There may have been another signal handler chaining to this one when we last tried to
     // restore the old signal handler.
@@ -151,7 +152,8 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
     return NULL;
   }
 
-  rcl_guard_condition_t ** guard_conditions = atomic_load(&g_guard_conditions);
+  rcl_guard_condition_t ** guard_conditions;
+  rcutils_atomic_load(&g_guard_conditions, guard_conditions);
 
   // Figure out how big the list currently is
   size_t count_gcs = 0;
@@ -179,7 +181,8 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
   new_gcs[count_gcs + 1] = NULL;
 
   // Swap the lists and free the old
-  rcl_guard_condition_t ** old_gcs = atomic_exchange(&g_guard_conditions, new_gcs);
+  rcl_guard_condition_t ** old_gcs;
+  rcutils_atomic_exchange(&g_guard_conditions, old_gcs, new_gcs);
   if (NULL != old_gcs) {
     allocator.deallocate(old_gcs, allocator.state);
   }
@@ -213,7 +216,8 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     return NULL;
   }
 
-  rcl_guard_condition_t ** guard_conditions = atomic_load(&g_guard_conditions);
+  rcl_guard_condition_t ** guard_conditions;
+  rcutils_atomic_load(&g_guard_conditions, guard_conditions);
 
   // Figure out how big the list currently is
   size_t count_gcs = 0;
@@ -240,7 +244,8 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
 
   if (count_gcs == 1) {
     // Just delete the list if there are no guard conditions left
-    rcl_guard_condition_t ** old_gcs = atomic_exchange(&g_guard_conditions, NULL);
+    rcl_guard_condition_t ** old_gcs;
+    rcutils_atomic_exchange(&g_guard_conditions, old_gcs, NULL);
     allocator.deallocate(old_gcs, allocator.state);
     restore_original_signal_handler();
   } else {
@@ -264,7 +269,8 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     new_gcs[count_gcs] = NULL;
 
     // Replace guard condition list
-    rcl_guard_condition_t ** old_gcs = atomic_exchange(&g_guard_conditions, new_gcs);
+    rcl_guard_condition_t ** old_gcs;
+    rcutils_atomic_exchange(&g_guard_conditions, old_gcs, new_gcs);
     allocator.deallocate(old_gcs, allocator.state);
   }
 
