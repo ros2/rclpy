@@ -17,6 +17,7 @@
 #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <rcutils/allocator.h>
+#include <rcutils/stdatomic_helper.h>
 
 #include <signal.h>
 
@@ -29,10 +30,28 @@
 /// Global reference to original signal handler for chaining purposes
 SIGNAL_HANDLER_T g_original_signal_handler = NULL;
 
+typedef _Atomic (rcl_guard_condition_t **) atomic_rcl_guard_condition_ptrptr_t;
+
 /// Global reference to guard conditions
 /// End with sentinel value instead of count to avoid mismatch if signal
 /// interrupts while adding or removing from the list
-rcl_guard_condition_t ** g_guard_conditions = NULL;
+atomic_rcl_guard_condition_ptrptr_t g_guard_conditions = NULL;
+
+/// Warn if getting g_guard_conditions could deadlock the signal handler
+/// \return 0 if no exception is raised, -1 if an exception was raised
+static int
+check_signal_safety()
+{
+  static bool did_warn = false;
+  if (!did_warn && !atomic_is_lock_free(g_guard_conditions)) {
+    did_warn = true;
+    const char * deadlock_msg =
+      "Global guard condition list access is not lock-free on this platform."
+      "The program may deadlock when receiving SIGINT.";
+    return PyErr_WarnEx(PyExc_ResourceWarning, deadlock_msg, 1);
+  }
+  return 0;
+}
 
 // Forward declaration
 static void catch_function(int signo);
@@ -79,7 +98,8 @@ call_original_signal_handler(int signo)
  */
 static void catch_function(int signo)
 {
-  if (NULL == g_guard_conditions || NULL == g_guard_conditions[0]) {
+  rcl_guard_condition_t ** guard_conditions = atomic_load(&g_guard_conditions);
+  if (NULL == guard_conditions || NULL == guard_conditions[0]) {
     // There may have been another signal handler chaining to this one when we last tried to
     // restore the old signal handler.
     // Try to restore the old handler again.
@@ -88,8 +108,8 @@ static void catch_function(int signo)
     return;
   }
 
+  rcl_guard_condition_t ** pgc = guard_conditions;
   // Trigger python signal handlers
-  rcl_guard_condition_t ** pgc = g_guard_conditions;
   while (NULL != *pgc) {
     rcl_ret_t ret = rcl_trigger_guard_condition(*pgc);
     if (ret != RCL_RET_OK) {
@@ -120,17 +140,24 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
     return NULL;
   }
 
+  if (0 != check_signal_safety()) {
+    // exception raised
+    return NULL;
+  }
+
   rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(
     pygc, "rcl_guard_condition_t");
   if (!gc) {
     return NULL;
   }
 
+  rcl_guard_condition_t ** guard_conditions = atomic_load(&g_guard_conditions);
+
   // Figure out how big the list currently is
   size_t count_gcs = 0;
-  if (NULL != g_guard_conditions) {
-    while (NULL != g_guard_conditions[count_gcs]) {
-      if (gc == g_guard_conditions[count_gcs]) {
+  if (NULL != guard_conditions) {
+    while (NULL != guard_conditions[count_gcs]) {
+      if (gc == guard_conditions[count_gcs]) {
         PyErr_Format(PyExc_ValueError, "Guard condition was already registered");
         return NULL;
       }
@@ -146,15 +173,13 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
 
   // populate the new guard condition list, ending with a sentinel of NULL
   for (size_t i = 0; i < count_gcs; ++i) {
-    new_gcs[i] = g_guard_conditions[i];
+    new_gcs[i] = guard_conditions[i];
   }
   new_gcs[count_gcs] = gc;
   new_gcs[count_gcs + 1] = NULL;
 
   // Swap the lists and free the old
-  rcl_guard_condition_t ** old_gcs = g_guard_conditions;
-  // Assumes this assignment is atomic
-  g_guard_conditions = new_gcs;
+  rcl_guard_condition_t ** old_gcs = atomic_exchange(&g_guard_conditions, new_gcs);
   if (NULL != old_gcs) {
     allocator.deallocate(old_gcs, allocator.state);
   }
@@ -188,15 +213,17 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     return NULL;
   }
 
+  rcl_guard_condition_t ** guard_conditions = atomic_load(&g_guard_conditions);
+
   // Figure out how big the list currently is
   size_t count_gcs = 0;
   bool found_gc = false;
   // assumes guard condition was only added to list once
   size_t found_index = 0;
 
-  if (NULL != g_guard_conditions) {
-    while (NULL != g_guard_conditions[count_gcs]) {
-      if (gc == g_guard_conditions[count_gcs]) {
+  if (NULL != guard_conditions) {
+    while (NULL != guard_conditions[count_gcs]) {
+      if (gc == guard_conditions[count_gcs]) {
         found_gc = true;
         found_index = count_gcs;
       }
@@ -213,8 +240,7 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
 
   if (count_gcs == 1) {
     // Just delete the list if there are no guard conditions left
-    rcl_guard_condition_t ** old_gcs = g_guard_conditions;
-    g_guard_conditions = NULL;
+    rcl_guard_condition_t ** old_gcs = atomic_exchange(&g_guard_conditions, NULL);
     allocator.deallocate(old_gcs, allocator.state);
     restore_original_signal_handler();
   } else {
@@ -227,10 +253,10 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
 
     // Put remaining guard conditions in the list, ending with a sentinel of NULL
     for (size_t i = 0; i < found_index; ++i) {
-      new_gcs[i] = g_guard_conditions[i];
+      new_gcs[i] = guard_conditions[i];
     }
     for (size_t i = found_index; i < count_gcs; ++i) {
-      new_gcs[i] = g_guard_conditions[i + 1];
+      new_gcs[i] = guard_conditions[i + 1];
     }
     // one less guard condition
     --count_gcs;
@@ -238,9 +264,7 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     new_gcs[count_gcs] = NULL;
 
     // Replace guard condition list
-    rcl_guard_condition_t ** old_gcs = g_guard_conditions;
-    // Assumes this assignment is atomic
-    g_guard_conditions = new_gcs;
+    rcl_guard_condition_t ** old_gcs = atomic_exchange(&g_guard_conditions, new_gcs);
     allocator.deallocate(old_gcs, allocator.state);
   }
 
@@ -281,5 +305,6 @@ static struct PyModuleDef _rclpy_signal_handler_module = {
 /// Init function of this module
 PyMODINIT_FUNC PyInit__rclpy_signal_handler(void)
 {
+  atomic_init(&g_guard_conditions, NULL);
   return PyModule_Create(&_rclpy_signal_handler_module);
 }
