@@ -105,8 +105,6 @@ static void catch_function(int signo)
 
 /// Register a guard condition to be triggered when SIGINT is received.
 /**
- * On failure, an exception is raised and NULL is returned if:
- *
  * Raises ValueError if the argument is not a guard condition handle
  * Raises ValueError if the argument was already registered
  *
@@ -169,8 +167,6 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
 
 /// Unregister a guard condition so it is not triggered when SIGINT is received.
 /**
- * On failure, an exception is raised and NULL is returned if:
- *
  * Raises ValueError if the argument is not a guard condition handle
  * Raises ValueError if the argument was not registered
  *
