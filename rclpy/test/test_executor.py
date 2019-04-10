@@ -345,7 +345,7 @@ class TestExecutor(unittest.TestCase):
         start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=0.1)
         end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, places=2)
+        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
         self.assertFalse(future.done())
 
         timer.cancel()
@@ -371,7 +371,7 @@ class TestExecutor(unittest.TestCase):
         start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=0.2)
         end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, places=2)
+        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
@@ -383,7 +383,7 @@ class TestExecutor(unittest.TestCase):
         start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=None)
         end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, places=2)
+        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
@@ -395,7 +395,7 @@ class TestExecutor(unittest.TestCase):
         start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=-1)
         end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, places=2)
+        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
@@ -416,7 +416,7 @@ class TestExecutor(unittest.TestCase):
         start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=0)
         end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.0, places=2)
+        self.assertAlmostEqual(end - start, 0.0, delta=0.01)
         self.assertFalse(future.done())
 
         timer.cancel()
