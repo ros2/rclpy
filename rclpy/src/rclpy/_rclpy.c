@@ -3656,6 +3656,9 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for QoS profile");
     return NULL;
   }
+  // Set to default so that we don't use uninitialized data if new fields are added
+  *qos_profile = rmw_qos_profile_default;
+  // Overwrite defaults with passed values
   qos_profile->history = pyqos_history;
   qos_profile->depth = pyqos_depth;
   qos_profile->reliability = pyqos_reliability;
