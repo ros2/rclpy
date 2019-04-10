@@ -35,7 +35,7 @@ typedef _Atomic (rcl_guard_condition_t **) atomic_rcl_guard_condition_ptrptr_t;
 /// Global reference to guard conditions
 /// End with sentinel value instead of count to avoid mismatch if signal
 /// interrupts while adding or removing from the list
-atomic_rcl_guard_condition_ptrptr_t g_guard_conditions = NULL;
+atomic_rcl_guard_condition_ptrptr_t g_guard_conditions;
 
 /// Warn if getting g_guard_conditions could deadlock the signal handler
 /// \return 0 if no exception is raised, -1 if an exception was raised
@@ -43,7 +43,7 @@ static int
 check_signal_safety()
 {
   static bool did_warn = false;
-  if (!did_warn && !atomic_is_lock_free(g_guard_conditions)) {
+  if (!did_warn && !atomic_is_lock_free(&g_guard_conditions)) {
     did_warn = true;
     const char * deadlock_msg =
       "Global guard condition list access is not lock-free on this platform."
