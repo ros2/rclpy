@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import builtin_interfaces.msg
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.clock import ClockType
 from rclpy.clock import ROSClock
+from rclpy.parameter import Parameter
 from rclpy.time import Time
+import rosgraph_msgs.msg
 
 CLOCK_TOPIC = '/clock'
 
@@ -45,11 +47,15 @@ class TimeSource:
             clock._set_ros_time_is_active(enabled)
         if enabled:
             self._subscribe_to_clock_topic()
+        else:
+            if self._clock_sub is not None and self._node is not None:
+                self._node.destroy_subscription(self._clock_sub)
+                self._clock_sub = None
 
     def _subscribe_to_clock_topic(self):
         if self._clock_sub is None and self._node is not None:
             self._clock_sub = self._node.create_subscription(
-                builtin_interfaces.msg.Time,
+                rosgraph_msgs.msg.Clock,
                 CLOCK_TOPIC,
                 self.clock_callback
             )
@@ -62,8 +68,20 @@ class TimeSource:
         if self._node is not None:
             self.detach_node()
         self._node = node
-        if self.ros_time_is_active:
-            self._subscribe_to_clock_topic()
+
+        use_sim_time_param = node.get_parameter('use_sim_time')
+        if use_sim_time_param.type_ != Parameter.Type.NOT_SET:
+            if use_sim_time_param.type_ == Parameter.Type.BOOL:
+                self.ros_time_is_active = use_sim_time_param.value
+            else:
+                node.get_logger().error(
+                    "Invalid type for parameter 'use_sim_time' {!r} should be bool"
+                    .format(use_sim_time_param.type_))
+        else:
+            node.get_logger().debug(
+                "'use_sim_time' parameter not set, using wall time by default")
+
+        node.set_parameters_callback(self._on_parameter_event)
 
     def detach_node(self):
         # Remove the subscription to the clock topic.
@@ -84,7 +102,19 @@ class TimeSource:
 
     def clock_callback(self, msg):
         # Cache the last message in case a new clock is attached.
-        time_from_msg = Time.from_msg(msg)
+        time_from_msg = Time.from_msg(msg.clock)
         self._last_time_set = time_from_msg
         for clock in self._associated_clocks:
             clock.set_ros_time_override(time_from_msg)
+
+    def _on_parameter_event(self, parameter_list):
+        for parameter in parameter_list:
+            if parameter.name == 'use_sim_time':
+                if parameter.type_ == Parameter.Type.BOOL:
+                    self.ros_time_is_active = parameter.value
+                else:
+                    self._node.get_logger().error(
+                        'use_sim_time parameter set to something besides a bool')
+                break
+
+        return SetParametersResult(successful=True)

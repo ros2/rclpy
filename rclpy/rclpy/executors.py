@@ -126,6 +126,12 @@ class TimeoutException(Exception):
     pass
 
 
+class ShutdownException(Exception):
+    """Signal that executor was shut down."""
+
+    pass
+
+
 class Executor:
     """
     The base class for an executor.
@@ -155,6 +161,8 @@ class Executor:
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
+        # Protect against shutdown() being called in parallel in two threads
+        self._shutdown_lock = Lock()
         # State for wait_for_ready_callbacks to reuse generator
         self._cb_iter = None
         self._last_args = None
@@ -189,15 +197,23 @@ class Executor:
         :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
             timeot expires before all outstanding work is done.
         """
-        self._is_shutdown = True
+        with self._shutdown_lock:
+            if not self._is_shutdown:
+                self._is_shutdown = True
+                # Tell executor it's been shut down
+                _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+
         if not self._work_tracker.wait(timeout_sec):
             return False
+
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
             self._nodes = set()
-        _rclpy.rclpy_destroy_entity(self._guard_condition)
 
-        self._guard_condition = None
+        with self._shutdown_lock:
+            if self._guard_condition:
+                _rclpy.rclpy_destroy_entity(self._guard_condition)
+                self._guard_condition = None
         self._cb_iter = None
         self._last_args = None
         self._last_kwargs = None
@@ -394,6 +410,7 @@ class Executor:
         Yield callbacks that are ready to be executed.
 
         :raise TimeoutException: on timeout.
+        :raise ShutdownException: on if executor was shut down.
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
@@ -404,11 +421,13 @@ class Executor:
         if timeout_nsec > 0:
             timeout_timer = WallTimer(None, None, timeout_nsec)
 
-        if nodes is None:
-            nodes = self.get_nodes()
-
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
+            # Refresh "all" nodes in case executor was woken by a node being added or removed
+            nodes_to_use = nodes
+            if nodes is None:
+                nodes_to_use = self.get_nodes()
+
             # Yield tasks in-progress before waiting for new work
             tasks = None
             with self._tasks_lock:
@@ -416,7 +435,7 @@ class Executor:
             if tasks:
                 for task, entity, node in reversed(tasks):
                     if (not task.executing() and not task.done() and
-                            (node is None or node in nodes)):
+                            (node is None or node in nodes_to_use)):
                         yielded_work = True
                         yield task, entity, node
                 with self._tasks_lock:
@@ -430,7 +449,7 @@ class Executor:
             clients: List[Client] = []
             services: List[Service] = []
             waitables: List[Waitable] = []
-            for node in nodes:
+            for node in nodes_to_use:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
                 timers.extend(filter(self.can_execute, node.timers))
                 clients.extend(filter(self.can_execute, node.clients))
@@ -487,6 +506,8 @@ class Executor:
 
                     # Wait for something to become ready
                     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+                    if self._is_shutdown:
+                        raise ShutdownException()
 
                     # get ready entities
                     subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
@@ -503,7 +524,7 @@ class Executor:
                         gc._executor_triggered = True
 
                 # Check waitables before wait set is destroyed
-                for node in nodes:
+                for node in nodes_to_use:
                     for wt in node.waitables:
                         # Only check waitables that were added to the wait set
                         if wt in waitables and wt.is_ready(wait_set):
@@ -513,7 +534,7 @@ class Executor:
                             yield handler, wt, node
 
             # Process ready entities one node at a time
-            for node in nodes:
+            for node in nodes_to_use:
                 for tmr in node.timers:
                     if tmr.timer_pointer in timers_ready:
                         # Check that a timer is ready to workaround rcl issue with cancelled timers
@@ -612,6 +633,8 @@ class SingleThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except ShutdownException:
+            pass
         except TimeoutException:
             pass
         else:
@@ -642,6 +665,8 @@ class MultiThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except ShutdownException:
+            pass
         except TimeoutException:
             pass
         else:

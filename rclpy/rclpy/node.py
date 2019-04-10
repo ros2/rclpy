@@ -130,7 +130,6 @@ class Node:
         self._logger = get_logger(_rclpy.rclpy_get_node_logger_name(self.handle))
 
         # Clock that has support for ROS time.
-        # TODO(dhood): use sim time if parameter has been set on the node.
         self._clock = ROSClock()
         self._time_source = TimeSource(node=self)
         self._time_source.attach_clock(self._clock)
