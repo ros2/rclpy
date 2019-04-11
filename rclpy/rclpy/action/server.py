@@ -45,10 +45,10 @@ class GoalEvent(Enum):
     """Goal events that cause state transitions."""
 
     EXECUTE = 1
-    REQUEST_CANCEL = 2
+    CANCEL_GOAL = 2
     SUCCEED = 3
     ABORT = 4
-    CANCEL = 5
+    CANCELED = 5
 
 
 class ServerGoalHandle:
@@ -155,8 +155,8 @@ class ServerGoalHandle:
     def abort(self):
         self._update_state(GoalEvent.ABORT)
 
-    def cancel(self):
-        self._update_state(GoalEvent.CANCEL)
+    def canceled(self):
+        self._update_state(GoalEvent.CANCELED)
 
     def destroy(self):
         with self._lock:
@@ -363,7 +363,7 @@ class ActionServer(Waitable):
 
             if CancelResponse.ACCEPT == response:
                 # Notify goal handle
-                goal_handle._update_state(GoalEvent.REQUEST_CANCEL)
+                goal_handle._update_state(GoalEvent.CANCEL_GOAL)
             else:
                 # Remove from response
                 cancel_response.goals_canceling.remove(goal_info)

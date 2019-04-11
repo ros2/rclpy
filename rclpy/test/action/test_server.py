@@ -280,7 +280,7 @@ class TestActionServer(unittest.TestCase):
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
             self.assertTrue(goal_handle.is_cancel_requested)
-            goal_handle.cancel()
+            goal_handle.canceled()
             return Fibonacci.Result()
 
         def cancel_callback(request):
@@ -326,7 +326,7 @@ class TestActionServer(unittest.TestCase):
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
             self.assertFalse(goal_handle.is_cancel_requested)
-            goal_handle.cancel()
+            goal_handle.canceled()
             return Fibonacci.Result()
 
         def cancel_callback(request):
@@ -378,7 +378,7 @@ class TestActionServer(unittest.TestCase):
         def execute_callback(gh):
             # The goal should already be in state CANCELING
             self.assertTrue(gh.is_cancel_requested)
-            gh.cancel()
+            gh.canceled()
             return Fibonacci.Result()
 
         action_server = ActionServer(
