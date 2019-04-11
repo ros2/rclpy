@@ -18,6 +18,7 @@ import multiprocessing
 from threading import Condition
 from threading import Lock
 from threading import RLock
+import time
 from typing import Any
 from typing import Callable
 from typing import Coroutine
@@ -263,10 +264,24 @@ class Executor:
         while self._context.ok():
             self.spin_once()
 
-    def spin_until_future_complete(self, future: Future) -> None:
-        """Execute callbacks until a given future is done."""
-        while self._context.ok() and not future.done():
-            self.spin_once()
+    def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        """Execute callbacks until a given future is done or a timeout occurs."""
+        if timeout_sec is None or timeout_sec < 0:
+            while self._context.ok() and not future.done():
+                self.spin_once(timeout_sec=timeout_sec)
+        else:
+            start = time.monotonic()
+            end = start + timeout_sec
+            timeout_left = timeout_sec_to_nsec(timeout_sec)
+
+            while self._context.ok() and not future.done():
+                self.spin_once(timeout_sec=timeout_left)
+                now = time.monotonic()
+
+                if now >= end:
+                    return
+
+                timeout_left = end - now
 
     def spin_once(self, timeout_sec: float = None) -> None:
         """
