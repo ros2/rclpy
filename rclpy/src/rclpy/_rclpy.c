@@ -3262,7 +3262,10 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
 
   PyObject * pyservice_names_and_types = rclpy_convert_to_py_names_and_types(
     &service_names_and_types);
-  rclpy_names_and_types_fini(&service_names_and_types);
+  if (!rclpy_names_and_types_fini(&service_names_and_types)) {
+    Py_XDECREF(pyservice_names_and_types);
+    return NULL;
+  }
   return pyservice_names_and_types;
 }
 
@@ -3307,7 +3310,10 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
   }
 
   PyObject * pytopic_names_and_types = rclpy_convert_to_py_names_and_types(&topic_names_and_types);
-  rclpy_names_and_types_fini(&topic_names_and_types);
+  if (!rclpy_names_and_types_fini(&topic_names_and_types)) {
+    Py_XDECREF(pytopic_names_and_types);
+    return NULL;
+  }
   return pytopic_names_and_types;
 }
 
@@ -3352,7 +3358,10 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
   }
 
   PyObject * pytopic_names_and_types = rclpy_convert_to_py_names_and_types(&topic_names_and_types);
-  rclpy_names_and_types_fini(&topic_names_and_types);
+  if (!rclpy_names_and_types_fini(&topic_names_and_types)) {
+    Py_XDECREF(pytopic_names_and_types);
+    return NULL;
+  }
   return pytopic_names_and_types;
 }
 

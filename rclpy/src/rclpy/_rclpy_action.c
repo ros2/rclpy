@@ -1716,7 +1716,10 @@ rclpy_action_get_client_names_and_types_by_node(PyObject * Py_UNUSED(self), PyOb
   }
 
   PyObject * pynames_and_types = rclpy_convert_to_py_names_and_types(&names_and_types);
-  rclpy_names_and_types_fini(&names_and_types);
+  if (!rclpy_names_and_types_fini(&names_and_types)) {
+    Py_XDECREF(pynames_and_types);
+    return NULL;
+  }
   return pynames_and_types;
 }
 
@@ -1753,7 +1756,10 @@ rclpy_action_get_server_names_and_types_by_node(PyObject * Py_UNUSED(self), PyOb
   }
 
   PyObject * pynames_and_types = rclpy_convert_to_py_names_and_types(&names_and_types);
-  rclpy_names_and_types_fini(&names_and_types);
+  if (!rclpy_names_and_types_fini(&names_and_types)) {
+    Py_XDECREF(pynames_and_types);
+    return NULL;
+  }
   return pynames_and_types;
 }
 
@@ -1783,7 +1789,10 @@ rclpy_action_get_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * pynames_and_types = rclpy_convert_to_py_names_and_types(&names_and_types);
-  rclpy_names_and_types_fini(&names_and_types);
+  if (!rclpy_names_and_types_fini(&names_and_types)) {
+    Py_XDECREF(pynames_and_types);
+    return NULL;
+  }
   return pynames_and_types;
 }
 
