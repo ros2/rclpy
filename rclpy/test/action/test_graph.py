@@ -81,6 +81,7 @@ class TestActionGraph(unittest.TestCase):
             nat = get_names_and_types_func(*args)
             if len(nat) == expected_num_names:
                 return nat
+            end = time.monotonic()
         assert len(nat) == expected_num_names
 
     def test_get_action_client_names_and_types_by_node(self):
