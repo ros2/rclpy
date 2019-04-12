@@ -23,7 +23,7 @@ def get_action_client_names_and_types_by_node(
     node: Node,
     remote_node_name: str,
     remote_node_namespace: str
-) ->  List[Tuple[str, str]]:
+) -> List[Tuple[str, str]]:
     """
     Get a list of action names and types for action clients associated with a node.
 
@@ -40,7 +40,7 @@ def get_action_server_names_and_types_by_node(
     node: Node,
     remote_node_name: str,
     remote_node_namespace: str
-) ->  List[Tuple[str, str]]:
+) -> List[Tuple[str, str]]:
     """
     Get a list of action names and types for action servers associated with a node.
 
