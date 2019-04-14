@@ -1,6 +1,51 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package rclpy
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+0.7.0 (2019-04-14)
+------------------
+* Added action graph API. (`#306 <https://github.com/ros2/rclpy/issues/306>`_)
+* Added timeout to executor_spin_until_future_complete. (`#301 <https://github.com/ros2/rclpy/issues/301>`_)
+* Refactored QoS Python-C conversion into less error-prone pattern (pre-QoS, standalone). (`#307 <https://github.com/ros2/rclpy/issues/307>`_)
+* Set QoS profile to default values to future-proof against uninitialized data if new fields are added
+* Fixed executor bug by refreshing nodes when executor is woken. (`#310 <https://github.com/ros2/rclpy/issues/310>`_)
+* Updated so executor exits immediately when shut down. (`#309 <https://github.com/ros2/rclpy/issues/309>`_)
+* Updated to use rosgraph_msgs.msg.Clock for TimeSource. (`#304 <https://github.com/ros2/rclpy/issues/304>`_)
+* Added param callback to time_source. (`#297 <https://github.com/ros2/rclpy/issues/297>`_)
+* Updated tests to pass with numpy arrays. (`#292 <https://github.com/ros2/rclpy/issues/292>`_)
+* Improved error handling to avoid memory leaks in C extension. (`#278 <https://github.com/ros2/rclpy/issues/278>`_)
+* Fixed sigint guard condition's lifecycle bug. (`#288 <https://github.com/ros2/rclpy/issues/288>`_)
+  Updated to use ament_target_dependencies where possible. (`#286 <https://github.com/ros2/rclpy/issues/286>`_)
+* Improved documentation. (`#277 <https://github.com/ros2/rclpy/issues/277>`_)
+  * Document node.py.
+  * Fix C extension documentation.
+  * Document init, shutdown, and spinning.
+  * Document Publisher and Subscription.
+  * Document Client and Service.
+  * Add warnings to constructors of client and service.
+  * Document executors and callback groups.
+  * Use typing,TYPE_CHECKING variable for condition imports used by annotations.
+  * Add instructions for building docs to README.
+  * Clarify doc briefs for graph discovery functions.
+* Added RcutilsLogger.warning. (`#284 <https://github.com/ros2/rclpy/issues/284>`_)
+* Changed logger.warn (deprecated) to logger.warning. (`#283 <https://github.com/ros2/rclpy/issues/283>`_)
+* Updated to use separated action types. (`#274 <https://github.com/ros2/rclpy/issues/274>`_)
+* Updated to guard against failed take when taking action messages. (`#281 <https://github.com/ros2/rclpy/issues/281>`_)
+* Enabled test using MultiThreadedExecutor. (`#280 <https://github.com/ros2/rclpy/issues/280>`_)
+* Added ActionServer. (`#270 <https://github.com/ros2/rclpy/issues/270>`_)
+* Changed error raised by executor dict interface to KeyError. (`#276 <https://github.com/ros2/rclpy/issues/276>`_)
+* Abstracted type conversions into functions (`#269 <https://github.com/ros2/rclpy/issues/269>`_)
+* Fixed Node's reference to executor. (`#275 <https://github.com/ros2/rclpy/issues/275>`_)
+* Updated to enforce UTF8 argv on rclpy.init(). (`#273 <https://github.com/ros2/rclpy/issues/273>`_)
+* Fixed Executor not executing tasks if there are no ready entities in the wait set. (`#272 <https://github.com/ros2/rclpy/issues/272>`_)
+* Replaced PyUnicode_1BYTE_DATA() with PyUnicode_AsUTF8(). (`#271 <https://github.com/ros2/rclpy/issues/271>`_)
+* Added Action Client. (`#262 <https://github.com/ros2/rclpy/issues/262>`_)
+* Updated to pass context to wait set. (`#258 <https://github.com/ros2/rclpy/issues/258>`_)
+* Added Waitable to callback group. (`#265 <https://github.com/ros2/rclpy/issues/265>`_)
+* Fixed flake8 error. (`#263 <https://github.com/ros2/rclpy/issues/263>`_)
+* Added HIDDEN_NODE_PREFIX definition to node.py. (`#259 <https://github.com/ros2/rclpy/issues/259>`_)
+* Added rclpy raw subscriptions. (`#242 <https://github.com/ros2/rclpy/issues/242>`_)
+* Added a test for invalid string checks on publishing. (`#256 <https://github.com/ros2/rclpy/issues/256>`_)
+* Contributors: AAlon, Dirk Thomas, Emerson Knapp, Jacob Perron, Joseph Duchesne, Michel Hidalgo, Shane Loretz, Vinnam Kim, Wei Liu, William Woodall, ivanpauno
 
 0.6.1 (2018-12-07)
 ------------------
