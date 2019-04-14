@@ -1682,6 +1682,120 @@ rclpy_action_expire_goals(PyObject * Py_UNUSED(self), PyObject * args)
   return result_tuple;
 }
 
+
+static PyObject *
+rclpy_action_get_client_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  char * remote_node_name;
+  char * remote_node_namespace;
+
+  if (!PyArg_ParseTuple(args, "Oss", &pynode, &remote_node_name, &remote_node_namespace)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_client_names_and_types_by_node(
+    node,
+    &allocator,
+    remote_node_name,
+    remote_node_namespace,
+    &names_and_types);
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed to get action client names and type: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * pynames_and_types = rclpy_convert_to_py_names_and_types(&names_and_types);
+  if (!rclpy_names_and_types_fini(&names_and_types)) {
+    Py_XDECREF(pynames_and_types);
+    return NULL;
+  }
+  return pynames_and_types;
+}
+
+static PyObject *
+rclpy_action_get_server_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  char * remote_node_name;
+  char * remote_node_namespace;
+
+  if (!PyArg_ParseTuple(args, "Oss", &pynode, &remote_node_name, &remote_node_namespace)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_server_names_and_types_by_node(
+    node,
+    &allocator,
+    remote_node_name,
+    remote_node_namespace,
+    &names_and_types);
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed to get action server names and type: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * pynames_and_types = rclpy_convert_to_py_names_and_types(&names_and_types);
+  if (!rclpy_names_and_types_fini(&names_and_types)) {
+    Py_XDECREF(pynames_and_types);
+    return NULL;
+  }
+  return pynames_and_types;
+}
+
+static PyObject *
+rclpy_action_get_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_names_and_types(node, &allocator, &names_and_types);
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed to get action names and type: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * pynames_and_types = rclpy_convert_to_py_names_and_types(&names_and_types);
+  if (!rclpy_names_and_types_fini(&names_and_types)) {
+    Py_XDECREF(pynames_and_types);
+    return NULL;
+  }
+  return pynames_and_types;
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_action_methods[] = {
   {
@@ -1817,6 +1931,24 @@ static PyMethodDef rclpy_action_methods[] = {
   {
     "rclpy_action_expire_goals", rclpy_action_expire_goals, METH_VARARGS,
     "Expire goals associated with an action server."
+  },
+  {
+    "rclpy_action_get_client_names_and_types_by_node",
+    rclpy_action_get_client_names_and_types_by_node,
+    METH_VARARGS,
+    "Get action client names and types by node."
+  },
+  {
+    "rclpy_action_get_server_names_and_types_by_node",
+    rclpy_action_get_server_names_and_types_by_node,
+    METH_VARARGS,
+    "Get action server names and types by node."
+  },
+  {
+    "rclpy_action_get_names_and_types",
+    rclpy_action_get_names_and_types,
+    METH_VARARGS,
+    "Get action names and types."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */

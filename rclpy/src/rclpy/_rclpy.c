@@ -3222,65 +3222,6 @@ cleanup:
   return pynode_names_and_namespaces;
 }
 
-/**
- * Convert names and types to PyObject.
- */
-bool
-__convert_names_and_types(
-  rcl_names_and_types_t topic_names_and_types,
-  PyObject * pytopic_names_and_types)
-{
-  size_t i;
-  for (i = 0; i < topic_names_and_types.names.size; ++i) {
-    PyObject * pytuple = PyTuple_New(2);
-    if (!pytuple) {
-      return false;
-    }
-    PyObject * pytopic_name = PyUnicode_FromString(topic_names_and_types.names.data[i]);
-    if (!pytopic_name) {
-      Py_DECREF(pytuple);
-      return false;
-    }
-    PyTuple_SET_ITEM(pytuple, 0, pytopic_name);
-    PyObject * pytypes_list = PyList_New(topic_names_and_types.types[i].size);
-    if (!pytypes_list) {
-      Py_DECREF(pytuple);
-      return false;
-    }
-    size_t j;
-    for (j = 0; j < topic_names_and_types.types[i].size; ++j) {
-      PyObject * pytopic_type = PyUnicode_FromString(topic_names_and_types.types[i].data[j]);
-      if (!pytopic_type) {
-        Py_DECREF(pytuple);
-        Py_DECREF(pytypes_list);
-        return false;
-      }
-      PyList_SET_ITEM(pytypes_list, j, pytopic_type);
-    }
-    PyTuple_SET_ITEM(pytuple, 1, pytypes_list);
-    PyList_SET_ITEM(pytopic_names_and_types, i, pytuple);
-  }
-  return true;
-}
-
-/**
- * Cleanup names and types.
- */
-bool __cleanup_names_and_types(rcl_names_and_types_t * names_and_types)
-{
-  if (!names_and_types) {
-    return true;
-  }
-  rcl_ret_t ret = rcl_names_and_types_fini(names_and_types);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to destroy topic_names_and_types: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return false;
-  }
-  return true;
-}
-
 /// Get a list of service names and types associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
@@ -3319,19 +3260,12 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
     return NULL;
   }
 
-  PyObject * pyservice_names_and_types = PyList_New(service_names_and_types.names.size);
-  if (!pyservice_names_and_types) {
-    __cleanup_names_and_types(&service_names_and_types);
+  PyObject * pyservice_names_and_types = rclpy_convert_to_py_names_and_types(
+    &service_names_and_types);
+  if (!rclpy_names_and_types_fini(&service_names_and_types)) {
+    Py_XDECREF(pyservice_names_and_types);
     return NULL;
   }
-
-  if (!__convert_names_and_types(service_names_and_types, pyservice_names_and_types)) {
-    __cleanup_names_and_types(&service_names_and_types);
-    Py_DECREF(pyservice_names_and_types);
-    return NULL;
-  }
-
-  __cleanup_names_and_types(&service_names_and_types);
   return pyservice_names_and_types;
 }
 
@@ -3375,18 +3309,11 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
     return NULL;
   }
 
-  PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.names.size);
-  if (!pytopic_names_and_types) {
-    __cleanup_names_and_types(&topic_names_and_types);
+  PyObject * pytopic_names_and_types = rclpy_convert_to_py_names_and_types(&topic_names_and_types);
+  if (!rclpy_names_and_types_fini(&topic_names_and_types)) {
+    Py_XDECREF(pytopic_names_and_types);
     return NULL;
   }
-
-  if (!__convert_names_and_types(topic_names_and_types, pytopic_names_and_types)) {
-    __cleanup_names_and_types(&topic_names_and_types);
-    Py_DECREF(pytopic_names_and_types);
-    return NULL;
-  }
-  __cleanup_names_and_types(&topic_names_and_types);
   return pytopic_names_and_types;
 }
 
@@ -3430,18 +3357,11 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
     return NULL;
   }
 
-  PyObject * pytopic_names_and_types = PyList_New(topic_names_and_types.names.size);
-  if (!pytopic_names_and_types) {
-    __cleanup_names_and_types(&topic_names_and_types);
+  PyObject * pytopic_names_and_types = rclpy_convert_to_py_names_and_types(&topic_names_and_types);
+  if (!rclpy_names_and_types_fini(&topic_names_and_types)) {
+    Py_XDECREF(pytopic_names_and_types);
     return NULL;
   }
-
-  if (!__convert_names_and_types(topic_names_and_types, pytopic_names_and_types)) {
-    __cleanup_names_and_types(&topic_names_and_types);
-    Py_DECREF(pytopic_names_and_types);
-    return NULL;
-  }
-  __cleanup_names_and_types(&topic_names_and_types);
   return pytopic_names_and_types;
 }
 
