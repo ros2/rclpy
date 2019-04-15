@@ -3545,6 +3545,9 @@ cleanup:
   return pyservice_names_and_types;
 }
 
+#define NANOSECONDS_TO_RMW_TIME(nsec) (rmw_time_t) { \
+    RCL_NS_TO_S(nsec), (nsec % (1000LL * 1000LL * 1000LL))}
+
 /// Return a Python QoSProfile object
 /**
  * This function creates a QoSProfile object from the QoS Policies provided
@@ -3562,20 +3565,29 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG pyqos_depth;
   unsigned PY_LONG_LONG pyqos_reliability;
   unsigned PY_LONG_LONG pyqos_durability;
+  PyObject * pyqos_lifespan;
+  PyObject * pyqos_deadline;
+  unsigned PY_LONG_LONG pyqos_liveliness;
+  PyObject * pyqos_liveliness_lease_duration;
   int avoid_ros_namespace_conventions;
 
   if (!PyArg_ParseTuple(
-      args, "KKKKp",
+      args, "KKKKOOKOp",
       &pyqos_history,
       &pyqos_depth,
       &pyqos_reliability,
       &pyqos_durability,
+      &pyqos_lifespan,
+      &pyqos_deadline,
+      &pyqos_liveliness,
+      &pyqos_liveliness_lease_duration,
       &avoid_ros_namespace_conventions))
   {
     return NULL;
   }
 
   rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyMem_Malloc(sizeof(rmw_qos_profile_t));
+
   if (!qos_profile) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for QoS profile");
     return NULL;
@@ -3587,6 +3599,21 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   qos_profile->depth = pyqos_depth;
   qos_profile->reliability = pyqos_reliability;
   qos_profile->durability = pyqos_durability;
+
+  rcl_duration_t * lifespan =
+    (rcl_duration_t *)PyCapsule_GetPointer(pyqos_lifespan, "rcl_duration_t");
+  qos_profile->lifespan = NANOSECONDS_TO_RMW_TIME(lifespan->nanoseconds);
+
+  rcl_duration_t * deadline =
+    (rcl_duration_t *)PyCapsule_GetPointer(pyqos_deadline, "rcl_duration_t");
+  qos_profile->deadline = NANOSECONDS_TO_RMW_TIME(deadline->nanoseconds);
+
+  qos_profile->liveliness = pyqos_liveliness;
+  rcl_duration_t * liveliness_lease_duration =
+    (rcl_duration_t *)PyCapsule_GetPointer(pyqos_liveliness_lease_duration, "rcl_duration_t");
+  qos_profile->liveliness_lease_duration =
+    NANOSECONDS_TO_RMW_TIME(liveliness_lease_duration->nanoseconds);
+
   qos_profile->avoid_ros_namespace_conventions = avoid_ros_namespace_conventions;
   PyObject * pyqos_profile = PyCapsule_New(qos_profile, "rmw_qos_profile_t", NULL);
   return pyqos_profile;

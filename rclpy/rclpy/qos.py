@@ -14,6 +14,7 @@
 
 from enum import IntEnum
 
+from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
@@ -26,6 +27,10 @@ class QoSProfile:
         '_depth',
         '_reliability',
         '_durability',
+        '_lifespan',
+        '_deadline',
+        '_liveliness',
+        '_liveliness_lease_duration',
         '_avoid_ros_namespace_conventions',
     ]
 
@@ -42,6 +47,12 @@ class QoSProfile:
         self.durability = kwargs.get(
             'durability',
             QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT)
+        self.lifespan = kwargs.get('lifespan', Duration())
+        self.deadline = kwargs.get('deadline', Duration())
+        self.liveliness = kwargs.get(
+            'liveliness',
+            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT)
+        self.liveliness_lease_duration = kwargs.get('liveliness_lease_duration', Duration())
         self.avoid_ros_namespace_conventions = kwargs.get(
             'avoid_ros_namespace_conventions',
             False)
@@ -107,6 +118,66 @@ class QoSProfile:
         self._depth = value
 
     @property
+    def lifespan(self):
+        """
+        Get field 'lifespan'.
+
+        :returns: lifespan attribute
+        :rtype: Duration
+        """
+        return self._lifespan
+
+    @lifespan.setter
+    def lifespan(self, value):
+        assert isinstance(value, Duration)
+        self._lifespan = value
+
+    @property
+    def deadline(self):
+        """
+        Get field 'deadline'.
+
+        :returns: deadline attribute.
+        :rtype: Duration
+        """
+        return self._deadline
+
+    @deadline.setter
+    def deadline(self, value):
+        assert isinstance(value, Duration)
+        self._deadline = value
+
+    @property
+    def liveliness(self):
+        """
+        Get field 'liveliness'.
+
+        :returns: liveliness attribute
+        :rtype: QoSLivelinessPolicy
+        """
+        return self._liveliness
+
+    @liveliness.setter
+    def liveliness(self, value):
+        assert isinstance(value, QoSLivelinessPolicy) or isinstance(value, int)
+        self._liveliness = QoSLivelinessPolicy(value)
+
+    @property
+    def liveliness_lease_duration(self):
+        """
+        Get field 'liveliness_lease_duration'.
+
+        :returns: liveliness_lease_duration attribute.
+        :rtype: Duration
+        """
+        return self._liveliness_lease_duration
+
+    @liveliness_lease_duration.setter
+    def liveliness_lease_duration(self, value):
+        assert isinstance(value, Duration)
+        self._liveliness_lease_duration = value
+
+    @property
     def avoid_ros_namespace_conventions(self):
         """
         Get field 'avoid_ros_namespace_conventions'.
@@ -127,6 +198,10 @@ class QoSProfile:
             self.depth,
             self.reliability,
             self.durability,
+            self.lifespan.get_c_duration(),
+            self.deadline.get_c_duration(),
+            self.liveliness,
+            self.liveliness_lease_duration.get_c_duration(),
             self.avoid_ros_namespace_conventions,
         )
 
@@ -165,6 +240,19 @@ class QoSDurabilityPolicy(IntEnum):
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
     RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL = 1
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
+
+
+class QoSLivelinessPolicy(IntEnum):
+    """
+    Enum for QoS Liveliness settings.
+
+    This enum matches the one defined in rmw/types.h
+    """
+
+    RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT = 0
+    RMW_QOS_POLICY_LIVELINESS_AUTOMATIC = 1
+    RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE = 2
+    RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
 
 
 qos_profile_default = _rclpy.rclpy_get_rmw_qos_profile(

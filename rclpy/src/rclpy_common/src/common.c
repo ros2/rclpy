@@ -25,6 +25,10 @@ typedef struct rclpy_qos_profile
   PyObject * history;
   PyObject * reliability;
   PyObject * durability;
+  PyObject * lifespan;
+  PyObject * deadline;
+  PyObject * liveliness;
+  PyObject * liveliness_lease_duration;
   PyObject * avoid_ros_namespace_conventions;
 } rclpy_qos_profile_t;
 
@@ -41,6 +45,10 @@ cleanup_rclpy_qos_profile(rclpy_qos_profile_t * profile)
   Py_XDECREF(profile->history);
   Py_XDECREF(profile->reliability);
   Py_XDECREF(profile->durability);
+  Py_XDECREF(profile->lifespan);
+  Py_XDECREF(profile->deadline);
+  Py_XDECREF(profile->liveliness);
+  Py_XDECREF(profile->liveliness_lease_duration);
   Py_XDECREF(profile->avoid_ros_namespace_conventions);
 }
 
@@ -109,6 +117,31 @@ rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
   return pynames_and_types;
 }
 
+static
+PyObject *
+_convert_rmw_time_to_py_duration(rmw_time_t * duration)
+{
+  uint64_t total_nanoseconds = RCUTILS_S_TO_NS(duration->sec) + duration->nsec;
+
+  PyObject * pyduration_module = PyImport_ImportModule("rclpy.duration");
+  if (!pyduration_module) {
+    return NULL;
+  }
+  PyObject * pyduration_class = PyObject_GetAttrString(pyduration_module, "Duration");
+  Py_DECREF(pyduration_module);
+  if (!pyduration_class) {
+    return NULL;
+  }
+
+  PyObject * args = PyTuple_New(0);
+  PyObject * kwargs = Py_BuildValue("{s:i}", "nanoseconds", total_nanoseconds);
+  PyObject * pyduration_object = PyObject_Call(pyduration_class, args, kwargs);
+  Py_DECREF(pyduration_class);
+  Py_DECREF(kwargs);
+  Py_DECREF(args);
+  return pyduration_object;
+}
+
 PyObject *
 rclpy_convert_to_py_qos_policy(void * profile)
 {
@@ -164,6 +197,35 @@ rclpy_convert_to_py_qos_policy(void * profile)
     return NULL;
   }
 
+  rclpy_qos.lifespan = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
+  if (!rclpy_qos.lifespan) {
+    Py_DECREF(pyqos_profile);
+    cleanup_rclpy_qos_profile(&rclpy_qos);
+    return NULL;
+  }
+
+  rclpy_qos.deadline = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
+  if (!rclpy_qos.deadline) {
+    Py_DECREF(pyqos_profile);
+    cleanup_rclpy_qos_profile(&rclpy_qos);
+    return NULL;
+  }
+
+  rclpy_qos.liveliness = PyLong_FromUnsignedLong(qos_profile->liveliness);
+  if (!rclpy_qos.liveliness) {
+    Py_DECREF(pyqos_profile);
+    cleanup_rclpy_qos_profile(&rclpy_qos);
+    return NULL;
+  }
+
+  rclpy_qos.liveliness_lease_duration = _convert_rmw_time_to_py_duration(
+    &qos_profile->liveliness_lease_duration);
+  if (!rclpy_qos.liveliness_lease_duration) {
+    Py_DECREF(pyqos_profile);
+    cleanup_rclpy_qos_profile(&rclpy_qos);
+    return NULL;
+  }
+
   rclpy_qos.avoid_ros_namespace_conventions =
     PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions);
   if (!rclpy_qos.avoid_ros_namespace_conventions) {
@@ -178,6 +240,11 @@ rclpy_convert_to_py_qos_policy(void * profile)
   set_result += PyObject_SetAttrString(pyqos_profile, "history", rclpy_qos.history);
   set_result += PyObject_SetAttrString(pyqos_profile, "reliability", rclpy_qos.reliability);
   set_result += PyObject_SetAttrString(pyqos_profile, "durability", rclpy_qos.durability);
+  set_result += PyObject_SetAttrString(pyqos_profile, "lifespan", rclpy_qos.lifespan);
+  set_result += PyObject_SetAttrString(pyqos_profile, "deadline", rclpy_qos.deadline);
+  set_result += PyObject_SetAttrString(pyqos_profile, "liveliness", rclpy_qos.liveliness);
+  set_result += PyObject_SetAttrString(pyqos_profile,
+      "liveliness_lease_duration", rclpy_qos.liveliness_lease_duration);
   set_result += PyObject_SetAttrString(pyqos_profile,
       "avoid_ros_namespace_conventions", rclpy_qos.avoid_ros_namespace_conventions);
 
