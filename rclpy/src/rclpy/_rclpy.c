@@ -3604,6 +3604,53 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   return pyqos_profile;
 }
 
+/// Manually assert that an entity is alive.
+/**
+  * When using RMW_QOS_POLICY_MANUAL_BY_*, the application must call this function at least as
+  * often as the qos policy liveliness_lease_duration.
+  * The passed entity can be a Publisher or a Node.
+  *
+  * Raises RuntimeError on failure to assert liveliness
+  * Raises TypeError if passed object is not a valid Publisher or Node
+  *
+  * \param[in] pyentity A capsule containing an rcl_node_t or rcl_publisher_t
+  * \return None
+  */
+static PyObject *
+rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyentity;
+
+  if (!PyArg_ParseTuple(args, "O", &pyentity)) {
+    return NULL;
+  }
+
+  if (PyCapsule_IsValid(pyentity, "rcl_node_t")) {
+    rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, "rcl_node_t");
+    if (RCL_RET_OK != rcl_node_assert_liveliness(node)) {
+      PyErr_Format(PyExc_RuntimeError,
+        "Failed assert liveliness on the Node: %s", rcl_get_error_string().str);
+      rcl_reset_error();
+      return NULL;
+    }
+  } else if (PyCapsule_IsValid(pyentity, "rcl_publisher_t")) {
+    rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
+      pyentity, "rcl_publisher_t");
+    if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher)) {
+      PyErr_Format(PyExc_RuntimeError,
+        "Failed to assert liveliness on the Publisher: %s", rcl_get_error_string().str);
+      rcl_reset_error();
+      return NULL;
+    }
+  } else {
+    PyErr_Format(PyExc_TypeError,
+      "Passed capsule is not a valid Node or Publisher.");
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
 /// Destructor for a time point
 void
 _rclpy_destroy_time_point(PyObject * pycapsule)
@@ -4783,6 +4830,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
     "Get QOS profile."
+  },
+  {
+    "rclpy_assert_liveliness", rclpy_assert_liveliness, METH_VARARGS,
+    "Assert the liveliness of an entity."
   },
 
   {
