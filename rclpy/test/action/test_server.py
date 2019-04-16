@@ -86,7 +86,7 @@ class TestActionServer(unittest.TestCase):
             rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
 
     def execute_goal_callback(self, goal_handle):
-        goal_handle.set_succeeded()
+        goal_handle.succeed()
         return Fibonacci.Result()
 
     def test_constructor_defaults(self):
@@ -280,7 +280,7 @@ class TestActionServer(unittest.TestCase):
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
             self.assertTrue(goal_handle.is_cancel_requested)
-            goal_handle.set_canceled()
+            goal_handle.canceled()
             return Fibonacci.Result()
 
         def cancel_callback(request):
@@ -326,7 +326,7 @@ class TestActionServer(unittest.TestCase):
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
             self.assertFalse(goal_handle.is_cancel_requested)
-            goal_handle.set_canceled()
+            goal_handle.canceled()
             return Fibonacci.Result()
 
         def cancel_callback(request):
@@ -378,7 +378,7 @@ class TestActionServer(unittest.TestCase):
         def execute_callback(gh):
             # The goal should already be in state CANCELING
             self.assertTrue(gh.is_cancel_requested)
-            gh.set_canceled()
+            gh.canceled()
             return Fibonacci.Result()
 
         action_server = ActionServer(
@@ -424,13 +424,13 @@ class TestActionServer(unittest.TestCase):
         self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_CANCELED)
         action_server.destroy()
 
-    def test_execute_set_succeeded(self):
+    def test_execute_succeed(self):
 
         def execute_callback(goal_handle):
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
-            goal_handle.set_succeeded()
+            goal_handle.succeed()
             return result
 
         action_server = ActionServer(
@@ -455,13 +455,13 @@ class TestActionServer(unittest.TestCase):
         self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
         action_server.destroy()
 
-    def test_execute_set_aborted(self):
+    def test_execute_abort(self):
 
         def execute_callback(goal_handle):
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
-            goal_handle.set_aborted()
+            goal_handle.abort()
             return result
 
         action_server = ActionServer(
@@ -596,7 +596,7 @@ class TestActionServer(unittest.TestCase):
             feedback = Fibonacci.Feedback()
             feedback.sequence = [1, 1, 2, 3]
             goal_handle.publish_feedback(feedback)
-            goal_handle.set_succeeded()
+            goal_handle.succeed()
             return Fibonacci.Result()
 
         action_server = ActionServer(

@@ -1349,33 +1349,33 @@ convert_from_py_goal_event(const int64_t pyevent)
   }
   to_decref[num_to_decref++] = pyexecute;
 
-  PyObject * pycancel = PyObject_GetAttrString(pygoal_event_class, "CANCEL");
-  if (!pycancel) {
+  PyObject * pycancel_goal = PyObject_GetAttrString(pygoal_event_class, "CANCEL_GOAL");
+  if (!pycancel_goal) {
     MULTI_DECREF(to_decref, num_to_decref)
     return -1;
   }
-  to_decref[num_to_decref++] = pycancel;
+  to_decref[num_to_decref++] = pycancel_goal;
 
-  PyObject * pyset_succeeded = PyObject_GetAttrString(pygoal_event_class, "SET_SUCCEEDED");
-  if (!pyset_succeeded) {
+  PyObject * pysucceed = PyObject_GetAttrString(pygoal_event_class, "SUCCEED");
+  if (!pysucceed) {
     MULTI_DECREF(to_decref, num_to_decref);
     return -1;
   }
-  to_decref[num_to_decref++] = pyset_succeeded;
+  to_decref[num_to_decref++] = pysucceed;
 
-  PyObject * pyset_aborted = PyObject_GetAttrString(pygoal_event_class, "SET_ABORTED");
-  if (!pyset_aborted) {
+  PyObject * pyabort = PyObject_GetAttrString(pygoal_event_class, "ABORT");
+  if (!pyabort) {
     MULTI_DECREF(to_decref, num_to_decref)
     return -1;
   }
-  to_decref[num_to_decref++] = pyset_aborted;
+  to_decref[num_to_decref++] = pyabort;
 
-  PyObject * pyset_canceled = PyObject_GetAttrString(pygoal_event_class, "SET_CANCELED");
-  if (!pyset_canceled) {
+  PyObject * pycanceled = PyObject_GetAttrString(pygoal_event_class, "CANCELED");
+  if (!pycanceled) {
     MULTI_DECREF(to_decref, num_to_decref)
     return -1;
   }
-  to_decref[num_to_decref++] = pyset_canceled;
+  to_decref[num_to_decref++] = pycanceled;
 
   PyObject * pyexecute_val = PyObject_GetAttrString(pyexecute, "value");
   if (!pyexecute_val) {
@@ -1384,55 +1384,55 @@ convert_from_py_goal_event(const int64_t pyevent)
   }
   to_decref[num_to_decref++] = pyexecute_val;
 
-  PyObject * pycancel_val = PyObject_GetAttrString(pycancel, "value");
-  if (!pycancel_val) {
+  PyObject * pycancel_goal_val = PyObject_GetAttrString(pycancel_goal, "value");
+  if (!pycancel_goal_val) {
     MULTI_DECREF(to_decref, num_to_decref);
     return -1;
   }
-  to_decref[num_to_decref++] = pycancel_val;
+  to_decref[num_to_decref++] = pycancel_goal_val;
 
-  PyObject * pyset_succeeded_val = PyObject_GetAttrString(pyset_succeeded, "value");
-  if (!pyset_succeeded_val) {
+  PyObject * pysucceed_val = PyObject_GetAttrString(pysucceed, "value");
+  if (!pysucceed_val) {
     MULTI_DECREF(to_decref, num_to_decref);
     return -1;
   }
-  to_decref[num_to_decref++] = pyset_succeeded_val;
+  to_decref[num_to_decref++] = pysucceed_val;
 
-  PyObject * pyset_aborted_val = PyObject_GetAttrString(pyset_aborted, "value");
-  if (!pyset_aborted_val) {
+  PyObject * pyabort_val = PyObject_GetAttrString(pyabort, "value");
+  if (!pyabort_val) {
     MULTI_DECREF(to_decref, num_to_decref);
     return -1;
   }
-  to_decref[num_to_decref++] = pyset_aborted_val;
+  to_decref[num_to_decref++] = pyabort_val;
 
-  PyObject * pyset_canceled_val = PyObject_GetAttrString(pyset_canceled, "value");
-  if (!pyset_canceled_val) {
+  PyObject * pycanceled_val = PyObject_GetAttrString(pycanceled, "value");
+  if (!pycanceled_val) {
     MULTI_DECREF(to_decref, num_to_decref);
     return -1;
   }
-  to_decref[num_to_decref++] = pyset_canceled_val;
+  to_decref[num_to_decref++] = pycanceled_val;
 
   const int64_t execute = PyLong_AsLong(pyexecute_val);
-  const int64_t cancel = PyLong_AsLong(pycancel_val);
-  const int64_t set_succeeded = PyLong_AsLong(pyset_succeeded_val);
-  const int64_t set_aborted = PyLong_AsLong(pyset_aborted_val);
-  const int64_t set_canceled = PyLong_AsLong(pyset_canceled_val);
+  const int64_t cancel_goal = PyLong_AsLong(pycancel_goal_val);
+  const int64_t succeed = PyLong_AsLong(pysucceed_val);
+  const int64_t abort = PyLong_AsLong(pyabort_val);
+  const int64_t canceled = PyLong_AsLong(pycanceled_val);
   MULTI_DECREF(to_decref, num_to_decref)
 
   if (execute == pyevent) {
     return GOAL_EVENT_EXECUTE;
   }
-  if (cancel == pyevent) {
-    return GOAL_EVENT_CANCEL;
+  if (cancel_goal == pyevent) {
+    return GOAL_EVENT_CANCEL_GOAL;
   }
-  if (set_succeeded == pyevent) {
-    return GOAL_EVENT_SET_SUCCEEDED;
+  if (succeed == pyevent) {
+    return GOAL_EVENT_SUCCEED;
   }
-  if (set_aborted == pyevent) {
-    return GOAL_EVENT_SET_ABORTED;
+  if (abort == pyevent) {
+    return GOAL_EVENT_ABORT;
   }
-  if (set_canceled == pyevent) {
-    return GOAL_EVENT_SET_CANCELED;
+  if (canceled == pyevent) {
+    return GOAL_EVENT_CANCELED;
   }
 
   PyErr_Format(
