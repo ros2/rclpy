@@ -2721,8 +2721,12 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
     if (struct_ptr[idx]) { \
       PyObject * obj = PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl); \
       if (obj) { \
-        PyList_Append(entity_ready_list, obj); \
+        int rc = PyList_Append(entity_ready_list, obj); \
         Py_DECREF(obj); \
+        if (rc != 0) { \
+          Py_DECREF(entity_ready_list); \
+          return NULL; \
+        } \
       } else { \
         Py_DECREF(entity_ready_list); \
         return NULL; \
