@@ -241,6 +241,7 @@ rclpy_convert_from_py(PyObject * pymessage, destroy_ros_message_signature ** des
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymessage, "__class__");
   if (!pymetaclass) {
+    (**destroy_ros_message)(message);
     return NULL;
   }
 
@@ -248,6 +249,7 @@ rclpy_convert_from_py(PyObject * pymessage, destroy_ros_message_signature ** des
     pymetaclass, "_CONVERT_FROM_PY");
   Py_DECREF(pymetaclass);
   if (!convert) {
+    (**destroy_ros_message)(message);
     return NULL;
   }
 
