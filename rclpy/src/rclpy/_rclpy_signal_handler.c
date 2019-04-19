@@ -235,7 +235,7 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     }
   }
 
-  if (count_gcs == 0 || !found_gc) {
+  if (!found_gc) {
     PyErr_Format(PyExc_ValueError, "Guard condition was not registered");
     return NULL;
   }
