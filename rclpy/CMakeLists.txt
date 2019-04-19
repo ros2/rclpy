@@ -137,6 +137,17 @@ ament_target_dependencies(rclpy_logging
   "rcutils"
 )
 
+# Signal handling library
+add_library(
+  rclpy_signal_handler
+  SHARED src/rclpy/_rclpy_signal_handler.c
+)
+configure_python_c_extension_library(rclpy_signal_handler)
+ament_target_dependencies(rclpy_signal_handler
+  "rcl"
+  "rcutils"
+)
+
 if(NOT WIN32)
   ament_environment_hooks(
     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
