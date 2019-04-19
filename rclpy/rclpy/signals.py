@@ -22,7 +22,7 @@ class SignalHandlerGuardCondition:
     def __init__(self, context=None):
         if context is None:
             context = get_default_context()
-        self.guard_handle, self.guard_pointer = _rclpy.rclpy_create_guard_condition(context.handle)
+        self.guard_handle, _ = _rclpy.rclpy_create_guard_condition(context.handle)
         _signals.rclpy_register_sigint_guard_condition(self.guard_handle)
 
     def __del__(self):
@@ -34,4 +34,3 @@ class SignalHandlerGuardCondition:
         _signals.rclpy_unregister_sigint_guard_condition(self.guard_handle)
         _rclpy.rclpy_destroy_entity(self.guard_handle)
         self.guard_handle = None
-        self.guard_pointer = None
