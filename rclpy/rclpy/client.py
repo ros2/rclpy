@@ -79,7 +79,13 @@ class Client:
 
         :param request: The service request.
         :return: The service response.
+        :raises: TypeError if the type of the passed request isn't an instance
+          of the Request type of the provided service when the client was
+          constructed.
         """
+        if not isinstance(request, self.srv_type.Request):
+            raise TypeError()
+
         event = threading.Event()
 
         def unblock(future):
@@ -116,7 +122,13 @@ class Client:
 
         :param request: The service request.
         :return: A future that completes when the request does.
+        :raises: TypeError if the type of the passed request isn't an instance
+          of the Request type of the provided service when the client was
+          constructed.
         """
+        if not isinstance(request, self.srv_type.Request):
+            raise TypeError()
+
         sequence_number = _rclpy.rclpy_send_request(self.client_handle, request)
         if sequence_number in self._pending_requests:
             raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)

@@ -134,6 +134,9 @@ class ServerGoalHandle:
         self._action_server.notify_execute(self, execute_callback)
 
     def publish_feedback(self, feedback):
+        if not isinstance(feedback, self._action_server.action_type.Feedback):
+            raise TypeError()
+
         with self._lock:
             # Ignore for already destructed goal handles
             if self._handle is None:

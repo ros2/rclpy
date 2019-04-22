@@ -56,7 +56,10 @@ class Publisher:
         """
         Send a message to the topic for the publisher.
 
-        :param msg: The ROS message to publish. The message must be the same type as the type
-            provided when the publisher was constructed.
+        :param msg: The ROS message to publish.
+        :raises: TypeError if the type of the passed message isn't an instance
+          of the provided type when the publisher was constructed.
         """
+        if not isinstance(msg, self.msg_type):
+            raise TypeError()
         _rclpy.rclpy_publish(self.publisher_handle, msg)
