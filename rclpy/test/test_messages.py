@@ -45,3 +45,8 @@ class TestMessages(unittest.TestCase):
         pub = self.node.create_publisher(Primitives, 'chatter')
         with self.assertRaises(UnicodeEncodeError):
             pub.publish(msg)
+
+    def test_different_type_raises(self):
+        pub = self.node.create_publisher(Primitives, 'chatter')
+        with self.assertRaises(TypeError):
+            pub.publish('different message type')

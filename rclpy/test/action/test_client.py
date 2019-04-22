@@ -327,6 +327,16 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
+    def test_different_type_raises(self):
+        ac = ActionClient(self.node, Fibonacci, 'fibonacci')
+        try:
+            with self.assertRaises(TypeError):
+                ac.send_goal('different goal type')
+            with self.assertRaises(TypeError):
+                ac.send_goal_async('different goal type')
+        finally:
+            ac.destroy()
+
 
 if __name__ == '__main__':
     unittest.main()

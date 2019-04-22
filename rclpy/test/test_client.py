@@ -90,6 +90,25 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
+    def test_different_type_raises(self):
+        cli = self.node.create_client(GetParameters, 'get/parameters')
+        srv = self.node.create_service(
+            GetParameters, 'get/parameters',
+            lambda request, response: 'different response type')
+        try:
+            with self.assertRaises(TypeError):
+                cli.call('different request type')
+            with self.assertRaises(TypeError):
+                cli.call_async('different request type')
+            self.assertTrue(cli.wait_for_service(timeout_sec=20))
+            future = cli.call_async(GetParameters.Request())
+            executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+            with self.assertRaises(TypeError):
+                rclpy.spin_until_future_complete(self.node, future, executor=executor)
+        finally:
+            self.node.destroy_client(cli)
+            self.node.destroy_service(srv)
+
 
 if __name__ == '__main__':
     unittest.main()

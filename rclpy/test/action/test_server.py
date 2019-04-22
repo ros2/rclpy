@@ -618,6 +618,40 @@ class TestActionServer(unittest.TestCase):
             self.mock_action_client.feedback_msg.feedback.sequence.tolist())
         action_server.destroy()
 
+    def test_different_feedback_type_raises(self):
+
+        def execute_with_feedback(goal_handle):
+            try:
+                goal_handle.publish_feedback('different feedback type')
+            except TypeError:
+                feedback = Fibonacci.Feedback()
+                feedback.sequence = [1, 1, 2, 3]
+                goal_handle.publish_feedback(feedback)
+            goal_handle.succeed()
+            return Fibonacci.Result()
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=execute_with_feedback,
+        )
+
+        try:
+            goal_msg = Fibonacci.Impl.SendGoalService.Request()
+            goal_msg.goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+            goal_future = self.mock_action_client.send_goal(goal_msg)
+
+            rclpy.spin_until_future_complete(
+                self.node, goal_future, self.executor)
+
+            feedback_msg = self.mock_action_client.feedback_msg
+            self.assertIsNotNone(feedback_msg)
+            self.assertEqual(
+                [1, 1, 2, 3], feedback_msg.feedback.sequence.tolist())
+        finally:
+            action_server.destroy()
+
 
 if __name__ == '__main__':
     unittest.main()
