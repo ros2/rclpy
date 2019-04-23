@@ -16,6 +16,11 @@ import multiprocessing
 import sys
 import traceback
 
+import pytest
+import rclpy
+from rclpy.handle import InvalidHandle
+from test_msgs.msg import Primitives
+
 
 def run_catch_report_raise(func, *args, **kwargs):
     try:
@@ -195,3 +200,32 @@ def test_destroy_entities():
 
 def test_corrupt_node_handle():
     func_launch(func_corrupt_node_handle, 'successfully modified node handle o_O')
+
+
+def test_destroy_subscription_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_subscription_asap', context=context)
+        try:
+            sub = node.create_subscription(Primitives, 'sub_topic', lambda msg: ...)
+
+            # handle valid
+            with sub.handle:
+                pass
+
+            with sub.handle:
+                node.destroy_subscription(sub)
+                # handle valid because it's still being used
+                with sub.handle:
+                    pass
+
+            with pytest.raises(InvalidHandle):
+                # handle invalid because it was destroyed when no one was using it
+                with sub.handle:
+                    pass
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)
