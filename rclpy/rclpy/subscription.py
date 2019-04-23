@@ -27,7 +27,6 @@ class Subscription:
     def __init__(
          self,
          subscription_handle,
-         subscription_pointer: int,
          msg_type: MsgType,
          topic: str,
          callback: Callable,
@@ -42,9 +41,8 @@ class Subscription:
         .. warning:: Users should not create a subscription with this constuctor, instead they
            should call :meth:`.Node.create_subscription`.
 
-        :param subscription_handle: Capsule pointing to the underlying ``rcl_subscription_t``
+        :param subscription_handle: :class:`Handle` wrapping the underlying ``rcl_subscription_t``
             object.
-        :param subscription_pointer: Memory address of the ``rcl_subscription_t`` implementation.
         :param msg_type: The type of ROS messages the subscription will subscribe to.
         :param topic: The name of the topic the subscription will subscribe to.
         :param callback: A user-defined callback function that is called when a message is
@@ -58,8 +56,7 @@ class Subscription:
             representation.
         """
         self.node_handle = node_handle
-        self.subscription_handle = subscription_handle
-        self.subscription_pointer = subscription_pointer
+        self.__handle = subscription_handle
         self.msg_type = msg_type
         self.topic = topic
         self.callback = callback
@@ -68,3 +65,16 @@ class Subscription:
         self._executor_event = False
         self.qos_profile = qos_profile
         self.raw = raw
+
+    @property
+    def handle(self):
+        return self.__handle
+
+    def destroy(self):
+        self.handle.destroy()
+
+    def __eq__(self, other):
+        return self.handle == other.handle
+
+    def __hash__(self):
+        return self.handle.pointer

@@ -38,6 +38,15 @@
 
 #include "rclpy_common/common.h"
 
+typedef struct
+{
+  // Important: a pointer to a structure is also a pointer to its first member.
+  // The subscription must be first in the struct to compare sub.handle.pointer to an address
+  // in a wait set.
+  rcl_subscription_t subscription;
+  rcl_node_t * node;
+} rclpy_subscription_t;
+
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
@@ -1658,6 +1667,22 @@ rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromUnsignedLongLong(elapsed_time);
 }
 
+/// PyCapsule destructor for subscription
+static void
+_rclpy_destroy_subscription(PyObject * pyentity)
+{
+  if (PyCapsule_IsValid(pyentity, "rclpy_subscription_t")) {
+    rclpy_subscription_t * sub = (rclpy_subscription_t *)PyCapsule_GetPointer(
+      pyentity, "rclpy_subscription_t");
+    if (!sub) {
+      return;
+    }
+    rcl_ret_t ret = rcl_subscription_fini(&(sub->subscription), sub->node);
+    (void)ret;
+    PyMem_Free(sub);
+  }
+}
+
 /// Create a subscription
 /**
  * This function will create a subscription for the given topic name.
@@ -1734,15 +1759,16 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
-  rcl_subscription_t * subscription =
-    (rcl_subscription_t *)PyMem_Malloc(sizeof(rcl_subscription_t));
-  if (!subscription) {
+  rclpy_subscription_t * sub =
+    (rclpy_subscription_t *)PyMem_Malloc(sizeof(rclpy_subscription_t));
+  if (!sub) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for subscription");
     return NULL;
   }
-  *subscription = rcl_get_zero_initialized_subscription();
+  sub->subscription = rcl_get_zero_initialized_subscription();
+  sub->node = node;
 
-  rcl_ret_t ret = rcl_subscription_init(subscription, node, ts, topic, &subscription_ops);
+  rcl_ret_t ret = rcl_subscription_init(&(sub->subscription), node, ts, topic, &subscription_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_TOPIC_NAME_INVALID) {
       PyErr_Format(PyExc_ValueError,
@@ -1753,39 +1779,19 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
         "Failed to create subscription: %s", rcl_get_error_string().str);
     }
     rcl_reset_error();
-    PyMem_Free(subscription);
+    PyMem_Free(sub);
     return NULL;
   }
 
-  PyObject * pylist = PyList_New(2);
-  if (!pylist) {
-    ret = rcl_subscription_fini(subscription, node);
-    (void)ret;
-    PyMem_Free(subscription);
-    return NULL;
-  }
-  PyObject * pysubscription = PyCapsule_New(subscription, "rcl_subscription_t", NULL);
+  PyObject * pysubscription = PyCapsule_New(
+    sub, "rclpy_subscription_t", _rclpy_destroy_subscription);
   if (!pysubscription) {
-    ret = rcl_subscription_fini(subscription, node);
+    ret = rcl_subscription_fini(&(sub->subscription), node);
     (void)ret;
-    PyMem_Free(subscription);
-    Py_DECREF(pylist);
+    PyMem_Free(sub);
     return NULL;
   }
-  PyObject * pysubscription_impl_reference =
-    PyLong_FromUnsignedLongLong((uint64_t)&subscription->impl);
-  if (!pysubscription_impl_reference) {
-    ret = rcl_subscription_fini(subscription, node);
-    (void)ret;
-    PyMem_Free(subscription);
-    Py_DECREF(pylist);
-    Py_DECREF(pysubscription);
-    return NULL;
-  }
-  PyList_SET_ITEM(pylist, 0, pysubscription);
-  PyList_SET_ITEM(pylist, 1, pysubscription_impl_reference);
-
-  return pylist;
+  return pysubscription;
 }
 
 /// Create a client
@@ -2179,7 +2185,7 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Destroy an entity attached to a node
 /**
- * Entity type must be one of ["subscription", "publisher", "client", "service"].
+ * Entity type must be one of ["publisher", "client", "service"].
  *
  * Raises RuntimeError on failure
  *
@@ -2207,12 +2213,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret;
-  if (PyCapsule_IsValid(pyentity, "rcl_subscription_t")) {
-    rcl_subscription_t * subscription = (rcl_subscription_t *)PyCapsule_GetPointer(
-      pyentity, "rcl_subscription_t");
-    ret = rcl_subscription_fini(subscription, node);
-    PyMem_Free(subscription);
-  } else if (PyCapsule_IsValid(pyentity, "rcl_publisher_t")) {
+  if (PyCapsule_IsValid(pyentity, "rcl_publisher_t")) {
     rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
       pyentity, "rcl_publisher_t");
     ret = rcl_publisher_fini(publisher, node);
@@ -2463,9 +2464,9 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   if (0 == strcmp(entity_type, "subscription")) {
-    rcl_subscription_t * subscription =
-      (rcl_subscription_t *)PyCapsule_GetPointer(pyentity, "rcl_subscription_t");
-    ret = rcl_wait_set_add_subscription(wait_set, subscription, &index);
+    rclpy_subscription_t * sub =
+      (rclpy_subscription_t *)PyCapsule_GetPointer(pyentity, "rclpy_subscription_t");
+    ret = rcl_wait_set_add_subscription(wait_set, &(sub->subscription), &index);
   } else if (0 == strcmp(entity_type, "client")) {
     rcl_client_t * client =
       (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
@@ -2775,14 +2776,14 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_subscription_t * subscription =
-    (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, "rcl_subscription_t");
-  if (!subscription) {
+  rclpy_subscription_t * sub =
+    (rclpy_subscription_t *)PyCapsule_GetPointer(pysubscription, "rclpy_subscription_t");
+  if (!sub) {
     return NULL;
   }
 
   if (PyObject_IsTrue(pyraw) == 1) {  // raw=True
-    return rclpy_take_raw(subscription);
+    return rclpy_take_raw(&(sub->subscription));
   }
 
   destroy_ros_message_signature * destroy_ros_message = NULL;
@@ -2791,7 +2792,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_ret_t ret = rcl_take(subscription, taken_msg, NULL);
+  rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, NULL);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,

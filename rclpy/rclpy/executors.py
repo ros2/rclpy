@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack
 import inspect
 import multiprocessing
 from threading import Condition
@@ -35,6 +36,7 @@ from typing import Union
 from rclpy.client import Client
 from rclpy.context import Context
 from rclpy.guard_condition import GuardCondition
+from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
 from rclpy.signals import SignalHandlerGuardCondition
@@ -301,7 +303,8 @@ class Executor:
         await await_or_execute(tmr.callback)
 
     def _take_subscription(self, sub):
-        msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type, sub.raw)
+        with sub.handle as capsule:
+            msg = _rclpy.rclpy_take(capsule, sub.msg_type, sub.raw)
         return msg
 
     async def _execute_subscription(self, sub, msg):
@@ -472,7 +475,14 @@ class Executor:
                 entity_count += waitable.get_num_entities()
 
             # Construct a wait set
-            with _WaitSet() as wait_set:
+            with _WaitSet() as wait_set, ExitStack() as context_stack:
+                sub_capsules = []
+                for sub in subscriptions:
+                    try:
+                        sub_capsules.append(context_stack.enter_context(sub.handle))
+                    except InvalidHandle:
+                        entity_count.num_subscriptions -= 1
+
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     entity_count.num_subscriptions,
@@ -483,7 +493,6 @@ class Executor:
                     self._context.handle)
 
                 entities = {
-                    'subscription': (subscriptions, 'subscription_handle'),
                     'guard_condition': (guards, 'guard_handle'),
                     'client': (clients, 'client_handle'),
                     'service': (services, 'service_handle'),
@@ -495,6 +504,8 @@ class Executor:
                         _rclpy.rclpy_wait_set_add_entity(
                             entity, wait_set, h.__getattribute__(handle_name)
                         )
+                for sub_capsule in sub_capsules:
+                    _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 
@@ -543,7 +554,7 @@ class Executor:
                                 yield handler, tmr, node
 
                 for sub in node.subscriptions:
-                    if sub.subscription_pointer in subs_ready:
+                    if sub.handle.pointer in subs_ready:
                         if sub.callback_group.can_execute(sub):
                             handler = self._make_handler(
                                 sub, node, self._take_subscription, self._execute_subscription)

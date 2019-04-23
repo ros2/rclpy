@@ -176,7 +176,7 @@ class SubscriptionWaitable(Waitable):
         self.guard_is_ready = False
 
         self.subscription = _rclpy.rclpy_create_subscription(
-            node.handle, EmptyMsg, 'test_topic', qos_profile_default.get_c_qos_profile())[0]
+            node.handle, EmptyMsg, 'test_topic', qos_profile_default.get_c_qos_profile())
         self.subscription_index = None
         self.subscription_is_ready = False
 
