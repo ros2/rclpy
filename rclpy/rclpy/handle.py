@@ -104,6 +104,8 @@ class Handle:
         :return: None
         """
         with self.__lock:
+            # Assume _return_capsule is not called more times than _get_capsule
+            assert self.__use_count > 0
             self.__use_count -= 1
             if 0 == self.__use_count and self.__request_invalidation:
                 self.__destroy()  # calls pycapsule destructor
