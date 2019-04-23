@@ -140,7 +140,7 @@ static PyMethodDef rclpy_pycapsule_methods[] = {
 };
 
 PyDoc_STRVAR(rclpy_pycapsule__doc__,
-  "RCLPY module for working with PyCapsule objects.");
+  "rclpy module for working with PyCapsule objects.");
 
 /// Define the Python module
 static struct PyModuleDef _rclpy_pycapsule_module = {
