@@ -68,8 +68,7 @@ rclpy_pycapsule_pointer(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  _Static_assert(sizeof(uint64_t) >= sizeof(void *), "Unable to cast pointer to integer");
-  return PyLong_FromUnsignedLongLong((uint64_t)pointer);
+  return PyLong_FromVoidPtr(pointer);
 }
 
 /// Destroy a pycapsule without waiting for the garbage collector.
