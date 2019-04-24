@@ -71,5 +71,10 @@ class Service:
 
         :param response: The service response.
         :param header: Capsule pointing to the service header from the original request.
+        :raises: TypeError if the type of the passed response isn't an instance
+          of the Response type of the provided service when the service was
+          constructed.
         """
+        if not isinstance(response, self.srv_type.Response):
+            raise TypeError()
         _rclpy.rclpy_send_response(self.service_handle, response, header)

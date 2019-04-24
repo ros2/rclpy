@@ -349,7 +349,13 @@ class ActionClient(Waitable):
         :type goal: action_type.Goal
         :return: The result response.
         :rtype: action_type.Result
+        :raises: TypeError if the type of the passed goal isn't an instance of
+          the Goal type of the provided action when the service was
+          constructed.
         """
+        if not isinstance(goal, self._action_type.Goal):
+            raise TypeError()
+
         event = threading.Event()
 
         def unblock(future):
@@ -386,7 +392,13 @@ class ActionClient(Waitable):
         :return: a Future instance to a goal handle that completes when the goal request
             has been accepted or rejected.
         :rtype: :class:`rclpy.task.Future` instance
+        :raises: TypeError if the type of the passed goal isn't an instance of
+          the Goal type of the provided action when the service was
+          constructed.
         """
+        if not isinstance(goal, self._action_type.Goal):
+            raise TypeError()
+
         request = self._action_type.Impl.SendGoalService.Request()
         request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         request.goal = goal
