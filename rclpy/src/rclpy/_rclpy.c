@@ -1671,16 +1671,27 @@ rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
 static void
 _rclpy_destroy_subscription(PyObject * pyentity)
 {
-  if (PyCapsule_IsValid(pyentity, "rclpy_subscription_t")) {
-    rclpy_subscription_t * sub = (rclpy_subscription_t *)PyCapsule_GetPointer(
-      pyentity, "rclpy_subscription_t");
-    if (!sub) {
-      return;
-    }
-    rcl_ret_t ret = rcl_subscription_fini(&(sub->subscription), sub->node);
-    (void)ret;
-    PyMem_Free(sub);
+  rclpy_subscription_t * sub = (rclpy_subscription_t *)PyCapsule_GetPointer(
+    pyentity, "rclpy_subscription_t");
+  if (!sub) {
+    // Don't want to raise an exception, who knows where it will get raised.
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_subscrition failed to get pointer");
+    return;
   }
+
+  rcl_ret_t ret = rcl_subscription_fini(&(sub->subscription), sub->node);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini subscription: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(sub);
 }
 
 /// Create a subscription
