@@ -451,9 +451,9 @@ class Node:
         check_for_type_support(srv_type)
         failed = False
         try:
-            with self.handle as capsule:
-                [client_handle, client_pointer] = _rclpy.rclpy_create_client(
-                    capsule,
+            with self.handle as node_capsule:
+                client_capsule = _rclpy.rclpy_create_client(
+                    node_capsule,
                     srv_type,
                     srv_name,
                     qos_profile.get_c_qos_profile())
@@ -461,9 +461,12 @@ class Node:
             failed = True
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
+
+        client_handle = Handle(client_capsule)
+
         client = Client(
             self.handle, self.context,
-            client_handle, client_pointer, srv_type, srv_name, qos_profile,
+            client_handle, srv_type, srv_name, qos_profile,
             callback_group)
         self.clients.append(client)
         callback_group.add_entity(client)
@@ -581,12 +584,10 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for cli in self.clients:
-            if cli.client_handle == client.client_handle:
-                with self.handle as capsule:
-                    _rclpy.rclpy_destroy_node_entity(cli.client_handle, capsule)
-                self.clients.remove(cli)
-                return True
+        if client in self.clients:
+            self.clients.remove(client)
+            client.destroy()
+            return True
         return False
 
     def destroy_service(self, service: Service) -> bool:
@@ -657,7 +658,7 @@ class Node:
             self.subscriptions = ()
             while self.clients:
                 cli = self.clients.pop()
-                _rclpy.rclpy_destroy_node_entity(cli.client_handle, capsule)
+                cli.destroy()
             while self.services:
                 srv = self.services.pop()
                 _rclpy.rclpy_destroy_node_entity(srv.service_handle, capsule)

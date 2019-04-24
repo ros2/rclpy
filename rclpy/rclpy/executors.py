@@ -312,7 +312,8 @@ class Executor:
             await await_or_execute(sub.callback, msg)
 
     def _take_client(self, client):
-        return _rclpy.rclpy_take_response(client.client_handle, client.srv_type.Response)
+        with client.handle as capsule:
+            return _rclpy.rclpy_take_response(capsule, client.srv_type.Response)
 
     async def _execute_client(self, client, seq_and_response):
         sequence, response = seq_and_response
@@ -483,6 +484,13 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_subscriptions -= 1
 
+                client_capsules = []
+                for cli in clients:
+                    try:
+                        client_capsules.append(context_stack.enter_context(cli.handle))
+                    except InvalidHandle:
+                        entity_count.num_clients -= 1
+
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     entity_count.num_subscriptions,
@@ -494,7 +502,6 @@ class Executor:
 
                 entities = {
                     'guard_condition': (guards, 'guard_handle'),
-                    'client': (clients, 'client_handle'),
                     'service': (services, 'service_handle'),
                     'timer': (timers, 'timer_handle'),
                 }
@@ -506,6 +513,8 @@ class Executor:
                         )
                 for sub_capsule in sub_capsules:
                     _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
+                for cli_capsule in client_capsules:
+                    _rclpy.rclpy_wait_set_add_entity('client', wait_set, cli_capsule)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 
@@ -571,7 +580,7 @@ class Executor:
                             yield handler, gc, node
 
                 for client in node.clients:
-                    if client.client_pointer in clients_ready:
+                    if client.handle.pointer in clients_ready:
                         if client.callback_group.can_execute(client):
                             handler = self._make_handler(
                                 client, node, self._take_client, self._execute_client)

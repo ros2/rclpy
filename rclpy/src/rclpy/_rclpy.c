@@ -53,6 +53,15 @@ typedef struct
   rcl_node_t * node;
 } rclpy_publisher_t;
 
+typedef struct
+{
+  // Important: a pointer to a structure is also a pointer to its first member.
+  // The client must be first in the struct to compare cli.handle.pointer to an address
+  // in a wait set.
+  rcl_client_t client;
+  rcl_node_t * node;
+} rclpy_client_t;
+
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
@@ -1854,16 +1863,30 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   return pysubscription;
 }
 
+/// PyCapsule destructor for client
+static void
+_rclpy_destroy_client(PyObject * pyentity)
+{
+  if (PyCapsule_IsValid(pyentity, "rclpy_client_t")) {
+    rclpy_client_t * client = (rclpy_client_t *)PyCapsule_GetPointer(
+      pyentity, "rclpy_client_t");
+    if (!client) {
+      return;
+    }
+    rcl_ret_t ret = rcl_client_fini(&(client->client), client->node);
+    (void)ret;
+    PyMem_Free(client);
+  }
+}
+
 /// Create a client
 /**
  * This function will create a client for the given service name.
  * This client will use the typesupport defined in the service module
  * provided as pysrv_type to send messages over the wire.
  *
- * On a successful call a list with two elements is returned:
- *
- * - a Capsule pointing to the pointer of the created rcl_client_t * structure
- * - an integer representing the memory address of the created rcl_client_t
+ * On a successful call a Capsule pointing to the pointer of the created rclpy_client_t * is
+ * returned.
  *
  * Raises ValueError if the capsules are not the correct types
  * Raises RuntimeError if the client could not be created
@@ -1872,7 +1895,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] pysrv_type Service module associated with the client
  * \param[in] pyservice_name Python object containing the service name
  * \param[in] pyqos_profile QoSProfile Python object for this client
- * \return capsule and memory address, or
+ * \return capsule or,
  * \return NULL on failure
  */
 static PyObject *
@@ -1930,14 +1953,15 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
-  rcl_client_t * client = (rcl_client_t *)PyMem_Malloc(sizeof(rcl_client_t));
+  rclpy_client_t * client = (rclpy_client_t *)PyMem_Malloc(sizeof(rclpy_client_t));
   if (!client) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for client");
     return NULL;
   }
-  *client = rcl_get_zero_initialized_client();
+  client->client = rcl_get_zero_initialized_client();
+  client->node = node;
 
-  rcl_ret_t ret = rcl_client_init(client, node, ts, service_name, &client_ops);
+  rcl_ret_t ret = rcl_client_init(&(client->client), node, ts, service_name, &client_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {
       PyErr_Format(PyExc_ValueError,
@@ -1951,34 +1975,15 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(client);
     return NULL;
   }
-  PyObject * pylist = PyList_New(2);
-  if (!pylist) {
-    ret = rcl_client_fini(client, node);
-    (void)ret;
-    PyMem_Free(client);
-    return NULL;
-  }
-  PyObject * pyclient = PyCapsule_New(client, "rcl_client_t", NULL);
+  PyObject * pyclient = PyCapsule_New(client, "rclpy_client_t", _rclpy_destroy_client);
   if (!pyclient) {
-    ret = rcl_client_fini(client, node);
+    ret = rcl_client_fini(&(client->client), node);
     (void)ret;
     PyMem_Free(client);
-    Py_DECREF(pylist);
     return NULL;
   }
-  PyObject * pyclient_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&client->impl);
-  if (!pyclient_impl_reference) {
-    ret = rcl_client_fini(client, node);
-    (void)ret;
-    PyMem_Free(client);
-    Py_DECREF(pylist);
-    Py_DECREF(pyclient);
-    return NULL;
-  }
-  PyList_SET_ITEM(pylist, 0, pyclient);
-  PyList_SET_ITEM(pylist, 1, pyclient_impl_reference);
 
-  return pylist;
+  return pyclient;
 }
 
 /// Publish a request message
@@ -1999,7 +2004,7 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OO", &pyclient, &pyrequest)) {
     return NULL;
   }
-  rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, "rcl_client_t");
+  rclpy_client_t * client = (rclpy_client_t *)PyCapsule_GetPointer(pyclient, "rclpy_client_t");
   if (!client) {
     return NULL;
   }
@@ -2011,7 +2016,7 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   int64_t sequence_number;
-  rcl_ret_t ret = rcl_send_request(client, raw_ros_request, &sequence_number);
+  rcl_ret_t ret = rcl_send_request(&(client->client), raw_ros_request, &sequence_number);
   destroy_ros_message(raw_ros_request);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -2222,13 +2227,13 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   if (!node) {
     return NULL;
   }
-  rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyclient, "rcl_client_t");
+  rclpy_client_t * client = (rclpy_client_t *)PyCapsule_GetPointer(pyclient, "rclpy_client_t");
   if (!client) {
     return NULL;
   }
 
   bool is_ready;
-  rcl_ret_t ret = rcl_service_server_is_available(node, client, &is_ready);
+  rcl_ret_t ret = rcl_service_server_is_available(node, &(client->client), &is_ready);
 
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -2245,7 +2250,7 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Destroy an entity attached to a node
 /**
- * Entity type must be one of ["client", "service"].
+ * Entity type must be one of ["service"].
  *
  * Raises RuntimeError on failure
  *
@@ -2273,11 +2278,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret;
-  if (PyCapsule_IsValid(pyentity, "rcl_client_t")) {
-    rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
-    ret = rcl_client_fini(client, node);
-    PyMem_Free(client);
-  } else if (PyCapsule_IsValid(pyentity, "rcl_service_t")) {
+  if (PyCapsule_IsValid(pyentity, "rcl_service_t")) {
     rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
     ret = rcl_service_fini(service, node);
     PyMem_Free(service);
@@ -2519,9 +2520,9 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
       (rclpy_subscription_t *)PyCapsule_GetPointer(pyentity, "rclpy_subscription_t");
     ret = rcl_wait_set_add_subscription(wait_set, &(sub->subscription), &index);
   } else if (0 == strcmp(entity_type, "client")) {
-    rcl_client_t * client =
-      (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
-    ret = rcl_wait_set_add_client(wait_set, client, &index);
+    rclpy_client_t * client =
+      (rclpy_client_t *)PyCapsule_GetPointer(pyentity, "rclpy_client_t");
+    ret = rcl_wait_set_add_client(wait_set, &(client->client), &index);
   } else if (0 == strcmp(entity_type, "service")) {
     rcl_service_t * service =
       (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
@@ -2966,8 +2967,8 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OO", &pyclient, &pyresponse_type)) {
     return NULL;
   }
-  rcl_client_t * client =
-    (rcl_client_t *)PyCapsule_GetPointer(pyclient, "rcl_client_t");
+  rclpy_client_t * client =
+    (rclpy_client_t *)PyCapsule_GetPointer(pyclient, "rclpy_client_t");
   if (!client) {
     return NULL;
   }
@@ -2983,7 +2984,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for response header");
     return NULL;
   }
-  rcl_ret_t ret = rcl_take_response(client, header, taken_response);
+  rcl_ret_t ret = rcl_take_response(&(client->client), header, taken_response);
   int64_t sequence = header->sequence_number;
   PyMem_Free(header);
 
