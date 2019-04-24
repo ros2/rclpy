@@ -46,7 +46,7 @@ class Publisher:
         :param node_handle: Capsule pointing to the ``rcl_node_t`` object for the node the
             publisher is associated with.
         """
-        self.publisher_handle = publisher_handle
+        self.__handle = publisher_handle
         self.msg_type = msg_type
         self.topic = topic
         self.qos_profile = qos_profile
@@ -62,4 +62,18 @@ class Publisher:
         """
         if not isinstance(msg, self.msg_type):
             raise TypeError()
-        _rclpy.rclpy_publish(self.publisher_handle, msg)
+        with self.handle as capsule:
+            _rclpy.rclpy_publish(capsule, msg)
+
+    @property
+    def handle(self):
+        return self.__handle
+
+    def destroy(self):
+        self.handle.destroy()
+
+    def __eq__(self, other):
+        return self.handle == other.handle
+
+    def __hash__(self):
+        return self.handle.pointer

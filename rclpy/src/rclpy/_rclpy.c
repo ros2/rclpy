@@ -47,6 +47,15 @@ typedef struct
   rcl_node_t * node;
 } rclpy_subscription_t;
 
+typedef struct
+{
+  // Important: a pointer to a structure is also a pointer to its first member.
+  // The publisher must be first in the struct to compare pub.handle.pointer to an address
+  // in a wait set.
+  rcl_publisher_t publisher;
+  rcl_node_t * node;
+} rclpy_publisher_t;
+
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
@@ -1168,6 +1177,22 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   return result;
 }
 
+/// PyCapsule destructor for publisher
+static void
+_rclpy_destroy_publisher(PyObject * pyentity)
+{
+  if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
+    rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+      pyentity, "rclpy_publisher_t");
+    if (!pub) {
+      return;
+    }
+    rcl_ret_t ret = rcl_publisher_fini(&(pub->publisher), pub->node);
+    (void)ret;
+    PyMem_Free(pub);
+  }
+}
+
 /// Create a publisher
 /**
  * This function will create a publisher and attach it to the provided topic name
@@ -1241,14 +1266,14 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
-  rcl_publisher_t * publisher = (rcl_publisher_t *)PyMem_Malloc(sizeof(rcl_publisher_t));
-  if (!publisher) {
+  rclpy_publisher_t * pub = (rclpy_publisher_t *)PyMem_Malloc(sizeof(rclpy_publisher_t));
+  if (!pub) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for publisher");
     return NULL;
   }
-  *publisher = rcl_get_zero_initialized_publisher();
+  pub->publisher = rcl_get_zero_initialized_publisher();
 
-  rcl_ret_t ret = rcl_publisher_init(publisher, node, ts, topic, &publisher_ops);
+  rcl_ret_t ret = rcl_publisher_init(&(pub->publisher), node, ts, topic, &publisher_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_TOPIC_NAME_INVALID) {
       PyErr_Format(PyExc_ValueError,
@@ -1259,10 +1284,10 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
         "Failed to create publisher: %s", rcl_get_error_string().str);
     }
     rcl_reset_error();
-    PyMem_Free(publisher);
+    PyMem_Free(pub);
     return NULL;
   }
-  return PyCapsule_New(publisher, "rcl_publisher_t", NULL);
+  return PyCapsule_New(pub, "rclpy_publisher_t", _rclpy_destroy_publisher);
 }
 
 /// Publish a message
@@ -1284,9 +1309,9 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
-    pypublisher, "rcl_publisher_t");
-  if (!publisher) {
+  rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+    pypublisher, "rclpy_publisher_t");
+  if (!pub) {
     return NULL;
   }
 
@@ -1296,7 +1321,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_ret_t ret = rcl_publish(publisher, raw_ros_message);
+  rcl_ret_t ret = rcl_publish(&(pub->publisher), raw_ros_message);
   destroy_ros_message(raw_ros_message);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -2223,7 +2248,7 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Destroy an entity attached to a node
 /**
- * Entity type must be one of ["publisher", "client", "service"].
+ * Entity type must be one of ["client", "service"].
  *
  * Raises RuntimeError on failure
  *
@@ -2251,12 +2276,7 @@ rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret;
-  if (PyCapsule_IsValid(pyentity, "rcl_publisher_t")) {
-    rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
-      pyentity, "rcl_publisher_t");
-    ret = rcl_publisher_fini(publisher, node);
-    PyMem_Free(publisher);
-  } else if (PyCapsule_IsValid(pyentity, "rcl_client_t")) {
+  if (PyCapsule_IsValid(pyentity, "rcl_client_t")) {
     rcl_client_t * client = (rcl_client_t *)PyCapsule_GetPointer(pyentity, "rcl_client_t");
     ret = rcl_client_fini(client, node);
     PyMem_Free(client);
