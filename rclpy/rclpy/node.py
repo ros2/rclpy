@@ -33,6 +33,7 @@ from rclpy.exceptions import NotInitializedException
 from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
+from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.parameter import Parameter
@@ -401,15 +402,17 @@ class Node:
         check_for_type_support(msg_type)
         failed = False
         try:
-            [subscription_handle, subscription_pointer] = _rclpy.rclpy_create_subscription(
+            subscription_capsule = _rclpy.rclpy_create_subscription(
                 self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True
         if failed:
             self._validate_topic_or_service_name(topic)
 
+        subscription_handle = Handle(subscription_capsule)
+
         subscription = Subscription(
-            subscription_handle, subscription_pointer, msg_type,
+            subscription_handle, msg_type,
             topic, callback, callback_group, qos_profile, self.handle, raw)
         self.subscriptions.append(subscription)
         callback_group.add_entity(subscription)
@@ -554,11 +557,10 @@ class Node:
 
         :return: ``True`` if succesful, ``False`` otherwise.
         """
-        for sub in self.subscriptions:
-            if sub.subscription_handle == subscription.subscription_handle:
-                _rclpy.rclpy_destroy_node_entity(sub.subscription_handle, self.handle)
-                self.subscriptions.remove(sub)
-                return True
+        if subscription in self.subscriptions:
+            self.subscriptions.remove(subscription)
+            subscription.destroy()
+            return True
         return False
 
     def destroy_client(self, client: Client) -> bool:
@@ -643,7 +645,7 @@ class Node:
             _rclpy.rclpy_destroy_node_entity(pub.publisher_handle, self.handle)
         while self.subscriptions:
             sub = self.subscriptions.pop()
-            _rclpy.rclpy_destroy_node_entity(sub.subscription_handle, self.handle)
+            sub.destroy()
         while self.clients:
             cli = self.clients.pop()
             _rclpy.rclpy_destroy_node_entity(cli.client_handle, self.handle)
