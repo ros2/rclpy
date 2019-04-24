@@ -97,20 +97,7 @@ rclpy_pycapsule_destroy(PyObject * Py_UNUSED(self), PyObject * args)
     PyErr_Format(PyExc_ValueError, "PyCapsule does not have a destructor.");
   }
 
-  // Need name to get pointer
-  const char * name = PyCapsule_GetName(pycapsule);
-
-  if (PyErr_Occurred()) {
-    return NULL;
-  }
-
-  void * pointer = PyCapsule_GetPointer(pycapsule, name);
-
-  if (NULL == pointer) {
-    return NULL;
-  }
-
-  destructor(pointer);
+  destructor(pycapsule);
 
   if (0 != PyCapsule_SetDestructor(pycapsule, NULL)) {
     return NULL;
