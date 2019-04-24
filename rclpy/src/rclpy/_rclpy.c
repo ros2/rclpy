@@ -1681,10 +1681,9 @@ _rclpy_destroy_subscription(PyObject * pyentity)
 
   rclpy_subscription_t * sub = (rclpy_subscription_t *)PyCapsule_GetPointer(
     pyentity, "rclpy_subscription_t");
-  if (!sub) {
-    // Impossible, ...GetPointer() guaranteed to return non NULL if PyCapsule_IsValid check passes
-    return;
-  }
+  // ...GetPointer() is guaranteed to return non NULL if PyCapsule_IsValid passes
+  assert(sub);
+
   rcl_ret_t ret = rcl_subscription_fini(&(sub->subscription), sub->node);
   if (RCL_RET_OK != ret) {
     // Warning should use line number of the current stack frame
