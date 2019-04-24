@@ -49,9 +49,6 @@ typedef struct
 
 typedef struct
 {
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The publisher must be first in the struct to compare pub.handle.pointer to an address
-  // in a wait set.
   rcl_publisher_t publisher;
   rcl_node_t * node;
 } rclpy_publisher_t;
