@@ -62,6 +62,15 @@ typedef struct
   rcl_node_t * node;
 } rclpy_client_t;
 
+typedef struct
+{
+  // Important: a pointer to a structure is also a pointer to its first member.
+  // The service must be first in the struct to compare srv.handle.pointer to an address
+  // in a wait set.
+  rcl_service_t service;
+  rcl_node_t * node;
+} rclpy_service_t;
+
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
@@ -2029,6 +2038,22 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   return PyLong_FromLongLong(sequence_number);
 }
 
+/// PyCapsule destructor for service
+static void
+_rclpy_destroy_service(PyObject * pyentity)
+{
+  if (PyCapsule_IsValid(pyentity, "rclpy_service_t")) {
+    rclpy_service_t * srv = (rclpy_service_t *)PyCapsule_GetPointer(
+      pyentity, "rclpy_service_t");
+    if (!srv) {
+      return;
+    }
+    rcl_ret_t ret = rcl_service_fini(&(srv->service), srv->node);
+    (void)ret;
+    PyMem_Free(srv);
+  }
+}
+
 /// Create a service server
 /**
  * This function will create a service server for the given service name.
@@ -2036,10 +2061,8 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
  * provided as pysrv_type to send messages over the wire.
  *
  *
- * On a successful call a list with two elements is returned:
- *
- * - a Capsule pointing to the pointer of the created rcl_service_t * structure
- * - an integer representing the memory address of the created rcl_service_t
+ * On a successful call a Capsule pointing to the pointer of the created rcl_service_t *
+ * is returned.
  *
  * Raises ValueError if the capsules are not the correct types
  * Raises RuntimeError if the service could not be created
@@ -2048,7 +2071,7 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] pysrv_type Service module associated with the service
  * \param[in] pyservice_name Python object for the service name
  * \param[in] pyqos_profile QoSProfile Python object for this service
- * \return capsule and memory address, or
+ * \return capsule, or
  * \return NULL on failure
  */
 static PyObject *
@@ -2106,13 +2129,15 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
-  rcl_service_t * service = (rcl_service_t *)PyMem_Malloc(sizeof(rcl_service_t));
-  if (!service) {
+  rclpy_service_t * srv = (rclpy_service_t *)PyMem_Malloc(sizeof(rclpy_service_t));
+  if (!srv) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for service");
     return NULL;
   }
-  *service = rcl_get_zero_initialized_service();
-  rcl_ret_t ret = rcl_service_init(service, node, ts, service_name, &service_ops);
+  srv->service = rcl_get_zero_initialized_service();
+  srv->node = node;
+
+  rcl_ret_t ret = rcl_service_init(&(srv->service), node, ts, service_name, &service_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {
       PyErr_Format(PyExc_ValueError,
@@ -2122,39 +2147,19 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
       PyErr_Format(PyExc_RuntimeError,
         "Failed to create service: %s", rcl_get_error_string().str);
     }
-    PyMem_Free(service);
+    PyMem_Free(srv);
     rcl_reset_error();
     return NULL;
   }
 
-  PyObject * pylist = PyList_New(2);
-  if (!pylist) {
-    ret = rcl_service_fini(service, node);
-    (void)ret;
-    PyMem_Free(service);
-    return NULL;
-  }
-  PyObject * pyservice = PyCapsule_New(service, "rcl_service_t", NULL);
+  PyObject * pyservice = PyCapsule_New(srv, "rclpy_service_t", _rclpy_destroy_service);
   if (!pyservice) {
-    ret = rcl_service_fini(service, node);
+    ret = rcl_service_fini(&(srv->service), node);
     (void)ret;
-    PyMem_Free(service);
-    Py_DECREF(pylist);
+    PyMem_Free(srv);
     return NULL;
   }
-  PyObject * pyservice_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&service->impl);
-  if (!pyservice_impl_reference) {
-    ret = rcl_service_fini(service, node);
-    (void)ret;
-    PyMem_Free(service);
-    Py_DECREF(pylist);
-    Py_DECREF(pyservice);
-    return NULL;
-  }
-  PyList_SET_ITEM(pylist, 0, pyservice);
-  PyList_SET_ITEM(pylist, 1, pyservice_impl_reference);
-
-  return pylist;
+  return pyservice;
 }
 
 /// Publish a response message
@@ -2177,9 +2182,8 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   if (!PyArg_ParseTuple(args, "OOO", &pyservice, &pyresponse, &pyheader)) {
     return NULL;
   }
-  rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(
-    pyservice, "rcl_service_t");
-  if (!service) {
+  rclpy_service_t * srv = (rclpy_service_t *)PyCapsule_GetPointer(pyservice, "rclpy_service_t");
+  if (!srv) {
     return NULL;
   }
 
@@ -2195,7 +2199,7 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_ret_t ret = rcl_send_response(service, header, raw_ros_response);
+  rcl_ret_t ret = rcl_send_response(&(srv->service), header, raw_ros_response);
   destroy_ros_message(raw_ros_response);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -2247,61 +2251,6 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
     Py_RETURN_TRUE;
   }
   Py_RETURN_FALSE;
-}
-
-/// Destroy an entity attached to a node
-/**
- * Entity type must be one of ["service"].
- *
- * Raises RuntimeError on failure
- *
- * \param[in] pyentity Capsule pointing to the entity to destroy
- * \param[in] pynode Capsule pointing to the node the entity belongs to
- */
-static PyObject *
-rclpy_destroy_node_entity(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pyentity;
-  PyObject * pynode;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyentity, &pynode)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-
-  if (!PyCapsule_CheckExact(pyentity)) {
-    PyErr_Format(PyExc_RuntimeError, "entity is not a capsule");
-    return NULL;
-  }
-
-  rcl_ret_t ret;
-  if (PyCapsule_IsValid(pyentity, "rcl_service_t")) {
-    rcl_service_t * service = (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
-    ret = rcl_service_fini(service, node);
-    PyMem_Free(service);
-  } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known node entity",
-      PyCapsule_GetName(pyentity));
-    return NULL;
-  }
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini '%s': %s", PyCapsule_GetName(pyentity), rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  if (PyCapsule_SetPointer(pyentity, Py_None)) {
-    // exception set by PyCapsule_SetPointer
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
 }
 
 /// Destructor for a clock
@@ -2525,9 +2474,9 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
       (rclpy_client_t *)PyCapsule_GetPointer(pyentity, "rclpy_client_t");
     ret = rcl_wait_set_add_client(wait_set, &(client->client), &index);
   } else if (0 == strcmp(entity_type, "service")) {
-    rcl_service_t * service =
-      (rcl_service_t *)PyCapsule_GetPointer(pyentity, "rcl_service_t");
-    ret = rcl_wait_set_add_service(wait_set, service, &index);
+    rclpy_service_t * srv =
+      (rclpy_service_t *)PyCapsule_GetPointer(pyentity, "rclpy_service_t");
+    ret = rcl_wait_set_add_service(wait_set, &(srv->service), &index);
   } else if (0 == strcmp(entity_type, "timer")) {
     rcl_timer_t * timer =
       (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
@@ -2891,9 +2840,9 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_service_t * service =
-    (rcl_service_t *)PyCapsule_GetPointer(pyservice, "rcl_service_t");
-  if (!service) {
+  rclpy_service_t * srv =
+    (rclpy_service_t *)PyCapsule_GetPointer(pyservice, "rclpy_service_t");
+  if (!srv) {
     return NULL;
   }
 
@@ -2908,7 +2857,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for request header");
     return NULL;
   }
-  rcl_ret_t ret = rcl_take_request(service, header, taken_request);
+  rcl_ret_t ret = rcl_take_request(&(srv->service), header, taken_request);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
@@ -4645,10 +4594,6 @@ static PyMethodDef rclpy_methods[] = {
     "Trigger a general purpose guard_condition."
   },
 
-  {
-    "rclpy_destroy_node_entity", rclpy_destroy_node_entity, METH_VARARGS,
-    "Destroy a Node entity."
-  },
   {
     "rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
     "Destroy an rclpy entity."

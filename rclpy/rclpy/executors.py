@@ -328,8 +328,8 @@ class Executor:
                 future.set_result(response)
 
     def _take_service(self, srv):
-        request_and_header = _rclpy.rclpy_take_request(
-            srv.service_handle, srv.srv_type.Request)
+        with srv.handle as capsule:
+            request_and_header = _rclpy.rclpy_take_request(capsule, srv.srv_type.Request)
         return request_and_header
 
     async def _execute_service(self, srv, request_and_header):
@@ -491,6 +491,13 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_clients -= 1
 
+                service_capsules = []
+                for srv in services:
+                    try:
+                        service_capsules.append(context_stack.enter_context(srv.handle))
+                    except InvalidHandle:
+                        entity_count.num_services -= 1
+
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     entity_count.num_subscriptions,
@@ -502,7 +509,6 @@ class Executor:
 
                 entities = {
                     'guard_condition': (guards, 'guard_handle'),
-                    'service': (services, 'service_handle'),
                     'timer': (timers, 'timer_handle'),
                 }
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)
@@ -515,6 +521,8 @@ class Executor:
                     _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
                 for cli_capsule in client_capsules:
                     _rclpy.rclpy_wait_set_add_entity('client', wait_set, cli_capsule)
+                for srv_capsule in service_capsules:
+                    _rclpy.rclpy_wait_set_add_entity('service', wait_set, srv_capsule)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 
@@ -588,7 +596,7 @@ class Executor:
                             yield handler, client, node
 
                 for srv in node.services:
-                    if srv.service_pointer in services_ready:
+                    if srv.handle.pointer in services_ready:
                         if srv.callback_group.can_execute(srv):
                             handler = self._make_handler(
                                 srv, node, self._take_service, self._execute_service)

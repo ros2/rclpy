@@ -86,7 +86,7 @@ class ServerWaitable(Waitable):
 
         with node.handle as node_capsule:
             self.server = _rclpy.rclpy_create_service(
-                node_capsule, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())[0]
+                node_capsule, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())
         self.server_index = None
         self.server_is_ready = False
 

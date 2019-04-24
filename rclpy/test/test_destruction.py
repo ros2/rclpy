@@ -199,3 +199,32 @@ def test_destroy_client_asap():
             node.destroy_node()
     finally:
         rclpy.shutdown(context=context)
+
+
+def test_destroy_service_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_service_asap', context=context)
+        try:
+            service = node.create_service(PrimitivesSrv, 'srv_service', lambda req, res: ...)
+
+            # handle valid
+            with service.handle:
+                pass
+
+            with service.handle:
+                node.destroy_service(service)
+                # handle valid because it's still being used
+                with service.handle:
+                    pass
+
+            with pytest.raises(InvalidHandle):
+                # handle invalid because it was destroyed when no one was using it
+                with service.handle:
+                    pass
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)

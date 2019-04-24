@@ -497,9 +497,9 @@ class Node:
         check_for_type_support(srv_type)
         failed = False
         try:
-            with self.handle as capsule:
-                [service_handle, service_pointer] = _rclpy.rclpy_create_service(
-                    capsule,
+            with self.handle as node_capsule:
+                service_capsule = _rclpy.rclpy_create_service(
+                    node_capsule,
                     srv_type,
                     srv_name,
                     qos_profile.get_c_qos_profile())
@@ -507,8 +507,11 @@ class Node:
             failed = True
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
+
+        service_handle = Handle(service_capsule)
+
         service = Service(
-            self.handle, service_handle, service_pointer,
+            self.handle, service_handle,
             srv_type, srv_name, callback, callback_group, qos_profile)
         self.services.append(service)
         callback_group.add_entity(service)
@@ -596,12 +599,10 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for srv in self.services:
-            if srv.service_handle == service.service_handle:
-                with self.handle as capsule:
-                    _rclpy.rclpy_destroy_node_entity(srv.service_handle, capsule)
-                self.services.remove(srv)
-                return True
+        if service in self.services:
+            self.services.remove(service)
+            service.destroy()
+            return True
         return False
 
     def destroy_timer(self, timer: WallTimer) -> bool:
@@ -661,7 +662,7 @@ class Node:
                 cli.destroy()
             while self.services:
                 srv = self.services.pop()
-                _rclpy.rclpy_destroy_node_entity(srv.service_handle, capsule)
+                srv.destroy()
             while self.timers:
                 tmr = self.timers.pop()
                 _rclpy.rclpy_destroy_entity(tmr.timer_handle)
