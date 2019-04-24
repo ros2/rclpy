@@ -1680,6 +1680,7 @@ _rclpy_destroy_subscription(PyObject * pyentity)
     int stack_level = 1;
     PyErr_WarnFormat(
       PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_subscrition failed to get pointer");
+    return;
   }
 
   rcl_ret_t ret = rcl_subscription_fini(&(sub->subscription), sub->node);
