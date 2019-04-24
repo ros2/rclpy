@@ -1278,6 +1278,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   pub->publisher = rcl_get_zero_initialized_publisher();
+  pub->node = node;
 
   rcl_ret_t ret = rcl_publisher_init(&(pub->publisher), node, ts, topic, &publisher_ops);
   if (ret != RCL_RET_OK) {
