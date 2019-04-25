@@ -122,23 +122,38 @@ PyObject *
 _convert_rmw_time_to_py_duration(rmw_time_t * duration)
 {
   uint64_t total_nanoseconds = RCUTILS_S_TO_NS(duration->sec) + duration->nsec;
+  PyObject * pyduration_module = NULL;
+  PyObject * pyduration_class = NULL;
+  PyObject * args = NULL;
+  PyObject * kwargs = NULL;
+  PyObject * pyduration_object = NULL;
 
-  PyObject * pyduration_module = PyImport_ImportModule("rclpy.duration");
+  pyduration_module = PyImport_ImportModule("rclpy.duration");
   if (!pyduration_module) {
-    return NULL;
+    goto cleanup;
   }
-  PyObject * pyduration_class = PyObject_GetAttrString(pyduration_module, "Duration");
-  Py_DECREF(pyduration_module);
+  pyduration_class = PyObject_GetAttrString(pyduration_module, "Duration");
   if (!pyduration_class) {
-    return NULL;
+    goto cleanup;
+  }
+  args = PyTuple_New(0);
+  if (!args) {
+    goto cleanup;
+  }
+  kwargs = Py_BuildValue("{s:i}", "nanoseconds", total_nanoseconds);
+  if (!kwargs) {
+    goto cleanup;
+  }
+  pyduration_object = PyObject_Call(pyduration_class, args, kwargs);
+  if (!pyduration_object) {
+    goto cleanup;
   }
 
-  PyObject * args = PyTuple_New(0);
-  PyObject * kwargs = Py_BuildValue("{s:i}", "nanoseconds", total_nanoseconds);
-  PyObject * pyduration_object = PyObject_Call(pyduration_class, args, kwargs);
-  Py_DECREF(pyduration_class);
-  Py_DECREF(kwargs);
-  Py_DECREF(args);
+cleanup:
+  Py_XDECREF(pyduration_module);
+  Py_XDECREF(pyduration_class);
+  Py_XDECREF(args);
+  Py_XDECREF(kwargs);
   return pyduration_object;
 }
 

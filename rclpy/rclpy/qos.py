@@ -159,7 +159,7 @@ class QoSProfile:
 
     @liveliness.setter
     def liveliness(self, value):
-        assert isinstance(value, QoSLivelinessPolicy) or isinstance(value, int)
+        assert isinstance(value, (QoSLivelinessPolicy, int))
         self._liveliness = QoSLivelinessPolicy(value)
 
     @property
