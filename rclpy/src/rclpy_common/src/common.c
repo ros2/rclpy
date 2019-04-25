@@ -119,7 +119,7 @@ rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
 
 static
 PyObject *
-_convert_rmw_time_to_py_duration(rmw_time_t * duration)
+_convert_rmw_time_to_py_duration(const rmw_time_t * duration)
 {
   uint64_t total_nanoseconds = RCUTILS_S_TO_NS(duration->sec) + duration->nsec;
   PyObject * pyduration_module = NULL;
@@ -140,7 +140,7 @@ _convert_rmw_time_to_py_duration(rmw_time_t * duration)
   if (!args) {
     goto cleanup;
   }
-  kwargs = Py_BuildValue("{s:i}", "nanoseconds", total_nanoseconds);
+  kwargs = Py_BuildValue("{s:l}", "nanoseconds", total_nanoseconds);
   if (!kwargs) {
     goto cleanup;
   }
@@ -158,7 +158,7 @@ cleanup:
 }
 
 PyObject *
-rclpy_convert_to_py_qos_policy(void * profile)
+rclpy_common_convert_to_py_qos_policy(const rmw_qos_profile_t * qos_profile)
 {
   PyObject * pyqos_module = PyImport_ImportModule("rclpy.qos");
   if (!pyqos_module) {
@@ -178,7 +178,6 @@ rclpy_convert_to_py_qos_policy(void * profile)
   }
 
   // start qos setting
-  rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)profile;
   rclpy_qos_profile_t rclpy_qos;
   init_rclpy_qos_profile(&rclpy_qos);
 

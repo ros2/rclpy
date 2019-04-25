@@ -205,6 +205,13 @@ class QoSProfile:
             self.avoid_ros_namespace_conventions,
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, QoSProfile):
+            return False
+        return all(
+            self.__getattribute__(slot) == other.__getattribute__(slot)
+            for slot in self.__slots__)
+
 
 class QoSHistoryPolicy(IntEnum):
     """
