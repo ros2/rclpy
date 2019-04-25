@@ -3556,8 +3556,6 @@ _convert_py_duration_to_rmw_time(PyObject * pyobject, rmw_time_t * out_time)
 {
   rcl_duration_t * duration = (rcl_duration_t *)PyCapsule_GetPointer(pyobject, "rcl_duration_t");
   if (!duration) {
-    PyErr_Format(PyExc_TypeError,
-      "Passed object was not a valid rcl_duration_t.");
     return false;
   }
   *out_time = (rmw_time_t) {
@@ -3655,7 +3653,6 @@ rclpy_convert_to_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   rmw_qos_profile_t * profile = (rmw_qos_profile_t *)PyCapsule_GetPointer(
     pyqos_profile, "rmw_qos_profile_t");
   if (!profile) {
-    PyErr_Format(PyExc_TypeError, "Capsule was not a valid rmw_qos_profile_t.");
     return NULL;
   }
   return rclpy_common_convert_to_py_qos_policy(profile);
