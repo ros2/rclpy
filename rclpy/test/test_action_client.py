@@ -75,6 +75,7 @@ class TestActionClient(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.node.destroy_node()
+        cls.executor.shutdown()
         rclpy.shutdown(context=cls.context)
 
     def setUp(self):
@@ -278,6 +279,7 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(future_2.result().accepted)
         finally:
             ac.destroy()
+            executor.shutdown()
 
     def test_send_goal_async_no_server(self):
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
