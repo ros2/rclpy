@@ -172,10 +172,6 @@ class SubscriptionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)[0]
-        self.guard_condition_index = None
-        self.guard_is_ready = False
-
         with node.handle as node_capsule:
             self.subscription = _rclpy.rclpy_create_subscription(
                 node_capsule, EmptyMsg, 'test_topic', qos_profile_default.get_c_qos_profile())
@@ -220,7 +216,7 @@ class GuardConditionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)[0]
+        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)
         self.guard_condition_index = None
         self.guard_is_ready = False
 

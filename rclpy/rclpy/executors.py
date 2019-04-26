@@ -151,9 +151,8 @@ class Executor:
         self._tasks: List[Tuple[Task, Optional[WaitableEntityType], Optional[Node]]] = []
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
-        gc, gc_handle = _rclpy.rclpy_create_guard_condition(self._context.handle)
-        self._guard_condition = gc
-        self._guard_condition_handle = gc_handle
+        self._guard = GuardCondition(
+            callback=None, callback_group=None, context=self._context)
         # True if shutdown has been called
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
@@ -181,7 +180,7 @@ class Executor:
         task = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
             self._tasks.append((task, None, None))
-            _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+            self._guard.trigger()
         # Task inherits from Future
         return task
 
@@ -198,7 +197,7 @@ class Executor:
             if not self._is_shutdown:
                 self._is_shutdown = True
                 # Tell executor it's been shut down
-                _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+                self._guard.trigger()
 
         if not self._work_tracker.wait(timeout_sec):
             return False
@@ -208,9 +207,9 @@ class Executor:
             self._nodes = set()
 
         with self._shutdown_lock:
-            if self._guard_condition:
-                _rclpy.rclpy_destroy_entity(self._guard_condition)
-                self._guard_condition = None
+            if self._guard:
+                self._guard.destroy()
+                self._guard = None
             if self._sigint_gc:
                 self._sigint_gc.destroy()
                 self._sigint_gc = None
@@ -220,8 +219,6 @@ class Executor:
         return True
 
     def __del__(self):
-        if self._guard_condition is not None:
-            _rclpy.rclpy_destroy_entity(self._guard_condition)
         if self._sigint_gc is not None:
             self._sigint_gc.destroy()
 
@@ -237,7 +234,7 @@ class Executor:
                 self._nodes.add(node)
                 node.executor = self
                 # Rebuild the wait set so it includes this new node
-                _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+                self._guard.trigger()
                 return True
             return False
 
@@ -254,7 +251,7 @@ class Executor:
                 pass
             else:
                 # Rebuild the wait set so it doesn't include this node
-                _rclpy.rclpy_trigger_guard_condition(self._guard_condition)
+                self._guard.trigger()
 
     def get_nodes(self) -> List['Node']:
         """Return nodes that have been added to this executor."""
@@ -374,14 +371,14 @@ class Executor:
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
-                _rclpy.rclpy_trigger_guard_condition(gc)
+                gc.trigger()
                 return
             with work_tracker:
                 arg = take_from_wait_list(entity)
 
                 # Signal that this has been 'taken' and can be added back to the wait list
                 entity._executor_event = False
-                _rclpy.rclpy_trigger_guard_condition(gc)
+                gc.trigger()
 
                 try:
                     await call_coroutine(entity, arg)
@@ -389,9 +386,9 @@ class Executor:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-                    _rclpy.rclpy_trigger_guard_condition(gc)
+                    gc.trigger()
         task = Task(
-            handler, (entity, self._guard_condition, self._is_shutdown, self._work_tracker),
+            handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
         with self._tasks_lock:
             self._tasks.append((task, entity, node))
@@ -469,10 +466,11 @@ class Executor:
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
-            node_entity_count = NumberOfEntities(
+            guards.append(self._guard)
+            guards.append(self._sigint_gc)
+
+            entity_count = NumberOfEntities(
                 len(subscriptions), len(guards), len(timers), len(clients), len(services))
-            executor_entity_count = NumberOfEntities(0, 2, 0, 0, 0)
-            entity_count = node_entity_count + executor_entity_count
             for waitable in waitables:
                 entity_count += waitable.get_num_entities()
 
@@ -506,6 +504,13 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_timers -= 1
 
+                guard_capsules = []
+                for gc in guards:
+                    try:
+                        guard_capsules.append(context_stack.enter_context(gc.handle))
+                    except InvalidHandle:
+                        entity_count.num_guard_conditions -= 1
+
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     entity_count.num_subscriptions,
@@ -515,15 +520,7 @@ class Executor:
                     entity_count.num_services,
                     self._context.handle)
 
-                entities = {
-                    'guard_condition': (guards, 'guard_handle'),
-                }
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)
-                for entity, (handles, handle_name) in entities.items():
-                    for h in handles:
-                        _rclpy.rclpy_wait_set_add_entity(
-                            entity, wait_set, h.__getattribute__(handle_name)
-                        )
                 for sub_capsule in sub_capsules:
                     _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
                 for cli_capsule in client_capsules:
@@ -532,13 +529,10 @@ class Executor:
                     _rclpy.rclpy_wait_set_add_entity('service', wait_set, srv_capsule)
                 for tmr_capsule in timer_capsules:
                     _rclpy.rclpy_wait_set_add_entity('timer', wait_set, tmr_capsule)
+                for gc_capsule in guard_capsules:
+                    _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, gc_capsule)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
-
-                sigint_gc = self._sigint_gc.guard_handle
-                _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, sigint_gc)
-                _rclpy.rclpy_wait_set_add_entity(
-                    'guard_condition', wait_set, self._guard_condition)
 
                 # Wait for something to become ready
                 _rclpy.rclpy_wait(wait_set, timeout_nsec)
@@ -554,7 +548,7 @@ class Executor:
 
                 # Mark all guards as triggered before yielding since they're auto-taken
                 for gc in guards:
-                    if gc.guard_pointer in guards_ready:
+                    if gc.handle.pointer in guards_ready:
                         gc._executor_triggered = True
 
                 # Check waitables before wait set is destroyed

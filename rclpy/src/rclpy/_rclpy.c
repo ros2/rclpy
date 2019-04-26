@@ -130,18 +130,43 @@ rclpy_create_context(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   return PyCapsule_New(context, "rcl_context_t", _rclpy_context_capsule_destructor);
 }
 
+/// PyCapsule destructor for guard condition
+static void
+_rclpy_destroy_guard_condition(PyObject * pyentity)
+{
+  rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(
+    pyentity, "rcl_guard_condition_t");
+  if (!gc) {
+    // Don't want to raise an exception, who knows where it will get raised.
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_guard_condition failed to get pointer");
+    return;
+  }
+
+  rcl_ret_t ret = rcl_guard_condition_fini(gc);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini guard condition: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(gc);
+}
+
 /// Create a general purpose guard condition
 /**
- * A successful call will return a list with two elements:
- *
- * - a Capsule with the pointer of the created rcl_guard_condition_t * structure
- * - an integer representing the memory address of the rcl_guard_condition_t
+ * A successful call will return a Capsule with the pointer of the created
+ * rcl_guard_condition_t * structure
  *
  * Raises RuntimeError if initializing the guard condition fails
  *
  * \remark Call rclpy_destroy_entity() to destroy a guard condition
  * \sa rclpy_destroy_entity()
- * \return a list with the capsule and memory location, or
+ * \return a capsule, or
  * \return NULL on failure
  */
 static PyObject *
@@ -176,33 +201,13 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pylist = PyList_New(2);
-  if (!pylist) {
-    ret = rcl_guard_condition_fini(gc);
-    PyMem_Free(gc);
-    return NULL;
-  }
-
-  PyObject * pygc = PyCapsule_New(gc, "rcl_guard_condition_t", NULL);
+  PyObject * pygc = PyCapsule_New(gc, "rcl_guard_condition_t", _rclpy_destroy_guard_condition);
   if (!pygc) {
     ret = rcl_guard_condition_fini(gc);
     PyMem_Free(gc);
-    Py_DECREF(pylist);
     return NULL;
   }
-
-  PyObject * pygc_reference = PyLong_FromVoidPtr(gc);
-  if (!pygc_reference) {
-    ret = rcl_guard_condition_fini(gc);
-    PyMem_Free(gc);
-    Py_DECREF(pylist);
-    Py_DECREF(pygc);
-    return NULL;
-  }
-
-  PyList_SET_ITEM(pylist, 0, pygc);
-  PyList_SET_ITEM(pylist, 1, pygc_reference);
-  return pylist;
+  return pygc;
 }
 
 /// Trigger a general purpose guard condition
@@ -2302,11 +2307,6 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     PyCapsule_SetDestructor(pyentity, NULL);
     _rclpy_destroy_clock(pyentity);
     ret = RCL_RET_OK;
-  } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
-    rcl_guard_condition_t * guard_condition = (rcl_guard_condition_t *)PyCapsule_GetPointer(
-      pyentity, "rcl_guard_condition_t");
-    ret = rcl_guard_condition_fini(guard_condition);
-    PyMem_Free(guard_condition);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", PyCapsule_GetName(pyentity));

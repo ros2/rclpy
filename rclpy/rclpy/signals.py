@@ -12,25 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.guard_condition import GuardCondition
+from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_signal_handler_implementation as _signals
-from rclpy.utilities import get_default_context
 
 
-class SignalHandlerGuardCondition:
+class SignalHandlerGuardCondition(GuardCondition):
 
     def __init__(self, context=None):
-        if context is None:
-            context = get_default_context()
-        self.guard_handle, _ = _rclpy.rclpy_create_guard_condition(context.handle)
-        _signals.rclpy_register_sigint_guard_condition(self.guard_handle)
+        super().__init__(callback=None, callback_group=None, context=context)
+        with self.handle as capsule:
+            _signals.rclpy_register_sigint_guard_condition(capsule)
 
     def __del__(self):
-        self.destroy()
+        try:
+            self.destroy()
+        except InvalidHandle:
+            # already destroyed
+            pass
 
     def destroy(self):
-        if self.guard_handle is None:
-            return
-        _signals.rclpy_unregister_sigint_guard_condition(self.guard_handle)
-        _rclpy.rclpy_destroy_entity(self.guard_handle)
-        self.guard_handle = None
+        with self.handle as capsule:
+            _signals.rclpy_unregister_sigint_guard_condition(capsule)
+        super().destroy()

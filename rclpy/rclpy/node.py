@@ -625,11 +625,10 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for gc in self.guards:
-            if gc.guard_handle == guard.guard_handle:
-                _rclpy.rclpy_destroy_entity(gc.guard_handle)
-                self.guards.remove(gc)
-                return True
+        if guard in self.guards:
+            self.guards.remove(guard)
+            guard.destroy()
+            return True
         return False
 
     def destroy_node(self) -> bool:
@@ -650,26 +649,25 @@ class Node:
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
 
-        with self.handle as capsule:
 
-            while self.publishers:
-                pub = self.publishers.pop()
-                pub.destroy()
-            self.subscriptions = ()
-            while self.clients:
-                cli = self.clients.pop()
-                cli.destroy()
-            while self.services:
-                srv = self.services.pop()
-                srv.destroy()
-            while self.timers:
-                tmr = self.timers.pop()
-                tmr.destroy()
-                # TODO(sloretz) Store clocks on node and destroy them separately
-                _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
-            while self.guards:
-                gc = self.guards.pop()
-                _rclpy.rclpy_destroy_entity(gc.guard_handle)
+        while self.publishers:
+            pub = self.publishers.pop()
+            pub.destroy()
+        self.subscriptions = ()
+        while self.clients:
+            cli = self.clients.pop()
+            cli.destroy()
+        while self.services:
+            srv = self.services.pop()
+            srv.destroy()
+        while self.timers:
+            tmr = self.timers.pop()
+            tmr.destroy()
+            # TODO(sloretz) Store clocks on node and destroy them separately
+            _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
+        while self.guards:
+            gc = self.guards.pop()
+            gc.destroy()
 
         self.handle.destroy()
 
