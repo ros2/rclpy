@@ -167,8 +167,8 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pygc_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&gc->impl);
-  if (!pygc_impl_reference) {
+  PyObject * pygc_reference = PyLong_FromVoidPtr(gc);
+  if (!pygc_reference) {
     ret = rcl_guard_condition_fini(gc);
     PyMem_Free(gc);
     Py_DECREF(pylist);
@@ -177,7 +177,7 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyList_SET_ITEM(pylist, 0, pygc);
-  PyList_SET_ITEM(pylist, 1, pygc_impl_reference);
+  PyList_SET_ITEM(pylist, 1, pygc_reference);
   return pylist;
 }
 
@@ -2624,7 +2624,7 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
   const rcl_ ## ENTITY_TYPE ## _t ** struct_ptr = wait_set->ENTITY_TYPE ## s; \
   for (idx = 0; idx < idx_max; idx ++) { \
     if (struct_ptr[idx]) { \
-      PyObject * obj = PyLong_FromUnsignedLongLong((uint64_t) & struct_ptr[idx]->impl); \
+      PyObject * obj = PyLong_FromVoidPtr((void *) struct_ptr[idx]); \
       if (obj) { \
         int rc = PyList_Append(entity_ready_list, obj); \
         Py_DECREF(obj); \
