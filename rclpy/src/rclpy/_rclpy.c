@@ -167,8 +167,8 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pygc_impl_reference = PyLong_FromVoidPtr(gc);
-  if (!pygc_impl_reference) {
+  PyObject * pygc_reference = PyLong_FromVoidPtr(gc);
+  if (!pygc_reference) {
     ret = rcl_guard_condition_fini(gc);
     PyMem_Free(gc);
     Py_DECREF(pylist);
@@ -177,7 +177,7 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyList_SET_ITEM(pylist, 0, pygc);
-  PyList_SET_ITEM(pylist, 1, pygc_impl_reference);
+  PyList_SET_ITEM(pylist, 1, pygc_reference);
   return pylist;
 }
 
