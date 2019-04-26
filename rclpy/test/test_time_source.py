@@ -37,7 +37,9 @@ class TestTimeSource(unittest.TestCase):
     def setUp(self):
         self.context = rclpy.context.Context()
         rclpy.init(context=self.context)
-        self.node = rclpy.create_node('TestTimeSource', namespace='/rclpy', context=self.context)
+        self.node = rclpy.create_node(
+            'TestTimeSource', namespace='/rclpy', context=self.context,
+            allow_undeclared_parameters=True)
 
     def tearDown(self):
         self.node.destroy_node()

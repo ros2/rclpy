@@ -62,19 +62,19 @@ class ParameterService:
 
     def _describe_parameters_callback(self, request, response):
         for name in request.names:
-            p = self._node.get_parameter(name)
-            response.descriptors.append(p.get_descriptor())
+            p = self._node.get_parameter_or(name)
+            response.descriptors.append(p.descriptor)
         return response
 
     def _get_parameters_callback(self, request, response):
         for name in request.names:
-            p = self._node.get_parameter(name)
+            p = self._node.get_parameter_or(name)
             response.values.append(p.get_parameter_value())
         return response
 
     def _get_parameter_types_callback(self, request, response):
         for name in request.names:
-            response.types.append(self._node.get_parameter(name).get_parameter_type())
+            response.types.append(self._node.get_parameter_or(name).type_)
         return response
 
     def _list_parameters_callback(self, request, response):

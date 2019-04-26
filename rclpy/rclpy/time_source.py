@@ -69,7 +69,7 @@ class TimeSource:
             self.detach_node()
         self._node = node
 
-        use_sim_time_param = node.get_parameter('use_sim_time')
+        use_sim_time_param = node.get_parameter_or('use_sim_time')
         if use_sim_time_param.type_ != Parameter.Type.NOT_SET:
             if use_sim_time_param.type_ == Parameter.Type.BOOL:
                 self.ros_time_is_active = use_sim_time_param.value
