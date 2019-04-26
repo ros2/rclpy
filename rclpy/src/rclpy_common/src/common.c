@@ -140,7 +140,7 @@ _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
   if (!args) {
     goto cleanup;
   }
-  kwargs = Py_BuildValue("{s:l}", "nanoseconds", total_nanoseconds);
+  kwargs = Py_BuildValue("{sK}", "nanoseconds", total_nanoseconds);
   if (!kwargs) {
     goto cleanup;
   }
