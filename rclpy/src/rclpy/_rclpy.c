@@ -1349,12 +1349,37 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// PyCapsule destructor for timer
+static void
+_rclpy_destroy_timer(PyObject * pyentity)
+{
+  rcl_timer_t * tmr = (rcl_timer_t *)PyCapsule_GetPointer(
+    pyentity, "rcl_timer_t");
+  if (!tmr) {
+    // Don't want to raise an exception, who knows where it will get raised.
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_timer failed to get pointer");
+    return;
+  }
+
+  rcl_ret_t ret = rcl_timer_fini(tmr);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini timer: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(tmr);
+}
+
 /// Create a timer
 /**
- * When successful a list with two elements is returned:
- *
- * - a Capsule pointing to the pointer of the created rcl_timer_t * structure
- * - an integer representing the memory address of the created rcl_timer_t
+ * When successful a Capsule pointing to the pointer of the created rcl_timer_t * structure
+ * is returned
  *
  * On failure, an exception is raised and NULL is returned if:
  *
@@ -1365,7 +1390,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
  * \param[in] clock pycapsule containing an rcl_clock_t
  * \param[in] period_nsec unsigned PyLong object storing the period of the
  *   timer in nanoseconds in a 64-bit unsigned integer
- * \return a list of the capsule and the memory address
+ * \return a capsule
  * \return NULL on failure
  */
 static PyObject *
@@ -1406,34 +1431,14 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pylist = PyList_New(2);
-  if (!pylist) {
-    ret = rcl_timer_fini(timer);
-    (void)ret;
-    PyMem_Free(timer);
-    return NULL;
-  }
-  PyObject * pytimer = PyCapsule_New(timer, "rcl_timer_t", NULL);
+  PyObject * pytimer = PyCapsule_New(timer, "rcl_timer_t", _rclpy_destroy_timer);
   if (!pytimer) {
     ret = rcl_timer_fini(timer);
     (void)ret;
     PyMem_Free(timer);
-    Py_DECREF(pylist);
     return NULL;
   }
-  PyObject * pytimer_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&timer->impl);
-  if (!pytimer_impl_reference) {
-    ret = rcl_timer_fini(timer);
-    (void)ret;
-    PyMem_Free(timer);
-    Py_DECREF(pylist);
-    Py_DECREF(pytimer);
-    return NULL;
-  }
-  PyList_SET_ITEM(pylist, 0, pytimer);
-  PyList_SET_ITEM(pylist, 1, pytimer_impl_reference);
-
-  return pylist;
+  return pytimer;
 }
 
 /// Returns the period of the timer in nanoseconds
@@ -2293,11 +2298,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret;
-  if (PyCapsule_IsValid(pyentity, "rcl_timer_t")) {
-    rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
-    ret = rcl_timer_fini(timer);
-    PyMem_Free(timer);
-  } else if (PyCapsule_IsValid(pyentity, "rcl_clock_t")) {
+  if (PyCapsule_IsValid(pyentity, "rcl_clock_t")) {
     PyCapsule_SetDestructor(pyentity, NULL);
     _rclpy_destroy_clock(pyentity);
     ret = RCL_RET_OK;

@@ -611,13 +611,12 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for tmr in self.timers:
-            if tmr.timer_handle == timer.timer_handle:
-                _rclpy.rclpy_destroy_entity(tmr.timer_handle)
-                # TODO(sloretz) Store clocks on node and destroy them separately
-                _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
-                self.timers.remove(tmr)
-                return True
+        if timer in self.timers:
+            self.timers.remove(timer)
+            timer.destroy()
+            # TODO(sloretz) Store clocks on node and destroy them separately
+            _rclpy.rclpy_destroy_entity(timer.clock._clock_handle)
+            return True
         return False
 
     def destroy_guard_condition(self, guard: GuardCondition) -> bool:
@@ -665,7 +664,7 @@ class Node:
                 srv.destroy()
             while self.timers:
                 tmr = self.timers.pop()
-                _rclpy.rclpy_destroy_entity(tmr.timer_handle)
+                tmr.destroy()
                 # TODO(sloretz) Store clocks on node and destroy them separately
                 _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
             while self.guards:

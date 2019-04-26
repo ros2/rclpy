@@ -228,3 +228,32 @@ def test_destroy_service_asap():
             node.destroy_node()
     finally:
         rclpy.shutdown(context=context)
+
+
+def test_destroy_timer_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_timer_asap', context=context)
+        try:
+            timer = node.create_timer(1.0, lambda: ...)
+
+            # handle valid
+            with timer.handle:
+                pass
+
+            with timer.handle:
+                node.destroy_timer(timer)
+                # handle valid because it's still being used
+                with timer.handle:
+                    pass
+
+            with pytest.raises(InvalidHandle):
+                # handle invalid because it was destroyed when no one was using it
+                with timer.handle:
+                    pass
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)

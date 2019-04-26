@@ -297,7 +297,8 @@ class Executor:
         raise NotImplementedError
 
     def _take_timer(self, tmr):
-        _rclpy.rclpy_call_timer(tmr.timer_handle)
+        with tmr.handle as capsule:
+            _rclpy.rclpy_call_timer(capsule)
 
     async def _execute_timer(self, tmr, _):
         await await_or_execute(tmr.callback)
@@ -498,6 +499,13 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_services -= 1
 
+                timer_capsules = []
+                for tmr in timers:
+                    try:
+                        timer_capsules.append(context_stack.enter_context(tmr.handle))
+                    except InvalidHandle:
+                        entity_count.num_timers -= 1
+
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     entity_count.num_subscriptions,
@@ -509,7 +517,6 @@ class Executor:
 
                 entities = {
                     'guard_condition': (guards, 'guard_handle'),
-                    'timer': (timers, 'timer_handle'),
                 }
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)
                 for entity, (handles, handle_name) in entities.items():
@@ -523,6 +530,8 @@ class Executor:
                     _rclpy.rclpy_wait_set_add_entity('client', wait_set, cli_capsule)
                 for srv_capsule in service_capsules:
                     _rclpy.rclpy_wait_set_add_entity('service', wait_set, srv_capsule)
+                for tmr_capsule in timer_capsules:
+                    _rclpy.rclpy_wait_set_add_entity('timer', wait_set, tmr_capsule)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 
@@ -561,14 +570,15 @@ class Executor:
             # Process ready entities one node at a time
             for node in nodes_to_use:
                 for tmr in node.timers:
-                    if tmr.timer_pointer in timers_ready:
-                        # Check that a timer is ready to workaround rcl issue with cancelled timers
-                        if _rclpy.rclpy_is_timer_ready(tmr.timer_handle):
-                            if tmr.callback_group.can_execute(tmr):
-                                handler = self._make_handler(
-                                    tmr, node, self._take_timer, self._execute_timer)
-                                yielded_work = True
-                                yield handler, tmr, node
+                    if tmr.handle.pointer in timers_ready:
+                        with tmr.handle as capsule:
+                            # Check timer is ready to workaround rcl issue with cancelled timers
+                            if _rclpy.rclpy_is_timer_ready(capsule):
+                                if tmr.callback_group.can_execute(tmr):
+                                    handler = self._make_handler(
+                                        tmr, node, self._take_timer, self._execute_timer)
+                                    yielded_work = True
+                                    yield handler, tmr, node
 
                 for sub in node.subscriptions:
                     if sub.handle.pointer in subs_ready:
@@ -606,7 +616,7 @@ class Executor:
             # Check timeout timer
             if (
                 timeout_nsec == 0 or
-                (timeout_timer is not None and timeout_timer.timer_pointer in timers_ready)
+                (timeout_timer is not None and timeout_timer.handle.pointer in timers_ready)
             ):
                 raise TimeoutException()
 
