@@ -119,7 +119,7 @@ rclpy_action_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pyqos_profile = NULL;
   if (0 == strcmp(rmw_profile, "rcl_action_qos_profile_status_default")) {
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rcl_action_qos_profile_status_default);
+    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rcl_action_qos_profile_status_default);
   } else {
     return PyErr_Format(PyExc_RuntimeError,
              "Requested unknown rmw_qos_profile: '%s'", rmw_profile);

@@ -3446,6 +3446,26 @@ cleanup:
   return pyservice_names_and_types;
 }
 
+/// Fill a given rmw_time_t with python Duration info, if possible.
+/**
+  * \param[in] pyobject Python Object that should be a Duration, error checking is done
+  * \param[out] out_time Valid destination for time data
+  * \return Whether or not conversion succeeded.
+  */
+bool
+_convert_py_duration_to_rmw_time(PyObject * pyobject, rmw_time_t * out_time)
+{
+  rcl_duration_t * duration = (rcl_duration_t *)PyCapsule_GetPointer(pyobject, "rcl_duration_t");
+  if (!duration) {
+    return false;
+  }
+  *out_time = (rmw_time_t) {
+    RCL_NS_TO_S(duration->nanoseconds),
+    duration->nanoseconds % (1000LL * 1000LL * 1000LL)
+  };
+  return true;
+}
+
 /// Return a Python QoSProfile object
 /**
  * This function creates a QoSProfile object from the QoS Policies provided
@@ -3463,20 +3483,29 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG pyqos_depth;
   unsigned PY_LONG_LONG pyqos_reliability;
   unsigned PY_LONG_LONG pyqos_durability;
+  PyObject * pyqos_lifespan;
+  PyObject * pyqos_deadline;
+  unsigned PY_LONG_LONG pyqos_liveliness;
+  PyObject * pyqos_liveliness_lease_duration;
   int avoid_ros_namespace_conventions;
 
   if (!PyArg_ParseTuple(
-      args, "KKKKp",
+      args, "KKKKOOKOp",
       &pyqos_history,
       &pyqos_depth,
       &pyqos_reliability,
       &pyqos_durability,
+      &pyqos_lifespan,
+      &pyqos_deadline,
+      &pyqos_liveliness,
+      &pyqos_liveliness_lease_duration,
       &avoid_ros_namespace_conventions))
   {
     return NULL;
   }
 
   rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)PyMem_Malloc(sizeof(rmw_qos_profile_t));
+
   if (!qos_profile) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for QoS profile");
     return NULL;
@@ -3488,9 +3517,46 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   qos_profile->depth = pyqos_depth;
   qos_profile->reliability = pyqos_reliability;
   qos_profile->durability = pyqos_durability;
+
+  if (!_convert_py_duration_to_rmw_time(pyqos_lifespan, &qos_profile->lifespan)) {
+    return NULL;
+  }
+  if (!_convert_py_duration_to_rmw_time(pyqos_deadline, &qos_profile->deadline)) {
+    return NULL;
+  }
+
+  qos_profile->liveliness = pyqos_liveliness;
+  if (!_convert_py_duration_to_rmw_time(pyqos_liveliness_lease_duration,
+    &qos_profile->liveliness_lease_duration))
+  {
+    return NULL;
+  }
+
   qos_profile->avoid_ros_namespace_conventions = avoid_ros_namespace_conventions;
   PyObject * pyqos_profile = PyCapsule_New(qos_profile, "rmw_qos_profile_t", NULL);
   return pyqos_profile;
+}
+
+/// Convert a C rmw_qos_profile_t Capsule to a Python QoSProfile object.
+/**
+  * This function is exposed to facilitate testing profile type conversion.
+  * \param[in] pyqos_profile Capsule of rmw_qos_profile_t from rclpy_convert_from_py_qos_policy
+  * \return QoSProfile object
+  */
+static PyObject *
+rclpy_convert_to_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pyqos_profile = NULL;
+  if (!PyArg_ParseTuple(args, "O", &pyqos_profile)) {
+    return NULL;
+  }
+
+  rmw_qos_profile_t * profile = (rmw_qos_profile_t *)PyCapsule_GetPointer(
+    pyqos_profile, "rmw_qos_profile_t");
+  if (!profile) {
+    return NULL;
+  }
+  return rclpy_common_convert_to_py_qos_policy(profile);
 }
 
 /// Fetch a predefined qos_profile from rmw and convert it to a Python QoSProfile Object
@@ -3513,19 +3579,19 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   }
   PyObject * pyqos_profile = NULL;
   if (0 == strcmp(pyrmw_profile, "qos_profile_sensor_data")) {
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_sensor_data);
+    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_sensor_data);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_default")) {
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_default);
+    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_system_default")) {
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_system_default);
+    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_system_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_services_default")) {
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_services_default);
+    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_services_default);
     // NOTE(mikaelarguedas) all conditions following this one are defined but not used
     // because parameters are not implemented in Python yet
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameters")) {
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_parameters);
+    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_parameters);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {
-    pyqos_profile = rclpy_convert_to_py_qos_policy((void *)&rmw_qos_profile_parameter_events);
+    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_parameter_events);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "Requested unknown rmw_qos_profile: '%s'", pyrmw_profile);
@@ -4715,7 +4781,10 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
     "Convert a QoSPolicy Python object into a rmw_qos_profile_t."
   },
-
+  {
+    "rclpy_convert_to_py_qos_policy", rclpy_convert_to_py_qos_policy, METH_VARARGS,
+    "Convert a rmw_qos_profile_t into a QoSPolicy Python object."
+  },
   {
     "rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
     "Get QOS profile."
