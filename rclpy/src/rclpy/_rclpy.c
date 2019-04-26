@@ -167,7 +167,7 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pygc_impl_reference = PyLong_FromUnsignedLongLong((uint64_t)&gc->impl);
+  PyObject * pygc_impl_reference = PyLong_FromVoidPtr(gc);
   if (!pygc_impl_reference) {
     ret = rcl_guard_condition_fini(gc);
     PyMem_Free(gc);
