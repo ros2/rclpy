@@ -165,7 +165,7 @@ rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
 
   RCUTILS_LOGGING_AUTOINIT
   rcutils_log_location_t logging_location = {function_name, file_name, line_number};
-  rcutils_log(&logging_location, severity, name, message);
+  rcutils_log(&logging_location, severity, name, "%s", message);
   Py_RETURN_NONE;
 }
 
