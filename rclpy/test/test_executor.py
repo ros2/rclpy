@@ -345,12 +345,14 @@ class TestExecutor(unittest.TestCase):
         start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=0.1)
         end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
+        # Nothing is ever setting the future, so this should have waited
+        # at least 0.1 seconds.
+        self.assertGreaterEqual(end - start, 0.1)
         self.assertFalse(future.done())
 
         timer.cancel()
 
-    def test_excutor_spin_until_future_complete_future_done(self):
+    def test_executor_spin_until_future_complete_future_done(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -360,7 +362,6 @@ class TestExecutor(unittest.TestCase):
         timer = self.node.create_timer(0.003, timer_callback)
 
         def set_future_result(future):
-            time.sleep(0.1)
             future.set_result('finished')
 
         # Future complete timeout_sec > 0
@@ -368,10 +369,7 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(future.done())
         t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
-        start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=0.2)
-        end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
@@ -380,10 +378,7 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(future.done())
         t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
-        start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=None)
-        end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
@@ -392,16 +387,13 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(future.done())
         t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
-        start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=-1)
-        end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.1, delta=0.01)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
         timer.cancel()
 
-    def test_excutor_spin_until_future_complete_do_not_wait(self):
+    def test_executor_spin_until_future_complete_do_not_wait(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -413,10 +405,7 @@ class TestExecutor(unittest.TestCase):
         # Do not wait timeout_sec = 0
         future = Future()
         self.assertFalse(future.done())
-        start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=0)
-        end = time.monotonic()
-        self.assertAlmostEqual(end - start, 0.0, delta=0.01)
         self.assertFalse(future.done())
 
         timer.cancel()
