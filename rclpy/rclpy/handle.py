@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import Lock
+from contextlib import ExitStack
+from threading import RLock
+import weakref
 
 from rclpy.impl.implementation_singleton import rclpy_pycapsule_implementation as _rclpy_capsule
 
@@ -44,7 +46,10 @@ class Handle:
         self.__use_count = 0
         self.__request_invalidation = False
         self.__valid = True
-        self.__lock = Lock()
+        self.__lock = RLock()
+        self.__required_handles = []
+        self.__dependent_handles = weakref.WeakSet()
+        self.__destroy_callbacks = []
         # Called to give an opportunity to raise an exception if the object is not a pycapsule.
         self.__capsule_name = _rclpy_capsule.rclpy_pycapsule_name(pycapsule)
         self.__capsule_pointer = _rclpy_capsule.rclpy_pycapsule_pointer(pycapsule)
@@ -75,14 +80,39 @@ class Handle:
         """
         return self.__capsule_pointer
 
-    def destroy(self):
-        """Destroy pycapsule as soon as possible without waiting for garbage collection."""
+    def destroy(self, then=None):
+        """
+        Destroy pycapsule as soon as possible without waiting for garbage collection.
+
+        :param then: callback to call after handle has been destroyed.
+        """
         with self.__lock:
             if not self.__valid:
                 raise InvalidHandle('Asked to destroy handle, but it was already destroyed')
+            if then:
+                self.__destroy_callbacks.append(then)
             self.__request_invalidation = True
             if 0 == self.__use_count:
-                self.__destroy()  # calls pycapsule destructor
+                self.__destroy()
+
+    def requires(self, req_handle):
+        """
+        Indicate that this handle requires another handle to out live it.
+
+        Calling :meth:`destroy` on the passed in handle will cause this handle to be
+        destroyed first.
+        This handle will hold a reference to the passed in handle so that this one is garbage
+        collected before the passed in handle if :meth:`destroy` is not called.
+        """
+        assert isinstance(req_handle, Handle)
+        with self.__lock, req_handle.__lock:
+            if self.__valid:
+                if req_handle.__valid:
+                    self.__required_handles.append(req_handle)
+                    req_handle.__dependent_handles.add(self)
+                else:
+                    # required handle destroyed before we could link to it, destroy self
+                    self.destroy()
 
     def _get_capsule(self):
         """
@@ -108,7 +138,7 @@ class Handle:
             assert self.__use_count > 0
             self.__use_count -= 1
             if 0 == self.__use_count and self.__request_invalidation:
-                self.__destroy()  # calls pycapsule destructor
+                self.__destroy()
 
     def __enter__(self):
         return self._get_capsule()
@@ -117,13 +147,49 @@ class Handle:
         self._return_capsule()
 
     def __destroy(self):
-        # Assume lock is held
-        assert not self.__lock.acquire(blocking=False)
-        # Assume capsule has not been destroyed
-        assert self.__valid
         # Assume no one is using the capsule anymore
         assert self.__use_count == 0
         # Assume someone has asked it to be destroyed
         assert self.__request_invalidation
-        _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+        # mark as invalid so no one else tries to use it
         self.__valid = False
+        self.__destroy_dependents(then=self.__destroy_self)
+
+    def __destroy_dependents(self, then):
+        # assumes self.__lock is held
+        deps_to_destroy = 0
+        deps_lock = RLock()
+
+        def watcher(handle):
+            nonlocal self
+            nonlocal deps_to_destroy
+            nonlocal deps_lock
+            nonlocal then
+            with deps_lock:
+                deps_to_destroy -= 1
+                if 0 == deps_to_destroy:
+                    # all dependents destroyed, do what comes next
+                    with self.__lock:
+                        then()
+
+        # Grab depenent handles to prevent them from being destroyed
+        # This prevents first handle from destroying self before other dependents are counted
+        with ExitStack() as context_stack:
+            for dep in self.__dependent_handles:
+                try:
+                    context_stack.enter_context(dep)
+                    deps_to_destroy += 1
+                    dep.destroy(then=watcher)
+                except InvalidHandle:
+                    # Dependent was already destroyed
+                    deps_to_destroy -= 1
+            if 0 == deps_to_destroy:
+                # No dependents to wait on, do what comes next
+                then()
+
+    def __destroy_self(self):
+        # Calls pycapsule destructor
+        _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+        for cb in self.__destroy_callbacks:
+            cb(self)
+        self.__destroy_callbacks = []

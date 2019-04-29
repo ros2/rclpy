@@ -247,18 +247,19 @@ class ActionServer(Waitable):
         check_for_type_support(action_type)
         self._node = node
         self._action_type = action_type
-        self._handle = _rclpy_action.rclpy_action_create_server(
-            node.handle,
-            node.get_clock().handle,
-            action_type,
-            action_name,
-            goal_service_qos_profile.get_c_qos_profile(),
-            result_service_qos_profile.get_c_qos_profile(),
-            cancel_service_qos_profile.get_c_qos_profile(),
-            feedback_pub_qos_profile.get_c_qos_profile(),
-            status_pub_qos_profile.get_c_qos_profile(),
-            result_timeout,
-        )
+        with node.handle as node_capsule:
+            self._handle = _rclpy_action.rclpy_action_create_server(
+                node_capsule,
+                node.get_clock().handle,
+                action_type,
+                action_name,
+                goal_service_qos_profile.get_c_qos_profile(),
+                result_service_qos_profile.get_c_qos_profile(),
+                cancel_service_qos_profile.get_c_qos_profile(),
+                feedback_pub_qos_profile.get_c_qos_profile(),
+                status_pub_qos_profile.get_c_qos_profile(),
+                result_timeout,
+            )
 
         # key: UUID in bytes, value: GoalHandle
         self._goal_handles = {}
@@ -600,13 +601,14 @@ class ActionServer(Waitable):
 
     def destroy(self):
         """Destroy the underlying action server handle."""
-        if self._handle is None or self._node.handle is None:
+        if self._handle is None:
             return
 
         for goal_handle in self._goal_handles.values():
             goal_handle.destroy()
 
-        _rclpy_action.rclpy_action_destroy_entity(self._handle, self._node.handle)
+        with self._node.handle as node_capsule:
+            _rclpy_action.rclpy_action_destroy_entity(self._handle, node_capsule)
         self._node.remove_waitable(self)
         self._handle = None
 

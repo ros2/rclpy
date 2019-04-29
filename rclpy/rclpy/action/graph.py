@@ -32,8 +32,9 @@ def get_action_client_names_and_types_by_node(
     :param node_namespace: Namespace of the remote node.
     :return: List of tuples containing two strings: the action name and action type.
     """
-    return _rclpy_action.rclpy_action_get_client_names_and_types_by_node(
-        node.handle, remote_node_name, remote_node_namespace)
+    with node.handle as node_capsule:
+        return _rclpy_action.rclpy_action_get_client_names_and_types_by_node(
+            node_capsule, remote_node_name, remote_node_namespace)
 
 
 def get_action_server_names_and_types_by_node(
@@ -49,8 +50,9 @@ def get_action_server_names_and_types_by_node(
     :param node_namespace: Namespace of the remote node.
     :return: List of tuples containing two strings: the action name and action type.
     """
-    return _rclpy_action.rclpy_action_get_server_names_and_types_by_node(
-        node.handle, remote_node_name, remote_node_namespace)
+    with node.handle as node_capsule:
+        return _rclpy_action.rclpy_action_get_server_names_and_types_by_node(
+            node_capsule, remote_node_name, remote_node_namespace)
 
 
 def get_action_names_and_types(node: Node) -> List[Tuple[str, str]]:
@@ -61,4 +63,5 @@ def get_action_names_and_types(node: Node) -> List[Tuple[str, str]]:
     :return: List of action names and types in the ROS graph as tuples containing two
        strings: the action name and action type.
     """
-    return _rclpy_action.rclpy_action_get_names_and_types(node.handle)
+    with node.handle as node_capsule:
+        return _rclpy_action.rclpy_action_get_names_and_types(node_capsule)

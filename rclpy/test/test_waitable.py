@@ -41,8 +41,9 @@ class ClientWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.client = _rclpy.rclpy_create_client(
-            node.handle, EmptySrv, 'test_client', qos_profile_default.get_c_qos_profile())[0]
+        with node.handle as node_capsule:
+            self.client = _rclpy.rclpy_create_client(
+                node_capsule, EmptySrv, 'test_client', qos_profile_default.get_c_qos_profile())[0]
         self.client_index = None
         self.client_is_ready = False
 
@@ -83,8 +84,9 @@ class ServerWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.server = _rclpy.rclpy_create_service(
-            node.handle, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())[0]
+        with node.handle as node_capsule:
+            self.server = _rclpy.rclpy_create_service(
+                node_capsule, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())[0]
         self.server_index = None
         self.server_is_ready = False
 
@@ -175,8 +177,9 @@ class SubscriptionWaitable(Waitable):
         self.guard_condition_index = None
         self.guard_is_ready = False
 
-        self.subscription = _rclpy.rclpy_create_subscription(
-            node.handle, EmptyMsg, 'test_topic', qos_profile_default.get_c_qos_profile())
+        with node.handle as node_capsule:
+            self.subscription = _rclpy.rclpy_create_subscription(
+                node_capsule, EmptyMsg, 'test_topic', qos_profile_default.get_c_qos_profile())
         self.subscription_index = None
         self.subscription_is_ready = False
 
@@ -311,8 +314,9 @@ class TestWaitable(unittest.TestCase):
 
         server = self.node.create_service(EmptySrv, 'test_client', lambda req, resp: resp)
 
-        while not _rclpy.rclpy_service_server_is_available(self.node.handle, self.waitable.client):
-            time.sleep(0.1)
+        with self.node.handle as node_capsule:
+            while not _rclpy.rclpy_service_server_is_available(node_capsule, self.waitable.client):
+                time.sleep(0.1)
 
         thr = self.start_spin_thread(self.waitable)
         _rclpy.rclpy_send_request(self.waitable.client, EmptySrv.Request())
