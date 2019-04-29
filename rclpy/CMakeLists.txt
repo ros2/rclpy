@@ -190,6 +190,7 @@ if(BUILD_TESTING)
     test/test_executor.py
     test/test_expand_topic_name.py
     test/test_guard_condition.py
+    test/test_handle.py
     test/test_init_shutdown.py
     test/test_logging.py
     test/test_messages.py
