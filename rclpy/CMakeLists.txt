@@ -176,12 +176,49 @@ if(BUILD_TESTING)
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
   if(NOT _typesupport_impls STREQUAL "")
-    ament_add_pytest_test(rclpytests test
+
+  # Run each test in its own pytest invocation to isolate any global state in rclpy
+  set(_rclpy_pytest_tests
+    test/test_action_client.py
+    test/test_action_graph.py
+    test/test_action_server.py
+    test/test_callback_group.py
+    test/test_client.py
+    test/test_clock.py
+    test/test_create_node.py
+    test/test_destruction.py
+    test/test_executor.py
+    test/test_expand_topic_name.py
+    test/test_guard_condition.py
+    test/test_init_shutdown.py
+    test/test_logging.py
+    test/test_messages.py
+    test/test_node.py
+    test/test_parameter.py
+    test/test_parameters_callback.py
+    test/test_qos.py
+    test/test_task.py
+    test/test_time_source.py
+    test/test_time.py
+    test/test_timer.py
+    test/test_topic_or_service_is_hidden.py
+    test/test_utilities.py
+    test/test_validate_full_topic_name.py
+    test/test_validate_namespace.py
+    test/test_validate_node_name.py
+    test/test_validate_topic_name.py
+    test/test_waitable.py
+  )
+
+  foreach(_test_path ${_rclpy_pytest_tests})
+    get_filename_component(_test_name ${_test_path} NAME_WE)
+    ament_add_pytest_test(${_test_name} ${_test_path}
       PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
         PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
-      TIMEOUT 200
+      TIMEOUT 60
     )
+  endforeach()
   endif()
 endif()
 set(PYTHON_EXECUTABLE "${_PYTHON_EXECUTABLE}")
