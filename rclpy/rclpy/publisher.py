@@ -28,7 +28,7 @@ class Publisher:
         msg_type: MsgType,
         topic: str,
         qos_profile: QoSProfile,
-        node_handle,
+        node_handle
     ) -> None:
         """
         Create a container for a ROS publisher.
