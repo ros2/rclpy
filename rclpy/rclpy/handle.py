@@ -105,13 +105,14 @@ class Handle:
         """
         assert isinstance(req_handle, Handle)
         with self.__lock, req_handle.__lock:
-            if self.__valid:
-                if req_handle.__valid:
-                    self.__required_handles.append(req_handle)
-                    req_handle.__dependent_handles.add(self)
-                else:
-                    # required handle destroyed before we could link to it, destroy self
-                    self.destroy()
+            if not self.__valid:
+                raise InvalidHandle('Cannot require a new handle if already destroyed')
+            if req_handle.__valid:
+                self.__required_handles.append(req_handle)
+                req_handle.__dependent_handles.add(self)
+            else:
+                # required handle destroyed before we could link to it, destroy self
+                self.destroy()
 
     def _get_capsule(self):
         """
