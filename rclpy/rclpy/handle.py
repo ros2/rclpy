@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import ExitStack
 from threading import RLock
 import weakref
 
@@ -157,39 +156,42 @@ class Handle:
 
     def __destroy_dependents(self, then):
         # assumes self.__lock is held
-        deps_to_destroy = 0
         deps_lock = RLock()
+        # Turn weak references to regular references
+        dependent_handles = [dep for dep in self.__dependent_handles]
 
         def watcher(handle):
-            nonlocal self
-            nonlocal deps_to_destroy
+            nonlocal dependent_handles
             nonlocal deps_lock
             nonlocal then
             with deps_lock:
-                deps_to_destroy -= 1
-                if 0 == deps_to_destroy:
+                dependent_handles.remove(handle)
+                if 0 == len(dependent_handles):
                     # all dependents destroyed, do what comes next
-                    with self.__lock:
-                        then()
+                    then()
 
-        # Grab depenent handles to prevent them from being destroyed
-        # This prevents first handle from destroying self before other dependents are counted
-        with ExitStack() as context_stack:
-            for dep in self.__dependent_handles:
-                try:
-                    context_stack.enter_context(dep)
-                    deps_to_destroy += 1
-                    dep.destroy(then=watcher)
-                except InvalidHandle:
-                    # Dependent was already destroyed
-                    deps_to_destroy -= 1
-            if 0 == deps_to_destroy:
-                # No dependents to wait on, do what comes next
-                then()
+        someone_else_will_call_then = False
+
+        for dep in self.__dependent_handles:
+            try:
+                dep.destroy(then=watcher)
+                someone_else_will_call_then = True
+            except InvalidHandle:
+                # Dependent was already destroyed
+                with deps_lock:
+                    dependent_handles.remove(dep)
+
+        if not someone_else_will_call_then:
+            # no dependents to wait on
+            then()
+            return
 
     def __destroy_self(self):
-        # Calls pycapsule destructor
-        _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
-        for cb in self.__destroy_callbacks:
-            cb(self)
-        self.__destroy_callbacks = []
+        with self.__lock:
+            # Calls pycapsule destructor
+            _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+            # Call post-destroy callbacks
+            while self.__destroy_callbacks:
+                self.__destroy_callbacks.pop()(self)
+            # get rid of references to other handles to break reference cycles
+            del self.__required_handles
