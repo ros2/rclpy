@@ -164,8 +164,6 @@ _rclpy_destroy_guard_condition(PyObject * pyentity)
  *
  * Raises RuntimeError if initializing the guard condition fails
  *
- * \remark Call rclpy_destroy_entity() to destroy a guard condition
- * \sa rclpy_destroy_entity()
  * \return a capsule, or
  * \return NULL on failure
  */
@@ -1201,16 +1199,27 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 static void
 _rclpy_destroy_publisher(PyObject * pyentity)
 {
-  if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
-    rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+  rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
       pyentity, "rclpy_publisher_t");
-    if (!pub) {
-      return;
-    }
-    rcl_ret_t ret = rcl_publisher_fini(&(pub->publisher), pub->node);
-    (void)ret;
-    PyMem_Free(pub);
+  if (!pub) {
+    // Don't want to raise an exception, who knows where it will get raised.
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_publisher failed to get pointer");
+    return;
   }
+
+  rcl_ret_t ret = rcl_publisher_fini(&(pub->publisher), pub->node);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini publisher: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(pub);
 }
 
 /// Create a publisher
@@ -1887,16 +1896,27 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 static void
 _rclpy_destroy_client(PyObject * pyentity)
 {
-  if (PyCapsule_IsValid(pyentity, "rclpy_client_t")) {
-    rclpy_client_t * client = (rclpy_client_t *)PyCapsule_GetPointer(
+  rclpy_client_t * cli = (rclpy_client_t *)PyCapsule_GetPointer(
       pyentity, "rclpy_client_t");
-    if (!client) {
-      return;
-    }
-    rcl_ret_t ret = rcl_client_fini(&(client->client), client->node);
-    (void)ret;
-    PyMem_Free(client);
+  if (!cli) {
+    // Don't want to raise an exception, who knows where it will get raised.
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_client failed to get pointer");
+    return;
   }
+
+  rcl_ret_t ret = rcl_client_fini(&(cli->client), cli->node);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini client: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(cli);
 }
 
 /// Create a client
@@ -2052,16 +2072,27 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
 static void
 _rclpy_destroy_service(PyObject * pyentity)
 {
-  if (PyCapsule_IsValid(pyentity, "rclpy_service_t")) {
-    rclpy_service_t * srv = (rclpy_service_t *)PyCapsule_GetPointer(
+  rclpy_service_t * srv = (rclpy_service_t *)PyCapsule_GetPointer(
       pyentity, "rclpy_service_t");
-    if (!srv) {
-      return;
-    }
-    rcl_ret_t ret = rcl_service_fini(&(srv->service), srv->node);
-    (void)ret;
-    PyMem_Free(srv);
+  if (!srv) {
+    // Don't want to raise an exception, who knows where it will get raised.
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_service failed to get pointer");
+    return;
   }
+
+  rcl_ret_t ret = rcl_service_fini(&(srv->service), srv->node);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini service: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(srv);
 }
 
 /// Create a service server
