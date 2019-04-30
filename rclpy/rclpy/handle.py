@@ -96,12 +96,12 @@ class Handle:
 
     def requires(self, req_handle):
         """
-        Indicate that this handle requires another handle to out live it.
+        Indicate that this handle requires another handle to live longer than itself.
 
         Calling :meth:`destroy` on the passed in handle will cause this handle to be
         destroyed first.
-        This handle will hold a reference to the passed in handle so that this one is garbage
-        collected before the passed in handle if :meth:`destroy` is not called.
+        This handle will hold a reference to the passed in handle so the required handle is
+        garbage collected after this handle in case :meth:`destroy` is not called.
         """
         assert isinstance(req_handle, Handle)
         with self.__lock, req_handle.__lock:
