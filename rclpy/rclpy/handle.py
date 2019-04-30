@@ -161,7 +161,12 @@ class Handle:
         # Turn weak references to regular references
         dependent_handles = [dep for dep in self.__dependent_handles]
 
-        def watcher(handle):
+        if not dependent_handles:
+            # no dependents to wait on
+            then()
+            return
+
+        def remove_dependent(handle):
             nonlocal dependent_handles
             nonlocal deps_lock
             nonlocal then
@@ -171,21 +176,12 @@ class Handle:
                     # all dependents destroyed, do what comes next
                     then()
 
-        someone_else_will_call_then = False
-
         for dep in self.__dependent_handles:
             try:
-                dep.destroy(then=watcher)
-                someone_else_will_call_then = True
+                dep.destroy(then=remove_dependent)
             except InvalidHandle:
                 # Dependent was already destroyed
-                with deps_lock:
-                    dependent_handles.remove(dep)
-
-        if not someone_else_will_call_then:
-            # no dependents to wait on
-            then()
-            return
+                remove_dependent(dep)
 
     def __destroy_self(self):
         with self.__lock:
