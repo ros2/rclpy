@@ -146,7 +146,8 @@ class Client:
 
         :return: ``True`` if a server is ready, ``False`` otherwise.
         """
-        return _rclpy.rclpy_service_server_is_available(self.node_handle, self.client_handle)
+        with self.node_handle as node_capsule:
+            return _rclpy.rclpy_service_server_is_available(node_capsule, self.client_handle)
 
     def wait_for_service(self, timeout_sec: float = None) -> bool:
         """

@@ -518,6 +518,33 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// PyCapsule destructor for node
+static void
+_rclpy_destroy_node(PyObject * pyentity)
+{
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(
+    pyentity, "rcl_node_t");
+  if (!node) {
+    // Don't want to raise an exception, who knows where it will get raised.
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_node failed to get pointer");
+    return;
+  }
+
+  rcl_ret_t ret = rcl_node_fini(node);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini node: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(node);
+}
+
 /// Create a node
 /**
  * Raises ValueError if the node name or namespace is invalid
@@ -605,7 +632,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
       PyExc_RuntimeWarning, stack_level, "Failed to fini arguments: %s",
       rcl_get_error_string().str);
   }
-  return PyCapsule_New(node, "rcl_node_t", NULL);
+  return PyCapsule_New(node, "rcl_node_t", _rclpy_destroy_node);
 }
 
 /// Get the name of a node.
@@ -2298,11 +2325,7 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret;
-  if (PyCapsule_IsValid(pyentity, "rcl_node_t")) {
-    rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, "rcl_node_t");
-    ret = rcl_node_fini(node);
-    PyMem_Free(node);
-  } else if (PyCapsule_IsValid(pyentity, "rcl_timer_t")) {
+  if (PyCapsule_IsValid(pyentity, "rcl_timer_t")) {
     rcl_timer_t * timer = (rcl_timer_t *)PyCapsule_GetPointer(pyentity, "rcl_timer_t");
     ret = rcl_timer_fini(timer);
     PyMem_Free(timer);

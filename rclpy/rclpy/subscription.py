@@ -32,7 +32,6 @@ class Subscription:
          callback: Callable,
          callback_group: CallbackGroup,
          qos_profile: QoSProfile,
-         node_handle,
          raw: bool
     ) -> None:
         """
@@ -50,12 +49,9 @@ class Subscription:
         :param callback_group: The callback group for the subscription. If ``None``, then the
             nodes default callback group is used.
         :param qos_profile: The quality of service profile to apply to the subscription.
-        :node_handle: Capsule pointing to the underlying ``rcl_node_t`` object for the node the
-            subscription is associated with.
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
         """
-        self.node_handle = node_handle
         self.__handle = subscription_handle
         self.msg_type = msg_type
         self.topic = topic
