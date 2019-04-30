@@ -45,7 +45,7 @@ class Handle:
         self.__use_count = 0
         self.__request_invalidation = False
         self.__valid = True
-        self.__lock = RLock()
+        self.__rlock = RLock()
         self.__required_handles = []
         self.__dependent_handles = weakref.WeakSet()
         self.__destroy_callbacks = []
@@ -85,7 +85,7 @@ class Handle:
 
         :param then: callback to call after handle has been destroyed.
         """
-        with self.__lock:
+        with self.__rlock:
             if not self.__valid:
                 raise InvalidHandle('Asked to destroy handle, but it was already destroyed')
             if then:
@@ -104,7 +104,7 @@ class Handle:
         garbage collected after this handle in case :meth:`destroy` is not called.
         """
         assert isinstance(req_handle, Handle)
-        with self.__lock, req_handle.__lock:
+        with self.__rlock, req_handle.__rlock:
             if not self.__valid:
                 raise InvalidHandle('Cannot require a new handle if already destroyed')
             if req_handle.__valid:
@@ -121,7 +121,7 @@ class Handle:
         The capsule must be returned using :meth:`_return_capsule` when it is no longer in use.
         :return: PyCapsule instance
         """
-        with self.__lock:
+        with self.__rlock:
             if not self.__valid:
                 raise InvalidHandle('Tried to use a handle that has been destroyed.')
             self.__use_count += 1
@@ -133,7 +133,7 @@ class Handle:
 
         :return: None
         """
-        with self.__lock:
+        with self.__rlock:
             # Assume _return_capsule is not called more times than _get_capsule
             assert self.__use_count > 0
             self.__use_count -= 1
@@ -156,7 +156,7 @@ class Handle:
         self.__destroy_dependents(then=self.__destroy_self)
 
     def __destroy_dependents(self, then):
-        # assumes self.__lock is held
+        # assumes self.__rlock is held
         deps_lock = RLock()
         # Turn weak references to regular references
         dependent_handles = [dep for dep in self.__dependent_handles]
@@ -184,7 +184,7 @@ class Handle:
                 remove_dependent(dep)
 
     def __destroy_self(self):
-        with self.__lock:
+        with self.__rlock:
             # Calls pycapsule destructor
             _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
             # Call post-destroy callbacks
