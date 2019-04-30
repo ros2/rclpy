@@ -2264,67 +2264,31 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 }
 
 /// Destructor for a clock
-void
+static void
 _rclpy_destroy_clock(PyObject * pycapsule)
 {
   rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pycapsule, "rcl_clock_t");
   if (NULL == clock) {
     // exception was set by PyCapsule_GetPointer
+    PyErr_Clear();
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to get clock pointer in destructor");
+    rcl_reset_error();
     return;
   }
 
   rcl_ret_t ret_clock = rcl_clock_fini(clock);
   PyMem_Free(clock);
   if (ret_clock != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini 'rcl_clock_t': %s", rcl_get_error_string().str);
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini clock: %s",
+      rcl_get_error_string().str);
     rcl_reset_error();
   }
-}
-
-/// Destroy an rcl entity
-/**
- * Raises RuntimeError on failure
- *
- * \param[in] pyentity Capsule pointing to the entity to destroy
- */
-static PyObject *
-rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pyentity;
-
-  if (!PyArg_ParseTuple(args, "O", &pyentity)) {
-    return NULL;
-  }
-
-  if (!PyCapsule_CheckExact(pyentity)) {
-    PyErr_Format(PyExc_ValueError, "Object is not a capsule");
-    return NULL;
-  }
-
-  rcl_ret_t ret;
-  if (PyCapsule_IsValid(pyentity, "rcl_clock_t")) {
-    PyCapsule_SetDestructor(pyentity, NULL);
-    _rclpy_destroy_clock(pyentity);
-    ret = RCL_RET_OK;
-  } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError, "'%s' is not a known entity", PyCapsule_GetName(pyentity));
-    return NULL;
-  }
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
-      "Failed to fini '%s': %s", PyCapsule_GetName(pyentity), rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  if (PyCapsule_SetPointer(pyentity, Py_None)) {
-    // exception set by PyCapsule_SetPointer
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
 }
 
 /// Return the identifier of the current rmw_implementation
@@ -4593,11 +4557,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_trigger_guard_condition", rclpy_trigger_guard_condition, METH_VARARGS,
     "Trigger a general purpose guard_condition."
-  },
-
-  {
-    "rclpy_destroy_entity", rclpy_destroy_entity, METH_VARARGS,
-    "Destroy an rclpy entity."
   },
 
   {

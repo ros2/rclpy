@@ -34,7 +34,6 @@ from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
 from rclpy.handle import Handle
-from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.parameter import Parameter
@@ -619,8 +618,6 @@ class Node:
         if timer in self.timers:
             self.timers.remove(timer)
             timer.destroy()
-            # TODO(sloretz) Store clocks on node and destroy them separately
-            _rclpy.rclpy_destroy_entity(timer.clock._clock_handle)
             return True
         return False
 
@@ -658,12 +655,8 @@ class Node:
         self.subscriptions = ()
         self.clients = ()
         self.services = ()
-        while self.timers:
-            tmr = self.timers.pop()
-            # TODO(sloretz) Store clocks on node and destroy them separately
-            _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
+        self.timers = ()
         self.guards = ()
-
         self.handle.destroy()
 
     def get_publisher_names_and_types_by_node(
@@ -787,10 +780,3 @@ class Node:
         :return: the number of subscribers on the topic.
         """
         return self._count_publishers_or_subscribers(topic_name, _rclpy.rclpy_count_subscribers)
-
-    def __del__(self):
-        try:
-            self.destroy_node()
-        except InvalidHandle:
-            # Already destroyed
-            pass

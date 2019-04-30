@@ -26,8 +26,10 @@ class WallTimer:
         self._context = get_default_context() if context is None else context
         # TODO(sloretz) Allow passing clocks in via timer constructor
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
-        self.__handle = Handle(_rclpy.rclpy_create_timer(
-            self._clock._clock_handle, self._context.handle, timer_period_ns))
+        with self._clock.handle as clock_capsule:
+            self.__handle = Handle(_rclpy.rclpy_create_timer(
+                clock_capsule, self._context.handle, timer_period_ns))
+        self.__handle.requires(self._clock.handle)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group
