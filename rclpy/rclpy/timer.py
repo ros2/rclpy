@@ -41,12 +41,6 @@ class WallTimer:
     def destroy(self):
         self.handle.destroy()
 
-    def __eq__(self, other):
-        return self.handle == other.handle
-
-    def __hash__(self):
-        return self.handle.pointer
-
     @property
     def clock(self):
         return self._clock

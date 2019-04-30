@@ -377,6 +377,7 @@ class Node:
             self._validate_topic_or_service_name(topic)
 
         publisher_handle = Handle(publisher_capsule)
+        publisher_handle.requires(self.handle)
 
         publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
         self.publishers.append(publisher)
@@ -463,6 +464,7 @@ class Node:
             self._validate_topic_or_service_name(srv_name, is_service=True)
 
         client_handle = Handle(client_capsule)
+        client_handle.requires(self.handle)
 
         client = Client(
             self.handle, self.context,
@@ -509,6 +511,7 @@ class Node:
             self._validate_topic_or_service_name(srv_name, is_service=True)
 
         service_handle = Handle(service_capsule)
+        service_handle.requires(self.handle)
 
         service = Service(
             self.handle, service_handle,
@@ -538,6 +541,7 @@ class Node:
         if callback_group is None:
             callback_group = self.default_callback_group
         timer = WallTimer(callback, callback_group, timer_period_nsec, context=self.context)
+        timer.handle.requires(self.handle)
 
         self.timers.append(timer)
         callback_group.add_entity(timer)
@@ -552,6 +556,7 @@ class Node:
         if callback_group is None:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
+        guard.handle.requires(self.handle)
 
         self.guards.append(guard)
         callback_group.add_entity(guard)
@@ -649,25 +654,15 @@ class Node:
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
 
-
-        while self.publishers:
-            pub = self.publishers.pop()
-            pub.destroy()
+        self.publishers = ()
         self.subscriptions = ()
-        while self.clients:
-            cli = self.clients.pop()
-            cli.destroy()
-        while self.services:
-            srv = self.services.pop()
-            srv.destroy()
+        self.clients = ()
+        self.services = ()
         while self.timers:
             tmr = self.timers.pop()
-            tmr.destroy()
             # TODO(sloretz) Store clocks on node and destroy them separately
             _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
-        while self.guards:
-            gc = self.guards.pop()
-            gc.destroy()
+        self.guards = ()
 
         self.handle.destroy()
 

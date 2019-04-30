@@ -173,9 +173,3 @@ class Client:
 
     def destroy(self):
         self.handle.destroy()
-
-    def __eq__(self, other):
-        return self.handle == other.handle
-
-    def __hash__(self):
-        return self.handle.pointer

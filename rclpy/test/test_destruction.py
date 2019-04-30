@@ -148,6 +148,10 @@ def test_destroy_node_asap():
 
 
 def test_destroy_publisher_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
         node = rclpy.create_node('test_destroy_publisher_asap', context=context)
         try:
             pub = node.create_publisher(Primitives, 'pub_topic')
