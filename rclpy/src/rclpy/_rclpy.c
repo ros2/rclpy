@@ -1200,7 +1200,7 @@ static void
 _rclpy_destroy_publisher(PyObject * pyentity)
 {
   rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
-      pyentity, "rclpy_publisher_t");
+    pyentity, "rclpy_publisher_t");
   if (!pub) {
     // Don't want to raise an exception, who knows where it will get raised.
     PyErr_Clear();
@@ -1897,7 +1897,7 @@ static void
 _rclpy_destroy_client(PyObject * pyentity)
 {
   rclpy_client_t * cli = (rclpy_client_t *)PyCapsule_GetPointer(
-      pyentity, "rclpy_client_t");
+    pyentity, "rclpy_client_t");
   if (!cli) {
     // Don't want to raise an exception, who knows where it will get raised.
     PyErr_Clear();
@@ -2073,7 +2073,7 @@ static void
 _rclpy_destroy_service(PyObject * pyentity)
 {
   rclpy_service_t * srv = (rclpy_service_t *)PyCapsule_GetPointer(
-      pyentity, "rclpy_service_t");
+    pyentity, "rclpy_service_t");
   if (!srv) {
     // Don't want to raise an exception, who knows where it will get raised.
     PyErr_Clear();
