@@ -23,7 +23,7 @@ from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
-from test_msgs.msg import Primitives
+from test_msgs.msg import BasicTypes
 
 TEST_NODE = 'my_node'
 TEST_NAMESPACE = '/my_ns'
@@ -51,22 +51,22 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_clock().clock_type, ClockType.ROS_TIME)
 
     def test_create_publisher(self):
-        self.node.create_publisher(Primitives, 'chatter')
+        self.node.create_publisher(BasicTypes, 'chatter')
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
-            self.node.create_publisher(Primitives, 'chatter?')
+            self.node.create_publisher(BasicTypes, 'chatter?')
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not start with a number'):
-            self.node.create_publisher(Primitives, '/chatter/42_is_the_answer')
+            self.node.create_publisher(BasicTypes, '/chatter/42_is_the_answer')
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_publisher(Primitives, 'chatter/{bad_sub}')
+            self.node.create_publisher(BasicTypes, 'chatter/{bad_sub}')
 
     def test_create_subscription(self):
-        self.node.create_subscription(Primitives, 'chatter', lambda msg: print(msg))
+        self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
-            self.node.create_subscription(Primitives, 'chatter?', lambda msg: print(msg))
+            self.node.create_subscription(BasicTypes, 'chatter?', lambda msg: print(msg))
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not start with a number'):
-            self.node.create_subscription(Primitives, '/chatter/42ish', lambda msg: print(msg))
+            self.node.create_subscription(BasicTypes, '/chatter/42ish', lambda msg: print(msg))
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_subscription(Primitives, 'foo/{bad_sub}', lambda msg: print(msg))
+            self.node.create_subscription(BasicTypes, 'foo/{bad_sub}', lambda msg: print(msg))
 
     def raw_subscription_callback(self, msg):
         print('Raw subscription callback: %s length %d' % (msg, len(msg)))
@@ -75,18 +75,18 @@ class TestNode(unittest.TestCase):
     def test_create_raw_subscription(self):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
-        primitives_pub = self.node.create_publisher(Primitives, 'raw_subscription_test')
+        basic_types_pub = self.node.create_publisher(BasicTypes, 'raw_subscription_test')
         self.raw_subscription_msg = None  # None=No result yet
         self.node.create_subscription(
-            Primitives,
+            BasicTypes,
             'raw_subscription_test',
             self.raw_subscription_callback,
             raw=True
         )
-        primitives_msg = Primitives()
+        basic_types_msg = BasicTypes()
         cycle_count = 0
         while cycle_count < 5 and self.raw_subscription_msg is None:
-            primitives_pub.publish(primitives_msg)
+            basic_types_pub.publish(basic_types_msg)
             cycle_count += 1
             executor.spin_once(timeout_sec=1)
         self.assertIsNotNone(self.raw_subscription_msg, 'raw subscribe timed out')
@@ -139,15 +139,15 @@ class TestNode(unittest.TestCase):
         self.assertEqual(0, self.node.count_publishers(fq_topic_name))
         self.assertEqual(0, self.node.count_subscribers(fq_topic_name))
 
-        self.node.create_publisher(Primitives, short_topic_name)
+        self.node.create_publisher(BasicTypes, short_topic_name)
         self.assertEqual(1, self.node.count_publishers(short_topic_name))
         self.assertEqual(1, self.node.count_publishers(fq_topic_name))
 
-        self.node.create_subscription(Primitives, short_topic_name, lambda msg: print(msg))
+        self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg))
         self.assertEqual(1, self.node.count_subscribers(short_topic_name))
         self.assertEqual(1, self.node.count_subscribers(fq_topic_name))
 
-        self.node.create_subscription(Primitives, short_topic_name, lambda msg: print(msg))
+        self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg))
         self.assertEqual(2, self.node.count_subscribers(short_topic_name))
         self.assertEqual(2, self.node.count_subscribers(fq_topic_name))
 

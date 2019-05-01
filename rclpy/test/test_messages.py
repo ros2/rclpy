@@ -16,7 +16,7 @@ import unittest
 
 import rclpy
 
-from test_msgs.msg import Primitives
+from test_msgs.msg import BasicTypes, Strings
 
 
 class TestMessages(unittest.TestCase):
@@ -40,13 +40,13 @@ class TestMessages(unittest.TestCase):
         rclpy.shutdown(context=cls.context)
 
     def test_invalid_string_raises(self):
-        msg = Primitives()
+        msg = Strings()
         msg.string_value = 'ñu'
-        pub = self.node.create_publisher(Primitives, 'chatter')
+        pub = self.node.create_publisher(Strings, 'chatter')
         with self.assertRaises(UnicodeEncodeError):
             pub.publish(msg)
 
     def test_different_type_raises(self):
-        pub = self.node.create_publisher(Primitives, 'chatter')
+        pub = self.node.create_publisher(BasicTypes, 'chatter')
         with self.assertRaises(TypeError):
             pub.publish('different message type')
