@@ -75,7 +75,7 @@ class TestNode(unittest.TestCase):
     def test_create_raw_subscription(self):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
-        primitives_pub = self.node.create_publisher(BasicTypes, 'raw_subscription_test')
+        basic_types_pub = self.node.create_publisher(BasicTypes, 'raw_subscription_test')
         self.raw_subscription_msg = None  # None=No result yet
         self.node.create_subscription(
             BasicTypes,
@@ -83,10 +83,10 @@ class TestNode(unittest.TestCase):
             self.raw_subscription_callback,
             raw=True
         )
-        primitives_msg = BasicTypes()
+        basic_types_msg = BasicTypes()
         cycle_count = 0
         while cycle_count < 5 and self.raw_subscription_msg is None:
-            primitives_pub.publish(primitives_msg)
+            basic_types_pub.publish(basic_types_msg)
             cycle_count += 1
             executor.spin_once(timeout_sec=1)
         self.assertIsNotNone(self.raw_subscription_msg, 'raw subscribe timed out')
