@@ -34,6 +34,7 @@ from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
 from rclpy.handle import Handle
+from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.parameter import Parameter
@@ -569,7 +570,10 @@ class Node:
         """
         if publisher in self.publishers:
             self.publishers.remove(publisher)
-            publisher.destroy()
+            try:
+                publisher.destroy()
+            except InvalidHandle:
+                return False
             return True
         return False
 
@@ -581,7 +585,10 @@ class Node:
         """
         if subscription in self.subscriptions:
             self.subscriptions.remove(subscription)
-            subscription.destroy()
+            try:
+                subscription.destroy()
+            except InvalidHandle:
+                return False
             return True
         return False
 
@@ -593,7 +600,10 @@ class Node:
         """
         if client in self.clients:
             self.clients.remove(client)
-            client.destroy()
+            try:
+                client.destroy()
+            except InvalidHandle:
+                return False
             return True
         return False
 
@@ -605,7 +615,10 @@ class Node:
         """
         if service in self.services:
             self.services.remove(service)
-            service.destroy()
+            try:
+                service.destroy()
+            except InvalidHandle:
+                return False
             return True
         return False
 
@@ -617,7 +630,10 @@ class Node:
         """
         if timer in self.timers:
             self.timers.remove(timer)
-            timer.destroy()
+            try:
+                timer.destroy()
+            except InvalidHandle:
+                return False
             return True
         return False
 
@@ -629,7 +645,10 @@ class Node:
         """
         if guard in self.guards:
             self.guards.remove(guard)
-            guard.destroy()
+            try:
+                guard.destroy()
+            except InvalidHandle:
+                return False
             return True
         return False
 
