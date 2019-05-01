@@ -43,7 +43,7 @@ class ClientWaitable(Waitable):
 
         with node.handle as node_capsule:
             self.client = _rclpy.rclpy_create_client(
-                node_capsule, EmptySrv, 'test_client', qos_profile_default.get_c_qos_profile())[0]
+                node_capsule, EmptySrv, 'test_client', qos_profile_default.get_c_qos_profile())
         self.client_index = None
         self.client_is_ready = False
 
@@ -86,7 +86,7 @@ class ServerWaitable(Waitable):
 
         with node.handle as node_capsule:
             self.server = _rclpy.rclpy_create_service(
-                node_capsule, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())[0]
+                node_capsule, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())
         self.server_index = None
         self.server_is_ready = False
 
@@ -129,9 +129,9 @@ class TimerWaitable(Waitable):
 
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         period_nanoseconds = 10000
-        self.timer = _rclpy.rclpy_create_timer(
-            self._clock._clock_handle, node.context.handle, period_nanoseconds
-        )[0]
+        with self._clock.handle as clock_capsule:
+            self.timer = _rclpy.rclpy_create_timer(
+                clock_capsule, node.context.handle, period_nanoseconds)
         self.timer_index = None
         self.timer_is_ready = False
 
@@ -172,10 +172,6 @@ class SubscriptionWaitable(Waitable):
 
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
-
-        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)[0]
-        self.guard_condition_index = None
-        self.guard_is_ready = False
 
         with node.handle as node_capsule:
             self.subscription = _rclpy.rclpy_create_subscription(
@@ -221,7 +217,7 @@ class GuardConditionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)[0]
+        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)
         self.guard_condition_index = None
         self.guard_is_ready = False
 

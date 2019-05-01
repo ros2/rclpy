@@ -368,13 +368,17 @@ class Node:
         check_for_type_support(msg_type)
         failed = False
         try:
-            with self.handle as capsule:
-                publisher_handle = _rclpy.rclpy_create_publisher(
-                    capsule, msg_type, topic, qos_profile.get_c_qos_profile())
+            with self.handle as node_capsule:
+                publisher_capsule = _rclpy.rclpy_create_publisher(
+                    node_capsule, msg_type, topic, qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True
         if failed:
             self._validate_topic_or_service_name(topic)
+
+        publisher_handle = Handle(publisher_capsule)
+        publisher_handle.requires(self.handle)
+
         publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
         self.publishers.append(publisher)
         return publisher
@@ -448,9 +452,9 @@ class Node:
         check_for_type_support(srv_type)
         failed = False
         try:
-            with self.handle as capsule:
-                [client_handle, client_pointer] = _rclpy.rclpy_create_client(
-                    capsule,
+            with self.handle as node_capsule:
+                client_capsule = _rclpy.rclpy_create_client(
+                    node_capsule,
                     srv_type,
                     srv_name,
                     qos_profile.get_c_qos_profile())
@@ -458,9 +462,13 @@ class Node:
             failed = True
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
+
+        client_handle = Handle(client_capsule)
+        client_handle.requires(self.handle)
+
         client = Client(
             self.handle, self.context,
-            client_handle, client_pointer, srv_type, srv_name, qos_profile,
+            client_handle, srv_type, srv_name, qos_profile,
             callback_group)
         self.clients.append(client)
         callback_group.add_entity(client)
@@ -491,9 +499,9 @@ class Node:
         check_for_type_support(srv_type)
         failed = False
         try:
-            with self.handle as capsule:
-                [service_handle, service_pointer] = _rclpy.rclpy_create_service(
-                    capsule,
+            with self.handle as node_capsule:
+                service_capsule = _rclpy.rclpy_create_service(
+                    node_capsule,
                     srv_type,
                     srv_name,
                     qos_profile.get_c_qos_profile())
@@ -501,8 +509,12 @@ class Node:
             failed = True
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
+
+        service_handle = Handle(service_capsule)
+        service_handle.requires(self.handle)
+
         service = Service(
-            self.handle, service_handle, service_pointer,
+            self.handle, service_handle,
             srv_type, srv_name, callback, callback_group, qos_profile)
         self.services.append(service)
         callback_group.add_entity(service)
@@ -529,6 +541,7 @@ class Node:
         if callback_group is None:
             callback_group = self.default_callback_group
         timer = WallTimer(callback, callback_group, timer_period_nsec, context=self.context)
+        timer.handle.requires(self.handle)
 
         self.timers.append(timer)
         callback_group.add_entity(timer)
@@ -543,6 +556,7 @@ class Node:
         if callback_group is None:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
+        guard.handle.requires(self.handle)
 
         self.guards.append(guard)
         callback_group.add_entity(guard)
@@ -554,12 +568,13 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for pub in self.publishers:
-            if pub.publisher_handle == publisher.publisher_handle:
-                with self.handle as capsule:
-                    _rclpy.rclpy_destroy_node_entity(pub.publisher_handle, capsule)
-                self.publishers.remove(pub)
-                return True
+        if publisher in self.publishers:
+            self.publishers.remove(publisher)
+            try:
+                publisher.destroy()
+            except InvalidHandle:
+                return False
+            return True
         return False
 
     def destroy_subscription(self, subscription: Subscription) -> bool:
@@ -570,7 +585,10 @@ class Node:
         """
         if subscription in self.subscriptions:
             self.subscriptions.remove(subscription)
-            subscription.destroy()
+            try:
+                subscription.destroy()
+            except InvalidHandle:
+                return False
             return True
         return False
 
@@ -580,12 +598,13 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for cli in self.clients:
-            if cli.client_handle == client.client_handle:
-                with self.handle as capsule:
-                    _rclpy.rclpy_destroy_node_entity(cli.client_handle, capsule)
-                self.clients.remove(cli)
-                return True
+        if client in self.clients:
+            self.clients.remove(client)
+            try:
+                client.destroy()
+            except InvalidHandle:
+                return False
+            return True
         return False
 
     def destroy_service(self, service: Service) -> bool:
@@ -594,12 +613,13 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for srv in self.services:
-            if srv.service_handle == service.service_handle:
-                with self.handle as capsule:
-                    _rclpy.rclpy_destroy_node_entity(srv.service_handle, capsule)
-                self.services.remove(srv)
-                return True
+        if service in self.services:
+            self.services.remove(service)
+            try:
+                service.destroy()
+            except InvalidHandle:
+                return False
+            return True
         return False
 
     def destroy_timer(self, timer: WallTimer) -> bool:
@@ -608,13 +628,13 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for tmr in self.timers:
-            if tmr.timer_handle == timer.timer_handle:
-                _rclpy.rclpy_destroy_entity(tmr.timer_handle)
-                # TODO(sloretz) Store clocks on node and destroy them separately
-                _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
-                self.timers.remove(tmr)
-                return True
+        if timer in self.timers:
+            self.timers.remove(timer)
+            try:
+                timer.destroy()
+            except InvalidHandle:
+                return False
+            return True
         return False
 
     def destroy_guard_condition(self, guard: GuardCondition) -> bool:
@@ -623,11 +643,13 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        for gc in self.guards:
-            if gc.guard_handle == guard.guard_handle:
-                _rclpy.rclpy_destroy_entity(gc.guard_handle)
-                self.guards.remove(gc)
-                return True
+        if guard in self.guards:
+            self.guards.remove(guard)
+            try:
+                guard.destroy()
+            except InvalidHandle:
+                return False
+            return True
         return False
 
     def destroy_node(self) -> bool:
@@ -648,27 +670,12 @@ class Node:
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
 
-        with self.handle as capsule:
-
-            while self.publishers:
-                pub = self.publishers.pop()
-                _rclpy.rclpy_destroy_node_entity(pub.publisher_handle, capsule)
-            self.subscriptions = ()
-            while self.clients:
-                cli = self.clients.pop()
-                _rclpy.rclpy_destroy_node_entity(cli.client_handle, capsule)
-            while self.services:
-                srv = self.services.pop()
-                _rclpy.rclpy_destroy_node_entity(srv.service_handle, capsule)
-            while self.timers:
-                tmr = self.timers.pop()
-                _rclpy.rclpy_destroy_entity(tmr.timer_handle)
-                # TODO(sloretz) Store clocks on node and destroy them separately
-                _rclpy.rclpy_destroy_entity(tmr.clock._clock_handle)
-            while self.guards:
-                gc = self.guards.pop()
-                _rclpy.rclpy_destroy_entity(gc.guard_handle)
-
+        self.publishers.clear()
+        self.subscriptions.clear()
+        self.clients.clear()
+        self.services.clear()
+        self.timers.clear()
+        self.guards.clear()
         self.handle.destroy()
 
     def get_publisher_names_and_types_by_node(
@@ -792,10 +799,3 @@ class Node:
         :return: the number of subscribers on the topic.
         """
         return self._count_publishers_or_subscribers(topic_name, _rclpy.rclpy_count_subscribers)
-
-    def __del__(self):
-        try:
-            self.destroy_node()
-        except InvalidHandle:
-            # Already destroyed
-            pass

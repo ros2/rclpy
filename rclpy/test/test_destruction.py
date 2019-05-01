@@ -16,6 +16,7 @@ import pytest
 import rclpy
 from rclpy.handle import InvalidHandle
 from test_msgs.msg import Primitives
+from test_msgs.srv import Primitives as PrimitivesSrv
 
 
 def test_destroy_node():
@@ -142,5 +143,121 @@ def test_destroy_node_asap():
             # handle invalid because it was destroyed when no one was using it
             with node.handle:
                 pass
+    finally:
+        rclpy.shutdown(context=context)
+
+
+def test_destroy_publisher_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_publisher_asap', context=context)
+        try:
+            pub = node.create_publisher(Primitives, 'pub_topic')
+
+            # handle valid
+            with pub.handle:
+                pass
+
+            with pub.handle:
+                node.destroy_publisher(pub)
+                # handle valid because it's still being used
+                with pub.handle:
+                    pass
+
+            with pytest.raises(InvalidHandle):
+                # handle invalid because it was destroyed when no one was using it
+                with pub.handle:
+                    pass
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)
+
+
+def test_destroy_client_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_client_asap', context=context)
+        try:
+            client = node.create_client(PrimitivesSrv, 'cli_service')
+
+            # handle valid
+            with client.handle:
+                pass
+
+            with client.handle:
+                node.destroy_client(client)
+                # handle valid because it's still being used
+                with client.handle:
+                    pass
+
+            with pytest.raises(InvalidHandle):
+                # handle invalid because it was destroyed when no one was using it
+                with client.handle:
+                    pass
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)
+
+
+def test_destroy_service_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_service_asap', context=context)
+        try:
+            service = node.create_service(PrimitivesSrv, 'srv_service', lambda req, res: ...)
+
+            # handle valid
+            with service.handle:
+                pass
+
+            with service.handle:
+                node.destroy_service(service)
+                # handle valid because it's still being used
+                with service.handle:
+                    pass
+
+            with pytest.raises(InvalidHandle):
+                # handle invalid because it was destroyed when no one was using it
+                with service.handle:
+                    pass
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)
+
+
+def test_destroy_timer_asap():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_timer_asap', context=context)
+        try:
+            timer = node.create_timer(1.0, lambda: ...)
+
+            # handle valid
+            with timer.handle:
+                pass
+
+            with timer.handle:
+                node.destroy_timer(timer)
+                # handle valid because it's still being used
+                with timer.handle:
+                    pass
+
+            with pytest.raises(InvalidHandle):
+                # handle invalid because it was destroyed when no one was using it
+                with timer.handle:
+                    pass
+        finally:
+            node.destroy_node()
     finally:
         rclpy.shutdown(context=context)
