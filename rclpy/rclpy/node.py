@@ -102,13 +102,13 @@ class Node:
         self.__handle = None
         self._context = get_default_context() if context is None else context
         self._parameters: dict = {}
-        self.publishers: List[Publisher] = []
-        self.subscriptions: List[Subscription] = []
-        self.clients: List[Client] = []
-        self.services: List[Service] = []
-        self.timers: List[WallTimer] = []
-        self.guards: List[GuardCondition] = []
-        self.waitables: List[Waitable] = []
+        self.__publishers: List[Publisher] = []
+        self.__subscriptions: List[Subscription] = []
+        self.__clients: List[Client] = []
+        self.__services: List[Service] = []
+        self.__timers: List[WallTimer] = []
+        self.__guards: List[GuardCondition] = []
+        self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
 
@@ -152,6 +152,76 @@ class Node:
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
+
+    @property
+    def publishers(self) -> List[Publisher]:
+        """
+        Return publishers that have been created on this node.
+
+        .. warning::
+        The returned list must not be modified.
+        """
+        return self.__publishers
+
+    @property
+    def subscriptions(self) -> List[Subscription]:
+        """
+        Return subscriptions that have been created on this node.
+
+        .. warning::
+        The returned list must not be modified.
+        """
+        return self.__subscriptions
+
+    @property
+    def clients(self) -> List[Client]:
+        """
+        Return clients that have been created on this node.
+
+        .. warning::
+        The returned list must not be modified.
+        """
+        return self.__clients
+
+    @property
+    def services(self) -> List[Service]:
+        """
+        Return services that have been created on this node.
+
+        .. warning::
+        The returned list must not be modified.
+        """
+        return self.__services
+
+    @property
+    def timers(self) -> List[WallTimer]:
+        """
+        Return timers that have been created on this node.
+
+        .. warning::
+        The returned list must not be modified.
+        """
+        return self.__timers
+
+    @property
+    def guards(self) -> List[GuardCondition]:
+        """
+        Return guards that have been created on this node.
+
+        .. warning::
+        The returned list must not be modified.
+        """
+        return self.__guards
+
+    @property
+    def waitables(self) -> List[Waitable]:
+        """
+        Return waitables that have been created on this node.
+
+        .. warning::
+        The returned list must not be modified.
+        """
+        return self.__waitables
 
     @property
     def executor(self) -> Optional[Executor]:
@@ -339,7 +409,7 @@ class Node:
 
         :param waitable: An instance of a waitable that the node will add to the waitset.
         """
-        self.waitables.append(waitable)
+        self.__waitables.append(waitable)
 
     def remove_waitable(self, waitable: Waitable) -> None:
         """
@@ -347,7 +417,7 @@ class Node:
 
         :param waitable: The Waitable to remove.
         """
-        self.waitables.remove(waitable)
+        self.__waitables.remove(waitable)
 
     def create_publisher(
         self,
@@ -380,7 +450,7 @@ class Node:
         publisher_handle.requires(self.handle)
 
         publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
-        self.publishers.append(publisher)
+        self.__publishers.append(publisher)
         return publisher
 
     def create_subscription(
@@ -426,7 +496,7 @@ class Node:
         subscription = Subscription(
             subscription_handle, msg_type,
             topic, callback, callback_group, qos_profile, raw)
-        self.subscriptions.append(subscription)
+        self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
         return subscription
 
@@ -470,7 +540,7 @@ class Node:
             self.handle, self.context,
             client_handle, srv_type, srv_name, qos_profile,
             callback_group)
-        self.clients.append(client)
+        self.__clients.append(client)
         callback_group.add_entity(client)
         return client
 
@@ -516,7 +586,7 @@ class Node:
         service = Service(
             self.handle, service_handle,
             srv_type, srv_name, callback, callback_group, qos_profile)
-        self.services.append(service)
+        self.__services.append(service)
         callback_group.add_entity(service)
         return service
 
@@ -543,7 +613,7 @@ class Node:
         timer = WallTimer(callback, callback_group, timer_period_nsec, context=self.context)
         timer.handle.requires(self.handle)
 
-        self.timers.append(timer)
+        self.__timers.append(timer)
         callback_group.add_entity(timer)
         return timer
 
@@ -558,7 +628,7 @@ class Node:
         guard = GuardCondition(callback, callback_group, context=self.context)
         guard.handle.requires(self.handle)
 
-        self.guards.append(guard)
+        self.__guards.append(guard)
         callback_group.add_entity(guard)
         return guard
 
@@ -568,8 +638,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if publisher in self.publishers:
-            self.publishers.remove(publisher)
+        if publisher in self.__publishers:
+            self.__publishers.remove(publisher)
             try:
                 publisher.destroy()
             except InvalidHandle:
@@ -583,8 +653,8 @@ class Node:
 
         :return: ``True`` if succesful, ``False`` otherwise.
         """
-        if subscription in self.subscriptions:
-            self.subscriptions.remove(subscription)
+        if subscription in self.__subscriptions:
+            self.__subscriptions.remove(subscription)
             try:
                 subscription.destroy()
             except InvalidHandle:
@@ -598,8 +668,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if client in self.clients:
-            self.clients.remove(client)
+        if client in self.__clients:
+            self.__clients.remove(client)
             try:
                 client.destroy()
             except InvalidHandle:
@@ -613,8 +683,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if service in self.services:
-            self.services.remove(service)
+        if service in self.__services:
+            self.__services.remove(service)
             try:
                 service.destroy()
             except InvalidHandle:
@@ -628,8 +698,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if timer in self.timers:
-            self.timers.remove(timer)
+        if timer in self.__timers:
+            self.__timers.remove(timer)
             try:
                 timer.destroy()
             except InvalidHandle:
@@ -643,8 +713,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if guard in self.guards:
-            self.guards.remove(guard)
+        if guard in self.__guards:
+            self.__guards.remove(guard)
             try:
                 guard.destroy()
             except InvalidHandle:
@@ -670,12 +740,12 @@ class Node:
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
 
-        self.publishers.clear()
-        self.subscriptions.clear()
-        self.clients.clear()
-        self.services.clear()
-        self.timers.clear()
-        self.guards.clear()
+        self.__publishers.clear()
+        self.__subscriptions.clear()
+        self.__clients.clear()
+        self.__services.clear()
+        self.__timers.clear()
+        self.__guards.clear()
         self.handle.destroy()
 
     def get_publisher_names_and_types_by_node(
