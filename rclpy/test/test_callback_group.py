@@ -18,7 +18,7 @@ from rcl_interfaces.srv import GetParameters
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
-from test_msgs.msg import Primitives
+from test_msgs.msg import BasicTypes
 
 
 class TestCallbackGroup(unittest.TestCase):
@@ -71,10 +71,10 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertTrue(group.has_entity(tmr2))
 
     def test_create_subscription_with_group(self):
-        sub1 = self.node.create_subscription(Primitives, 'chatter', lambda msg: print(msg))
+        sub1 = self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
         group = ReentrantCallbackGroup()
         sub2 = self.node.create_subscription(
-            Primitives, 'chatter', lambda msg: print(msg), callback_group=group)
+            BasicTypes, 'chatter', lambda msg: print(msg), callback_group=group)
 
         self.assertFalse(group.has_entity(sub1))
         self.assertTrue(group.has_entity(sub2))
