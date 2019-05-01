@@ -16,7 +16,7 @@ import unittest
 
 import rclpy
 
-from test_msgs.msg import BasicTypes, Strings 
+from test_msgs.msg import BasicTypes, Strings
 
 
 class TestMessages(unittest.TestCase):
