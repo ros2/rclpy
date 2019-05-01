@@ -31,7 +31,7 @@ class SignalHandlerGuardCondition(GuardCondition):
             # already destroyed
             pass
         except ValueError:
-            # ValueError: Guard condition was not registered
+            # Guard condition was not registered
             pass
 
     def destroy(self):
