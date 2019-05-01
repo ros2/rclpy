@@ -30,6 +30,9 @@ class SignalHandlerGuardCondition(GuardCondition):
         except InvalidHandle:
             # already destroyed
             pass
+        except ValueError:
+            # Guard condition was not registered
+            pass
 
     def destroy(self):
         with self.handle as capsule:
