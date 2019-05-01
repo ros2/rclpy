@@ -670,12 +670,12 @@ class Node:
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
 
-        self.publishers = ()
-        self.subscriptions = ()
-        self.clients = ()
-        self.services = ()
-        self.timers = ()
-        self.guards = ()
+        self.publishers.clear()
+        self.subscriptions.clear()
+        self.clients.clear()
+        self.services.clear()
+        self.timers.clear()
+        self.guards.clear()
         self.handle.destroy()
 
     def get_publisher_names_and_types_by_node(
