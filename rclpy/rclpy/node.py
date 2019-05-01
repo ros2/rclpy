@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import Callable
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -154,74 +155,39 @@ class Node:
             self._parameter_service = ParameterService(self)
 
     @property
-    def publishers(self) -> List[Publisher]:
-        """
-        Return publishers that have been created on this node.
-
-        .. warning::
-        The returned list must not be modified.
-        """
-        return self.__publishers
+    def publishers(self) -> Iterator[Publisher]:
+        """Get publishers that have been created on this node."""
+        yield from self.__publishers
 
     @property
-    def subscriptions(self) -> List[Subscription]:
-        """
-        Return subscriptions that have been created on this node.
-
-        .. warning::
-        The returned list must not be modified.
-        """
-        return self.__subscriptions
+    def subscriptions(self) -> Iterator[Subscription]:
+        """Get subscriptions that have been created on this node."""
+        yield from self.__subscriptions
 
     @property
-    def clients(self) -> List[Client]:
-        """
-        Return clients that have been created on this node.
-
-        .. warning::
-        The returned list must not be modified.
-        """
-        return self.__clients
+    def clients(self) -> Iterator[Client]:
+        """Get clients that have been created on this node."""
+        yield from self.__clients
 
     @property
-    def services(self) -> List[Service]:
-        """
-        Return services that have been created on this node.
-
-        .. warning::
-        The returned list must not be modified.
-        """
-        return self.__services
+    def services(self) -> Iterator[Service]:
+        """Get services that have been created on this node."""
+        yield from self.__services
 
     @property
-    def timers(self) -> List[WallTimer]:
-        """
-        Return timers that have been created on this node.
-
-        .. warning::
-        The returned list must not be modified.
-        """
-        return self.__timers
+    def timers(self) -> Iterator[WallTimer]:
+        """Get timers that have been created on this node."""
+        yield from self.__timers
 
     @property
-    def guards(self) -> List[GuardCondition]:
-        """
-        Return guards that have been created on this node.
-
-        .. warning::
-        The returned list must not be modified.
-        """
-        return self.__guards
+    def guards(self) -> Iterator[GuardCondition]:
+        """Get guards that have been created on this node."""
+        yield from self.__guards
 
     @property
-    def waitables(self) -> List[Waitable]:
-        """
-        Return waitables that have been created on this node.
-
-        .. warning::
-        The returned list must not be modified.
-        """
-        return self.__waitables
+    def waitables(self) -> Iterator[Waitable]:
+        """Get waitables that have been created on this node."""
+        yield from self.__waitables
 
     @property
     def executor(self) -> Optional[Executor]:
