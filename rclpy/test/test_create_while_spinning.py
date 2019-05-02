@@ -54,7 +54,7 @@ class TestCreateWhileSpinning(unittest.TestCase):
 
     def test_publish_subscribe(self):
         evt = threading.Event()
-        sub = self.node.create_subscription(BasicTypes, 'foo', lambda msg: evt.set())
+        self.node.create_subscription(BasicTypes, 'foo', lambda msg: evt.set())
         pub = self.node.create_publisher(BasicTypes, 'foo')
         pub.publish(BasicTypes())
         assert evt.wait(TIMEOUT)
@@ -67,7 +67,7 @@ class TestCreateWhileSpinning(unittest.TestCase):
             evt.set()
             return resp
 
-        srv = self.node.create_service(BasicTypesSrv, 'foo', trigger_event)
+        self.node.create_service(BasicTypesSrv, 'foo', trigger_event)
         cli = self.node.create_client(BasicTypesSrv, 'foo')
         cli.wait_for_service()
         cli.call_async(BasicTypesSrv.Request())
@@ -83,7 +83,7 @@ class TestCreateWhileSpinning(unittest.TestCase):
     def test_timer(self):
         evt = threading.Event()
 
-        tmr = self.node.create_timer(TIMEOUT / 10, lambda: evt.set())
+        self.node.create_timer(TIMEOUT / 10, lambda: evt.set())
         assert evt.wait(TIMEOUT)
 
     def test_waitable(self):
