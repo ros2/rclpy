@@ -117,7 +117,7 @@ _new_zero_initialized_rcl_event()
 /**
   * \param[in] class_name The name of the rclpy.qos_event class to construct.
   * \param[in] args Tuple-like arguments to the constructor of the type.
-  *   NOTE this function steals a reference to `args` instead of just borrowing it
+  *   NOTE this function steals a reference to `args` instead of just borrowing it.
   */
 static
 PyObject * _create_py_qos_event(const char * class_name, PyObject * args)
@@ -243,15 +243,15 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, uint32_t event_type
 /**
   * This function will create an event handle for the given Subscription or Publisher parent.
   *
-  * Raises MemoryError if the event can't be allocated
-  * Raises RuntimeError on initialization failure
-  * Raises TypeError if the capsules are not the correct types
+  * Raises MemoryError if the event can't be allocated.
+  * Raises RuntimeError on initialization failure.
+  * Raises TypeError if the capsules are not the correct types.
   *
   * \param[in] pyevent_type Enum value of
-  *   rcl_publisher_event_type_t or rcl_subscription_event_type_t, chosen by the type of pyparent
-  * \param[in] pyparent Capsule containing the parent Publisher or Subscription
-  * \return capsule containing rcl_event_t
-  * \return NULL on failure
+  *   rcl_publisher_event_type_t or rcl_subscription_event_type_t, chosen by the type of pyparent.
+  * \param[in] pyparent Capsule containing the parent Publisher or Subscription.
+  * \return capsule containing rcl_event_t.
+  * \return NULL on failure.
   */
 static PyObject *
 rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
@@ -305,20 +305,20 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
   return pyevent;
 }
 
-/// Get a pending QoS event's data
+/// Get a pending QoS event's data.
 /**
   * After having determined that a middleware event is ready, get the callback payload.
   *
-  * Raises RuntimeError on failure to take the event from the middleware
-  * Raises TypeError if the capsules are not the correct types
-  * Raises ValueError on unknown event_type argument
+  * Raises RuntimeError on failure to take the event from the middleware.
+  * Raises TypeError if the capsules are not the correct types.
+  * Raises ValueError on unknown event_type argument.
   *
-  * \param[in] pyevent Event handle from rclpy_create_event
+  * \param[in] pyevent Event handle from rclpy_create_event.
   * \param[in] pyevent_type Enum value of
-  *   rcl_publisher_event_type_t or rcl_subscription_event_type_t, chosen by the type of pyparent
-  * \param[in] pyparent Capsule containing the parent Publisher or Subscription
-  * \return Python object from rclpy.qos_event containing callback data
-  * \return NULL on failure
+  *   rcl_publisher_event_type_t or rcl_subscription_event_type_t, chosen by the type of pyparent.
+  * \param[in] pyparent Capsule containing the parent Publisher or Subscription.
+  * \return Python object from rclpy.qos_event containing callback data.
+  * \return NULL on failure.
   */
 static PyObject *
 rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
