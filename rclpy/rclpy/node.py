@@ -52,6 +52,8 @@ from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
+from rclpy.qos_event import PublisherEventCallbacks
+from rclpy.qos_event import SubscriptionEventCallbacks
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
@@ -696,7 +698,9 @@ class Node:
         msg_type,
         topic: str,
         *,
-        qos_profile: QoSProfile = qos_profile_default
+        qos_profile: QoSProfile = qos_profile_default,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[PublisherEventCallbacks] = None,
     ) -> Publisher:
         """
         Create a new publisher.
@@ -704,8 +708,13 @@ class Node:
         :param msg_type: The type of ROS messages the publisher will publish.
         :param topic: The name of the topic the publisher will publish to.
         :param qos_profile: The quality of service profile to apply to the publisher.
+        :param callback_group: The callback group for the publisher's event handlers.
+            If ``None``, then the node's default callback group is used.
+        :param event_callbacks: User-defined callbacks for middleware events.
         :return: The new publisher.
         """
+        callback_group = callback_group or self.default_callback_group
+
         # this line imports the typesupport for the message module if not already done
         check_for_type_support(msg_type)
         failed = False
@@ -721,9 +730,16 @@ class Node:
         publisher_handle = Handle(publisher_capsule)
         publisher_handle.requires(self.handle)
 
-        publisher = Publisher(publisher_handle, msg_type, topic, qos_profile)
+        publisher = Publisher(
+            publisher_handle, msg_type, topic, qos_profile,
+            event_callbacks=event_callbacks or PublisherEventCallbacks(),
+            callback_group=callback_group)
         self.__publishers.append(publisher)
         self._wake_executor()
+
+        for event_callback in publisher.event_handlers:
+            self.add_waitable(event_callback)
+
         return publisher
 
     def create_subscription(
@@ -733,7 +749,8 @@ class Node:
         callback: Callable[[MsgType], None],
         *,
         qos_profile: QoSProfile = qos_profile_default,
-        callback_group: CallbackGroup = None,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         raw: bool = False
     ) -> Subscription:
         """
@@ -746,11 +763,12 @@ class Node:
         :param qos_profile: The quality of service profile to apply to the subscription.
         :param callback_group: The callback group for the subscription. If ``None``, then the
             nodes default callback group is used.
+        :param event_callbacks: User-defined callbacks for middleware events.
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
         """
-        if callback_group is None:
-            callback_group = self.default_callback_group
+        callback_group = callback_group or self.default_callback_group
+
         # this line imports the typesupport for the message module if not already done
         check_for_type_support(msg_type)
         failed = False
@@ -768,10 +786,14 @@ class Node:
 
         subscription = Subscription(
             subscription_handle, msg_type,
-            topic, callback, callback_group, qos_profile, raw)
+            topic, callback, callback_group, qos_profile, raw,
+            event_callbacks=event_callbacks or SubscriptionEventCallbacks())
         self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
-        self._wake_executor()
+
+        for event_handler in subscription.event_handlers:
+            self.add_waitable(event_handler)
+
         return subscription
 
     def create_client(

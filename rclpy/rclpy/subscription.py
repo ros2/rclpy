@@ -17,6 +17,8 @@ from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.qos import QoSProfile
+from rclpy.qos_event import SubscriptionEventCallbacks
+
 
 # For documentation only
 MsgType = TypeVar('MsgType')
@@ -32,7 +34,8 @@ class Subscription:
          callback: Callable,
          callback_group: CallbackGroup,
          qos_profile: QoSProfile,
-         raw: bool
+         raw: bool,
+         event_callbacks: SubscriptionEventCallbacks,
     ) -> None:
         """
         Create a container for a ROS subscription.
@@ -61,6 +64,9 @@ class Subscription:
         self._executor_event = False
         self.qos_profile = qos_profile
         self.raw = raw
+
+        self.event_handlers = event_callbacks.create_event_handlers(
+            callback_group, subscription_handle)
 
     @property
     def handle(self):

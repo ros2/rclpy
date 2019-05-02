@@ -37,6 +37,7 @@
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #include "rclpy_common/common.h"
+#include "./_rclpy_qos_event.c"
 
 typedef struct
 {
@@ -2498,6 +2499,9 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
     ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition, &index);
+  } else if (0 == strcmp(entity_type, "event")) {
+    rcl_event_t * event = (rcl_event_t *)PyCapsule_GetPointer(pyentity, "rcl_event_t");
+    ret = rcl_wait_set_add_event(wait_set, event, &index);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
@@ -2563,6 +2567,9 @@ rclpy_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (0 == strcmp(entity_type, "guard_condition")) {
     entities = (void *)wait_set->guard_conditions;
     num_entities = wait_set->size_of_guard_conditions;
+  } else if (0 == strcmp(entity_type, "event")) {
+    entities = (void *)wait_set->events;
+    num_entities = wait_set->size_of_events;
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "'%s' is not a known entity", entity_type);
@@ -4646,6 +4653,11 @@ static PyMethodDef rclpy_methods[] = {
     "Create a Timer."
   },
   {
+    "rclpy_create_event", rclpy_create_event, METH_VARARGS,
+    "Create an Event."
+  },
+
+  {
     "rclpy_create_guard_condition", rclpy_create_guard_condition, METH_VARARGS,
     "Create a general purpose guard_condition."
   },
@@ -4770,6 +4782,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_take_response", rclpy_take_response, METH_VARARGS,
     "rclpy_take_response."
+  },
+  {
+    "rclpy_take_event", rclpy_take_event, METH_VARARGS,
+    "Get the pending data for a ready QoS Event."
   },
 
   {
