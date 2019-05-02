@@ -26,8 +26,7 @@ from rclpy.exceptions import InvalidParameterValueException
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 from rclpy.exceptions import ParameterAlreadyDeclaredException
-# from rclpy.exceptions import ParameterImmutableException
-# from rclpy.exceptions import ParameterNotDeclaredException
+from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
 from test_msgs.msg import BasicTypes
@@ -292,7 +291,16 @@ class Test(unittest.TestCase):
     def setUp(self):
         self.context = rclpy.context.Context()
         rclpy.init(context=self.context)
-        self.node = rclpy.create_node(TEST_NODE, namespace=TEST_NAMESPACE, context=self.context)
+        self.node = rclpy.create_node(
+            TEST_NODE,
+            namespace=TEST_NAMESPACE,
+            context=self.context,
+            initial_parameters=[
+                Parameter('initial_foo', Parameter.Type.INTEGER, 4321),
+                Parameter('initial_bar', Parameter.Type.STRING, 'init_param'),
+                Parameter('initial_baz', Parameter.Type.DOUBLE, 3.14)
+            ]
+        )
 
     @classmethod
     def tearDown(self):
@@ -300,6 +308,8 @@ class Test(unittest.TestCase):
         rclpy.shutdown(context=self.context)
 
     def test_declare_parameter(self):
+        result_initial_foo = self.node.declare_parameter(
+            'initial_foo', ParameterValue(), ParameterDescriptor())
         result_foo = self.node.declare_parameter(
             'foo', ParameterValue(
                 type=Parameter.Type.INTEGER.value, integer_value=42), ParameterDescriptor())
@@ -311,12 +321,15 @@ class Test(unittest.TestCase):
                 type=Parameter.Type.DOUBLE.value, double_value=2.41), ParameterDescriptor())
 
         # OK cases.
+        self.assertIsInstance(result_initial_foo, Parameter)
         self.assertIsInstance(result_foo, Parameter)
         self.assertIsInstance(result_bar, Parameter)
         self.assertIsInstance(result_baz, Parameter)
+        self.assertEqual(result_initial_foo.value, 4321)
         self.assertEqual(result_foo.value, 42)
         self.assertEqual(result_bar.value, 'hello')
         self.assertEqual(result_baz.value, 2.41)
+        self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
@@ -470,69 +483,31 @@ class Test(unittest.TestCase):
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
 
-    # def test_node_set_parameters(self):
-    #     results = self.node.set_parameters([
-    #         Parameter('foo', Parameter.Type.INTEGER, 42),
-    #         Parameter('bar', Parameter.Type.STRING, 'hello'),
-    #         Parameter('baz', Parameter.Type.DOUBLE, 2.41)
-    #     ])
-    #     self.assertTrue(all(isinstance(result, SetParametersResult) for result in results))
-    #     self.assertTrue(all(result.successful for result in results))
-    #     self.assertEqual(self.node.get_parameter('foo').value, 42)
-    #     self.assertEqual(self.node.get_parameter('bar').value, 'hello')
-    #     self.assertEqual(self.node.get_parameter('baz').value, 2.41)
+    def test_node_set_undeclared_parameters(self):
+        with self.assertRaises(ParameterNotDeclaredException):
+            self.node.set_parameters([
+                Parameter('foo', Parameter.Type.INTEGER, 42),
+                Parameter('bar', Parameter.Type.STRING, 'hello'),
+                Parameter('baz', Parameter.Type.DOUBLE, 2.41)
+            ])
 
-    # def test_node_cannot_set_invalid_parameters(self):
-    #     with self.assertRaises(TypeError):
-    #         self.node.set_parameters([42])
+    def test_node_set_undeclared_parameters_atomically(self):
+        with self.assertRaises(ParameterNotDeclaredException):
+            self.node.set_parameters_atomically([
+                Parameter('foo', Parameter.Type.INTEGER, 42),
+                Parameter('bar', Parameter.Type.STRING, 'hello'),
+                Parameter('baz', Parameter.Type.DOUBLE, 2.41)
+            ])
 
-    # def test_node_set_parameters_atomically(self):
-    #     result = self.node.set_parameters_atomically([
-    #         Parameter('foo', Parameter.Type.INTEGER, 42),
-    #         Parameter('bar', Parameter.Type.STRING, 'hello'),
-    #         Parameter('baz', Parameter.Type.DOUBLE, 2.41)
-    #     ])
-    #     self.assertEqual(self.node.get_parameter('foo').value, 42)
-    #     self.assertIsInstance(result, SetParametersResult)
-    #     self.assertTrue(result.successful)
+    def test_node_get_undeclared_parameter(self):
+        with self.assertRaises(ParameterNotDeclaredException):
+            self.node.get_parameter('initial_foo')
 
-    # def test_node_get_parameter(self):
-    #     self.node.set_parameters([Parameter('foo', Parameter.Type.INTEGER, 42)])
-    #     self.assertIsInstance(self.node.get_parameter('foo'), Parameter)
-    #     self.assertEqual(self.node.get_parameter('foo').value, 42)
-
-    # def test_node_get_parameter_returns_parameter_not_set(self):
-    #     self.assertIsInstance(self.node.get_parameter('unset'), Parameter)
-    #     self.assertEqual(self.node.get_parameter('unset').type_, Parameter.Type.NOT_SET)
-
-    # def test_node_has_parameter_services(self):
-    #     service_names_and_types = self.node.get_service_names_and_types()
-    #     self.assertIn(
-    #         ('/my_ns/my_node/describe_parameters', ['rcl_interfaces/DescribeParameters']),
-    #         service_names_and_types
-    #     )
-    #     self.assertIn(
-    #         ('/my_ns/my_node/get_parameter_types', ['rcl_interfaces/GetParameterTypes']),
-    #         service_names_and_types
-    #     )
-    #     self.assertIn(
-    #         ('/my_ns/my_node/get_parameters', ['rcl_interfaces/GetParameters']),
-    #         service_names_and_types
-    #     )
-    #     self.assertIn(
-    #         ('/my_ns/my_node/list_parameters', ['rcl_interfaces/ListParameters']),
-    #         service_names_and_types
-    #     )
-    #     self.assertIn(
-    #         ('/my_ns/my_node/set_parameters', ['rcl_interfaces/SetParameters']),
-    #         service_names_and_types
-    #     )
-    #     self.assertIn(
-    #         (
-    #             '/my_ns/my_node/set_parameters_atomically',
-    #             ['rcl_interfaces/SetParametersAtomically']
-    #         ), service_names_and_types
-    #     )
+    def test_node_get_undeclared_parameter_or(self):
+        result = self.node.get_parameter_or(
+            'initial_foo', Parameter('foo', Parameter.Type.INTEGER, 152))
+        self.assertEqual(result.name, 'foo')
+        self.assertEqual(result.value, 152)
 
 
 class TestCreateNode(unittest.TestCase):

@@ -321,7 +321,7 @@ class Node:
             assert isinstance(name, str)
             # Get value from initial parameters, of from tuple if it doesn't exist.
             if name in self._initial_parameters:
-                value = self._initial_parameters[name]
+                value = self._initial_parameters[name].get_parameter_value()
             elif parameter_tuple[1] is None:
                 value = ParameterValue()
             else:
