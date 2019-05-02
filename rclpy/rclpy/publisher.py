@@ -15,6 +15,7 @@
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
@@ -26,7 +27,7 @@ class Publisher:
 
     def __init__(
         self,
-        publisher_handle,
+        publisher_handle: Handle,
         msg_type: MsgType,
         topic: str,
         qos_profile: QoSProfile,

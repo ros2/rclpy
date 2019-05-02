@@ -25,10 +25,11 @@ typedef union _qos_event_callback_data {
 
 typedef PyObject * (* _qos_event_data_filler_function)(_qos_event_callback_data_t *);
 
+static
 bool
 _check_rcl_return(rcl_ret_t ret, const char * error_msg)
 {
-  if (ret != RCL_RET_OK) {
+  if (RCL_RET_OK != ret) {
     PyErr_Format(PyExc_RuntimeError,
       "%s: %s", error_msg, rcl_get_error_string().str);
     rcl_reset_error();
@@ -37,51 +38,69 @@ _check_rcl_return(rcl_ret_t ret, const char * error_msg)
   return true;
 }
 
+static
 void
 _destroy_event_capsule(PyObject * pycapsule)
 {
   rcl_event_t * event = (rcl_event_t *)PyCapsule_GetPointer(pycapsule, "rcl_event_t");
+  if (!event) {
+    PyErr_Clear();
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_destroy_event_capsule failed to get pointer");
+  }
   rcl_ret_t ret = rcl_event_fini(event);
+  if (RCL_RET_OK != ret) {
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini event: %s", rcl_get_error_string().str);
+  }
   PyMem_Free(event);
-  _check_rcl_return(ret, "Failed to fini 'rcl_event_t'");
 }
 
+static
 bool
 _is_pycapsule_rcl_subscription(PyObject * pycapsule)
 {
   return PyCapsule_IsValid(pycapsule, "rclpy_subscription_t");
 }
 
+static
 bool
 _is_pycapsule_rcl_publisher(PyObject * pycapsule)
 {
-  return PyCapsule_IsValid(pycapsule, "rcl_publisher_t");
+  return PyCapsule_IsValid(pycapsule, "rclpy_publisher_t");
 }
 
+static
 bool
 _is_pycapsule_rcl_event(PyObject * pycapsule)
 {
   return PyCapsule_IsValid(pycapsule, "rcl_event_t");
 }
 
+static
 rcl_subscription_t *
 _pycapsule_to_rcl_subscription(PyObject * pycapsule)
 {
   return (rcl_subscription_t *)PyCapsule_GetPointer(pycapsule, "rclpy_subscription_t");
 }
 
+static
 rcl_publisher_t *
 _pycapsule_to_rcl_publisher(PyObject * pycapsule)
 {
-  return (rcl_publisher_t *)PyCapsule_GetPointer(pycapsule, "rcl_publisher_t");
+  return (rcl_publisher_t *)PyCapsule_GetPointer(pycapsule, "rclpy_publisher_t");
 }
 
+static
 rcl_event_t *
 _pycapsule_to_rcl_event(PyObject * pycapsule)
 {
   return (rcl_event_t *)PyCapsule_GetPointer(pycapsule, "rcl_event_t");
 }
 
+static
 rcl_event_t *
 _new_zero_initialized_rcl_event()
 {
@@ -94,7 +113,13 @@ _new_zero_initialized_rcl_event()
   return event;
 }
 
-
+/// Create a Python object of the given type from the qos_event module.
+/**
+  * \param[in] class_name The name of the rclpy.qos_event class to construct.
+  * \param[in] args Tuple-like arguments to the constructor of the type.
+  *   NOTE this function steals a reference to `args` instead of just borrowing it
+  */
+static
 PyObject * _create_py_qos_event(const char * class_name, PyObject * args)
 {
   PyObject * pyqos_event_module = NULL;
@@ -121,6 +146,7 @@ cleanup:
   return pyqos_event;
 }
 
+static
 PyObject *
 _requested_deadline_missed_to_py_object(_qos_event_callback_data_t * data)
 {
@@ -135,6 +161,7 @@ _requested_deadline_missed_to_py_object(_qos_event_callback_data_t * data)
   return _create_py_qos_event("QoSRequestedDeadlineMissedInfo", args);
 }
 
+static
 PyObject *
 _liveliness_changed_to_py_object(_qos_event_callback_data_t * data)
 {
@@ -151,6 +178,7 @@ _liveliness_changed_to_py_object(_qos_event_callback_data_t * data)
   return _create_py_qos_event("QoSLivelinessChangedInfo", args);
 }
 
+static
 PyObject *
 _offered_deadline_missed_to_py_object(_qos_event_callback_data_t * data)
 {
@@ -165,6 +193,7 @@ _offered_deadline_missed_to_py_object(_qos_event_callback_data_t * data)
   return _create_py_qos_event("QoSOfferedDeadlineMissedInfo", args);
 }
 
+static
 PyObject *
 _liveliness_lost_to_py_object(_qos_event_callback_data_t * data)
 {
@@ -179,7 +208,7 @@ _liveliness_lost_to_py_object(_qos_event_callback_data_t * data)
   return _create_py_qos_event("QoSLivelinessLostInfo", args);
 }
 
-
+static
 _qos_event_data_filler_function
 _get_qos_event_data_filler_function_for(PyObject * pyparent, uint32_t event_type)
 {

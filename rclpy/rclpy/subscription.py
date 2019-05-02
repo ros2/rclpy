@@ -16,6 +16,7 @@ from typing import Callable
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.handle import Handle
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import SubscriptionEventCallbacks
 
@@ -28,7 +29,7 @@ class Subscription:
 
     def __init__(
          self,
-         subscription_handle,
+         subscription_handle: Handle,
          msg_type: MsgType,
          topic: str,
          callback: Callable,

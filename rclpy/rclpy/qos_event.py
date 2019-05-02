@@ -16,7 +16,9 @@ from enum import IntEnum
 from typing import Callable
 from typing import List
 from typing import NamedTuple
+from typing import Optional
 
+import rclpy
 from rclpy.callback_groups import CallbackGroup
 from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -99,10 +101,10 @@ class QoSEventHandler(Waitable):
     def __init__(
         self,
         *,
-        callback_group,
-        callback,
-        event_type,
-        parent_handle,
+        callback_group: CallbackGroup,
+        callback: Callable,
+        event_type: IntEnum,
+        parent_handle: Handle,
     ):
         # Waitable init adds self to callback_group
         super().__init__(callback_group)
@@ -110,7 +112,10 @@ class QoSEventHandler(Waitable):
         self.callback = callback
 
         self._parent_handle = parent_handle
-        self._event_handle = _rclpy.rclpy_create_event(event_type, parent_handle)
+        with parent_handle as parent_capsule:
+            event_capsule = _rclpy.rclpy_create_event(event_type, parent_capsule)
+        self._event_handle = Handle(event_capsule)
+        self._event_handle.requires(self._parent_handle)
         self._ready_to_take_data = False
         self._event_index = None
 
@@ -127,15 +132,15 @@ class QoSEventHandler(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self._ready_to_take_data:
             self._ready_to_take_data = False
-            return _rclpy.rclpy_take_event(
-                self._event_handle, self._parent_handle, self.event_type)
+            with self._parent_handle as parent_capsule, self._event_handle as event_capsule:
+                return _rclpy.rclpy_take_event(event_capsule, parent_capsule, self.event_type)
         return None
 
     async def execute(self, taken_data):
         """Execute work after data has been taken from a ready wait set."""
         if not taken_data:
             return
-        self.callback(taken_data)
+        await rclpy.executors.await_or_execute(self.callback, [taken_data])
 
     def get_num_entities(self):
         """Return number of each type of entity used."""
@@ -143,7 +148,8 @@ class QoSEventHandler(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entites to wait set."""
-        self._event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, self._event_handle)
+        with self._event_handle as event_capsule:
+            self._event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, event_capsule)
     # End Waitable API
 
 
@@ -153,8 +159,8 @@ class SubscriptionEventCallbacks:
     def __init__(
         self,
         *,
-        deadline: Callable[[QoSRequestedDeadlineMissedInfo], None] = None,
-        liveliness: Callable[[QoSLivelinessChangedInfo], None] = None,
+        deadline: Optional[Callable[[QoSRequestedDeadlineMissedInfo], None]] = None,
+        liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None,
     ) -> None:
         """
         Constructor.
@@ -168,22 +174,21 @@ class SubscriptionEventCallbacks:
         self.liveliness = liveliness
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, subscription_handle: Handle
+        self, callback_group: CallbackGroup, subscription_handle: Handle,
     ) -> List[QoSEventHandler]:
         event_handlers = []
-        with subscription_handle as subscription_capsule:
-            if self.deadline:
-                event_handlers.append(QoSEventHandler(
-                    callback_group=callback_group,
-                    callback=self.deadline,
-                    event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED,
-                    parent_handle=subscription_capsule))
-            if self.liveliness:
-                event_handlers.append(QoSEventHandler(
-                    callback_group=callback_group,
-                    callback=self.liveliness,
-                    event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED,
-                    parent_handle=subscription_capsule))
+        if self.deadline:
+            event_handlers.append(QoSEventHandler(
+                callback_group=callback_group,
+                callback=self.deadline,
+                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED,
+                parent_handle=subscription_handle))
+        if self.liveliness:
+            event_handlers.append(QoSEventHandler(
+                callback_group=callback_group,
+                callback=self.liveliness,
+                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED,
+                parent_handle=subscription_handle))
         return event_handlers
 
 
@@ -193,8 +198,8 @@ class PublisherEventCallbacks:
     def __init__(
         self,
         *,
-        deadline: Callable[[QoSOfferedDeadlineMissedInfo], None] = None,
-        liveliness: Callable[[QoSLivelinessLostInfo], None] = None
+        deadline: Optional[Callable[[QoSOfferedDeadlineMissedInfo], None]] = None,
+        liveliness: Optional[Callable[[QoSLivelinessLostInfo], None]] = None
     ) -> None:
         """
         Constructor.
@@ -208,7 +213,7 @@ class PublisherEventCallbacks:
         self.liveliness = liveliness
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, publisher_handle
+        self, callback_group: CallbackGroup, publisher_handle: Handle,
     ) -> List[QoSEventHandler]:
         event_handlers = []
         if self.deadline:
