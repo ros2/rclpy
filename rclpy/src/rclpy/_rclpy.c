@@ -2255,31 +2255,25 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
 /**
  * Raises ValueError if the arguments are not capsules
  *
- * \param[in] pynode Capsule pointing to the node the entity belongs to
  * \param[in] pyclient Capsule pointing to the client
  * \return True if the service server is available
  */
 static PyObject *
 rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  PyObject * pynode;
   PyObject * pyclient;
 
-  if (!PyArg_ParseTuple(args, "OO", &pynode, &pyclient)) {
+  if (!PyArg_ParseTuple(args, "O", &pyclient)) {
     return NULL;
   }
 
-  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
   rclpy_client_t * client = (rclpy_client_t *)PyCapsule_GetPointer(pyclient, "rclpy_client_t");
   if (!client) {
     return NULL;
   }
 
   bool is_ready;
-  rcl_ret_t ret = rcl_service_server_is_available(node, &(client->client), &is_ready);
+  rcl_ret_t ret = rcl_service_server_is_available(client->node, &(client->client), &is_ready);
 
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,

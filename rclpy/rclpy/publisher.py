@@ -28,7 +28,6 @@ class Publisher:
         msg_type: MsgType,
         topic: str,
         qos_profile: QoSProfile,
-        node_handle
     ) -> None:
         """
         Create a container for a ROS publisher.
@@ -43,14 +42,11 @@ class Publisher:
         :param msg_type: The type of ROS messages the publisher will publish.
         :param topic: The name of the topic the publisher will publish to.
         :param qos_profile: The quality of service profile to apply to the publisher.
-        :param node_handle: Capsule pointing to the ``rcl_node_t`` object for the node the
-            publisher is associated with.
         """
         self.__handle = publisher_handle
         self.msg_type = msg_type
         self.topic = topic
         self.qos_profile = qos_profile
-        self.node_handle = node_handle
 
     def publish(self, msg: MsgType) -> None:
         """

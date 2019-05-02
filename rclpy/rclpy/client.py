@@ -32,7 +32,6 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 class Client:
     def __init__(
         self,
-        node_handle,
         context: Context,
         client_handle,
         srv_type: SrvType,
@@ -46,8 +45,6 @@ class Client:
         .. warning:: Users should not create a service client with this constuctor, instead they
            should call :meth:`.Node.create_client`.
 
-        :param node_handle: Capsule pointing to the ``rcl_node_t`` object for the node associated
-            with the service client.
         :param context: The context associated with the service client.
         :param client_handle: :class:`Handle` wrapping the underlying ``rcl_client_t`` object.
         :param srv_type: The service type.
@@ -56,7 +53,6 @@ class Client:
         :param callback_group: The callback group for the service client. If ``None``, then the
             nodes default callback group is used.
         """
-        self.node_handle = node_handle
         self.context = context
         self.__handle = client_handle
         self.srv_type = srv_type
@@ -144,8 +140,8 @@ class Client:
 
         :return: ``True`` if a server is ready, ``False`` otherwise.
         """
-        with self.handle as capsule, self.node_handle as node_capsule:
-            return _rclpy.rclpy_service_server_is_available(node_capsule, capsule)
+        with self.handle as capsule:
+            return _rclpy.rclpy_service_server_is_available(capsule)
 
     def wait_for_service(self, timeout_sec: float = None) -> bool:
         """

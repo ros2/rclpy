@@ -28,7 +28,6 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 class Service:
     def __init__(
         self,
-        node_handle,
         service_handle,
         srv_type: SrvType,
         srv_name: str,
@@ -42,8 +41,6 @@ class Service:
         .. warning:: Users should not create a service server with this constuctor, instead they
            should call :meth:`.Node.create_service`.
 
-        :param node_handle: Capsule pointing to the ``rcl_node_t`` object for the node associated
-            with the service server.
         :param context: The context associated with the service server.
         :param service_handle: Capsule pointing to the underlying ``rcl_service_t`` object.
         :param srv_type: The service type.
@@ -52,7 +49,6 @@ class Service:
             nodes default callback group is used.
         :param qos_profile: The quality of service profile to apply the service server.
         """
-        self.node_handle = node_handle
         self.__handle = service_handle
         self.srv_type = srv_type
         self.srv_name = srv_name

@@ -415,7 +415,7 @@ class Node:
         publisher_handle = Handle(publisher_capsule)
         publisher_handle.requires(self.handle)
 
-        publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
+        publisher = Publisher(publisher_handle, msg_type, topic, qos_profile)
         self.__publishers.append(publisher)
         return publisher
 
@@ -503,7 +503,7 @@ class Node:
         client_handle.requires(self.handle)
 
         client = Client(
-            self.handle, self.context,
+            self.context,
             client_handle, srv_type, srv_name, qos_profile,
             callback_group)
         self.__clients.append(client)
@@ -550,7 +550,7 @@ class Node:
         service_handle.requires(self.handle)
 
         service = Service(
-            self.handle, service_handle,
+            service_handle,
             srv_type, srv_name, callback, callback_group, qos_profile)
         self.__services.append(service)
         callback_group.add_entity(service)
