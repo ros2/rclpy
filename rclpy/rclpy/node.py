@@ -210,6 +210,11 @@ class Node:
             new_executor.add_node(self)
             self.__executor_weakref = weakref.ref(new_executor)
 
+    def _wake_executor(self):
+        executor = self.executor
+        if executor:
+            executor.wake()
+
     @property
     def context(self) -> Context:
         """Get the context associated with the node."""
@@ -376,6 +381,7 @@ class Node:
         :param waitable: An instance of a waitable that the node will add to the waitset.
         """
         self.__waitables.append(waitable)
+        self._wake_executor()
 
     def remove_waitable(self, waitable: Waitable) -> None:
         """
@@ -384,6 +390,7 @@ class Node:
         :param waitable: The Waitable to remove.
         """
         self.__waitables.remove(waitable)
+        self._wake_executor()
 
     def create_publisher(
         self,
@@ -417,6 +424,7 @@ class Node:
 
         publisher = Publisher(publisher_handle, msg_type, topic, qos_profile, self.handle)
         self.__publishers.append(publisher)
+        self._wake_executor()
         return publisher
 
     def create_subscription(
@@ -464,6 +472,7 @@ class Node:
             topic, callback, callback_group, qos_profile, raw)
         self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
+        self._wake_executor()
         return subscription
 
     def create_client(
@@ -508,6 +517,7 @@ class Node:
             callback_group)
         self.__clients.append(client)
         callback_group.add_entity(client)
+        self._wake_executor()
         return client
 
     def create_service(
@@ -554,6 +564,7 @@ class Node:
             srv_type, srv_name, callback, callback_group, qos_profile)
         self.__services.append(service)
         callback_group.add_entity(service)
+        self._wake_executor()
         return service
 
     def create_timer(
@@ -581,6 +592,7 @@ class Node:
 
         self.__timers.append(timer)
         callback_group.add_entity(timer)
+        self._wake_executor()
         return timer
 
     def create_guard_condition(
@@ -596,6 +608,7 @@ class Node:
 
         self.__guards.append(guard)
         callback_group.add_entity(guard)
+        self._wake_executor()
         return guard
 
     def destroy_publisher(self, publisher: Publisher) -> bool:
@@ -610,6 +623,7 @@ class Node:
                 publisher.destroy()
             except InvalidHandle:
                 return False
+            self._wake_executor()
             return True
         return False
 
@@ -625,6 +639,7 @@ class Node:
                 subscription.destroy()
             except InvalidHandle:
                 return False
+            self._wake_executor()
             return True
         return False
 
@@ -640,6 +655,7 @@ class Node:
                 client.destroy()
             except InvalidHandle:
                 return False
+            self._wake_executor()
             return True
         return False
 
@@ -655,6 +671,7 @@ class Node:
                 service.destroy()
             except InvalidHandle:
                 return False
+            self._wake_executor()
             return True
         return False
 
@@ -670,6 +687,7 @@ class Node:
                 timer.destroy()
             except InvalidHandle:
                 return False
+            self._wake_executor()
             return True
         return False
 
@@ -685,6 +703,7 @@ class Node:
                 guard.destroy()
             except InvalidHandle:
                 return False
+            self._wake_executor()
             return True
         return False
 
@@ -713,6 +732,7 @@ class Node:
         self.__timers.clear()
         self.__guards.clear()
         self.handle.destroy()
+        self._wake_executor()
 
     def get_publisher_names_and_types_by_node(
         self,
