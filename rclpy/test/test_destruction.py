@@ -51,13 +51,13 @@ def test_destroy_timers():
             timer2 = node.create_timer(1, None)
             timer2  # noqa
 
-            assert 2 == len(node.timers)
+            assert 2 == len(tuple(node.timers))
             assert node.destroy_timer(timer1)
 
-            assert 1 == len(node.timers)
+            assert 1 == len(tuple(node.timers))
         finally:
             node.destroy_node()
-        assert 0 == len(node.timers)
+        assert 0 == len(tuple(node.timers))
     finally:
         rclpy.shutdown(context=context)
 
@@ -70,30 +70,30 @@ def test_destroy_entities():
         try:
             timer = node.create_timer(0.1, None)
             timer  # noqa
-            assert 1 == len(node.timers)
+            assert 1 == len(tuple(node.timers))
             pub1 = node.create_publisher(BasicTypes, 'pub1_topic')
-            assert 2 == len(node.publishers)
+            assert 2 == len(tuple(node.publishers))
             pub2 = node.create_publisher(BasicTypes, 'pub2_topic')
             pub2  # noqa
-            assert 3 == len(node.publishers)
+            assert 3 == len(tuple(node.publishers))
             sub1 = node.create_subscription(
                 BasicTypes, 'sub1_topic', lambda msg: ...)
-            assert 1 == len(node.subscriptions)
+            assert 1 == len(tuple(node.subscriptions))
             sub2 = node.create_subscription(
                 BasicTypes, 'sub2_topic', lambda msg: ...)
             sub2  # noqa
-            assert 2 == len(node.subscriptions)
+            assert 2 == len(tuple(node.subscriptions))
 
             assert node.destroy_publisher(pub1)
-            assert 2 == len(node.publishers)
+            assert 2 == len(tuple(node.publishers))
 
             assert node.destroy_subscription(sub1)
-            assert 1 == len(node.subscriptions)
+            assert 1 == len(tuple(node.subscriptions))
         finally:
             node.destroy_node()
-        assert 0 == len(node.timers)
-        assert 0 == len(node.publishers)
-        assert 0 == len(node.subscriptions)
+        assert 0 == len(tuple(node.timers))
+        assert 0 == len(tuple(node.publishers))
+        assert 0 == len(tuple(node.subscriptions))
     finally:
         rclpy.shutdown(context=context)
 
