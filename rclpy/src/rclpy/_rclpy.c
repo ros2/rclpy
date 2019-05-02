@@ -1351,7 +1351,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_ret_t ret = rcl_publish(&(pub->publisher), raw_ros_message);
+  rcl_ret_t ret = rcl_publish(&(pub->publisher), raw_ros_message, NULL);
   destroy_ros_message(raw_ros_message);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
@@ -2753,7 +2753,7 @@ rclpy_take_raw(rcl_subscription_t * subscription)
     return NULL;
   }
 
-  ret = rcl_take_serialized_message(subscription, &msg, NULL);
+  ret = rcl_take_serialized_message(subscription, &msg, NULL, NULL);
   if (ret != RMW_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
@@ -2813,7 +2813,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, NULL);
+  rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, NULL, NULL);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyErr_Format(PyExc_RuntimeError,
