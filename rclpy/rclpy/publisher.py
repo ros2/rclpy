@@ -67,3 +67,12 @@ class Publisher:
 
     def destroy(self):
         self.handle.destroy()
+
+    def assert_liveliness(self) -> None:
+        """
+        Manually assert that this Publisher is alive.
+
+        If the QoS Liveliness policy is set to RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC, the
+        application must call this at least as often as ``QoSProfile.liveliness_lease_duration``.
+        """
+        _rclpy.rclpy_assert_liveliness(self.publisher_handle)
