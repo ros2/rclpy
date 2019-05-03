@@ -62,8 +62,8 @@ class ParameterService:
 
     def _describe_parameters_callback(self, request, response):
         for name in request.names:
-            p = self._node.get_parameter_or(name)
-            response.descriptors.append(p.descriptor)
+            descriptor = self._node.describe_parameter(name)
+            response.descriptors.append(descriptor)
         return response
 
     def _get_parameters_callback(self, request, response):

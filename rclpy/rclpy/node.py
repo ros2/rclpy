@@ -92,7 +92,8 @@ class Node:
         use_global_arguments: bool = True,
         start_parameter_services: bool = True,
         initial_parameters: List[Parameter] = None,
-        allow_undeclared_parameters: bool = False
+        allow_undeclared_parameters: bool = False,
+        automatically_declare_initial_parameters: bool = True
     ) -> None:
         """
         Constructor.
@@ -110,6 +111,8 @@ class Node:
         :param initial_parameters: A list of parameters to be set during node creation.
         :param allow_undeclared_parameters: True if undeclared parameters are allowed.
             This flag affects the behavior of parameter-related operations.
+        :param automatically_declare_initial_parameters: True if initial parameters have to be
+            declared upon node creation, false otherwise.
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
@@ -124,6 +127,8 @@ class Node:
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
         self._allow_undeclared_parameters = allow_undeclared_parameters
+        self._initial_parameters = {}
+        self._descriptors = {}
 
         namespace = namespace or ''
         if not self._context.ok():
@@ -162,10 +167,12 @@ class Node:
         if initial_parameters is not None:
             self._initial_parameters.update({p.name: p for p in initial_parameters})
 
+        if automatically_declare_initial_parameters:
+            self._parameters.update(self._initial_parameters)
+            self._descriptors.update({p: ParameterDescriptor() for p in self._parameters})
+
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
-
-        self._descriptors = {}
 
     @property
     def publishers(self) -> Iterator[Publisher]:
@@ -408,13 +415,15 @@ class Node:
             # If undeclared parameters are allowed, the parameter might be in the initial set.
             # If that's the case, first set and then return.
             if name in self._initial_parameters:
-                self._set_parameters_atomically([self._initial_parameters[name]])
+                self._parameters.update({name: self._initial_parameters[name]})
+                self._descriptors.update({name: ParameterDescriptor()})
                 return self._parameters[name]
             return Parameter(name, Parameter.Type.NOT_SET, None)
         else:
             raise ParameterNotDeclaredException(name)
 
-    def get_parameter_or(self, name: str, alternative_value: Parameter = None) -> Parameter:
+    def get_parameter_or(
+            self, name: str, alternative_value: Optional[Parameter] = None) -> Parameter:
         """
         Get a parameter or the alternative value.
 
@@ -581,6 +590,7 @@ class Node:
                 parameter_event.node = self.get_namespace() + self.get_name()
             else:
                 parameter_event.node = self.get_namespace() + '/' + self.get_name()
+
             for param in parameter_list:
                 if Parameter.Type.NOT_SET == param.type_:
                     if Parameter.Type.NOT_SET != self.get_parameter_or(param.name).type_:
