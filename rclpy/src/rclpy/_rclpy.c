@@ -39,39 +39,6 @@
 #include "rclpy_common/common.h"
 #include "./_rclpy_qos_event.c"
 
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The subscription must be first in the struct to compare sub.handle.pointer to an address
-  // in a wait set.
-  rcl_subscription_t subscription;
-  rcl_node_t * node;
-} rclpy_subscription_t;
-
-typedef struct
-{
-  rcl_publisher_t publisher;
-  rcl_node_t * node;
-} rclpy_publisher_t;
-
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The client must be first in the struct to compare cli.handle.pointer to an address
-  // in a wait set.
-  rcl_client_t client;
-  rcl_node_t * node;
-} rclpy_client_t;
-
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The service must be first in the struct to compare srv.handle.pointer to an address
-  // in a wait set.
-  rcl_service_t service;
-  rcl_node_t * node;
-} rclpy_service_t;
-
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
@@ -3641,9 +3608,9 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
   } else if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
-    rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
+    rclpy_publisher_t * publisher = (rclpy_publisher_t *)PyCapsule_GetPointer(
       pyentity, "rclpy_publisher_t");
-    if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher)) {
+    if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
       PyErr_Format(PyExc_RuntimeError,
         "Failed to assert liveliness on the Publisher: %s", rcl_get_error_string().str);
       rcl_reset_error();
