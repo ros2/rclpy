@@ -133,13 +133,9 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
 static void
 unregister_sigint_signal_handler()
 {
-  if (is_null_signal_handler(g_original_sigint_handler)) {
-    // Handler not registered yet
-    return;
-  }
   const SIGNAL_HANDLER_T current_sigint_handler =
     install_signal_handler(SIGINT, g_original_sigint_handler);
-  if (is_rclpy_sigint_handler(current_sigint_handler)) {
+  if (!is_rclpy_sigint_handler(current_sigint_handler)) {
     // Oops, someone else must have registered a signal handler
     // that chains to us put it back so it continues to work
     install_signal_handler(SIGINT, current_sigint_handler);
