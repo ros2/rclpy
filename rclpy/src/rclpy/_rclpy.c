@@ -3633,9 +3633,9 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
       rcl_reset_error();
       return NULL;
     }
-  } else if (PyCapsule_IsValid(pyentity, "rcl_publisher_t")) {
+  } else if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
     rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
-      pyentity, "rcl_publisher_t");
+      pyentity, "rclpy_publisher_t");
     if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher)) {
       PyErr_Format(PyExc_RuntimeError,
         "Failed to assert liveliness on the Publisher: %s", rcl_get_error_string().str);
