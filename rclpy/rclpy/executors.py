@@ -471,6 +471,7 @@ class Executor:
 
             entity_count = NumberOfEntities(
                 len(subscriptions), len(guards), len(timers), len(clients), len(services))
+
             for waitable in waitables:
                 entity_count += waitable.get_num_entities()
 
@@ -518,6 +519,7 @@ class Executor:
                     entity_count.num_timers,
                     entity_count.num_clients,
                     entity_count.num_services,
+                    entity_count.num_events,
                     self._context.handle)
 
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)

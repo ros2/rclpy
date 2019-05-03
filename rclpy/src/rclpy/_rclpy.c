@@ -2368,12 +2368,13 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   unsigned PY_LONG_LONG number_of_timers;
   unsigned PY_LONG_LONG number_of_clients;
   unsigned PY_LONG_LONG number_of_services;
+  unsigned PY_LONG_LONG number_of_events;
   PyObject * pycontext;
 
   if (!PyArg_ParseTuple(
-      args, "OKKKKKO", &pywait_set, &number_of_subscriptions,
+      args, "OKKKKKKO", &pywait_set, &number_of_subscriptions,
       &number_of_guard_conditions, &number_of_timers,
-      &number_of_clients, &number_of_services, &pycontext))
+      &number_of_clients, &number_of_services, &number_of_events, &pycontext))
   {
     return NULL;
   }
@@ -2389,8 +2390,15 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_ret_t ret = rcl_wait_set_init(
-    wait_set, number_of_subscriptions, number_of_guard_conditions, number_of_timers,
-    number_of_clients, number_of_services, context, rcl_get_default_allocator());
+    wait_set,
+    number_of_subscriptions,
+    number_of_guard_conditions,
+    number_of_timers,
+    number_of_clients,
+    number_of_services,
+    number_of_events,
+    context,
+    rcl_get_default_allocator());
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
       "Failed to initialize wait set: %s", rcl_get_error_string().str);
