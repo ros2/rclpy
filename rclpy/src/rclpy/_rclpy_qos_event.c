@@ -342,9 +342,16 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   ret = rcl_take_event(event, &event_data);
-  if (!_check_rcl_return(ret, "Failed to take event")) {
-    return NULL;
+  if (RCL_RET_UNSUPPORTED == ret) {
+    PyErr_Format(PyExc_NotImplementedError,
+      "Take event is not implemented in the current RMW implementation: %s",
+      rcl_get_error_string().str);
+    rcl_reset_error();
+  } else if (RCL_RET_OK != ret) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to take event: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+  } else {
+    return event_filler(&event_data);
   }
-
-  return event_filler(&event_data);
+  return NULL;
 }

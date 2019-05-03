@@ -155,23 +155,29 @@ class TestQoSEvent(unittest.TestCase):
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side
-        with deadline_event_handle as event_capsule, publisher.handle as publisher_capsule:
-            event_data = _rclpy.rclpy_take_event(
-                event_capsule,
-                publisher_capsule,
-                QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
-        self.assertIsInstance(event_data, QoSOfferedDeadlineMissedInfo)
-        self.assertEqual(event_data.total_count, 0)
-        self.assertEqual(event_data.total_count_change, 0)
+        try:
+            with deadline_event_handle as event_capsule, publisher.handle as publisher_capsule:
+                event_data = _rclpy.rclpy_take_event(
+                    event_capsule,
+                    publisher_capsule,
+                    QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
+            self.assertIsInstance(event_data, QoSOfferedDeadlineMissedInfo)
+            self.assertEqual(event_data.total_count, 0)
+            self.assertEqual(event_data.total_count_change, 0)
+        except NotImplementedError:
+            pass
 
-        with liveliness_event_handle as event_capsule, publisher.handle as publisher_capsule:
-            event_data = _rclpy.rclpy_take_event(
-                event_capsule,
-                publisher_capsule,
-                QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
-        self.assertIsInstance(event_data, QoSLivelinessLostInfo)
-        self.assertEqual(event_data.total_count, 0)
-        self.assertEqual(event_data.total_count_change, 0)
+        try:
+            with liveliness_event_handle as event_capsule, publisher.handle as publisher_capsule:
+                event_data = _rclpy.rclpy_take_event(
+                    event_capsule,
+                    publisher_capsule,
+                    QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
+            self.assertIsInstance(event_data, QoSLivelinessLostInfo)
+            self.assertEqual(event_data.total_count, 0)
+            self.assertEqual(event_data.total_count_change, 0)
+        except NotImplementedError:
+            pass
 
         self.node.destroy_publisher(publisher)
 
@@ -202,24 +208,30 @@ class TestQoSEvent(unittest.TestCase):
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side
-        with deadline_event_handle as event_capsule, subscription.handle as parent_capsule:
-            event_data = _rclpy.rclpy_take_event(
-                event_capsule,
-                parent_capsule,
-                QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
-        self.assertIsInstance(event_data, QoSRequestedDeadlineMissedInfo)
-        self.assertEqual(event_data.total_count, 0)
-        self.assertEqual(event_data.total_count_change, 0)
+        try:
+            with deadline_event_handle as event_capsule, subscription.handle as parent_capsule:
+                event_data = _rclpy.rclpy_take_event(
+                    event_capsule,
+                    parent_capsule,
+                    QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
+            self.assertIsInstance(event_data, QoSRequestedDeadlineMissedInfo)
+            self.assertEqual(event_data.total_count, 0)
+            self.assertEqual(event_data.total_count_change, 0)
+        except NotImplementedError:
+            pass
 
-        with liveliness_event_handle as event_capsule, subscription.handle as parent_capsule:
-            event_data = _rclpy.rclpy_take_event(
-                event_capsule,
-                parent_capsule,
-                QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
-        self.assertIsInstance(event_data, QoSLivelinessChangedInfo)
-        self.assertEqual(event_data.alive_count, 0)
-        self.assertEqual(event_data.alive_count_change, 0)
-        self.assertEqual(event_data.not_alive_count, 0)
-        self.assertEqual(event_data.not_alive_count_change, 0)
+        try:
+            with liveliness_event_handle as event_capsule, subscription.handle as parent_capsule:
+                event_data = _rclpy.rclpy_take_event(
+                    event_capsule,
+                    parent_capsule,
+                    QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
+            self.assertIsInstance(event_data, QoSLivelinessChangedInfo)
+            self.assertEqual(event_data.alive_count, 0)
+            self.assertEqual(event_data.alive_count_change, 0)
+            self.assertEqual(event_data.not_alive_count, 0)
+            self.assertEqual(event_data.not_alive_count_change, 0)
+        except NotImplementedError:
+            pass
 
         self.node.destroy_subscription(subscription)
