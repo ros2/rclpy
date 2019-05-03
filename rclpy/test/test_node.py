@@ -285,7 +285,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         )
 
 
-class Test(unittest.TestCase):
+class TestNode(unittest.TestCase):
 
     @classmethod
     def setUp(self):
@@ -366,7 +366,7 @@ class Test(unittest.TestCase):
 
         with self.assertRaises(AssertionError):
             self.node.declare_parameter(
-                'wrong_parameter_descriptor_tpye', ParameterValue(), ParameterValue())
+                'wrong_parameter_descriptor_type', ParameterValue(), ParameterValue())
 
     def test_declare_parameters(self):
         parameters = [

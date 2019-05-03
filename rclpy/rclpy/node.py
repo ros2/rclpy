@@ -405,6 +405,11 @@ class Node:
         if self.has_parameter(name):
             return self._parameters[name]
         elif self._allow_undeclared_parameters:
+            # If undeclared parameters are allowed, the parameter might be in the initial set.
+            # If that's the case, first set and then return.
+            if name in self._initial_parameters:
+                self._set_parameters_atomically([self._initial_parameters[name]])
+                return self._parameters[name]
             return Parameter(name, Parameter.Type.NOT_SET, None)
         else:
             raise ParameterNotDeclaredException(name)
