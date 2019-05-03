@@ -319,7 +319,7 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
   // Arguments
   PyObject * pyevent = NULL;
   PyObject * pyparent = NULL;
-  unsigned PY_LONG_LONG event_type;
+  uint32_t event_type;
 
   // Type conversion
   rcl_ret_t ret;
@@ -327,7 +327,7 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
   _qos_event_callback_data_t event_data;
   _qos_event_data_filler_function event_filler = NULL;
 
-  if (!PyArg_ParseTuple(args, "OOK", &pyevent, &pyparent, &event_type)) {
+  if (!PyArg_ParseTuple(args, "OOk", &pyevent, &pyparent, &event_type)) {
     return NULL;
   }
 
