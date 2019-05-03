@@ -310,9 +310,8 @@ class TestWaitable(unittest.TestCase):
 
         server = self.node.create_service(EmptySrv, 'test_client', lambda req, resp: resp)
 
-        with self.node.handle as node_capsule:
-            while not _rclpy.rclpy_service_server_is_available(node_capsule, self.waitable.client):
-                time.sleep(0.1)
+        while not _rclpy.rclpy_service_server_is_available(self.waitable.client):
+            time.sleep(0.1)
 
         thr = self.start_spin_thread(self.waitable)
         _rclpy.rclpy_send_request(self.waitable.client, EmptySrv.Request())
