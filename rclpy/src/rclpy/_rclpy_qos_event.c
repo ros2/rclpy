@@ -1,4 +1,4 @@
-// Copyright 2019 Open Source Robotics Foundation, Inc.
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,13 +70,6 @@ bool
 _is_pycapsule_rcl_publisher(PyObject * pycapsule)
 {
   return PyCapsule_IsValid(pycapsule, "rclpy_publisher_t");
-}
-
-static
-bool
-_is_pycapsule_rcl_event(PyObject * pycapsule)
-{
-  return PyCapsule_IsValid(pycapsule, "rcl_event_t");
 }
 
 static
@@ -247,7 +240,7 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, uint32_t event_type
   * Raises RuntimeError on initialization failure.
   * Raises TypeError if the capsules are not the correct types.
   *
-  * \param[in] pyevent_type Enum value of
+  * \param[in] event_type Enum value of
   *   rcl_publisher_event_type_t or rcl_subscription_event_type_t, chosen by the type of pyparent.
   * \param[in] pyparent Capsule containing the parent Publisher or Subscription.
   * \return capsule containing rcl_event_t.
@@ -256,7 +249,7 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, uint32_t event_type
 static PyObject *
 rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
 {
-  unsigned PY_LONG_LONG pyevent_type;
+  unsigned PY_LONG_LONG event_type;
   PyObject * pyparent = NULL;
 
   rcl_ret_t ret;
@@ -266,7 +259,7 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * pyevent = NULL;
 
-  if (!PyArg_ParseTuple(args, "KO", &pyevent_type, &pyparent)) {
+  if (!PyArg_ParseTuple(args, "KO", &event_type, &pyparent)) {
     return NULL;
   }
 
@@ -285,9 +278,9 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (subscription) {
-    ret = rcl_subscription_event_init(event, subscription, pyevent_type);
+    ret = rcl_subscription_event_init(event, subscription, event_type);
   } else {
-    ret = rcl_publisher_event_init(event, publisher, pyevent_type);
+    ret = rcl_publisher_event_init(event, publisher, event_type);
   }
   if (!_check_rcl_return(ret, "Failed to initialize event")) {
     PyMem_Free(event);
@@ -314,7 +307,7 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
   * Raises ValueError on unknown event_type argument.
   *
   * \param[in] pyevent Event handle from rclpy_create_event.
-  * \param[in] pyevent_type Enum value of
+  * \param[in] event_type Enum value of
   *   rcl_publisher_event_type_t or rcl_subscription_event_type_t, chosen by the type of pyparent.
   * \param[in] pyparent Capsule containing the parent Publisher or Subscription.
   * \return Python object from rclpy.qos_event containing callback data.
@@ -326,26 +319,24 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
   // Arguments
   PyObject * pyevent = NULL;
   PyObject * pyparent = NULL;
-  unsigned PY_LONG_LONG pyevent_type;
+  unsigned PY_LONG_LONG event_type;
 
   // Type conversion
   rcl_ret_t ret;
   rcl_event_t * event = NULL;
-  PyObject * pyqos_event = NULL;
   _qos_event_callback_data_t event_data;
   _qos_event_data_filler_function event_filler = NULL;
 
-  if (!PyArg_ParseTuple(args, "OOK", &pyevent, &pyparent, &pyevent_type)) {
+  if (!PyArg_ParseTuple(args, "OOK", &pyevent, &pyparent, &event_type)) {
     return NULL;
   }
 
-  if (!_is_pycapsule_rcl_event(pyevent)) {
-    PyErr_Format(PyExc_TypeError, "Capsule was not a valid rcl_event_t");
-    return NULL;
-  }
   event = _pycapsule_to_rcl_event(pyevent);
+  if (!event) {
+    return NULL;
+  }
 
-  event_filler = _get_qos_event_data_filler_function_for(pyparent, pyevent_type);
+  event_filler = _get_qos_event_data_filler_function_for(pyparent, event_type);
   if (!event_filler) {
     return NULL;
   }
@@ -355,9 +346,5 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  pyqos_event = event_filler(&event_data);
-  if (!pyqos_event) {
-    return NULL;
-  }
-  return pyqos_event;
+  return event_filler(&event_data);
 }
