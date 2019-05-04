@@ -281,7 +281,9 @@ class TestWaitable(unittest.TestCase):
     def setUpClass(cls):
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
-        cls.node = rclpy.create_node('TestWaitable', namespace='/rclpy/test', context=cls.context)
+        cls.node = rclpy.create_node(
+            'TestWaitable', namespace='/rclpy/test', context=cls.context,
+            allow_undeclared_parameters=True)
         cls.executor = SingleThreadedExecutor(context=cls.context)
         cls.executor.add_node(cls.node)
 

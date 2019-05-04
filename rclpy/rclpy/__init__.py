@@ -111,7 +111,9 @@ def create_node(
     namespace: str = None,
     use_global_arguments: bool = True,
     start_parameter_services: bool = True,
-    initial_parameters: List[Parameter] = None
+    initial_parameters: List[Parameter] = None,
+    allow_undeclared_parameters: bool = False,
+    automatically_declare_initial_parameters: bool = True
 ) -> 'Node':
     """
     Create an instance of :class:`.Node`.
@@ -126,6 +128,9 @@ def create_node(
         arguments.
     :param start_parameter_services: ``False`` if the node should not create parameter services.
     :param initial_parameters: A list of :class:`.Parameter` to be set during node creation.
+    :param allow_undeclared_parameters: True if undeclared parameters are allowed, False otherwise.
+    :param automatically_declare_initial_parameters: True if initial parameters have to be declared
+        upon node creation, false otherwise.
     :return: An instance of the newly created node.
     """
     # imported locally to avoid loading extensions on module import
@@ -134,7 +139,9 @@ def create_node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
         start_parameter_services=start_parameter_services,
-        initial_parameters=initial_parameters)
+        initial_parameters=initial_parameters,
+        allow_undeclared_parameters=allow_undeclared_parameters,
+        automatically_declare_initial_parameters=automatically_declare_initial_parameters)
 
 
 def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:

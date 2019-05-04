@@ -15,7 +15,7 @@
 from enum import Enum
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
-from rcl_interfaces.msg import ParameterDescriptor, ParameterType, ParameterValue
+from rcl_interfaces.msg import ParameterType, ParameterValue
 
 PARAMETER_SEPARATOR_STRING = '.'
 
@@ -108,9 +108,6 @@ class Parameter:
     @property
     def value(self):
         return self._value
-
-    def get_descriptor(self):
-        return ParameterDescriptor(name=self.name, type=self.type_.value)
 
     def get_parameter_value(self):
         parameter_value = ParameterValue(type=self.type_.value)

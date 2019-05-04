@@ -65,3 +65,48 @@ class InvalidServiceNameException(NameValidationException):
 
     def __init__(self, name, error_msg, invalid_index, *args):
         NameValidationException.__init__(self, 'service name', name, error_msg, invalid_index)
+
+
+class ParameterException(Exception):
+    """Base exception for parameter-related errors."""
+
+    def __init__(self, error_msg, parameters, *args):
+        Exception.__init__(self, '{error_msg}: {parameters}'.format(error_msg, parameters), *args)
+
+
+class ParameterNotDeclaredException(ParameterException):
+    """Raised when handling an undeclared parameter when it is not allowed."""
+
+    def __init__(self, parameters, *args):
+        Exception.__init__(self, 'Invalid access to undeclared parameter(s)', parameters, *args)
+
+
+class ParameterAlreadyDeclaredException(ParameterException):
+    """Raised when declaring a parameter that had been declared before."""
+
+    def __init__(self, parameters, *args):
+        Exception.__init__(self, 'Parameter(s) already declared', parameters, *args)
+
+
+class InvalidParameterException(ParameterException):
+    """Raised when a parameter to be declared has an invalid name."""
+
+    def __init__(self, parameter, *args):
+        Exception.__init__(self, 'Invalid parameter name', parameter, *args)
+
+
+class InvalidParameterValueException(ParameterException):
+    """Raised when a parameter to be declared is rejected by a callback."""
+
+    def __init__(self, parameter, value, *args):
+        Exception.__init__(
+            self,
+            'Invalid parameter value ({value}) for parameter'.format(
+                value=value), parameter, *args)
+
+
+class ParameterImmutableException(ParameterException):
+    """Raised when a read-only parameter is modified."""
+
+    def __init__(self, parameter, *args):
+        Exception.__init__(self, 'Attempted to modify read-only parameter', parameter, *args)
