@@ -25,7 +25,7 @@
 
 #define SIGNAL_HANDLER_T struct sigaction
 
-#define NULL_SIGNAL_HANDLER (const SIGNAL_HANDLER_T) {0}
+#define NULL_SIGNAL_HANDLER (const SIGNAL_HANDLER_T) {0, 0, 0, 0}
 
 #define DEFINE_SIGNAL_HANDLER(name) \
   static void _ ## name(int signum, siginfo_t * info, void * context); \
