@@ -25,21 +25,29 @@
 
 #define SIGNAL_HANDLER_T struct sigaction
 
-#define NULL_SIGNAL_HANDLER (const SIGNAL_HANDLER_T) {0, 0, 0, 0}
+static SIGNAL_HANDLER_T
+make_null_signal_handler()
+{
+  SIGNAL_HANDLER_T handler;
+  memset(&handler, 0, sizeof(handler));
+  return handler;
+}
 
-#define DEFINE_SIGNAL_HANDLER(name) \
-  static void _ ## name(int signum, siginfo_t * info, void * context); \
-  static SIGNAL_HANDLER_T get_ ## name() { \
-    SIGNAL_HANDLER_T signal_handler; \
-    memset(&signal_handler, 0, sizeof(signal_handler)); \
-    sigemptyset(&signal_handler.sa_mask); \
-    signal_handler.sa_sigaction = _ ## name; \
-    signal_handler.sa_flags = SA_SIGINFO; \
-    return signal_handler; \
-  } \
-  static bool is_ ## name(SIGNAL_HANDLER_T handler) { \
-    return _ ## name == handler.sa_sigaction; \
-  } \
+#define NULL_SIGNAL_HANDLER make_null_signal_handler()
+
+#define DEFINE_SIGNAL_HANDLER(name)                                     \
+  static void _ ## name(int signum, siginfo_t * info, void * context);  \
+  static SIGNAL_HANDLER_T get_ ## name() {                              \
+    SIGNAL_HANDLER_T handler;                                           \
+    memset(&handler, 0, sizeof(handler));                               \
+    sigemptyset(&handler.sa_mask);                                      \
+    handler.sa_sigaction = _ ## name;                                   \
+    handler.sa_flags = SA_SIGINFO;                                      \
+    return handler;                                                     \
+  }                                                                     \
+  static bool is_ ## name(SIGNAL_HANDLER_T handler) {                   \
+    return _ ## name == handler.sa_sigaction;                           \
+  }                                                                     \
   static void _ ## name(int signum, siginfo_t * info, void * context)
 
 #define SIGNAL_HANDLER_ARGS signum, info, context
@@ -49,8 +57,10 @@ call_signal_handler(
   SIGNAL_HANDLER_T handler, int signum,
   siginfo_t * siginfo, void * context)
 {
-  if (handler.sa_flags & SA_SIGINFO) {
-    if (handler.sa_sigaction != NULL) {
+  if (handler.sa_flags & SA_SIGINFO)
+  {
+    if (handler.sa_sigaction != NULL)
+    {
       handler.sa_sigaction(signum, siginfo, context);
     }
   } else {
@@ -66,18 +76,15 @@ call_signal_handler(
 static SIGNAL_HANDLER_T
 install_signal_handler(int signum, SIGNAL_HANDLER_T handler)
 {
-  SIGNAL_HANDLER_T old_handler = NULL_SIGNAL_HANDLER;
+  SIGNAL_HANDLER_T old_handler;
   sigaction(signum, &handler, &old_handler);
   return old_handler;
 }
 
-static bool is_null_signal_handler(SIGNAL_HANDLER_T handler)
-{
-  return handler.sa_flags & SA_SIGINFO ?
-         handler.sa_sigaction == NULL :
-         handler.sa_handler == NULL;
-}
-
+#define is_null_signal_handler(handler) \
+  (handler.sa_flags & SA_SIGINFO ?      \
+   NULL == handler.sa_sigaction :       \
+   NULL == handler.sa_handler)
 
 #else
 
@@ -89,10 +96,12 @@ static bool is_null_signal_handler(SIGNAL_HANDLER_T handler)
 
 #define NULL_SIGNAL_HANDLER NULL
 
-#define DEFINE_SIGNAL_HANDLER(name) \
-  static void _ ## name(int signum); \
-  static SIGNAL_HANDLER_T get_ ## name() {return _ ## name;} \
-  static bool is_ ## name(SIGNAL_HANDLER_T handler) {return _ ## name == handler;} \
+#define DEFINE_SIGNAL_HANDLER(name)                             \
+  static void _ ## name(int signum);                            \
+  static SIGNAL_HANDLER_T get_ ## name() { return _ ## name; }  \
+  static bool is_ ## name(SIGNAL_HANDLER_T handler) {           \
+    return _ ## name == handler;                                \
+  }                                                             \
   static void _ ## name(int signum)
 
 #define SIGNAL_HANDLER_ARGS signum
@@ -101,8 +110,7 @@ static bool is_null_signal_handler(SIGNAL_HANDLER_T handler)
 
 #define install_signal_handler(signum, handler) signal(signum, handler)
 
-#define is_null_signal_handler(signal_handler) \
-  (NULL_SIGNAL_HANDLER == signal_handler)
+#define is_null_signal_handler(signal_handler) (NULL_SIGNAL_HANDLER == signal_handler)
 
 #endif
 
@@ -111,7 +119,7 @@ static bool trigger_guard_conditions();
 static void unregister_sigint_signal_handler();
 
 /// Original signal handler for chaining purposes
-SIGNAL_HANDLER_T g_original_sigint_handler = NULL_SIGNAL_HANDLER;
+SIGNAL_HANDLER_T g_original_sigint_handler;
 
 /// Signal handler function
 DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
@@ -129,7 +137,7 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
   }
 }
 
-/// Restore the original signal handler when ours was registered
+/// Unregister our SIGINT handler and restore the original one
 static void
 unregister_sigint_signal_handler()
 {
@@ -145,7 +153,7 @@ unregister_sigint_signal_handler()
   g_original_sigint_handler = NULL_SIGNAL_HANDLER;
 }
 
-/// Register our signal handler and store the current
+/// Register our SIGINT handler and store the current one
 static void
 register_sigint_signal_handler()
 {
@@ -396,5 +404,6 @@ static struct PyModuleDef _rclpy_signal_handler_module = {
 PyMODINIT_FUNC PyInit__rclpy_signal_handler(void)
 {
   atomic_init(&g_guard_conditions, NULL);
+  g_original_sigint_handler = NULL_SIGNAL_HANDLER;
   return PyModule_Create(&_rclpy_signal_handler_module);
 }
