@@ -93,7 +93,7 @@ class Node:
         start_parameter_services: bool = True,
         initial_parameters: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_initial_parameters: bool = True
+        automatically_declare_initial_parameters: bool = False
     ) -> None:
         """
         Constructor.
@@ -168,8 +168,10 @@ class Node:
             self._initial_parameters.update({p.name: p for p in initial_parameters})
 
         if automatically_declare_initial_parameters:
-            self._parameters.update(self._initial_parameters)
-            self._descriptors.update({p: ParameterDescriptor() for p in self._parameters})
+            # _update_initial_parameter alters _initial_parameters, so get names first.
+            initial_parameter_names = [name for name in self._initial_parameters]
+            for parameter_name in initial_parameter_names:
+                self._update_initial_parameter(parameter_name)
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
@@ -402,6 +404,11 @@ class Node:
         """
         Get a parameter by name.
 
+        If the parameter was not declared, if undeclared parameters are allowed and the parameter
+        is one of the initial parameters, it will be implicitly declared with a default descriptor
+        and returned.
+        No callbacks will be called in this case.
+
         :param name: Fully-qualified name of the parameter, including its namespace.
         :return: The values for the given parameter names.
             A default Parameter will be returned for an undeclared parameter if
@@ -415,21 +422,30 @@ class Node:
             # If undeclared parameters are allowed, the parameter might be in the initial set.
             # If that's the case, first set and then return.
             if name in self._initial_parameters:
-                self._parameters.update({name: self._initial_parameters[name]})
-                self._descriptors.update({name: ParameterDescriptor()})
+                self._update_initial_parameter(name)
                 return self._parameters[name]
             return Parameter(name, Parameter.Type.NOT_SET, None)
         else:
             raise ParameterNotDeclaredException(name)
+
+    def _update_initial_parameter(self, name: str):
+        """Move initial parameter to parameter list."""
+        self._parameters.update({name: self._initial_parameters[name]})
+        self._descriptors.update({name: ParameterDescriptor()})
+        del self._initial_parameters[name]
 
     def get_parameter_or(
             self, name: str, alternative_value: Optional[Parameter] = None) -> Parameter:
         """
         Get a parameter or the alternative value.
 
+        If the parameter was not declared, if undeclared parameters are allowed and the parameter
+        is one of the initial parameters, it will be implicitly declared with a default descriptor
+        and returned.
+        No callbacks will be called in this case.
+
         If the alternative value is None, a default Parameter with the given name and NOT_SET
         type will be returned.
-        This method does not declare parameters in any case.
 
         :param name: Fully-qualified name of the parameter, including its namespace.
         :param alternative_value: Alternative parameter to get if it had not been declared before.
@@ -438,7 +454,13 @@ class Node:
         if alternative_value is None:
             alternative_value = Parameter(name, Parameter.Type.NOT_SET)
 
-        return self._parameters.get(name, alternative_value)
+        if self.has_parameter(name):
+            return self._parameters[name]
+        elif self._allow_undeclared_parameters and name in self._initial_parameters:
+            self._update_initial_parameter(name)
+            return self._parameters[name]
+        else:
+            return alternative_value
 
     def set_parameters(self, parameter_list: List[Parameter]) -> List[SetParametersResult]:
         """
