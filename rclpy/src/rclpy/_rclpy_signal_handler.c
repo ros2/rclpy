@@ -35,19 +35,19 @@ make_null_signal_handler()
 
 #define NULL_SIGNAL_HANDLER make_null_signal_handler()
 
-#define DEFINE_SIGNAL_HANDLER(name)                                     \
-  static void _ ## name(int signum, siginfo_t * info, void * context);  \
-  static SIGNAL_HANDLER_T get_ ## name() {                              \
-    SIGNAL_HANDLER_T handler;                                           \
-    memset(&handler, 0, sizeof(handler));                               \
-    sigemptyset(&handler.sa_mask);                                      \
-    handler.sa_sigaction = _ ## name;                                   \
-    handler.sa_flags = SA_SIGINFO;                                      \
-    return handler;                                                     \
-  }                                                                     \
-  static bool is_ ## name(SIGNAL_HANDLER_T handler) {                   \
-    return _ ## name == handler.sa_sigaction;                           \
-  }                                                                     \
+#define DEFINE_SIGNAL_HANDLER(name) \
+  static void _ ## name(int signum, siginfo_t * info, void * context); \
+  static SIGNAL_HANDLER_T get_ ## name() { \
+    SIGNAL_HANDLER_T handler; \
+    memset(&handler, 0, sizeof(handler)); \
+    sigemptyset(&handler.sa_mask); \
+    handler.sa_sigaction = _ ## name; \
+    handler.sa_flags = SA_SIGINFO; \
+    return handler; \
+  } \
+  static bool is_ ## name(SIGNAL_HANDLER_T handler) { \
+    return _ ## name == handler.sa_sigaction; \
+  } \
   static void _ ## name(int signum, siginfo_t * info, void * context)
 
 #define SIGNAL_HANDLER_ARGS signum, info, context
@@ -57,10 +57,8 @@ call_signal_handler(
   SIGNAL_HANDLER_T handler, int signum,
   siginfo_t * siginfo, void * context)
 {
-  if (handler.sa_flags & SA_SIGINFO)
-  {
-    if (handler.sa_sigaction != NULL)
-    {
+  if (handler.sa_flags & SA_SIGINFO) {
+    if (handler.sa_sigaction != NULL) {
       handler.sa_sigaction(signum, siginfo, context);
     }
   } else {
@@ -82,9 +80,9 @@ install_signal_handler(int signum, SIGNAL_HANDLER_T handler)
 }
 
 #define is_null_signal_handler(handler) \
-  (handler.sa_flags & SA_SIGINFO ?      \
-   NULL == handler.sa_sigaction :       \
-   NULL == handler.sa_handler)
+  (handler.sa_flags & SA_SIGINFO ? \
+  NULL == handler.sa_sigaction : \
+  NULL == handler.sa_handler)
 
 #else
 
@@ -96,12 +94,12 @@ install_signal_handler(int signum, SIGNAL_HANDLER_T handler)
 
 #define NULL_SIGNAL_HANDLER NULL
 
-#define DEFINE_SIGNAL_HANDLER(name)                             \
-  static void _ ## name(int signum);                            \
-  static SIGNAL_HANDLER_T get_ ## name() { return _ ## name; }  \
-  static bool is_ ## name(SIGNAL_HANDLER_T handler) {           \
-    return _ ## name == handler;                                \
-  }                                                             \
+#define DEFINE_SIGNAL_HANDLER(name) \
+  static void _ ## name(int signum); \
+  static SIGNAL_HANDLER_T get_ ## name() {return _ ## name;} \
+  static bool is_ ## name(SIGNAL_HANDLER_T handler) { \
+    return _ ## name == handler; \
+  } \
   static void _ ## name(int signum)
 
 #define SIGNAL_HANDLER_ARGS signum
