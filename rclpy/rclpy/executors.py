@@ -253,6 +253,15 @@ class Executor:
                 # Rebuild the wait set so it doesn't include this node
                 self._guard.trigger()
 
+    def wake(self) -> None:
+        """
+        Wake the executor because something changed.
+
+        This is used to tell the executor when entities are created or destroyed.
+        """
+        if self._guard:
+            self._guard.trigger()
+
     def get_nodes(self) -> List['Node']:
         """Return nodes that have been added to this executor."""
         with self._nodes_lock:
