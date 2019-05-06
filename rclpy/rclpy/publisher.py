@@ -75,4 +75,5 @@ class Publisher:
         If the QoS Liveliness policy is set to RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC, the
         application must call this at least as often as ``QoSProfile.liveliness_lease_duration``.
         """
-        _rclpy.rclpy_assert_liveliness(self.publisher_handle)
+        with self.handle as capsule:
+            _rclpy.rclpy_assert_liveliness(capsule)
