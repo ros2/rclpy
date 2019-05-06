@@ -93,7 +93,7 @@ class Node:
         start_parameter_services: bool = True,
         initial_parameters: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_initial_parameters: bool = True
+        automatically_declare_initial_parameters: bool = False
     ) -> None:
         """
         Constructor.
@@ -403,7 +403,7 @@ class Node:
         Get a parameter by name.
 
         :param name: Fully-qualified name of the parameter, including its namespace.
-        :return: The values for the given parameter names.
+        :return: The value for the given parameter name.
             A default Parameter will be returned for an undeclared parameter if
             undeclared parameters are allowed.
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
@@ -412,12 +412,6 @@ class Node:
         if self.has_parameter(name):
             return self._parameters[name]
         elif self._allow_undeclared_parameters:
-            # If undeclared parameters are allowed, the parameter might be in the initial set.
-            # If that's the case, first set and then return.
-            if name in self._initial_parameters:
-                self._parameters.update({name: self._initial_parameters[name]})
-                self._descriptors.update({name: ParameterDescriptor()})
-                return self._parameters[name]
             return Parameter(name, Parameter.Type.NOT_SET, None)
         else:
             raise ParameterNotDeclaredException(name)
@@ -428,8 +422,7 @@ class Node:
         Get a parameter or the alternative value.
 
         If the alternative value is None, a default Parameter with the given name and NOT_SET
-        type will be returned.
-        This method does not declare parameters in any case.
+        type will be returned if the parameter was not declared.
 
         :param name: Fully-qualified name of the parameter, including its namespace.
         :param alternative_value: Alternative parameter to get if it had not been declared before.
