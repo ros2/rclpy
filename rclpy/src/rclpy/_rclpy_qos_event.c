@@ -189,7 +189,7 @@ _liveliness_lost_to_py_object(_qos_event_callback_data_t * data)
 
 static
 _qos_event_data_filler_function
-_get_qos_event_data_filler_function_for(PyObject * pyparent, uint32_t event_type)
+_get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LONG event_type)
 {
   if (_is_pycapsule_rcl_subscription(pyparent)) {
     switch (event_type) {
@@ -199,7 +199,7 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, uint32_t event_type
         return &_liveliness_changed_to_py_object;
       default:
         PyErr_Format(PyExc_ValueError,
-          "Event type %d for Subscriptions not understood by rclpy.", event_type);
+          "Event type %llu for Subscriptions not understood by rclpy.", event_type);
     }
   } else if (_is_pycapsule_rcl_publisher(pyparent)) {
     switch (event_type) {
@@ -209,7 +209,7 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, uint32_t event_type
         return &_liveliness_lost_to_py_object;
       default:
         PyErr_Format(PyExc_ValueError,
-          "Event type %d for Publishers not understood by rclpy.", event_type);
+          "Event type %llu for Publishers not understood by rclpy.", event_type);
     }
   } else {
     PyErr_Format(PyExc_TypeError,
@@ -309,7 +309,7 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
   // Arguments
   PyObject * pyevent = NULL;
   PyObject * pyparent = NULL;
-  uint32_t event_type;
+  unsigned PY_LONG_LONG event_type;
 
   // Type conversion
   rcl_ret_t ret;
@@ -317,7 +317,7 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
   _qos_event_callback_data_t event_data;
   _qos_event_data_filler_function event_filler = NULL;
 
-  if (!PyArg_ParseTuple(args, "OOk", &pyevent, &pyparent, &event_type)) {
+  if (!PyArg_ParseTuple(args, "OOK", &pyevent, &pyparent, &event_type)) {
     return NULL;
   }
 
