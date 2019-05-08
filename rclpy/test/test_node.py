@@ -258,29 +258,29 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_node_has_parameter_services(self):
         service_names_and_types = self.node.get_service_names_and_types()
         self.assertIn(
-            ('/my_ns/my_node/describe_parameters', ['rcl_interfaces/DescribeParameters']),
+            ('/my_ns/my_node/describe_parameters', ['rcl_interfaces/srv/DescribeParameters']),
             service_names_and_types
         )
         self.assertIn(
-            ('/my_ns/my_node/get_parameter_types', ['rcl_interfaces/GetParameterTypes']),
+            ('/my_ns/my_node/get_parameter_types', ['rcl_interfaces/srv/GetParameterTypes']),
             service_names_and_types
         )
         self.assertIn(
-            ('/my_ns/my_node/get_parameters', ['rcl_interfaces/GetParameters']),
+            ('/my_ns/my_node/get_parameters', ['rcl_interfaces/srv/GetParameters']),
             service_names_and_types
         )
         self.assertIn(
-            ('/my_ns/my_node/list_parameters', ['rcl_interfaces/ListParameters']),
+            ('/my_ns/my_node/list_parameters', ['rcl_interfaces/srv/ListParameters']),
             service_names_and_types
         )
         self.assertIn(
-            ('/my_ns/my_node/set_parameters', ['rcl_interfaces/SetParameters']),
+            ('/my_ns/my_node/set_parameters', ['rcl_interfaces/srv/SetParameters']),
             service_names_and_types
         )
         self.assertIn(
             (
                 '/my_ns/my_node/set_parameters_atomically',
-                ['rcl_interfaces/SetParametersAtomically']
+                ['rcl_interfaces/srv/SetParametersAtomically']
             ), service_names_and_types
         )
 

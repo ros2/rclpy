@@ -101,7 +101,7 @@ class TestActionGraph(unittest.TestCase):
         assert name1 == TEST_NAMESPACE1 + '/' + TEST_ACTION0
         assert isinstance(types1, list)
         assert len(types1) == 1
-        assert types1[0] == 'test_msgs/Fibonacci'
+        assert types1[0] == 'test_msgs/action/Fibonacci'
 
         names_and_types2 = self.get_names_and_types(
             get_action_client_names_and_types_by_node,
@@ -113,12 +113,12 @@ class TestActionGraph(unittest.TestCase):
         name20, types20 = names_and_types2[0]
         assert isinstance(types20, list)
         assert len(types20) == 1
-        assert types20[0] == 'test_msgs/Fibonacci'
+        assert types20[0] == 'test_msgs/action/Fibonacci'
         assert isinstance(names_and_types2[1], tuple)
         name21, types21 = names_and_types2[1]
         assert isinstance(types21, list)
         assert len(types21) == 1
-        assert types21[0] == 'test_msgs/Fibonacci'
+        assert types21[0] == 'test_msgs/action/Fibonacci'
         # Not assuming the order of names in the list
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION0 in [name20, name21]
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION1 in [name20, name21]
@@ -142,7 +142,7 @@ class TestActionGraph(unittest.TestCase):
         assert name1 == TEST_NAMESPACE1 + '/' + TEST_ACTION0
         assert isinstance(types1, list)
         assert len(types1) == 1
-        assert types1[0] == 'test_msgs/Fibonacci'
+        assert types1[0] == 'test_msgs/action/Fibonacci'
 
         names_and_types2 = self.get_names_and_types(
             get_action_server_names_and_types_by_node,
@@ -155,12 +155,12 @@ class TestActionGraph(unittest.TestCase):
         name20, types20 = names_and_types2[0]
         assert isinstance(types20, list)
         assert len(types20) == 1
-        assert types20[0] == 'test_msgs/Fibonacci'
+        assert types20[0] == 'test_msgs/action/Fibonacci'
         assert isinstance(names_and_types2[1], tuple)
         name21, types21 = names_and_types2[1]
         assert isinstance(types21, list)
         assert len(types21) == 1
-        assert types21[0] == 'test_msgs/Fibonacci'
+        assert types21[0] == 'test_msgs/action/Fibonacci'
         # Not assuming the order of names in the list
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION0 in [name20, name21]
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION1 in [name20, name21]
@@ -174,17 +174,17 @@ class TestActionGraph(unittest.TestCase):
         name0, types0 = names_and_types[0]
         assert isinstance(types0, list)
         assert len(types0) == 1
-        assert types0[0] == 'test_msgs/Fibonacci'
+        assert types0[0] == 'test_msgs/action/Fibonacci'
         assert isinstance(names_and_types[1], tuple)
         name1, types1 = names_and_types[1]
         assert isinstance(types1, list)
         assert len(types1) == 1
-        assert types1[0] == 'test_msgs/Fibonacci'
+        assert types1[0] == 'test_msgs/action/Fibonacci'
         assert isinstance(names_and_types[2], tuple)
         name2, types2 = names_and_types[2]
         assert isinstance(types2, list)
         assert len(types2) == 1
-        assert types2[0] == 'test_msgs/Fibonacci'
+        assert types2[0] == 'test_msgs/action/Fibonacci'
         # Not assuming the order of names in the list
         assert TEST_NAMESPACE1 + '/' + TEST_ACTION0 in [name0, name1, name2]
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION0 in [name0, name1, name2]
