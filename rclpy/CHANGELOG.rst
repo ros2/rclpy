@@ -1,6 +1,36 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+0.7.1 (2019-05-08)
+------------------
+* Update tests to include namespace in ROS types (`#294 <https://github.com/ros2/rclpy/issues/294>`_)
+* Capsule available at self.handle (`#340 <https://github.com/ros2/rclpy/issues/340>`_)
+* Wake executor when entities created or destroyed (`#336 <https://github.com/ros2/rclpy/issues/336>`_)
+* Setting automatic declaration for initial parameters to False. (`#339 <https://github.com/ros2/rclpy/issues/339>`_)
+* Improve signal handling (`#338 <https://github.com/ros2/rclpy/issues/338>`_)
+* Parameter API enhancements (`#325 <https://github.com/ros2/rclpy/issues/325>`_)
+* QoS - Expose the assert_liveliness API for Publishers and Nodes (`#313 <https://github.com/ros2/rclpy/issues/313>`_)
+* Minimal change to build against new rcl API (`#305 <https://github.com/ros2/rclpy/issues/305>`_)
+* Remove extra references to node handle (`#335 <https://github.com/ros2/rclpy/issues/335>`_)
+* API updates for RMW preallocation work. (`#337 <https://github.com/ros2/rclpy/issues/337>`_)
+* Make pub/sub/cli/srv/etc lists use @property on node (`#333 <https://github.com/ros2/rclpy/issues/333>`_)
+* Ignore ValueError in SignalHandlerGuardCondition.__del_\_ (`#334 <https://github.com/ros2/rclpy/issues/334>`_)
+* Use new test interface definitions (`#332 <https://github.com/ros2/rclpy/issues/332>`_)
+* Thread safe node.destroy\_* (`#319 <https://github.com/ros2/rclpy/issues/319>`_)
+* Make `destroy_node` thread safe (`#330 <https://github.com/ros2/rclpy/issues/330>`_)
+* Remove most of the timing checks in test_executor (`#329 <https://github.com/ros2/rclpy/issues/329>`_)
+* Prevent rcutils_log from accessing invalid memory (`#326 <https://github.com/ros2/rclpy/issues/326>`_)
+* Wait set uses pointers to rcl types not rcl->impl types (`#324 <https://github.com/ros2/rclpy/issues/324>`_)
+* QoS - Expose Lifespan, Deadline, and Liveliness policy settings (`#312 <https://github.com/ros2/rclpy/issues/312>`_)
+* Remove __eq_\_ and __hash_\_ from Subscription (`#323 <https://github.com/ros2/rclpy/issues/323>`_)
+* Fix subscription pycapsule not being destroyed (`#320 <https://github.com/ros2/rclpy/issues/320>`_)
+* Make destroy_subscription thread safe (`#318 <https://github.com/ros2/rclpy/issues/318>`_)
+* enforce correct message type is passed to various API (`#317 <https://github.com/ros2/rclpy/issues/317>`_)
+* Every executor gets its own SIGINT guard condition (`#308 <https://github.com/ros2/rclpy/issues/308>`_)
+* add missing error handling and cleanup (`#315 <https://github.com/ros2/rclpy/issues/315>`_)
+* Rename action state transitions (`#300 <https://github.com/ros2/rclpy/issues/300>`_)
+* Contributors: Chris Lalancette, Dirk Thomas, Emerson Knapp, Jacob Perron, Juan Ignacio Ubeira, Michael Carroll, Michel Hidalgo, Shane Loretz, Thomas Moulard
+
 0.7.0 (2019-04-14)
 ------------------
 * Added action graph API. (`#306 <https://github.com/ros2/rclpy/issues/306>`_)
