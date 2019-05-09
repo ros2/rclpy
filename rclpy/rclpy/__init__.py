@@ -134,7 +134,7 @@ def create_node(
     :return: An instance of the newly created node.
     """
     # imported locally to avoid loading extensions on module import
-    from rclpy.node import Node
+    from rclpy.node import Node  # noqa: F811
     return Node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
