@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from enum import IntEnum
+import warnings
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
@@ -37,9 +38,19 @@ class QoSProfile:
     def __init__(self, **kwargs):
         assert all('_' + key in self.__slots__ for key in kwargs.keys()), \
             'Invalid arguments passed to constructor: %r' % kwargs.keys()
+        if 'history' not in kwargs:
+            warnings.warn(
+                "QoSProfile needs a 'history' setting when constructed", DeprecationWarning)
         self.history = kwargs.get(
             'history',
             QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT)
+        if (
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST == self.history and
+            'depth' not in kwargs
+        ):
+            warnings.warn(
+                'A QoSProfile with history set to KEEP_LAST needs a depth specified',
+                DeprecationWarning)
         self.depth = kwargs.get('depth', int())
         self.reliability = kwargs.get(
             'reliability',

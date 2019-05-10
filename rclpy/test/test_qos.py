@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import unittest
+import warnings
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -31,32 +32,46 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(qos_profile, converted_profile)
 
     def test_eq_operator(self):
-        profile_1 = QoSProfile()
-        profile_same = QoSProfile()
-        profile_different_number = QoSProfile(depth=1)
-        profile_different_duration = QoSProfile(deadline=Duration(seconds=2))
-        profile_equal_duration = QoSProfile(deadline=Duration(seconds=2))
+        profile_1 = QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=1)
+        profile_same = QoSProfile(
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=1)
+        profile_different_depth = QoSProfile(
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=2)
+        profile_different_duration = QoSProfile(
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+            depth=1,
+            deadline=Duration(seconds=2))
+        profile_equal_duration = QoSProfile(
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+            depth=1,
+            deadline=Duration(seconds=2))
 
         self.assertEqual(profile_1, profile_same)
-        self.assertNotEqual(profile_1, profile_different_number)
+        self.assertNotEqual(profile_1, profile_different_depth)
         self.assertNotEqual(profile_1, profile_different_duration)
         self.assertEqual(profile_different_duration, profile_equal_duration)
 
     def test_simple_round_trip(self):
-        source_profile = QoSProfile()
+        source_profile = QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL)
         self.convert_and_assert_equality(source_profile)
 
     def test_big_nanoseconds(self):
         # Under 31 bits
-        no_problem = QoSProfile(lifespan=Duration(seconds=2))
+        no_problem = QoSProfile(
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL,
+            lifespan=Duration(seconds=2))
         self.convert_and_assert_equality(no_problem)
 
         # Total nanoseconds in duration is too large to store in 32 bit signed int
-        int32_problem = QoSProfile(lifespan=Duration(seconds=4))
+        int32_problem = QoSProfile(
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL,
+            lifespan=Duration(seconds=4))
         self.convert_and_assert_equality(int32_problem)
 
         # Total nanoseconds in duration is too large to store in 32 bit unsigned int
-        uint32_problem = QoSProfile(lifespan=Duration(seconds=5))
+        uint32_problem = QoSProfile(
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL,
+            lifespan=Duration(seconds=5))
         self.convert_and_assert_equality(uint32_problem)
 
     def test_alldata_round_trip(self):
@@ -72,3 +87,23 @@ class TestQosProfile(unittest.TestCase):
             avoid_ros_namespace_conventions=True
         )
         self.convert_and_assert_equality(source_profile)
+
+    def test_deprecation_warnings(self):
+        warnings.simplefilter('always')
+        with warnings.catch_warnings(record=True) as w:
+            QoSProfile()
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            # No deprecation if history is supplied
+            QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL)
+            assert len(w) == 0, str(w[-1].message)
+        with warnings.catch_warnings(record=True) as w:
+            # Deprecation warning if KEEP_LAST, but no depth
+            QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            # No deprecation if 'depth' is present
+            QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=1)
+            assert len(w) == 0, str(w[-1].message)

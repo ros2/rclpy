@@ -14,6 +14,7 @@
 
 import unittest
 from unittest.mock import Mock
+import warnings
 
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterValue
@@ -29,6 +30,7 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
+from rclpy.qos import qos_profile_sensor_data
 from test_msgs.msg import BasicTypes
 
 TEST_NODE = 'my_node'
@@ -60,21 +62,36 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
     def test_create_publisher(self):
         self.node.create_publisher(BasicTypes, 'chatter')
+        self.node.create_publisher(BasicTypes, 'chatter', 0)
+        self.node.create_publisher(BasicTypes, 'chatter', 1)
+        self.node.create_publisher(BasicTypes, 'chatter', qos_profile_sensor_data)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
-            self.node.create_publisher(BasicTypes, 'chatter?')
+            self.node.create_publisher(BasicTypes, 'chatter?', 1)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not start with a number'):
-            self.node.create_publisher(BasicTypes, '/chatter/42_is_the_answer')
+            self.node.create_publisher(BasicTypes, '/chatter/42_is_the_answer', 1)
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_publisher(BasicTypes, 'chatter/{bad_sub}')
+            self.node.create_publisher(BasicTypes, 'chatter/{bad_sub}', 1)
+        with self.assertRaisesRegex(ValueError, 'must be greater than or equal to zero'):
+            self.node.create_publisher(BasicTypes, 'chatter', -1)
+        with self.assertRaisesRegex(TypeError, 'Expected QoSProfile or int'):
+            self.node.create_publisher(BasicTypes, 'chatter', 'foo')
 
     def test_create_subscription(self):
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
+        self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 0)
+        self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
+        self.node.create_subscription(
+            BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_sensor_data)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
-            self.node.create_subscription(BasicTypes, 'chatter?', lambda msg: print(msg))
+            self.node.create_subscription(BasicTypes, 'chatter?', lambda msg: print(msg), 1)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not start with a number'):
-            self.node.create_subscription(BasicTypes, '/chatter/42ish', lambda msg: print(msg))
+            self.node.create_subscription(BasicTypes, '/chatter/42ish', lambda msg: print(msg), 1)
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_subscription(BasicTypes, 'foo/{bad_sub}', lambda msg: print(msg))
+            self.node.create_subscription(BasicTypes, 'foo/{bad_sub}', lambda msg: print(msg), 1)
+        with self.assertRaisesRegex(ValueError, 'must be greater than or equal to zero'):
+            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), -1)
+        with self.assertRaisesRegex(TypeError, 'Expected QoSProfile or int'):
+            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 'foo')
 
     def raw_subscription_callback(self, msg):
         print('Raw subscription callback: %s length %d' % (msg, len(msg)))
@@ -83,7 +100,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_create_raw_subscription(self):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
-        basic_types_pub = self.node.create_publisher(BasicTypes, 'raw_subscription_test')
+        basic_types_pub = self.node.create_publisher(BasicTypes, 'raw_subscription_test', 1)
         self.raw_subscription_msg = None  # None=No result yet
         self.node.create_subscription(
             BasicTypes,
@@ -122,6 +139,40 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_service(GetParameters, '/get/42parameters', lambda req: None)
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
             self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req: None)
+
+    def test_deprecation_warnings(self):
+        warnings.simplefilter('always')
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_publisher(BasicTypes, 'chatter')
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_publisher(BasicTypes, 'chatter', qos_profile=qos_profile_sensor_data)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_publisher(BasicTypes, 'chatter', qos_profile=qos_profile_sensor_data)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_subscription(
+                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile=qos_profile_sensor_data)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_subscription(
+                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile=qos_profile_sensor_data)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), raw=True)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        warnings.simplefilter('default')
 
     def test_service_names_and_types(self):
         # test that it doesn't raise
