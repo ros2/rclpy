@@ -55,7 +55,7 @@ WaitableEntityType = TypeVar('WaitableEntityType')
 
 # Avoid import cycle
 if TYPE_CHECKING:
-    from rclpy.node import Node
+    from rclpy.node import Node  # noqa: F401
 
 
 class _WaitSet:

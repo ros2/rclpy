@@ -48,15 +48,15 @@ from rclpy.context import Context
 from rclpy.parameter import Parameter
 from rclpy.task import Future
 from rclpy.utilities import get_default_context
-from rclpy.utilities import get_rmw_implementation_identifier  # noqa
-from rclpy.utilities import ok  # noqa: forwarding to this module
+from rclpy.utilities import get_rmw_implementation_identifier  # noqa: F401
+from rclpy.utilities import ok  # noqa: F401 forwarding to this module
 from rclpy.utilities import shutdown as _shutdown
-from rclpy.utilities import try_shutdown  # noqa
+from rclpy.utilities import try_shutdown  # noqa: F401
 
 # Avoid loading extensions on module import
 if TYPE_CHECKING:
-    from rclpy.executors import Executor
-    from rclpy.node import Node
+    from rclpy.executors import Executor  # noqa: F401
+    from rclpy.node import Node  # noqa: F401
 
 
 def init(*, args: List[str] = None, context: Context = None) -> None:
@@ -134,7 +134,7 @@ def create_node(
     :return: An instance of the newly created node.
     """
     # imported locally to avoid loading extensions on module import
-    from rclpy.node import Node
+    from rclpy.node import Node  # noqa: F811
     return Node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
