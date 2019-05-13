@@ -94,25 +94,29 @@ class TestQosProfile(unittest.TestCase):
         self.convert_and_assert_equality(source_profile)
 
     def test_deprecation_warnings(self):
-        warnings.simplefilter('always')
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
             QoSProfile()
             assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
+            assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
             # No deprecation if history is supplied
             QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL)
             assert len(w) == 0, str(w[-1].message)
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
             # Deprecation warning if KEEP_LAST, but no depth
             QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST)
             assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
+            assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
             # No deprecation if 'depth' is present
             QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=1)
             assert len(w) == 0, str(w[-1].message)
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
             # No deprecation if only depth
             QoSProfile(depth=1)
             assert len(w) == 0, str(w[-1].message)

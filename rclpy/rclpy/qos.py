@@ -44,7 +44,6 @@ class QoSProfile:
             else:
                 warnings.warn(
                     "QoSProfile needs a 'history' and/or 'depth' setting when constructed",
-                    DeprecationWarning,
                     stacklevel=2)
         self.history = kwargs.get(
             'history',
@@ -55,7 +54,6 @@ class QoSProfile:
         ):
             warnings.warn(
                 'A QoSProfile with history set to KEEP_LAST needs a depth specified',
-                DeprecationWarning,
                 stacklevel=2)
         self.depth = kwargs.get('depth', int())
         self.reliability = kwargs.get(

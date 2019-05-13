@@ -682,8 +682,7 @@ class Node:
         if isinstance(qos_or_depth, QoSProfile):
             if isinstance(qos_or_depth, DeprecatedQoSProfile):
                 warnings.warn(
-                    "Using deprecated QoSProfile '{qos_or_depth.name}'".format_map(locals()),
-                    DeprecationWarning)
+                    "Using deprecated QoSProfile '{qos_or_depth.name}'".format_map(locals()))
             return qos_or_depth
         elif isinstance(qos_or_depth, int):
             if qos_or_depth < 0:
@@ -740,7 +739,7 @@ class Node:
         """
         # if the new API is not used, issue a deprecation warning and continue with the old API
         if qos_or_depth is None:
-            warnings.warn("Use the new 'qos_or_depth' parameter", DeprecationWarning)
+            warnings.warn("Use the new 'qos_or_depth' parameter, instead of 'qos_profile'")
         else:
             qos_profile = self._validate_qos_or_depth_parameter(qos_or_depth)
 
@@ -807,7 +806,7 @@ class Node:
         """
         # if the new API is not used, issue a deprecation warning and continue with the old API
         if qos_or_depth is None:
-            warnings.warn("Use the new 'qos_or_depth' parameter", DeprecationWarning)
+            warnings.warn("Use the new 'qos_or_depth' parameter, instead of 'qos_profile'")
         else:
             qos_profile = self._validate_qos_or_depth_parameter(qos_or_depth)
 
