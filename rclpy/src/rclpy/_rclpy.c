@@ -37,39 +37,7 @@
 #include <rosidl_generator_c/message_type_support_struct.h>
 
 #include "rclpy_common/common.h"
-
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The subscription must be first in the struct to compare sub.handle.pointer to an address
-  // in a wait set.
-  rcl_subscription_t subscription;
-  rcl_node_t * node;
-} rclpy_subscription_t;
-
-typedef struct
-{
-  rcl_publisher_t publisher;
-  rcl_node_t * node;
-} rclpy_publisher_t;
-
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The client must be first in the struct to compare cli.handle.pointer to an address
-  // in a wait set.
-  rcl_client_t client;
-  rcl_node_t * node;
-} rclpy_client_t;
-
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The service must be first in the struct to compare srv.handle.pointer to an address
-  // in a wait set.
-  rcl_service_t service;
-  rcl_node_t * node;
-} rclpy_service_t;
+#include "./_rclpy_qos_event.c"
 
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
@@ -2498,6 +2466,9 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
     ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition, &index);
+  } else if (0 == strcmp(entity_type, "event")) {
+    rcl_event_t * event = (rcl_event_t *)PyCapsule_GetPointer(pyentity, "rcl_event_t");
+    ret = rcl_wait_set_add_event(wait_set, event, &index);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
     PyErr_Format(PyExc_RuntimeError,
@@ -2563,6 +2534,9 @@ rclpy_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (0 == strcmp(entity_type, "guard_condition")) {
     entities = (void *)wait_set->guard_conditions;
     num_entities = wait_set->size_of_guard_conditions;
+  } else if (0 == strcmp(entity_type, "event")) {
+    entities = (void *)wait_set->events;
+    num_entities = wait_set->size_of_events;
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "'%s' is not a known entity", entity_type);
@@ -3634,9 +3608,9 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
   } else if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
-    rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
+    rclpy_publisher_t * publisher = (rclpy_publisher_t *)PyCapsule_GetPointer(
       pyentity, "rclpy_publisher_t");
-    if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher)) {
+    if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
       PyErr_Format(PyExc_RuntimeError,
         "Failed to assert liveliness on the Publisher: %s", rcl_get_error_string().str);
       rcl_reset_error();
@@ -4646,6 +4620,11 @@ static PyMethodDef rclpy_methods[] = {
     "Create a Timer."
   },
   {
+    "rclpy_create_event", rclpy_create_event, METH_VARARGS,
+    "Create an Event."
+  },
+
+  {
     "rclpy_create_guard_condition", rclpy_create_guard_condition, METH_VARARGS,
     "Create a general purpose guard_condition."
   },
@@ -4770,6 +4749,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_take_response", rclpy_take_response, METH_VARARGS,
     "rclpy_take_response."
+  },
+  {
+    "rclpy_take_event", rclpy_take_event, METH_VARARGS,
+    "Get the pending data for a ready QoS Event."
   },
 
   {
