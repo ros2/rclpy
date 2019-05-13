@@ -30,6 +30,7 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
+from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_sensor_data
 from test_msgs.msg import BasicTypes
 
@@ -155,6 +156,10 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
         with warnings.catch_warnings(record=True) as w:
+            self.node.create_publisher(BasicTypes, 'chatter', qos_profile_default)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
             self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
@@ -166,6 +171,11 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             self.node.create_subscription(
                 BasicTypes, 'chatter', lambda msg: print(msg), qos_profile=qos_profile_sensor_data)
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            self.node.create_subscription(
+                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_default)
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
         with warnings.catch_warnings(record=True) as w:

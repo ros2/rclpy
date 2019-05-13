@@ -50,6 +50,7 @@ from rclpy.logging import get_logger
 from rclpy.parameter import Parameter
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
+from rclpy.qos import DeprecatedQoSProfile
 from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
@@ -679,6 +680,10 @@ class Node:
 
     def _validate_qos_or_depth_parameter(self, qos_or_depth) -> QoSProfile:
         if isinstance(qos_or_depth, QoSProfile):
+            if isinstance(qos_or_depth, DeprecatedQoSProfile):
+                warnings.warn(
+                    "Using deprecated QoSProfile '{qos_or_depth.name}'".format_map(locals()),
+                    DeprecationWarning)
             return qos_or_depth
         elif isinstance(qos_or_depth, int):
             if qos_or_depth < 0:

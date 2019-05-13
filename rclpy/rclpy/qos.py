@@ -44,7 +44,8 @@ class QoSProfile:
             else:
                 warnings.warn(
                     "QoSProfile needs a 'history' and/or 'depth' setting when constructed",
-                    DeprecationWarning)
+                    DeprecationWarning,
+                    stacklevel=2)
         self.history = kwargs.get(
             'history',
             QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT)
@@ -54,7 +55,8 @@ class QoSProfile:
         ):
             warnings.warn(
                 'A QoSProfile with history set to KEEP_LAST needs a depth specified',
-                DeprecationWarning)
+                DeprecationWarning,
+                stacklevel=2)
         self.depth = kwargs.get('depth', int())
         self.reliability = kwargs.get(
             'reliability',
@@ -277,8 +279,25 @@ class QoSLivelinessPolicy(IntEnum):
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
 
 
-qos_profile_default = _rclpy.rclpy_get_rmw_qos_profile(
+class DeprecatedQoSProfile(QoSProfile):
+
+    def __init__(self, qos_profile: QoSProfile, profile_name: str):
+        super().__init__(
+            history=qos_profile.history,
+            depth=qos_profile.depth,
+            reliability=qos_profile.reliability,
+            durability=qos_profile.durability,
+            lifespan=qos_profile.lifespan,
+            deadline=qos_profile.deadline,
+            liveliness=qos_profile.liveliness,
+            liveliness_lease_duration=qos_profile.liveliness_lease_duration,
+            avoid_ros_namespace_conventions=qos_profile.avoid_ros_namespace_conventions)
+        self.name = profile_name
+
+
+__qos_profile_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_default')
+qos_profile_default = DeprecatedQoSProfile(__qos_profile_default, 'qos_profile_default')
 qos_profile_system_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_system_default')
 qos_profile_sensor_data = _rclpy.rclpy_get_rmw_qos_profile(
