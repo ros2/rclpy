@@ -53,7 +53,6 @@ from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
-from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import SubscriptionEventCallbacks
@@ -684,9 +683,7 @@ class Node:
         elif isinstance(qos_or_depth, int):
             if qos_or_depth < 0:
                 raise ValueError('history depth must be greater than or equal to zero')
-            return QoSProfile(
-                history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
-                depth=qos_or_depth)
+            return QoSProfile(depth=qos_or_depth)
         else:
             raise TypeError(
                 'Expected QoSProfile or int, but received {!r}'.format(type(qos_or_depth)))

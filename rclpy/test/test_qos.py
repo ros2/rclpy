@@ -31,6 +31,11 @@ class TestQosProfile(unittest.TestCase):
         converted_profile = _rclpy.rclpy_convert_to_py_qos_policy(c_profile)
         self.assertEqual(qos_profile, converted_profile)
 
+    def test_depth_only_constructor(self):
+        qos = QoSProfile(depth=1)
+        assert qos.depth == 1
+        assert qos.history == QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST
+
     def test_eq_operator(self):
         profile_1 = QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=1)
         profile_same = QoSProfile(
@@ -106,4 +111,8 @@ class TestQosProfile(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             # No deprecation if 'depth' is present
             QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=1)
+            assert len(w) == 0, str(w[-1].message)
+        with warnings.catch_warnings(record=True) as w:
+            # No deprecation if only depth
+            QoSProfile(depth=1)
             assert len(w) == 0, str(w[-1].message)
