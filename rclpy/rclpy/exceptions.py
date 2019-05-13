@@ -96,7 +96,7 @@ class InvalidParameterException(ParameterException):
 
 
 class InvalidParameterValueException(ParameterException):
-    """Raised when a parameter to be declared is rejected by a callback."""
+    """Raised when a parameter is rejected by a user callback or when applying a descriptor."""
 
     def __init__(self, parameter, value, *args):
         Exception.__init__(
