@@ -349,7 +349,7 @@ class TestWaitable(unittest.TestCase):
     def test_waitable_with_subscription(self):
         self.waitable = SubscriptionWaitable(self.node)
         self.node.add_waitable(self.waitable)
-        pub = self.node.create_publisher(EmptyMsg, 'test_topic')
+        pub = self.node.create_publisher(EmptyMsg, 'test_topic', 1)
 
         thr = self.start_spin_thread(self.waitable)
         pub.publish(EmptyMsg())

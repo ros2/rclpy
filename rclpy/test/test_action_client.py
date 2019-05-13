@@ -43,7 +43,7 @@ class MockActionServer():
             Fibonacci.Impl.GetResultService, '/fibonacci/_action/get_result',
             self.result_callback)
         self.feedback_pub = node.create_publisher(
-            Fibonacci.Impl.FeedbackMessage, '/fibonacci/_action/feedback')
+            Fibonacci.Impl.FeedbackMessage, '/fibonacci/_action/feedback', 1)
 
     def goal_callback(self, request, response):
         response.accepted = True

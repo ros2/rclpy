@@ -71,10 +71,10 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertTrue(group.has_entity(tmr2))
 
     def test_create_subscription_with_group(self):
-        sub1 = self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
+        sub1 = self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
         group = ReentrantCallbackGroup()
         sub2 = self.node.create_subscription(
-            BasicTypes, 'chatter', lambda msg: print(msg), callback_group=group)
+            BasicTypes, 'chatter', lambda msg: print(msg), 1, callback_group=group)
 
         self.assertFalse(group.has_entity(sub1))
         self.assertTrue(group.has_entity(sub2))

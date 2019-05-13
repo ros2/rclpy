@@ -34,7 +34,6 @@ from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_sensor_data
 from test_msgs.msg import BasicTypes
 
-
 TEST_NODE = 'my_node'
 TEST_NAMESPACE = '/my_ns'
 
@@ -63,7 +62,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(self.node.get_clock().clock_type, ClockType.ROS_TIME)
 
     def test_create_publisher(self):
-        self.node.create_publisher(BasicTypes, 'chatter')
         self.node.create_publisher(BasicTypes, 'chatter', 0)
         self.node.create_publisher(BasicTypes, 'chatter', 1)
         self.node.create_publisher(BasicTypes, 'chatter', qos_profile_sensor_data)
@@ -79,7 +77,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_publisher(BasicTypes, 'chatter', 'foo')
 
     def test_create_subscription(self):
-        self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 0)
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
         self.node.create_subscription(
@@ -108,6 +105,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             BasicTypes,
             'raw_subscription_test',
             self.raw_subscription_callback,
+            1,
             raw=True
         )
         basic_types_msg = BasicTypes()
@@ -216,15 +214,15 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(0, self.node.count_publishers(fq_topic_name))
         self.assertEqual(0, self.node.count_subscribers(fq_topic_name))
 
-        self.node.create_publisher(BasicTypes, short_topic_name)
+        self.node.create_publisher(BasicTypes, short_topic_name, 1)
         self.assertEqual(1, self.node.count_publishers(short_topic_name))
         self.assertEqual(1, self.node.count_publishers(fq_topic_name))
 
-        self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg))
+        self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg), 1)
         self.assertEqual(1, self.node.count_subscribers(short_topic_name))
         self.assertEqual(1, self.node.count_subscribers(fq_topic_name))
 
-        self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg))
+        self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg), 1)
         self.assertEqual(2, self.node.count_subscribers(short_topic_name))
         self.assertEqual(2, self.node.count_subscribers(fq_topic_name))
 

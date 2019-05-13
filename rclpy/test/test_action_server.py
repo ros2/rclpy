@@ -40,9 +40,12 @@ class MockActionClient():
         self.result_srv = node.create_client(
             Fibonacci.Impl.GetResultService, '/fibonacci/_action/get_result')
         self.feedback_sub = node.create_subscription(
-            Fibonacci.Impl.FeedbackMessage, '/fibonacci/_action/feedback', self.feedback_callback)
+            Fibonacci.Impl.FeedbackMessage,
+            '/fibonacci/_action/feedback',
+            self.feedback_callback,
+            1)
         self.status_sub = node.create_subscription(
-            Fibonacci.Impl.GoalStatusMessage, '/fibonacci/_action/status', self.status_callback)
+            Fibonacci.Impl.GoalStatusMessage, '/fibonacci/_action/status', self.status_callback, 1)
 
     def reset(self):
         self.feedback_msg = None
