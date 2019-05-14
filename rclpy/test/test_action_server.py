@@ -112,11 +112,11 @@ class TestActionServer(unittest.TestCase):
             goal_callback=lambda req: GoalResponse.REJECT,
             handle_accepted_callback=lambda gh: None,
             cancel_callback=lambda req: CancelResponse.REJECT,
-            goal_service_qos_profile=rclpy.qos.qos_profile_default,
-            result_service_qos_profile=rclpy.qos.qos_profile_default,
-            cancel_service_qos_profile=rclpy.qos.qos_profile_default,
-            feedback_pub_qos_profile=rclpy.qos.qos_profile_default,
-            status_pub_qos_profile=rclpy.qos.qos_profile_default,
+            goal_service_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            result_service_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            cancel_service_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            feedback_pub_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            status_pub_qos_profile=rclpy.qos.QoSProfile(depth=10),
             result_timeout=300,
         )
         action_server.destroy()

@@ -51,7 +51,6 @@ from rclpy.parameter import Parameter
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import DeprecatedQoSProfile
-from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
@@ -716,7 +715,7 @@ class Node:
         topic: str,
         qos_or_depth: Union[QoSProfile, int] = None,
         *,
-        qos_profile: QoSProfile = qos_profile_default,
+        qos_profile: QoSProfile = QoSProfile(depth=10),
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
     ) -> Publisher:
@@ -779,7 +778,7 @@ class Node:
         callback: Callable[[MsgType], None],
         qos_or_depth: Union[QoSProfile, int] = None,
         *,
-        qos_profile: QoSProfile = qos_profile_default,
+        qos_profile: QoSProfile = QoSProfile(depth=10),
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         raw: bool = False
