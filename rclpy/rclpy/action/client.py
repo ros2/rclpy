@@ -23,7 +23,8 @@ from action_msgs.srv import CancelGoal
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 from rclpy.qos import qos_profile_action_status_default
-from rclpy.qos import qos_profile_default, qos_profile_services_default
+from rclpy.qos import qos_profile_services_default
+from rclpy.qos import QoSProfile
 from rclpy.task import Future
 from rclpy.type_support import check_for_type_support
 from rclpy.waitable import NumberOfEntities, Waitable
@@ -120,7 +121,7 @@ class ActionClient(Waitable):
         goal_service_qos_profile=qos_profile_services_default,
         result_service_qos_profile=qos_profile_services_default,
         cancel_service_qos_profile=qos_profile_services_default,
-        feedback_sub_qos_profile=qos_profile_default,
+        feedback_sub_qos_profile=QoSProfile(depth=10),
         status_sub_qos_profile=qos_profile_action_status_default
     ):
         """

@@ -42,11 +42,11 @@ class TestMessages(unittest.TestCase):
     def test_invalid_string_raises(self):
         msg = Strings()
         msg.string_value = 'ñu'
-        pub = self.node.create_publisher(Strings, 'chatter')
+        pub = self.node.create_publisher(Strings, 'chatter', 1)
         with self.assertRaises(UnicodeEncodeError):
             pub.publish(msg)
 
     def test_different_type_raises(self):
-        pub = self.node.create_publisher(BasicTypes, 'chatter')
+        pub = self.node.create_publisher(BasicTypes, 'chatter', 1)
         with self.assertRaises(TypeError):
             pub.publish('different message type')

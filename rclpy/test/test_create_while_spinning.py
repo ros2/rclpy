@@ -54,8 +54,8 @@ class TestCreateWhileSpinning(unittest.TestCase):
 
     def test_publish_subscribe(self):
         evt = threading.Event()
-        self.node.create_subscription(BasicTypes, 'foo', lambda msg: evt.set())
-        pub = self.node.create_publisher(BasicTypes, 'foo')
+        self.node.create_subscription(BasicTypes, 'foo', lambda msg: evt.set(), 1)
+        pub = self.node.create_publisher(BasicTypes, 'foo', 1)
         pub.publish(BasicTypes())
         assert evt.wait(TIMEOUT)
 

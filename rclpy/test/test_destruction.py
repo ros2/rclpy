@@ -71,16 +71,16 @@ def test_destroy_entities():
             timer = node.create_timer(0.1, None)
             timer  # noqa
             assert 1 == len(tuple(node.timers))
-            pub1 = node.create_publisher(BasicTypes, 'pub1_topic')
+            pub1 = node.create_publisher(BasicTypes, 'pub1_topic', 1)
             assert 2 == len(tuple(node.publishers))
-            pub2 = node.create_publisher(BasicTypes, 'pub2_topic')
+            pub2 = node.create_publisher(BasicTypes, 'pub2_topic', 1)
             pub2  # noqa
             assert 3 == len(tuple(node.publishers))
             sub1 = node.create_subscription(
-                BasicTypes, 'sub1_topic', lambda msg: ...)
+                BasicTypes, 'sub1_topic', lambda msg: ..., 1)
             assert 1 == len(tuple(node.subscriptions))
             sub2 = node.create_subscription(
-                BasicTypes, 'sub2_topic', lambda msg: ...)
+                BasicTypes, 'sub2_topic', lambda msg: ..., 1)
             sub2  # noqa
             assert 2 == len(tuple(node.subscriptions))
 
@@ -105,7 +105,7 @@ def test_destroy_subscription_asap():
     try:
         node = rclpy.create_node('test_destroy_subscription_asap', context=context)
         try:
-            sub = node.create_subscription(BasicTypes, 'sub_topic', lambda msg: ...)
+            sub = node.create_subscription(BasicTypes, 'sub_topic', lambda msg: ..., 1)
 
             # handle valid
             with sub.handle:
@@ -154,7 +154,7 @@ def test_destroy_publisher_asap():
     try:
         node = rclpy.create_node('test_destroy_publisher_asap', context=context)
         try:
-            pub = node.create_publisher(BasicTypes, 'pub_topic')
+            pub = node.create_publisher(BasicTypes, 'pub_topic', 1)
 
             # handle valid
             with pub.handle:

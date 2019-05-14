@@ -43,7 +43,7 @@ class MockActionServer():
             Fibonacci.Impl.GetResultService, '/fibonacci/_action/get_result',
             self.result_callback)
         self.feedback_pub = node.create_publisher(
-            Fibonacci.Impl.FeedbackMessage, '/fibonacci/_action/feedback')
+            Fibonacci.Impl.FeedbackMessage, '/fibonacci/_action/feedback', 1)
 
     def goal_callback(self, request, response):
         response.accepted = True
@@ -98,11 +98,11 @@ class TestActionClient(unittest.TestCase):
             self.node,
             Fibonacci,
             'fibonacci',
-            goal_service_qos_profile=rclpy.qos.qos_profile_default,
-            result_service_qos_profile=rclpy.qos.qos_profile_default,
-            cancel_service_qos_profile=rclpy.qos.qos_profile_default,
-            feedback_sub_qos_profile=rclpy.qos.qos_profile_default,
-            status_sub_qos_profile=rclpy.qos.qos_profile_default
+            goal_service_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            result_service_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            cancel_service_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            feedback_sub_qos_profile=rclpy.qos.QoSProfile(depth=10),
+            status_sub_qos_profile=rclpy.qos.QoSProfile(depth=10)
         )
         ac.destroy()
 

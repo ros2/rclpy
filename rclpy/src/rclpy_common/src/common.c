@@ -160,74 +160,48 @@ cleanup:
 PyObject *
 rclpy_common_convert_to_py_qos_policy(const rmw_qos_profile_t * qos_profile)
 {
-  PyObject * pyqos_module = PyImport_ImportModule("rclpy.qos");
-  if (!pyqos_module) {
-    return NULL;
-  }
-
-  PyObject * pyqos_policy_class = PyObject_GetAttrString(pyqos_module, "QoSProfile");
-  Py_DECREF(pyqos_module);
-  if (!pyqos_policy_class) {
-    return NULL;
-  }
-
-  PyObject * pyqos_profile = PyObject_CallObject(pyqos_policy_class, NULL);
-  Py_DECREF(pyqos_policy_class);
-  if (!pyqos_profile) {
-    return NULL;
-  }
-
-  // start qos setting
+  // Convert rmw members to Python objects
   rclpy_qos_profile_t rclpy_qos;
   init_rclpy_qos_profile(&rclpy_qos);
 
-  int set_result = -1;
-
   rclpy_qos.depth = PyLong_FromSize_t(qos_profile->depth);
   if (!rclpy_qos.depth) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
   rclpy_qos.history = PyLong_FromUnsignedLong(qos_profile->history);
   if (!rclpy_qos.history) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
   rclpy_qos.reliability = PyLong_FromUnsignedLong(qos_profile->reliability);
   if (!rclpy_qos.reliability) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
   rclpy_qos.durability = PyLong_FromUnsignedLong(qos_profile->durability);
   if (!rclpy_qos.durability) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
   rclpy_qos.lifespan = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
   if (!rclpy_qos.lifespan) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
   rclpy_qos.deadline = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
   if (!rclpy_qos.deadline) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
   rclpy_qos.liveliness = PyLong_FromUnsignedLong(qos_profile->liveliness);
   if (!rclpy_qos.liveliness) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
@@ -235,7 +209,6 @@ rclpy_common_convert_to_py_qos_policy(const rmw_qos_profile_t * qos_profile)
   rclpy_qos.liveliness_lease_duration = _convert_rmw_time_to_py_duration(
     &qos_profile->liveliness_lease_duration);
   if (!rclpy_qos.liveliness_lease_duration) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
@@ -243,31 +216,60 @@ rclpy_common_convert_to_py_qos_policy(const rmw_qos_profile_t * qos_profile)
   rclpy_qos.avoid_ros_namespace_conventions =
     PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions);
   if (!rclpy_qos.avoid_ros_namespace_conventions) {
-    Py_DECREF(pyqos_profile);
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
-  // A success returns 0, and a failure returns -1
-  set_result = 0;
-  set_result += PyObject_SetAttrString(pyqos_profile, "depth", rclpy_qos.depth);
-  set_result += PyObject_SetAttrString(pyqos_profile, "history", rclpy_qos.history);
-  set_result += PyObject_SetAttrString(pyqos_profile, "reliability", rclpy_qos.reliability);
-  set_result += PyObject_SetAttrString(pyqos_profile, "durability", rclpy_qos.durability);
-  set_result += PyObject_SetAttrString(pyqos_profile, "lifespan", rclpy_qos.lifespan);
-  set_result += PyObject_SetAttrString(pyqos_profile, "deadline", rclpy_qos.deadline);
-  set_result += PyObject_SetAttrString(pyqos_profile, "liveliness", rclpy_qos.liveliness);
-  set_result += PyObject_SetAttrString(pyqos_profile,
-      "liveliness_lease_duration", rclpy_qos.liveliness_lease_duration);
-  set_result += PyObject_SetAttrString(pyqos_profile,
-      "avoid_ros_namespace_conventions", rclpy_qos.avoid_ros_namespace_conventions);
-
-  cleanup_rclpy_qos_profile(&rclpy_qos);
-
-  if (0 != set_result) {
-    Py_DECREF(pyqos_profile);
+  // Create dictionary to hold QoSProfile keyword arguments
+  PyObject * pyqos_kwargs = PyDict_New();
+  if (!pyqos_kwargs) {
+    cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
+
+  // Populate keyword arguments for QoSProfile object
+  // A success returns 0, and a failure returns -1
+  int set_result = 0;
+  set_result += PyDict_SetItemString(pyqos_kwargs, "depth", rclpy_qos.depth);
+  set_result += PyDict_SetItemString(pyqos_kwargs, "history", rclpy_qos.history);
+  set_result += PyDict_SetItemString(pyqos_kwargs, "reliability", rclpy_qos.reliability);
+  set_result += PyDict_SetItemString(pyqos_kwargs, "durability", rclpy_qos.durability);
+  set_result += PyDict_SetItemString(pyqos_kwargs, "lifespan", rclpy_qos.lifespan);
+  set_result += PyDict_SetItemString(pyqos_kwargs, "deadline", rclpy_qos.deadline);
+  set_result += PyDict_SetItemString(pyqos_kwargs, "liveliness", rclpy_qos.liveliness);
+  set_result += PyDict_SetItemString(
+    pyqos_kwargs, "liveliness_lease_duration", rclpy_qos.liveliness_lease_duration);
+  set_result += PyDict_SetItemString(
+    pyqos_kwargs, "avoid_ros_namespace_conventions", rclpy_qos.avoid_ros_namespace_conventions);
+  cleanup_rclpy_qos_profile(&rclpy_qos);
+  if (0 != set_result) {
+    Py_DECREF(pyqos_kwargs);
+    return NULL;
+  }
+
+  // Construct Python QoSProfile object
+  PyObject * pyqos_module = PyImport_ImportModule("rclpy.qos");
+  if (!pyqos_module) {
+    Py_DECREF(pyqos_kwargs);
+    return NULL;
+  }
+  PyObject * pyqos_profile_class = PyObject_GetAttrString(pyqos_module, "QoSProfile");
+  Py_DECREF(pyqos_module);
+  if (!pyqos_profile_class) {
+    Py_DECREF(pyqos_kwargs);
+    return NULL;
+  }
+  // There are no positional arguments, but we're required to pass an empty tuple anyways
+  PyObject * pyqos_args = PyTuple_New(0);
+  if (!pyqos_args) {
+    Py_DECREF(pyqos_kwargs);
+    Py_DECREF(pyqos_profile_class);
+    return NULL;
+  }
+  PyObject * pyqos_profile = PyObject_Call(pyqos_profile_class, pyqos_args, pyqos_kwargs);
+  Py_DECREF(pyqos_profile_class);
+  Py_DECREF(pyqos_args);
+  Py_DECREF(pyqos_kwargs);
   return pyqos_profile;
 }
 

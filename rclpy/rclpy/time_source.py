@@ -57,7 +57,8 @@ class TimeSource:
             self._clock_sub = self._node.create_subscription(
                 rosgraph_msgs.msg.Clock,
                 CLOCK_TOPIC,
-                self.clock_callback
+                self.clock_callback,
+                10
             )
 
     def attach_node(self, node):

@@ -23,7 +23,7 @@ from rclpy.clock import ClockType
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import check_for_type_support
-from rclpy.qos import qos_profile_default
+from rclpy.qos import QoSProfile
 from rclpy.task import Future
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
@@ -43,7 +43,7 @@ class ClientWaitable(Waitable):
 
         with node.handle as node_capsule:
             self.client = _rclpy.rclpy_create_client(
-                node_capsule, EmptySrv, 'test_client', qos_profile_default.get_c_qos_profile())
+                node_capsule, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile())
         self.client_index = None
         self.client_is_ready = False
 
@@ -86,7 +86,7 @@ class ServerWaitable(Waitable):
 
         with node.handle as node_capsule:
             self.server = _rclpy.rclpy_create_service(
-                node_capsule, EmptySrv, 'test_server', qos_profile_default.get_c_qos_profile())
+                node_capsule, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile())
         self.server_index = None
         self.server_is_ready = False
 
@@ -175,7 +175,7 @@ class SubscriptionWaitable(Waitable):
 
         with node.handle as node_capsule:
             self.subscription = _rclpy.rclpy_create_subscription(
-                node_capsule, EmptyMsg, 'test_topic', qos_profile_default.get_c_qos_profile())
+                node_capsule, EmptyMsg, 'test_topic', QoSProfile(depth=10).get_c_qos_profile())
         self.subscription_index = None
         self.subscription_is_ready = False
 
@@ -349,7 +349,7 @@ class TestWaitable(unittest.TestCase):
     def test_waitable_with_subscription(self):
         self.waitable = SubscriptionWaitable(self.node)
         self.node.add_waitable(self.waitable)
-        pub = self.node.create_publisher(EmptyMsg, 'test_topic')
+        pub = self.node.create_publisher(EmptyMsg, 'test_topic', 1)
 
         thr = self.start_spin_thread(self.waitable)
         pub.publish(EmptyMsg())

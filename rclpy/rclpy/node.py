@@ -18,7 +18,9 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import TypeVar
+from typing import Union
 
+import warnings
 import weakref
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
@@ -48,7 +50,7 @@ from rclpy.logging import get_logger
 from rclpy.parameter import Parameter
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
-from rclpy.qos import qos_profile_default
+from rclpy.qos import DeprecatedQoSProfile
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
@@ -160,7 +162,7 @@ class Node:
         self.__executor_weakref = None
 
         self._parameter_event_publisher = self.create_publisher(
-            ParameterEvent, 'parameter_events', qos_profile=qos_profile_parameter_events)
+            ParameterEvent, 'parameter_events', qos_profile_parameter_events)
 
         with self.handle as capsule:
             self._initial_parameters = _rclpy.rclpy_get_node_parameters(Parameter, capsule)
@@ -675,6 +677,20 @@ class Node:
         expanded_topic_or_service_name = expand_topic_name(topic_or_service_name, name, namespace)
         validate_full_topic_name(expanded_topic_or_service_name, is_service=is_service)
 
+    def _validate_qos_or_depth_parameter(self, qos_or_depth) -> QoSProfile:
+        if isinstance(qos_or_depth, QoSProfile):
+            if isinstance(qos_or_depth, DeprecatedQoSProfile):
+                warnings.warn(
+                    "Using deprecated QoSProfile '{qos_or_depth.name}'".format_map(locals()))
+            return qos_or_depth
+        elif isinstance(qos_or_depth, int):
+            if qos_or_depth < 0:
+                raise ValueError('history depth must be greater than or equal to zero')
+            return QoSProfile(depth=qos_or_depth)
+        else:
+            raise TypeError(
+                'Expected QoSProfile or int, but received {!r}'.format(type(qos_or_depth)))
+
     def add_waitable(self, waitable: Waitable) -> None:
         """
         Add a class that is capable of adding things to the wait set.
@@ -697,8 +713,9 @@ class Node:
         self,
         msg_type,
         topic: str,
+        qos_or_depth: Union[QoSProfile, int] = None,
         *,
-        qos_profile: QoSProfile = qos_profile_default,
+        qos_profile: QoSProfile = QoSProfile(depth=10),
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
     ) -> Publisher:
@@ -707,12 +724,24 @@ class Node:
 
         :param msg_type: The type of ROS messages the publisher will publish.
         :param topic: The name of the topic the publisher will publish to.
-        :param qos_profile: The quality of service profile to apply to the publisher.
+        :param qos_or_depth: A QoSProfile or a history depth to apply to the publisher.
+          This is a required parameter, and only defaults to None for backwards compatibility.
+          In the case that a history depth is provided, the QoS history is set to
+          RMW_QOS_POLICY_HISTORY_KEEP_LAST, the QoS history depth is set to the value
+          of the parameter, and all other QoS settings are set to their default values.
+        :param qos_profile: **This parameter is deprecated; use the qos_or_depth parameter
+          instead.**
         :param callback_group: The callback group for the publisher's event handlers.
             If ``None``, then the node's default callback group is used.
         :param event_callbacks: User-defined callbacks for middleware events.
         :return: The new publisher.
         """
+        # if the new API is not used, issue a deprecation warning and continue with the old API
+        if qos_or_depth is None:
+            warnings.warn("Use the new 'qos_or_depth' parameter, instead of 'qos_profile'")
+        else:
+            qos_profile = self._validate_qos_or_depth_parameter(qos_or_depth)
+
         callback_group = callback_group or self.default_callback_group
 
         # this line imports the typesupport for the message module if not already done
@@ -747,8 +776,9 @@ class Node:
         msg_type,
         topic: str,
         callback: Callable[[MsgType], None],
+        qos_or_depth: Union[QoSProfile, int] = None,
         *,
-        qos_profile: QoSProfile = qos_profile_default,
+        qos_profile: QoSProfile = QoSProfile(depth=10),
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         raw: bool = False
@@ -760,13 +790,25 @@ class Node:
         :param topic: The name of the topic the subscription will subscribe to.
         :param callback: A user-defined callback function that is called when a message is
             received by the subscription.
-        :param qos_profile: The quality of service profile to apply to the subscription.
+        :param qos_or_depth: A QoSProfile or a history depth to apply to the subscription.
+          This is a required parameter, and only defaults to None for backwards compatibility.
+          In the case that a history depth is provided, the QoS history is set to
+          RMW_QOS_POLICY_HISTORY_KEEP_LAST, the QoS history depth is set to the value
+          of the parameter, and all other QoS settings are set to their default values.
+        :param qos_profile: **This parameter is deprecated; use the qos_or_depth parameter
+          instead.**
         :param callback_group: The callback group for the subscription. If ``None``, then the
             nodes default callback group is used.
         :param event_callbacks: User-defined callbacks for middleware events.
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
         """
+        # if the new API is not used, issue a deprecation warning and continue with the old API
+        if qos_or_depth is None:
+            warnings.warn("Use the new 'qos_or_depth' parameter, instead of 'qos_profile'")
+        else:
+            qos_profile = self._validate_qos_or_depth_parameter(qos_or_depth)
+
         callback_group = callback_group or self.default_callback_group
 
         # this line imports the typesupport for the message module if not already done
