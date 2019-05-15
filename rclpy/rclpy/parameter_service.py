@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rcl_interfaces.msg import ParameterDescriptor
+from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTypes
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
+from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
 from rclpy.qos import qos_profile_parameters
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
@@ -62,7 +65,10 @@ class ParameterService:
 
     def _describe_parameters_callback(self, request, response):
         for name in request.names:
-            descriptor = self._node.describe_parameter(name)
+            try:
+                descriptor = self._node.describe_parameter(name)
+            except ParameterNotDeclaredException:
+                descriptor = ParameterDescriptor()
             response.descriptors.append(descriptor)
         return response
 
@@ -118,10 +124,23 @@ class ParameterService:
     def _set_parameters_callback(self, request, response):
         for p in request.parameters:
             param = Parameter.from_parameter_msg(p)
-            response.results.append(self._node.set_parameters_atomically([param]))
+            try:
+                result = self._node.set_parameters_atomically([param])
+            except ParameterNotDeclaredException as e:
+                result = SetParametersResult(
+                    successful=False,
+                    reason=str(e)
+                )
+            response.results.append(result)
         return response
 
     def _set_parameters_atomically_callback(self, request, response):
-        response.result = self._node.set_parameters_atomically([
-            Parameter.from_parameter_msg(p) for p in request.parameters])
+        try:
+            response.result = self._node.set_parameters_atomically([
+                Parameter.from_parameter_msg(p) for p in request.parameters])
+        except ParameterNotDeclaredException as e:
+            response.result = SetParametersResult(
+                    successful=False,
+                    reason=str(e)
+                )
         return response
