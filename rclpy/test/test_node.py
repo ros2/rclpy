@@ -636,17 +636,14 @@ class TestNode(unittest.TestCase):
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
         ]
@@ -683,22 +680,18 @@ class TestNode(unittest.TestCase):
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
             Parameter(
                 name=parameter_tuples[3][0],
-                type_=Parameter.Type.from_parameter_value(extra_value),
                 value=float_value
             ),
         ]
@@ -729,7 +722,6 @@ class TestNode(unittest.TestCase):
             [
                 Parameter(
                     name=reject_parameter_tuple[0],
-                    type_=Parameter.Type.from_parameter_value(reject_parameter_tuple[1]),
                     value=reject_parameter_tuple[1]
                 )
             ]
@@ -764,17 +756,14 @@ class TestNode(unittest.TestCase):
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
         ]
@@ -784,23 +773,21 @@ class TestNode(unittest.TestCase):
         # Try setting a different value to the declared parameters.
         integer_value = 24
         string_value = 'bye'
+
         float_value = 1.42
 
         # Re-create parameters with modified values.
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
         ]
@@ -877,17 +864,14 @@ class TestNode(unittest.TestCase):
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
         ]
@@ -919,22 +903,18 @@ class TestNode(unittest.TestCase):
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
             Parameter(
                 name=parameter_tuples[3][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
         ]
@@ -966,7 +946,6 @@ class TestNode(unittest.TestCase):
             [
                 Parameter(
                     name=reject_parameter_tuple[0],
-                    type_=Parameter.Type.from_parameter_value(reject_parameter_tuple[1]),
                     value=reject_parameter_tuple[1]
                 )
             ]
@@ -1000,17 +979,14 @@ class TestNode(unittest.TestCase):
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
         ]
@@ -1025,17 +1001,14 @@ class TestNode(unittest.TestCase):
         parameters = [
             Parameter(
                 name=parameter_tuples[0][0],
-                type_=Parameter.Type.from_parameter_value(integer_value),
                 value=integer_value
             ),
             Parameter(
                 name=parameter_tuples[1][0],
-                type_=Parameter.Type.from_parameter_value(string_value),
                 value=string_value
             ),
             Parameter(
                 name=parameter_tuples[2][0],
-                type_=Parameter.Type.from_parameter_value(float_value),
                 value=float_value
             ),
         ]

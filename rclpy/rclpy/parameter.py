@@ -120,7 +120,11 @@ class Parameter:
             value = param_msg.value.string_array_value
         return cls(param_msg.name, type_, value)
 
-    def __init__(self, name, type_, value=None):
+    def __init__(self, name, type_=None, value=None):
+        if type_ is None:
+            # This will raise a TypeError if it is not possible to get a type from the value.
+            type_ = Parameter.Type.from_parameter_value(value)
+
         if not isinstance(type_, Parameter.Type):
             raise TypeError("type must be an instance of '{}'".format(repr(Parameter.Type)))
 
