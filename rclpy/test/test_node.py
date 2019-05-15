@@ -18,7 +18,6 @@ import warnings
 
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
-from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
@@ -401,14 +400,11 @@ class TestNode(unittest.TestCase):
         result_initial_foo = self.node.declare_parameter(
             'initial_foo', ParameterValue(), ParameterDescriptor())
         result_foo = self.node.declare_parameter(
-            'foo', ParameterValue(
-                type=Parameter.Type.INTEGER.value, integer_value=42), ParameterDescriptor())
+            'foo', 42, ParameterDescriptor())
         result_bar = self.node.declare_parameter(
-            'bar', ParameterValue(
-                type=Parameter.Type.STRING.value, string_value='hello'), ParameterDescriptor())
+            'bar', 'hello', ParameterDescriptor())
         result_baz = self.node.declare_parameter(
-            'baz', ParameterValue(
-                type=Parameter.Type.DOUBLE.value, double_value=2.41), ParameterDescriptor())
+            'baz', 2.41, ParameterDescriptor())
 
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
@@ -427,45 +423,38 @@ class TestNode(unittest.TestCase):
         # Error cases.
         with self.assertRaises(ParameterAlreadyDeclaredException):
             self.node.declare_parameter(
-                'foo', ParameterValue(
-                    type=Parameter.Type.STRING.value, string_value='raise'), ParameterDescriptor())
+                'foo', 'raise', ParameterDescriptor())
         with self.assertRaises(InvalidParameterException):
             self.node.declare_parameter(
-                '123foo', ParameterValue(
-                    type=Parameter.Type.STRING.value, string_value='raise'), ParameterDescriptor())
+                '123foo', 'raise', ParameterDescriptor())
         with self.assertRaises(InvalidParameterException):
             self.node.declare_parameter(
-                'foo??', ParameterValue(
-                    type=Parameter.Type.STRING.value, string_value='raise'), ParameterDescriptor())
+                'foo??', 'raise', ParameterDescriptor())
 
         self.node.set_parameters_callback(self.reject_parameter_callback)
         with self.assertRaises(InvalidParameterValueException):
             self.node.declare_parameter(
-                'reject_me', ParameterValue(
-                    type=Parameter.Type.STRING.value, string_value='raise'), ParameterDescriptor())
+                'reject_me', 'raise', ParameterDescriptor())
 
         with self.assertRaises(TypeError):
             self.node.declare_parameter(
                 1,
-                ParameterValue(type=Parameter.Type.STRING.value, string_value='wrong_name_type'),
+                'wrong_name_type',
                 ParameterDescriptor())
 
         with self.assertRaises(TypeError):
             self.node.declare_parameter(
-                'wrong_parameter_value_type', 1234, ParameterDescriptor())
+                'wrong_parameter_value_type', ParameterValue(), ParameterDescriptor())
 
         with self.assertRaises(TypeError):
             self.node.declare_parameter(
-                'wrong_parameter_descriptor_type', ParameterValue(), ParameterValue())
+                'wrong_parameter_descriptor_type', 1, ParameterValue())
 
     def test_declare_parameters(self):
         parameters = [
-            ('foo', ParameterValue(
-                type=Parameter.Type.INTEGER.value, integer_value=42), ParameterDescriptor()),
-            ('bar', ParameterValue(
-                type=Parameter.Type.STRING.value, string_value='hello'), ParameterDescriptor()),
-            ('baz', ParameterValue(
-                type=Parameter.Type.DOUBLE.value, double_value=2.41), ParameterDescriptor()),
+            ('foo', 42, ParameterDescriptor()),
+            ('bar', 'hello', ParameterDescriptor()),
+            ('baz', 2.41, ParameterDescriptor()),
         ]
 
         result = self.node.declare_parameters('', parameters)
@@ -503,36 +492,27 @@ class TestNode(unittest.TestCase):
         # Declare a new set of parameters; the first one is not already declared,
         # but 2nd and 3rd one are.
         parameters = [
-            ('foobar', ParameterValue(
-                type=Parameter.Type.INTEGER.value, integer_value=43), ParameterDescriptor()),
-            ('bar', ParameterValue(
-                type=Parameter.Type.STRING.value, string_value='hello'), ParameterDescriptor()),
-            ('baz', ParameterValue(
-                type=Parameter.Type.DOUBLE.value, double_value=2.41), ParameterDescriptor()),
+            ('foobar', 43, ParameterDescriptor()),
+            ('bar', 'hello', ParameterDescriptor()),
+            ('baz', 2.41, ParameterDescriptor()),
         ]
         with self.assertRaises(ParameterAlreadyDeclaredException):
             self.node.declare_parameters('', parameters)
 
         # Declare a new set; the third one shall fail because of its name.
         parameters = [
-            ('foobarbar', ParameterValue(
-                type=Parameter.Type.INTEGER.value, integer_value=44), ParameterDescriptor()),
-            ('barbarbar', ParameterValue(
-                type=Parameter.Type.STRING.value, string_value='world'), ParameterDescriptor()),
-            ('baz??wrong_name', ParameterValue(
-                type=Parameter.Type.DOUBLE.value, double_value=2.41), ParameterDescriptor()),
+            ('foobarbar', 44, ParameterDescriptor()),
+            ('barbarbar', 'world', ParameterDescriptor()),
+            ('baz??wrong_name', 2.41, ParameterDescriptor()),
         ]
         with self.assertRaises(InvalidParameterException):
             self.node.declare_parameters('', parameters)
 
         # Declare a new set; the third one shall be rejected by the callback.
         parameters = [
-            ('im_ok', ParameterValue(
-                type=Parameter.Type.INTEGER.value, integer_value=44), ParameterDescriptor()),
-            ('im_also_ok', ParameterValue(
-                type=Parameter.Type.STRING.value, string_value='world'), ParameterDescriptor()),
-            ('reject_me', ParameterValue(
-                type=Parameter.Type.DOUBLE.value, double_value=2.41), ParameterDescriptor()),
+            ('im_ok', 44, ParameterDescriptor()),
+            ('im_also_ok', 'world', ParameterDescriptor()),
+            ('reject_me', 2.41, ParameterDescriptor()),
         ]
         self.node.set_parameters_callback(self.reject_parameter_callback)
         with self.assertRaises(InvalidParameterValueException):
@@ -543,8 +523,7 @@ class TestNode(unittest.TestCase):
                 '',
                 [(
                     1,
-                    ParameterValue(
-                        type=Parameter.Type.STRING.value, string_value='wrong_name_type'),
+                    'wrong_name_type',
                     ParameterDescriptor()
                 )]
             )
@@ -554,7 +533,7 @@ class TestNode(unittest.TestCase):
                 '',
                 [(
                     'wrong_parameter_value_type',
-                    1234,
+                    ParameterValue(),
                     ParameterDescriptor()
                 )]
             )
@@ -584,7 +563,7 @@ class TestNode(unittest.TestCase):
         # Declare parameter, verify existance, undeclare, and verify again.
         self.node.declare_parameter(
             'foo',
-            ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+            'hello',
             ParameterDescriptor()
         )
         self.assertTrue(self.node.has_parameter('foo'))
@@ -595,7 +574,7 @@ class TestNode(unittest.TestCase):
         self.assertFalse(self.node.has_parameter('immutable_foo'))
         self.node.declare_parameter(
             'immutable_foo',
-            ParameterValue(type=Parameter.Type.STRING.value, string_value='I am immutable'),
+            'I am immutable',
             ParameterDescriptor(read_only=True)
         )
         with self.assertRaises(ParameterImmutableException):
@@ -632,32 +611,44 @@ class TestNode(unittest.TestCase):
         self.assertEqual(result.value, 152)
 
     def test_node_set_parameters(self):
+        integer_value = 42
+        string_value = 'hello'
+        float_value = 2.41
         parameter_tuples = [
             (
                 'foo',
-                ParameterValue(type=Parameter.Type.INTEGER.value, integer_value=42),
+                integer_value,
                 ParameterDescriptor()
             ),
             (
                 'bar',
-                ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+                string_value,
                 ParameterDescriptor()
             ),
             (
                 'baz',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.41),
+                float_value,
                 ParameterDescriptor()
             )
         ]
 
         # Create rclpy.Parameter list from tuples.
         parameters = [
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[0][0], value=parameter_tuples[0][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[1][0], value=parameter_tuples[1][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[2][0], value=parameter_tuples[2][1])),
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
         ]
 
         with self.assertRaises(ParameterNotDeclaredException):
@@ -679,24 +670,37 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
         # Now we modify the declared parameters, add a new one and set them again.
-        parameter_tuples[0][1].integer_value = 24
-        parameter_tuples[1][1].string_value = 'bye'
-        parameter_tuples[2][1].double_value = 1.42
+        integer_value = 24
+        string_value = 'bye'
+        float_value = 1.42
+        extra_value = 2.71
         parameter_tuples.append(
             (
                 'foobar',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.71),
+                extra_value,
                 ParameterDescriptor())
             )
         parameters = [
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[0][0], value=parameter_tuples[0][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[1][0], value=parameter_tuples[1][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[2][0], value=parameter_tuples[2][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[3][0], value=parameter_tuples[3][1])),
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
+            Parameter(
+                name=parameter_tuples[3][0],
+                type_=Parameter.Type.from_parameter_value(extra_value),
+                value=float_value
+            ),
         ]
         # The first three parameters should have been set; the fourth one causes the exception.
         with self.assertRaises(ParameterNotDeclaredException):
@@ -715,7 +719,7 @@ class TestNode(unittest.TestCase):
         # Declare a new parameter and set a callback so that it's rejected when set.
         reject_parameter_tuple = (
             'reject_me',
-            ParameterValue(type=Parameter.Type.BOOL.value, bool_value=True),
+            True,
             ParameterDescriptor()
         )
 
@@ -723,8 +727,11 @@ class TestNode(unittest.TestCase):
         self.node.set_parameters_callback(self.reject_parameter_callback)
         result = self.node.set_parameters(
             [
-                Parameter.from_parameter_msg(
-                    ParameterMsg(name=reject_parameter_tuple[0], value=reject_parameter_tuple[1]))
+                Parameter(
+                    name=reject_parameter_tuple[0],
+                    type_=Parameter.Type.from_parameter_value(reject_parameter_tuple[1]),
+                    value=reject_parameter_tuple[1]
+                )
             ]
         )
         self.assertIsInstance(result, list)
@@ -732,49 +739,70 @@ class TestNode(unittest.TestCase):
         self.assertFalse(result[0].successful)
 
     def test_node_set_parameters_read_only(self):
+        integer_value = 42
+        string_value = 'hello'
+        float_value = 2.41
         parameter_tuples = [
             (
                 'immutable_foo',
-                ParameterValue(type=Parameter.Type.INTEGER.value, integer_value=42),
+                integer_value,
                 ParameterDescriptor(read_only=True)
             ),
             (
                 'bar',
-                ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+                string_value,
                 ParameterDescriptor()
             ),
             (
                 'immutable_baz',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.41),
+                float_value,
                 ParameterDescriptor(read_only=True)
             )
         ]
 
         # Create rclpy.Parameter list from tuples.
         parameters = [
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[0][0], value=parameter_tuples[0][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[1][0], value=parameter_tuples[1][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[2][0], value=parameter_tuples[2][1])),
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
         ]
 
         self.node.declare_parameters('', parameter_tuples)
 
         # Try setting a different value to the declared parameters.
-        parameter_tuples[0][1].integer_value = 24
-        parameter_tuples[1][1].string_value = 'bye'
-        parameter_tuples[2][1].double_value = 1.42
+        integer_value = 24
+        string_value = 'bye'
+        float_value = 1.42
 
-        # Re-create parameters from modified tuples.
+        # Re-create parameters with modified values.
         parameters = [
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[0][0], value=parameter_tuples[0][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[1][0], value=parameter_tuples[1][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[2][0], value=parameter_tuples[2][1])),
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
         ]
 
         result = self.node.set_parameters(parameters)
@@ -795,17 +823,17 @@ class TestNode(unittest.TestCase):
         parameter_tuples = [
             (
                 'foo',
-                ParameterValue(type=Parameter.Type.INTEGER.value, integer_value=42),
+                42,
                 ParameterDescriptor()
             ),
             (
                 'bar',
-                ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+                'hello',
                 ParameterDescriptor()
             ),
             (
                 'baz',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.41),
+                2.41,
                 ParameterDescriptor()
             )
         ]
@@ -824,32 +852,44 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
     def test_node_set_parameters_atomically(self):
+        integer_value = 42
+        string_value = 'hello'
+        float_value = 2.41
         parameter_tuples = [
             (
                 'foo',
-                ParameterValue(type=Parameter.Type.INTEGER.value, integer_value=42),
+                integer_value,
                 ParameterDescriptor()
             ),
             (
                 'bar',
-                ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+                string_value,
                 ParameterDescriptor()
             ),
             (
                 'baz',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.41),
+                float_value,
                 ParameterDescriptor()
             )
         ]
 
         # Create rclpy.Parameter list from tuples.
         parameters = [
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[0][0], value=parameter_tuples[0][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[1][0], value=parameter_tuples[1][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[2][0], value=parameter_tuples[2][1])),
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
         ]
 
         with self.assertRaises(ParameterNotDeclaredException):
@@ -866,24 +906,37 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
         # Now we modify the declared parameters, add a new one and set them again.
-        parameter_tuples[0][1].integer_value = 24
-        parameter_tuples[1][1].string_value = 'bye'
-        parameter_tuples[2][1].double_value = 1.42
+        integer_value = 24
+        string_value = 'bye'
+        float_value = 1.42
+        extra_value = 2.71
         parameter_tuples.append(
             (
                 'foobar',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.71),
+                extra_value,
                 ParameterDescriptor())
             )
         parameters = [
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[0][0], value=parameter_tuples[0][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[1][0], value=parameter_tuples[1][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[2][0], value=parameter_tuples[2][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[3][0], value=parameter_tuples[3][1])),
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
+            Parameter(
+                name=parameter_tuples[3][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
         ]
 
         # The fourth parameter causes the exception, hence none is set.
@@ -903,7 +956,7 @@ class TestNode(unittest.TestCase):
         # Declare a new parameter and set a callback so that it's rejected when set.
         reject_parameter_tuple = (
             'reject_me',
-            ParameterValue(type=Parameter.Type.BOOL.value, bool_value=True),
+            True,
             ParameterDescriptor()
         )
 
@@ -911,48 +964,81 @@ class TestNode(unittest.TestCase):
         self.node.set_parameters_callback(self.reject_parameter_callback)
         result = self.node.set_parameters_atomically(
             [
-                Parameter.from_parameter_msg(
-                    ParameterMsg(name=reject_parameter_tuple[0], value=reject_parameter_tuple[1]))
+                Parameter(
+                    name=reject_parameter_tuple[0],
+                    type_=Parameter.Type.from_parameter_value(reject_parameter_tuple[1]),
+                    value=reject_parameter_tuple[1]
+                )
             ]
         )
         self.assertIsInstance(result, SetParametersResult)
         self.assertFalse(result.successful)
 
     def test_node_set_parameters_atomically_read_only(self):
+        integer_value = 42
+        string_value = 'hello'
+        float_value = 2.41
         parameter_tuples = [
             (
                 'foo',
-                ParameterValue(type=Parameter.Type.INTEGER.value, integer_value=42),
+                integer_value,
                 ParameterDescriptor()
             ),
             (
                 'bar',
-                ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+                string_value,
                 ParameterDescriptor()
             ),
             (
                 'immutable_baz',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.41),
+                float_value,
                 ParameterDescriptor(read_only=True)
             )
         ]
 
         # Create rclpy.Parameter list from tuples.
         parameters = [
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[0][0], value=parameter_tuples[0][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[1][0], value=parameter_tuples[1][1])),
-            Parameter.from_parameter_msg(
-                ParameterMsg(name=parameter_tuples[2][0], value=parameter_tuples[2][1])),
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
         ]
 
         self.node.declare_parameters('', parameter_tuples)
 
         # Try setting a different value to the declared parameters.
-        parameter_tuples[0][1].integer_value = 24
-        parameter_tuples[1][1].string_value = 'bye'
-        parameter_tuples[2][1].double_value = 1.42
+        integer_value = 24
+        string_value = 'bye'
+        float_value = 1.42
+
+        parameters = [
+            Parameter(
+                name=parameter_tuples[0][0],
+                type_=Parameter.Type.from_parameter_value(integer_value),
+                value=integer_value
+            ),
+            Parameter(
+                name=parameter_tuples[1][0],
+                type_=Parameter.Type.from_parameter_value(string_value),
+                value=string_value
+            ),
+            Parameter(
+                name=parameter_tuples[2][0],
+                type_=Parameter.Type.from_parameter_value(float_value),
+                value=float_value
+            ),
+        ]
 
         result = self.node.set_parameters_atomically(parameters)
 
@@ -968,17 +1054,17 @@ class TestNode(unittest.TestCase):
         parameter_tuples = [
             (
                 'foo',
-                ParameterValue(type=Parameter.Type.INTEGER.value, integer_value=42),
+                42,
                 ParameterDescriptor()
             ),
             (
                 'bar',
-                ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+                'hello',
                 ParameterDescriptor()
             ),
             (
                 'baz',
-                ParameterValue(type=Parameter.Type.DOUBLE.value, double_value=2.41),
+                2.41,
                 ParameterDescriptor()
             )
         ]
@@ -1003,7 +1089,7 @@ class TestNode(unittest.TestCase):
         # Declare parameter with descriptor.
         self.node.declare_parameter(
             'foo',
-            ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+            'hello',
             ParameterDescriptor(
                 name='foo',
                 type=ParameterType.PARAMETER_STRING,
@@ -1035,7 +1121,7 @@ class TestNode(unittest.TestCase):
         # Declare parameters with descriptors.
         self.node.declare_parameter(
             'foo',
-            ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+            'hello',
             ParameterDescriptor(
                 name='foo',
                 type=ParameterType.PARAMETER_STRING,
@@ -1047,7 +1133,7 @@ class TestNode(unittest.TestCase):
         )
         self.node.declare_parameter(
             'bar',
-            ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+            'hello',
             ParameterDescriptor(
                 name='bar',
                 type=ParameterType.PARAMETER_INTEGER,
@@ -1097,7 +1183,7 @@ class TestNode(unittest.TestCase):
         # Declare parameter with default descriptor.
         self.node.declare_parameter(
             'foo',
-            ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+            'hello',
             ParameterDescriptor()
         )
         self.assertEqual(self.node.describe_parameter('foo'), ParameterDescriptor())
@@ -1136,7 +1222,7 @@ class TestNode(unittest.TestCase):
         # Declare parameter with a read_only descriptor.
         self.node.declare_parameter(
             'foo',
-            ParameterValue(type=Parameter.Type.STRING.value, string_value='hello'),
+            'hello',
             ParameterDescriptor(read_only=True)
         )
         self.assertEqual(self.node.describe_parameter('foo'), ParameterDescriptor(read_only=True))

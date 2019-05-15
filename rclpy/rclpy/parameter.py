@@ -34,6 +34,40 @@ class Parameter:
         DOUBLE_ARRAY = ParameterType.PARAMETER_DOUBLE_ARRAY
         STRING_ARRAY = ParameterType.PARAMETER_STRING_ARRAY
 
+        @classmethod
+        def from_parameter_value(cls, parameter_value):
+            """
+            Get a Parameter.Type from a given variable.
+
+            :return: A Parameter.Type corresponding to the instance type of the given value.
+            :raises: TypeError if the conversion to a type was not possible.
+            """
+            if parameter_value is None:
+                return Parameter.Type.NOT_SET
+            elif isinstance(parameter_value, bool):
+                return Parameter.Type.BOOL
+            elif isinstance(parameter_value, int):
+                return Parameter.Type.INTEGER
+            elif isinstance(parameter_value, float):
+                return Parameter.Type.DOUBLE
+            elif isinstance(parameter_value, str):
+                return Parameter.Type.STRING
+            elif isinstance(parameter_value, list):
+                if all(isinstance(v, bytes) for v in parameter_value):
+                    return Parameter.Type.BYTE_ARRAY
+                elif all(isinstance(v, bool) for v in parameter_value):
+                    return Parameter.Type.BOOL_ARRAY
+                elif all(isinstance(v, int) for v in parameter_value):
+                    return Parameter.Type.INTEGER_ARRAY
+                elif all(isinstance(v, float) for v in parameter_value):
+                    return Parameter.Type.DOUBLE_ARRAY
+                elif all(isinstance(v, str) for v in parameter_value):
+                    return Parameter.Type.STRING_ARRAY
+                else:
+                    raise TypeError('The given value is not a list of one of the allowed types.')
+            else:
+                raise TypeError('The given value is not one of the allowed types.')
+
         def check(self, parameter_value):
             if Parameter.Type.NOT_SET == self:
                 return parameter_value is None

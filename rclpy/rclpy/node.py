@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
 from typing import Callable
 from typing import Iterator
 from typing import List
@@ -290,7 +291,7 @@ class Node:
     def declare_parameter(
         self,
         name: str,
-        value: ParameterValue = ParameterValue(),
+        value: Any = None,
         descriptor: ParameterDescriptor = ParameterDescriptor()
     ) -> Parameter:
         """
@@ -314,8 +315,8 @@ class Node:
         namespace: str,
         parameters: List[Union[
             Tuple[str],
-            Tuple[str, ParameterValue],
-            Tuple[str, ParameterValue, ParameterDescriptor],
+            Tuple[str, Any],
+            Tuple[str, Any, ParameterDescriptor],
         ]]
     ) -> List[Parameter]:
         """
@@ -360,15 +361,12 @@ class Node:
 
                 # Get value from initial parameters, of from tuple if it doesn't exist.
                 if name in self._initial_parameters:
-                    value = self._initial_parameters[name].get_parameter_value()
+                    type_ = self._initial_parameters[name].type_
+                    value = self._initial_parameters[name].value
                 else:
+                    # This raises a TypeError if it's not possible to get a type from the tuple.
+                    type_ = Parameter.Type.from_parameter_value(parameter_tuple[1])
                     value = parameter_tuple[1]
-                assert \
-                    isinstance(value, ParameterValue), \
-                    (
-                        'Second element {value} at index {index} in parameters list '
-                        'is not a ParameterValue.'.format_map(locals())
-                    )
 
                 # Get descriptor from tuple.
                 descriptor = parameter_tuple[2]
@@ -388,8 +386,7 @@ class Node:
             full_name = namespace + name
             validate_parameter_name(full_name)
 
-            parameter_list.append(Parameter.from_parameter_msg(
-                ParameterMsg(name=full_name, value=value)))
+            parameter_list.append(Parameter(full_name, type_, value))
             descriptor_list.append(descriptor)
 
         parameters_already_declared = [
@@ -632,7 +629,19 @@ class Node:
             assert len(descriptor_list) == len(parameter_list)
 
         result = None
-        if self._parameters_callback:
+        # First check if there's a read-only parameter among the ones in the list.
+        # The first time a read-only parameter is declared it has no descriptor
+        # at this point.
+        if any(
+                self.describe_parameter(param.name).read_only for
+                param in parameter_list if
+                param.name in self._descriptors
+        ):
+            result = SetParametersResult(
+                successful=False,
+                reason='Trying to set a read-only parameter.'
+            )
+        elif self._parameters_callback:
             result = self._parameters_callback(parameter_list)
         else:
             result = SetParametersResult(successful=True)
@@ -670,15 +679,6 @@ class Node:
                         #  Parameter is new. (Parameter had no value and new value is set)
                         parameter_event.new_parameters.append(param.to_parameter_msg())
                     else:
-                        # Parameter changed. (Parameter had a value and new value is set)
-                        # If a read-only parameter is being modified, stop here.
-                        if self.describe_parameter(param.name).read_only:
-                            result = SetParametersResult(
-                                successful=False,
-                                reason='Parameter {} cannot be set because it is read-only'.format(
-                                    param.name)
-                            )
-                            return result
                         parameter_event.changed_parameters.append(
                             param.to_parameter_msg())
 
