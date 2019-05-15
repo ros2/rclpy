@@ -39,12 +39,11 @@ class TestMessages(unittest.TestCase):
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
 
-    def test_invalid_string_raises(self):
+    def test_unicode_string(self):
         msg = Strings()
         msg.string_value = 'ñu'
         pub = self.node.create_publisher(Strings, 'chatter', 1)
-        with self.assertRaises(UnicodeEncodeError):
-            pub.publish(msg)
+        pub.publish(msg)
 
     def test_different_type_raises(self):
         pub = self.node.create_publisher(BasicTypes, 'chatter', 1)
