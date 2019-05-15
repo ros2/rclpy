@@ -633,9 +633,9 @@ class Node:
         # The first time a read-only parameter is declared it has no descriptor
         # at this point.
         if any(
-                self.describe_parameter(param.name).read_only for
-                param in parameter_list if
-                param.name in self._descriptors
+            self.describe_parameter(param.name).read_only for
+            param in parameter_list if
+            param.name in self._descriptors
         ):
             result = SetParametersResult(
                 successful=False,
