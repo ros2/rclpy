@@ -140,7 +140,7 @@ class QoSEventHandler(Waitable):
         """Execute work after data has been taken from a ready wait set."""
         if not taken_data:
             return
-        await rclpy.executors.await_or_execute(self.callback, [taken_data])
+        await rclpy.executors.await_or_execute(self.callback, taken_data)
 
     def get_num_entities(self):
         """Return number of each type of entity used."""
