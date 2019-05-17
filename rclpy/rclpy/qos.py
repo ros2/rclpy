@@ -308,3 +308,65 @@ qos_profile_parameter_events = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events')
 qos_profile_action_status_default = _rclpy_action.rclpy_action_get_rmw_qos_profile(
     'rcl_action_qos_profile_status_default')
+
+
+class QoSNameTranslations:
+    """
+    Convenience namespace to provide String->Type translations for string-configured utilities.
+
+    For example, the ros2topic command line tool uses these maps for its options.
+    """
+
+    HistoryPolicy = {
+        None: None,  # Allow default of None
+        'system_default':
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT,
+        'keep_last':
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+        'keep_all':
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL,
+    }
+    ReliabilityPolicy = {
+        None: None,  # Allow default of None
+        'system_default':
+            QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT,
+        'reliable':
+            QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_RELIABLE,
+        'best_effort':
+            QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+    }
+    DurabilityPolicy = {
+        None: None,  # Allow default of None
+        'system_default':
+            QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT,
+        'transient_local':
+            QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL,
+        'volatile':
+            QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE,
+    }
+    LivelinessPolicy = {
+        None: None,  # Allow default of None
+        'system_default':
+            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT,
+        'automatic':
+            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_AUTOMATIC,
+        'manual_by_node':
+            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE,
+        'manual_by_topic':
+            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC,
+    }
+    PresetProfiles = {
+        None: qos_profile_system_default,  # Allow default of None
+        'system_default':
+            qos_profile_system_default,
+        'sensor_data':
+            qos_profile_sensor_data,
+        'services_default':
+            qos_profile_services_default,
+        'parameters':
+            qos_profile_parameters,
+        'parameter_events':
+            qos_profile_parameter_events,
+        'action_status_default':
+            qos_profile_action_status_default,
+    }
