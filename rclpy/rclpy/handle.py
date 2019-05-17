@@ -46,6 +46,8 @@ class Handle:
         self.__request_invalidation = False
         self.__valid = True
         self.__rlock = RLock()
+        # Create this early because RLock() can raise during interpeter shutdown
+        self.__dependents_rlock = RLock()
         self.__required_handles = []
         self.__dependent_handles = weakref.WeakSet()
         self.__destroy_callbacks = []
@@ -157,7 +159,7 @@ class Handle:
 
     def __destroy_dependents(self, then):
         # assumes self.__rlock is held
-        deps_lock = RLock()
+        deps_lock = self.__dependents_rlock
         # Turn weak references to regular references
         dependent_handles = [dep for dep in self.__dependent_handles]
 
