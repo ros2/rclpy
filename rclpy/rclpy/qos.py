@@ -238,7 +238,13 @@ class QoSPolicyEnum(IntEnum):
 
     @classmethod
     def short_keys(cls):
-        return [k for k in cls.__members__.keys() if not k.startswith('RMW')]
+        """Return a list of shortened typing-friendly enum values."""
+        return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
+
+    @classmethod
+    def get_from_short_key(cls, name):
+        """Retrieve a policy type from a short name, case-insensitive."""
+        return cls[name.upper()].value
 
 
 class QoSHistoryPolicy(QoSPolicyEnum):
@@ -249,11 +255,11 @@ class QoSHistoryPolicy(QoSPolicyEnum):
     """
 
     RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT = 0
-    system_default = RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_HISTORY_KEEP_LAST = 1
-    keep_last = RMW_QOS_POLICY_HISTORY_KEEP_LAST
+    KEEP_LAST = RMW_QOS_POLICY_HISTORY_KEEP_LAST
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
-    keep_all = RMW_QOS_POLICY_HISTORY_KEEP_ALL
+    KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
 
 class QoSReliabilityPolicy(QoSPolicyEnum):
@@ -264,11 +270,11 @@ class QoSReliabilityPolicy(QoSPolicyEnum):
     """
 
     RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT = 0
-    system_default = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_RELIABILITY_RELIABLE = 1
-    reliable = RMW_QOS_POLICY_RELIABILITY_RELIABLE
+    RELIABLE = RMW_QOS_POLICY_RELIABILITY_RELIABLE
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
-    best_effort = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
+    BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
 
 class QoSDurabilityPolicy(QoSPolicyEnum):
@@ -279,11 +285,11 @@ class QoSDurabilityPolicy(QoSPolicyEnum):
     """
 
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
-    system_default = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL = 1
-    transient_local = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
+    TRANSIENT_LOCAL = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
-    volatile = RMW_QOS_POLICY_DURABILITY_VOLATILE
+    VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
 
 
 class QoSLivelinessPolicy(QoSPolicyEnum):
@@ -294,13 +300,13 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
     """
 
     RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT = 0
-    system_default = RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT
     RMW_QOS_POLICY_LIVELINESS_AUTOMATIC = 1
-    automatic = RMW_QOS_POLICY_LIVELINESS_AUTOMATIC
+    AUTOMATIC = RMW_QOS_POLICY_LIVELINESS_AUTOMATIC
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE = 2
-    manual_by_node = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
+    MANUAL_BY_NODE = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
-    manual_by_topic = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
+    MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
 
 
 class DeprecatedQoSProfile(QoSProfile):
@@ -337,9 +343,23 @@ qos_profile_action_status_default = _rclpy_action.rclpy_action_get_rmw_qos_profi
 
 
 class QoSPresetProfiles(Enum):
-    system_default = qos_profile_system_default
-    sensor_data = qos_profile_sensor_data
-    services_default = qos_profile_services_default
-    parameters = qos_profile_parameters
-    parameter_events = qos_profile_parameter_events
-    action_status_default = qos_profile_action_status_default
+    SYSTEM_DEFAULT = qos_profile_system_default
+    SENSOR_DATA = qos_profile_sensor_data
+    SERVICES_DEFAULT = qos_profile_services_default
+    PARAMETERS = qos_profile_parameters
+    PARAMETER_EVENTS = qos_profile_parameter_events
+    ACTION_STATUS_DEFAULT = qos_profile_action_status_default
+
+    """Noted that the following are duplicated from QoSPolicyEnum.
+
+    Our supported version of Python3 (3.5) doesn't have a fix that allows mixins on Enum.
+    """
+    @classmethod
+    def short_keys(cls):
+        """Return a list of shortened typing-friendly enum values."""
+        return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
+
+    @classmethod
+    def get_from_short_key(cls, name):
+        """Retrieve a policy type from a short name, case-insensitive."""
+        return cls[name.upper()].value

@@ -127,12 +127,18 @@ class TestQosProfile(unittest.TestCase):
         # Full test on History to show the mechanism works
         assert QoSHistoryPolicy.short_keys() == ['system_default', 'keep_last', 'keep_all']
         assert (
-            QoSHistoryPolicy['system_default'] ==
-            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT)
-        assert QoSHistoryPolicy['keep_all'] == QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL
-        assert QoSHistoryPolicy['keep_last'] == QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST
+            QoSHistoryPolicy.get_from_short_key('system_default') ==
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT.value)
+        assert (
+            QoSHistoryPolicy.get_from_short_key('KEEP_ALL') ==
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL.value)
+        assert (
+            QoSHistoryPolicy.get_from_short_key('KEEP_last') ==
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST.value)
 
     def test_preset_profiles(self):
         # Make sure the Enum does what we expect
-        assert QoSPresetProfiles.system_default.value == qos_profile_system_default
-        assert QoSPresetProfiles['system_default'] == QoSPresetProfiles.system_default
+        assert QoSPresetProfiles.SYSTEM_DEFAULT.value == qos_profile_system_default
+        assert (
+            QoSPresetProfiles.SYSTEM_DEFAULT.value ==
+            QoSPresetProfiles.get_from_short_key('system_default'))
