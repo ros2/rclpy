@@ -57,13 +57,13 @@ class TestActionGraph(unittest.TestCase):
         assert cls.wait_for_node(node=cls.node2, remote_node=cls.node1, timeout=2)
 
     @staticmethod
-    def wait_for_node(*, node, remote_node, timeout=float('+inf')):
+    def wait_for_node(*, node, remote_node, timeout):
         remote_node_identifier = (remote_node.get_name(), remote_node.get_namespace())
         start = time.time()
         while remote_node_identifier not in node.get_node_names_and_namespaces():
             if time.time() - start > timeout:
                 return False
-            time.sleep(1)
+            time.sleep(0.1)
         return True
 
     @classmethod
