@@ -51,6 +51,21 @@ class TestActionGraph(unittest.TestCase):
         cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0, lambda: None)
         cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1, lambda: None)
 
+        assert cls.wait_for_node(node=cls.node1, remote_node=cls.node0, timeout=2)
+        assert cls.wait_for_node(node=cls.node1, remote_node=cls.node2, timeout=2)
+        assert cls.wait_for_node(node=cls.node2, remote_node=cls.node0, timeout=2)
+        assert cls.wait_for_node(node=cls.node2, remote_node=cls.node1, timeout=2)
+
+    @staticmethod
+    def wait_for_node(*, node, remote_node, timeout):
+        remote_node_identifier = (remote_node.get_name(), remote_node.get_namespace())
+        start = time.time()
+        while remote_node_identifier not in node.get_node_names_and_namespaces():
+            if time.time() - start > timeout:
+                return False
+            time.sleep(0.1)
+        return True
+
     @classmethod
     def tearDownClass(cls):
         cls.action_client10.destroy()
