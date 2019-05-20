@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 from enum import IntEnum
 import warnings
 
@@ -228,7 +229,19 @@ class QoSProfile:
             for slot in self.__slots__)
 
 
-class QoSHistoryPolicy(IntEnum):
+class QoSPolicyEnum(IntEnum):
+    """
+    Base for QoS Policy enumerations.
+
+    Provides helper function to filter keys for utilities.
+    """
+
+    @classmethod
+    def short_keys(cls):
+        return [k for k in cls.__members__.keys() if not k.startswith('RMW')]
+
+
+class QoSHistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
 
@@ -236,11 +249,14 @@ class QoSHistoryPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT = 0
+    system_default = RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_HISTORY_KEEP_LAST = 1
+    keep_last = RMW_QOS_POLICY_HISTORY_KEEP_LAST
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
+    keep_all = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
 
-class QoSReliabilityPolicy(IntEnum):
+class QoSReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
 
@@ -248,11 +264,14 @@ class QoSReliabilityPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT = 0
+    system_default = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_RELIABILITY_RELIABLE = 1
+    reliable = RMW_QOS_POLICY_RELIABILITY_RELIABLE
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
+    best_effort = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
 
-class QoSDurabilityPolicy(IntEnum):
+class QoSDurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
 
@@ -260,11 +279,14 @@ class QoSDurabilityPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
+    system_default = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL = 1
+    transient_local = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
+    volatile = RMW_QOS_POLICY_DURABILITY_VOLATILE
 
 
-class QoSLivelinessPolicy(IntEnum):
+class QoSLivelinessPolicy(QoSPolicyEnum):
     """
     Enum for QoS Liveliness settings.
 
@@ -272,9 +294,13 @@ class QoSLivelinessPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT = 0
+    system_default = RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT
     RMW_QOS_POLICY_LIVELINESS_AUTOMATIC = 1
+    automatic = RMW_QOS_POLICY_LIVELINESS_AUTOMATIC
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE = 2
+    manual_by_node = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
+    manual_by_topic = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
 
 
 class DeprecatedQoSProfile(QoSProfile):
@@ -310,63 +336,10 @@ qos_profile_action_status_default = _rclpy_action.rclpy_action_get_rmw_qos_profi
     'rcl_action_qos_profile_status_default')
 
 
-class QoSNameTranslations:
-    """
-    Convenience namespace to provide String->Type translations for string-configured utilities.
-
-    For example, the ros2topic command line tool uses these maps for its options.
-    """
-
-    HistoryPolicy = {
-        None: None,  # Allow default of None
-        'system_default':
-            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT,
-        'keep_last':
-            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
-        'keep_all':
-            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL,
-    }
-    ReliabilityPolicy = {
-        None: None,  # Allow default of None
-        'system_default':
-            QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT,
-        'reliable':
-            QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_RELIABLE,
-        'best_effort':
-            QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
-    }
-    DurabilityPolicy = {
-        None: None,  # Allow default of None
-        'system_default':
-            QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT,
-        'transient_local':
-            QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL,
-        'volatile':
-            QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE,
-    }
-    LivelinessPolicy = {
-        None: None,  # Allow default of None
-        'system_default':
-            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT,
-        'automatic':
-            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_AUTOMATIC,
-        'manual_by_node':
-            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE,
-        'manual_by_topic':
-            QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC,
-    }
-    PresetProfiles = {
-        None: qos_profile_system_default,  # Allow default of None
-        'system_default':
-            qos_profile_system_default,
-        'sensor_data':
-            qos_profile_sensor_data,
-        'services_default':
-            qos_profile_services_default,
-        'parameters':
-            qos_profile_parameters,
-        'parameter_events':
-            qos_profile_parameter_events,
-        'action_status_default':
-            qos_profile_action_status_default,
-    }
+class QoSPresetProfiles(Enum):
+    system_default = qos_profile_system_default
+    sensor_data = qos_profile_sensor_data
+    services_default = qos_profile_services_default
+    parameters = qos_profile_parameters
+    parameter_events = qos_profile_parameter_events
+    action_status_default = qos_profile_action_status_default
