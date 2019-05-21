@@ -99,8 +99,9 @@ class TestQosProfile(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             QoSProfile()
-            assert len(w) == 1
+            assert len(w) == 2  # must supply depth or history, _and_ KEEP_LAST needs depth
             assert issubclass(w[0].category, UserWarning)
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             # No deprecation if history is supplied
@@ -142,3 +143,9 @@ class TestQosProfile(unittest.TestCase):
         assert (
             QoSPresetProfiles.SYSTEM_DEFAULT.value ==
             QoSPresetProfiles.get_from_short_key('system_default'))
+
+    def test_default_profile(self):
+        profile = QoSProfile(depth=10)
+        assert all(
+            profile.__getattribute__(k) == QoSPresetProfiles.DEFAULT.value.__getattribute__(k)
+            for k in profile.__slots__)
