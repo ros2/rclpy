@@ -17,9 +17,11 @@ import warnings
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.qos import qos_profile_system_default
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSLivelinessPolicy
+from rclpy.qos import QoSPresetProfiles
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 
@@ -120,3 +122,23 @@ class TestQosProfile(unittest.TestCase):
             # No deprecation if only depth
             QoSProfile(depth=1)
             assert len(w) == 0, str(w[-1].message)
+
+    def test_policy_short_names(self):
+        # Full test on History to show the mechanism works
+        assert QoSHistoryPolicy.short_keys() == ['system_default', 'keep_last', 'keep_all']
+        assert (
+            QoSHistoryPolicy.get_from_short_key('system_default') ==
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT.value)
+        assert (
+            QoSHistoryPolicy.get_from_short_key('KEEP_ALL') ==
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL.value)
+        assert (
+            QoSHistoryPolicy.get_from_short_key('KEEP_last') ==
+            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST.value)
+
+    def test_preset_profiles(self):
+        # Make sure the Enum does what we expect
+        assert QoSPresetProfiles.SYSTEM_DEFAULT.value == qos_profile_system_default
+        assert (
+            QoSPresetProfiles.SYSTEM_DEFAULT.value ==
+            QoSPresetProfiles.get_from_short_key('system_default'))

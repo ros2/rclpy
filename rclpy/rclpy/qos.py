@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 from enum import IntEnum
 import warnings
 
@@ -228,7 +229,25 @@ class QoSProfile:
             for slot in self.__slots__)
 
 
-class QoSHistoryPolicy(IntEnum):
+class QoSPolicyEnum(IntEnum):
+    """
+    Base for QoS Policy enumerations.
+
+    Provides helper function to filter keys for utilities.
+    """
+
+    @classmethod
+    def short_keys(cls):
+        """Return a list of shortened typing-friendly enum values."""
+        return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
+
+    @classmethod
+    def get_from_short_key(cls, name):
+        """Retrieve a policy type from a short name, case-insensitive."""
+        return cls[name.upper()].value
+
+
+class QoSHistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
 
@@ -236,11 +255,14 @@ class QoSHistoryPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT = 0
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_HISTORY_KEEP_LAST = 1
+    KEEP_LAST = RMW_QOS_POLICY_HISTORY_KEEP_LAST
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
+    KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
 
-class QoSReliabilityPolicy(IntEnum):
+class QoSReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
 
@@ -248,11 +270,14 @@ class QoSReliabilityPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT = 0
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_RELIABILITY_RELIABLE = 1
+    RELIABLE = RMW_QOS_POLICY_RELIABILITY_RELIABLE
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
+    BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
 
-class QoSDurabilityPolicy(IntEnum):
+class QoSDurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
 
@@ -260,11 +285,14 @@ class QoSDurabilityPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
     RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL = 1
+    TRANSIENT_LOCAL = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
+    VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
 
 
-class QoSLivelinessPolicy(IntEnum):
+class QoSLivelinessPolicy(QoSPolicyEnum):
     """
     Enum for QoS Liveliness settings.
 
@@ -272,9 +300,13 @@ class QoSLivelinessPolicy(IntEnum):
     """
 
     RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT = 0
+    SYSTEM_DEFAULT = RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT
     RMW_QOS_POLICY_LIVELINESS_AUTOMATIC = 1
+    AUTOMATIC = RMW_QOS_POLICY_LIVELINESS_AUTOMATIC
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE = 2
+    MANUAL_BY_NODE = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
+    MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
 
 
 class DeprecatedQoSProfile(QoSProfile):
@@ -308,3 +340,26 @@ qos_profile_parameter_events = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events')
 qos_profile_action_status_default = _rclpy_action.rclpy_action_get_rmw_qos_profile(
     'rcl_action_qos_profile_status_default')
+
+
+class QoSPresetProfiles(Enum):
+    SYSTEM_DEFAULT = qos_profile_system_default
+    SENSOR_DATA = qos_profile_sensor_data
+    SERVICES_DEFAULT = qos_profile_services_default
+    PARAMETERS = qos_profile_parameters
+    PARAMETER_EVENTS = qos_profile_parameter_events
+    ACTION_STATUS_DEFAULT = qos_profile_action_status_default
+
+    """Noted that the following are duplicated from QoSPolicyEnum.
+
+    Our supported version of Python3 (3.5) doesn't have a fix that allows mixins on Enum.
+    """
+    @classmethod
+    def short_keys(cls):
+        """Return a list of shortened typing-friendly enum values."""
+        return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
+
+    @classmethod
+    def get_from_short_key(cls, name):
+        """Retrieve a policy type from a short name, case-insensitive."""
+        return cls[name.upper()].value
