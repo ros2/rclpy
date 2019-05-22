@@ -23,7 +23,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 # "Forward-declare" this value so that it can be used in the QoSProfile initializer.
 # It will have a value by the end of definitions, before user code runs.
-_qos_default_value_for_init = []
+_qos_profile_default = None
 
 
 class QoSProfile:
@@ -45,7 +45,7 @@ class QoSProfile:
         assert all('_' + key in self.__slots__ for key in kwargs.keys()), \
             'Invalid arguments passed to constructor: %r' % kwargs.keys()
 
-        if not len(_qos_default_value_for_init):
+        if not _qos_profile_default:
             # Any of the setters, upon receiving these None values, would assert.
             # This can't happen though, because this is only used at definition time, when
             # we are initializing fully-defined preset profiles.
@@ -53,7 +53,7 @@ class QoSProfile:
                 slot[1:]: None for slot in self.__slots__
             })
         else:
-            from_profile = _qos_default_value_for_init[0]
+            from_profile = _qos_profile_default
 
         if 'history' not in kwargs:
             if 'depth' in kwargs:
@@ -336,8 +336,6 @@ class DeprecatedQoSProfile(QoSProfile):
 
 _qos_profile_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_default')
-_qos_default_value_for_init.append(_qos_profile_default)
-
 qos_profile_default = DeprecatedQoSProfile(_qos_profile_default, 'qos_profile_default')
 qos_profile_system_default = _rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_system_default')
