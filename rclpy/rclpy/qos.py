@@ -46,12 +46,12 @@ class QoSProfile:
             'Invalid arguments passed to constructor: %r' % kwargs.keys()
 
         if not _qos_profile_default:
-            # Any of the setters, upon receiving these None values, would assert.
-            # This can't happen though, because this is only used at definition time, when
-            # we are initializing fully-defined preset profiles.
-            from_profile = Namespace(**{
-                slot[1:]: None for slot in self.__slots__
-            })
+            # It is still definition time, and all calls to this initializer are expected to be
+            # fully-defined preset profiles from the C side.
+            assert all(kwargs[slot[1:]] is not None for slot in self.__slots__)
+            # Any of the setters, upon receiving these None values, would assert
+            # if the above assertion failed.
+            from_profile = Namespace(**{slot[1:]: None for slot in self.__slots__})
         else:
             from_profile = _qos_profile_default
 
