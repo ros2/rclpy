@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
+
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
@@ -24,6 +27,8 @@ from typing import Union
 import warnings
 import weakref
 
+from rcl_interfaces.msg import FloatingPointRange
+from rcl_interfaces.msg import IntegerRange
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterEvent
@@ -80,6 +85,9 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
 class Node:
+
+    PARAM_REL_TOL = 1e-6
+
     """
     A Node in the ROS graph.
 
@@ -337,7 +345,7 @@ class Node:
         :raises: TypeError if any tuple in :param:`parameters` does not match the annotated type.
         """
         parameter_list = []
-        descriptor_list = []
+        descriptors = {}
         for index, parameter_tuple in enumerate(parameters):
             if len(parameter_tuple) < 1 or len(parameter_tuple) > 3:
                 raise TypeError(
@@ -387,7 +395,7 @@ class Node:
             validate_parameter_name(full_name)
 
             parameter_list.append(Parameter(full_name, type_, value))
-            descriptor_list.append(descriptor)
+            descriptors.update({full_name: descriptor})
 
         parameters_already_declared = [
             parameter.name for parameter in parameter_list if parameter.name in self._parameters
@@ -398,7 +406,7 @@ class Node:
         # Call the callback once for each of the parameters, using method that doesn't
         # check whether the parameter was declared beforehand or not.
         self._set_parameters(
-            parameter_list, descriptor_list=descriptor_list, raise_on_failure=True)
+            parameter_list, descriptors=descriptors, raise_on_failure=True)
         return self.get_parameters([parameter.name for parameter in parameter_list])
 
     def undeclare_parameter(self, name: str):
@@ -510,7 +518,7 @@ class Node:
     def _set_parameters(
         self,
         parameter_list: List[Parameter],
-        descriptor_list: Optional[List[ParameterDescriptor]] = None,
+        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
         raise_on_failure=False,
         check_undeclared_parameters=False
     ) -> List[SetParametersResult]:
@@ -528,7 +536,7 @@ class Node:
         according to `raise_on_failure` flag.
 
         :param parameter_list: List of parameters to set.
-        :param descriptor_list: List of descriptors to set to the given parameters.
+        :param descriptors: Descriptors to set to the given parameters.
             If a list is given, it must have the same size as the parameter list.
         :param raise_on_failure: True if InvalidParameterValueException has to be raised when
             the user callback rejects a parameter, False otherwise.
@@ -538,19 +546,19 @@ class Node:
         :raises: InvalidParameterValueException if the user-defined callback rejects the
             parameter value and raise_on_failure flag is True.
         """
-        if descriptor_list is not None:
-            assert len(descriptor_list) == len(parameter_list)
+        if descriptors is not None:
+            assert all(parameter.name in descriptors for parameter in parameter_list)
 
         results = []
-        for index, param in enumerate(parameter_list):
+        for param in parameter_list:
             if check_undeclared_parameters:
                 self._check_undeclared_parameters([param])
             result = self._set_parameters_atomically(
                 [param],
-                None if descriptor_list is None else [descriptor_list[index]]
+                descriptors
             )
             if raise_on_failure and not result.successful:
-                raise InvalidParameterValueException(param.name, param.value)
+                raise InvalidParameterValueException(param.name, param.value, result.reason)
             results.append(result)
         return results
 
@@ -604,7 +612,7 @@ class Node:
     def _set_parameters_atomically(
         self,
         parameter_list: List[Parameter],
-        descriptor_list: Optional[List[ParameterDescriptor]] = None
+        descriptors: Optional[Dict[str, ParameterDescriptor]] = None
     ) -> SetParametersResult:
         """
         Set the given parameters, all at one time, and then aggregate result.
@@ -623,24 +631,16 @@ class Node:
         something else, then the parameter will be implicitly undeclared.
 
         :param parameter_list: The list of parameters to set.
+        :param descriptors: New descriptors to apply to the parameters before setting them.
         :return: Aggregate result of setting all the parameters atomically.
         """
-        if descriptor_list is not None:
-            assert len(descriptor_list) == len(parameter_list)
+        if descriptors is not None:
+            assert all(parameter.name in descriptors for parameter in parameter_list)
 
-        result = None
-        # First check if there's a read-only parameter among the ones in the list.
-        # The first time a read-only parameter is declared it has no descriptor
-        # at this point.
-        if any(
-            self.describe_parameter(param.name).read_only for
-            param in parameter_list if
-            param.name in self._descriptors
-        ):
-            result = SetParametersResult(
-                successful=False,
-                reason='Trying to set a read-only parameter.'
-            )
+        # If new descriptors are not provided, check for read-only.
+        result = self._apply_descriptors(parameter_list, descriptors, descriptors is None)
+        if not result.successful:
+            return result
         elif self._parameters_callback:
             result = self._parameters_callback(parameter_list)
         else:
@@ -654,7 +654,7 @@ class Node:
             else:
                 parameter_event.node = self.get_namespace() + '/' + self.get_name()
 
-            for index, param in enumerate(parameter_list):
+            for param in parameter_list:
                 if Parameter.Type.NOT_SET == param.type_:
                     if Parameter.Type.NOT_SET != self.get_parameter_or(param.name).type_:
                         # Parameter deleted. (Parameter had value and new value is not set)
@@ -670,8 +670,8 @@ class Node:
                     # Update descriptors; set a default if it doesn't exist.
                     # Don't update if it already exists for the current parameter and a new one
                     # was not specified in this method call.
-                    if descriptor_list is not None:
-                        self._descriptors[param.name] = descriptor_list[index]
+                    if descriptors is not None:
+                        self._descriptors[param.name] = descriptors[param.name]
                     elif param.name not in self._descriptors:
                         self._descriptors[param.name] = ParameterDescriptor()
 
@@ -682,25 +682,180 @@ class Node:
                         parameter_event.changed_parameters.append(
                             param.to_parameter_msg())
 
-                    self._apply_descriptor_and_set(param)
+                    # Descriptors have already been applied by this point.
+                    self._parameters[param.name] = param
 
             parameter_event.stamp = self._clock.now().to_msg()
             self._parameter_event_publisher.publish(parameter_event)
 
         return result
 
+    def _apply_descriptors(
+        self,
+        parameter_list: List[Parameter],
+        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
+        check_read_only: bool = True
+    ) -> SetParametersResult:
+        """
+        Apply descriptors to parameters and return an aggregated result without saving parameters.
+
+        In case no descriptors are provided to the method, existing descriptors shall be used.
+        In any case, if a given parameter doesn't have a descriptor it shall be skipped.
+
+        :param parameter_list: Parameters to be checked.
+        :param descriptors: Descriptors to apply. If None, the stored descriptors for the given
+            parameters' names are used instead.
+        :param check_read_only: True if read-only check has to be applied.
+        :return: SetParametersResult; successful if checks passed, unsuccessful otherwise.
+        :raises: ParameterNotDeclaredException if a descriptor is not provided, the given parameter
+            name had not been declared and undeclared parameters are not allowed.
+        """
+        if descriptors is None:
+            descriptors = self._descriptors
+
+        for param in parameter_list:
+            if param.name in descriptors:
+                result = self._apply_descriptor(param, descriptors[param.name], check_read_only)
+                if not result.successful:
+                    return result
+        return SetParametersResult(successful=True)
+
+    def _apply_descriptor(
+        self,
+        parameter: Parameter,
+        descriptor: Optional[ParameterDescriptor] = None,
+        check_read_only: bool = True
+    ) -> SetParametersResult:
+        """
+        Apply a descriptor to a parameter and return a result without saving the parameter.
+
+        This method sets the type in the descriptor to match the parameter type.
+        If a descriptor is provided, its name will be set to the name of the parameter.
+
+        :param parameter: Parameter to be checked.
+        :param descriptor: Descriptor to apply. If None, the stored descriptor for the given
+            parameter's name is used instead.
+        :param check_read_only: True if read-only check has to be applied.
+        :return: SetParametersResult; successful if checks passed, unsuccessful otherwise.
+        :raises: ParameterNotDeclaredException if a descriptor is not provided, the given parameter
+            name had not been declared and undeclared parameters are not allowed.
+        """
+        if descriptor is None:
+            descriptor = self.describe_parameter(parameter.name)
+        else:
+            descriptor.name = parameter.name
+
+        # The type in the descriptor has to match the type of the parameter.
+        descriptor.type = parameter.type_.value
+
+        if check_read_only and descriptor.read_only:
+            return SetParametersResult(
+                successful=False,
+                reason='Trying to set a read-only parameter: {}.'.format(parameter.name))
+
+        if parameter.type_ == Parameter.Type.INTEGER and descriptor.integer_range:
+            return self._apply_integer_range(parameter, descriptor.integer_range[0])
+
+        if parameter.type_ == Parameter.Type.DOUBLE and descriptor.floating_point_range:
+            return self._apply_floating_point_range(parameter, descriptor.floating_point_range[0])
+
+        return SetParametersResult(successful=True)
+
+    def _apply_integer_range(
+        self,
+        parameter: Parameter,
+        integer_range: IntegerRange
+    ) -> SetParametersResult:
+        min_value = min(integer_range.from_value, integer_range.to_value)
+        max_value = max(integer_range.from_value, integer_range.to_value)
+
+        # Values in the edge are always OK.
+        if parameter.value == min_value or parameter.value == max_value:
+            return SetParametersResult(successful=True)
+
+        if parameter.value < min_value or parameter.value > max_value:
+            return SetParametersResult(
+                successful=False,
+                reason='Parameter {} out of range\n'
+                       'Min: {}, Max: {}, value: {}'.format(
+                            parameter.name, min_value, max_value, parameter.value
+                        )
+            )
+
+        if integer_range.step != 0 and (parameter.value - min_value) % integer_range.step != 0:
+            return SetParametersResult(
+                successful=False,
+                reason='The distance between the parameter value for {}'
+                       'is not a multiple of step.\n'
+                       'Min: {}, max: {}, value: {}, step: {}'.format(
+                            parameter.name,
+                            min_value,
+                            max_value,
+                            parameter.value,
+                            integer_range.step
+                        )
+            )
+
+        return SetParametersResult(successful=True)
+
+    def _apply_floating_point_range(
+        self,
+        parameter: Parameter,
+        floating_point_range: FloatingPointRange
+    ) -> SetParametersResult:
+        min_value = min(floating_point_range.from_value, floating_point_range.to_value)
+        max_value = max(floating_point_range.from_value, floating_point_range.to_value)
+
+        # Values in the edge are always OK.
+        if (
+            math.isclose(parameter.value, min_value, rel_tol=self.PARAM_REL_TOL) or
+            math.isclose(parameter.value, max_value, rel_tol=self.PARAM_REL_TOL)
+        ):
+            return SetParametersResult(successful=True)
+
+        if parameter.value < min_value or parameter.value > max_value:
+            return SetParametersResult(
+                successful=False,
+                reason='Parameter {} out of range\n'
+                       'Min: {}, Max: {}, value: {}'.format(
+                            parameter.name, min_value, max_value, parameter.value
+                        )
+            )
+
+        if floating_point_range.step != 0.0:
+            distance_int_steps = round((parameter.value - min_value) / floating_point_range.step)
+            if not math.isclose(
+                min_value + distance_int_steps * floating_point_range.step,
+                parameter.value,
+                rel_tol=self.PARAM_REL_TOL
+            ):
+                return SetParametersResult(
+                    successful=False,
+                    reason='The distance between the parameter value for {}'
+                           'is not a close multiple of step.\n'
+                           'Min: {}, max: {}, value: {}, step: {}'.format(
+                                parameter.name,
+                                min_value,
+                                max_value,
+                                parameter.value,
+                                floating_point_range.step
+                            )
+                )
+
+        return SetParametersResult(successful=True)
+
     def _apply_descriptor_and_set(
         self,
         parameter: Parameter,
-        descriptor: Optional[ParameterDescriptor] = None
-    ) -> bool:
-        """Apply parameter descriptor and set parameter."""
-        # TODO(jubeira): this is where the parameter ranges should be applied in the future.
-        if descriptor is None:
-            descriptor = self._descriptors[parameter.name]
+        descriptor: Optional[ParameterDescriptor] = None,
+        check_read_only: bool = True
+    ) -> SetParametersResult:
+        """Apply parameter descriptor and set parameter if successful."""
+        result = self._apply_descriptor(parameter, descriptor, check_read_only)
+        if result.successful:
+            self._parameters[parameter.name] = parameter
 
-        self._parameters[parameter.name] = parameter
-        return True
+        return result
 
     def describe_parameter(self, name: str) -> ParameterDescriptor:
         """
@@ -747,6 +902,8 @@ class Node:
         """
         Set a new descriptor for a given parameter.
 
+        The name in the descriptor is ignored and set to :param:`name`.
+
         :param name: Fully-qualified name of the parameter to set the descriptor to.
         :param descriptor: New descriptor to apply to the parameter.
         :param alternative_value: Value to set to the parameter if the existing value does not
@@ -775,14 +932,20 @@ class Node:
                 ParameterMsg(name=name, value=alternative_value))
 
         # First try keeping the parameter, then try the alternative one.
-        if (
-            self._apply_descriptor_and_set(current_parameter, descriptor) or
-            self._apply_descriptor_and_set(alternative_parameter, descriptor)
-        ):
-            self._descriptors[name] = descriptor
-            return self.get_parameter(name).get_parameter_value()
-        else:
-            raise InvalidParameterValueException(name)
+        # Don't check for read-only since we are applying a new descriptor now.
+        if not self._apply_descriptor_and_set(current_parameter, descriptor, False).successful:
+            alternative_set_result = (
+                self._apply_descriptor_and_set(alternative_parameter, descriptor, False)
+            )
+            if not alternative_set_result.successful:
+                raise InvalidParameterValueException(
+                    name,
+                    alternative_parameter.value,
+                    alternative_set_result.reason
+                )
+
+        self._descriptors[name] = descriptor
+        return self.get_parameter(name).get_parameter_value()
 
     def set_parameters_callback(
         self,

@@ -1135,9 +1135,10 @@ class TestNode(unittest.TestCase):
         self.assertEqual(foo_descriptor.integer_range[0].to_value, 10)
         self.assertEqual(foo_descriptor.integer_range[0].step, 2)
 
+        # The descriptor gets the type of the parameter.
         bar_descriptor = descriptor_list[1]
         self.assertEqual(bar_descriptor.name, 'bar')
-        self.assertEqual(bar_descriptor.type, ParameterType.PARAMETER_INTEGER)
+        self.assertEqual(bar_descriptor.type, ParameterType.PARAMETER_STRING)
         self.assertEqual(bar_descriptor.additional_constraints, 'some more constraints')
         self.assertEqual(bar_descriptor.read_only, True)
         self.assertEqual(bar_descriptor.floating_point_range[0].from_value, -3.0)
@@ -1147,30 +1148,55 @@ class TestNode(unittest.TestCase):
         self.assertEqual(bar_descriptor.integer_range[0].to_value, 20)
         self.assertEqual(bar_descriptor.integer_range[0].step, 3)
 
-    # TODO(jubeira): test cases failing because of non-compliant existing parameter values
-    # once the feature is implemented.
     def test_set_descriptor(self):
         with self.assertRaises(ParameterNotDeclaredException):
             self.node.set_descriptor('foo', ParameterDescriptor())
 
         # Declare parameter with default descriptor.
+        # The name and type of the stored descriptor shall match the parameter,
         self.node.declare_parameter(
             'foo',
             'hello',
             ParameterDescriptor()
         )
-        self.assertEqual(self.node.describe_parameter('foo'), ParameterDescriptor())
+        self.assertEqual(
+            self.node.describe_parameter('foo'),
+            ParameterDescriptor(name='foo', type=Parameter.Type.STRING.value)
+        )
 
         # Now modify the descriptor and check again.
         value = self.node.set_descriptor(
             'foo',
             ParameterDescriptor(
-                name='foo',
-                type=ParameterType.PARAMETER_STRING,
+                name='this will be ignored',
+                type=ParameterType.PARAMETER_INTEGER,  # Type will be ignored too.
                 additional_constraints='some constraints',
+                read_only=False,
+                integer_range=[IntegerRange(from_value=-10, to_value=10, step=2)]
+            )
+        )
+        self.assertEqual(value.type, Parameter.Type.STRING.value)
+        self.assertEqual(value.string_value, 'hello')
+
+        # Name and type will match the parameter, not the given descriptor.
+        descriptor = self.node.describe_parameter('foo')
+        self.assertEqual(descriptor.name, 'foo')
+        self.assertEqual(descriptor.type, ParameterType.PARAMETER_STRING)
+        self.assertEqual(descriptor.additional_constraints, 'some constraints')
+        self.assertEqual(descriptor.read_only, False)
+        self.assertEqual(descriptor.integer_range[0].from_value, -10)
+        self.assertEqual(descriptor.integer_range[0].to_value, 10)
+        self.assertEqual(descriptor.integer_range[0].step, 2)
+
+        # A descriptor that is not read-only can be replaced by a read-only one.
+        value = self.node.set_descriptor(
+            'foo',
+            ParameterDescriptor(
+                name='bar',
+                type=ParameterType.PARAMETER_STRING,
+                additional_constraints='some more constraints',
                 read_only=True,
                 floating_point_range=[FloatingPointRange(from_value=-2.0, to_value=2.0, step=0.1)],
-                integer_range=[IntegerRange(from_value=-10, to_value=10, step=2)]
             )
         )
         self.assertEqual(value.type, Parameter.Type.STRING.value)
@@ -1179,14 +1205,11 @@ class TestNode(unittest.TestCase):
         descriptor = self.node.describe_parameter('foo')
         self.assertEqual(descriptor.name, 'foo')
         self.assertEqual(descriptor.type, ParameterType.PARAMETER_STRING)
-        self.assertEqual(descriptor.additional_constraints, 'some constraints')
+        self.assertEqual(descriptor.additional_constraints, 'some more constraints')
         self.assertEqual(descriptor.read_only, True)
         self.assertEqual(descriptor.floating_point_range[0].from_value, -2.0)
         self.assertEqual(descriptor.floating_point_range[0].to_value, 2.0)
         self.assertEqual(descriptor.floating_point_range[0].step, 0.1)
-        self.assertEqual(descriptor.integer_range[0].from_value, -10)
-        self.assertEqual(descriptor.integer_range[0].to_value, 10)
-        self.assertEqual(descriptor.integer_range[0].step, 2)
 
     def test_set_descriptor_read_only(self):
         with self.assertRaises(ParameterNotDeclaredException):
@@ -1198,7 +1221,10 @@ class TestNode(unittest.TestCase):
             'hello',
             ParameterDescriptor(read_only=True)
         )
-        self.assertEqual(self.node.describe_parameter('foo'), ParameterDescriptor(read_only=True))
+        self.assertEqual(
+            self.node.describe_parameter('foo'),
+            ParameterDescriptor(name='foo', type=Parameter.Type.STRING.value, read_only=True)
+        )
 
         # Try modifying the descriptor.
         with self.assertRaises(ParameterImmutableException):
@@ -1211,6 +1237,184 @@ class TestNode(unittest.TestCase):
                     read_only=False,
                 )
             )
+
+    def test_floating_point_range_descriptor(self):
+        # OK cases; non-floats are not affected by the range.
+        fp_range = FloatingPointRange(from_value=0.0, to_value=10.0, step=0.5)
+        parameters = [
+            ('from_value', 0.0, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('to_value', 10.0, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('in_range', 4.5, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('str_value', 'I am no integer', ParameterDescriptor(floating_point_range=[fp_range])),
+            ('int_value', 123, ParameterDescriptor(floating_point_range=[fp_range]))
+        ]
+
+        result = self.node.declare_parameters('', parameters)
+
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], Parameter)
+        self.assertIsInstance(result[1], Parameter)
+        self.assertIsInstance(result[2], Parameter)
+        self.assertIsInstance(result[3], Parameter)
+        self.assertIsInstance(result[4], Parameter)
+        self.assertAlmostEqual(result[0].value, 0.0)
+        self.assertAlmostEqual(result[1].value, 10.0)
+        self.assertAlmostEqual(result[2].value, 4.5)
+        self.assertEqual(result[3].value, 'I am no integer')
+        self.assertEqual(result[4].value, 123)
+        self.assertEqual(self.node.get_parameter('from_value').value, 0.0)
+        self.assertEqual(self.node.get_parameter('to_value').value, 10.0)
+        self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
+        self.assertEqual(self.node.get_parameter('str_value').value, 'I am no integer')
+        self.assertAlmostEqual(self.node.get_parameter('int_value').value, 123)
+
+        # Try to set a parameter out of range.
+        result = self.node.set_parameters([Parameter('in_range', value=12.0)])
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertFalse(result[0].successful)
+        self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
+
+        # Try to set a parameter out of range (bad step).
+        result = self.node.set_parameters([Parameter('in_range', value=4.25)])
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertFalse(result[0].successful)
+        self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
+
+        # Change in_range parameter to int; ranges will not apply.
+        result = self.node.set_parameters([Parameter('in_range', value=12)])
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertTrue(result[0].successful)
+        self.assertEqual(self.node.get_parameter('in_range').value, 12)
+
+        # From and to are always valid.
+        # Parameters that don't comply with the description will raise an exception.
+        fp_range = FloatingPointRange(from_value=-10.0, to_value=0.0, step=30.0)
+        parameters = [
+            ('from_value_2', -10.0, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('to_value_2', 0.0, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('in_range_bad_step', -4.5, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('out_of_range', 30.0, ParameterDescriptor(floating_point_range=[fp_range]))
+        ]
+        with self.assertRaises(InvalidParameterValueException):
+            self.node.declare_parameters('', parameters)
+
+        self.assertAlmostEqual(self.node.get_parameter('from_value_2').value, -10.0)
+        self.assertAlmostEqual(self.node.get_parameter('to_value_2').value, 0.0)
+        self.assertFalse(self.node.has_parameter('in_range_bad_step'))
+        self.assertFalse(self.node.has_parameter('out_of_range'))
+
+        # Try some more parameters with no step.
+        fp_range = FloatingPointRange(from_value=-10.0, to_value=10.0, step=0.0)
+        parameters = [
+            ('from_value_no_step', -10.0, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('to_value_no_step', 10.0, ParameterDescriptor(floating_point_range=[fp_range])),
+            ('in_range_no_step', 5.37, ParameterDescriptor(floating_point_range=[fp_range])),
+        ]
+
+        result = self.node.declare_parameters('', parameters)
+
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], Parameter)
+        self.assertIsInstance(result[1], Parameter)
+        self.assertIsInstance(result[2], Parameter)
+        self.assertAlmostEqual(result[0].value, -10.0)
+        self.assertAlmostEqual(result[1].value, 10.0)
+        self.assertAlmostEqual(result[2].value, 5.37)
+        self.assertAlmostEqual(self.node.get_parameter('from_value_no_step').value, -10.0)
+        self.assertAlmostEqual(self.node.get_parameter('to_value_no_step').value, 10.0)
+        self.assertAlmostEqual(self.node.get_parameter('in_range_no_step').value, 5.37)
+
+    def test_integer_range_descriptor(self):
+        # OK cases; non-integers are not affected by the range.
+        integer_range = IntegerRange(from_value=0, to_value=10, step=2)
+        parameters = [
+            ('from_value', 0, ParameterDescriptor(integer_range=[integer_range])),
+            ('to_value', 10, ParameterDescriptor(integer_range=[integer_range])),
+            ('in_range', 4, ParameterDescriptor(integer_range=[integer_range])),
+            ('str_value', 'I am no integer', ParameterDescriptor(integer_range=[integer_range])),
+            ('float_value', 123.0, ParameterDescriptor(integer_range=[integer_range]))
+        ]
+
+        result = self.node.declare_parameters('', parameters)
+
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], Parameter)
+        self.assertIsInstance(result[1], Parameter)
+        self.assertIsInstance(result[2], Parameter)
+        self.assertIsInstance(result[3], Parameter)
+        self.assertIsInstance(result[4], Parameter)
+        self.assertEqual(result[0].value, 0)
+        self.assertEqual(result[1].value, 10)
+        self.assertEqual(result[2].value, 4)
+        self.assertEqual(result[3].value, 'I am no integer')
+        self.assertAlmostEqual(result[4].value, 123.0)
+        self.assertEqual(self.node.get_parameter('from_value').value, 0)
+        self.assertEqual(self.node.get_parameter('to_value').value, 10)
+        self.assertEqual(self.node.get_parameter('in_range').value, 4)
+        self.assertEqual(self.node.get_parameter('str_value').value, 'I am no integer')
+        self.assertAlmostEqual(self.node.get_parameter('float_value').value, 123.0)
+
+        # Try to set a parameter out of range.
+        result = self.node.set_parameters([Parameter('in_range', value=12)])
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertFalse(result[0].successful)
+        self.assertEqual(self.node.get_parameter('in_range').value, 4)
+
+        # Try to set a parameter out of range (bad step).
+        result = self.node.set_parameters([Parameter('in_range', value=5)])
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertFalse(result[0].successful)
+        self.assertEqual(self.node.get_parameter('in_range').value, 4)
+
+        # Change in_range parameter to a float; ranges will not apply.
+        result = self.node.set_parameters([Parameter('in_range', value=12.0)])
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertTrue(result[0].successful)
+        self.assertAlmostEqual(self.node.get_parameter('in_range').value, 12.0)
+
+        # From and to are always valid.
+        # Parameters that don't comply with the description will raise an exception.
+        integer_range = IntegerRange(from_value=-10, to_value=0, step=30)
+        parameters = [
+            ('from_value_2', -10, ParameterDescriptor(integer_range=[integer_range])),
+            ('to_value_2', 0, ParameterDescriptor(integer_range=[integer_range])),
+            ('in_range_bad_step', -4, ParameterDescriptor(integer_range=[integer_range])),
+            ('out_of_range', 30, ParameterDescriptor(integer_range=[integer_range]))
+        ]
+        with self.assertRaises(InvalidParameterValueException):
+            self.node.declare_parameters('', parameters)
+
+        self.assertEqual(self.node.get_parameter('from_value_2').value, -10)
+        self.assertEqual(self.node.get_parameter('to_value_2').value, 0)
+        self.assertFalse(self.node.has_parameter('in_range_bad_step'))
+        self.assertFalse(self.node.has_parameter('out_of_range'))
+
+        # Try some more parameters with no step.
+        integer_range = IntegerRange(from_value=-10, to_value=10, step=0)
+        parameters = [
+            ('from_value_no_step', -10, ParameterDescriptor(integer_range=[integer_range])),
+            ('to_value_no_step', 10, ParameterDescriptor(integer_range=[integer_range])),
+            ('in_range_no_step', 5, ParameterDescriptor(integer_range=[integer_range])),
+        ]
+
+        result = self.node.declare_parameters('', parameters)
+
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], Parameter)
+        self.assertIsInstance(result[1], Parameter)
+        self.assertIsInstance(result[2], Parameter)
+        self.assertEqual(result[0].value, -10)
+        self.assertEqual(result[1].value, 10)
+        self.assertEqual(result[2].value, 5)
+        self.assertEqual(self.node.get_parameter('from_value_no_step').value, -10)
+        self.assertEqual(self.node.get_parameter('to_value_no_step').value, 10)
+        self.assertEqual(self.node.get_parameter('in_range_no_step').value, 5)
 
 
 class TestCreateNode(unittest.TestCase):
