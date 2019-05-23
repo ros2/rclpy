@@ -102,7 +102,6 @@ class TestQosProfile(unittest.TestCase):
             QoSProfile()
             assert len(w) == 2  # must supply depth or history, _and_ KEEP_LAST needs depth
             assert issubclass(w[0].category, UserWarning)
-
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             # No deprecation if history is supplied
