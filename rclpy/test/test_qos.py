@@ -17,6 +17,7 @@ import warnings
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.qos import _qos_profile_default
 from rclpy.qos import qos_profile_system_default
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
@@ -145,7 +146,9 @@ class TestQosProfile(unittest.TestCase):
             QoSPresetProfiles.get_from_short_key('system_default'))
 
     def test_default_profile(self):
-        profile = QoSProfile(depth=10)
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter('always')
+            profile = QoSProfile()
         assert all(
-            profile.__getattribute__(k) == QoSPresetProfiles.DEFAULT.value.__getattribute__(k)
+            profile.__getattribute__(k) == _qos_profile_default.__getattribute__(k)
             for k in profile.__slots__)
