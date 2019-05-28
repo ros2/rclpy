@@ -98,11 +98,11 @@ class InvalidParameterException(ParameterException):
 class InvalidParameterValueException(ParameterException):
     """Raised when a parameter is rejected by a user callback or when applying a descriptor."""
 
-    def __init__(self, parameter, value, *args):
+    def __init__(self, parameter, value, reason, *args):
         Exception.__init__(
             self,
-            'Invalid parameter value ({value}) for parameter'.format(
-                value=value), parameter, *args)
+            'Invalid parameter value ({value}) for parameter. Reason: {reason}'.format(
+                value=value, reason=reason), parameter, *args)
 
 
 class ParameterImmutableException(ParameterException):
