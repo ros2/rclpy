@@ -113,7 +113,7 @@ def create_node(
     start_parameter_services: bool = True,
     parameter_overrides: List[Parameter] = None,
     allow_undeclared_parameters: bool = False,
-    automatically_declare_initial_parameters: bool = True
+    automatically_declare_parameters_from_overrides: bool = True
 ) -> 'Node':
     """
     Create an instance of :class:`.Node`.
@@ -130,8 +130,8 @@ def create_node(
     :param parameter_overrides: A list of :class:`.Parameter` which are used to override the
         initial values of parameters declared on this node.
     :param allow_undeclared_parameters: True if undeclared parameters are allowed, False otherwise.
-    :param automatically_declare_initial_parameters: True if initial parameters have to be declared
-        upon node creation, false otherwise.
+    :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides" will
+        be used to implicitly declare parameters on the node during creation.
     :return: An instance of the newly created node.
     """
     # imported locally to avoid loading extensions on module import
@@ -142,7 +142,9 @@ def create_node(
         start_parameter_services=start_parameter_services,
         parameter_overrides=parameter_overrides,
         allow_undeclared_parameters=allow_undeclared_parameters,
-        automatically_declare_initial_parameters=automatically_declare_initial_parameters)
+        automatically_declare_parameters_from_overrides=(
+            automatically_declare_parameters_from_overrides
+        ))
 
 
 def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:

@@ -98,7 +98,7 @@ class Node:
         start_parameter_services: bool = True,
         parameter_overrides: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_initial_parameters: bool = False
+        automatically_declare_parameters_from_overrides: bool = False
     ) -> None:
         """
         Constructor.
@@ -117,8 +117,8 @@ class Node:
             on the node.
         :param allow_undeclared_parameters: True if undeclared parameters are allowed.
             This flag affects the behavior of parameter-related operations.
-        :param automatically_declare_initial_parameters: True if initial parameters have to be
-            declared upon node creation, false otherwise.
+        :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
+            will be used to implicitly declare parameters on the node during creation.
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
@@ -173,7 +173,7 @@ class Node:
         if parameter_overrides is not None:
             self._parameter_overrides.update({p.name: p for p in parameter_overrides})
 
-        if automatically_declare_initial_parameters:
+        if automatically_declare_parameters_from_overrides:
             self._parameters.update(self._parameter_overrides)
             self._descriptors.update({p: ParameterDescriptor() for p in self._parameters})
 
