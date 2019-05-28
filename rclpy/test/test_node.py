@@ -152,34 +152,12 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
-            self.node.create_publisher(BasicTypes, 'chatter', qos_profile=qos_profile_sensor_data)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_publisher(BasicTypes, 'chatter', qos_profile=qos_profile_sensor_data)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
             self.node.create_publisher(BasicTypes, 'chatter', qos_profile_default)
             assert len(w) == 1
             assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(
-                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile=qos_profile_sensor_data)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(
-                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile=qos_profile_sensor_data)
             assert len(w) == 1
             assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:
