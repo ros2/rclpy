@@ -537,7 +537,7 @@ class Node:
 
         :param parameter_list: List of parameters to set.
         :param descriptors: Descriptors to set to the given parameters.
-            If a dict is given, each parameter in the list must have a corresponding descriptor.
+            If descriptors are given, each parameter in the list must have a corresponding one.
         :param raise_on_failure: True if InvalidParameterValueException has to be raised when
             the user callback rejects a parameter, False otherwise.
         :param check_undeclared_parameters: True if the method needs to check for undeclared
@@ -632,13 +632,18 @@ class Node:
 
         :param parameter_list: The list of parameters to set.
         :param descriptors: New descriptors to apply to the parameters before setting them.
+            If descriptors are given, each parameter in the list must have a corresponding one.
         :return: Aggregate result of setting all the parameters atomically.
         """
         if descriptors is not None:
+            # If new descriptors are provided, ensure every parameter has an assigned descriptor
+            # and do not check for read-only.
             assert all(parameter.name in descriptors for parameter in parameter_list)
+            result = self._apply_descriptors(parameter_list, descriptors, False)
+        else:
+            # If new descriptors are not provided, use existing ones and check for read-only.
+            result = self._apply_descriptors(parameter_list, self._descriptors, True)
 
-        # If new descriptors are not provided, check for read-only.
-        result = self._apply_descriptors(parameter_list, descriptors, descriptors is None)
         if not result.successful:
             return result
         elif self._parameters_callback:
@@ -693,7 +698,7 @@ class Node:
     def _apply_descriptors(
         self,
         parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
+        descriptors: Dict[str, ParameterDescriptor],
         check_read_only: bool = True
     ) -> SetParametersResult:
         """
@@ -703,16 +708,12 @@ class Node:
         In any case, if a given parameter doesn't have a descriptor it shall be skipped.
 
         :param parameter_list: Parameters to be checked.
-        :param descriptors: Descriptors to apply. If None, the stored descriptors for the given
-            parameters' names are used instead.
+        :param descriptors: Descriptors to apply.
         :param check_read_only: True if read-only check has to be applied.
         :return: SetParametersResult; successful if checks passed, unsuccessful otherwise.
         :raises: ParameterNotDeclaredException if a descriptor is not provided, the given parameter
             name had not been declared and undeclared parameters are not allowed.
         """
-        if descriptors is None:
-            descriptors = self._descriptors
-
         for param in parameter_list:
             if param.name in descriptors:
                 result = self._apply_descriptor(param, descriptors[param.name], check_read_only)
@@ -773,10 +774,10 @@ class Node:
         if parameter.value == min_value or parameter.value == max_value:
             return SetParametersResult(successful=True)
 
-        if parameter.value < min_value or parameter.value > max_value:
+        if not min_value < parameter.value < max_value:
             return SetParametersResult(
                 successful=False,
-                reason='Parameter {} out of range\n'
+                reason='Parameter {} out of range. '
                        'Min: {}, Max: {}, value: {}'.format(
                             parameter.name, min_value, max_value, parameter.value
                         )
@@ -785,7 +786,7 @@ class Node:
         if integer_range.step != 0 and (parameter.value - min_value) % integer_range.step != 0:
             return SetParametersResult(
                 successful=False,
-                reason='The parameter value for {} is not a valid step.\n'
+                reason='The parameter value for {} is not a valid step. '
                        'Min: {}, max: {}, value: {}, step: {}'.format(
                             parameter.name,
                             min_value,
@@ -812,10 +813,10 @@ class Node:
         ):
             return SetParametersResult(successful=True)
 
-        if parameter.value < min_value or parameter.value > max_value:
+        if not min_value < parameter.value < max_value:
             return SetParametersResult(
                 successful=False,
-                reason='Parameter {} out of range\n'
+                reason='Parameter {} out of range '
                        'Min: {}, Max: {}, value: {}'.format(
                             parameter.name, min_value, max_value, parameter.value
                         )
@@ -830,7 +831,7 @@ class Node:
             ):
                 return SetParametersResult(
                     successful=False,
-                    reason='The parameter value for {} is not close enough to a valid step.\n'
+                    reason='The parameter value for {} is not close enough to a valid step. '
                            'Min: {}, max: {}, value: {}, step: {}'.format(
                                 parameter.name,
                                 min_value,

@@ -1106,10 +1106,10 @@ class TestNode(unittest.TestCase):
         )
         self.node.declare_parameter(
             'bar',
-            'hello',
+            10,
             ParameterDescriptor(
                 name='bar',
-                type=ParameterType.PARAMETER_INTEGER,
+                type=ParameterType.PARAMETER_DOUBLE,
                 additional_constraints='some more constraints',
                 read_only=True,
                 floating_point_range=[FloatingPointRange(from_value=-3.0, to_value=3.0, step=0.3)],
@@ -1138,7 +1138,7 @@ class TestNode(unittest.TestCase):
         # The descriptor gets the type of the parameter.
         bar_descriptor = descriptor_list[1]
         self.assertEqual(bar_descriptor.name, 'bar')
-        self.assertEqual(bar_descriptor.type, ParameterType.PARAMETER_STRING)
+        self.assertEqual(bar_descriptor.type, ParameterType.PARAMETER_INTEGER)
         self.assertEqual(bar_descriptor.additional_constraints, 'some more constraints')
         self.assertEqual(bar_descriptor.read_only, True)
         self.assertEqual(bar_descriptor.floating_point_range[0].from_value, -3.0)
