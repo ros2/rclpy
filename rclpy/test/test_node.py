@@ -1245,7 +1245,7 @@ class TestNode(unittest.TestCase):
             ('from_value', 0.0, ParameterDescriptor(floating_point_range=[fp_range])),
             ('to_value', 10.0, ParameterDescriptor(floating_point_range=[fp_range])),
             ('in_range', 4.5, ParameterDescriptor(floating_point_range=[fp_range])),
-            ('str_value', 'I am no integer', ParameterDescriptor(floating_point_range=[fp_range])),
+            ('str_value', 'I am no float', ParameterDescriptor(floating_point_range=[fp_range])),
             ('int_value', 123, ParameterDescriptor(floating_point_range=[fp_range]))
         ]
 
@@ -1260,12 +1260,12 @@ class TestNode(unittest.TestCase):
         self.assertAlmostEqual(result[0].value, 0.0)
         self.assertAlmostEqual(result[1].value, 10.0)
         self.assertAlmostEqual(result[2].value, 4.5)
-        self.assertEqual(result[3].value, 'I am no integer')
+        self.assertEqual(result[3].value, 'I am no float')
         self.assertEqual(result[4].value, 123)
         self.assertEqual(self.node.get_parameter('from_value').value, 0.0)
         self.assertEqual(self.node.get_parameter('to_value').value, 10.0)
         self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
-        self.assertEqual(self.node.get_parameter('str_value').value, 'I am no integer')
+        self.assertEqual(self.node.get_parameter('str_value').value, 'I am no float')
         self.assertAlmostEqual(self.node.get_parameter('int_value').value, 123)
 
         # Try to set a parameter out of range.

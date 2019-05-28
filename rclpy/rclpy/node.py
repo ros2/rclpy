@@ -537,7 +537,7 @@ class Node:
 
         :param parameter_list: List of parameters to set.
         :param descriptors: Descriptors to set to the given parameters.
-            If a list is given, it must have the same size as the parameter list.
+            If a dict is given, each parameter in the list must have a corresponding descriptor.
         :param raise_on_failure: True if InvalidParameterValueException has to be raised when
             the user callback rejects a parameter, False otherwise.
         :param check_undeclared_parameters: True if the method needs to check for undeclared
@@ -785,8 +785,7 @@ class Node:
         if integer_range.step != 0 and (parameter.value - min_value) % integer_range.step != 0:
             return SetParametersResult(
                 successful=False,
-                reason='The distance between the parameter value for {}'
-                       'is not a multiple of step.\n'
+                reason='The parameter value for {} is not a valid step.\n'
                        'Min: {}, max: {}, value: {}, step: {}'.format(
                             parameter.name,
                             min_value,
@@ -831,8 +830,7 @@ class Node:
             ):
                 return SetParametersResult(
                     successful=False,
-                    reason='The distance between the parameter value for {}'
-                           'is not a close multiple of step.\n'
+                    reason='The parameter value for {} is not close enough to a valid step.\n'
                            'Min: {}, max: {}, value: {}, step: {}'.format(
                                 parameter.name,
                                 min_value,
