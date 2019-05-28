@@ -842,9 +842,8 @@ class Node:
         self,
         msg_type,
         topic: str,
-        qos_or_depth: Union[QoSProfile, int] = None,
+        qos_profile: Union[QoSProfile, int] = None,
         *,
-        qos_profile: QoSProfile = QoSProfile(depth=10),
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
     ) -> Publisher:
@@ -853,23 +852,22 @@ class Node:
 
         :param msg_type: The type of ROS messages the publisher will publish.
         :param topic: The name of the topic the publisher will publish to.
-        :param qos_or_depth: A QoSProfile or a history depth to apply to the publisher.
+        :param qos_profile: A QoSProfile or a history depth to apply to the publisher.
           This is a required parameter, and only defaults to None for backwards compatibility.
           In the case that a history depth is provided, the QoS history is set to
           RMW_QOS_POLICY_HISTORY_KEEP_LAST, the QoS history depth is set to the value
           of the parameter, and all other QoS settings are set to their default values.
-        :param qos_profile: **This parameter is deprecated; use the qos_or_depth parameter
-          instead.**
         :param callback_group: The callback group for the publisher's event handlers.
             If ``None``, then the node's default callback group is used.
         :param event_callbacks: User-defined callbacks for middleware events.
         :return: The new publisher.
         """
         # if the new API is not used, issue a deprecation warning and continue with the old API
-        if qos_or_depth is None:
-            warnings.warn("Use the new 'qos_or_depth' parameter, instead of 'qos_profile'")
+        if qos_profile is None:
+            warnings.warn("Pass an explicit 'qos_profile' argument")
+            qos_profile = QoSProfile(depth=10)
         else:
-            qos_profile = self._validate_qos_or_depth_parameter(qos_or_depth)
+            qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
 
         callback_group = callback_group or self.default_callback_group
 
@@ -905,9 +903,8 @@ class Node:
         msg_type,
         topic: str,
         callback: Callable[[MsgType], None],
-        qos_or_depth: Union[QoSProfile, int] = None,
+        qos_profile: Union[QoSProfile, int] = None,
         *,
-        qos_profile: QoSProfile = QoSProfile(depth=10),
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         raw: bool = False
@@ -919,13 +916,11 @@ class Node:
         :param topic: The name of the topic the subscription will subscribe to.
         :param callback: A user-defined callback function that is called when a message is
             received by the subscription.
-        :param qos_or_depth: A QoSProfile or a history depth to apply to the subscription.
+        :param qos_profile: A QoSProfile or a history depth to apply to the subscription.
           This is a required parameter, and only defaults to None for backwards compatibility.
           In the case that a history depth is provided, the QoS history is set to
           RMW_QOS_POLICY_HISTORY_KEEP_LAST, the QoS history depth is set to the value
           of the parameter, and all other QoS settings are set to their default values.
-        :param qos_profile: **This parameter is deprecated; use the qos_or_depth parameter
-          instead.**
         :param callback_group: The callback group for the subscription. If ``None``, then the
             nodes default callback group is used.
         :param event_callbacks: User-defined callbacks for middleware events.
@@ -933,10 +928,11 @@ class Node:
             representation.
         """
         # if the new API is not used, issue a deprecation warning and continue with the old API
-        if qos_or_depth is None:
-            warnings.warn("Use the new 'qos_or_depth' parameter, instead of 'qos_profile'")
+        if qos_profile is None:
+            warnings.warn("Pass an explicit 'qos_profile' argument")
+            qos_profile = QoSProfile(depth=10)
         else:
-            qos_profile = self._validate_qos_or_depth_parameter(qos_or_depth)
+            qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
 
         callback_group = callback_group or self.default_callback_group
 
