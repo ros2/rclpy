@@ -383,7 +383,7 @@ class TestNode(unittest.TestCase):
             TEST_NODE,
             namespace=TEST_NAMESPACE,
             context=self.context,
-            initial_parameters=[
+            parameter_overrides=[
                 Parameter('initial_foo', Parameter.Type.INTEGER, 4321),
                 Parameter('initial_bar', Parameter.Type.STRING, 'init_param'),
                 Parameter('initial_baz', Parameter.Type.DOUBLE, 3.14)

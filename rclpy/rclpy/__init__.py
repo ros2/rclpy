@@ -111,7 +111,7 @@ def create_node(
     namespace: str = None,
     use_global_arguments: bool = True,
     start_parameter_services: bool = True,
-    initial_parameters: List[Parameter] = None,
+    parameter_overrides: List[Parameter] = None,
     allow_undeclared_parameters: bool = False,
     automatically_declare_initial_parameters: bool = True
 ) -> 'Node':
@@ -127,7 +127,8 @@ def create_node(
     :param use_global_arguments: ``False`` if the node should ignore process-wide command line
         arguments.
     :param start_parameter_services: ``False`` if the node should not create parameter services.
-    :param initial_parameters: A list of :class:`.Parameter` to be set during node creation.
+    :param parameter_overrides: A list of :class:`.Parameter` which are used to override the
+        initial values of parameters declared on this node.
     :param allow_undeclared_parameters: True if undeclared parameters are allowed, False otherwise.
     :param automatically_declare_initial_parameters: True if initial parameters have to be declared
         upon node creation, false otherwise.
@@ -139,7 +140,7 @@ def create_node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
         start_parameter_services=start_parameter_services,
-        initial_parameters=initial_parameters,
+        parameter_overrides=parameter_overrides,
         allow_undeclared_parameters=allow_undeclared_parameters,
         automatically_declare_initial_parameters=automatically_declare_initial_parameters)
 
