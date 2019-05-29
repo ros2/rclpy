@@ -1,6 +1,17 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+0.7.3 (2019-05-29)
+------------------
+* Rename parameter options (`#363 <https://github.com/ros2/rclpy/issues/363>`_)
+  * rename the initial_parameters option to parameter_overrides
+  * rename automatically_declare_initial_parameters to automatically_declare_parameters_from_overrides
+  * update allow_undeclared_parameters docs
+* Consolidate create_publisher arguments (`#362 <https://github.com/ros2/rclpy/issues/362>`_)
+* Enforcing parameter ranges. (`#357 <https://github.com/ros2/rclpy/issues/357>`_)
+* Initialize QoSProfile with values from rmw_qos_profile_default (`#356 <https://github.com/ros2/rclpy/issues/356>`_)
+* Contributors: Dirk Thomas, Emerson Knapp, Juan Ignacio Ubeira, William Woodall
+
 0.7.2 (2019-05-20)
 ------------------
 * Add convenience name translations for use by commandline utilities etc. (`#352 <https://github.com/ros2/rclpy/issues/352>`_)
