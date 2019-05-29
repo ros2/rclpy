@@ -111,9 +111,9 @@ def create_node(
     namespace: str = None,
     use_global_arguments: bool = True,
     start_parameter_services: bool = True,
-    initial_parameters: List[Parameter] = None,
+    parameter_overrides: List[Parameter] = None,
     allow_undeclared_parameters: bool = False,
-    automatically_declare_initial_parameters: bool = True
+    automatically_declare_parameters_from_overrides: bool = False
 ) -> 'Node':
     """
     Create an instance of :class:`.Node`.
@@ -127,10 +127,12 @@ def create_node(
     :param use_global_arguments: ``False`` if the node should ignore process-wide command line
         arguments.
     :param start_parameter_services: ``False`` if the node should not create parameter services.
-    :param initial_parameters: A list of :class:`.Parameter` to be set during node creation.
-    :param allow_undeclared_parameters: True if undeclared parameters are allowed, False otherwise.
-    :param automatically_declare_initial_parameters: True if initial parameters have to be declared
-        upon node creation, false otherwise.
+    :param parameter_overrides: A list of :class:`.Parameter` which are used to override the
+        initial values of parameters declared on this node.
+     :param allow_undeclared_parameters: if True undeclared parameters are allowed, default False.
+        This option doesn't affect `parameter_overrides`.
+    :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides" will
+        be used to implicitly declare parameters on the node during creation, default False.
     :return: An instance of the newly created node.
     """
     # imported locally to avoid loading extensions on module import
@@ -139,9 +141,11 @@ def create_node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
         start_parameter_services=start_parameter_services,
-        initial_parameters=initial_parameters,
+        parameter_overrides=parameter_overrides,
         allow_undeclared_parameters=allow_undeclared_parameters,
-        automatically_declare_initial_parameters=automatically_declare_initial_parameters)
+        automatically_declare_parameters_from_overrides=(
+            automatically_declare_parameters_from_overrides
+        ))
 
 
 def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:

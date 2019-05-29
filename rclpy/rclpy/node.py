@@ -104,9 +104,9 @@ class Node:
         namespace: str = None,
         use_global_arguments: bool = True,
         start_parameter_services: bool = True,
-        initial_parameters: List[Parameter] = None,
+        parameter_overrides: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_initial_parameters: bool = False
+        automatically_declare_parameters_from_overrides: bool = False
     ) -> None:
         """
         Constructor.
@@ -121,11 +121,12 @@ class Node:
             args.
         :param start_parameter_services: ``False`` if the node should not create parameter
             services.
-        :param initial_parameters: A list of parameters to be set during node creation.
+        :param parameter_overrides: A list of overrides for initial values for parameters declared
+            on the node.
         :param allow_undeclared_parameters: True if undeclared parameters are allowed.
             This flag affects the behavior of parameter-related operations.
-        :param automatically_declare_initial_parameters: True if initial parameters have to be
-            declared upon node creation, false otherwise.
+        :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
+            will be used to implicitly declare parameters on the node during creation.
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
@@ -140,7 +141,7 @@ class Node:
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
         self._allow_undeclared_parameters = allow_undeclared_parameters
-        self._initial_parameters = {}
+        self._parameter_overrides = {}
         self._descriptors = {}
 
         namespace = namespace or ''
@@ -174,14 +175,14 @@ class Node:
             ParameterEvent, 'parameter_events', qos_profile_parameter_events)
 
         with self.handle as capsule:
-            self._initial_parameters = _rclpy.rclpy_get_node_parameters(Parameter, capsule)
+            self._parameter_overrides = _rclpy.rclpy_get_node_parameters(Parameter, capsule)
         # Combine parameters from params files with those from the node constructor and
         # use the set_parameters_atomically API so a parameter event is published.
-        if initial_parameters is not None:
-            self._initial_parameters.update({p.name: p for p in initial_parameters})
+        if parameter_overrides is not None:
+            self._parameter_overrides.update({p.name: p for p in parameter_overrides})
 
-        if automatically_declare_initial_parameters:
-            self._parameters.update(self._initial_parameters)
+        if automatically_declare_parameters_from_overrides:
+            self._parameters.update(self._parameter_overrides)
             self._descriptors.update({p: ParameterDescriptor() for p in self._parameters})
 
         if start_parameter_services:
@@ -367,10 +368,10 @@ class Node:
                         'is not a str.'.format_map(locals())
                     )
 
-                # Get value from initial parameters, of from tuple if it doesn't exist.
-                if name in self._initial_parameters:
-                    type_ = self._initial_parameters[name].type_
-                    value = self._initial_parameters[name].value
+                # Get value from parameter overrides, of from tuple if it doesn't exist.
+                if name in self._parameter_overrides:
+                    type_ = self._parameter_overrides[name].type_
+                    value = self._parameter_overrides[name].value
                 else:
                     # This raises a TypeError if it's not possible to get a type from the tuple.
                     type_ = Parameter.Type.from_parameter_value(parameter_tuple[1])
