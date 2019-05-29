@@ -113,7 +113,7 @@ def create_node(
     start_parameter_services: bool = True,
     parameter_overrides: List[Parameter] = None,
     allow_undeclared_parameters: bool = False,
-    automatically_declare_parameters_from_overrides: bool = True
+    automatically_declare_parameters_from_overrides: bool = False
 ) -> 'Node':
     """
     Create an instance of :class:`.Node`.
