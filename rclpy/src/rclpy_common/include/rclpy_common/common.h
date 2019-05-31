@@ -81,14 +81,14 @@ RCLPY_COMMON_PUBLIC
 PyObject *
 rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * topic_names_and_types);
 
-/// Convert a C rmw_qos_profile_t into a Python QoSProfile object.
+/// Convert a C rmw_qos_profile_t into a Python dictionary with qos profile args.
 /**
  * \param[in] profile Pointer to a rmw_qos_profile_t to convert
- * \return QoSProfile object
+ * \return Python dictionary
  */
 RCLPY_COMMON_PUBLIC
 PyObject *
-rclpy_common_convert_to_py_qos_policy(const rmw_qos_profile_t * profile);
+rclpy_common_convert_to_qos_dict(const rmw_qos_profile_t * profile);
 
 RCLPY_COMMON_PUBLIC
 void *

@@ -3534,17 +3534,17 @@ rclpy_convert_to_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   if (!profile) {
     return NULL;
   }
-  return rclpy_common_convert_to_py_qos_policy(profile);
+  return rclpy_common_convert_to_qos_dict(profile);
 }
 
-/// Fetch a predefined qos_profile from rmw and convert it to a Python QoSProfile Object
+/// Fetch a predefined qos_profile from rmw and convert it to a dictionary with QoSProfile args
 /**
  * Raises RuntimeError if there is an rcl error
  *
  * This function takes a string defining a rmw_qos_profile_t and returns the
- * corresponding Python QoSProfile object.
+ * corresponding QoSProfile args in a dictionary
  * \param[in] string with the name of the profile to load
- * \return QoSProfile object
+ * \return dictionary with QoSProfile args
  */
 static PyObject *
 rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
@@ -3557,19 +3557,19 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   }
   PyObject * pyqos_profile = NULL;
   if (0 == strcmp(pyrmw_profile, "qos_profile_sensor_data")) {
-    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_sensor_data);
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_sensor_data);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_default")) {
-    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_default);
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_system_default")) {
-    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_system_default);
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_system_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_services_default")) {
-    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_services_default);
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_services_default);
     // NOTE(mikaelarguedas) all conditions following this one are defined but not used
     // because parameters are not implemented in Python yet
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameters")) {
-    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_parameters);
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameters);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {
-    pyqos_profile = rclpy_common_convert_to_py_qos_policy(&rmw_qos_profile_parameter_events);
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameter_events);
   } else {
     PyErr_Format(PyExc_RuntimeError,
       "Requested unknown rmw_qos_profile: '%s'", pyrmw_profile);

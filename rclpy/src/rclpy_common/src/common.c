@@ -158,7 +158,7 @@ cleanup:
 }
 
 PyObject *
-rclpy_common_convert_to_py_qos_policy(const rmw_qos_profile_t * qos_profile)
+rclpy_common_convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
 {
   // Convert rmw members to Python objects
   rclpy_qos_profile_t rclpy_qos;
@@ -247,30 +247,7 @@ rclpy_common_convert_to_py_qos_policy(const rmw_qos_profile_t * qos_profile)
     return NULL;
   }
 
-  // Construct Python QoSProfile object
-  PyObject * pyqos_module = PyImport_ImportModule("rclpy.qos");
-  if (!pyqos_module) {
-    Py_DECREF(pyqos_kwargs);
-    return NULL;
-  }
-  PyObject * pyqos_profile_class = PyObject_GetAttrString(pyqos_module, "QoSProfile");
-  Py_DECREF(pyqos_module);
-  if (!pyqos_profile_class) {
-    Py_DECREF(pyqos_kwargs);
-    return NULL;
-  }
-  // There are no positional arguments, but we're required to pass an empty tuple anyways
-  PyObject * pyqos_args = PyTuple_New(0);
-  if (!pyqos_args) {
-    Py_DECREF(pyqos_kwargs);
-    Py_DECREF(pyqos_profile_class);
-    return NULL;
-  }
-  PyObject * pyqos_profile = PyObject_Call(pyqos_profile_class, pyqos_args, pyqos_kwargs);
-  Py_DECREF(pyqos_profile_class);
-  Py_DECREF(pyqos_args);
-  Py_DECREF(pyqos_kwargs);
-  return pyqos_profile;
+  return pyqos_kwargs;
 }
 
 void *

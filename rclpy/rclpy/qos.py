@@ -334,21 +334,20 @@ class DeprecatedQoSProfile(QoSProfile):
         self.name = profile_name
 
 
-_qos_profile_default = _rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_default')
+_qos_profile_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile('qos_profile_default'))
 qos_profile_default = DeprecatedQoSProfile(_qos_profile_default, 'qos_profile_default')
-qos_profile_system_default = _rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_system_default')
-qos_profile_sensor_data = _rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_sensor_data')
-qos_profile_services_default = _rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_services_default')
-qos_profile_parameters = _rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_parameters')
-qos_profile_parameter_events = _rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_parameter_events')
-qos_profile_action_status_default = _rclpy_action.rclpy_action_get_rmw_qos_profile(
-    'rcl_action_qos_profile_status_default')
+qos_profile_system_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_system_default'))
+qos_profile_sensor_data = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_sensor_data'))
+qos_profile_services_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_services_default'))
+qos_profile_parameters = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_parameters'))
+qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_parameter_events'))
+qos_profile_action_status_default = QoSProfile(
+    **_rclpy_action.rclpy_action_get_rmw_qos_profile('rcl_action_qos_profile_status_default'))
 
 
 class QoSPresetProfiles(Enum):
