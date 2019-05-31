@@ -31,7 +31,7 @@ class TestQosProfile(unittest.TestCase):
 
     def convert_and_assert_equality(self, qos_profile):
         c_profile = qos_profile.get_c_qos_profile()
-        converted_profile = _rclpy.rclpy_convert_to_py_qos_policy(c_profile)
+        converted_profile = QoSProfile(**_rclpy.rclpy_convert_to_py_qos_policy(c_profile))
         self.assertEqual(qos_profile, converted_profile)
 
     def test_depth_only_constructor(self):

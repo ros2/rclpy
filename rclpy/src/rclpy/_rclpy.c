@@ -3534,7 +3534,7 @@ rclpy_convert_to_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   if (!profile) {
     return NULL;
   }
-  return rclpy_common_convert_to_py_qos_policy(profile);
+  return rclpy_common_convert_to_qos_dict(profile);
 }
 
 /// Fetch a predefined qos_profile from rmw and convert it to a dictionary with QoSProfile args
