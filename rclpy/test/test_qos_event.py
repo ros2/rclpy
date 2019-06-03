@@ -49,24 +49,27 @@ class TestQoSEvent(unittest.TestCase):
         deadline_callback = Mock()
 
         # No arg
-        publisher = self.node.create_publisher(EmptyMsg, 'test_topic')
+        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
         self.assertEqual(len(publisher.event_handlers), 0)
         self.node.destroy_publisher(publisher)
 
         # Arg with no callbacks
-        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', event_callbacks=callbacks)
+        publisher = self.node.create_publisher(
+            EmptyMsg, 'test_topic', 10, event_callbacks=callbacks)
         self.assertEqual(len(publisher.event_handlers), 0)
         self.node.destroy_publisher(publisher)
 
         # Arg with one of the callbacks
         callbacks.deadline = deadline_callback
-        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', event_callbacks=callbacks)
+        publisher = self.node.create_publisher(
+            EmptyMsg, 'test_topic', 10, event_callbacks=callbacks)
         self.assertEqual(len(publisher.event_handlers), 1)
         self.node.destroy_publisher(publisher)
 
         # Arg with both callbacks
         callbacks.liveliness = liveliness_callback
-        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', event_callbacks=callbacks)
+        publisher = self.node.create_publisher(
+            EmptyMsg, 'test_topic', 10, event_callbacks=callbacks)
         self.assertEqual(len(publisher.event_handlers), 2)
         self.node.destroy_publisher(publisher)
 
@@ -77,27 +80,27 @@ class TestQoSEvent(unittest.TestCase):
         message_callback = Mock()
 
         # No arg
-        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', message_callback)
+        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', message_callback, 10)
         self.assertEqual(len(subscription.event_handlers), 0)
         self.node.destroy_subscription(subscription)
 
         # Arg with no callbacks
         subscription = self.node.create_subscription(
-            EmptyMsg, 'test_topic', message_callback, event_callbacks=callbacks)
+            EmptyMsg, 'test_topic', message_callback, 10, event_callbacks=callbacks)
         self.assertEqual(len(subscription.event_handlers), 0)
         self.node.destroy_subscription(subscription)
 
         # Arg with one of the callbacks
         callbacks.deadline = deadline_callback
         subscription = self.node.create_subscription(
-            EmptyMsg, 'test_topic', message_callback, event_callbacks=callbacks)
+            EmptyMsg, 'test_topic', message_callback, 10, event_callbacks=callbacks)
         self.assertEqual(len(subscription.event_handlers), 1)
         self.node.destroy_subscription(subscription)
 
         # Arg with both callbacks
         callbacks.liveliness = liveliness_callback
         subscription = self.node.create_subscription(
-            EmptyMsg, 'test_topic', message_callback, event_callbacks=callbacks)
+            EmptyMsg, 'test_topic', message_callback, 10, event_callbacks=callbacks)
         self.assertEqual(len(subscription.event_handlers), 2)
         self.node.destroy_subscription(subscription)
 
@@ -112,7 +115,7 @@ class TestQoSEvent(unittest.TestCase):
         handle.destroy()
 
     def test_publisher_event_create_destroy(self):
-        publisher = self.node.create_publisher(EmptyMsg, 'test_topic')
+        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
         self._do_create_destroy(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
         self._do_create_destroy(
@@ -121,7 +124,7 @@ class TestQoSEvent(unittest.TestCase):
 
     def test_subscription_event_create_destroy(self):
         message_callback = Mock()
-        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', message_callback)
+        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', message_callback, 10)
         self._do_create_destroy(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
         self._do_create_destroy(
@@ -131,7 +134,7 @@ class TestQoSEvent(unittest.TestCase):
     def test_call_publisher_rclpy_event_apis(self):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
-        publisher = self.node.create_publisher(EmptyMsg, 'test_topic')
+        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
         wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
         _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
 
@@ -184,7 +187,7 @@ class TestQoSEvent(unittest.TestCase):
     def test_call_subscription_rclpy_event_apis(self):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
-        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', Mock())
+        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', Mock(), 10)
         wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
         _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
 
