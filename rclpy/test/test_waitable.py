@@ -305,6 +305,8 @@ class TestWaitable(unittest.TestCase):
 
     def tearDown(self):
         self.node.remove_waitable(self.waitable)
+        # Ensure resources inside the waitable are destroyed before the node in tearDownClass
+        del self.waitable
 
     def test_waitable_with_client(self):
         self.waitable = ClientWaitable(self.node)
