@@ -3112,8 +3112,9 @@ cleanup:
  *
  * \param[in] pynode Capsule pointing to the node
  * \param[in] node_name of a remote node to get publishers for
- * \return Python list of tuples where each tuple contains the two strings:
- *   the topic name and topic type
+ * \return Python list of tuples.
+ *   The first element of each tuple is the service name (string) and the second element
+ *   is a list of service types (list of strings).
  */
 static PyObject *
 rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
@@ -3161,8 +3162,9 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
  * \param[in] no_demangle if true topic names and types returned will not be demangled
  * \param[in] node_name of a remote node to get subscriptions for
  * \param[in] node_namespace namespace of the remote node
- * \return Python list of tuples where each tuple contains the two strings:
- *   the topic name and topic type
+ * \return Python list of tuples.
+ *   The first element of each tuple is the topic name (string) and the second element
+ *   is a list of topic types (list of strings).
  */
 static PyObject *
 rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
@@ -3209,8 +3211,9 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
  * \param[in] no_demangle if true topic names and types returned will not be demangled
  * \param[in] node_name of a remote node to get publishers for
  * \param[in] node_namespace namespace of the remote node
- * \return Python list of tuples where each tuple contains the two strings:
- *   the topic name and topic type
+ * \return Python list of tuples.
+ *   The first element of each tuple is the topic name (string) and the second element
+ *   is a list of topic types (list of strings).
  */
 static PyObject *
 rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
@@ -3255,8 +3258,9 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
  *
  * \param[in] pynode Capsule pointing to the node
  * \param[in] no_demangle if true topic names and types returned will not be demangled
- * \return Python list of tuples where each tuple contains the two strings:
- *   the topic name and topic type
+ * \return Python list of tuples.
+ *   The first element of each tuple is the topic name (string) and the second element
+ *   is a list of topic types (list of strings).
  */
 static PyObject *
 rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
@@ -3343,8 +3347,9 @@ cleanup:
  * Raises RuntimeError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node
- * \return Python list of tuples where each tuple contains the two strings:
- *   the topic name and topic type
+ * \return Python list of tuples.
+ *   The first element of each tuple is the service name (string) and the second element
+ *   is a list of service types (list of strings).
  */
 static PyObject *
 rclpy_get_service_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)

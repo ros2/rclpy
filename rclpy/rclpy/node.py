@@ -1390,14 +1390,16 @@ class Node:
         node_name: str,
         node_namespace: str,
         no_demangle: bool = False
-    ) -> List[Tuple[str, str]]:
+    ) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered topics for publishers of a remote node.
 
         :param node_name: Name of a remote node to get publishers for.
         :param node_namespace: Namespace of the remote node.
         :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
-        :return: List of tuples containing two strings: the topic name and topic type.
+        :return: List of tuples.
+          The first element of each tuple is the topic name and the second element is a list of
+          topic types.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_publisher_names_and_types_by_node(
@@ -1408,14 +1410,16 @@ class Node:
         node_name: str,
         node_namespace: str,
         no_demangle: bool = False
-    ) -> List[Tuple[str, str]]:
+    ) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered topics for subscriptions of a remote node.
 
         :param node_name: Name of a remote node to get subscriptions for.
         :param node_namespace: Namespace of the remote node.
         :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
-        :return: List of tuples containing two strings: the topic name and topic type.
+        :return: List of tuples.
+          The first element of each tuple is the topic name and the second element is a list of
+          topic types.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_subscriber_names_and_types_by_node(
@@ -1425,33 +1429,39 @@ class Node:
         self,
         node_name: str,
         node_namespace: str
-    ) -> List[Tuple[str, str]]:
+    ) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered service topics for a remote node.
 
         :param node_name: Name of a remote node to get services for.
         :param node_namespace: Namespace of the remote node.
-        :return: List of tuples containing two strings: the service name and service type.
+        :return: List of tuples.
+          The first element of each tuple is the service name and the second element is a list of
+          service types.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_service_names_and_types_by_node(
                 capsule, node_name, node_namespace)
 
-    def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, str]]:
+    def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, List[str]]]:
         """
         Get a list topic names and types for the node.
 
         :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
-        :return: List of tuples containing two strings: the topic name and topic type.
+        :return: List of tuples.
+          The first element of each tuple is the topic name and the second element is a list of
+          topic types.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_topic_names_and_types(capsule, no_demangle)
 
-    def get_service_names_and_types(self) -> List[Tuple[str, str]]:
+    def get_service_names_and_types(self) -> List[Tuple[str, List[str]]]:
         """
         Get a list of service topics for the node.
 
-        :return: List of tuples containing two strings: the service name and service type.
+        :return: List of tuples.
+          The first element of each tuple is the service name and the second element is a list of
+          service types.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_service_names_and_types(capsule)
