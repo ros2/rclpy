@@ -1,6 +1,11 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+Forthcoming
+-----------
+* Fix API documentation related to ROS graph methods (`#366 <https://github.com/ros2/rclpy/issues/366>`_)
+* Contributors: Jacob Perron
+
 0.7.3 (2019-05-29)
 ------------------
 * Rename parameter options (`#363 <https://github.com/ros2/rclpy/issues/363>`_)
