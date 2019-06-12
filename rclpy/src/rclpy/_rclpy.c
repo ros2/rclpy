@@ -4523,21 +4523,40 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (!PyDict_Contains(params_by_node_name, py_node_name_with_namespace)) {
-    // No parameters for current node.
-    Py_DECREF(params_by_node_name);
-    Py_DECREF(py_node_name_with_namespace);
-    return PyDict_New();
-  }
-  PyObject * node_params = PyDict_GetItem(params_by_node_name, py_node_name_with_namespace);
-  Py_DECREF(py_node_name_with_namespace);
+  PyObject * node_params = PyDict_New();
   if (NULL == node_params) {
     Py_DECREF(params_by_node_name);
+    Py_DECREF(py_node_name_with_namespace);
     return NULL;
   }
-  // PyDict_GetItem is a borrowed reference. INCREF so we can return a new one.
-  Py_INCREF(node_params);
+
+  PyObject * py_wildcard_name = PyUnicode_FromString("/**");
+  if (NULL == py_wildcard_name) {
+    Py_DECREF(params_by_node_name);
+    Py_DECREF(py_node_name_with_namespace);
+    Py_DECREF(node_params);
+    return NULL;
+  }
+
+  PyObject * current_key, * current_value;
+  Py_ssize_t current_index = 0;
+  while (PyDict_Next(params_by_node_name, &current_index, &current_key, &current_value)) {
+    // TODO(cottsay) implement further wildcard matching
+    if (PyObject_RichCompareBool(current_key, py_wildcard_name, Py_EQ) == 1 ||
+      PyObject_RichCompareBool(current_key, py_node_name_with_namespace, Py_EQ) == 1)
+    {
+      if (-1 == PyDict_Update(node_params, current_value)) {
+        Py_DECREF(node_params);
+        node_params = NULL;
+        break;
+      }
+    }
+  }
+
   Py_DECREF(params_by_node_name);
+  Py_DECREF(py_node_name_with_namespace);
+  Py_DECREF(py_wildcard_name);
+
   return node_params;
 }
 
