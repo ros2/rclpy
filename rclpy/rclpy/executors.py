@@ -280,7 +280,7 @@ class Executor:
         else:
             start = time.monotonic()
             end = start + timeout_sec
-            timeout_left = timeout_sec_to_nsec(timeout_sec)
+            timeout_left = timeout_sec
 
             while self._context.ok() and not future.done():
                 self.spin_once(timeout_sec=timeout_left)
