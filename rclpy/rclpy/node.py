@@ -331,6 +331,21 @@ class Node:
         """
         Declare a list of parameters.
 
+        The tuples in the given parameter list shall contain the name for each parameter,
+        optionally providing a value and a descriptor.
+        For each entry in the list, a parameter with a name of "namespace.name"
+        will be declared.
+        The resulting value for each declared parameter will be returned, considering
+        parameter overrides set upon node creation as the first choice,
+        or provided parameter values as the second one.
+
+        The name expansion is naive, so if you set the namespace to be "foo.",
+        then the resulting parameter names will be like "foo..name".
+        However, if the namespace is an empty string, then no leading '.' will be
+        placed before each name, which would have been the case when naively
+        expanding "namespace.name".
+        This allows you to declare several parameters at once without a namespace.
+
         This method, if successful, will result in any callback registered with
         :func:`set_parameters_callback` to be called once for each parameter.
         If one of those calls fail, an exception will be raised and the remaining parameters will
@@ -338,7 +353,7 @@ class Node:
         Parameters declared up to that point will not be undeclared.
 
         :param namespace: Namespace for parameters.
-        :param parameters: Tuple with parameters to declare, with a name, value and descriptor.
+        :param parameters: List of tuples with parameters to declare.
         :return: Parameter list with the effectively assigned values for each of them.
         :raises: ParameterAlreadyDeclaredException if the parameter had already been declared.
         :raises: InvalidParameterException if the parameter name is invalid.
@@ -391,12 +406,14 @@ class Node:
                 # This means either value or descriptor were not defined which is fine.
                 pass
 
-            # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
-            full_name = namespace + name
-            validate_parameter_name(full_name)
+            if namespace:
+                name = '{namespace}.{name}'.format_map(locals())
 
-            parameter_list.append(Parameter(full_name, type_, value))
-            descriptors.update({full_name: descriptor})
+            # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
+            validate_parameter_name(name)
+
+            parameter_list.append(Parameter(name, type_, value))
+            descriptors.update({name: descriptor})
 
         parameters_already_declared = [
             parameter.name for parameter in parameter_list if parameter.name in self._parameters
