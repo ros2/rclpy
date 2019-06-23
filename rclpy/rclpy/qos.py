@@ -256,7 +256,7 @@ class QoSPolicyEnum(IntEnum):
         return cls[name.upper()].value
 
 
-class QoSHistoryPolicy(QoSPolicyEnum):
+class HistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
 
@@ -270,8 +270,11 @@ class QoSHistoryPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
     KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
+#  Naming the class HistoryPolicy QoSHistoryPolicy 
+#  because it is used in other places with the "Qos" infront
+QoSHistoryPolicy=HistoryPolicy
 
-class QoSReliabilityPolicy(QoSPolicyEnum):
+class ReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
 
@@ -285,13 +288,18 @@ class QoSReliabilityPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
     BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
+# Naming the class ReliabilityPolicy QoSReliabilityPolicy 
+# because it is used in other places with the "Qos" infront
+QoSReliabilityPolicy=ReliabilityPolicy
 
-class QoSDurabilityPolicy(QoSPolicyEnum):
+
+
+class DurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
 
     This enum matches the one defined in rmw/types.h
-    """
+    """  
 
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
     SYSTEM_DEFAULT = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
@@ -300,6 +308,9 @@ class QoSDurabilityPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
     VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
 
+# Naming the class DurabilityPolicy QoSDurabilityPolicy 
+# because it is used in other places with the "Qos" infront
+QoSDurabilityPolicy=DurabilityPolicy
 
 class QoSLivelinessPolicy(QoSPolicyEnum):
     """
@@ -307,7 +318,7 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
 
     This enum matches the one defined in rmw/types.h
     """
-
+    
     RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT = 0
     SYSTEM_DEFAULT = RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT
     RMW_QOS_POLICY_LIVELINESS_AUTOMATIC = 1
@@ -316,7 +327,10 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
     MANUAL_BY_NODE = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
     MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
-
+    
+# Naming the class DurabilityPolicy QoSDurabilityPolicy 
+# because it is used in other places with the "Qos" infront
+QoSDurabilityPolicy=DurabilityPolicy
 
 class DeprecatedQoSProfile(QoSProfile):
 
@@ -334,20 +348,21 @@ class DeprecatedQoSProfile(QoSProfile):
         self.name = profile_name
 
 
-_qos_profile_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile('qos_profile_default'))
+_qos_profile_default = _rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_default')
 qos_profile_default = DeprecatedQoSProfile(_qos_profile_default, 'qos_profile_default')
-qos_profile_system_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_system_default'))
-qos_profile_sensor_data = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_sensor_data'))
-qos_profile_services_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_services_default'))
-qos_profile_parameters = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_parameters'))
-qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_parameter_events'))
-qos_profile_action_status_default = QoSProfile(
-    **_rclpy_action.rclpy_action_get_rmw_qos_profile('rcl_action_qos_profile_status_default'))
+qos_profile_system_default = _rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_system_default')
+qos_profile_sensor_data = _rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_sensor_data')
+qos_profile_services_default = _rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_services_default')
+qos_profile_parameters = _rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_parameters')
+qos_profile_parameter_events = _rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_parameter_events')
+qos_profile_action_status_default = _rclpy_action.rclpy_action_get_rmw_qos_profile(
+    'rcl_action_qos_profile_status_default')
 
 
 class QoSPresetProfiles(Enum):
