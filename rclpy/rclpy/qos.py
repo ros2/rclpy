@@ -297,7 +297,7 @@ class DurabilityPolicy(QoSPolicyEnum):
     Enum for QoS Durability settings.
 
     This enum matches the one defined in rmw/types.h
-    """
+    """  
 
     RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
     SYSTEM_DEFAULT = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
@@ -329,7 +329,6 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
 # Alias with the old name, for retrocompatibility is clearer.
 QoSLivelinessPolicy = LivelinessPolicy
 
-
 class DeprecatedQoSProfile(QoSProfile):
 
     def __init__(self, qos_profile: QoSProfile, profile_name: str):
@@ -360,7 +359,6 @@ qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events'))
 qos_profile_action_status_default = QoSProfile(
     **_rclpy_action.rclpy_action_get_rmw_qos_profile('rcl_action_qos_profile_status_default'))
-
 
 
 class QoSPresetProfiles(Enum):
