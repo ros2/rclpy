@@ -270,6 +270,9 @@ class QoSHistoryPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
     KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
+#Alias with the old name, for retrocompatibility
+HistoryPolicy = QoSHistoryPolicy
+
 
 class QoSReliabilityPolicy(QoSPolicyEnum):
     """
@@ -285,6 +288,9 @@ class QoSReliabilityPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
     BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
+#Alias with the old name, for retrocompatibility
+ReliabilityPolicy = QoSReliabilityPolicy
+
 
 class QoSDurabilityPolicy(QoSPolicyEnum):
     """
@@ -299,6 +305,9 @@ class QoSDurabilityPolicy(QoSPolicyEnum):
     TRANSIENT_LOCAL = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
     VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
+
+#Alias with the old name, for retrocompatibility
+DurabilityPolicy = QoSDurabilityPolicy
 
 
 class QoSLivelinessPolicy(QoSPolicyEnum):
@@ -316,6 +325,9 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
     MANUAL_BY_NODE = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
     MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
+
+#Alias with the old name, for retrocompatibility
+LivelinessPolicy = QoSLivelinessPolicy
 
 
 class DeprecatedQoSProfile(QoSProfile):
