@@ -256,7 +256,7 @@ class QoSPolicyEnum(IntEnum):
         return cls[name.upper()].value
 
 
-class QoSHistoryPolicy(QoSPolicyEnum):
+class HistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
 
@@ -270,8 +270,11 @@ class QoSHistoryPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
     KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
+# Alias with the old name, for retrocompatibility is clearer.
+QoSHistoryPolicy = HistoryPolicy
 
-class QoSReliabilityPolicy(QoSPolicyEnum):
+
+class ReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
 
@@ -285,8 +288,11 @@ class QoSReliabilityPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
     BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
+# Alias with the old name, for retrocompatibility is clearer.
+QoSReliabilityPolicy = ReliabilityPolicy
 
-class QoSDurabilityPolicy(QoSPolicyEnum):
+
+class DurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
 
@@ -300,6 +306,9 @@ class QoSDurabilityPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
     VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
 
+# Alias with the old name, for retrocompatibility is clearer.
+QoSDurabilityPolicy = DurabilityPolicy
+
 
 class QoSLivelinessPolicy(QoSPolicyEnum):
     """
@@ -307,7 +316,7 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
 
     This enum matches the one defined in rmw/types.h
     """
-
+    
     RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT = 0
     SYSTEM_DEFAULT = RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT
     RMW_QOS_POLICY_LIVELINESS_AUTOMATIC = 1
@@ -316,6 +325,9 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
     MANUAL_BY_NODE = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
     MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
+    
+# Alias with the old name, for retrocompatibility is clearer.
+QoSLivelinessPolicy = LivelinessPolicy
 
 
 class DeprecatedQoSProfile(QoSProfile):
@@ -348,6 +360,7 @@ qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events'))
 qos_profile_action_status_default = QoSProfile(
     **_rclpy_action.rclpy_action_get_rmw_qos_profile('rcl_action_qos_profile_status_default'))
+
 
 
 class QoSPresetProfiles(Enum):
