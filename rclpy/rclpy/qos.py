@@ -362,8 +362,6 @@ qos_profile_action_status_default = QoSProfile(
     **_rclpy_action.rclpy_action_get_rmw_qos_profile('rcl_action_qos_profile_status_default'))
 
 
-
-
 class QoSPresetProfiles(Enum):
     SYSTEM_DEFAULT = qos_profile_system_default
     SENSOR_DATA = qos_profile_sensor_data
