@@ -329,6 +329,7 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
 # Alias with the old name, for retrocompatibility is clearer.
 QoSLivelinessPolicy = LivelinessPolicy
 
+
 class DeprecatedQoSProfile(QoSProfile):
 
     def __init__(self, qos_profile: QoSProfile, profile_name: str):
