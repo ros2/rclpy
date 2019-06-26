@@ -399,15 +399,17 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
         # Error cases.
+        # TODO(@jubeira): add failing test cases with invalid names once name
+        # validation is implemented.
         with self.assertRaises(ParameterAlreadyDeclaredException):
             self.node.declare_parameter(
                 'foo', 'raise', ParameterDescriptor())
         with self.assertRaises(InvalidParameterException):
             self.node.declare_parameter(
-                '123foo', 'raise', ParameterDescriptor())
+                '', 'raise', ParameterDescriptor())
         with self.assertRaises(InvalidParameterException):
             self.node.declare_parameter(
-                'foo??', 'raise', ParameterDescriptor())
+                '', 'raise', ParameterDescriptor())
 
         self.node.set_parameters_callback(self.reject_parameter_callback)
         with self.assertRaises(InvalidParameterValueException):
@@ -449,7 +451,7 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
-        result = self.node.declare_parameters('/namespace/', parameters)
+        result = self.node.declare_parameters('namespace', parameters)
 
         # OK cases.
         self.assertIsInstance(result, list)
@@ -459,9 +461,9 @@ class TestNode(unittest.TestCase):
         self.assertEqual(result[0].value, 42)
         self.assertEqual(result[1].value, 'hello')
         self.assertEqual(result[2].value, 2.41)
-        self.assertEqual(self.node.get_parameter('/namespace/foo').value, 42)
-        self.assertEqual(self.node.get_parameter('/namespace/bar').value, 'hello')
-        self.assertEqual(self.node.get_parameter('/namespace/baz').value, 2.41)
+        self.assertEqual(self.node.get_parameter('namespace.foo').value, 42)
+        self.assertEqual(self.node.get_parameter('namespace.bar').value, 'hello')
+        self.assertEqual(self.node.get_parameter('namespace.baz').value, 2.41)
 
         # Error cases.
         with self.assertRaises(ParameterAlreadyDeclaredException):
@@ -481,7 +483,7 @@ class TestNode(unittest.TestCase):
         parameters = [
             ('foobarbar', 44, ParameterDescriptor()),
             ('barbarbar', 'world', ParameterDescriptor()),
-            ('baz??wrong_name', 2.41, ParameterDescriptor()),
+            ('', 2.41, ParameterDescriptor()),
         ]
         with self.assertRaises(InvalidParameterException):
             self.node.declare_parameters('', parameters)
