@@ -256,7 +256,7 @@ class QoSPolicyEnum(IntEnum):
         return cls[name.upper()].value
 
 
-class QoSHistoryPolicy(QoSPolicyEnum):
+class HistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
 
@@ -270,8 +270,11 @@ class QoSHistoryPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
     KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
+#Alias with the old name, for retrocompatibility
+QoSHistoryPolicy = HistoryPolicy 
 
-class QoSReliabilityPolicy(QoSPolicyEnum):
+
+class ReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
 
@@ -285,8 +288,11 @@ class QoSReliabilityPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
     BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
+#Alias with the old name, for retrocompatibility
+QoSReliabilityPolicy = ReliabilityPolicy 
 
-class QoSDurabilityPolicy(QoSPolicyEnum):
+
+class DurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
 
@@ -300,8 +306,11 @@ class QoSDurabilityPolicy(QoSPolicyEnum):
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
     VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
 
+#Alias with the old name, for retrocompatibility
+QoSDurabilityPolicy = DurabilityPolicy 
 
-class QoSLivelinessPolicy(QoSPolicyEnum):
+
+class LivelinessPolicy(QoSPolicyEnum):
     """
     Enum for QoS Liveliness settings.
 
@@ -316,6 +325,9 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
     MANUAL_BY_NODE = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
     MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
+
+#Alias with the old name, for retrocompatibility
+QoSLivelinessPolicy = LivelinessPolicy 
 
 
 class DeprecatedQoSProfile(QoSProfile):
