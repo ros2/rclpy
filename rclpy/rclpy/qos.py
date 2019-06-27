@@ -256,7 +256,7 @@ class QoSPolicyEnum(IntEnum):
         return cls[name.upper()].value
 
 
-class QoSHistoryPolicy(QoSPolicyEnum):
+class HistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
 
@@ -274,7 +274,7 @@ class QoSHistoryPolicy(QoSPolicyEnum):
 QoSHistoryPolicy = HistoryPolicy 
 
 
-class QoSReliabilityPolicy(QoSPolicyEnum):
+class ReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
 
@@ -292,7 +292,7 @@ class QoSReliabilityPolicy(QoSPolicyEnum):
 QoSReliabilityPolicy = ReliabilityPolicy 
 
 
-class QoSDurabilityPolicy(QoSPolicyEnum):
+class DurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
 
@@ -310,7 +310,7 @@ class QoSDurabilityPolicy(QoSPolicyEnum):
 QoSDurabilityPolicy = DurabilityPolicy 
 
 
-class QoSLivelinessPolicy(QoSPolicyEnum):
+class LivelinessPolicy(QoSPolicyEnum):
     """
     Enum for QoS Liveliness settings.
 
