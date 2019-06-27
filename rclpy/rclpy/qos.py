@@ -271,7 +271,7 @@ class QoSHistoryPolicy(QoSPolicyEnum):
     KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
 
 #Alias with the old name, for retrocompatibility
-HistoryPolicy = QoSHistoryPolicy
+QoSHistoryPolicy = HistoryPolicy 
 
 
 class QoSReliabilityPolicy(QoSPolicyEnum):
@@ -289,7 +289,7 @@ class QoSReliabilityPolicy(QoSPolicyEnum):
     BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
 
 #Alias with the old name, for retrocompatibility
-ReliabilityPolicy = QoSReliabilityPolicy
+QoSReliabilityPolicy = ReliabilityPolicy 
 
 
 class QoSDurabilityPolicy(QoSPolicyEnum):
@@ -307,7 +307,7 @@ class QoSDurabilityPolicy(QoSPolicyEnum):
     VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
 
 #Alias with the old name, for retrocompatibility
-DurabilityPolicy = QoSDurabilityPolicy
+QoSDurabilityPolicy = DurabilityPolicy 
 
 
 class QoSLivelinessPolicy(QoSPolicyEnum):
@@ -327,7 +327,7 @@ class QoSLivelinessPolicy(QoSPolicyEnum):
     MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
 
 #Alias with the old name, for retrocompatibility
-LivelinessPolicy = QoSLivelinessPolicy
+QoSLivelinessPolicy = LivelinessPolicy 
 
 
 class DeprecatedQoSProfile(QoSProfile):
