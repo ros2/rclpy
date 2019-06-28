@@ -383,20 +383,25 @@ class TestNode(unittest.TestCase):
             'bar', 'hello', ParameterDescriptor())
         result_baz = self.node.declare_parameter(
             'baz', 2.41, ParameterDescriptor())
+        result_value_not_set = self.node.declare_parameter('value_not_set')
 
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
         self.assertIsInstance(result_foo, Parameter)
         self.assertIsInstance(result_bar, Parameter)
         self.assertIsInstance(result_baz, Parameter)
+        self.assertIsInstance(result_value_not_set, Parameter)
         self.assertEqual(result_initial_foo.value, 4321)
         self.assertEqual(result_foo.value, 42)
         self.assertEqual(result_bar.value, 'hello')
         self.assertEqual(result_baz.value, 2.41)
+        self.assertIsNone(result_value_not_set.value)
         self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
+        self.assertIsNone(self.node.get_parameter('value_not_set').value)
+        self.assertTrue(self.node.has_parameter('value_not_set'))
 
         # Error cases.
         # TODO(@jubeira): add failing test cases with invalid names once name
@@ -434,7 +439,8 @@ class TestNode(unittest.TestCase):
         parameters = [
             ('foo', 42, ParameterDescriptor()),
             ('bar', 'hello', ParameterDescriptor()),
-            ('baz', 2.41, ParameterDescriptor()),
+            ('baz', 2.41),
+            ('value_not_set',)
         ]
 
         result = self.node.declare_parameters('', parameters)
@@ -444,12 +450,16 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result[0], Parameter)
         self.assertIsInstance(result[1], Parameter)
         self.assertIsInstance(result[2], Parameter)
+        self.assertIsInstance(result[3], Parameter)
         self.assertEqual(result[0].value, 42)
         self.assertEqual(result[1].value, 'hello')
         self.assertEqual(result[2].value, 2.41)
+        self.assertIsNone(result[3].value)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
+        self.assertIsNone(self.node.get_parameter('value_not_set').value)
+        self.assertTrue(self.node.has_parameter('value_not_set'))
 
         result = self.node.declare_parameters('namespace', parameters)
 
@@ -458,12 +468,16 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result[0], Parameter)
         self.assertIsInstance(result[1], Parameter)
         self.assertIsInstance(result[2], Parameter)
+        self.assertIsInstance(result[3], Parameter)
         self.assertEqual(result[0].value, 42)
         self.assertEqual(result[1].value, 'hello')
         self.assertEqual(result[2].value, 2.41)
+        self.assertIsNone(result[3].value)
         self.assertEqual(self.node.get_parameter('namespace.foo').value, 42)
         self.assertEqual(self.node.get_parameter('namespace.bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('namespace.baz').value, 2.41)
+        self.assertIsNone(self.node.get_parameter('namespace.value_not_set').value)
+        self.assertTrue(self.node.has_parameter('namespace.value_not_set'))
 
         # Error cases.
         with self.assertRaises(ParameterAlreadyDeclaredException):
