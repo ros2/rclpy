@@ -1464,7 +1464,7 @@ class Node:
         self,
         node_name: str,
         node_namespace: str
-    ) -> List[Tuple[std, List[str]]]:
+    ) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered service client topics for a remote node.
 
