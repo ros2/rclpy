@@ -3153,6 +3153,54 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
   return pyservice_names_and_types;
 }
 
+/// Get a list of service client names and types associated with the given node name.
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RuntimeError if there is an rcl error
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] node_name of a remote node to get publishers for
+ * \return Python list of tuples.
+ *   The first element of each tuple is the service name (string) and the second element
+ *   is a list of service types (list of strings).
+*/
+static PyObject *
+rclpy_get_client_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  char * node_name;
+  char * node_namespace;
+
+  if (!PyArg_ParseTuple(args, "Oss", &pynode, &node_name, &node_namespace)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  rcl_names_and_types_t client_names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret =
+    rcl_get_client_names_and_types_by_node(node, &allocator, node_name, node_namespace,
+      &client_names_and_types);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get_client_names_and_types: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * pyclient_names_and_types = rclpy_convert_to_py_names_and_types(
+    &client_names_and_types);
+  if (!rclpy_names_and_types_fini(&client_names_and_types)) {
+    Py_XDECREF(pyclient_names_and_types);
+    return NULL;
+  }
+  return pyclient_names_and_types;
+}
+
 /// Get a list of topic names and types having at least one subscription from the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
@@ -4811,6 +4859,11 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_get_service_names_and_types_by_node", rclpy_get_service_names_and_types_by_node,
     METH_VARARGS,
     "Get service list of specified node from graph API."
+  },
+  {
+    "rclpy_get_client_names_and_types_by_node", rclpy_get_client_names_and_types_by_node,
+    METH_VARARGS,
+    "Get a service client list of a specified node from graph API."
   },
   {
     "rclpy_get_topic_names_and_types", rclpy_get_topic_names_and_types, METH_VARARGS,

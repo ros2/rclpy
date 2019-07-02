@@ -1460,6 +1460,24 @@ class Node:
             return _rclpy.rclpy_get_service_names_and_types_by_node(
                 capsule, node_name, node_namespace)
 
+    def get_client_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str
+    ) -> List[Tuple[std, List[str]]]:
+        """
+        Get a list of discovered service client topics for a remote node.
+
+        :param node_name: Name of a remote node to get services for.
+        :param node_namespace: Namespace of the remode node.
+        :return: List of tuples.
+          The fist element of each tuple is the service name and the second element is a list of
+          service types.
+        """
+        with self.handle as capsule:
+            return _rclpy.rclpy_get_client_names_and_types_by_node(
+                capsule, node_name, node_namespace)
+
     def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, List[str]]]:
         """
         Get a list topic names and types for the node.
