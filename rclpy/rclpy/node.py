@@ -1469,7 +1469,7 @@ class Node:
         Get a list of discovered service client topics for a remote node.
 
         :param node_name: Name of a remote node to get service clients for.
-        :param node_namespace: Namespace of the remode node.
+        :param node_namespace: Namespace of the remote node.
         :return: List of tuples.
           The fist element of each tuple is the service client name and the second element is a list of
           service client types.
