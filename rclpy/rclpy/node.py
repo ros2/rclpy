@@ -1448,7 +1448,7 @@ class Node:
         node_namespace: str
     ) -> List[Tuple[str, List[str]]]:
         """
-        Get a list of discovered service sever topics for a remote node.
+        Get a list of discovered service server topics for a remote node.
 
         :param node_name: Name of a remote node to get services for.
         :param node_namespace: Namespace of the remote node.
