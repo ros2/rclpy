@@ -206,6 +206,16 @@ class TestTime(unittest.TestCase):
         time3 = Time.from_msg(builtins_msg.time_value, clock_type=ClockType.SYSTEM_TIME)
         assert time3.clock_type == ClockType.SYSTEM_TIME
 
+    def test_time_message_conversions_big_nanoseconds(self):
+        time1 = Time(nanoseconds=1553575413247045598, clock_type=ClockType.ROS_TIME)
+        builtins_msg = Builtins()
+        builtins_msg.time_value = time1.to_msg()
+
+        # Default clock type resulting from from_msg will be ROS time
+        time2 = Time.from_msg(builtins_msg.time_value)
+        assert isinstance(time2, Time)
+        assert time1 == time2
+
     def test_duration_message_conversions(self):
         duration = Duration(nanoseconds=1)
         builtins_msg = Builtins()
