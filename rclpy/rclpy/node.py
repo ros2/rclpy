@@ -1448,13 +1448,13 @@ class Node:
         node_namespace: str
     ) -> List[Tuple[str, List[str]]]:
         """
-        Get a list of discovered service topics for a remote node.
+        Get a list of discovered service sever topics for a remote node.
 
         :param node_name: Name of a remote node to get services for.
         :param node_namespace: Namespace of the remote node.
         :return: List of tuples.
-          The first element of each tuple is the service name and the second element is a list of
-          service types.
+          The first element of each tuple is the service server name
+          and the second element is a list of service types.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_service_names_and_types_by_node(
@@ -1471,8 +1471,8 @@ class Node:
         :param node_name: Name of a remote node to get service clients for.
         :param node_namespace: Namespace of the remote node.
         :return: List of tuples.
-          The fist element of each tuple is the service client name and the second element is a list of
-          service client types.
+          The fist element of each tuple is the service client name
+          and the second element is a list of service client types.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_client_names_and_types_by_node(

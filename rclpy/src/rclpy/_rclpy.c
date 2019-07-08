@@ -3141,6 +3141,7 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
     PyErr_Format(PyExc_RuntimeError,
       "Failed to get_service_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
+    rclpy_names_and_types_fini(&service_names_and_types);
     return NULL;
   }
 
@@ -3189,6 +3190,7 @@ rclpy_get_client_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * 
     PyErr_Format(PyExc_RuntimeError,
       "Failed to get_client_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
+    rclpy_names_and_types_fini(&client_names_and_types);
     return NULL;
   }
 
