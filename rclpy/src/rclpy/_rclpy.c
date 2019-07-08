@@ -4858,7 +4858,7 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_service_names_and_types_by_node", rclpy_get_service_names_and_types_by_node,
     METH_VARARGS,
-    "Get service list of specified node from graph API."
+    "Get service server list of specified node from graph API."
   },
   {
     "rclpy_get_client_names_and_types_by_node", rclpy_get_client_names_and_types_by_node,
