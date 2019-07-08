@@ -215,9 +215,6 @@ class TestTime(unittest.TestCase):
         time2 = Time.from_msg(builtins_msg.time_value)
         assert isinstance(time2, Time)
         assert time1 == time2
-        # Clock type can be specified if appropriate
-        time3 = Time.from_msg(builtins_msg.time_value, clock_type=ClockType.SYSTEM_TIME)
-        assert time3.clock_type == ClockType.SYSTEM_TIME
 
     def test_duration_message_conversions(self):
         duration = Duration(nanoseconds=1)
