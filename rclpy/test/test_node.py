@@ -179,7 +179,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_service_names_and_types_by_node(self):
         # test that it doesnt raise
         self.node.get_service_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
-        
+
     def test_client_names_and_types_by_node(self):
         # test that it doesnt raise
         self.node.get_client_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
@@ -611,6 +611,56 @@ class TestNode(unittest.TestCase):
             'initial_foo', Parameter('foo', Parameter.Type.INTEGER, 152))
         self.assertEqual(result.name, 'foo')
         self.assertEqual(result.value, 152)
+
+    def test_node_get_parameters_by_prefix(self):
+        parameters = [
+            ('foo.foo', 43),
+            ('foo.bar', 'hello'),
+            ('foo.baz', 2.41),
+            ('bar.foo', 1),
+            ('bar.bar', 12.3),
+            ('bar.baz', 'world'),
+        ]
+        self.node.declare_parameters('', parameters)
+
+        parameters = self.node.get_parameters_by_prefix('foo')
+        self.assertIsInstance(parameters, list)
+        self.assertEqual(len(parameters), 3)
+        self.assertIsInstance(parameters[0], Parameter)
+        self.assertIsInstance(parameters[1], Parameter)
+        self.assertIsInstance(parameters[2], Parameter)
+        self.assertTrue(self.node.get_parameter('foo.foo') in parameters)
+        self.assertTrue(self.node.get_parameter('foo.bar') in parameters)
+        self.assertTrue(self.node.get_parameter('foo.baz') in parameters)
+
+        parameters = self.node.get_parameters_by_prefix('bar')
+        self.assertIsInstance(parameters, list)
+        self.assertEqual(len(parameters), 3)
+        self.assertIsInstance(parameters[0], Parameter)
+        self.assertIsInstance(parameters[1], Parameter)
+        self.assertIsInstance(parameters[2], Parameter)
+        self.assertTrue(self.node.get_parameter('bar.foo') in parameters)
+        self.assertTrue(self.node.get_parameter('bar.bar') in parameters)
+        self.assertTrue(self.node.get_parameter('bar.baz') in parameters)
+
+        parameters = self.node.get_parameters_by_prefix('')
+        self.assertIsInstance(parameters, list)
+        self.assertEqual(len(parameters), 6)
+        self.assertIsInstance(parameters[0], Parameter)
+        self.assertIsInstance(parameters[1], Parameter)
+        self.assertIsInstance(parameters[2], Parameter)
+        self.assertIsInstance(parameters[3], Parameter)
+        self.assertIsInstance(parameters[4], Parameter)
+        self.assertIsInstance(parameters[5], Parameter)
+        self.assertTrue(self.node.get_parameter('foo.foo') in parameters)
+        self.assertTrue(self.node.get_parameter('foo.bar') in parameters)
+        self.assertTrue(self.node.get_parameter('foo.baz') in parameters)
+        self.assertTrue(self.node.get_parameter('bar.foo') in parameters)
+        self.assertTrue(self.node.get_parameter('bar.bar') in parameters)
+        self.assertTrue(self.node.get_parameter('bar.baz') in parameters)
+
+        parameters = self.node.get_parameters_by_prefix('baz')
+        self.assertFalse(parameters)
 
     def test_node_set_parameters(self):
         integer_value = 42

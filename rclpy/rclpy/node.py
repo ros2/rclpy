@@ -503,6 +503,28 @@ class Node:
 
         return self._parameters.get(name, alternative_value)
 
+    def get_parameters_by_prefix(self, prefix: str) -> List[Parameter]:
+        """
+        Get parameters that have a given prefix in their names.
+
+        For example, if you use the prefix "foo" and the parameters "foo.ping", "foo.pong"
+        and "bar.baz" exist, then the returned list will have the parameters "foo.ping" and
+        "foo.pong".
+
+        An empty string for the prefix will match all parameters.
+
+        If no parameters with the prefix are found, an empty list will be returned.
+
+        :param prefix: The prefix of the parameters to get.
+        :return: List of parameters with the given prefix.
+        """
+        parameters_with_prefix = []
+        for parameter_name in self._parameters:
+            if parameter_name.startswith(prefix):
+                parameters_with_prefix.append(self._parameters.get(parameter_name))
+
+        return parameters_with_prefix
+
     def set_parameters(self, parameter_list: List[Parameter]) -> List[SetParametersResult]:
         """
         Set parameters for the node, and return the result for the set action.
