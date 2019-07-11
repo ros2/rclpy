@@ -179,7 +179,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_service_names_and_types_by_node(self):
         # test that it doesnt raise
         self.node.get_service_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
-        
+
     def test_client_names_and_types_by_node(self):
         # test that it doesnt raise
         self.node.get_client_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
