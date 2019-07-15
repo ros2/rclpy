@@ -53,7 +53,7 @@ from rclpy.handle import Handle
 from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
-from rclpy.parameter import Parameter
+from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import DeprecatedQoSProfile
@@ -505,23 +505,29 @@ class Node:
 
     def get_parameters_by_prefix(self, prefix: str) -> List[Parameter]:
         """
-        Get parameters that have a given prefix in their names.
+        Get parameters that have a given prefix in their names as a dictionary.
 
+        The names which are used as keys in the returned dictionary have the prefix removed.
         For example, if you use the prefix "foo" and the parameters "foo.ping", "foo.pong"
-        and "bar.baz" exist, then the returned list will have the parameters "foo.ping" and
-        "foo.pong".
+        and "bar.baz" exist, then the returned dictionary will have the keys "ping" and "pong".
+        Note that the parameter separator is also removed from the parameter name to create the
+        keys.
 
         An empty string for the prefix will match all parameters.
 
-        If no parameters with the prefix are found, an empty list will be returned.
+        If no parameters with the prefix are found, an empty dictionary will be returned.
 
         :param prefix: The prefix of the parameters to get.
-        :return: List of parameters with the given prefix.
+        :return: Dict of parameters with the given prefix.
         """
-        parameters_with_prefix = []
+        parameters_with_prefix = {}
+        if prefix:
+            prefix = prefix + PARAMETER_SEPARATOR_STRING
+        prefix_len = len(prefix)
         for parameter_name in self._parameters:
             if parameter_name.startswith(prefix):
-                parameters_with_prefix.append(self._parameters.get(parameter_name))
+                parameters_with_prefix.update(
+                    {parameter_name[prefix_len:]: self._parameters.get(parameter_name)})
 
         return parameters_with_prefix
 

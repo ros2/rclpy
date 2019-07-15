@@ -624,43 +624,47 @@ class TestNode(unittest.TestCase):
         self.node.declare_parameters('', parameters)
 
         parameters = self.node.get_parameters_by_prefix('foo')
-        self.assertIsInstance(parameters, list)
+        self.assertIsInstance(parameters, dict)
         self.assertEqual(len(parameters), 3)
-        self.assertIsInstance(parameters[0], Parameter)
-        self.assertIsInstance(parameters[1], Parameter)
-        self.assertIsInstance(parameters[2], Parameter)
-        self.assertTrue(self.node.get_parameter('foo.foo') in parameters)
-        self.assertTrue(self.node.get_parameter('foo.bar') in parameters)
-        self.assertTrue(self.node.get_parameter('foo.baz') in parameters)
+        self.assertDictEqual(
+            parameters,
+            {
+                'foo': self.node.get_parameter('foo.foo'),
+                'bar': self.node.get_parameter('foo.bar'),
+                'baz': self.node.get_parameter('foo.baz')
+            }
+        )
 
         parameters = self.node.get_parameters_by_prefix('bar')
-        self.assertIsInstance(parameters, list)
+        self.assertIsInstance(parameters, dict)
         self.assertEqual(len(parameters), 3)
-        self.assertIsInstance(parameters[0], Parameter)
-        self.assertIsInstance(parameters[1], Parameter)
-        self.assertIsInstance(parameters[2], Parameter)
-        self.assertTrue(self.node.get_parameter('bar.foo') in parameters)
-        self.assertTrue(self.node.get_parameter('bar.bar') in parameters)
-        self.assertTrue(self.node.get_parameter('bar.baz') in parameters)
+        self.assertDictEqual(
+            parameters,
+            {
+                'foo': self.node.get_parameter('bar.foo'),
+                'bar': self.node.get_parameter('bar.bar'),
+                'baz': self.node.get_parameter('bar.baz')
+            }
+        )
 
         parameters = self.node.get_parameters_by_prefix('')
-        self.assertIsInstance(parameters, list)
+        self.assertIsInstance(parameters, dict)
         self.assertEqual(len(parameters), 6)
-        self.assertIsInstance(parameters[0], Parameter)
-        self.assertIsInstance(parameters[1], Parameter)
-        self.assertIsInstance(parameters[2], Parameter)
-        self.assertIsInstance(parameters[3], Parameter)
-        self.assertIsInstance(parameters[4], Parameter)
-        self.assertIsInstance(parameters[5], Parameter)
-        self.assertTrue(self.node.get_parameter('foo.foo') in parameters)
-        self.assertTrue(self.node.get_parameter('foo.bar') in parameters)
-        self.assertTrue(self.node.get_parameter('foo.baz') in parameters)
-        self.assertTrue(self.node.get_parameter('bar.foo') in parameters)
-        self.assertTrue(self.node.get_parameter('bar.bar') in parameters)
-        self.assertTrue(self.node.get_parameter('bar.baz') in parameters)
+        self.assertDictEqual(
+            parameters,
+            {
+                'foo.foo': self.node.get_parameter('foo.foo'),
+                'foo.bar': self.node.get_parameter('foo.bar'),
+                'foo.baz': self.node.get_parameter('foo.baz'),
+                'bar.foo': self.node.get_parameter('bar.foo'),
+                'bar.bar': self.node.get_parameter('bar.bar'),
+                'bar.baz': self.node.get_parameter('bar.baz')
+            }
+        )
 
         parameters = self.node.get_parameters_by_prefix('baz')
         self.assertFalse(parameters)
+        self.assertIsInstance(parameters, dict)
 
     def test_node_set_parameters(self):
         integer_value = 42
