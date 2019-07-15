@@ -614,36 +614,36 @@ class TestNode(unittest.TestCase):
 
     def test_node_get_parameters_by_prefix(self):
         parameters = [
-            ('foo.foo', 43),
-            ('foo.bar', 'hello'),
-            ('foo.baz', 2.41),
-            ('bar.foo', 1),
-            ('bar.bar', 12.3),
-            ('bar.baz', 'world'),
+            ('foo_prefix.foo', 43),
+            ('foo_prefix.bar', 'hello'),
+            ('foo_prefix.baz', 2.41),
+            ('bar_prefix.foo', 1),
+            ('bar_prefix.bar', 12.3),
+            ('bar_prefix.baz', 'world'),
         ]
         self.node.declare_parameters('', parameters)
 
-        parameters = self.node.get_parameters_by_prefix('foo')
+        parameters = self.node.get_parameters_by_prefix('foo_prefix')
         self.assertIsInstance(parameters, dict)
         self.assertEqual(len(parameters), 3)
         self.assertDictEqual(
             parameters,
             {
-                'foo': self.node.get_parameter('foo.foo'),
-                'bar': self.node.get_parameter('foo.bar'),
-                'baz': self.node.get_parameter('foo.baz')
+                'foo': self.node.get_parameter('foo_prefix.foo'),
+                'bar': self.node.get_parameter('foo_prefix.bar'),
+                'baz': self.node.get_parameter('foo_prefix.baz')
             }
         )
 
-        parameters = self.node.get_parameters_by_prefix('bar')
+        parameters = self.node.get_parameters_by_prefix('bar_prefix')
         self.assertIsInstance(parameters, dict)
         self.assertEqual(len(parameters), 3)
         self.assertDictEqual(
             parameters,
             {
-                'foo': self.node.get_parameter('bar.foo'),
-                'bar': self.node.get_parameter('bar.bar'),
-                'baz': self.node.get_parameter('bar.baz')
+                'foo': self.node.get_parameter('bar_prefix.foo'),
+                'bar': self.node.get_parameter('bar_prefix.bar'),
+                'baz': self.node.get_parameter('bar_prefix.baz')
             }
         )
 
@@ -653,12 +653,12 @@ class TestNode(unittest.TestCase):
         self.assertDictEqual(
             parameters,
             {
-                'foo.foo': self.node.get_parameter('foo.foo'),
-                'foo.bar': self.node.get_parameter('foo.bar'),
-                'foo.baz': self.node.get_parameter('foo.baz'),
-                'bar.foo': self.node.get_parameter('bar.foo'),
-                'bar.bar': self.node.get_parameter('bar.bar'),
-                'bar.baz': self.node.get_parameter('bar.baz')
+                'foo_prefix.foo': self.node.get_parameter('foo_prefix.foo'),
+                'foo_prefix.bar': self.node.get_parameter('foo_prefix.bar'),
+                'foo_prefix.baz': self.node.get_parameter('foo_prefix.baz'),
+                'bar_prefix.foo': self.node.get_parameter('bar_prefix.foo'),
+                'bar_prefix.bar': self.node.get_parameter('bar_prefix.bar'),
+                'bar_prefix.baz': self.node.get_parameter('bar_prefix.baz')
             }
         )
 
