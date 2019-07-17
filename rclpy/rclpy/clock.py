@@ -208,7 +208,7 @@ class ROSClock(Clock):
     def set_ros_time_override(self, time):
         from rclpy.time import Time
         if not isinstance(time, Time):
-            TypeError(
+            raise TypeError(
                 'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
         with self.handle as clock_capsule:
             _rclpy.rclpy_clock_set_ros_time_override(clock_capsule, time._time_handle)
