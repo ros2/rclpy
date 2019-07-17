@@ -612,6 +612,60 @@ class TestNode(unittest.TestCase):
         self.assertEqual(result.name, 'foo')
         self.assertEqual(result.value, 152)
 
+    def test_node_get_parameters_by_prefix(self):
+        parameters = [
+            ('foo_prefix.foo', 43),
+            ('foo_prefix.bar', 'hello'),
+            ('foo_prefix.baz', 2.41),
+            ('bar_prefix.foo', 1),
+            ('bar_prefix.bar', 12.3),
+            ('bar_prefix.baz', 'world'),
+        ]
+        self.node.declare_parameters('', parameters)
+
+        parameters = self.node.get_parameters_by_prefix('foo_prefix')
+        self.assertIsInstance(parameters, dict)
+        self.assertEqual(len(parameters), 3)
+        self.assertDictEqual(
+            parameters,
+            {
+                'foo': self.node.get_parameter('foo_prefix.foo'),
+                'bar': self.node.get_parameter('foo_prefix.bar'),
+                'baz': self.node.get_parameter('foo_prefix.baz')
+            }
+        )
+
+        parameters = self.node.get_parameters_by_prefix('bar_prefix')
+        self.assertIsInstance(parameters, dict)
+        self.assertEqual(len(parameters), 3)
+        self.assertDictEqual(
+            parameters,
+            {
+                'foo': self.node.get_parameter('bar_prefix.foo'),
+                'bar': self.node.get_parameter('bar_prefix.bar'),
+                'baz': self.node.get_parameter('bar_prefix.baz')
+            }
+        )
+
+        parameters = self.node.get_parameters_by_prefix('')
+        self.assertIsInstance(parameters, dict)
+        self.assertEqual(len(parameters), 6)
+        self.assertDictEqual(
+            parameters,
+            {
+                'foo_prefix.foo': self.node.get_parameter('foo_prefix.foo'),
+                'foo_prefix.bar': self.node.get_parameter('foo_prefix.bar'),
+                'foo_prefix.baz': self.node.get_parameter('foo_prefix.baz'),
+                'bar_prefix.foo': self.node.get_parameter('bar_prefix.foo'),
+                'bar_prefix.bar': self.node.get_parameter('bar_prefix.bar'),
+                'bar_prefix.baz': self.node.get_parameter('bar_prefix.baz')
+            }
+        )
+
+        parameters = self.node.get_parameters_by_prefix('baz')
+        self.assertFalse(parameters)
+        self.assertIsInstance(parameters, dict)
+
     def test_node_set_parameters(self):
         integer_value = 42
         string_value = 'hello'

@@ -53,7 +53,7 @@ from rclpy.handle import Handle
 from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
-from rclpy.parameter import Parameter
+from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import DeprecatedQoSProfile
@@ -502,6 +502,34 @@ class Node:
             alternative_value = Parameter(name, Parameter.Type.NOT_SET)
 
         return self._parameters.get(name, alternative_value)
+
+    def get_parameters_by_prefix(self, prefix: str) -> List[Parameter]:
+        """
+        Get parameters that have a given prefix in their names as a dictionary.
+
+        The names which are used as keys in the returned dictionary have the prefix removed.
+        For example, if you use the prefix "foo" and the parameters "foo.ping", "foo.pong"
+        and "bar.baz" exist, then the returned dictionary will have the keys "ping" and "pong".
+        Note that the parameter separator is also removed from the parameter name to create the
+        keys.
+
+        An empty string for the prefix will match all parameters.
+
+        If no parameters with the prefix are found, an empty dictionary will be returned.
+
+        :param prefix: The prefix of the parameters to get.
+        :return: Dict of parameters with the given prefix.
+        """
+        parameters_with_prefix = {}
+        if prefix:
+            prefix = prefix + PARAMETER_SEPARATOR_STRING
+        prefix_len = len(prefix)
+        for parameter_name in self._parameters:
+            if parameter_name.startswith(prefix):
+                parameters_with_prefix.update(
+                    {parameter_name[prefix_len:]: self._parameters.get(parameter_name)})
+
+        return parameters_with_prefix
 
     def set_parameters(self, parameter_list: List[Parameter]) -> List[SetParametersResult]:
         """
