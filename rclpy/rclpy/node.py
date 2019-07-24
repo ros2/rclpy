@@ -301,7 +301,8 @@ class Node:
         self,
         name: str,
         value: Any = None,
-        descriptor: ParameterDescriptor = ParameterDescriptor()
+        descriptor: ParameterDescriptor = ParameterDescriptor(),
+        ignore_override: bool = False
     ) -> Parameter:
         """
         Declare and initialize a parameter.
@@ -312,12 +313,13 @@ class Node:
         :param name: Fully-qualified name of the parameter, including its namespace.
         :param value: Value of the parameter to declare.
         :param descriptor: Descriptor for the parameter to declare.
+        :param ignore_override: True if overrides shall not be taken into account; False otherwise.
         :return: Parameter with the effectively assigned value.
         :raises: ParameterAlreadyDeclaredException if the parameter had already been declared.
         :raises: InvalidParameterException if the parameter name is invalid.
         :raises: InvalidParameterValueException if the registered callback rejects the parameter.
         """
-        return self.declare_parameters('', [(name, value, descriptor)])[0]
+        return self.declare_parameters('', [(name, value, descriptor)], ignore_override)[0]
 
     def declare_parameters(
         self,
@@ -326,7 +328,8 @@ class Node:
             Tuple[str],
             Tuple[str, Any],
             Tuple[str, Any, ParameterDescriptor],
-        ]]
+        ]],
+        ignore_override: bool = False
     ) -> List[Parameter]:
         """
         Declare a list of parameters.
@@ -354,6 +357,7 @@ class Node:
 
         :param namespace: Namespace for parameters.
         :param parameters: List of tuples with parameters to declare.
+        :param ignore_override: True if overrides shall not be taken into account; False otherwise.
         :return: Parameter list with the effectively assigned values for each of them.
         :raises: ParameterAlreadyDeclaredException if the parameter had already been declared.
         :raises: InvalidParameterException if the parameter name is invalid.
@@ -384,7 +388,7 @@ class Node:
                     )
 
                 # Get value from parameter overrides, of from tuple if it doesn't exist.
-                if name in self._parameter_overrides:
+                if not ignore_override and name in self._parameter_overrides:
                     value = self._parameter_overrides[name].value
                 else:
                     # This raises a TypeError if it's not possible to get a type from the tuple.
@@ -545,6 +549,7 @@ class Node:
 
         If undeclared parameters are allowed, then all the parameters will be implicitly
         declared before being set even if they were not declared beforehand.
+        Parameter overrides are ignored by this method.
 
         If a callback was registered previously with :func:`set_parameters_callback`, it will be
         called prior to setting the parameters for the node, once for each parameter.
