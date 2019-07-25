@@ -385,6 +385,8 @@ class TestNode(unittest.TestCase):
     def test_declare_parameter(self):
         result_initial_foo = self.node.declare_parameter(
             'initial_foo', ParameterValue(), ParameterDescriptor())
+        result_initial_bar = self.node.declare_parameter(
+            'initial_bar', 'ignoring_override', ParameterDescriptor(), ignore_override=True)
         result_foo = self.node.declare_parameter(
             'foo', 42, ParameterDescriptor())
         result_bar = self.node.declare_parameter(
@@ -395,16 +397,20 @@ class TestNode(unittest.TestCase):
 
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
+        self.assertIsInstance(result_initial_bar, Parameter)
         self.assertIsInstance(result_foo, Parameter)
         self.assertIsInstance(result_bar, Parameter)
         self.assertIsInstance(result_baz, Parameter)
         self.assertIsInstance(result_value_not_set, Parameter)
+        # initial_foo gets the override value; initial_bar does not.
         self.assertEqual(result_initial_foo.value, 4321)
+        self.assertEqual(result_initial_bar.value, 'ignoring_override')
         self.assertEqual(result_foo.value, 42)
         self.assertEqual(result_bar.value, 'hello')
         self.assertEqual(result_baz.value, 2.41)
         self.assertIsNone(result_value_not_set.value)
         self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
+        self.assertEqual(self.node.get_parameter('initial_bar').value, 'ignoring_override')
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
@@ -445,6 +451,7 @@ class TestNode(unittest.TestCase):
 
     def test_declare_parameters(self):
         parameters = [
+            ('initial_foo', 0, ParameterDescriptor()),
             ('foo', 42, ParameterDescriptor()),
             ('bar', 'hello', ParameterDescriptor()),
             ('baz', 2.41),
@@ -453,16 +460,20 @@ class TestNode(unittest.TestCase):
 
         result = self.node.declare_parameters('', parameters)
 
-        # OK cases.
+        # OK cases - using overrides.
         self.assertIsInstance(result, list)
+        self.assertEqual(len(result), len(parameters))
         self.assertIsInstance(result[0], Parameter)
         self.assertIsInstance(result[1], Parameter)
         self.assertIsInstance(result[2], Parameter)
         self.assertIsInstance(result[3], Parameter)
-        self.assertEqual(result[0].value, 42)
-        self.assertEqual(result[1].value, 'hello')
-        self.assertEqual(result[2].value, 2.41)
-        self.assertIsNone(result[3].value)
+        self.assertIsInstance(result[4], Parameter)
+        self.assertEqual(result[0].value, 4321)
+        self.assertEqual(result[1].value, 42)
+        self.assertEqual(result[2].value, 'hello')
+        self.assertEqual(result[3].value, 2.41)
+        self.assertIsNone(result[4].value)
+        self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
@@ -473,19 +484,40 @@ class TestNode(unittest.TestCase):
 
         # OK cases.
         self.assertIsInstance(result, list)
+        self.assertEqual(len(result), len(parameters))
         self.assertIsInstance(result[0], Parameter)
         self.assertIsInstance(result[1], Parameter)
         self.assertIsInstance(result[2], Parameter)
         self.assertIsInstance(result[3], Parameter)
-        self.assertEqual(result[0].value, 42)
-        self.assertEqual(result[1].value, 'hello')
-        self.assertEqual(result[2].value, 2.41)
-        self.assertIsNone(result[3].value)
+        self.assertIsInstance(result[4], Parameter)
+        self.assertEqual(result[0].value, 4321)
+        self.assertEqual(result[1].value, 42)
+        self.assertEqual(result[2].value, 'hello')
+        self.assertEqual(result[3].value, 2.41)
+        self.assertIsNone(result[4].value)
+        self.assertEqual(self.node.get_parameter('namespace.initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('namespace.foo').value, 42)
         self.assertEqual(self.node.get_parameter('namespace.bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('namespace.baz').value, 2.41)
         self.assertIsNone(self.node.get_parameter('namespace.value_not_set').value)
         self.assertTrue(self.node.has_parameter('namespace.value_not_set'))
+
+        parameters = [
+            ('initial_bar', 'ignoring_override', ParameterDescriptor()),
+            ('initial_baz', 'ignoring_override_again', ParameterDescriptor()),
+        ]
+
+        result = self.node.declare_parameters('', parameters, ignore_override=True)
+
+        # OK cases - ignoring overrides.
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), len(parameters))
+        self.assertIsInstance(result[0], Parameter)
+        self.assertIsInstance(result[1], Parameter)
+        self.assertEqual(result[0].value, 'ignoring_override')
+        self.assertEqual(result[1].value, 'ignoring_override_again')
+        self.assertEqual(self.node.get_parameter('initial_bar').value, 'ignoring_override')
+        self.assertEqual(self.node.get_parameter('initial_baz').value, 'ignoring_override_again')
 
         # Error cases.
         with self.assertRaises(ParameterAlreadyDeclaredException):
