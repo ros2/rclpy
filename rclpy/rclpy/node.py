@@ -164,11 +164,6 @@ class Node:
         with self.handle as capsule:
             self._logger = get_logger(_rclpy.rclpy_get_node_logger_name(capsule))
 
-        # Clock that has support for ROS time.
-        self._clock = ROSClock()
-        self._time_source = TimeSource(node=self)
-        self._time_source.attach_clock(self._clock)
-
         self.__executor_weakref = None
 
         self._parameter_event_publisher = self.create_publisher(
@@ -184,6 +179,11 @@ class Node:
         if automatically_declare_parameters_from_overrides:
             self._parameters.update(self._parameter_overrides)
             self._descriptors.update({p: ParameterDescriptor() for p in self._parameters})
+
+        # Clock that has support for ROS time.
+        self._clock = ROSClock()
+        self._time_source = TimeSource(node=self)
+        self._time_source.attach_clock(self._clock)
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)

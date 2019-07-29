@@ -36,6 +36,7 @@ from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.time_source import USE_SIM_TIME_NAME
 from test_msgs.msg import BasicTypes
 
 TEST_NODE = 'my_node'
@@ -586,6 +587,24 @@ class TestNode(unittest.TestCase):
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
 
+    def test_use_sim_time(self):
+        self.assertTrue(self.node.has_parameter(USE_SIM_TIME_NAME))
+        self.assertFalse(self.node.get_parameter(USE_SIM_TIME_NAME).value)
+
+        temp_node = rclpy.create_node(
+            TEST_NODE + '2',
+            namespace=TEST_NAMESPACE,
+            context=self.context,
+            parameter_overrides=[
+                Parameter(USE_SIM_TIME_NAME, value=True),
+            ],
+            automatically_declare_parameters_from_overrides=False
+        )
+        # use_sim_time is declared automatically anyways; in this case using override value.
+        self.assertTrue(temp_node.has_parameter(USE_SIM_TIME_NAME))
+        self.assertTrue(temp_node.get_parameter(USE_SIM_TIME_NAME).value)
+        temp_node.destroy_node()
+
     def test_node_undeclare_parameter_has_parameter(self):
         # Undeclare unexisting parameter.
         with self.assertRaises(ParameterNotDeclaredException):
@@ -681,7 +700,7 @@ class TestNode(unittest.TestCase):
 
         parameters = self.node.get_parameters_by_prefix('')
         self.assertIsInstance(parameters, dict)
-        self.assertEqual(len(parameters), 6)
+        # use_sim_time is automatically declared.
         self.assertDictEqual(
             parameters,
             {
@@ -690,7 +709,8 @@ class TestNode(unittest.TestCase):
                 'foo_prefix.baz': self.node.get_parameter('foo_prefix.baz'),
                 'bar_prefix.foo': self.node.get_parameter('bar_prefix.foo'),
                 'bar_prefix.bar': self.node.get_parameter('bar_prefix.bar'),
-                'bar_prefix.baz': self.node.get_parameter('bar_prefix.baz')
+                'bar_prefix.baz': self.node.get_parameter('bar_prefix.baz'),
+                USE_SIM_TIME_NAME : self.node.get_parameter(USE_SIM_TIME_NAME)
             }
         )
 
