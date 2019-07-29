@@ -710,7 +710,7 @@ class TestNode(unittest.TestCase):
                 'bar_prefix.foo': self.node.get_parameter('bar_prefix.foo'),
                 'bar_prefix.bar': self.node.get_parameter('bar_prefix.bar'),
                 'bar_prefix.baz': self.node.get_parameter('bar_prefix.baz'),
-                USE_SIM_TIME_NAME : self.node.get_parameter(USE_SIM_TIME_NAME)
+                USE_SIM_TIME_NAME: self.node.get_parameter(USE_SIM_TIME_NAME)
             }
         )
 
