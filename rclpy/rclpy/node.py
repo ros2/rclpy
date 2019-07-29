@@ -181,6 +181,8 @@ class Node:
             self._descriptors.update({p: ParameterDescriptor() for p in self._parameters})
 
         # Clock that has support for ROS time.
+        # Note: parameter overrides and parameter event publisher need to be ready at this point
+        # to be able to declare 'use_sim_time' if it was not declared yet.
         self._clock = ROSClock()
         self._time_source = TimeSource(node=self)
         self._time_source.attach_clock(self._clock)
