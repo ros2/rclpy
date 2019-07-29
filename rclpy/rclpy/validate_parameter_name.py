@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from rclpy.exceptions import InvalidParameterException
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 def validate_parameter_name(name: str) -> bool:
@@ -28,10 +27,8 @@ def validate_parameter_name(name: str) -> bool:
     :param name str: parameter name to be validated.
     :raises: InvalidParameterException: when the name is invalid.
     """
-    # TODO(jubeira): define whether this is an appropriate method to validate
-    # parameter names.
-    result = _rclpy.rclpy_get_validation_error_for_topic_name(name)
-    if result is None:
-        return True
-    error_msg, invalid_index = result
-    raise InvalidParameterException(name, error_msg, invalid_index)
+    # TODO(jubeira): add parameter name check to be implemented at RCL level.
+    if not name:
+        raise InvalidParameterException(name)
+
+    return True

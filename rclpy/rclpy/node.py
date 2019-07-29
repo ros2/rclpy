@@ -331,6 +331,21 @@ class Node:
         """
         Declare a list of parameters.
 
+        The tuples in the given parameter list shall contain the name for each parameter,
+        optionally providing a value and a descriptor.
+        For each entry in the list, a parameter with a name of "namespace.name"
+        will be declared.
+        The resulting value for each declared parameter will be returned, considering
+        parameter overrides set upon node creation as the first choice,
+        or provided parameter values as the second one.
+
+        The name expansion is naive, so if you set the namespace to be "foo.",
+        then the resulting parameter names will be like "foo..name".
+        However, if the namespace is an empty string, then no leading '.' will be
+        placed before each name, which would have been the case when naively
+        expanding "namespace.name".
+        This allows you to declare several parameters at once without a namespace.
+
         This method, if successful, will result in any callback registered with
         :func:`set_parameters_callback` to be called once for each parameter.
         If one of those calls fail, an exception will be raised and the remaining parameters will
@@ -338,7 +353,7 @@ class Node:
         Parameters declared up to that point will not be undeclared.
 
         :param namespace: Namespace for parameters.
-        :param parameters: Tuple with parameters to declare, with a name, value and descriptor.
+        :param parameters: List of tuples with parameters to declare.
         :return: Parameter list with the effectively assigned values for each of them.
         :raises: ParameterAlreadyDeclaredException if the parameter had already been declared.
         :raises: InvalidParameterException if the parameter name is invalid.
@@ -354,7 +369,7 @@ class Node:
                     '{parameter_tuple}; expecting length between 1 and 3'.format_map(locals())
                 )
 
-            value = ParameterValue()
+            value = None
             descriptor = ParameterDescriptor()
 
             # Get the values from the tuple, checking its types.
@@ -370,11 +385,9 @@ class Node:
 
                 # Get value from parameter overrides, of from tuple if it doesn't exist.
                 if name in self._parameter_overrides:
-                    type_ = self._parameter_overrides[name].type_
                     value = self._parameter_overrides[name].value
                 else:
                     # This raises a TypeError if it's not possible to get a type from the tuple.
-                    type_ = Parameter.Type.from_parameter_value(parameter_tuple[1])
                     value = parameter_tuple[1]
 
                 # Get descriptor from tuple.
@@ -391,12 +404,14 @@ class Node:
                 # This means either value or descriptor were not defined which is fine.
                 pass
 
-            # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
-            full_name = namespace + name
-            validate_parameter_name(full_name)
+            if namespace:
+                name = '{namespace}.{name}'.format_map(locals())
 
-            parameter_list.append(Parameter(full_name, type_, value))
-            descriptors.update({full_name: descriptor})
+            # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
+            validate_parameter_name(name)
+
+            parameter_list.append(Parameter(name, value=value))
+            descriptors.update({name: descriptor})
 
         parameters_already_declared = [
             parameter.name for parameter in parameter_list if parameter.name in self._parameters
@@ -407,7 +422,11 @@ class Node:
         # Call the callback once for each of the parameters, using method that doesn't
         # check whether the parameter was declared beforehand or not.
         self._set_parameters(
-            parameter_list, descriptors=descriptors, raise_on_failure=True)
+            parameter_list,
+            descriptors,
+            raise_on_failure=True,
+            allow_undeclared_parameters=True
+        )
         return self.get_parameters([parameter.name for parameter in parameter_list])
 
     def undeclare_parameter(self, name: str):
@@ -514,21 +533,21 @@ class Node:
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
             and at least one parameter in the list hadn't been declared beforehand.
         """
-        return self._set_parameters(parameter_list, check_undeclared_parameters=True)
+        return self._set_parameters(parameter_list)
 
     def _set_parameters(
         self,
         parameter_list: List[Parameter],
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
-        raise_on_failure=False,
-        check_undeclared_parameters=False
+        raise_on_failure: bool = False,
+        allow_undeclared_parameters: bool = False
     ) -> List[SetParametersResult]:
         """
         Set parameters for the node, and return the result for the set action.
 
         Method for internal usage; applies a setter method for each parameters in the list.
-        By default it doesn't check if the parameters were declared, and both declares and sets
-        the given list.
+        By default it checks if the parameters were declared, raising an exception if at least
+        one of them was not.
 
         If a callback was registered previously with :func:`set_parameters_callback`, it will be
         called prior to setting the parameters for the node, once for each parameter.
@@ -541,22 +560,26 @@ class Node:
             If descriptors are given, each parameter in the list must have a corresponding one.
         :param raise_on_failure: True if InvalidParameterValueException has to be raised when
             the user callback rejects a parameter, False otherwise.
-        :param check_undeclared_parameters: True if the method needs to check for undeclared
-            parameters for each of the elements in the parameter list, False otherwise.
+        :param allow_undeclared_parameters: If False, this method will check for undeclared
+            parameters for each of the elements in the parameter list.
         :return: The result for each set action as a list.
         :raises: InvalidParameterValueException if the user-defined callback rejects the
             parameter value and raise_on_failure flag is True.
+        :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
+            method and at least one parameter in the list hadn't been declared beforehand.
         """
         if descriptors is not None:
             assert all(parameter.name in descriptors for parameter in parameter_list)
 
         results = []
         for param in parameter_list:
-            if check_undeclared_parameters:
+            if not allow_undeclared_parameters:
                 self._check_undeclared_parameters([param])
+            # If undeclared parameters are allowed, parameters with type NOT_SET shall be stored.
             result = self._set_parameters_atomically(
                 [param],
-                descriptors
+                descriptors,
+                allow_not_set_type=allow_undeclared_parameters
             )
             if raise_on_failure and not result.successful:
                 raise InvalidParameterValueException(param.name, param.value, result.reason)
@@ -574,8 +597,8 @@ class Node:
         If setting a parameter fails due to not being declared, then no parameter will be set set.
         Either all of the parameters are set or none of them are set.
 
-        If undeclared parameters are allowed, then all the parameters will be implicitly
-        declared before being set even if they were not declared beforehand.
+        If undeclared parameters are allowed for the node, then all the parameters will be
+        implicitly declared before being set even if they were not declared beforehand.
 
         If a callback was registered previously with :func:`set_parameters_callback`, it will be
         called prior to setting the parameters for the node only once for all parameters.
@@ -613,13 +636,14 @@ class Node:
     def _set_parameters_atomically(
         self,
         parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None
+        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
+        allow_not_set_type: bool = False
     ) -> SetParametersResult:
         """
         Set the given parameters, all at one time, and then aggregate result.
 
-        This method does not check if the parameters were declared beforehand, and is intended
-        for internal use of this class.
+        This internal method does not reject undeclared parameters.
+        If :param:`allow_not_set_type` is False, a parameter with type NOT_SET will be undeclared.
 
         If a callback was registered previously with :func:`set_parameters_callback`, it will be
         called prior to setting the parameters for the node only once for all parameters.
@@ -628,12 +652,11 @@ class Node:
         For each successfully set parameter, a :class:`ParameterEvent` message is
         published.
 
-        If the value type of the parameter is NOT_SET, and the existing parameter type is
-        something else, then the parameter will be implicitly undeclared.
-
         :param parameter_list: The list of parameters to set.
         :param descriptors: New descriptors to apply to the parameters before setting them.
             If descriptors are given, each parameter in the list must have a corresponding one.
+        :param allow_not_set_type: False if parameters with NOT_SET type shall be undeclared,
+            True if they should be stored despite not having an actual value.
         :return: Aggregate result of setting all the parameters atomically.
         """
         if descriptors is not None:
@@ -661,13 +684,11 @@ class Node:
                 parameter_event.node = self.get_namespace() + '/' + self.get_name()
 
             for param in parameter_list:
-                if Parameter.Type.NOT_SET == param.type_:
-                    if Parameter.Type.NOT_SET != self.get_parameter_or(param.name).type_:
-                        # Parameter deleted. (Parameter had value and new value is not set)
-                        parameter_event.deleted_parameters.append(
-                            param.to_parameter_msg())
+                # If parameters without type and value are not allowed, they shall be undeclared.
+                if not allow_not_set_type and Parameter.Type.NOT_SET == param.type_:
+                    # Parameter deleted. (Parameter had value and new value is not set).
+                    parameter_event.deleted_parameters.append(param.to_parameter_msg())
                     # Delete any unset parameters regardless of their previous value.
-                    # We don't currently store NOT_SET parameters so this is an extra precaution.
                     if param.name in self._parameters:
                         del self._parameters[param.name]
                     if param.name in self._descriptors:
