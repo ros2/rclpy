@@ -521,6 +521,9 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
 
+                if not self._context.ok():
+                    raise ShutdownException()
+
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     entity_count.num_subscriptions,
