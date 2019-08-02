@@ -61,12 +61,17 @@ if TYPE_CHECKING:
 class _WaitSet:
     """Make sure the wait set gets destroyed when a generator exits."""
 
+    def __init__(self, context):
+        self.context = context
+
     def __enter__(self):
         self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
+        self.gc = self.context.get_interrupt_guard_condition(self)
         return self.wait_set
 
     def __exit__(self, t, v, tb):
         _rclpy.rclpy_destroy_wait_set(self.wait_set)
+        self.context.release_interrupt_guard_condition(self)
 
 
 class _WorkTracker:
@@ -124,6 +129,12 @@ class TimeoutException(Exception):
 
 class ShutdownException(Exception):
     """Signal that executor was shut down."""
+
+    pass
+
+
+class ExternalShutdownException(Exception):
+    """Context has been shutdown."""
 
     pass
 
@@ -478,14 +489,16 @@ class Executor:
             guards.append(self._guard)
             guards.append(self._sigint_gc)
 
-            entity_count = NumberOfEntities(
-                len(subscriptions), len(guards), len(timers), len(clients), len(services))
-
-            for waitable in waitables:
-                entity_count += waitable.get_num_entities()
-
+            wait_set_wrapper = _WaitSet(self.context)
             # Construct a wait set
-            with _WaitSet() as wait_set, ExitStack() as context_stack:
+            with wait_set_wrapper as wait_set, ExitStack() as context_stack:
+                guards.append(wait_set_wrapper.gc)
+                entity_count = NumberOfEntities(
+                   len(subscriptions), len(guards), len(timers), len(clients), len(services))
+
+                for waitable in waitables:
+                    entity_count += waitable.get_num_entities()
+
                 sub_capsules = []
                 for sub in subscriptions:
                     try:
@@ -549,6 +562,8 @@ class Executor:
                 _rclpy.rclpy_wait(wait_set, timeout_nsec)
                 if self._is_shutdown:
                     raise ShutdownException()
+                if not self._context.ok():
+                    raise ExternalShutdownException()
 
                 # get ready entities
                 subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
@@ -693,6 +708,8 @@ class MultiThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except ExternalShutdownException:
+            pass
         except ShutdownException:
             pass
         except TimeoutException:
