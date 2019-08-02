@@ -67,6 +67,9 @@ class _WaitSet:
     def __enter__(self):
         self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
         self.gc = self.context.get_interrupt_guard_condition(self)
+        return self
+
+    def get_capsule(self):
         return self.wait_set
 
     def __exit__(self, t, v, tb):
@@ -489,10 +492,10 @@ class Executor:
             guards.append(self._guard)
             guards.append(self._sigint_gc)
 
-            wait_set_wrapper = _WaitSet(self.context)
             # Construct a wait set
-            with wait_set_wrapper as wait_set, ExitStack() as context_stack:
-                guards.append(wait_set_wrapper.gc)
+            with _WaitSet(self.context) as wait_set, ExitStack() as context_stack:
+                guards.append(wait_set.gc)
+                wait_set = wait_set.get_capsule()
                 entity_count = NumberOfEntities(
                    len(subscriptions), len(guards), len(timers), len(clients), len(services))
 
