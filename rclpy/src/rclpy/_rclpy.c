@@ -43,7 +43,7 @@ void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(capsule, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     return;
   }
   if (NULL != context->impl) {
@@ -89,7 +89,7 @@ static PyObject *
 rclpy_create_context(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcl_context_t * context = (rcl_context_t *)PyMem_Malloc(sizeof(rcl_context_t));
-  if (NULL == context) {
+  if (!context) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for context");
     return NULL;
   }
@@ -145,7 +145,7 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     return NULL;
   }
 
@@ -212,14 +212,14 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 void
 _rclpy_arg_list_fini(int num_args, char ** argv)
 {
-  if (NULL == argv) {
+  if (!argv) {
     return;
   }
   rcl_allocator_t allocator = rcl_get_default_allocator();
   // Free each arg individually
   for (int i = 0; i < num_args; ++i) {
     char * arg = argv[i];
-    if (NULL == arg) {
+    if (!arg) {
       // NULL in list means array was partially inititialized when an error occurred
       break;
     }
@@ -241,7 +241,7 @@ _rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
 {
   // Convert to list() in case pyargs is a generator
   pyargs = PySequence_List(pyargs);
-  if (NULL == pyargs) {
+  if (!pyargs) {
     // Exception raised
     return RCL_RET_ERROR;
   }
@@ -257,7 +257,7 @@ _rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
   rcl_allocator_t allocator = rcl_get_default_allocator();
   if (*num_args > 0) {
     *arg_values = allocator.allocate(sizeof(char *) * (*num_args), allocator.state);
-    if (NULL == *arg_values) {
+    if (!*arg_values) {
       PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
       Py_DECREF(pyargs);
       return RCL_RET_BAD_ALLOC;
@@ -266,7 +266,7 @@ _rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
     for (int i = 0; i < *num_args; ++i) {
       // Returns borrowed reference, do not decref
       PyObject * pyarg = PyList_GetItem(pyargs, i);
-      if (NULL == pyarg) {
+      if (!pyarg) {
         _rclpy_arg_list_fini(i, *arg_values);
         Py_DECREF(pyargs);
         // Exception raised
@@ -274,7 +274,7 @@ _rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
       }
       const char * arg_str = PyUnicode_AsUTF8(pyarg);
       (*arg_values)[i] = rcutils_strdup(arg_str, allocator);
-      if (NULL == (*arg_values)[i]) {
+      if (!(*arg_values)[i]) {
         _rclpy_arg_list_fini(i, *arg_values);
         PyErr_Format(PyExc_MemoryError, "Failed to duplicate string");
         Py_DECREF(pyargs);
@@ -432,7 +432,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   pyseqlist = PySequence_List(pyargs);
-  if (NULL == pyseqlist) {
+  if (!pyseqlist) {
     // Exception raised
     return NULL;
   }
@@ -445,7 +445,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   int num_args = (int)pysize_num_args;
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     Py_DECREF(pyseqlist);
     return NULL;
   }
@@ -455,7 +455,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   bool have_args = true;
   if (num_args > 0) {
     arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
-    if (NULL == arg_values) {
+    if (!arg_values) {
       PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
       Py_DECREF(pyseqlist);
       return NULL;
@@ -464,13 +464,13 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     for (int i = 0; i < num_args; ++i) {
       // Returns borrowed reference, do not decref
       PyObject * pyarg = PyList_GetItem(pyseqlist, i);
-      if (NULL == pyarg) {
+      if (!pyarg) {
         have_args = false;
         break;
       }
       // Borrows a pointer, do not free arg_values[i]
       arg_values[i] = PyUnicode_AsUTF8(pyarg);
-      if (NULL == arg_values[i]) {
+      if (!arg_values[i]) {
         have_args = false;
         break;
       }
@@ -568,7 +568,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     return NULL;
   }
 
@@ -1387,12 +1387,12 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     return NULL;
   }
 
   rcl_clock_t * clock = (rcl_clock_t *) PyCapsule_GetPointer(pyclock, "rcl_clock_t");
-  if (NULL == clock) {
+  if (!clock) {
     return NULL;
   }
 
@@ -2261,7 +2261,7 @@ static void
 _rclpy_destroy_clock(PyObject * pycapsule)
 {
   rcl_clock_t * clock = (rcl_clock_t *)PyCapsule_GetPointer(pycapsule, "rcl_clock_t");
-  if (NULL == clock) {
+  if (!clock) {
     // exception was set by PyCapsule_GetPointer
     PyErr_Clear();
     // Warning should use line number of the current stack frame
@@ -2353,7 +2353,7 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     return NULL;
   }
 
@@ -2543,7 +2543,7 @@ rclpy_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (NULL == entities) {
+  if (!entities) {
     PyErr_Format(PyExc_RuntimeError, "Wait set '%s' isn't allocated", entity_type);
     return NULL;
   }
@@ -2972,7 +2972,7 @@ rclpy_ok(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     return NULL;
   }
 
@@ -3000,7 +3000,7 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (NULL == context) {
+  if (!context) {
     return NULL;
   }
 
@@ -3717,7 +3717,7 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
-  if (NULL == time_point) {
+  if (!time_point) {
     PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
     return NULL;
   }
@@ -3785,7 +3785,7 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_duration_t * duration = (rcl_duration_t *) PyMem_Malloc(sizeof(rcl_duration_t));
-  if (NULL == duration) {
+  if (!duration) {
     PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for duration.");
     return NULL;
   }
@@ -3844,7 +3844,7 @@ rclpy_create_clock(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_clock_t * clock = (rcl_clock_t *)PyMem_Malloc(sizeof(rcl_clock_t));
-  if (NULL == clock) {
+  if (!clock) {
     PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for clock.");
     return NULL;
   }
@@ -3887,7 +3887,7 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
-  if (NULL == time_point) {
+  if (!time_point) {
     PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
     return NULL;
   }
@@ -4105,12 +4105,12 @@ _rclpy_on_time_jump(
     PY_LONG_LONG delta = time_jump->delta.nanoseconds;
     PyObject * pyjump_info = Py_BuildValue(
       "{zzzL}", "clock_change", clock_change, "delta", delta);
-    if (NULL == pyjump_info) {
+    if (!pyjump_info) {
       Py_DECREF(pycallback);
       return;
     }
     PyObject * pyargs = PyTuple_Pack(1, pyjump_info);
-    if (NULL == pyargs) {
+    if (!pyargs) {
       Py_DECREF(pyjump_info);
       Py_DECREF(pycallback);
       return;
@@ -4244,30 +4244,30 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->integer_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER;
     value = PyLong_FromLongLong(*(variant->integer_value));
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
   } else if (variant->double_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE;
     value = PyFloat_FromDouble(*(variant->double_value));
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
   } else if (variant->string_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING;
     value = PyUnicode_FromString(variant->string_value);
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
   } else if (variant->byte_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BYTE_ARRAY;
     value = PyList_New(variant->byte_array_value->size);
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
     for (size_t i = 0; i < variant->byte_array_value->size; ++i) {
       member_value = PyBytes_FromFormat("%u", variant->byte_array_value->values[i]);
-      if (NULL == member_value) {
+      if (!member_value) {
         Py_DECREF(value);
         return NULL;
       }
@@ -4276,7 +4276,7 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->bool_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL_ARRAY;
     value = PyList_New(variant->bool_array_value->size);
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
     for (size_t i = 0; i < variant->bool_array_value->size; ++i) {
@@ -4287,12 +4287,12 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->integer_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER_ARRAY;
     value = PyList_New(variant->integer_array_value->size);
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
     for (size_t i = 0; i < variant->integer_array_value->size; ++i) {
       member_value = PyLong_FromLongLong(variant->integer_array_value->values[i]);
-      if (NULL == member_value) {
+      if (!member_value) {
         Py_DECREF(value);
         return NULL;
       }
@@ -4301,12 +4301,12 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->double_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE_ARRAY;
     value = PyList_New(variant->double_array_value->size);
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
     for (size_t i = 0; i < variant->double_array_value->size; ++i) {
       member_value = PyFloat_FromDouble(variant->double_array_value->values[i]);
-      if (NULL == member_value) {
+      if (!member_value) {
         Py_DECREF(value);
         return NULL;
       }
@@ -4315,12 +4315,12 @@ static PyObject * _parameter_from_rcl_variant(
   } else if (variant->string_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING_ARRAY;
     value = PyList_New(variant->string_array_value->size);
-    if (NULL == value) {
+    if (!value) {
       return NULL;
     }
     for (size_t i = 0; i < variant->string_array_value->size; ++i) {
       member_value = PyUnicode_FromString(variant->string_array_value->data[i]);
-      if (NULL == member_value) {
+      if (!member_value) {
         Py_DECREF(value);
         return NULL;
       }
@@ -4332,7 +4332,7 @@ static PyObject * _parameter_from_rcl_variant(
   }
 
   PyObject * args = Py_BuildValue("(i)", type_enum_value);
-  if (NULL == args) {
+  if (!args) {
     Py_DECREF(value);
     return NULL;
   }
@@ -4341,7 +4341,7 @@ static PyObject * _parameter_from_rcl_variant(
   args = Py_BuildValue("OOO", name, type, value);
   Py_DECREF(value);
   Py_DECREF(type);
-  if (NULL == args) {
+  if (!args) {
     return NULL;
   }
 
@@ -4376,13 +4376,13 @@ _populate_node_parameters_from_rcl_params(
     } else {
       py_node_name = PyUnicode_FromString(params->node_names[i]);
     }
-    if (NULL == py_node_name) {
+    if (!py_node_name) {
       return false;
     }
     PyObject * parameter_dict;
     if (!PyDict_Contains(node_params_dict, py_node_name)) {
       parameter_dict = PyDict_New();
-      if (NULL == parameter_dict) {
+      if (!parameter_dict) {
         Py_DECREF(py_node_name);
         return false;
       }
@@ -4393,7 +4393,7 @@ _populate_node_parameters_from_rcl_params(
       }
     } else {
       parameter_dict = PyDict_GetItem(node_params_dict, py_node_name);
-      if (NULL == parameter_dict) {
+      if (!parameter_dict) {
         Py_DECREF(py_node_name);
         PyErr_Format(PyExc_RuntimeError, "Error reading node_paramters from internal dict");
         return false;
@@ -4404,14 +4404,14 @@ _populate_node_parameters_from_rcl_params(
     rcl_node_params_t node_params = params->params[i];
     for (size_t ii = 0; ii < node_params.num_params; ++ii) {
       PyObject * py_param_name = PyUnicode_FromString(node_params.parameter_names[ii]);
-      if (NULL == py_param_name) {
+      if (!py_param_name) {
         Py_DECREF(py_node_name);
         Py_DECREF(parameter_dict);
         return false;
       }
       PyObject * py_param = _parameter_from_rcl_variant(py_param_name,
           &node_params.parameter_values[ii], parameter_cls, parameter_type_cls);
-      if (NULL == py_param) {
+      if (!py_param) {
         Py_DECREF(py_node_name);
         Py_DECREF(parameter_dict);
         Py_DECREF(py_param_name);
@@ -4512,12 +4512,12 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(node_capsule, "rcl_node_t");
-  if (NULL == node) {
+  if (!node) {
     return NULL;
   }
 
   PyObject * params_by_node_name = PyDict_New();
-  if (NULL == params_by_node_name) {
+  if (!params_by_node_name) {
     return NULL;
   }
 
@@ -4527,7 +4527,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * parameter_type_cls = PyObject_GetAttrString(parameter_cls, "Type");
-  if (NULL == parameter_type_cls) {
+  if (!parameter_type_cls) {
     // PyObject_GetAttrString raises AttributeError on failure.
     Py_DECREF(params_by_node_name);
     return NULL;
@@ -4568,20 +4568,20 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * py_node_name_with_namespace = PyUnicode_FromString(node_name_with_namespace);
   allocator.deallocate(node_name_with_namespace, allocator.state);
-  if (NULL == py_node_name_with_namespace) {
+  if (!py_node_name_with_namespace) {
     Py_DECREF(params_by_node_name);
     return NULL;
   }
 
   PyObject * node_params = PyDict_New();
-  if (NULL == node_params) {
+  if (!node_params) {
     Py_DECREF(params_by_node_name);
     Py_DECREF(py_node_name_with_namespace);
     return NULL;
   }
 
   PyObject * py_wildcard_name = PyUnicode_FromString("/**");
-  if (NULL == py_wildcard_name) {
+  if (!py_wildcard_name) {
     Py_DECREF(params_by_node_name);
     Py_DECREF(py_node_name_with_namespace);
     Py_DECREF(node_params);

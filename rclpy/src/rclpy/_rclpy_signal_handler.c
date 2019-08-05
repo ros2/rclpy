@@ -81,8 +81,8 @@ install_signal_handler(int signum, SIGNAL_HANDLER_T handler)
 
 #define is_null_signal_handler(handler) \
   (handler.sa_flags & SA_SIGINFO ? \
-  NULL == handler.sa_sigaction : \
-  NULL == handler.sa_handler)
+  !handler.sa_sigaction : \
+  !handler.sa_handler)
 
 #else
 
@@ -197,7 +197,7 @@ trigger_guard_conditions()
 {
   rcl_guard_condition_t ** guard_conditions;
   rcutils_atomic_load(&g_guard_conditions, guard_conditions);
-  if (NULL == guard_conditions || NULL == guard_conditions[0]) {
+  if (!guard_conditions || !guard_conditions[0]) {
     return false;
   }
 
