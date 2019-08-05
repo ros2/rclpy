@@ -144,12 +144,15 @@ class Node:
         self._parameter_overrides = {}
         self._descriptors = {}
 
+        if cli_args is not None:
+            cli_args = ['--ros-args', *cli_args]
         namespace = namespace or ''
         if not self._context.ok():
             raise NotInitializedException('cannot create node')
         try:
             self.__handle = Handle(_rclpy.rclpy_create_node(
-                node_name, namespace, self._context.handle, cli_args, use_global_arguments))
+                node_name, namespace, self._context.handle, cli_args, use_global_arguments
+            ))
         except ValueError:
             # these will raise more specific errors if the name or namespace is bad
             validate_node_name(node_name)
