@@ -1529,7 +1529,10 @@ class TestCreateNode(unittest.TestCase):
 
     def test_use_global_arguments(self):
         context = rclpy.context.Context()
-        rclpy.init(args=['process_name', '__node:=global_node_name'], context=context)
+        rclpy.init(
+            args=['process_name', '--ros-args', '__node:=global_node_name'],
+            context=context
+        )
         try:
             node1 = rclpy.create_node(
                 'my_node', namespace='/my_ns', use_global_arguments=True, context=context)
