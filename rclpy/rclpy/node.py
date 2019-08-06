@@ -146,7 +146,7 @@ class Node:
         self._parameter_overrides = {}
         self._descriptors = {}
 
-        if cli_args is not None:
+        if cli_args is not None and '--ros-args' not in cli_args:
             cli_args = ['--ros-args', *cli_args]
         namespace = namespace or ''
         if not self._context.ok():
