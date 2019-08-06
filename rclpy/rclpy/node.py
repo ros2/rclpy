@@ -115,6 +115,8 @@ class Node:
         :param context: The context to be associated with, or ``None`` for the default global
             context.
         :param cli_args: A list of strings of command line args to be used only by this node.
+            Being specific to a ROS node, an implicit `--ros-args` scope flag always precedes
+            these arguments.
         :param namespace: The namespace to which relative topic and service names will be prefixed.
             Validated by :func:`validate_namespace`.
         :param use_global_arguments: ``False`` if the node should ignore process-wide command line

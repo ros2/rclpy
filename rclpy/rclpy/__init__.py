@@ -121,7 +121,8 @@ def create_node(
     :param node_name: A name to give to the node.
     :param context: The context to associated with the node, or ``None`` for the default global
         context.
-    :param cli_args: Command line arguments to be used by the node.
+    :param cli_args: Command line arguments to be used by the node. Being specific to a ROS node,
+        an implicit `--ros-args` scope flag always precedes these arguments.
     :param namespace: The namespace prefix to apply to entities associated with the node
         (node name, topics, etc).
     :param use_global_arguments: ``False`` if the node should ignore process-wide command line
