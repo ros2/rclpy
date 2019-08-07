@@ -115,6 +115,8 @@ class Node:
         :param context: The context to be associated with, or ``None`` for the default global
             context.
         :param cli_args: A list of strings of command line args to be used only by this node.
+            Being specific to a ROS node, an implicit `--ros-args` scope flag always precedes
+            these arguments.
         :param namespace: The namespace to which relative topic and service names will be prefixed.
             Validated by :func:`validate_namespace`.
         :param use_global_arguments: ``False`` if the node should ignore process-wide command line
@@ -144,12 +146,15 @@ class Node:
         self._parameter_overrides = {}
         self._descriptors = {}
 
+        if cli_args is not None and '--ros-args' not in cli_args:
+            cli_args = ['--ros-args', *cli_args]
         namespace = namespace or ''
         if not self._context.ok():
             raise NotInitializedException('cannot create node')
         try:
             self.__handle = Handle(_rclpy.rclpy_create_node(
-                node_name, namespace, self._context.handle, cli_args, use_global_arguments))
+                node_name, namespace, self._context.handle, cli_args, use_global_arguments
+            ))
         except ValueError:
             # these will raise more specific errors if the name or namespace is bad
             validate_node_name(node_name)
