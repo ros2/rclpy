@@ -123,10 +123,20 @@ class TestParameter(unittest.TestCase):
             Parameter('illegaltype', 'mytype', 'myvalue')
 
         with self.assertRaises(TypeError):
-            Parameter('illegaltype', value=('invalid', 'type'))
-
-        with self.assertRaises(TypeError):
             Parameter('illegaltype', value={'invalid': 'type'})
+
+    def test_integer_tuple_array(self):
+        # list
+        int_list = [1, 2, 3]
+        self.assertEqual(
+            Parameter.Type.INTEGER_ARRAY, Parameter.Type.from_parameter_value(int_list))
+        self.assertTrue(Parameter.Type.check(Parameter.Type.INTEGER_ARRAY, int_list))
+
+        # tuple
+        int_tuple = (1, 2, 3)
+        self.assertEqual(
+            Parameter.Type.INTEGER_ARRAY, Parameter.Type.from_parameter_value(int_tuple))
+        self.assertTrue(Parameter.Type.check(Parameter.Type.INTEGER_ARRAY, int_tuple))
 
 
 if __name__ == '__main__':
