@@ -1396,7 +1396,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_ret_t ret = rcl_publish(&(pub->publisher), raw_ros_message, NULL);
+  rcl_ret_t ret = rcl_publish(&(pub->publisher), raw_ros_message, NULL, false);
   destroy_ros_message(raw_ros_message);
   if (ret != RCL_RET_OK) {
     PyErr_Format(PyExc_RuntimeError,
