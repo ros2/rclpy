@@ -52,7 +52,7 @@ class Parameter:
                 return Parameter.Type.DOUBLE
             elif isinstance(parameter_value, str):
                 return Parameter.Type.STRING
-            elif isinstance(parameter_value, list):
+            elif isinstance(parameter_value, (list, tuple)):
                 if all(isinstance(v, bytes) for v in parameter_value):
                     return Parameter.Type.BYTE_ARRAY
                 elif all(isinstance(v, bool) for v in parameter_value):
@@ -80,19 +80,19 @@ class Parameter:
             if Parameter.Type.STRING == self:
                 return isinstance(parameter_value, str)
             if Parameter.Type.BYTE_ARRAY == self:
-                return isinstance(parameter_value, list) and \
+                return isinstance(parameter_value, (list, tuple)) and \
                     all(isinstance(v, bytes) and len(v) == 1 for v in parameter_value)
             if Parameter.Type.BOOL_ARRAY == self:
-                return isinstance(parameter_value, list) and \
+                return isinstance(parameter_value, (list, tuple)) and \
                     all(isinstance(v, bool) for v in parameter_value)
             if Parameter.Type.INTEGER_ARRAY == self:
-                return isinstance(parameter_value, list) and \
+                return isinstance(parameter_value, (list, tuple)) and \
                     all(isinstance(v, int) for v in parameter_value)
             if Parameter.Type.DOUBLE_ARRAY == self:
-                return isinstance(parameter_value, list) and \
+                return isinstance(parameter_value, (list, tuple)) and \
                     all(isinstance(v, float) for v in parameter_value)
             if Parameter.Type.STRING_ARRAY == self:
-                return isinstance(parameter_value, list) and \
+                return isinstance(parameter_value, (list, tuple)) and \
                     all(isinstance(v, str) for v in parameter_value)
             return False
 
