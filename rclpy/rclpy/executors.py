@@ -128,6 +128,12 @@ class ShutdownException(Exception):
     pass
 
 
+class ExternalShutdownException(Exception):
+    """Context has been shutdown."""
+
+    pass
+
+
 class Executor:
     """
     The base class for an executor.
@@ -163,6 +169,7 @@ class Executor:
         self._last_args = None
         self._last_kwargs = None
         self._sigint_gc = SignalHandlerGuardCondition(context)
+        self._context.on_shutdown(self.wake)
 
     @property
     def context(self) -> Context:
@@ -549,6 +556,8 @@ class Executor:
                 _rclpy.rclpy_wait(wait_set, timeout_nsec)
                 if self._is_shutdown:
                     raise ShutdownException()
+                if not self._context.ok():
+                    raise ExternalShutdownException()
 
                 # get ready entities
                 subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
@@ -693,6 +702,8 @@ class MultiThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except ExternalShutdownException:
+            pass
         except ShutdownException:
             pass
         except TimeoutException:

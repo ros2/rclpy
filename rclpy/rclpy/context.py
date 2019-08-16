@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+from typing import Callable
 
 
 class Context:
@@ -28,27 +29,46 @@ class Context:
         from rclpy.impl.implementation_singleton import rclpy_implementation
         self._handle = rclpy_implementation.rclpy_create_context()
         self._lock = threading.Lock()
+        self._callbacks = []
+        self._callbacks_lock = threading.Lock()
 
     @property
     def handle(self):
         return self._handle
 
     def ok(self):
+        """Check if context hasn't been shut down."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             return rclpy_implementation.rclpy_ok(self._handle)
 
+    def _call_on_shutdown_callbacks(self):
+        with self._callbacks_lock:
+            for callback in self._callbacks:
+                callback()
+            self._callbacks = []
+
     def shutdown(self):
+        """Shutdown this context."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
-            return rclpy_implementation.rclpy_shutdown(self._handle)
+            rclpy_implementation.rclpy_shutdown(self._handle)
+        self._call_on_shutdown_callbacks()
 
     def try_shutdown(self):
-        """Shutdown rclpy if not already shutdown."""
+        """Shutdown this context, if not already shutdown."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             if rclpy_implementation.rclpy_ok(self._handle):
-                return rclpy_implementation.rclpy_shutdown(self._handle)
+                rclpy_implementation.rclpy_shutdown(self._handle)
+                self._call_on_shutdown_callbacks()
+
+    def on_shutdown(self, callback: Callable[[], None]):
+        """Add a callback to be called on shutdown."""
+        if not callable(callback):
+            raise TypeError('callback should be a callable, got {}', type(callback))
+        with self._callbacks_lock:
+            self._callbacks.append(callback)
