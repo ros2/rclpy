@@ -69,10 +69,6 @@ class Context:
     def on_shutdown(self, callback: Callable[[], None]):
         """Add a callback to be called on shutdown."""
         if not callable(callback):
-            raise ValueError('callback should be a callable, got {}', type(callback))
+            raise TypeError('callback should be a callable, got {}', type(callback))
         with self._callbacks_lock:
             self._callbacks.append(callback)
-
-    def get_on_shutdown_callbacks(self):
-        """Get registered on shutdown callbacks."""
-        return self._callbacks
