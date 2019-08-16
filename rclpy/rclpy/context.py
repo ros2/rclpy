@@ -47,6 +47,7 @@ class Context:
         with self._callbacks_lock:
             for callback in self._callbacks:
                 callback()
+            self._callbacks = []
 
     def shutdown(self):
         """Shutdown this context."""
@@ -63,7 +64,7 @@ class Context:
         with self._lock:
             if rclpy_implementation.rclpy_ok(self._handle):
                 rclpy_implementation.rclpy_shutdown(self._handle)
-        self._call_on_shutdown_callbacks()
+                self._call_on_shutdown_callbacks()
 
     def on_shutdown(self, callback: Callable[[], None]):
         """Add a callback to be called on shutdown."""
