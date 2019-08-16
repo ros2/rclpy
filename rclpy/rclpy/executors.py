@@ -61,20 +61,12 @@ if TYPE_CHECKING:
 class _WaitSet:
     """Make sure the wait set gets destroyed when a generator exits."""
 
-    def __init__(self, context):
-        self.context = context
-
     def __enter__(self):
         self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        self.gc = self.context.get_interrupt_guard_condition(self)
-        return self
-
-    def get_capsule(self):
         return self.wait_set
 
     def __exit__(self, t, v, tb):
         _rclpy.rclpy_destroy_wait_set(self.wait_set)
-        self.context.release_interrupt_guard_condition(self)
 
 
 class _WorkTracker:
@@ -177,6 +169,7 @@ class Executor:
         self._last_args = None
         self._last_kwargs = None
         self._sigint_gc = SignalHandlerGuardCondition(context)
+        self._context.on_shutdown(self.wake)
 
     @property
     def context(self) -> Context:
@@ -492,16 +485,14 @@ class Executor:
             guards.append(self._guard)
             guards.append(self._sigint_gc)
 
+            entity_count = NumberOfEntities(
+                len(subscriptions), len(guards), len(timers), len(clients), len(services))
+
+            for waitable in waitables:
+                entity_count += waitable.get_num_entities()
+
             # Construct a wait set
-            with _WaitSet(self.context) as wait_set, ExitStack() as context_stack:
-                guards.append(wait_set.gc)
-                wait_set = wait_set.get_capsule()
-                entity_count = NumberOfEntities(
-                   len(subscriptions), len(guards), len(timers), len(clients), len(services))
-
-                for waitable in waitables:
-                    entity_count += waitable.get_num_entities()
-
+            with _WaitSet() as wait_set, ExitStack() as context_stack:
                 sub_capsules = []
                 for sub in subscriptions:
                     try:

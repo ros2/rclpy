@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+from typing import Callable
 
 
 class Context:
@@ -28,49 +29,49 @@ class Context:
         from rclpy.impl.implementation_singleton import rclpy_implementation
         self._handle = rclpy_implementation.rclpy_create_context()
         self._lock = threading.Lock()
-        self._guard_lock = threading.RLock()
-        self._guard_conditions = {}
+        self._callbacks = []
+        self._callbacks_lock = threading.Lock()
 
     @property
     def handle(self):
         return self._handle
 
-    def get_interrupt_guard_condition(self, wait_set):
-        with self._guard_lock:
-            from .guard_condition import GuardCondition
-            if wait_set not in self._guard_conditions:
-                self._guard_conditions[wait_set] = GuardCondition(
-                    callback=None, callback_group=None, context=self)
-            return self._guard_conditions[wait_set]
-
-    def release_interrupt_guard_condition(self, wait_set):
-        with self._guard_lock:
-            if wait_set in self._guard_conditions:
-                self._guard_conditions[wait_set].destroy()
-                del self._guard_conditions[wait_set]
-
-    def interrupt_wait_sets(self):
-        with self._guard_lock:
-            for gc in self._guard_conditions.values():
-                gc.trigger()
-
     def ok(self):
+        """Check if context hasn't been shut down."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             return rclpy_implementation.rclpy_ok(self._handle)
 
+    def _call_on_shutdown_callbacks(self):
+        with self._callbacks_lock:
+            for callback in self._callbacks:
+                callback()
+
     def shutdown(self):
+        """Shutdown this context."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             rclpy_implementation.rclpy_shutdown(self._handle)
-            self.interrupt_wait_sets()
+        self._call_on_shutdown_callbacks()
 
     def try_shutdown(self):
-        """Shutdown rclpy if not already shutdown."""
+        """Shutdown this context, if not already shutdown."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             if rclpy_implementation.rclpy_ok(self._handle):
-                return rclpy_implementation.rclpy_shutdown(self._handle)
+                rclpy_implementation.rclpy_shutdown(self._handle)
+        self._call_on_shutdown_callbacks()
+
+    def on_shutdown(self, callback: Callable[[], None]):
+        """Add a callback to be called on shutdown."""
+        if not callable(callback):
+            raise ValueError('callback should be a callable, got {}', type(callback))
+        with self._callbacks_lock:
+            self._callbacks.append(callback)
+
+    def get_on_shutdown_callbacks(self):
+        """Get registered on shutdown callbacks."""
+        return self._callbacks
