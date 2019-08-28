@@ -1,5 +1,10 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.6 (2019-08-28)
+------------------
+* Fix missing raise (`#390 <https://github.com/ros2/rclpy/pull/390>`_)
+* Fix time conversion for big nanoseconds value (`#384 <https://github.com/ros2/rclpy/pull/384>`_)
+* Contributors: Daniel Wang, Vinnam Kim
 
 0.7.5 (2019-08-01)
 ------------------
