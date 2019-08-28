@@ -25,8 +25,8 @@ class TestValidateRemoveRosArgs(unittest.TestCase):
             'process_name',
             '-d',
             '--ros-args',
-            '__ns:=/foo/bar',
-            '__ns:=/fiz/buz',
+            '-r', '__ns:=/foo/bar',
+            '-r', '__ns:=/fiz/buz',
             '--',
             '--foo=bar',
             '--baz'
