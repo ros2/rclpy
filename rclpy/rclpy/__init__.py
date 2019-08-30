@@ -45,6 +45,7 @@ from typing import List
 from typing import TYPE_CHECKING
 
 from rclpy.context import Context
+# from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.task import Future
 from rclpy.utilities import get_default_context
@@ -58,6 +59,10 @@ if TYPE_CHECKING:
     from rclpy.executors import Executor  # noqa: F401
     from rclpy.node import Node  # noqa: F401
 
+# `rclpy.node.Node.get_*_names_and_types_by_node` methods may raise this error.
+# It is populated in `init` function.
+NodeNameNonExistentError = None
+
 
 def init(*, args: List[str] = None, context: Context = None) -> None:
     """
@@ -70,7 +75,9 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
     context = get_default_context() if context is None else context
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
-    return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context.handle)
+    global NodeNameNonExistentError
+    rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context.handle)
+    NodeNameNonExistentError = rclpy_implementation.NodeNameNonExistentError
 
 
 # The global spin functions need an executor to do the work

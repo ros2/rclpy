@@ -1463,6 +1463,8 @@ class Node:
         :return: List of tuples.
           The first element of each tuple is the topic name and the second element is a list of
           topic types.
+        :raise rclpy.NonExistentNodeNameError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_publisher_names_and_types_by_node(
@@ -1483,6 +1485,8 @@ class Node:
         :return: List of tuples.
           The first element of each tuple is the topic name and the second element is a list of
           topic types.
+        :raise rclpy.NonExistentNodeNameError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_subscriber_names_and_types_by_node(
@@ -1501,6 +1505,8 @@ class Node:
         :return: List of tuples.
           The first element of each tuple is the service server name
           and the second element is a list of service types.
+        :raise rclpy.NonExistentNodeNameError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_service_names_and_types_by_node(
@@ -1519,6 +1525,8 @@ class Node:
         :return: List of tuples.
           The fist element of each tuple is the service client name
           and the second element is a list of service client types.
+        :raise rclpy.NonExistentNodeNameError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_client_names_and_types_by_node(

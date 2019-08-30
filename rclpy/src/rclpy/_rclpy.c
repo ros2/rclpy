@@ -41,6 +41,7 @@
 
 static PyObject * RCLInvalidROSArgsError;
 static PyObject * UnknownROSArgsError;
+static PyObject * _rclpy_node_name_non_existent_error;
 
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
@@ -3213,10 +3214,13 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
     rcl_get_service_names_and_types_by_node(node, &allocator, node_name, node_namespace,
       &service_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = _rclpy_node_name_non_existent_error;
+    }
+    PyErr_Format(error,
       "Failed to get_service_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
-    rclpy_names_and_types_fini(&service_names_and_types);
     return NULL;
   }
 
@@ -3262,10 +3266,13 @@ rclpy_get_client_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * 
     rcl_get_client_names_and_types_by_node(node, &allocator, node_name, node_namespace,
       &client_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = _rclpy_node_name_non_existent_error;
+    }
+    PyErr_Format(error,
       "Failed to get_client_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
-    rclpy_names_and_types_fini(&client_names_and_types);
     return NULL;
   }
 
@@ -3313,7 +3320,11 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
     rcl_get_subscriber_names_and_types_by_node(node, &allocator, no_demangle, node_name,
       node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = _rclpy_node_name_non_existent_error;
+    }
+    PyErr_Format(error,
       "Failed to get_subscriber_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -3362,7 +3373,11 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
     rcl_get_publisher_names_and_types_by_node(node, &allocator, no_demangle, node_name,
       node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = _rclpy_node_name_non_existent_error;
+    }
+    PyErr_Format(error,
       "Failed to get_publisher_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -5077,6 +5092,15 @@ PyMODINIT_FUNC PyInit__rclpy(void)
     return NULL;
   }
   if (PyModule_AddObject(m, "UnknownROSArgsError", UnknownROSArgsError) != 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  _rclpy_node_name_non_existent_error = PyErr_NewExceptionWithDoc(
+    "_rclpy.NodeNameNonExistentError",
+    "Thrown when a node name is not found.",
+    PyExc_RuntimeError, NULL);
+  if (PyModule_AddObject(m, "NodeNameNonExistentError", _rclpy_node_name_non_existent_error)) {
     Py_DECREF(m);
     return NULL;
   }
