@@ -29,7 +29,7 @@ class CallbackGroup:
 
     def __init__(self) -> None:
         super().__init__()
-        self.entities: set = set()
+        self.entities = set()  # type: set
 
     def add_entity(self, entity) -> None:
         """

@@ -14,21 +14,15 @@
 
 import math
 
-from typing import Any
-from typing import Callable
-from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import TypeVar
-from typing import Union
 
 import warnings
 import weakref
 
-from rcl_interfaces.msg import FloatingPointRange
-from rcl_interfaces.msg import IntegerRange
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterEvent
@@ -97,16 +91,16 @@ class Node:
 
     def __init__(
         self,
-        node_name: str,
+        node_name,
         *,
-        context: Context = None,
-        cli_args: List[str] = None,
-        namespace: str = None,
-        use_global_arguments: bool = True,
-        start_parameter_services: bool = True,
-        parameter_overrides: List[Parameter] = None,
-        allow_undeclared_parameters: bool = False,
-        automatically_declare_parameters_from_overrides: bool = False
+        context=None,
+        cli_args=None,
+        namespace=None,
+        use_global_arguments=True,
+        start_parameter_services=True,
+        parameter_overrides=None,
+        allow_undeclared_parameters=False,
+        automatically_declare_parameters_from_overrides=False
     ) -> None:
         """
         Constructor.
@@ -130,14 +124,14 @@ class Node:
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
-        self._parameters: dict = {}
-        self.__publishers: List[Publisher] = []
-        self.__subscriptions: List[Subscription] = []
-        self.__clients: List[Client] = []
-        self.__services: List[Service] = []
-        self.__timers: List[WallTimer] = []
-        self.__guards: List[GuardCondition] = []
-        self.__waitables: List[Waitable] = []
+        self._parameters = {}  # type: dict
+        self.__publishers = []  # type: List[Publisher]
+        self.__subscriptions = []  # type: List[Subscription]
+        self.__clients = []  # type: List[Client]
+        self.__services = []  # type: List[Service]
+        self.__timers = []  # type: List[WallTimer]
+        self.__guards = []  # type: List[GuardCondition]
+        self.__waitables = []  # type: List[Waitable]
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
         self._allow_undeclared_parameters = allow_undeclared_parameters
@@ -301,9 +295,9 @@ class Node:
 
     def declare_parameter(
         self,
-        name: str,
-        value: Any = None,
-        descriptor: ParameterDescriptor = ParameterDescriptor()
+        name,
+        value=None,
+        descriptor=ParameterDescriptor()
     ) -> Parameter:
         """
         Declare and initialize a parameter.
@@ -323,12 +317,8 @@ class Node:
 
     def declare_parameters(
         self,
-        namespace: str,
-        parameters: List[Union[
-            Tuple[str],
-            Tuple[str, Any],
-            Tuple[str, Any, ParameterDescriptor],
-        ]]
+        namespace,
+        parameters
     ) -> List[Parameter]:
         """
         Declare a list of parameters.
@@ -451,11 +441,11 @@ class Node:
         else:
             raise ParameterNotDeclaredException(name)
 
-    def has_parameter(self, name: str) -> bool:
+    def has_parameter(self, name) -> bool:
         """Return True if parameter is declared; False otherwise."""
         return name in self._parameters
 
-    def get_parameters(self, names: List[str]) -> List[Parameter]:
+    def get_parameters(self, names) -> List[Parameter]:
         """
         Get a list of parameters.
 
@@ -470,7 +460,7 @@ class Node:
             raise TypeError('All names must be instances of type str')
         return [self.get_parameter(name) for name in names]
 
-    def get_parameter(self, name: str) -> Parameter:
+    def get_parameter(self, name) -> Parameter:
         """
         Get a parameter by name.
 
@@ -489,7 +479,7 @@ class Node:
             raise ParameterNotDeclaredException(name)
 
     def get_parameter_or(
-            self, name: str, alternative_value: Optional[Parameter] = None) -> Parameter:
+            self, name, alternative_value=None) -> Parameter:
         """
         Get a parameter or the alternative value.
 
@@ -505,7 +495,7 @@ class Node:
 
         return self._parameters.get(name, alternative_value)
 
-    def set_parameters(self, parameter_list: List[Parameter]) -> List[SetParametersResult]:
+    def set_parameters(self, parameter_list) -> List[SetParametersResult]:
         """
         Set parameters for the node, and return the result for the set action.
 
@@ -539,10 +529,10 @@ class Node:
 
     def _set_parameters(
         self,
-        parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
-        raise_on_failure: bool = False,
-        allow_undeclared_parameters: bool = False
+        parameter_list,
+        descriptors=None,
+        raise_on_failure=False,
+        allow_undeclared_parameters=False
     ) -> List[SetParametersResult]:
         """
         Set parameters for the node, and return the result for the set action.
@@ -588,7 +578,7 @@ class Node:
             results.append(result)
         return results
 
-    def set_parameters_atomically(self, parameter_list: List[Parameter]) -> SetParametersResult:
+    def set_parameters_atomically(self, parameter_list) -> SetParametersResult:
         """
         Set the given parameters, all at one time, and then aggregate result.
 
@@ -637,9 +627,9 @@ class Node:
 
     def _set_parameters_atomically(
         self,
-        parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
-        allow_not_set_type: bool = False
+        parameter_list,
+        descriptors=None,
+        allow_not_set_type=False
     ) -> SetParametersResult:
         """
         Set the given parameters, all at one time, and then aggregate result.
@@ -721,9 +711,9 @@ class Node:
 
     def _apply_descriptors(
         self,
-        parameter_list: List[Parameter],
-        descriptors: Dict[str, ParameterDescriptor],
-        check_read_only: bool = True
+        parameter_list,
+        descriptors,
+        check_read_only=True
     ) -> SetParametersResult:
         """
         Apply descriptors to parameters and return an aggregated result without saving parameters.
@@ -747,9 +737,9 @@ class Node:
 
     def _apply_descriptor(
         self,
-        parameter: Parameter,
-        descriptor: Optional[ParameterDescriptor] = None,
-        check_read_only: bool = True
+        parameter,
+        descriptor=None,
+        check_read_only=True
     ) -> SetParametersResult:
         """
         Apply a descriptor to a parameter and return a result without saving the parameter.
@@ -788,8 +778,8 @@ class Node:
 
     def _apply_integer_range(
         self,
-        parameter: Parameter,
-        integer_range: IntegerRange
+        parameter,
+        integer_range
     ) -> SetParametersResult:
         min_value = min(integer_range.from_value, integer_range.to_value)
         max_value = max(integer_range.from_value, integer_range.to_value)
@@ -824,8 +814,8 @@ class Node:
 
     def _apply_floating_point_range(
         self,
-        parameter: Parameter,
-        floating_point_range: FloatingPointRange
+        parameter,
+        floating_point_range
     ) -> SetParametersResult:
         min_value = min(floating_point_range.from_value, floating_point_range.to_value)
         max_value = max(floating_point_range.from_value, floating_point_range.to_value)
@@ -869,9 +859,9 @@ class Node:
 
     def _apply_descriptor_and_set(
         self,
-        parameter: Parameter,
-        descriptor: Optional[ParameterDescriptor] = None,
-        check_read_only: bool = True
+        parameter,
+        descriptor=None,
+        check_read_only=True
     ) -> SetParametersResult:
         """Apply parameter descriptor and set parameter if successful."""
         result = self._apply_descriptor(parameter, descriptor, check_read_only)
@@ -880,7 +870,7 @@ class Node:
 
         return result
 
-    def describe_parameter(self, name: str) -> ParameterDescriptor:
+    def describe_parameter(self, name) -> ParameterDescriptor:
         """
         Get the parameter descriptor of a given parameter.
 
@@ -899,7 +889,7 @@ class Node:
             else:
                 raise ParameterNotDeclaredException(name)
 
-    def describe_parameters(self, names: List[str]) -> List[ParameterDescriptor]:
+    def describe_parameters(self, names) -> List[ParameterDescriptor]:
         """
         Get the parameter descriptors of a given list of parameters.
 
@@ -918,9 +908,9 @@ class Node:
 
     def set_descriptor(
         self,
-        name: str,
-        descriptor: ParameterDescriptor,
-        alternative_value: Optional[ParameterValue] = None
+        name,
+        descriptor,
+        alternative_value=None
     ) -> ParameterValue:
         """
         Set a new descriptor for a given parameter.
@@ -972,7 +962,7 @@ class Node:
 
     def set_parameters_callback(
         self,
-        callback: Callable[[List[Parameter]], SetParametersResult]
+        callback
     ) -> None:
         """
         Register a set parameters callback.
@@ -1006,7 +996,7 @@ class Node:
             raise TypeError(
                 'Expected QoSProfile or int, but received {!r}'.format(type(qos_or_depth)))
 
-    def add_waitable(self, waitable: Waitable) -> None:
+    def add_waitable(self, waitable) -> None:
         """
         Add a class that is capable of adding things to the wait set.
 
@@ -1015,7 +1005,7 @@ class Node:
         self.__waitables.append(waitable)
         self._wake_executor()
 
-    def remove_waitable(self, waitable: Waitable) -> None:
+    def remove_waitable(self, waitable) -> None:
         """
         Remove a Waitable that was previously added to the node.
 
@@ -1027,11 +1017,11 @@ class Node:
     def create_publisher(
         self,
         msg_type,
-        topic: str,
-        qos_profile: Union[QoSProfile, int] = None,
+        topic,
+        qos_profile=None,
         *,
-        callback_group: Optional[CallbackGroup] = None,
-        event_callbacks: Optional[PublisherEventCallbacks] = None,
+        callback_group=None,
+        event_callbacks=None
     ) -> Publisher:
         """
         Create a new publisher.
@@ -1087,13 +1077,13 @@ class Node:
     def create_subscription(
         self,
         msg_type,
-        topic: str,
-        callback: Callable[[MsgType], None],
-        qos_profile: Union[QoSProfile, int] = None,
+        topic,
+        callback,
+        qos_profile=None,
         *,
-        callback_group: Optional[CallbackGroup] = None,
-        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
-        raw: bool = False
+        callback_group=None,
+        event_callbacks=None,
+        raw=False
     ) -> Subscription:
         """
         Create a new subscription.
@@ -1152,10 +1142,10 @@ class Node:
     def create_client(
         self,
         srv_type,
-        srv_name: str,
+        srv_name,
         *,
-        qos_profile: QoSProfile = qos_profile_services_default,
-        callback_group: CallbackGroup = None
+        qos_profile=qos_profile_services_default,
+        callback_group=None
     ) -> Client:
         """
         Create a new service client.
@@ -1197,11 +1187,11 @@ class Node:
     def create_service(
         self,
         srv_type,
-        srv_name: str,
-        callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
+        srv_name,
+        callback,
         *,
-        qos_profile: QoSProfile = qos_profile_services_default,
-        callback_group: CallbackGroup = None
+        qos_profile=qos_profile_services_default,
+        callback_group=None
     ) -> Service:
         """
         Create a new service server.
@@ -1243,9 +1233,9 @@ class Node:
 
     def create_timer(
         self,
-        timer_period_sec: float,
-        callback: Callable,
-        callback_group: CallbackGroup = None
+        timer_period_sec,
+        callback,
+        callback_group=None
     ) -> WallTimer:
         """
         Create a new timer.
@@ -1271,8 +1261,8 @@ class Node:
 
     def create_guard_condition(
         self,
-        callback: Callable,
-        callback_group: CallbackGroup = None
+        callback,
+        callback_group=None
     ) -> GuardCondition:
         """Create a new guard condition."""
         if callback_group is None:
@@ -1285,7 +1275,7 @@ class Node:
         self._wake_executor()
         return guard
 
-    def destroy_publisher(self, publisher: Publisher) -> bool:
+    def destroy_publisher(self, publisher) -> bool:
         """
         Destroy a publisher created by the node.
 
@@ -1301,7 +1291,7 @@ class Node:
             return True
         return False
 
-    def destroy_subscription(self, subscription: Subscription) -> bool:
+    def destroy_subscription(self, subscription) -> bool:
         """
         Destroy a subscription created by the node.
 
@@ -1317,7 +1307,7 @@ class Node:
             return True
         return False
 
-    def destroy_client(self, client: Client) -> bool:
+    def destroy_client(self, client) -> bool:
         """
         Destroy a service client created by the node.
 
@@ -1333,7 +1323,7 @@ class Node:
             return True
         return False
 
-    def destroy_service(self, service: Service) -> bool:
+    def destroy_service(self, service) -> bool:
         """
         Destroy a service server created by the node.
 
@@ -1349,7 +1339,7 @@ class Node:
             return True
         return False
 
-    def destroy_timer(self, timer: WallTimer) -> bool:
+    def destroy_timer(self, timer) -> bool:
         """
         Destroy a timer created by the node.
 
@@ -1365,7 +1355,7 @@ class Node:
             return True
         return False
 
-    def destroy_guard_condition(self, guard: GuardCondition) -> bool:
+    def destroy_guard_condition(self, guard) -> bool:
         """
         Destroy a guard condition created by the node.
 
@@ -1410,9 +1400,9 @@ class Node:
 
     def get_publisher_names_and_types_by_node(
         self,
-        node_name: str,
-        node_namespace: str,
-        no_demangle: bool = False
+        node_name,
+        node_namespace,
+        no_demangle=False
     ) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered topics for publishers of a remote node.
@@ -1430,9 +1420,9 @@ class Node:
 
     def get_subscriber_names_and_types_by_node(
         self,
-        node_name: str,
-        node_namespace: str,
-        no_demangle: bool = False
+        node_name,
+        node_namespace,
+        no_demangle=False
     ) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered topics for subscriptions of a remote node.
@@ -1450,8 +1440,8 @@ class Node:
 
     def get_service_names_and_types_by_node(
         self,
-        node_name: str,
-        node_namespace: str
+        node_name,
+        node_namespace
     ) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered service topics for a remote node.
@@ -1466,7 +1456,7 @@ class Node:
             return _rclpy.rclpy_get_service_names_and_types_by_node(
                 capsule, node_name, node_namespace)
 
-    def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, List[str]]]:
+    def get_topic_names_and_types(self, no_demangle=False) -> List[Tuple[str, List[str]]]:
         """
         Get a list topic names and types for the node.
 
@@ -1514,7 +1504,7 @@ class Node:
         with self.handle as node_capsule:
             return func(node_capsule, fq_topic_name)
 
-    def count_publishers(self, topic_name: str) -> int:
+    def count_publishers(self, topic_name) -> int:
         """
         Return the number of publishers on a given topic.
 
@@ -1527,7 +1517,7 @@ class Node:
         """
         return self._count_publishers_or_subscribers(topic_name, _rclpy.rclpy_count_publishers)
 
-    def count_subscribers(self, topic_name: str) -> int:
+    def count_subscribers(self, topic_name) -> int:
         """
         Return the number of subscribers on a given topic.
 
