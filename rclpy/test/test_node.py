@@ -1560,6 +1560,28 @@ class TestCreateNode(unittest.TestCase):
         finally:
             rclpy.shutdown(context=context)
 
+    def test_bad_node_arguments(self):
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
+
+        from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
+        with self.assertRaises(_rclpy.RCLInvalidROSArgsError):
+            rclpy.create_node(
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '-r', 'not-a-remap'],
+                context=context)
+
+        with self.assertRaises(_rclpy.UnknownROSArgsError):
+            rclpy.create_node(
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '--my-custom-flag'],
+                context=context)
+
+        rclpy.shutdown(context=context)
+
 
 if __name__ == '__main__':
     unittest.main()
