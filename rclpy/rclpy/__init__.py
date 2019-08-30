@@ -45,7 +45,6 @@ from typing import List
 from typing import TYPE_CHECKING
 
 from rclpy.context import Context
-# from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.task import Future
 from rclpy.utilities import get_default_context
