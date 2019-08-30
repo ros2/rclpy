@@ -25,29 +25,29 @@ from typing import Callable
 from typing import Coroutine
 from typing import Generator
 from typing import List
-from typing import Optional
-from typing import Set
+from typing import Optional  # noqa: F401
+from typing import Set  # noqa: F401
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
 
-from rclpy.client import Client
+from rclpy.client import Client  # noqa: F401
 from rclpy.context import Context
 from rclpy.guard_condition import GuardCondition
 from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.service import Service
+from rclpy.service import Service  # noqa: F401
 from rclpy.signals import SignalHandlerGuardCondition
-from rclpy.subscription import Subscription
+from rclpy.subscription import Subscription  # noqa: F401
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.timer import WallTimer
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
-from rclpy.waitable import Waitable
+from rclpy.waitable import Waitable  # noqa: F401
 
 # For documentation purposes
 # TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking

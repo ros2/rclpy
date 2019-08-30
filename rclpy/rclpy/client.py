@@ -14,7 +14,7 @@
 
 import threading
 import time
-from typing import Dict
+from typing import Dict  # noqa: F401
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
