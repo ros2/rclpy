@@ -13,10 +13,13 @@
 # limitations under the License.
 
 from enum import IntEnum
+from typing import Callable
 from typing import List
 from typing import NamedTuple
+from typing import Optional
 
 import rclpy
+from rclpy.callback_groups import CallbackGroup
 from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.waitable import NumberOfEntities
@@ -98,10 +101,10 @@ class QoSEventHandler(Waitable):
     def __init__(
         self,
         *,
-        callback_group,
-        callback,
-        event_type,
-        parent_handle
+        callback_group: CallbackGroup,
+        callback: Callable,
+        event_type: IntEnum,
+        parent_handle: Handle
     ):
         # Waitable init adds self to callback_group
         super().__init__(callback_group)
@@ -156,8 +159,8 @@ class SubscriptionEventCallbacks:
     def __init__(
         self,
         *,
-        deadline=None,
-        liveliness=None
+        deadline: Optional[Callable[[QoSRequestedDeadlineMissedInfo], None]] = None,
+        liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None
     ) -> None:
         """
         Constructor.
@@ -171,7 +174,7 @@ class SubscriptionEventCallbacks:
         self.liveliness = liveliness
 
     def create_event_handlers(
-        self, callback_group, subscription_handle,
+        self, callback_group: CallbackGroup, subscription_handle: Handle
     ) -> List[QoSEventHandler]:
         event_handlers = []
         if self.deadline:
@@ -195,8 +198,8 @@ class PublisherEventCallbacks:
     def __init__(
         self,
         *,
-        deadline=None,
-        liveliness=None
+        deadline: Optional[Callable[[QoSOfferedDeadlineMissedInfo], None]] = None,
+        liveliness: Optional[Callable[[QoSLivelinessLostInfo], None]] = None
     ) -> None:
         """
         Constructor.
@@ -210,7 +213,7 @@ class PublisherEventCallbacks:
         self.liveliness = liveliness
 
     def create_event_handlers(
-        self, callback_group, publisher_handle,
+        self, callback_group: CallbackGroup, publisher_handle: Handle
     ) -> List[QoSEventHandler]:
         event_handlers = []
         if self.deadline:
