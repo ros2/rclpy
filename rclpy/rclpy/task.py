@@ -85,7 +85,7 @@ class Future:
         """
         Get the result of a done task.
 
-        This raises an exception if one was set during the task.
+        :raises: Exception if one was set during the task.
 
         :return: The result set by the task
         """
