@@ -1530,7 +1530,7 @@ class TestCreateNode(unittest.TestCase):
     def test_use_global_arguments(self):
         context = rclpy.context.Context()
         rclpy.init(
-            args=['process_name', '--ros-args', '__node:=global_node_name'],
+            args=['process_name', '--ros-args', '-r', '__node:=global_node_name'],
             context=context
         )
         try:
@@ -1550,7 +1550,7 @@ class TestCreateNode(unittest.TestCase):
         rclpy.init(context=context)
         try:
             node = rclpy.create_node(
-                'my_node', namespace='/my_ns', cli_args=['__ns:=/foo/bar'], context=context)
+                'my_node', namespace='/my_ns', cli_args=['-r', '__ns:=/foo/bar'], context=context)
             self.assertEqual('/foo/bar', node.get_namespace())
             node.destroy_node()
         finally:
