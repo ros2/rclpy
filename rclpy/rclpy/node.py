@@ -130,14 +130,14 @@ class Node:
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
-        self._parameters: dict = {}
-        self.__publishers: List[Publisher] = []
-        self.__subscriptions: List[Subscription] = []
-        self.__clients: List[Client] = []
-        self.__services: List[Service] = []
-        self.__timers: List[WallTimer] = []
-        self.__guards: List[GuardCondition] = []
-        self.__waitables: List[Waitable] = []
+        self._parameters = {}  # type: dict
+        self.__publishers = []  # type: List[Publisher]
+        self.__subscriptions = []  # type: List[Subscription]
+        self.__clients = []  # type: List[Client]
+        self.__services = []  # type: List[Service]
+        self.__timers = []  # type: List[WallTimer]
+        self.__guards = []  # type: List[GuardCondition]
+        self.__waitables = []  # type: List[Waitable]
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callback = None
         self._allow_undeclared_parameters = allow_undeclared_parameters
@@ -1031,7 +1031,7 @@ class Node:
         qos_profile: Union[QoSProfile, int] = None,
         *,
         callback_group: Optional[CallbackGroup] = None,
-        event_callbacks: Optional[PublisherEventCallbacks] = None,
+        event_callbacks: Optional[PublisherEventCallbacks] = None
     ) -> Publisher:
         """
         Create a new publisher.

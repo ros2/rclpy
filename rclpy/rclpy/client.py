@@ -14,7 +14,7 @@
 
 import threading
 import time
-from typing import Dict
+from typing import Dict  # noqa: F401
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
@@ -59,7 +59,7 @@ class Client:
         self.srv_name = srv_name
         self.qos_profile = qos_profile
         # Key is a sequence number, value is an instance of a Future
-        self._pending_requests: Dict[int, Future] = {}
+        self._pending_requests = {}  # type: Dict[int, Future]
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False

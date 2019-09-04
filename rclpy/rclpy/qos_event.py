@@ -104,7 +104,7 @@ class QoSEventHandler(Waitable):
         callback_group: CallbackGroup,
         callback: Callable,
         event_type: IntEnum,
-        parent_handle: Handle,
+        parent_handle: Handle
     ):
         # Waitable init adds self to callback_group
         super().__init__(callback_group)
@@ -160,7 +160,7 @@ class SubscriptionEventCallbacks:
         self,
         *,
         deadline: Optional[Callable[[QoSRequestedDeadlineMissedInfo], None]] = None,
-        liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None,
+        liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None
     ) -> None:
         """
         Constructor.
@@ -174,7 +174,7 @@ class SubscriptionEventCallbacks:
         self.liveliness = liveliness
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, subscription_handle: Handle,
+        self, callback_group: CallbackGroup, subscription_handle: Handle
     ) -> List[QoSEventHandler]:
         event_handlers = []
         if self.deadline:
@@ -213,7 +213,7 @@ class PublisherEventCallbacks:
         self.liveliness = liveliness
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, publisher_handle: Handle,
+        self, callback_group: CallbackGroup, publisher_handle: Handle
     ) -> List[QoSEventHandler]:
         event_handlers = []
         if self.deadline:
