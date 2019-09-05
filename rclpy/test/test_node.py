@@ -1550,7 +1550,11 @@ class TestCreateNode(unittest.TestCase):
         rclpy.init(context=context)
         try:
             node = rclpy.create_node(
-                'my_node', namespace='/my_ns', cli_args=['-r', '__ns:=/foo/bar'], context=context)
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '-r', '__ns:=/foo/bar'],
+                context=context
+            )
             self.assertEqual('/foo/bar', node.get_namespace())
             node.destroy_node()
         finally:
