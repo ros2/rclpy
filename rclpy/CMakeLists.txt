@@ -28,16 +28,16 @@ if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
-# enables using the Python extensions from the build space for testing
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
-
 ament_python_install_package(${PROJECT_NAME})
+
+# enables using the Python extensions from the build space for testing
+configure_file("resource/__init__.py.in" "${PROJECT_NAME}/__init__.py" @ONLY)
 
 function(set_properties _targetname _build_type)
   set_target_properties(${_targetname} PROPERTIES
     PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
-    RUNTIME_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
+    LIBRARY_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
+    RUNTIME_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}"
     OUTPUT_NAME "_${_targetname}${PythonExtra_EXTENSION_SUFFIX}"
     SUFFIX "${PythonExtra_EXTENSION_EXTENSION}")
 endfunction()
@@ -218,7 +218,7 @@ if(BUILD_TESTING)
     ament_add_pytest_test(${_test_name} ${_test_path}
       PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
       APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
-        PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
+      ENV RCLPY_TEST_LIBRARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
       TIMEOUT 60
       WERROR ON
     )

@@ -15,6 +15,8 @@
 import threading
 from typing import Callable
 
+from rclpy.impl.implementation_singleton import rclpy_implementation
+
 
 class Context:
     """
@@ -26,7 +28,6 @@ class Context:
     """
 
     def __init__(self):
-        from rclpy.impl.implementation_singleton import rclpy_implementation
         self._handle = rclpy_implementation.rclpy_create_context()
         self._lock = threading.Lock()
         self._callbacks = []
@@ -38,8 +39,6 @@ class Context:
 
     def ok(self):
         """Check if context hasn't been shut down."""
-        # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             return rclpy_implementation.rclpy_ok(self._handle)
 
@@ -51,16 +50,12 @@ class Context:
 
     def shutdown(self):
         """Shutdown this context."""
-        # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             rclpy_implementation.rclpy_shutdown(self._handle)
         self._call_on_shutdown_callbacks()
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
-        # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             if rclpy_implementation.rclpy_ok(self._handle):
                 rclpy_implementation.rclpy_shutdown(self._handle)

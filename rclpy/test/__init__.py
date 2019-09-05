@@ -12,18 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib
+import os
 import sys
 
 assert 'rclpy' not in sys.modules, 'rclpy should not have been imported before running tests'
 
-# this will make the extensions load from the build folder
-import rclpy.impl  # noqa
-import test_rclpy  # noqa
+# this will load rclpy from the build folder
+sys.path.insert(0, os.environ.get('RCLPY_TEST_LIBRARY_DIR'))
 
-
-def _custom_import(name):
-    return importlib.import_module(name, package='test_rclpy')
-
-
-rclpy.impl._import = _custom_import
+import rclpy  # noqa
+assert rclpy  # silence pyflakes
