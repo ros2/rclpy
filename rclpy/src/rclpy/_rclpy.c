@@ -289,6 +289,48 @@ _rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
   return RCL_RET_OK;
 }
 
+/// Raise an UnknownROSArgsError exception
+/* \param[in] pyargs a sequence of string args
+ * \param[in] unknown_ros_args_count the number of unknown ROS args
+ * \param[in] unknown_ros_args_indices the indices to unknown ROS args
+ */
+void _rclpy_raise_unknown_ros_args(
+  PyObject * pyargs,
+  const int * unknown_ros_args_indices,
+  int unknown_ros_args_count)
+{
+  PyObject * unknown_ros_pyargs = NULL;
+
+  pyargs = PySequence_List(pyargs);
+  if (NULL == pyargs) {
+    goto cleanup;
+  }
+
+  unknown_ros_pyargs = PyList_New(0);
+  if (NULL == unknown_ros_pyargs) {
+    goto cleanup;
+  }
+
+  for (int i = 0; i < unknown_ros_args_count; ++i) {
+    PyObject * ros_pyarg = PyList_GetItem(
+      pyargs, (Py_ssize_t)unknown_ros_args_indices[i]);
+    if (NULL == ros_pyarg) {
+      goto cleanup;
+    }
+    if (PyList_Append(unknown_ros_pyargs, ros_pyarg) != 0) {
+      goto cleanup;
+    }
+  }
+
+  PyErr_Format(
+    UnknownROSArgsError,
+    "Found unknown ROS arguments: %R",
+    unknown_ros_pyargs);
+cleanup:
+  Py_XDECREF(unknown_ros_pyargs);
+  Py_XDECREF(pyargs);
+}
+
 /// Parse a sequence of strings into rcl_arguments_t struct
 /* Raises TypeError of pyargs is not a sequence
  * Raises OverflowError if len(pyargs) > INT_MAX
@@ -300,7 +342,6 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
 {
   rcl_ret_t ret;
 
-  rcl_allocator_t allocator = rcl_get_default_allocator();
   int num_args = 0;
   char ** arg_values = NULL;
   // Py_None is a singleton so comparing pointer value works
@@ -315,6 +356,7 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
   // Otherwise the remapping functions will error if the user passes no arguments to a node and sets
   // use_global_arguments to False.
 
+  rcl_allocator_t allocator = rcl_get_default_allocator();
   // Adding const via cast to eliminate warning about incompatible pointer type
   const char ** const_arg_values = (const char **)arg_values;
   ret = rcl_parse_arguments(num_args, const_arg_values, allocator, parsed_args);
@@ -323,15 +365,14 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
     if (ret == RCL_RET_INVALID_ROS_ARGS) {
       PyErr_Format(
         RCLInvalidROSArgsError,
-        "Failed to parse arguments: %s",
+        "Failed to parse ROS arguments: %s",
         rcl_get_error_string().str);
-      rcl_reset_error();
-      goto cleanup;
+    } else {
+      PyErr_Format(
+        PyExc_RuntimeError,
+        "Failed to init: %s",
+        rcl_get_error_string().str);
     }
-    PyErr_Format(
-      PyExc_RuntimeError,
-      "Failed to init: %s",
-      rcl_get_error_string().str);
     rcl_reset_error();
     goto cleanup;
   }
@@ -341,7 +382,7 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
     int * unparsed_ros_args_indices = NULL;
     ret = rcl_arguments_get_unparsed_ros(
       parsed_args, allocator, &unparsed_ros_args_indices);
-    if (ret != RCL_RET_OK) {
+    if (RCL_RET_OK != ret) {
       PyErr_Format(
         PyExc_RuntimeError,
         "Failed to get unparsed ROS arguments: %s",
@@ -349,38 +390,8 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
       rcl_reset_error();
       goto cleanup;
     }
-
-    PyObject * unknown_ros_pyargs = NULL;
-
-    pyargs = PySequence_List(pyargs);
-    if (pyargs == NULL) {
-      goto inner_cleanup;
-    }
-
-    unknown_ros_pyargs = PyList_New(0);
-    if (unknown_ros_pyargs == NULL) {
-      goto inner_cleanup;
-    }
-
-    for (int i = 0; i < unparsed_ros_args_count; ++i) {
-      PyObject * ros_pyarg = PySequence_GetItem(pyargs, (Py_ssize_t)i);
-      if (ros_pyarg == NULL) {
-        goto inner_cleanup;
-      }
-      if (PyList_Append(unknown_ros_pyargs, ros_pyarg) != 0) {
-        goto inner_cleanup;
-      }
-    }
-
-    PyErr_Format(
-      UnknownROSArgsError,
-      "found unknown ROS arguments: %R",
-      unknown_ros_pyargs);
-
-inner_cleanup:
+    _rclpy_raise_unknown_ros_args(pyargs, unparsed_ros_args_indices, unparsed_ros_args_count);
     allocator.deallocate(unparsed_ros_args_indices, allocator.state);
-    Py_XDECREF(unknown_ros_pyargs);
-    Py_XDECREF(pyargs);
     ret = RCL_RET_ERROR;
   }
 cleanup:
@@ -5052,7 +5063,10 @@ PyMODINIT_FUNC PyInit__rclpy(void)
     Py_DECREF(m);
     return NULL;
   }
-  PyModule_AddObject(m, "RCLInvalidROSArgsError", RCLInvalidROSArgsError);
+  if(PyModule_AddObject(m, "RCLInvalidROSArgsError", RCLInvalidROSArgsError) != 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
 
   UnknownROSArgsError = PyErr_NewExceptionWithDoc(
     "_rclpy.UnknownROSArgsError",
@@ -5062,7 +5076,10 @@ PyMODINIT_FUNC PyInit__rclpy(void)
     Py_DECREF(m);
     return NULL;
   }
-  PyModule_AddObject(m, "UnknownROSArgsError", UnknownROSArgsError);
+  if (PyModule_AddObject(m, "UnknownROSArgsError", UnknownROSArgsError) != 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
 
   if (PyErr_Occurred()) {
     Py_DECREF(m);
