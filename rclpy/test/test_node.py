@@ -1560,6 +1560,30 @@ class TestCreateNode(unittest.TestCase):
         finally:
             rclpy.shutdown(context=context)
 
+    def test_bad_node_arguments(self):
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
+
+        from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
+        invalid_ros_args_error_pattern = r'Failed to parse ROS arguments:.*not-a-remap.*'
+        with self.assertRaisesRegex(_rclpy.RCLInvalidROSArgsError, invalid_ros_args_error_pattern):
+            rclpy.create_node(
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '-r', 'not-a-remap'],
+                context=context)
+
+        unknown_ros_args_error_pattern = r'Found unknown ROS arguments:.*\[\'--my-custom-flag\'\]'
+        with self.assertRaisesRegex(_rclpy.UnknownROSArgsError, unknown_ros_args_error_pattern):
+            rclpy.create_node(
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '--my-custom-flag'],
+                context=context)
+
+        rclpy.shutdown(context=context)
+
 
 if __name__ == '__main__':
     unittest.main()
