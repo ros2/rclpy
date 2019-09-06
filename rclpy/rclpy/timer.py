@@ -12,20 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.clock import Clock
-from rclpy.clock import ClockType
 from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
 
 
-# TODO(mikaelarguedas) create a Timer or ROSTimer once we can specify custom time sources
-class WallTimer:
+class Timer:
 
-    def __init__(self, callback, callback_group, timer_period_ns, *, context=None):
+    def __init__(self, callback, callback_group, timer_period_ns, clock, *, context=None):
         self._context = get_default_context() if context is None else context
-        # TODO(sloretz) Allow passing clocks in via timer constructor
-        self._clock = Clock(clock_type=ClockType.STEADY_TIME)
+        self._clock = clock
         with self._clock.handle as clock_capsule:
             self.__handle = Handle(_rclpy.rclpy_create_timer(
                 clock_capsule, self._context.handle, timer_period_ns))
