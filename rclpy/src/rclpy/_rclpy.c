@@ -5063,7 +5063,7 @@ PyMODINIT_FUNC PyInit__rclpy(void)
     Py_DECREF(m);
     return NULL;
   }
-  if(PyModule_AddObject(m, "RCLInvalidROSArgsError", RCLInvalidROSArgsError) != 0) {
+  if (PyModule_AddObject(m, "RCLInvalidROSArgsError", RCLInvalidROSArgsError) != 0) {
     Py_DECREF(m);
     return NULL;
   }
