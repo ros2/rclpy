@@ -1,5 +1,10 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.7 (2019-09-06)
+------------------
+* Fixed Python 3.5 compatibility by removing unsupported type hints. (`#414 <https://github.com/ros2/rclpy/issues/414>`_)
+* Contributors: Steven! Ragnarök
+
 0.7.6 (2019-08-28)
 ------------------
 * Fix missing raise (`#390 <https://github.com/ros2/rclpy/pull/390>`_)
