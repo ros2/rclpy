@@ -29,15 +29,15 @@ if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # enables using the Python extensions from the build space for testing
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_impl/__init__.py" "")
 
 ament_python_install_package(${PROJECT_NAME})
 
 function(set_properties _targetname _build_type)
   set_target_properties(${_targetname} PROPERTIES
     PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
-    RUNTIME_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
+    LIBRARY_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_impl"
+    RUNTIME_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_impl"
     OUTPUT_NAME "_${_targetname}${PythonExtra_EXTENSION_SUFFIX}"
     SUFFIX "${PythonExtra_EXTENSION_EXTENSION}")
 endfunction()
@@ -67,7 +67,7 @@ function(configure_python_c_extension_library _library_name)
   )
 
   install(TARGETS ${_library_name}
-    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
+    DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}_impl"
   )
 endfunction()
 
@@ -95,6 +95,11 @@ install(TARGETS rclpy_common
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+)
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_impl/__init__.py"
+  DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}_impl"
 )
 
 add_library(

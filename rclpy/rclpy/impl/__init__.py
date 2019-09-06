@@ -18,7 +18,7 @@ import os
 
 def _import(name):
     try:
-        return importlib.import_module(name, package='rclpy')
+        return importlib.import_module(name, package='rclpy_impl')
     except ImportError as e:
         if e.path is not None and os.path.isfile(e.path):
             e.msg += \

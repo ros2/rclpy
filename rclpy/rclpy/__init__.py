@@ -45,6 +45,7 @@ from typing import List
 from typing import TYPE_CHECKING
 
 from rclpy.context import Context
+from rclpy.impl.implementation_singleton import rclpy_implementation
 from rclpy.parameter import Parameter
 from rclpy.task import Future
 from rclpy.utilities import get_default_context
@@ -68,8 +69,6 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
         (see :func:`.get_default_context`).
     """
     context = get_default_context() if context is None else context
-    # imported locally to avoid loading extensions on module import
-    from rclpy.impl.implementation_singleton import rclpy_implementation
     return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context.handle)
 
 
