@@ -16,7 +16,7 @@ import unittest
 import warnings
 
 from rclpy.duration import Duration
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.qos import _qos_profile_default
 from rclpy.qos import qos_profile_system_default
 from rclpy.qos import QoSDurabilityPolicy
@@ -31,7 +31,9 @@ class TestQosProfile(unittest.TestCase):
 
     def convert_and_assert_equality(self, qos_profile):
         c_profile = qos_profile.get_c_qos_profile()
-        converted_profile = QoSProfile(**_rclpy.rclpy_convert_to_py_qos_policy(c_profile))
+        converted_profile = QoSProfile(**get_rclpy_implementation().rclpy_convert_to_py_qos_policy(
+            c_profile
+        ))
         self.assertEqual(qos_profile, converted_profile)
 
     def test_depth_only_constructor(self):

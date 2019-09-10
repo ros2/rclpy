@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from rclpy.exceptions import InvalidNodeNameException
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 
 def validate_node_name(node_name):
@@ -27,7 +27,7 @@ def validate_node_name(node_name):
     :returns: True when it is valid
     :raises: InvalidNodeNameException: when the node_name is invalid
     """
-    result = _rclpy.rclpy_get_validation_error_for_node_name(node_name)
+    result = get_rclpy_implementation().rclpy_get_validation_error_for_node_name(node_name)
     if result is None:
         return True
     error_msg, invalid_index = result

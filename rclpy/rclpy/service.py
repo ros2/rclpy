@@ -1,4 +1,4 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2016-2019 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ from typing import Callable
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.qos import QoSProfile
 
 # Used for documentation purposes only
@@ -71,7 +71,7 @@ class Service:
         if not isinstance(response, self.srv_type.Response):
             raise TypeError()
         with self.handle as capsule:
-            _rclpy.rclpy_send_response(capsule, response, header)
+            get_rclpy_implementation().rclpy_send_response(capsule, response, header)
 
     @property
     def handle(self):

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import builtin_interfaces
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 
 class Duration:
@@ -22,14 +22,18 @@ class Duration:
         total_nanoseconds = int(seconds * 1e9)
         total_nanoseconds += int(nanoseconds)
         try:
-            self._duration_handle = _rclpy.rclpy_create_duration(total_nanoseconds)
+            self._duration_handle = get_rclpy_implementation().rclpy_create_duration(
+                total_nanoseconds
+            )
         except OverflowError as e:
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C time point.') from e
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_duration_get_nanoseconds(self._duration_handle)
+        return get_rclpy_implementation().rclpy_duration_get_nanoseconds(
+            self._duration_handle
+        )
 
     def __repr__(self):
         return 'Duration(nanoseconds={0})'.format(self.nanoseconds)

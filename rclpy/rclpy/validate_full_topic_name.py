@@ -14,7 +14,7 @@
 
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 
 def validate_full_topic_name(name, *, is_service=False):
@@ -31,7 +31,7 @@ def validate_full_topic_name(name, *, is_service=False):
     :returns: True when it is valid
     :raises: InvalidTopicNameException: when the name is invalid
     """
-    result = _rclpy.rclpy_get_validation_error_for_full_topic_name(name)
+    result = get_rclpy_implementation().rclpy_get_validation_error_for_full_topic_name(name)
     if result is None:
         return True
     error_msg, invalid_index = result

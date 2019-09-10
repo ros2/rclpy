@@ -15,7 +15,7 @@
 from threading import RLock
 import weakref
 
-from rclpy.impl.implementation_singleton import rclpy_pycapsule_implementation as _rclpy_capsule
+from rclpy.impl.implementation_singleton import get_rclpy_pycapsule_implementation
 
 
 class InvalidHandle(Exception):
@@ -52,8 +52,10 @@ class Handle:
         self.__dependent_handles = weakref.WeakSet()
         self.__destroy_callbacks = []
         # Called to give an opportunity to raise an exception if the object is not a pycapsule.
-        self.__capsule_name = _rclpy_capsule.rclpy_pycapsule_name(pycapsule)
-        self.__capsule_pointer = _rclpy_capsule.rclpy_pycapsule_pointer(pycapsule)
+        self.__capsule_name = get_rclpy_pycapsule_implementation().rclpy_pycapsule_name(pycapsule)
+        self.__capsule_pointer = get_rclpy_pycapsule_implementation().rclpy_pycapsule_pointer(
+            pycapsule
+        )
 
     def __eq__(self, other):
         return self.__capsule_pointer == other.__capsule_pointer
@@ -188,7 +190,7 @@ class Handle:
     def __destroy_self(self):
         with self.__rlock:
             # Calls pycapsule destructor
-            _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+            get_rclpy_pycapsule_implementation().rclpy_pycapsule_destroy(self.__capsule)
             # Call post-destroy callbacks
             while self.__destroy_callbacks:
                 self.__destroy_callbacks.pop()(self)

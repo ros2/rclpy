@@ -1,4 +1,4 @@
-# Copyright 2017 Open Source Robotics Foundation, Inc.
+# Copyright 2017-2019 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import inspect
 import os
 import time
 
-from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
+from rclpy.impl.implementation_singleton import get_rclpy_logging_implementation
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
 _internal_callers = []
@@ -231,18 +231,24 @@ class RcutilsLogger:
     def set_level(self, level):
         from rclpy.logging import LoggingSeverity
         level = LoggingSeverity(level)
-        return _rclpy_logging.rclpy_logging_set_logger_level(self.name, level)
+        return get_rclpy_logging_implementation().rclpy_logging_set_logger_level(self.name, level)
 
     def get_effective_level(self):
         from rclpy.logging import LoggingSeverity
         level = LoggingSeverity(
-            _rclpy_logging.rclpy_logging_get_logger_effective_level(self.name))
+            get_rclpy_logging_implementation().rclpy_logging_get_logger_effective_level(
+                self.name
+            )
+        )
         return level
 
     def is_enabled_for(self, severity):
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
-        return _rclpy_logging.rclpy_logging_logger_is_enabled_for(self.name, severity)
+        return get_rclpy_logging_implementation().rclpy_logging_logger_is_enabled_for(
+            self.name,
+            severity
+        )
 
     def log(self, message, severity, **kwargs):
         r"""
@@ -322,7 +328,7 @@ class RcutilsLogger:
                 return False
 
         # Call the relevant function from the C extension.
-        _rclpy_logging.rclpy_logging_rcutils_log(
+        get_rclpy_logging_implementation().rclpy_logging_rcutils_log(
             severity, name, message,
             caller_id.function_name, caller_id.file_path, caller_id.line_number)
         return True

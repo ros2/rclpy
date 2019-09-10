@@ -19,7 +19,7 @@ from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.context import Context
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.qos import QoSProfile
 from rclpy.task import Future
 
@@ -123,7 +123,7 @@ class Client:
             raise TypeError()
 
         with self.handle as capsule:
-            sequence_number = _rclpy.rclpy_send_request(capsule, request)
+            sequence_number = get_rclpy_implementation().rclpy_send_request(capsule, request)
         if sequence_number in self._pending_requests:
             raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)
 
@@ -141,7 +141,7 @@ class Client:
         :return: ``True`` if a server is ready, ``False`` otherwise.
         """
         with self.handle as capsule:
-            return _rclpy.rclpy_service_server_is_available(capsule)
+            return get_rclpy_implementation().rclpy_service_server_is_available(capsule)
 
     def wait_for_service(self, timeout_sec: float = None) -> bool:
         """

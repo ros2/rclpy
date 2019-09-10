@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Open Source Robotics Foundation, Inc.
+# Copyright 2016-2019 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,17 +19,56 @@ For example, you might use it like this:
 
 .. code::
 
-    from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+    from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
-    _rclpy.rclpy_init()
-    while _rclpy.rclpy_ok():
+    get_rclpy_implementation().rclpy_init()
+    while get_rclpy_implementation().rclpy_ok():
         # ...
 """
 
 from rclpy.impl import _import
 
-rclpy_implementation = _import('._rclpy')
-rclpy_action_implementation = _import('._rclpy_action')
-rclpy_logging_implementation = _import('._rclpy_logging')
-rclpy_signal_handler_implementation = _import('._rclpy_signal_handler')
-rclpy_pycapsule_implementation = _import('._rclpy_pycapsule')
+
+def get_rclpy_implementation():
+    """
+    Get the rclpy C extension.
+
+    This function shouldn't be called from module level.
+    """
+    return _import('._rclpy')
+
+
+def get_rclpy_action_implementation():
+    """
+    Get the rclpy action C extension.
+
+    This function shouldn't be called from module level.
+    """
+    return _import('._rclpy_action')
+
+
+def get_rclpy_logging_implementation():
+    """
+    Get the rclpy logging C extension.
+
+    This function shouldn't be called from module level.
+    """
+    return _import('._rclpy_logging')
+
+
+def get_rclpy_signal_handler_implementation():
+    """
+    Get the rclpy C extension.
+
+    This function shouldn't be called from module level.
+    """
+    return _import('._rclpy_signal_handler')
+
+
+def get_rclpy_pycapsule_implementation():
+    """
+    Get the rclpy pycapsule C extension.
+
+    This function shouldn't be called from module level.
+    """
+    return _import('._rclpy_pycapsule')

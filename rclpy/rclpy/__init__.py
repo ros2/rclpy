@@ -45,6 +45,10 @@ from typing import List
 from typing import TYPE_CHECKING
 
 from rclpy.context import Context
+from rclpy.executors import Executor
+from rclpy.executors import SingleThreadedExecutor
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
+from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.task import Future
 from rclpy.utilities import get_default_context
@@ -52,11 +56,6 @@ from rclpy.utilities import get_rmw_implementation_identifier  # noqa: F401
 from rclpy.utilities import ok  # noqa: F401 forwarding to this module
 from rclpy.utilities import shutdown as _shutdown
 from rclpy.utilities import try_shutdown  # noqa: F401
-
-# Avoid loading extensions on module import
-if TYPE_CHECKING:
-    from rclpy.executors import Executor  # noqa: F401
-    from rclpy.node import Node  # noqa: F401
 
 
 def init(*, args: List[str] = None, context: Context = None) -> None:
@@ -68,9 +67,7 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
         (see :func:`.get_default_context`).
     """
     context = get_default_context() if context is None else context
-    # imported locally to avoid loading extensions on module import
-    from rclpy.impl.implementation_singleton import rclpy_implementation
-    return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context.handle)
+    return get_rclpy_implementation().rclpy_init(args if args is not None else sys.argv, context.handle)
 
 
 # The global spin functions need an executor to do the work
@@ -78,11 +75,9 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
 __executor = None
 
 
-def get_global_executor() -> 'Executor':
+def get_global_executor() -> Executor:
     global __executor
     if __executor is None:
-        # imported locally to avoid loading extensions on module import
-        from rclpy.executors import SingleThreadedExecutor
         __executor = SingleThreadedExecutor()
     return __executor
 
@@ -114,7 +109,7 @@ def create_node(
     parameter_overrides: List[Parameter] = None,
     allow_undeclared_parameters: bool = False,
     automatically_declare_parameters_from_overrides: bool = False
-) -> 'Node':
+) -> Node:
     """
     Create an instance of :class:`.Node`.
 
@@ -136,8 +131,6 @@ def create_node(
         be used to implicitly declare parameters on the node during creation, default False.
     :return: An instance of the newly created node.
     """
-    # imported locally to avoid loading extensions on module import
-    from rclpy.node import Node  # noqa: F811
     return Node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,

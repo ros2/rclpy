@@ -18,8 +18,8 @@ from enum import IntEnum
 import warnings
 
 from rclpy.duration import Duration
-from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_action_implementation
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 # "Forward-declare" this value so that it can be used in the QoSProfile initializer.
 # It will have a value by the end of definitions, before user code runs.
@@ -218,7 +218,7 @@ class QoSProfile:
         self._avoid_ros_namespace_conventions = value
 
     def get_c_qos_profile(self):
-        return _rclpy.rclpy_convert_from_py_qos_policy(
+        return get_rclpy_implementation().rclpy_convert_from_py_qos_policy(
             self.history,
             self.depth,
             self.reliability,
@@ -350,20 +350,25 @@ class DeprecatedQoSProfile(QoSProfile):
         self.name = profile_name
 
 
-_qos_profile_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile('qos_profile_default'))
+_qos_profile_default = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
+    'qos_profile_default'
+))
 qos_profile_default = DeprecatedQoSProfile(_qos_profile_default, 'qos_profile_default')
-qos_profile_system_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+qos_profile_system_default = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
     'qos_profile_system_default'))
-qos_profile_sensor_data = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+qos_profile_sensor_data = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
     'qos_profile_sensor_data'))
-qos_profile_services_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+qos_profile_services_default = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
     'qos_profile_services_default'))
-qos_profile_parameters = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+qos_profile_parameters = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
     'qos_profile_parameters'))
-qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+qos_profile_parameter_events = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events'))
 qos_profile_action_status_default = QoSProfile(
-    **_rclpy_action.rclpy_action_get_rmw_qos_profile('rcl_action_qos_profile_status_default'))
+    **get_rclpy_action_implementation().rclpy_action_get_rmw_qos_profile(
+        'rcl_action_qos_profile_status_default'
+    )
+)
 
 
 class QoSPresetProfiles(Enum):

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from rclpy.exceptions import InvalidNamespaceException
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 
 def validate_namespace(namespace):
@@ -31,7 +31,9 @@ def validate_namespace(namespace):
     :returns: True when it is valid
     :raises: InvalidNamespaceException: when the namespace is invalid
     """
-    result = _rclpy.rclpy_get_validation_error_for_namespace(namespace)
+    result = get_rclpy_implementation().rclpy_get_validation_error_for_namespace(
+        namespace
+    )
     if result is None:
         return True
     error_msg, invalid_index = result

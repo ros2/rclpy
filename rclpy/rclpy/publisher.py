@@ -16,7 +16,7 @@ from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.handle import Handle
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 
@@ -67,7 +67,7 @@ class Publisher:
         if not isinstance(msg, self.msg_type):
             raise TypeError()
         with self.handle as capsule:
-            _rclpy.rclpy_publish(capsule, msg)
+            get_rclpy_implementation().rclpy_publish(capsule, msg)
 
     @property
     def handle(self):
@@ -84,4 +84,4 @@ class Publisher:
         application must call this at least as often as ``QoSProfile.liveliness_lease_duration``.
         """
         with self.handle as capsule:
-            _rclpy.rclpy_assert_liveliness(capsule)
+            get_rclpy_implementation().rclpy_assert_liveliness(capsule)

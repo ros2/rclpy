@@ -21,7 +21,7 @@ from typing import Optional
 import rclpy
 from rclpy.callback_groups import CallbackGroup
 from rclpy.handle import Handle
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
@@ -113,7 +113,10 @@ class QoSEventHandler(Waitable):
 
         self._parent_handle = parent_handle
         with parent_handle as parent_capsule:
-            event_capsule = _rclpy.rclpy_create_event(event_type, parent_capsule)
+            event_capsule = get_rclpy_implementation().rclpy_create_event(
+                event_type,
+                parent_capsule
+            )
         self._event_handle = Handle(event_capsule)
         self._event_handle.requires(self._parent_handle)
         self._ready_to_take_data = False
@@ -124,7 +127,11 @@ class QoSEventHandler(Waitable):
         """Return True if entities are ready in the wait set."""
         if self._event_index is None:
             return False
-        if _rclpy.rclpy_wait_set_is_ready('event', wait_set, self._event_index):
+        if get_rclpy_implementation().rclpy_wait_set_is_ready(
+            'event',
+            wait_set,
+            self._event_index
+        ):
             self._ready_to_take_data = True
         return self._ready_to_take_data
 
@@ -133,7 +140,11 @@ class QoSEventHandler(Waitable):
         if self._ready_to_take_data:
             self._ready_to_take_data = False
             with self._parent_handle as parent_capsule, self._event_handle as event_capsule:
-                return _rclpy.rclpy_take_event(event_capsule, parent_capsule, self.event_type)
+                return get_rclpy_implementation().rclpy_take_event(
+                    event_capsule,
+                    parent_capsule,
+                    self.event_type
+                )
         return None
 
     async def execute(self, taken_data):
@@ -149,7 +160,11 @@ class QoSEventHandler(Waitable):
     def add_to_wait_set(self, wait_set):
         """Add entites to wait set."""
         with self._event_handle as event_capsule:
-            self._event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, event_capsule)
+            self._event_index = get_rclpy_implementation().rclpy_wait_set_add_entity(
+                'event',
+                wait_set,
+                event_capsule
+            )
     # End Waitable API
 
 

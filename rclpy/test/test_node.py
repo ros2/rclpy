@@ -33,6 +33,7 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_sensor_data
@@ -1564,10 +1565,11 @@ class TestCreateNode(unittest.TestCase):
         context = rclpy.context.Context()
         rclpy.init(context=context)
 
-        from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
         invalid_ros_args_error_pattern = r'Failed to parse ROS arguments:.*not-a-remap.*'
-        with self.assertRaisesRegex(_rclpy.RCLInvalidROSArgsError, invalid_ros_args_error_pattern):
+        with self.assertRaisesRegex(
+            get_rclpy_implementation().RCLInvalidROSArgsError,
+            invalid_ros_args_error_pattern
+        ):
             rclpy.create_node(
                 'my_node',
                 namespace='/my_ns',
@@ -1575,7 +1577,10 @@ class TestCreateNode(unittest.TestCase):
                 context=context)
 
         unknown_ros_args_error_pattern = r'Found unknown ROS arguments:.*\[\'--my-custom-flag\'\]'
-        with self.assertRaisesRegex(_rclpy.UnknownROSArgsError, unknown_ros_args_error_pattern):
+        with self.assertRaisesRegex(
+            get_rclpy_implementation().UnknownROSArgsError,
+            unknown_ros_args_error_pattern
+        ):
             rclpy.create_node(
                 'my_node',
                 namespace='/my_ns',

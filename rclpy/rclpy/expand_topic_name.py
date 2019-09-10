@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 
 def expand_topic_name(topic_name, node_name, node_namespace):
@@ -30,4 +30,8 @@ def expand_topic_name(topic_name, node_name, node_namespace):
     :returns: expanded topic name which is fully qualified
     :raises: ValueError if the topic name, node name or namespace are invalid
     """
-    return _rclpy.rclpy_expand_topic_name(topic_name, node_name, node_namespace)
+    return get_rclpy_implementation().rclpy_expand_topic_name(
+        topic_name,
+        node_name,
+        node_namespace
+    )

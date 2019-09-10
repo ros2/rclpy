@@ -1,4 +1,4 @@
-# Copyright 2018 Open Source Robotics Foundation, Inc.
+# Copyright 2018-2019 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 import builtin_interfaces
 from rclpy.clock import ClockType
 from rclpy.duration import Duration
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 
 CONVERSION_CONSTANT = 10 ** 9
@@ -33,7 +33,10 @@ class Time:
         total_nanoseconds = int(seconds * CONVERSION_CONSTANT)
         total_nanoseconds += int(nanoseconds)
         try:
-            self._time_handle = _rclpy.rclpy_create_time_point(total_nanoseconds, clock_type)
+            self._time_handle = get_rclpy_implementation().rclpy_create_time_point(
+                total_nanoseconds,
+                clock_type
+            )
         except OverflowError as e:
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C time point.') from e
@@ -41,7 +44,7 @@ class Time:
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_time_point_get_nanoseconds(self._time_handle)
+        return get_rclpy_implementation().rclpy_time_point_get_nanoseconds(self._time_handle)
 
     def seconds_nanoseconds(self):
         """

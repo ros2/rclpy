@@ -17,7 +17,7 @@ from unittest.mock import Mock
 
 import rclpy
 from rclpy.handle import Handle
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import QoSLivelinessChangedInfo
 from rclpy.qos_event import QoSLivelinessLostInfo
@@ -106,7 +106,10 @@ class TestQoSEvent(unittest.TestCase):
 
     def _create_event_handle(self, parent_entity, event_type):
         with parent_entity.handle as parent_capsule:
-            event_capsule = _rclpy.rclpy_create_event(event_type, parent_capsule)
+            event_capsule = get_rclpy_implementation().rclpy_create_event(
+                event_type,
+                parent_capsule
+            )
         self.assertIsNotNone(event_capsule)
         return Handle(event_capsule)
 
@@ -135,32 +138,49 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
-        wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
+        wait_set = get_rclpy_implementation().rclpy_get_zero_initialized_wait_set()
+        get_rclpy_implementation().rclpy_wait_set_init(
+            wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
 
         deadline_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
         with deadline_event_handle as capsule:
-            deadline_event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, capsule)
+            deadline_event_index = get_rclpy_implementation().rclpy_wait_set_add_entity(
+                'event',
+                wait_set,
+                capsule
+            )
         self.assertIsNotNone(deadline_event_index)
 
         liveliness_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
         with liveliness_event_handle as capsule:
-            liveliness_event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, capsule)
+            liveliness_event_index = get_rclpy_implementation().rclpy_wait_set_add_entity(
+                'event',
+                wait_set,
+                capsule
+            )
         self.assertIsNotNone(liveliness_event_index)
 
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
-        _rclpy.rclpy_wait(wait_set, 0)
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, deadline_event_index))
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, liveliness_event_index))
+        get_rclpy_implementation().rclpy_wait(wait_set, 0)
+        self.assertFalse(get_rclpy_implementation().rclpy_wait_set_is_ready(
+            'event',
+            wait_set,
+            deadline_event_index
+        ))
+        self.assertFalse(get_rclpy_implementation().rclpy_wait_set_is_ready(
+            'event',
+            wait_set,
+            liveliness_event_index
+        ))
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side
         try:
             with deadline_event_handle as event_capsule, publisher.handle as publisher_capsule:
-                event_data = _rclpy.rclpy_take_event(
+                event_data = get_rclpy_implementation().rclpy_take_event(
                     event_capsule,
                     publisher_capsule,
                     QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
@@ -172,7 +192,7 @@ class TestQoSEvent(unittest.TestCase):
 
         try:
             with liveliness_event_handle as event_capsule, publisher.handle as publisher_capsule:
-                event_data = _rclpy.rclpy_take_event(
+                event_data = get_rclpy_implementation().rclpy_take_event(
                     event_capsule,
                     publisher_capsule,
                     QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
@@ -188,32 +208,48 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         subscription = self.node.create_subscription(EmptyMsg, 'test_topic', Mock(), 10)
-        wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
+        wait_set = get_rclpy_implementation().rclpy_get_zero_initialized_wait_set()
+        get_rclpy_implementation().rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
 
         deadline_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
         with deadline_event_handle as capsule:
-            deadline_event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, capsule)
+            deadline_event_index = get_rclpy_implementation().rclpy_wait_set_add_entity(
+                'event',
+                wait_set,
+                capsule
+            )
         self.assertIsNotNone(deadline_event_index)
 
         liveliness_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
         with liveliness_event_handle as capsule:
-            liveliness_event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, capsule)
+            liveliness_event_index = get_rclpy_implementation().rclpy_wait_set_add_entity(
+                'event',
+                wait_set,
+                capsule
+            )
         self.assertIsNotNone(liveliness_event_index)
 
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
-        _rclpy.rclpy_wait(wait_set, 0)
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, deadline_event_index))
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, liveliness_event_index))
+        get_rclpy_implementation().rclpy_wait(wait_set, 0)
+        self.assertFalse(get_rclpy_implementation().rclpy_wait_set_is_ready(
+            'event',
+            wait_set,
+            deadline_event_index
+        ))
+        self.assertFalse(get_rclpy_implementation().rclpy_wait_set_is_ready(
+            'event',
+            wait_set,
+            liveliness_event_index
+        ))
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side
         try:
             with deadline_event_handle as event_capsule, subscription.handle as parent_capsule:
-                event_data = _rclpy.rclpy_take_event(
+                event_data = get_rclpy_implementation().rclpy_take_event(
                     event_capsule,
                     parent_capsule,
                     QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
@@ -225,7 +261,7 @@ class TestQoSEvent(unittest.TestCase):
 
         try:
             with liveliness_event_handle as event_capsule, subscription.handle as parent_capsule:
-                event_data = _rclpy.rclpy_take_event(
+                event_data = get_rclpy_implementation().rclpy_take_event(
                     event_capsule,
                     parent_capsule,
                     QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
