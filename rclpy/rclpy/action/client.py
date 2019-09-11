@@ -22,8 +22,7 @@ from action_msgs.srv import CancelGoal
 
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import get_rclpy_action_implementation
-from rclpy.qos import qos_profile_action_status_default
-from rclpy.qos import qos_profile_services_default
+from rclpy.qos import qos_profiles
 from rclpy.qos import QoSProfile
 from rclpy.task import Future
 from rclpy.type_support import check_for_type_support
@@ -118,11 +117,11 @@ class ActionClient(Waitable):
         action_name,
         *,
         callback_group=None,
-        goal_service_qos_profile=qos_profile_services_default,
-        result_service_qos_profile=qos_profile_services_default,
-        cancel_service_qos_profile=qos_profile_services_default,
-        feedback_sub_qos_profile=QoSProfile(depth=10),
-        status_sub_qos_profile=qos_profile_action_status_default
+        goal_service_qos_profile=None,
+        result_service_qos_profile=None,
+        cancel_service_qos_profile=None,
+        feedback_sub_qos_profile=None,
+        status_sub_qos_profile=None
     ):
         """
         Constructor.
@@ -139,6 +138,17 @@ class ActionClient(Waitable):
         :param feedback_sub_qos_profile: QoS profile for the feedback subscriber.
         :param status_sub_qos_profile: QoS profile for the status subscriber.
         """
+        if goal_service_qos_profile is None:
+            goal_service_qos_profile = qos_profiles.services_default
+        if result_service_qos_profile is None:
+            result_service_qos_profile = qos_profiles.services_default
+        if cancel_service_qos_profile is None:
+            cancel_service_qos_profile = qos_profiles.services_default
+        if feedback_sub_qos_profile is None:
+            feedback_sub_qos_profile = QoSProfile(depth=10)
+        if status_sub_qos_profile is None:
+            status_sub_qos_profile = qos_profiles.action_status_default
+
         if callback_group is None:
             callback_group = node.default_callback_group
 

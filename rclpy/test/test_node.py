@@ -35,8 +35,7 @@ from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import get_rclpy_implementation
 from rclpy.parameter import Parameter
-from rclpy.qos import qos_profile_default
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import qos_profiles
 from rclpy.time_source import USE_SIM_TIME_NAME
 from test_msgs.msg import BasicTypes
 
@@ -70,7 +69,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_create_publisher(self):
         self.node.create_publisher(BasicTypes, 'chatter', 0)
         self.node.create_publisher(BasicTypes, 'chatter', 1)
-        self.node.create_publisher(BasicTypes, 'chatter', qos_profile_sensor_data)
+        self.node.create_publisher(BasicTypes, 'chatter', qos_profiles.sensor_data)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
             self.node.create_publisher(BasicTypes, 'chatter?', 1)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not start with a number'):
@@ -86,7 +85,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 0)
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
         self.node.create_subscription(
-            BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_sensor_data)
+            BasicTypes, 'chatter', lambda msg: print(msg), qos_profiles.sensor_data)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
             self.node.create_subscription(BasicTypes, 'chatter?', lambda msg: print(msg), 1)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not start with a number'):
@@ -154,7 +153,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
-            self.node.create_publisher(BasicTypes, 'chatter', qos_profile_default)
+            self.node.create_publisher(BasicTypes, 'chatter', qos_profiles.default)
             assert len(w) == 1
             assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:
@@ -165,7 +164,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             self.node.create_subscription(
-                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_default)
+                BasicTypes, 'chatter', lambda msg: print(msg), qos_profiles.default)
             assert len(w) == 1
             assert issubclass(w[0].category, UserWarning)
         with warnings.catch_warnings(record=True) as w:

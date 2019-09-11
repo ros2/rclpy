@@ -42,7 +42,6 @@ This will invalidate all entities derived from the context.
 
 import sys
 from typing import List
-from typing import TYPE_CHECKING
 
 from rclpy.context import Context
 from rclpy.executors import Executor
@@ -67,7 +66,9 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
         (see :func:`.get_default_context`).
     """
     context = get_default_context() if context is None else context
-    return get_rclpy_implementation().rclpy_init(args if args is not None else sys.argv, context.handle)
+    return get_rclpy_implementation().rclpy_init(
+        args if args is not None else sys.argv, context.handle
+    )
 
 
 # The global spin functions need an executor to do the work

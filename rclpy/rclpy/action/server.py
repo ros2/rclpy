@@ -20,8 +20,7 @@ from action_msgs.msg import GoalInfo, GoalStatus
 
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import get_rclpy_action_implementation
-from rclpy.qos import qos_profile_action_status_default
-from rclpy.qos import qos_profile_services_default
+from rclpy.qos import qos_profiles
 from rclpy.qos import QoSProfile
 from rclpy.task import Future
 from rclpy.type_support import check_for_type_support
@@ -212,11 +211,11 @@ class ActionServer(Waitable):
         goal_callback=default_goal_callback,
         handle_accepted_callback=default_handle_accepted_callback,
         cancel_callback=default_cancel_callback,
-        goal_service_qos_profile=qos_profile_services_default,
-        result_service_qos_profile=qos_profile_services_default,
-        cancel_service_qos_profile=qos_profile_services_default,
-        feedback_pub_qos_profile=QoSProfile(depth=10),
-        status_pub_qos_profile=qos_profile_action_status_default,
+        goal_service_qos_profile=None,
+        result_service_qos_profile=None,
+        cancel_service_qos_profile=None,
+        feedback_pub_qos_profile=None,
+        status_pub_qos_profile=None,
         result_timeout=900
     ):
         """
@@ -243,6 +242,17 @@ class ActionServer(Waitable):
         :param result_timeout: How long in seconds a result is kept by the server after a goal
             reaches a terminal state.
         """
+        if goal_service_qos_profile is None:
+            goal_service_qos_profile = qos_profiles.services_default
+        if result_service_qos_profile is None:
+            result_service_qos_profile = qos_profiles.services_default
+        if cancel_service_qos_profile is None:
+            cancel_service_qos_profile = qos_profiles.services_default
+        if feedback_pub_qos_profile is None:
+            feedback_pub_qos_profile = QoSProfile(depth=10)
+        if status_pub_qos_profile is None:
+            status_pub_qos_profile = qos_profiles.action_status_default
+
         if callback_group is None:
             callback_group = node.default_callback_group
 

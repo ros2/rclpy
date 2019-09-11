@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from argparse import Namespace
-from enum import Enum
 from enum import IntEnum
+from typing import Optional
 import warnings
 
 from rclpy.duration import Duration
@@ -23,7 +23,7 @@ from rclpy.impl.implementation_singleton import get_rclpy_implementation
 
 # "Forward-declare" this value so that it can be used in the QoSProfile initializer.
 # It will have a value by the end of definitions, before user code runs.
-_qos_profile_default = None
+qos_profiles = None
 
 
 class QoSProfile:
@@ -41,11 +41,11 @@ class QoSProfile:
         '_avoid_ros_namespace_conventions',
     ]
 
-    def __init__(self, **kwargs):
+    def __init__(self, *, do_not_use_defaults: bool = False, **kwargs):
         assert all('_' + key in self.__slots__ for key in kwargs.keys()), \
             'Invalid arguments passed to constructor: %r' % kwargs.keys()
 
-        if not _qos_profile_default:
+        if do_not_use_defaults or qos_profiles is None:
             # It is still definition time, and all calls to this initializer are expected to be
             # fully-defined preset profiles from the C side.
             assert all(kwargs[slot[1:]] is not None for slot in self.__slots__)
@@ -53,7 +53,7 @@ class QoSProfile:
             # if the above assertion failed.
             from_profile = Namespace(**{slot[1:]: None for slot in self.__slots__})
         else:
-            from_profile = _qos_profile_default
+            from_profile = qos_profiles.default
 
         if 'history' not in kwargs:
             if 'depth' in kwargs:
@@ -346,49 +346,115 @@ class DeprecatedQoSProfile(QoSProfile):
             deadline=qos_profile.deadline,
             liveliness=qos_profile.liveliness,
             liveliness_lease_duration=qos_profile.liveliness_lease_duration,
-            avoid_ros_namespace_conventions=qos_profile.avoid_ros_namespace_conventions)
+            avoid_ros_namespace_conventions=qos_profile.avoid_ros_namespace_conventions,
+            do_not_use_defaults=True
+        )
         self.name = profile_name
 
 
-_qos_profile_default = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
-    'qos_profile_default'
-))
-qos_profile_default = DeprecatedQoSProfile(_qos_profile_default, 'qos_profile_default')
-qos_profile_system_default = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
-    'qos_profile_system_default'))
-qos_profile_sensor_data = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
-    'qos_profile_sensor_data'))
-qos_profile_services_default = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
-    'qos_profile_services_default'))
-qos_profile_parameters = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
-    'qos_profile_parameters'))
-qos_profile_parameter_events = QoSProfile(**get_rclpy_implementation().rclpy_get_rmw_qos_profile(
-    'qos_profile_parameter_events'))
-qos_profile_action_status_default = QoSProfile(
-    **get_rclpy_action_implementation().rclpy_action_get_rmw_qos_profile(
-        'rcl_action_qos_profile_status_default'
-    )
-)
+class _QoSProfiles:
+    """Implementation detail."""
 
+    def __init__(self):
+        self.__non_deprecated_default: Optional[QoSProfile] = None
+        self.__default: Optional[DeprecatedQoSProfile] = None
+        self.__system_default: Optional[DeprecatedQoSProfile] = None
+        self.__sensor_data: Optional[QoSProfile] = None
+        self.__services_default: Optional[QoSProfile] = None
+        self.__parameters: Optional[QoSProfile] = None
+        self.__parameter_events: Optional[QoSProfile] = None
+        self.__action_status_default: Optional[QoSProfile] = None
 
-class QoSPresetProfiles(Enum):
-    SYSTEM_DEFAULT = qos_profile_system_default
-    SENSOR_DATA = qos_profile_sensor_data
-    SERVICES_DEFAULT = qos_profile_services_default
-    PARAMETERS = qos_profile_parameters
-    PARAMETER_EVENTS = qos_profile_parameter_events
-    ACTION_STATUS_DEFAULT = qos_profile_action_status_default
+    def __from_rclpy_c_extension(self, name: str):
+        return QoSProfile(
+            do_not_use_defaults=True,
+            **get_rclpy_implementation().rclpy_get_rmw_qos_profile(name)
+        )
 
-    """Noted that the following are duplicated from QoSPolicyEnum.
+    def __from_rclpy_action_c_extension(self, name: str):
+        return QoSProfile(
+            do_not_use_defaults=True,
+            **get_rclpy_action_implementation().rclpy_action_get_rmw_qos_profile(name)
+        )
 
-    Our supported version of Python3 (3.5) doesn't have a fix that allows mixins on Enum.
-    """
-    @classmethod
-    def short_keys(cls):
+    @property
+    def _default(self):
+        if self.__non_deprecated_default is None:
+            self.__non_deprecated_default = self.__from_rclpy_c_extension('qos_profile_default')
+        return self.__non_deprecated_default
+
+    @property
+    def default(self):
+        if self.__default is None:
+            self.__default = DeprecatedQoSProfile(
+                self._default,
+                'qos_profile_default'
+            )
+        return self.__default
+
+    @property
+    def system_default(self):
+        if self.__system_default is None:
+            self.__system_default = self.__from_rclpy_c_extension('qos_profile_system_default')
+        return self.__system_default
+
+    @property
+    def sensor_data(self):
+        if self.__sensor_data is None:
+            self.__sensor_data = self.__from_rclpy_c_extension('qos_profile_sensor_data')
+        return self.__sensor_data
+
+    @property
+    def services_default(self):
+        if self.__services_default is None:
+            self.__services_default = self.__from_rclpy_c_extension('qos_profile_services_default')
+        return self.__services_default
+
+    @property
+    def parameters(self):
+        if self.__parameters is None:
+            self.__parameters = self.__from_rclpy_c_extension('qos_profile_parameters')
+        return self.__parameters
+
+    @property
+    def parameter_events(self):
+        if self.__parameter_events is None:
+            self.__parameter_events = self.__from_rclpy_c_extension('qos_profile_parameter_events')
+        return self.__parameter_events
+
+    @property
+    def action_status_default(self):
+        if self.__action_status_default is None:
+            self.__action_status_default = self.__from_rclpy_action_c_extension(
+                'rcl_action_qos_profile_status_default'
+            )
+        return self.__action_status_default
+
+    def short_keys(self):
         """Return a list of shortened typing-friendly enum values."""
-        return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
+        return [k for k in self.__dict__.keys() if not k.startswith('_')]
 
-    @classmethod
-    def get_from_short_key(cls, name):
+    def get_from_short_key(self, name):
         """Retrieve a policy type from a short name, case-insensitive."""
-        return cls[name.upper()].value
+        return getattr(self, name.lower())
+
+
+"""
+The following default qos profiles are available under the `qos_profiles` namespace:
+    - default
+    - system_default
+    - sensor_data
+    - services_default
+    - parameteres
+    - parameter_events
+    - action_status_default
+They can be accessed by doing:
+```
+from rclpy.qos import qos_profiles
+...
+def some_function_or_method(...):
+    ...
+    something_else(..., qos_profiles.default)
+    ...
+"""
+qos_profiles = _QoSProfiles()

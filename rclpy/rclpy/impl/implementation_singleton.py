@@ -26,8 +26,6 @@ For example, you might use it like this:
         # ...
 """
 
-from rclpy.impl import _import
-
 
 def get_rclpy_implementation():
     """
@@ -35,6 +33,7 @@ def get_rclpy_implementation():
 
     This function shouldn't be called from module level.
     """
+    from rclpy.impl import _import
     return _import('._rclpy')
 
 
@@ -44,6 +43,7 @@ def get_rclpy_action_implementation():
 
     This function shouldn't be called from module level.
     """
+    from rclpy.impl import _import
     return _import('._rclpy_action')
 
 
@@ -53,6 +53,7 @@ def get_rclpy_logging_implementation():
 
     This function shouldn't be called from module level.
     """
+    from rclpy.impl import _import
     return _import('._rclpy_logging')
 
 
@@ -62,6 +63,7 @@ def get_rclpy_signal_handler_implementation():
 
     This function shouldn't be called from module level.
     """
+    from rclpy.impl import _import
     return _import('._rclpy_signal_handler')
 
 
@@ -71,4 +73,5 @@ def get_rclpy_pycapsule_implementation():
 
     This function shouldn't be called from module level.
     """
+    from rclpy.impl import _import
     return _import('._rclpy_pycapsule')

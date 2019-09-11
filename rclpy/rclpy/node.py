@@ -57,8 +57,7 @@ from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import DeprecatedQoSProfile
-from rclpy.qos import qos_profile_parameter_events
-from rclpy.qos import qos_profile_services_default
+from rclpy.qos import qos_profiles
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import SubscriptionEventCallbacks
@@ -172,7 +171,7 @@ class Node:
         self.__executor_weakref = None
 
         self._parameter_event_publisher = self.create_publisher(
-            ParameterEvent, 'parameter_events', qos_profile_parameter_events)
+            ParameterEvent, 'parameter_events', qos_profiles.parameter_events)
 
         with self.handle as capsule:
             self._parameter_overrides = get_rclpy_implementation().rclpy_get_node_parameters(
@@ -1195,7 +1194,7 @@ class Node:
         srv_type,
         srv_name: str,
         *,
-        qos_profile: QoSProfile = qos_profile_services_default,
+        qos_profile: Optional[QoSProfile] = None,
         callback_group: CallbackGroup = None
     ) -> Client:
         """
@@ -1211,6 +1210,8 @@ class Node:
             callback_group = self.default_callback_group
         check_for_type_support(srv_type)
         failed = False
+        if qos_profile is None:
+            qos_profile = qos_profiles.services_default
         try:
             with self.handle as node_capsule:
                 client_capsule = get_rclpy_implementation().rclpy_create_client(
@@ -1241,7 +1242,7 @@ class Node:
         srv_name: str,
         callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
         *,
-        qos_profile: QoSProfile = qos_profile_services_default,
+        qos_profile: Optional[QoSProfile] = None,
         callback_group: CallbackGroup = None
     ) -> Service:
         """
@@ -1259,6 +1260,8 @@ class Node:
             callback_group = self.default_callback_group
         check_for_type_support(srv_type)
         failed = False
+        if qos_profile is None:
+            qos_profile = qos_profiles.services_default
         try:
             with self.handle as node_capsule:
                 service_capsule = get_rclpy_implementation().rclpy_create_service(

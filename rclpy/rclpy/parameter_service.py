@@ -18,7 +18,7 @@ from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTy
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
-from rclpy.qos import qos_profile_parameters
+from rclpy.qos import qos_profiles
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
 
 
@@ -32,35 +32,35 @@ class ParameterService:
             TOPIC_SEPARATOR_STRING.join((nodename, 'describe_parameters'))
         node.create_service(
             DescribeParameters, describe_parameters_service_name,
-            self._describe_parameters_callback, qos_profile=qos_profile_parameters
+            self._describe_parameters_callback, qos_profile=qos_profiles.parameters
         )
         get_parameters_service_name = TOPIC_SEPARATOR_STRING.join((nodename, 'get_parameters'))
         node.create_service(
             GetParameters, get_parameters_service_name, self._get_parameters_callback,
-            qos_profile=qos_profile_parameters
+            qos_profile=qos_profiles.parameters
         )
         get_parameter_types_service_name = \
             TOPIC_SEPARATOR_STRING.join((nodename, 'get_parameter_types'))
         node.create_service(
             GetParameterTypes, get_parameter_types_service_name,
-            self._get_parameter_types_callback, qos_profile=qos_profile_parameters
+            self._get_parameter_types_callback, qos_profile=qos_profiles.parameters
         )
         list_parameters_service_name = TOPIC_SEPARATOR_STRING.join((nodename, 'list_parameters'))
         node.create_service(
             ListParameters, list_parameters_service_name, self._list_parameters_callback,
-            qos_profile=qos_profile_parameters
+            qos_profile=qos_profiles.parameters
         )
         set_parameters_service_name = TOPIC_SEPARATOR_STRING.join((nodename, 'set_parameters'))
         node.create_service(
             SetParameters, set_parameters_service_name, self._set_parameters_callback,
-            qos_profile=qos_profile_parameters
+            qos_profile=qos_profiles.parameters
         )
         set_parameters_atomically_service_name = \
             TOPIC_SEPARATOR_STRING.join((nodename, 'set_parameters_atomically'))
         node.create_service(
             SetParametersAtomically, set_parameters_atomically_service_name,
             self._set_parameters_atomically_callback,
-            qos_profile=qos_profile_parameters
+            qos_profile=qos_profiles.parameters
         )
 
     def _describe_parameters_callback(self, request, response):

@@ -17,12 +17,10 @@ import warnings
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import get_rclpy_implementation
-from rclpy.qos import _qos_profile_default
-from rclpy.qos import qos_profile_system_default
+from rclpy.qos import qos_profiles
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSLivelinessPolicy
-from rclpy.qos import QoSPresetProfiles
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 
@@ -141,15 +139,14 @@ class TestQosProfile(unittest.TestCase):
 
     def test_preset_profiles(self):
         # Make sure the Enum does what we expect
-        assert QoSPresetProfiles.SYSTEM_DEFAULT.value == qos_profile_system_default
         assert (
-            QoSPresetProfiles.SYSTEM_DEFAULT.value ==
-            QoSPresetProfiles.get_from_short_key('system_default'))
+            qos_profiles.system_default ==
+            qos_profiles.get_from_short_key('system_default'))
 
     def test_default_profile(self):
         with warnings.catch_warnings(record=True):
             warnings.simplefilter('always')
             profile = QoSProfile()
         assert all(
-            profile.__getattribute__(k) == _qos_profile_default.__getattribute__(k)
+            profile.__getattribute__(k) == qos_profiles._default.__getattribute__(k)
             for k in profile.__slots__)

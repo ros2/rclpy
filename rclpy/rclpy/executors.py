@@ -327,7 +327,10 @@ class Executor:
 
     def _take_client(self, client):
         with client.handle as capsule:
-            return get_rclpy_implementation().rclpy_take_response(capsule, client.srv_type.Response)
+            return get_rclpy_implementation().rclpy_take_response(
+                capsule,
+                client.srv_type.Response
+            )
 
     async def _execute_client(self, client, seq_and_response):
         sequence, response = seq_and_response
@@ -343,7 +346,10 @@ class Executor:
 
     def _take_service(self, srv):
         with srv.handle as capsule:
-            request_and_header = get_rclpy_implementation().rclpy_take_request(capsule, srv.srv_type.Request)
+            request_and_header = get_rclpy_implementation().rclpy_take_request(
+                capsule,
+                srv.srv_type.Request
+            )
         return request_and_header
 
     async def _execute_service(self, srv, request_and_header):

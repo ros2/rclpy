@@ -15,7 +15,7 @@
 
 from enum import IntEnum
 
-from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
+from rclpy.impl.implementation_singleton import get_rclpy_logging_implementation
 import rclpy.impl.rcutils_logger
 
 
@@ -44,11 +44,11 @@ def get_logger(name):
 
 
 def initialize():
-    return _rclpy_logging.rclpy_logging_initialize()
+    return get_rclpy_logging_implementation().rclpy_logging_initialize()
 
 
 def shutdown():
-    return _rclpy_logging.rclpy_logging_shutdown()
+    return get_rclpy_logging_implementation().rclpy_logging_shutdown()
 
 
 def clear_config():
@@ -59,9 +59,11 @@ def clear_config():
 
 def set_logger_level(name, level):
     level = LoggingSeverity(level)
-    return _rclpy_logging.rclpy_logging_set_logger_level(name, level)
+    return get_rclpy_logging_implementation().rclpy_logging_set_logger_level(name, level)
 
 
 def get_logger_effective_level(name):
-    logger_level = _rclpy_logging.rclpy_logging_get_logger_effective_level(name)
+    logger_level = get_rclpy_logging_implementation().rclpy_logging_get_logger_effective_level(
+        name
+    )
     return LoggingSeverity(logger_level)
