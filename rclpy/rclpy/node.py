@@ -756,6 +756,12 @@ class Node:
             self._parameter_event_publisher.publish(parameter_event)
 
         return result
+    
+    def add_on_set_paramters_callback(self,Callable:Callable([List[Parameter],SetParametersResult])):
+        """add the callback to list"""
+    
+    def remove_on_set_parameters_callback(self,Callable:Callable[List[Parameter],SetParametersResult]):
+        """remove callback from list"""
 
     def _apply_descriptors(
         self,
