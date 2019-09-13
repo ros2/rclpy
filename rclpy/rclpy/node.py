@@ -65,7 +65,7 @@ from rclpy.qos_event import SubscriptionEventCallbacks
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
-from rclpy.timer import WallTimer
+from rclpy.timer import Timer
 from rclpy.type_support import check_for_type_support
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
@@ -137,7 +137,7 @@ class Node:
         self.__subscriptions: List[Subscription] = []
         self.__clients: List[Client] = []
         self.__services: List[Service] = []
-        self.__timers: List[WallTimer] = []
+        self.__timers: List[Timer] = []
         self.__guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
@@ -214,7 +214,7 @@ class Node:
         yield from self.__services
 
     @property
-    def timers(self) -> Iterator[WallTimer]:
+    def timers(self) -> Iterator[Timer]:
         """Get timers that have been created on this node."""
         yield from self.__timers
 
@@ -1281,8 +1281,9 @@ class Node:
         self,
         timer_period_sec: float,
         callback: Callable,
-        callback_group: CallbackGroup = None
-    ) -> WallTimer:
+        callback_group: CallbackGroup = None,
+        clock: Clock = None,
+    ) -> Timer:
         """
         Create a new timer.
 
@@ -1293,11 +1294,14 @@ class Node:
         :param callback: A user-defined callback function that is called when the timer expires.
         :param callback_group: The callback group for the timer. If ``None``, then the nodes
             default callback group is used.
+        :param clock: The clock which the timer gets time from.
         """
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
         if callback_group is None:
             callback_group = self.default_callback_group
-        timer = WallTimer(callback, callback_group, timer_period_nsec, context=self.context)
+        if clock is None:
+            clock = self._clock
+        timer = Timer(callback, callback_group, timer_period_nsec, clock, context=self.context)
         timer.handle.requires(self.handle)
 
         self.__timers.append(timer)
@@ -1385,7 +1389,7 @@ class Node:
             return True
         return False
 
-    def destroy_timer(self, timer: WallTimer) -> bool:
+    def destroy_timer(self, timer: Timer) -> bool:
         """
         Destroy a timer created by the node.
 
