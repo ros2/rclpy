@@ -141,7 +141,7 @@ class Node:
         self.__guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
-        self._parameters_callback:List[List[Parameter],SetParametersResult]=[]
+        self._parameters_callback:Callable[List[Parameter],SetParametersResult]=[]
         self._allow_undeclared_parameters = allow_undeclared_parameters
         self._parameter_overrides = {}
         self._descriptors = {}
@@ -757,14 +757,14 @@ class Node:
 
         return result
     
-    def add_on_set_paramters_callback(self,Callable:Callable([List[Parameter],SetParametersResult])):
+    def add_on_set_paramters_callback(self,callback:Callable([List[Parameter],SetParametersResult])):
         """add the callback to list"""
         prevCallBack=self._parameters_callback
-        prevCallBack.insert(0,Callable)
+        prevCallBack.insert(0,callback)
         self._parameters_callback=prevCallBack
 
     
-    def remove_on_set_parameters_callback(self,Callable:Callable[List[Parameter],SetParametersResult]):
+    def remove_on_set_parameters_callback(self,callback:Callable[List[Parameter],SetParametersResult]):
         """remove callback from list"""
         # prevCallBack=self._parameters_callback
         
