@@ -70,7 +70,6 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
     context = get_default_context() if context is None else context
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
-    global NodeNameNonExistentError
     return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context.handle)
 
 
