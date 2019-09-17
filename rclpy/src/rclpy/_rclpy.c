@@ -3709,8 +3709,6 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_system_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_services_default")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_services_default);
-    // NOTE(mikaelarguedas) all conditions following this one are defined but not used
-    // because parameters are not implemented in Python yet
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameters")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameters);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {
