@@ -205,17 +205,20 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(0, self.node.count_publishers(fq_topic_name))
         self.assertEqual(0, self.node.count_subscribers(fq_topic_name))
 
-        self.node.create_publisher(BasicTypes, short_topic_name, 1)
+        short_topic_publisher = self.node.create_publisher(BasicTypes, short_topic_name, 1)
         self.assertEqual(1, self.node.count_publishers(short_topic_name))
         self.assertEqual(1, self.node.count_publishers(fq_topic_name))
+        self.assertEqual(0, short_topic_publisher.get_subscription_count())
 
         self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg), 1)
         self.assertEqual(1, self.node.count_subscribers(short_topic_name))
         self.assertEqual(1, self.node.count_subscribers(fq_topic_name))
+        self.assertEqual(1, short_topic_publisher.get_subscription_count())
 
         self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg), 1)
         self.assertEqual(2, self.node.count_subscribers(short_topic_name))
         self.assertEqual(2, self.node.count_subscribers(fq_topic_name))
+        self.assertEqual(2, short_topic_publisher.get_subscription_count())
 
         # error cases
         with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
