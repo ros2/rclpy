@@ -760,27 +760,17 @@ class Node:
     def add_on_set_paramters_callback(self,callback:Callable([List[Parameter],SetParametersResult])):
         """add the callback to list"""
 
-        prevCallBack=self._parameters_callback
+        prevCallBack = self._parameters_callback
         prevCallBack.insert(0,callback)
         self._parameters_callback = prevCallBack
 
     
     def remove_on_set_parameters_callback(self,callback:Callable[List[Parameter],SetParametersResult]):
         """remove callback from list"""
-
-        prevCallBack = self._parameters_callback
-        prevCallBack_itr = prevCallBack
-        flag:bool = False
-        for value in enumerate(prevCallBack_itr):
-            if(value[1] == callback):
-                flag=True
-                prevCallBack.remove(value[1])
-                break
-        if(flag):
-            self._parameters_callback = prevCallBack
-        else:
-            """There isnt ay exceptions for unregistered callback,so for time being I have done this"""
-            InvalidParameterValueException(callback[0][0].parameter,callback[0][0].value,callback[0][0].reason)
+        try:
+            self._parameters_callback.remove(callback)
+        except ValueError:
+            print("Callback doesn't exist")
 
 
     def _apply_descriptors(
