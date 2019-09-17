@@ -34,6 +34,7 @@ from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterEvent
 from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
+
 from rclpy.callback_groups import CallbackGroup
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.client import Client
@@ -82,6 +83,10 @@ MsgType = TypeVar('MsgType')
 SrvType = TypeVar('SrvType')
 SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
+
+# Re-export exception defined in _rclpy C extension.
+# `Node.get_*_names_and_types_by_node` methods may raise this error.
+NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
 
 
 class Node:
@@ -1463,6 +1468,8 @@ class Node:
         :return: List of tuples.
           The first element of each tuple is the topic name and the second element is a list of
           topic types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_publisher_names_and_types_by_node(
@@ -1483,6 +1490,8 @@ class Node:
         :return: List of tuples.
           The first element of each tuple is the topic name and the second element is a list of
           topic types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_subscriber_names_and_types_by_node(
@@ -1501,6 +1510,8 @@ class Node:
         :return: List of tuples.
           The first element of each tuple is the service server name
           and the second element is a list of service types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_service_names_and_types_by_node(
@@ -1519,6 +1530,8 @@ class Node:
         :return: List of tuples.
           The fist element of each tuple is the service client name
           and the second element is a list of service client types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_client_names_and_types_by_node(
