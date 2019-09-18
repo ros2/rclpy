@@ -4835,7 +4835,7 @@ static PyMethodDef rclpy_methods[] = {
   },
   {
     "rclpy_publisher_get_subscription_count", rclpy_publisher_get_subscription_count, METH_VARARGS,
-    "Count subscribers from publisher."
+    "Count subscribers from a publisher."
   },
   {
     "rclpy_send_request", rclpy_send_request, METH_VARARGS,
