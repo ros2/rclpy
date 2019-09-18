@@ -14,7 +14,6 @@
 
 import unittest
 from unittest.mock import Mock
-import warnings
 
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
@@ -34,7 +33,6 @@ from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
-from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.time_source import USE_SIM_TIME_NAME
 from test_msgs.msg import BasicTypes
@@ -144,34 +142,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_service(GetParameters, '/get/42parameters', lambda req: None)
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
             self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req: None)
-
-    def test_deprecation_warnings(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_publisher(BasicTypes, 'chatter')
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_publisher(BasicTypes, 'chatter', qos_profile_default)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(
-                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_default)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), raw=True)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
 
     def test_service_names_and_types(self):
         # test that it doesn't raise
