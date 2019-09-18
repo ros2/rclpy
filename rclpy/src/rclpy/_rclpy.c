@@ -18,6 +18,7 @@
 #include <rcl/expand_topic_name.h>
 #include <rcl/graph.h>
 #include <rcl/node.h>
+#include <rcl/publisher.h>
 #include <rcl/rcl.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
@@ -1405,6 +1406,37 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   Py_RETURN_NONE;
+}
+
+/// Count subscribers from a publisher.
+/**
+ *
+ * \param[in] pynode Capsule pointing to the publisher
+ * \return count of subscribers
+ */
+static PyObject *
+rclpy_publisher_get_subscription_count(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pypublisher;
+
+  if (!PyArg_ParseTuple(args, "O", &pypublisher)) {
+    return NULL;
+  }
+
+  const rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+    pypublisher, "rclpy_publisher_t");
+  if (!pub) {
+    return NULL;
+  }
+
+  size_t count = 0;
+  rmw_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
+  if (RMW_RET_OK != ret) {
+    PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string().str);
+    rmw_reset_error();
+    return NULL;
+  }
+  return PyLong_FromSize_t(count);
 }
 
 /// PyCapsule destructor for timer
@@ -4800,6 +4832,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_publish", rclpy_publish, METH_VARARGS,
     "Publish a message."
+  },
+  {
+    "rclpy_publisher_get_subscription_count", rclpy_publisher_get_subscription_count, METH_VARARGS,
+    "Count subscribers from a publisher."
   },
   {
     "rclpy_send_request", rclpy_send_request, METH_VARARGS,
