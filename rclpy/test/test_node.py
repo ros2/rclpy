@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pathlib
 import unittest
 from unittest.mock import Mock
 
@@ -39,6 +40,8 @@ from test_msgs.msg import BasicTypes
 
 TEST_NODE = 'my_node'
 TEST_NAMESPACE = '/my_ns'
+
+TEST_RESOURCES_DIR = pathlib.Path(__file__).resolve().parent / 'resources' / 'test_node'
 
 
 class TestNodeAllowUndeclaredParameters(unittest.TestCase):
@@ -348,6 +351,11 @@ class TestNode(unittest.TestCase):
                 Parameter('initial_bar', Parameter.Type.STRING, 'init_param'),
                 Parameter('initial_baz', Parameter.Type.DOUBLE, 3.14)
             ],
+            cli_args=[
+                '--ros-args', '-p', 'initial_fizz:=buzz',
+                '--params-file', str(TEST_RESOURCES_DIR / 'test_parameters.yaml'),
+                '-p', 'initial_buzz:=1.'
+            ],
             automatically_declare_parameters_from_overrides=False
         )
 
@@ -361,6 +369,15 @@ class TestNode(unittest.TestCase):
             'initial_foo', ParameterValue(), ParameterDescriptor())
         result_initial_bar = self.node.declare_parameter(
             'initial_bar', 'ignoring_override', ParameterDescriptor(), ignore_override=True)
+        result_initial_fizz = self.node.declare_parameter(
+            'initial_fizz', 'default', ParameterDescriptor())
+        result_initial_baz = self.node.declare_parameter(
+            'initial_baz', ParameterValue(), ParameterDescriptor())
+        result_initial_buzz = self.node.declare_parameter(
+            'initial_buzz', ParameterValue(), ParameterDescriptor())
+        result_initial_foobar = self.node.declare_parameter(
+            'initial_foobar', ParameterValue(), ParameterDescriptor())
+
         result_foo = self.node.declare_parameter(
             'foo', 42, ParameterDescriptor())
         result_bar = self.node.declare_parameter(
@@ -372,19 +389,29 @@ class TestNode(unittest.TestCase):
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
         self.assertIsInstance(result_initial_bar, Parameter)
+        self.assertIsInstance(result_initial_fizz, Parameter)
+        self.assertIsInstance(result_initial_baz, Parameter)
         self.assertIsInstance(result_foo, Parameter)
         self.assertIsInstance(result_bar, Parameter)
         self.assertIsInstance(result_baz, Parameter)
         self.assertIsInstance(result_value_not_set, Parameter)
-        # initial_foo gets the override value; initial_bar does not.
+        # initial_foo and initial_fizz get override values; initial_bar does not.
         self.assertEqual(result_initial_foo.value, 4321)
         self.assertEqual(result_initial_bar.value, 'ignoring_override')
+        self.assertEqual(result_initial_fizz.value, 23)  # provided by CLI, overridden by file
+        self.assertEqual(result_initial_baz.value, 3.14)  # provided by file, overridden manually
+        self.assertEqual(result_initial_buzz.value, 1)  # provided by CLI
+        self.assertEqual(result_initial_foobar.value, False)  # provided by file
         self.assertEqual(result_foo.value, 42)
         self.assertEqual(result_bar.value, 'hello')
         self.assertEqual(result_baz.value, 2.41)
         self.assertIsNone(result_value_not_set.value)
         self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('initial_bar').value, 'ignoring_override')
+        self.assertEqual(self.node.get_parameter('initial_fizz').value, 23)
+        self.assertEqual(self.node.get_parameter('initial_baz').value, 3.14)
+        self.assertEqual(self.node.get_parameter('initial_buzz').value, 1)
+        self.assertEqual(self.node.get_parameter('initial_foobar').value, False)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)

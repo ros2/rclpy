@@ -4553,14 +4553,14 @@ _populate_node_parameters_from_rcl_params(
   return true;
 }
 
-/// Populate a Python dict with node parameters parsed from arguments files
+/// Populate a Python dict with node parameters parsed from CLI arguments
 /**
  * On failure a Python exception is raised and false is returned if:
  *
  * Raises RuntimeError if param_files cannot be extracted from arguments.
  * Raises RuntimeError if yaml files do not parse succesfully.
  *
- * \param[in] args The arguments to parse for parameter files
+ * \param[in] args The arguments to parse for parameters
  * \param[in] allocator Allocator to use for allocating and deallocating within the function.
  * \param[in] parameter_cls The PythonObject for the Parameter class.
  * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
@@ -4571,43 +4571,24 @@ _populate_node_parameters_from_rcl_params(
  *
  */
 static bool
-_parse_param_files(
+_parse_param_overrides(
   const rcl_arguments_t * args, rcl_allocator_t allocator, PyObject * parameter_cls,
   PyObject * parameter_type_cls, PyObject * params_by_node_name)
 {
-  char ** param_files;
-  int param_files_count = rcl_arguments_get_param_files_count(args);
-  bool successful = true;
-  if (param_files_count <= 0) {
-    return successful;
-  }
-  if (RCL_RET_OK != rcl_arguments_get_param_files(args, allocator, &param_files)) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
+  rcl_params_t * params = NULL;
+  if (RCL_RET_OK != rcl_arguments_get_param_overrides(args, &params)) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to get parameters overrides: %s",
       rcl_get_error_string().str);
     return false;
   }
-  for (int i = 0; i < param_files_count; ++i) {
-    if (successful) {
-      rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
-      if (!rcl_parse_yaml_file(param_files[i], params)) {
-        // failure to parse will automatically fini the params struct
-        PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file '%s': %s",
-          param_files[i], rcl_get_error_string().str);
-        rcl_reset_error();
-        successful = false;
-      } else {
-        if (!_populate_node_parameters_from_rcl_params(
-            params, allocator, parameter_cls, parameter_type_cls, params_by_node_name))
-        {
-          successful = false;
-        }
-        rcl_yaml_node_struct_fini(params);
-      }
-    }
-    allocator.deallocate(param_files[i], allocator.state);
+  if (NULL == params) {
+    // No parameter overrides.
+    return true;
   }
-  allocator.deallocate(param_files, allocator.state);
-  return successful;
+  bool success = _populate_node_parameters_from_rcl_params(
+    params, allocator, parameter_cls, parameter_type_cls, params_by_node_name);
+  rcl_yaml_node_struct_fini(params);
+  return success;
 }
 
 /// Get a list of parameters for the current node from rcl_yaml_param_parser
@@ -4657,7 +4638,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   const rcl_allocator_t allocator = node_options->allocator;
 
   if (node_options->use_global_arguments) {
-    if (!_parse_param_files(
+    if (!_parse_param_overrides(
         &(node->context->global_arguments), allocator, parameter_cls,
         parameter_type_cls, params_by_node_name))
     {
@@ -4667,7 +4648,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
-  if (!_parse_param_files(&(node_options->arguments), allocator, parameter_cls,
+  if (!_parse_param_overrides(&(node_options->arguments), allocator, parameter_cls,
     parameter_type_cls, params_by_node_name))
   {
     Py_DECREF(parameter_type_cls);
