@@ -1,5 +1,25 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.6 (2019-08-28)
+------------------
+* Fix missing raise (`#390 <https://github.com/ros2/rclpy/pull/390>`_)
+* Fix time conversion for big nanoseconds value (`#384 <https://github.com/ros2/rclpy/pull/384>`_)
+* Contributors: Daniel Wang, Vinnam Kim
+
+0.7.5 (2019-08-01)
+------------------
+* Updated to use params from node '/**' from parameter YAML file. (`#399 <https://github.com/ros2/rclpy/issues/399>`_)
+* Updated to declare 'use_sim_time' when attaching node to time source. (`#401 <https://github.com/ros2/rclpy/issues/401>`_)
+* Fixed an errant conversion to nsecs in executors timeout.` (`#397 <https://github.com/ros2/rclpy/issues/397>`_)
+* Fixed parameter handling issues. (`#394 <https://github.com/ros2/rclpy/issues/394>`_)
+  * Fixing namespace expansion for declare_parameters. (`#377 <https://github.com/ros2/rclpy/issues/377>`_)
+  * Allowing parameter declaration without a given value. (`#382 <https://github.com/ros2/rclpy/issues/382>`_)
+* Contributors: Juan Ignacio Ubeira, Scott K Logan
+
+0.7.4 (2019-06-12)
+------------------
+* Fix API documentation related to ROS graph methods (`#366 <https://github.com/ros2/rclpy/issues/366>`_)
+* Contributors: Jacob Perron
 
 0.7.3 (2019-05-29)
 ------------------
