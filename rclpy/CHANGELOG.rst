@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.0 (2019-09-26)
+------------------
 * Take parameter overrides provided through the CLI. (`#434 <https://github.com/ros2/rclpy/issues/434>`_)
 * Changelog version to master (`#410 <https://github.com/ros2/rclpy/issues/410>`_)
 * Remove deprecated QoS functionality (`#431 <https://github.com/ros2/rclpy/issues/431>`_)
