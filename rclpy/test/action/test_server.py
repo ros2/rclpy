@@ -534,8 +534,8 @@ class TestActionServer(unittest.TestCase):
         )
 
         goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
-        goal_msg = Fibonacci.Impl.SendGoalService.Request()
-        goal_msg.goal_id = goal_uuid
+        goal_msg = Fibonacci.Goal()
+        goal_msg._action_goal_id = goal_uuid
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
         goal_handle = goal_future.result()
@@ -545,8 +545,8 @@ class TestActionServer(unittest.TestCase):
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result_response = get_result_future.result()
         # Goal status should default to STATUS_ABORTED
-        self.assertEqual(result_response.status, GoalStatus.STATUS_ABORTED)
-        self.assertEqual(result_response.result.sequence.tolist(), [])
+        self.assertEqual(result_response.action_status, GoalStatus.STATUS_ABORTED)
+        self.assertEqual(result_response.sequence, [])
         action_server.destroy()
 
     def test_expire_goals_none(self):
