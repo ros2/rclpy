@@ -15,6 +15,7 @@
 from enum import Enum
 import functools
 import threading
+import traceback
 
 from action_msgs.msg import GoalInfo, GoalStatus
 
@@ -319,8 +320,14 @@ class ActionServer(Waitable):
         goal_uuid = goal_handle.goal_id.uuid
         self._node.get_logger().debug('Executing goal with ID {0}'.format(goal_uuid))
 
-        # Execute user callback
-        execute_result = await await_or_execute(execute_callback, goal_handle)
+        try:
+            # Execute user callback
+            execute_result = await await_or_execute(execute_callback, goal_handle)
+        except Exception as ex:
+            # Create an empty result so that we can still send a response to the client
+            execute_result = self._action_type.Result()
+            self._node.get_logger().error('Error raised in execute callback: {0}'.format(ex))
+            traceback.print_exc()
 
         # If user did not trigger a terminal state, assume aborted
         if goal_handle.is_active:
