@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <assert.h>
+
 #include "rcl/error_handling.h"
 
 #include "rclpy_common/common.h"
@@ -35,6 +37,7 @@ typedef struct rclpy_qos_profile
 void
 init_rclpy_qos_profile(rclpy_qos_profile_t * rclpy_profile)
 {
+  assert(rclpy_profile);
   memset(rclpy_profile, 0, sizeof(*rclpy_profile));
 }
 
