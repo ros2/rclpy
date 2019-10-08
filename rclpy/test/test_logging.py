@@ -17,7 +17,10 @@ import time
 import unittest
 
 import rclpy
+from rclpy.clock import Clock, ROSClock
 from rclpy.logging import LoggingSeverity
+from rclpy.time import Time
+from rclpy.time_source import TimeSource
 
 
 class TestLogging(unittest.TestCase):
@@ -100,12 +103,13 @@ class TestLogging(unittest.TestCase):
 
     def test_log_throttle(self):
         message_was_logged = []
+        system_clock = Clock()
         for i in range(5):
             message_was_logged.append(rclpy.logging._root_logger.log(
                 'message_' + inspect.stack()[0][3] + '_' + str(i),
                 LoggingSeverity.INFO,
                 throttle_duration_sec=1,
-                throttle_time_source_type='RCUTILS_STEADY_TIME',
+                throttle_time_source_type=system_clock,
             ))
             time.sleep(0.4)
         self.assertEqual(
@@ -115,6 +119,50 @@ class TestLogging(unittest.TestCase):
                 False,  # t=0.8, throttled
                 True,  # t=1.2, not throttled
                 False  # t=1.6, throttled
+            ])
+
+    def test_log_throttle_ros_clock(self):
+        message_was_logged = []
+        ros_clock = ROSClock()
+        time_source = TimeSource()
+        time_source.attach_clock(ros_clock)
+        time_source.ros_time_is_active = True
+        for i in range(5):
+            message_was_logged.append(rclpy.logging._root_logger.log(
+                'message_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
+                throttle_duration_sec=1,
+                throttle_time_source_type=ros_clock,
+            ))
+            time.sleep(0.4)
+        self.assertEqual(
+            message_was_logged, [
+                False,  # t=0, throttled
+                False,  # t=0.4, throttled
+                False,  # t=0.8, throttled
+                False,  # t=1.2, throttled
+                False  # t=1.6, throttled
+            ])
+        message_was_logged = []
+        for i in range(5):
+            message_was_logged.append(rclpy.logging._root_logger.log(
+                'message_' + inspect.stack()[0][3] + '_' + str(i),
+                LoggingSeverity.INFO,
+                throttle_duration_sec=2,
+                throttle_time_source_type=ros_clock,
+            ))
+            ros_clock.set_ros_time_override(Time(
+                seconds=i + 1,
+                nanoseconds=0,
+                clock_type=ros_clock.clock_type,
+                ))
+        self.assertEqual(
+            message_was_logged, [
+                False,  # t=0, throttled
+                False,  # t=1.0, throttled
+                True,  # t=2.0, not throttled
+                False,  # t=3.0, throttled
+                True  # t=4.0, not throttled
             ])
 
     def test_log_skip_first(self):
@@ -131,13 +179,14 @@ class TestLogging(unittest.TestCase):
         # Because of the ordering of supported_filters, first the throttle condition will be
         # evaluated/updated, then the skip_first condition
         message_was_logged = []
+        system_clock = Clock()
         for i in range(5):
             message_was_logged.append(rclpy.logging._root_logger.log(
                 'message_' + inspect.stack()[0][3] + '_' + str(i),
                 LoggingSeverity.INFO,
                 skip_first=True,
                 throttle_duration_sec=1,
-                throttle_time_source_type='RCUTILS_STEADY_TIME',
+                throttle_time_source_type=system_clock,
             ))
             time.sleep(0.4)
         self.assertEqual(
@@ -164,12 +213,13 @@ class TestLogging(unittest.TestCase):
         self.assertEqual(message_was_logged, [False, True] + [False] * 3)
 
     def test_log_arguments(self):
+        system_clock = Clock()
         # Check half-specified filter not allowed if a required parameter is missing
         with self.assertRaisesRegex(TypeError, 'required parameter .* not specified'):
             rclpy.logging._root_logger.log(
                 'message',
                 LoggingSeverity.INFO,
-                throttle_time_source_type='RCUTILS_STEADY_TIME',
+                throttle_time_source_type=system_clock,
             )
 
         # Check half-specified filter is allowed if an optional parameter is missing
