@@ -132,8 +132,8 @@ class Throttle(LoggingFilter):
         context['throttle_last_logged'] = 0
         if not isinstance(context['throttle_time_source_type'], Clock):
             raise ValueError(
-                'Received throttle_time_source_type of "{0}"; '
-                'currently Clock object is supported.'
+                'Received throttle_time_source_type of "{0}" '
+                'is not a clock instance'
                 .format(context['throttle_time_source_type']))
 
     @staticmethod

@@ -155,7 +155,7 @@ class TestLogging(unittest.TestCase):
                 seconds=i + 1,
                 nanoseconds=0,
                 clock_type=ros_clock.clock_type,
-                ))
+            ))
         self.assertEqual(
             message_was_logged, [
                 False,  # t=0, throttled
