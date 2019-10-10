@@ -200,6 +200,7 @@ if(BUILD_TESTING)
     test/test_parameters_callback.py
     test/test_qos.py
     test/test_qos_event.py
+    test/test_rate.py
     test/test_task.py
     test/test_time_source.py
     test/test_time.py

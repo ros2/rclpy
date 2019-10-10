@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
+
+from rclpy.exceptions import ROSInterruptException
 from rclpy.handle import Handle
+from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
 
@@ -80,3 +84,65 @@ class Timer:
     def time_until_next_call(self):
         with self.handle as capsule:
             return _rclpy.rclpy_time_until_next_call(capsule)
+
+
+class Rate:
+    """A utility for sleeping at a fixed rate."""
+
+    def __init__(self, timer: Timer, *, context=None):
+        # Rate is a wrapper around a timer
+        self._timer = timer
+        self._is_shutdown = False
+        self._is_destroyed = False
+
+        # This event is set to wake sleepers
+        self._event = threading.Event()
+        self._lock = threading.Lock()
+        self._num_sleepers = 0
+
+        # Set event when timer fires
+        self._timer.callback = self._event.set
+
+        # Set event when ROS is shutdown
+        context.on_shutdown(self._on_shutdown)
+
+    def _on_shutdown(self):
+        self._is_shutdown = True
+        self.destroy()
+
+    def destroy(self):
+        self._is_destroyed = True
+        self._event.set()
+
+    def _presleep(self):
+        if self._is_shutdown:
+            raise ROSInterruptException()
+        if self._is_destroyed:
+            raise RuntimeError('Rate cannot sleep because it has been destroyed')
+        if not self._timer.handle:
+            self.destroy()
+            raise InvalidHandle('Rate cannot sleep because the timer has been destroyed')
+        with self._lock:
+            self._num_sleepers += 1
+
+    def _postsleep(self):
+        with self._lock:
+            self._num_sleepers -= 1
+            if self._num_sleepers == 0:
+                self._event.clear()
+        if self._is_shutdown:
+            self.destroy()
+            raise ROSInterruptException()
+
+    def sleep(self):
+        """
+        Block until timer triggers.
+
+        Care should be taken when calling this from a callback.
+        This may block forever if called in a callback in a SingleThreadedExecutor.
+        """
+        self._presleep()
+        try:
+            self._event.wait()
+        finally:
+            self._postsleep()
