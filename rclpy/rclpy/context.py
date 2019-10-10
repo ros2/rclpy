@@ -14,6 +14,7 @@
 
 import threading
 from typing import Callable
+import weakref
 
 
 class Context:
@@ -45,7 +46,8 @@ class Context:
 
     def _call_on_shutdown_callbacks(self):
         with self._callbacks_lock:
-            for callback in self._callbacks:
+            for weak_method in self._callbacks:
+                callback = weak_method()
                 callback()
             self._callbacks = []
 
@@ -66,9 +68,15 @@ class Context:
                 rclpy_implementation.rclpy_shutdown(self._handle)
                 self._call_on_shutdown_callbacks()
 
+    def _remove_callback(self, weak_method):
+        self._callbacks.remove(weak_method)
+
     def on_shutdown(self, callback: Callable[[], None]):
         """Add a callback to be called on shutdown."""
         if not callable(callback):
             raise TypeError('callback should be a callable, got {}', type(callback))
         with self._callbacks_lock:
-            self._callbacks.append(callback)
+            if not self.ok():
+                callback()
+            else:
+                self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
