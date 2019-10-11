@@ -1,5 +1,12 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.8 (2019-10-11)
+------------------
+* Updated to accept tuples as parameter arrays. (`#442 <https://github.com/ros2/rclpy/issues/442>`_)
+* Fixed uncaught exception from user execute callback in Action Server. (`#439 <https://github.com/ros2/rclpy/issues/439>`_)
+  Fixes `#296 <https://github.com/ros2/rclpy/issues/296>`_.
+* Contributors: Christian Rauch, Jacob Perron, Steven! Ragnarök
+
 0.7.7 (2019-09-06)
 ------------------
 * Fixed Python 3.5 compatibility by removing unsupported type hints. (`#414 <https://github.com/ros2/rclpy/issues/414>`_)
