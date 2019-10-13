@@ -711,7 +711,7 @@ class Node:
         if not result.successful:
             return result
         elif self._parameters_callback:
-            result = self._parameters_callback(List[parameter_list, result])
+            result = self._parameters_callback(parameter_list)
         else:
             result = SetParametersResult(successful=True)
 
