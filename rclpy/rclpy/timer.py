@@ -89,7 +89,7 @@ class Timer:
 class Rate:
     """A utility for sleeping at a fixed rate."""
 
-    def __init__(self, timer: Timer, *, context=None):
+    def __init__(self, timer: Timer, *, context):
         # Rate is a wrapper around a timer
         self._timer = timer
         self._is_shutdown = False
