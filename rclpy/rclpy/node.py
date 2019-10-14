@@ -36,6 +36,7 @@ from rcl_interfaces.msg import SetParametersResult
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock import ROSClock
@@ -64,6 +65,7 @@ from rclpy.qos_event import SubscriptionEventCallbacks
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
+from rclpy.timer import Rate
 from rclpy.timer import Timer
 from rclpy.type_support import check_for_type_support
 from rclpy.utilities import get_default_context
@@ -144,6 +146,7 @@ class Node:
         self.__guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
+        self._rate_group = ReentrantCallbackGroup()
         self._parameters_callback = None
         self._allow_undeclared_parameters = allow_undeclared_parameters
         self._parameter_overrides = {}
@@ -1313,6 +1316,28 @@ class Node:
         self._wake_executor()
         return guard
 
+    def create_rate(
+        self,
+        frequency: float,
+        clock: Clock = None,
+    ) -> Rate:
+        """
+        Create a Rate object.
+
+        :param frequency: The frequency the Rate runs at (Hz).
+        :param clock: The clock the Rate gets time from.
+        """
+        if frequency <= 0:
+            raise ValueError('frequency must be > 0')
+        # Create a timer and give it to the rate object
+        period = 1.0 / frequency
+        # Rate will set its own callback
+        callback = None
+        # Rates get their own group so timing is not messed up by other callbacks
+        group = self._rate_group
+        timer = self.create_timer(period, callback, group, clock)
+        return Rate(timer, context=self.context)
+
     def destroy_publisher(self, publisher: Publisher) -> bool:
         """
         Destroy a publisher created by the node.
@@ -1408,6 +1433,15 @@ class Node:
             self._wake_executor()
             return True
         return False
+
+    def destroy_rate(self, rate: Rate):
+        """
+        Destroy a Rate object created by the node.
+
+        :return: ``True`` if successful, ``False`` otherwise.
+        """
+        self.destroy_timer(rate._timer)
+        rate.destroy()
 
     def destroy_node(self) -> bool:
         """
