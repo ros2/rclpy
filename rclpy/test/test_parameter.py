@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from array import array
 import unittest
 
 from rclpy.parameter import Parameter
@@ -137,6 +138,16 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(
             Parameter.Type.INTEGER_ARRAY, Parameter.Type.from_parameter_value(int_tuple))
         self.assertTrue(Parameter.Type.check(Parameter.Type.INTEGER_ARRAY, int_tuple))
+
+    def test_integer_array(self):
+        int_array = array('i', [1, 2, 3])
+        self.assertEqual(
+            Parameter.Type.INTEGER_ARRAY, Parameter.Type.from_parameter_value(int_array))
+
+    def test_double_array(self):
+        double_array = array('d', [1.0, 2.0, 3.0])
+        self.assertEqual(
+            Parameter.Type.DOUBLE_ARRAY, Parameter.Type.from_parameter_value(double_array))
 
 
 if __name__ == '__main__':
