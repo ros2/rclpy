@@ -53,6 +53,8 @@ class TestMessages(unittest.TestCase):
         # if the parameters of the created topic are the same as the one
         # that has in memory. It's expected that if any participant
         # is not subscribed/publishing to a topic, this is destroyed.
+        # Revert the topic name to 'chatter' once proper topic destruction
+        # for opensplice is possible.
         pub = self.node.create_publisher(
             BasicTypes, 'chatter_different_message_type', 1)
         with self.assertRaises(TypeError):
