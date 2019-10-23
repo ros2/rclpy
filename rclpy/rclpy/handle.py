@@ -55,6 +55,10 @@ class Handle:
         self.__capsule_name = _rclpy_capsule.rclpy_pycapsule_name(pycapsule)
         self.__capsule_pointer = _rclpy_capsule.rclpy_pycapsule_pointer(pycapsule)
 
+    def __bool__(self):
+        """Return True if the handle is valid."""
+        return self.__valid
+
     def __eq__(self, other):
         return self.__capsule_pointer == other.__capsule_pointer
 

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pathlib
 import unittest
 from unittest.mock import Mock
-import warnings
 
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
@@ -34,13 +34,14 @@ from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
-from rclpy.qos import qos_profile_default
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.time_source import USE_SIM_TIME_NAME
 from test_msgs.msg import BasicTypes
 
 TEST_NODE = 'my_node'
 TEST_NAMESPACE = '/my_ns'
+
+TEST_RESOURCES_DIR = pathlib.Path(__file__).resolve().parent / 'resources' / 'test_node'
 
 
 class TestNodeAllowUndeclaredParameters(unittest.TestCase):
@@ -145,34 +146,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
             self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req: None)
 
-    def test_deprecation_warnings(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_publisher(BasicTypes, 'chatter')
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_publisher(BasicTypes, 'chatter', qos_profile_default)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg))
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(
-                BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_default)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), raw=True)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-
     def test_service_names_and_types(self):
         # test that it doesn't raise
         self.node.get_service_names_and_types()
@@ -205,17 +178,20 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(0, self.node.count_publishers(fq_topic_name))
         self.assertEqual(0, self.node.count_subscribers(fq_topic_name))
 
-        self.node.create_publisher(BasicTypes, short_topic_name, 1)
+        short_topic_publisher = self.node.create_publisher(BasicTypes, short_topic_name, 1)
         self.assertEqual(1, self.node.count_publishers(short_topic_name))
         self.assertEqual(1, self.node.count_publishers(fq_topic_name))
+        self.assertEqual(0, short_topic_publisher.get_subscription_count())
 
         self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg), 1)
         self.assertEqual(1, self.node.count_subscribers(short_topic_name))
         self.assertEqual(1, self.node.count_subscribers(fq_topic_name))
+        self.assertEqual(1, short_topic_publisher.get_subscription_count())
 
         self.node.create_subscription(BasicTypes, short_topic_name, lambda msg: print(msg), 1)
         self.assertEqual(2, self.node.count_subscribers(short_topic_name))
         self.assertEqual(2, self.node.count_subscribers(fq_topic_name))
+        self.assertEqual(2, short_topic_publisher.get_subscription_count())
 
         # error cases
         with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
@@ -375,6 +351,11 @@ class TestNode(unittest.TestCase):
                 Parameter('initial_bar', Parameter.Type.STRING, 'init_param'),
                 Parameter('initial_baz', Parameter.Type.DOUBLE, 3.14)
             ],
+            cli_args=[
+                '--ros-args', '-p', 'initial_fizz:=buzz',
+                '--params-file', str(TEST_RESOURCES_DIR / 'test_parameters.yaml'),
+                '-p', 'initial_buzz:=1.'
+            ],
             automatically_declare_parameters_from_overrides=False
         )
 
@@ -388,6 +369,15 @@ class TestNode(unittest.TestCase):
             'initial_foo', ParameterValue(), ParameterDescriptor())
         result_initial_bar = self.node.declare_parameter(
             'initial_bar', 'ignoring_override', ParameterDescriptor(), ignore_override=True)
+        result_initial_fizz = self.node.declare_parameter(
+            'initial_fizz', 'default', ParameterDescriptor())
+        result_initial_baz = self.node.declare_parameter(
+            'initial_baz', ParameterValue(), ParameterDescriptor())
+        result_initial_buzz = self.node.declare_parameter(
+            'initial_buzz', ParameterValue(), ParameterDescriptor())
+        result_initial_foobar = self.node.declare_parameter(
+            'initial_foobar', ParameterValue(), ParameterDescriptor())
+
         result_foo = self.node.declare_parameter(
             'foo', 42, ParameterDescriptor())
         result_bar = self.node.declare_parameter(
@@ -399,19 +389,29 @@ class TestNode(unittest.TestCase):
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
         self.assertIsInstance(result_initial_bar, Parameter)
+        self.assertIsInstance(result_initial_fizz, Parameter)
+        self.assertIsInstance(result_initial_baz, Parameter)
         self.assertIsInstance(result_foo, Parameter)
         self.assertIsInstance(result_bar, Parameter)
         self.assertIsInstance(result_baz, Parameter)
         self.assertIsInstance(result_value_not_set, Parameter)
-        # initial_foo gets the override value; initial_bar does not.
+        # initial_foo and initial_fizz get override values; initial_bar does not.
         self.assertEqual(result_initial_foo.value, 4321)
         self.assertEqual(result_initial_bar.value, 'ignoring_override')
+        self.assertEqual(result_initial_fizz.value, 23)  # provided by CLI, overridden by file
+        self.assertEqual(result_initial_baz.value, 3.14)  # provided by file, overridden manually
+        self.assertEqual(result_initial_buzz.value, 1)  # provided by CLI
+        self.assertEqual(result_initial_foobar.value, False)  # provided by file
         self.assertEqual(result_foo.value, 42)
         self.assertEqual(result_bar.value, 'hello')
         self.assertEqual(result_baz.value, 2.41)
         self.assertIsNone(result_value_not_set.value)
         self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('initial_bar').value, 'ignoring_override')
+        self.assertEqual(self.node.get_parameter('initial_fizz').value, 23)
+        self.assertEqual(self.node.get_parameter('initial_baz').value, 3.14)
+        self.assertEqual(self.node.get_parameter('initial_buzz').value, 1)
+        self.assertEqual(self.node.get_parameter('initial_foobar').value, False)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
@@ -1530,7 +1530,7 @@ class TestCreateNode(unittest.TestCase):
     def test_use_global_arguments(self):
         context = rclpy.context.Context()
         rclpy.init(
-            args=['process_name', '--ros-args', '__node:=global_node_name'],
+            args=['process_name', '--ros-args', '-r', '__node:=global_node_name'],
             context=context
         )
         try:
@@ -1550,11 +1550,39 @@ class TestCreateNode(unittest.TestCase):
         rclpy.init(context=context)
         try:
             node = rclpy.create_node(
-                'my_node', namespace='/my_ns', cli_args=['__ns:=/foo/bar'], context=context)
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '-r', '__ns:=/foo/bar'],
+                context=context
+            )
             self.assertEqual('/foo/bar', node.get_namespace())
             node.destroy_node()
         finally:
             rclpy.shutdown(context=context)
+
+    def test_bad_node_arguments(self):
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
+
+        from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
+        invalid_ros_args_error_pattern = r'Failed to parse ROS arguments:.*not-a-remap.*'
+        with self.assertRaisesRegex(_rclpy.RCLInvalidROSArgsError, invalid_ros_args_error_pattern):
+            rclpy.create_node(
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '-r', 'not-a-remap'],
+                context=context)
+
+        unknown_ros_args_error_pattern = r'Found unknown ROS arguments:.*\[\'--my-custom-flag\'\]'
+        with self.assertRaisesRegex(_rclpy.UnknownROSArgsError, unknown_ros_args_error_pattern):
+            rclpy.create_node(
+                'my_node',
+                namespace='/my_ns',
+                cli_args=['--ros-args', '--my-custom-flag'],
+                context=context)
+
+        rclpy.shutdown(context=context)
 
 
 if __name__ == '__main__':

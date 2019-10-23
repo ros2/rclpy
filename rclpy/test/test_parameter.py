@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from array import array
 import unittest
 
+from rcl_interfaces.msg import Parameter as ParameterMsg
+from rcl_interfaces.msg import ParameterValue
 from rclpy.parameter import Parameter
 
 
@@ -137,6 +140,26 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(
             Parameter.Type.INTEGER_ARRAY, Parameter.Type.from_parameter_value(int_tuple))
         self.assertTrue(Parameter.Type.check(Parameter.Type.INTEGER_ARRAY, int_tuple))
+
+    def test_integer_array(self):
+        int_array = array('i', [1, 2, 3])
+        self.assertEqual(
+            Parameter.Type.INTEGER_ARRAY, Parameter.Type.from_parameter_value(int_array))
+        # test that it doesn't raise
+        Parameter.from_parameter_msg(ParameterMsg(
+            name='int_array',
+            value=ParameterValue(type=7, integer_array_value=[1, 2, 3])
+        ))
+
+    def test_double_array(self):
+        double_array = array('d', [1.0, 2.0, 3.0])
+        self.assertEqual(
+            Parameter.Type.DOUBLE_ARRAY, Parameter.Type.from_parameter_value(double_array))
+        # test that it doesn't raise
+        Parameter.from_parameter_msg(ParameterMsg(
+            name='double_array',
+            value=ParameterValue(type=8, double_array_value=[1.0, 2.0, 3.0])
+        ))
 
 
 if __name__ == '__main__':

@@ -69,6 +69,11 @@ class Publisher:
         with self.handle as capsule:
             _rclpy.rclpy_publish(capsule, msg)
 
+    def get_subscription_count(self) -> int:
+        """Get the amount of subscribers that this publisher has."""
+        with self.handle as capsule:
+            return _rclpy.rclpy_publisher_get_subscription_count(capsule)
+
     @property
     def handle(self):
         return self.__handle

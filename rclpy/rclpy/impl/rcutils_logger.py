@@ -17,8 +17,8 @@ from collections import namedtuple
 from collections import OrderedDict
 import inspect
 import os
-import time
 
+from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
@@ -123,28 +123,24 @@ class Throttle(LoggingFilter):
 
     params = {
         'throttle_duration_sec': None,
-        'throttle_time_source_type': 'RCUTILS_STEADY_TIME',
+        'throttle_time_source_type': Clock(),
     }
 
     @classmethod
     def initialize_context(cls, context, **kwargs):
         super(Throttle, cls).initialize_context(context, **kwargs)
         context['throttle_last_logged'] = 0
-        # TODO(dhood): clarify the accepted values of the time source type, once it's actually used
-        if context['throttle_time_source_type'] != 'RCUTILS_STEADY_TIME':
+        if not isinstance(context['throttle_time_source_type'], Clock):
             raise ValueError(
-                'Received throttle_time_source_type of "{0}"; '
-                'currently only RCUTILS_STEADY_TIME is supported'
-                # TODO(dhood): remove the following note when the time source is actually rcutils
-                ' (simulated with python time.monotonic)'
+                'Received throttle_time_source_type of "{0}" '
+                'is not a clock instance'
                 .format(context['throttle_time_source_type']))
 
     @staticmethod
     def should_log(context):
         logging_condition = True
-        # TODO(dhood): use rcutils time once support is available in rclpy
-        now = time.monotonic()
-        next_log_time = context['throttle_last_logged'] + context['throttle_duration_sec']
+        now = context['throttle_time_source_type'].now().nanoseconds
+        next_log_time = context['throttle_last_logged'] + (context['throttle_duration_sec'] * 1e+9)
         logging_condition = now >= next_log_time
         if logging_condition:
             context['throttle_last_logged'] = now

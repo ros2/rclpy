@@ -138,7 +138,8 @@ class TestTask(unittest.TestCase):
         t()
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Exception', t.exception().sentinel_value)
-        self.assertEqual(None, t.result())
+        with self.assertRaises(Exception):
+            t.result()
 
     def test_coroutine_exception(self):
 
@@ -151,7 +152,8 @@ class TestTask(unittest.TestCase):
         t()
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Exception', t.exception().sentinel_value)
-        self.assertEqual(None, t.result())
+        with self.assertRaises(Exception):
+            t.result()
 
     def test_task_normal_callable_args(self):
         arg_in = 'Sentinel Arg'
@@ -237,6 +239,19 @@ class TestFuture(unittest.TestCase):
             c.send(None)
         except StopIteration as e:
             self.assertEqual('Sentinel Result', e.value)
+
+    def test_await_exception(self):
+        f = Future()
+
+        async def coro():
+            nonlocal f
+            return await f
+
+        c = coro()
+        c.send(None)
+        f.set_exception(RuntimeError('test exception'))
+        with self.assertRaises(RuntimeError):
+            c.send(None)
 
     def test_cancel_schedules_callbacks(self):
         executor = DummyExecutor()

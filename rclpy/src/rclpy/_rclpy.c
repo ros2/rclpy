@@ -18,6 +18,7 @@
 #include <rcl/expand_topic_name.h>
 #include <rcl/graph.h>
 #include <rcl/node.h>
+#include <rcl/publisher.h>
 #include <rcl/rcl.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
@@ -38,6 +39,10 @@
 
 #include "rclpy_common/common.h"
 #include "./_rclpy_qos_event.c"
+
+static PyObject * RCLInvalidROSArgsError;
+static PyObject * UnknownROSArgsError;
+static PyObject * NodeNameNonExistentError;
 
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
@@ -286,6 +291,48 @@ _rclpy_pyargs_to_list(PyObject * pyargs, int * num_args, char *** arg_values)
   return RCL_RET_OK;
 }
 
+/// Raise an UnknownROSArgsError exception
+/* \param[in] pyargs a sequence of string args
+ * \param[in] unknown_ros_args_count the number of unknown ROS args
+ * \param[in] unknown_ros_args_indices the indices to unknown ROS args
+ */
+void _rclpy_raise_unknown_ros_args(
+  PyObject * pyargs,
+  const int * unknown_ros_args_indices,
+  int unknown_ros_args_count)
+{
+  PyObject * unknown_ros_pyargs = NULL;
+
+  pyargs = PySequence_List(pyargs);
+  if (NULL == pyargs) {
+    goto cleanup;
+  }
+
+  unknown_ros_pyargs = PyList_New(0);
+  if (NULL == unknown_ros_pyargs) {
+    goto cleanup;
+  }
+
+  for (int i = 0; i < unknown_ros_args_count; ++i) {
+    PyObject * ros_pyarg = PyList_GetItem(
+      pyargs, (Py_ssize_t)unknown_ros_args_indices[i]);
+    if (NULL == ros_pyarg) {
+      goto cleanup;
+    }
+    if (PyList_Append(unknown_ros_pyargs, ros_pyarg) != 0) {
+      goto cleanup;
+    }
+  }
+
+  PyErr_Format(
+    UnknownROSArgsError,
+    "Found unknown ROS arguments: %R",
+    unknown_ros_pyargs);
+cleanup:
+  Py_XDECREF(unknown_ros_pyargs);
+  Py_XDECREF(pyargs);
+}
+
 /// Parse a sequence of strings into rcl_arguments_t struct
 /* Raises TypeError of pyargs is not a sequence
  * Raises OverflowError if len(pyargs) > INT_MAX
@@ -297,7 +344,6 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
 {
   rcl_ret_t ret;
 
-  rcl_allocator_t allocator = rcl_get_default_allocator();
   int num_args = 0;
   char ** arg_values = NULL;
   // Py_None is a singleton so comparing pointer value works
@@ -312,14 +358,45 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
   // Otherwise the remapping functions will error if the user passes no arguments to a node and sets
   // use_global_arguments to False.
 
+  rcl_allocator_t allocator = rcl_get_default_allocator();
   // Adding const via cast to eliminate warning about incompatible pointer type
   const char ** const_arg_values = (const char **)arg_values;
   ret = rcl_parse_arguments(num_args, const_arg_values, allocator, parsed_args);
 
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+    if (ret == RCL_RET_INVALID_ROS_ARGS) {
+      PyErr_Format(
+        RCLInvalidROSArgsError,
+        "Failed to parse ROS arguments: %s",
+        rcl_get_error_string().str);
+    } else {
+      PyErr_Format(
+        PyExc_RuntimeError,
+        "Failed to init: %s",
+        rcl_get_error_string().str);
+    }
     rcl_reset_error();
+    goto cleanup;
   }
+
+  int unparsed_ros_args_count = rcl_arguments_get_count_unparsed_ros(parsed_args);
+  if (unparsed_ros_args_count > 0) {
+    int * unparsed_ros_args_indices = NULL;
+    ret = rcl_arguments_get_unparsed_ros(
+      parsed_args, allocator, &unparsed_ros_args_indices);
+    if (RCL_RET_OK != ret) {
+      PyErr_Format(
+        PyExc_RuntimeError,
+        "Failed to get unparsed ROS arguments: %s",
+        rcl_get_error_string().str);
+      rcl_reset_error();
+      goto cleanup;
+    }
+    _rclpy_raise_unknown_ros_args(pyargs, unparsed_ros_args_indices, unparsed_ros_args_count);
+    allocator.deallocate(unparsed_ros_args_indices, allocator.state);
+    ret = RCL_RET_ERROR;
+  }
+cleanup:
   _rclpy_arg_list_fini(num_args, arg_values);
   return ret;
 }
@@ -1329,6 +1406,37 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   Py_RETURN_NONE;
+}
+
+/// Count subscribers from a publisher.
+/**
+ *
+ * \param[in] pynode Capsule pointing to the publisher
+ * \return count of subscribers
+ */
+static PyObject *
+rclpy_publisher_get_subscription_count(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pypublisher;
+
+  if (!PyArg_ParseTuple(args, "O", &pypublisher)) {
+    return NULL;
+  }
+
+  const rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+    pypublisher, "rclpy_publisher_t");
+  if (!pub) {
+    return NULL;
+  }
+
+  size_t count = 0;
+  rmw_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
+  if (RMW_RET_OK != ret) {
+    PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string().str);
+    rmw_reset_error();
+    return NULL;
+  }
+  return PyLong_FromSize_t(count);
 }
 
 /// PyCapsule destructor for timer
@@ -3138,10 +3246,13 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
     rcl_get_service_names_and_types_by_node(node, &allocator, node_name, node_namespace,
       &service_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = NodeNameNonExistentError;
+    }
+    PyErr_Format(error,
       "Failed to get_service_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
-    rclpy_names_and_types_fini(&service_names_and_types);
     return NULL;
   }
 
@@ -3187,10 +3298,13 @@ rclpy_get_client_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * 
     rcl_get_client_names_and_types_by_node(node, &allocator, node_name, node_namespace,
       &client_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = NodeNameNonExistentError;
+    }
+    PyErr_Format(error,
       "Failed to get_client_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
-    rclpy_names_and_types_fini(&client_names_and_types);
     return NULL;
   }
 
@@ -3238,7 +3352,11 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
     rcl_get_subscriber_names_and_types_by_node(node, &allocator, no_demangle, node_name,
       node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = NodeNameNonExistentError;
+    }
+    PyErr_Format(error,
       "Failed to get_subscriber_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -3287,7 +3405,11 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
     rcl_get_publisher_names_and_types_by_node(node, &allocator, no_demangle, node_name,
       node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyObject * error = PyExc_RuntimeError;
+    if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
+      error = NodeNameNonExistentError;
+    }
+    PyErr_Format(error,
       "Failed to get_publisher_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -3619,8 +3741,6 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_system_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_services_default")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_services_default);
-    // NOTE(mikaelarguedas) all conditions following this one are defined but not used
-    // because parameters are not implemented in Python yet
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameters")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameters);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {
@@ -4433,14 +4553,14 @@ _populate_node_parameters_from_rcl_params(
   return true;
 }
 
-/// Populate a Python dict with node parameters parsed from arguments files
+/// Populate a Python dict with node parameters parsed from CLI arguments
 /**
  * On failure a Python exception is raised and false is returned if:
  *
  * Raises RuntimeError if param_files cannot be extracted from arguments.
  * Raises RuntimeError if yaml files do not parse succesfully.
  *
- * \param[in] args The arguments to parse for parameter files
+ * \param[in] args The arguments to parse for parameters
  * \param[in] allocator Allocator to use for allocating and deallocating within the function.
  * \param[in] parameter_cls The PythonObject for the Parameter class.
  * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
@@ -4451,43 +4571,24 @@ _populate_node_parameters_from_rcl_params(
  *
  */
 static bool
-_parse_param_files(
+_parse_param_overrides(
   const rcl_arguments_t * args, rcl_allocator_t allocator, PyObject * parameter_cls,
   PyObject * parameter_type_cls, PyObject * params_by_node_name)
 {
-  char ** param_files;
-  int param_files_count = rcl_arguments_get_param_files_count(args);
-  bool successful = true;
-  if (param_files_count <= 0) {
-    return successful;
-  }
-  if (RCL_RET_OK != rcl_arguments_get_param_files(args, allocator, &param_files)) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to get initial parameters: %s",
+  rcl_params_t * params = NULL;
+  if (RCL_RET_OK != rcl_arguments_get_param_overrides(args, &params)) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to get parameters overrides: %s",
       rcl_get_error_string().str);
     return false;
   }
-  for (int i = 0; i < param_files_count; ++i) {
-    if (successful) {
-      rcl_params_t * params = rcl_yaml_node_struct_init(allocator);
-      if (!rcl_parse_yaml_file(param_files[i], params)) {
-        // failure to parse will automatically fini the params struct
-        PyErr_Format(PyExc_RuntimeError, "Failed to parse yaml params file '%s': %s",
-          param_files[i], rcl_get_error_string().str);
-        rcl_reset_error();
-        successful = false;
-      } else {
-        if (!_populate_node_parameters_from_rcl_params(
-            params, allocator, parameter_cls, parameter_type_cls, params_by_node_name))
-        {
-          successful = false;
-        }
-        rcl_yaml_node_struct_fini(params);
-      }
-    }
-    allocator.deallocate(param_files[i], allocator.state);
+  if (NULL == params) {
+    // No parameter overrides.
+    return true;
   }
-  allocator.deallocate(param_files, allocator.state);
-  return successful;
+  bool success = _populate_node_parameters_from_rcl_params(
+    params, allocator, parameter_cls, parameter_type_cls, params_by_node_name);
+  rcl_yaml_node_struct_fini(params);
+  return success;
 }
 
 /// Get a list of parameters for the current node from rcl_yaml_param_parser
@@ -4537,7 +4638,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   const rcl_allocator_t allocator = node_options->allocator;
 
   if (node_options->use_global_arguments) {
-    if (!_parse_param_files(
+    if (!_parse_param_overrides(
         &(node->context->global_arguments), allocator, parameter_cls,
         parameter_type_cls, params_by_node_name))
     {
@@ -4547,7 +4648,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     }
   }
 
-  if (!_parse_param_files(&(node_options->arguments), allocator, parameter_cls,
+  if (!_parse_param_overrides(&(node_options->arguments), allocator, parameter_cls,
     parameter_type_cls, params_by_node_name))
   {
     Py_DECREF(parameter_type_cls);
@@ -4710,6 +4811,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_publish", rclpy_publish, METH_VARARGS,
     "Publish a message."
+  },
+  {
+    "rclpy_publisher_get_subscription_count", rclpy_publisher_get_subscription_count, METH_VARARGS,
+    "Count subscribers from a publisher."
   },
   {
     "rclpy_send_request", rclpy_send_request, METH_VARARGS,
@@ -4975,5 +5080,49 @@ static struct PyModuleDef _rclpymodule = {
 /// Init function of this module
 PyMODINIT_FUNC PyInit__rclpy(void)
 {
-  return PyModule_Create(&_rclpymodule);
+  PyObject * m = PyModule_Create(&_rclpymodule);
+  if (NULL == m) {
+    return NULL;
+  }
+
+  RCLInvalidROSArgsError = PyErr_NewExceptionWithDoc(
+    "_rclpy.RCLInvalidROSArgsError",
+    "Thrown when invalid ROS arguments are found by rcl.",
+    PyExc_RuntimeError, NULL);
+  if (NULL == RCLInvalidROSArgsError) {
+    Py_DECREF(m);
+    return NULL;
+  }
+  if (PyModule_AddObject(m, "RCLInvalidROSArgsError", RCLInvalidROSArgsError) != 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  UnknownROSArgsError = PyErr_NewExceptionWithDoc(
+    "_rclpy.UnknownROSArgsError",
+    "Thrown when unknown ROS arguments are found.",
+    PyExc_RuntimeError, NULL);
+  if (NULL == UnknownROSArgsError) {
+    Py_DECREF(m);
+    return NULL;
+  }
+  if (PyModule_AddObject(m, "UnknownROSArgsError", UnknownROSArgsError) != 0) {
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  NodeNameNonExistentError = PyErr_NewExceptionWithDoc(
+    "_rclpy.NodeNameNonExistentError",
+    "Thrown when a node name is not found.",
+    PyExc_RuntimeError, NULL);
+  if (PyModule_AddObject(m, "NodeNameNonExistentError", NodeNameNonExistentError)) {
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  if (PyErr_Occurred()) {
+    Py_DECREF(m);
+    return NULL;
+  }
+  return m;
 }

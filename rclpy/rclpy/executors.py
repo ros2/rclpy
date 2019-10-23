@@ -34,6 +34,8 @@ from typing import Union
 
 
 from rclpy.client import Client
+from rclpy.clock import Clock
+from rclpy.clock import ClockType
 from rclpy.context import Context
 from rclpy.guard_condition import GuardCondition
 from rclpy.handle import InvalidHandle
@@ -43,7 +45,7 @@ from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.timer import WallTimer
+from rclpy.timer import Timer
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
@@ -168,6 +170,8 @@ class Executor:
         self._cb_iter = None
         self._last_args = None
         self._last_kwargs = None
+        # Executor cannot use ROS clock because that requires a node
+        self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         self._sigint_gc = SignalHandlerGuardCondition(context)
         self._context.on_shutdown(self.wake)
 
@@ -437,7 +441,7 @@ class Executor:
         timeout_timer = None
         timeout_nsec = timeout_sec_to_nsec(timeout_sec)
         if timeout_nsec > 0:
-            timeout_timer = WallTimer(None, None, timeout_nsec)
+            timeout_timer = Timer(None, None, timeout_nsec, self._clock)
 
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
@@ -463,7 +467,7 @@ class Executor:
             # Gather entities that can be waited on
             subscriptions: List[Subscription] = []
             guards: List[GuardCondition] = []
-            timers: List[WallTimer] = []
+            timers: List[Timer] = []
             clients: List[Client] = []
             services: List[Service] = []
             waitables: List[Waitable] = []
