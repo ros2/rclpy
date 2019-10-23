@@ -47,7 +47,14 @@ class TestMessages(unittest.TestCase):
         self.node.destroy_publisher(pub)
 
     def test_different_type_raises(self):
-        pub = self.node.create_publisher(BasicTypes, 'chatter', 1)
+        # TODO(bmarchi): When a publisher is destroyed for opensplice,
+        # the topic from the previous test is kept around and is cached, so
+        # the new publisher can't be created because opensplice checks
+        # if the parameters of the created topic are the same as the one
+        # that has in memory. It's expected that if any participant
+        # is not subscribed/publishing to a topic, this is destroyed.
+        pub = self.node.create_publisher(
+            BasicTypes, 'chatter_different_message_type', 1)
         with self.assertRaises(TypeError):
             pub.publish('different message type')
         self.node.destroy_publisher(pub)
