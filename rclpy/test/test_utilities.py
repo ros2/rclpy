@@ -25,8 +25,8 @@ class TestValidateRemoveRosArgs(unittest.TestCase):
             'process_name',
             '-d',
             '--ros-args',
-            '__ns:=/foo/bar',
-            '__ns:=/fiz/buz',
+            '-r', '__ns:=/foo/bar',
+            '-r', '__ns:=/fiz/buz',
             '--',
             '--foo=bar',
             '--baz'
@@ -37,11 +37,6 @@ class TestValidateRemoveRosArgs(unittest.TestCase):
         self.assertEqual('-d', stripped_args[1])
         self.assertEqual('--foo=bar', stripped_args[2])
         self.assertEqual('--baz', stripped_args[3])
-
-    def test_remove_ros_args_empty(self):
-        args = []
-        with self.assertRaises(RuntimeError):
-            rclpy.utilities.remove_ros_args(args=args)
 
 
 class TestUtilities(unittest.TestCase):

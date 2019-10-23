@@ -110,3 +110,10 @@ class ParameterImmutableException(ParameterException):
 
     def __init__(self, parameter, *args):
         Exception.__init__(self, 'Attempted to modify read-only parameter', parameter, *args)
+
+
+class ROSInterruptException(Exception):
+    """Raised when an operation is canceled by rclpy shutting down."""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'rclpy.shutdown() has been called', *args)

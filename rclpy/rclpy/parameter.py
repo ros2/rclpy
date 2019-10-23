@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import array
 from enum import Enum
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
@@ -52,7 +53,7 @@ class Parameter:
                 return Parameter.Type.DOUBLE
             elif isinstance(parameter_value, str):
                 return Parameter.Type.STRING
-            elif isinstance(parameter_value, (list, tuple)):
+            elif isinstance(parameter_value, (list, tuple, array.array)):
                 if all(isinstance(v, bytes) for v in parameter_value):
                     return Parameter.Type.BYTE_ARRAY
                 elif all(isinstance(v, bool) for v in parameter_value):
@@ -86,10 +87,10 @@ class Parameter:
                 return isinstance(parameter_value, (list, tuple)) and \
                     all(isinstance(v, bool) for v in parameter_value)
             if Parameter.Type.INTEGER_ARRAY == self:
-                return isinstance(parameter_value, (list, tuple)) and \
+                return isinstance(parameter_value, (list, tuple, array.array)) and \
                     all(isinstance(v, int) for v in parameter_value)
             if Parameter.Type.DOUBLE_ARRAY == self:
-                return isinstance(parameter_value, (list, tuple)) and \
+                return isinstance(parameter_value, (list, tuple, array.array)) and \
                     all(isinstance(v, float) for v in parameter_value)
             if Parameter.Type.STRING_ARRAY == self:
                 return isinstance(parameter_value, (list, tuple)) and \

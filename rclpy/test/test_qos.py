@@ -13,11 +13,10 @@
 # limitations under the License.
 
 import unittest
-import warnings
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.qos import _qos_profile_default
+from rclpy.qos import InvalidQoSProfileException
 from rclpy.qos import qos_profile_system_default
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
@@ -96,33 +95,13 @@ class TestQosProfile(unittest.TestCase):
         )
         self.convert_and_assert_equality(source_profile)
 
-    def test_deprecation_warnings(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
+    def test_invalid_qos(self):
+        with self.assertRaises(InvalidQoSProfileException):
+            # No history or depth settings provided
             QoSProfile()
-            assert len(w) == 2  # must supply depth or history, _and_ KEEP_LAST needs depth
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            # No deprecation if history is supplied
-            QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL)
-            assert len(w) == 0, str(w[-1].message)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            # Deprecation warning if KEEP_LAST, but no depth
+        with self.assertRaises(InvalidQoSProfileException):
+            # History is KEEP_LAST, but no depth is provided
             QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            # No deprecation if 'depth' is present
-            QoSProfile(history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, depth=1)
-            assert len(w) == 0, str(w[-1].message)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            # No deprecation if only depth
-            QoSProfile(depth=1)
-            assert len(w) == 0, str(w[-1].message)
 
     def test_policy_short_names(self):
         # Full test on History to show the mechanism works
@@ -143,11 +122,3 @@ class TestQosProfile(unittest.TestCase):
         assert (
             QoSPresetProfiles.SYSTEM_DEFAULT.value ==
             QoSPresetProfiles.get_from_short_key('system_default'))
-
-    def test_default_profile(self):
-        with warnings.catch_warnings(record=True):
-            warnings.simplefilter('always')
-            profile = QoSProfile()
-        assert all(
-            profile.__getattribute__(k) == _qos_profile_default.__getattribute__(k)
-            for k in profile.__slots__)

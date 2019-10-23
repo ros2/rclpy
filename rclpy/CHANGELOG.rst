@@ -1,5 +1,63 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog for package rclpy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.0 (2019-09-26)
+------------------
+* Take parameter overrides provided through the CLI. (`#434 <https://github.com/ros2/rclpy/issues/434>`_)
+* Changelog version to master (`#410 <https://github.com/ros2/rclpy/issues/410>`_)
+* Remove deprecated QoS functionality (`#431 <https://github.com/ros2/rclpy/issues/431>`_)
+* Remove comment (`#432 <https://github.com/ros2/rclpy/issues/432>`_)
+* Provide subscription count from Publisher `#418 <https://github.com/ros2/rclpy/issues/418>`_ (`#429 <https://github.com/ros2/rclpy/issues/429>`_)
+* Raise custom error when node name is not found (`#413 <https://github.com/ros2/rclpy/issues/413>`_)
+* Timer uses ROS time by default (`#419 <https://github.com/ros2/rclpy/issues/419>`_)
+* Fix _rclpy.c formatting. (`#421 <https://github.com/ros2/rclpy/issues/421>`_)
+* Fail on invalid and unknown ROS specific arguments (`#415 <https://github.com/ros2/rclpy/issues/415>`_)
+* Force explicit --ros-args in cli args. (`#416 <https://github.com/ros2/rclpy/issues/416>`_)
+* Make Future result() and __await_\_ raise exceptions (`#412 <https://github.com/ros2/rclpy/issues/412>`_)
+* Use of -r/--remap flags where appropriate. (`#411 <https://github.com/ros2/rclpy/issues/411>`_)
+* Awake waitables on shutdown, check if context is valid (`#403 <https://github.com/ros2/rclpy/issues/403>`_)
+* Accept tuples as parameter arrays (`#389 <https://github.com/ros2/rclpy/issues/389>`_)
+* Adapt to '--ros-args ... [--]'-based ROS args extraction (`#405 <https://github.com/ros2/rclpy/issues/405>`_)
+* Replace 'NULL == ' with ! (`#404 <https://github.com/ros2/rclpy/issues/404>`_)
+* Declaring 'use_sim_time' when attaching node to time source. (`#396 <https://github.com/ros2/rclpy/issues/396>`_)
+* Adding ignore_override parameter to declare_parameter(s). (`#392 <https://github.com/ros2/rclpy/issues/392>`_)
+* fix missing 'raise'
+* Adding get_parameters_by_prefix method to Node. (`#386 <https://github.com/ros2/rclpy/issues/386>`_)
+* remove whitespace (`#385 <https://github.com/ros2/rclpy/issues/385>`_)
+* Added clients by node implementation from rcl (`#383 <https://github.com/ros2/rclpy/issues/383>`_)
+* Fix time conversion for a big nanoseconds value (`#384 <https://github.com/ros2/rclpy/issues/384>`_)
+* Allowing parameter declaration without a given value. (`#382 <https://github.com/ros2/rclpy/issues/382>`_)
+* Make flake8 happy on windows (`#381 <https://github.com/ros2/rclpy/issues/381>`_)
+* Rename QoS*Policy enum's to *Policy (`#379 <https://github.com/ros2/rclpy/issues/379>`_)
+* Fixing namespace expansion for declare_parameters. (`#377 <https://github.com/ros2/rclpy/issues/377>`_)
+* Use params from node '/**' from parameter YAML file (`#370 <https://github.com/ros2/rclpy/issues/370>`_)
+* [executors] don't convert a timeout_sec to nsecs (`#372 <https://github.com/ros2/rclpy/issues/372>`_)
+* Fix API documentation related to ROS graph methods (`#366 <https://github.com/ros2/rclpy/issues/366>`_)
+* Treat warnings as test failures and fix warnings (`#365 <https://github.com/ros2/rclpy/issues/365>`_)
+* Refactored _rclpy.rclpy_get_rmw_qos_profile to return dictionary instead of QoSProfile (`#364 <https://github.com/ros2/rclpy/issues/364>`_)
+* Contributors: Brian Marchi, Christian Rauch, Daniel Stonier, Daniel Wang, Geno117, Jacob Perron, Juan Ignacio Ubeira, Michel Hidalgo, Scott K Logan, Shane Loretz, Siddharth Kucheria, Vinnam Kim, William Woodall, ivanpauno, suab321321
+
+0.7.6 (2019-08-28)
+------------------
+* Fix missing raise (`#390 <https://github.com/ros2/rclpy/pull/390>`_)
+* Fix time conversion for big nanoseconds value (`#384 <https://github.com/ros2/rclpy/pull/384>`_)
+* Contributors: Daniel Wang, Vinnam Kim
+
+0.7.5 (2019-08-01)
+------------------
+* Updated to use params from node '/**' from parameter YAML file. (`#399 <https://github.com/ros2/rclpy/issues/399>`_)
+* Updated to declare 'use_sim_time' when attaching node to time source. (`#401 <https://github.com/ros2/rclpy/issues/401>`_)
+* Fixed an errant conversion to nsecs in executors timeout.` (`#397 <https://github.com/ros2/rclpy/issues/397>`_)
+* Fixed parameter handling issues. (`#394 <https://github.com/ros2/rclpy/issues/394>`_)
+  * Fixing namespace expansion for declare_parameters. (`#377 <https://github.com/ros2/rclpy/issues/377>`_)
+  * Allowing parameter declaration without a given value. (`#382 <https://github.com/ros2/rclpy/issues/382>`_)
+* Contributors: Juan Ignacio Ubeira, Scott K Logan
+
+0.7.4 (2019-06-12)
+------------------
+* Fix API documentation related to ROS graph methods (`#366 <https://github.com/ros2/rclpy/issues/366>`_)
+* Contributors: Jacob Perron
 
 0.7.3 (2019-05-29)
 ------------------
