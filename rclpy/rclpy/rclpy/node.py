@@ -1658,4 +1658,3 @@ class Node:
         """
         with self.handle as capsule:
             _rclpy.rclpy_assert_liveliness(capsule)
-
