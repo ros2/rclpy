@@ -141,7 +141,7 @@ class Node:
         self.__guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
-        self._parameters_callback:Callable[List[Parameter],SetParametersResult]=[]
+        self._parameters_callback:Callable[[List[Parameter]], SetParametersResult] = []
         self._allow_undeclared_parameters = allow_undeclared_parameters
         self._parameter_overrides = {}
         self._descriptors = {}
@@ -711,7 +711,7 @@ class Node:
         if not result.successful:
             return result
         elif self._parameters_callback:
-            result = self._parameters_callback(parameter_list)
+            add_on_set_paramters_callback(parameter_list,SetParametersResult(successful=True))
         else:
             result = SetParametersResult(successful=True)
 
@@ -757,21 +757,28 @@ class Node:
 
         return result
     
-    def add_on_set_paramters_callback(self,callback:Callable([List[Parameter],SetParametersResult])):
+    def add_on_set_paramters_callback(
+         self,
+        callback: Callable[List[Parameter], SetParametersResult]
+    ) -> None:
+
         """add the callback to list"""
 
         prevCallBack = self._parameters_callback
         prevCallBack.insert(0,callback)
         self._parameters_callback = prevCallBack
 
+    def remove_on_set_parameters_callback(
+         self,
+        callback: Callable[[List[Parameter]], SetParametersResult]
+    ) -> None:
     
-    def remove_on_set_parameters_callback(self,callback:Callable[List[Parameter],SetParametersResult]):
         """remove callback from list"""
-        try:
-            self._parameters_callback.remove(callback)
-        except ValueError:
-            print("Callback doesn't exist")
 
+       if callback in self._parameters_callback:
+           self._parameters_callback.remove(callback)
+       else:
+           print("Callback Does not exists")
 
     def _apply_descriptors(
         self,
