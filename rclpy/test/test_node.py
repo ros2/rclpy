@@ -25,6 +25,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
 import rclpy
 from rclpy.clock import ClockType
+from rclpy.duration import Duration
 from rclpy.exceptions import InvalidParameterException
 from rclpy.exceptions import InvalidParameterValueException
 from rclpy.exceptions import InvalidServiceNameException
@@ -35,6 +36,11 @@ from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSDurabilityPolicy
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSLivelinessPolicy
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
 from rclpy.time_source import USE_SIM_TIME_NAME
 from test_msgs.msg import BasicTypes
 
@@ -42,6 +48,17 @@ TEST_NODE = 'my_node'
 TEST_NAMESPACE = '/my_ns'
 
 TEST_RESOURCES_DIR = pathlib.Path(__file__).resolve().parent / 'resources' / 'test_node'
+
+
+def are_qos_equal(qos_profile, qos_dict):
+    # Depth and history are skipped because they are not retrieved.
+    return qos_profile.durability == qos_dict['durability'] and \
+           qos_profile.reliability == qos_dict['reliability'] and \
+           qos_profile.deadline == qos_dict['deadline'] and \
+           qos_profile.lifespan == qos_dict['lifespan'] and \
+           qos_profile.liveliness == qos_dict['liveliness'] and \
+           qos_profile.liveliness_lease_duration == \
+           qos_dict['liveliness_lease_duration']
 
 
 class TestNodeAllowUndeclaredParameters(unittest.TestCase):
@@ -170,6 +187,72 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_node_names_and_namespaces(self):
         # test that it doesn't raise
         self.node.get_node_names_and_namespaces()
+
+    def test_get_publishers_subscriptions_info_by_topic(self):
+        topic_name = 'test_topic_info'
+        fq_topic_name = '{namespace}/{name}'.format(namespace=TEST_NAMESPACE, name=topic_name)
+        # Lists should be empty
+        self.assertFalse(self.node.get_publishers_info_by_topic(fq_topic_name))
+        self.assertFalse(self.node.get_subscriptions_info_by_topic(fq_topic_name))
+
+        # Add a publisher
+        qos_profile = QoSProfile(
+            depth=10,
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL,
+            deadline=Duration(seconds=1, nanoseconds=12345),
+            lifespan=Duration(seconds=20, nanoseconds=9887665),
+            reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+            durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL,
+            liveliness_lease_duration=Duration(seconds=5, nanoseconds=23456),
+            liveliness=QoSLivelinessPolicy.MANUAL_BY_TOPIC)
+        self.node.create_publisher(BasicTypes, topic_name, qos_profile)
+        # List should have one item
+        publisher_list = self.node.get_publishers_info_by_topic(fq_topic_name)
+        self.assertEqual(1, len(publisher_list))
+        # Subscription list should be empty
+        self.assertFalse(self.node.get_subscriptions_info_by_topic(fq_topic_name))
+        # Verify publisher list has the right data
+        # self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
+        # self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
+        self.assertEqual('test_msgs::msg::dds_::BasicTypes_', publisher_list[0].get('topic_type'))
+        actual_qos_profile = publisher_list[0].get('qos_profile')
+        self.assertTrue(are_qos_equal(qos_profile, actual_qos_profile))
+
+        # Add a subscription
+        qos_profile2 = QoSProfile(
+            depth=0,
+            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+            deadline=Duration(seconds=15, nanoseconds=1678),
+            lifespan=Duration(seconds=29, nanoseconds=2345),
+            reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_RELIABLE,
+            durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE,
+            liveliness_lease_duration=Duration(seconds=5, nanoseconds=23456),
+            liveliness=QoSLivelinessPolicy.MANUAL_BY_NODE)
+        self.node.create_subscription(BasicTypes, topic_name, lambda msg: print(msg), qos_profile2)
+        # Both lists should have one item
+        publisher_list = self.node.get_publishers_info_by_topic(fq_topic_name)
+        subscription_list = self.node.get_subscriptions_info_by_topic(fq_topic_name)
+        self.assertEqual(1, len(publisher_list))
+        self.assertEqual(1, len(subscription_list))
+        # Verify subscription list has the right data
+        # self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
+        # self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
+        self.assertEqual('test_msgs::msg::dds_::BasicTypes_',
+                         publisher_list[0].get('topic_type'))
+        self.assertEqual('test_msgs::msg::dds_::BasicTypes_',
+                         subscription_list[0].get('topic_type'))
+        publisher_qos_profile = publisher_list[0].get('qos_profile')
+        subscription_qos_profile = subscription_list[0].get('qos_profile')
+        self.assertTrue(are_qos_equal(qos_profile, publisher_qos_profile))
+        self.assertTrue(are_qos_equal(qos_profile2, subscription_qos_profile))
+
+        # Error cases
+        with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
+            self.node.get_subscriptions_info_by_topic(1)
+            self.node.get_publishers_info_by_topic(1)
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.get_subscriptions_info_by_topic('13')
+            self.node.get_publishers_info_by_topic('13')
 
     def test_count_publishers_subscribers(self):
         short_topic_name = 'chatter'

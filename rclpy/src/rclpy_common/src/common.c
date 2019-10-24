@@ -358,3 +358,96 @@ rclpy_convert_to_py(void * message, PyObject * pyclass)
   }
   return convert(message);
 }
+
+PyObject *
+rclpy_convert_to_py_topic_info_list(const rmw_topic_info_array_t * info_array)
+{
+  if (!info_array) {
+    return NULL;
+  }
+
+  PyObject * py_info_array = PyList_New(info_array->count);
+  if (!py_info_array) {
+    return NULL;
+  }
+
+  for (size_t i = 0; i < info_array->count; ++i) {
+    rmw_topic_info_t topic_info = info_array->info_array[i];
+    const rmw_qos_profile_t * qos_profile = topic_info.qos_profile;
+    PyObject * py_qos_profile = rclpy_common_convert_to_qos_dict(qos_profile);
+    if (!py_qos_profile) {
+      Py_DECREF(py_info_array);
+      return NULL;
+    }
+    const char * node_name = topic_info.node_name;
+    PyObject * py_node_name = PyUnicode_FromString(node_name);
+    if (!py_node_name) {
+      Py_DECREF(py_info_array);
+      Py_DECREF(py_qos_profile);
+      return NULL;
+    }
+
+    const char * node_namespace = topic_info.node_namespace;
+    PyObject * py_node_namespace = PyUnicode_FromString(node_namespace);
+    if (!py_node_namespace) {
+      Py_DECREF(py_info_array);
+      Py_DECREF(py_qos_profile);
+      Py_DECREF(py_node_name);
+      return NULL;
+    }
+
+    const char * topic_type = topic_info.topic_type;
+    PyObject * py_topic_type = PyUnicode_FromString(topic_type);
+    if (!py_topic_type) {
+      Py_DECREF(py_info_array);
+      Py_DECREF(py_qos_profile);
+      Py_DECREF(py_node_name);
+      Py_DECREF(py_node_namespace);
+      return NULL;
+    }
+
+    const char * gid = topic_info.gid;
+    PyObject * py_gid = PyUnicode_FromString(gid);
+    if (!py_gid) {
+      Py_DECREF(py_info_array);
+      Py_DECREF(py_qos_profile);
+      Py_DECREF(py_node_name);
+      Py_DECREF(py_node_namespace);
+      Py_DECREF(py_topic_type);
+      return NULL;
+    }
+
+    // Create dictionary that represents rmw_topic_info_t
+    PyObject * py_topic_info_dict = PyDict_New();
+    if (!py_topic_info_dict) {
+      Py_DECREF(py_info_array);
+      Py_DECREF(py_qos_profile);
+      Py_DECREF(py_node_name);
+      Py_DECREF(py_node_namespace);
+      Py_DECREF(py_topic_type);
+      Py_DECREF(py_gid);
+      return NULL;
+    }
+    // Populate keyword arguments
+    // A success returns 0, and a failure returns -1
+    int set_result = 0;
+    set_result += PyDict_SetItemString(py_topic_info_dict, "qos_profile", py_qos_profile);
+    set_result += PyDict_SetItemString(py_topic_info_dict, "node_name", py_node_name);
+    set_result += PyDict_SetItemString(py_topic_info_dict, "node_namespace", py_node_namespace);
+    set_result += PyDict_SetItemString(py_topic_info_dict, "topic_type", py_topic_type);
+    set_result += PyDict_SetItemString(py_topic_info_dict, "gid", py_gid);
+    if (set_result != 0) {
+      Py_DECREF(py_info_array);
+      Py_DECREF(py_qos_profile);
+      Py_DECREF(py_node_name);
+      Py_DECREF(py_node_namespace);
+      Py_DECREF(py_topic_type);
+      Py_DECREF(py_gid);
+      Py_DECREF(py_topic_info_dict);
+      return NULL;
+    }
+    // add this dict to the list
+    PyList_SET_ITEM(py_info_array, i, py_topic_info_dict);
+  }
+  return py_info_array;
+}

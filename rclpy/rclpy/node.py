@@ -1681,3 +1681,65 @@ class Node:
         """
         with self.handle as capsule:
             _rclpy.rclpy_assert_liveliness(capsule)
+
+    def _get_info_by_topic(
+            self,
+            topic_name: str,
+            no_mangle: bool,
+            func: Callable[[object, str, bool], List[Dict]]) -> List[Dict]:
+        fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
+        validate_topic_name(fq_topic_name)
+        with self.handle as node_capsule:
+            return func(node_capsule, fq_topic_name, no_mangle)
+
+    def get_publishers_info_by_topic(
+            self, topic_name: str, no_mangle: bool = False) -> List[Dict]:
+        """
+        Return a list of publishers publishing to a given topic.
+
+        The returned parameter is a list of dictionaries, where each dictionary will
+        contain the node name, node namespace, topic type, participant's GID and its QoS profile.
+
+        'topic_name' may be a relative, private or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name, if
+        the 'no_mangle' param is set to false.
+
+        The queried topic name is not remapped.
+
+        'no_mangle' defaults to false.
+
+        :param topic_name: the topic_name on which to find the publishers.
+        :param no_mangle: if false, the given topic name will be expanded
+                          to its fully qualified name.
+        :return: a list of dictionaries representing all the publishers on this topic.
+        """
+        return self._get_info_by_topic(
+            topic_name,
+            no_mangle,
+            _rclpy.rclpy_get_publishers_info_by_topic)
+
+    def get_subscriptions_info_by_topic(
+            self, topic_name: str, no_mangle: bool = False) -> List[Dict]:
+        """
+        Return a list of subscriptions to a given topic.
+
+        The returned parameter is a list of dictionaries, where each dictionary will contain
+        the node name, node namespace, topic type, participant's GID and its QoS profile.
+
+        'topic_name' may be a relative, private or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name, if
+        the 'no_mangle' param is set to false.
+
+        The queried topic name is not remapped.
+
+        'no_mangle' defaults to false.
+
+        :param topic_name: the topic_name on which to find the subscriptions.
+        :param no_mangle: if false, the given topic name will be expanded
+                          to its fully qualified name.
+        :return: a list of dictionaries representing all the subscriptions on this topic.
+        """
+        return self._get_info_by_topic(
+            topic_name,
+            no_mangle,
+            _rclpy.rclpy_get_subscriptions_info_by_topic)

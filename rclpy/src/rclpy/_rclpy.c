@@ -31,6 +31,7 @@
 #include <rmw/error_handling.h>
 #include <rmw/rmw.h>
 #include <rmw/serialized_message.h>
+#include <rmw/topic_info_array.h>
 #include <rmw/types.h>
 #include <rmw/validate_full_topic_name.h>
 #include <rmw/validate_namespace.h>
@@ -884,6 +885,96 @@ rclpy_count_subscribers(PyObject * Py_UNUSED(self), PyObject * args)
 {
   return _count_subscribers_publishers(args, "subscribers", rcl_count_subscribers);
 }
+
+typedef rcl_ret_t (* rcl_get_info_by_topic_func)(
+  const rcl_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * topic_name,
+  bool no_mangle,
+  rmw_topic_info_array_t * info_array);
+
+static PyObject *
+_get_info_by_topic(
+  PyObject * args, const char * type,
+  rcl_get_info_by_topic_func rcl_get_info_by_topic)
+{
+  PyObject * pynode;
+  const char * topic_name;
+  PyObject * pyno_mangle;
+
+  if (!PyArg_ParseTuple(args, "OsO", &pynode, &topic_name, &pyno_mangle)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+  bool no_mangle = PyObject_IsTrue(pyno_mangle);
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rmw_topic_info_array_t info_array = rmw_get_zero_initialized_topic_info_array();
+  rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
+  rmw_ret_t fini_ret;
+  if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_BAD_ALLOC) {
+      PyErr_Format(PyExc_MemoryError, "Failed to get information by topic for %s: %s",
+        type, rcl_get_error_string().str);
+    } else {
+      PyErr_Format(PyExc_RuntimeError, "Failed to get information by topic for %s: %s",
+        type, rcl_get_error_string().str);
+    }
+    rcl_reset_error();
+    fini_ret = rmw_topic_info_array_fini(&allocator, &info_array);
+    if (fini_ret != RMW_RET_OK) {
+      PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed.");
+      rmw_reset_error();
+    }
+    return NULL;
+  }
+  PyObject * py_info_array = rclpy_convert_to_py_topic_info_list(&info_array);
+  fini_ret = rmw_topic_info_array_fini(&allocator, &info_array);
+  if (fini_ret != RMW_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed.");
+    rmw_reset_error();
+    return NULL;
+  }
+  return py_info_array;
+}
+
+/// Returns a list of publishers, publishing to a topic
+/// The returned publisher information includes node name, node namespace,
+/// topic type, gid and qos profile
+/**
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \param[in] topic_name the topic name to get the publishers for.
+ * \param[in] no_mangle if true the given topic name will be
+ *            expanded to its fully qualified name.
+ * \return list of publishers
+ */
+static PyObject *
+rclpy_get_publishers_info_by_topic(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  return _get_info_by_topic(args, "publishers", rcl_get_publishers_info_by_topic);
+}
+
+/// Returns a list of subscriptions to a topic
+/// The returned subscription information includes node name, node namespace,
+/// topic type, gid and qos profile
+/**
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \param[in] topic_name the topic name to get the subscriptions for.
+ * \param[in] no_mangle if true the given topic name will be
+ *            expanded to its fully qualified name.
+ * \return list of subscriptions.
+ */
+static PyObject *
+rclpy_get_subscriptions_info_by_topic(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  return _get_info_by_topic(args, "subscriptions", rcl_get_subscriptions_info_by_topic);
+}
+
 
 /// Validate a topic name and return error message and index of invalidation.
 /**
@@ -4876,6 +4967,14 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_count_subscribers", rclpy_count_subscribers, METH_VARARGS,
     "Count subscribers for a topic."
+  },
+  {
+    "rclpy_get_publishers_info_by_topic", rclpy_get_publishers_info_by_topic, METH_VARARGS,
+    "Get a list of publishers for a topic."
+  },
+  {
+    "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
+    "Get a list of subscriptions for a topic."
   },
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
