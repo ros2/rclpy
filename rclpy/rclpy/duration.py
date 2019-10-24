@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import builtin_interfaces
+import builtin_interfaces.msg
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
