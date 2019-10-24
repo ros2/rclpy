@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.1 (2019-10-23)
+------------------
+* Fix the unicode test string for opensplice rmw implementation (`#447 <https://github.com/ros2/rclpy/issues/447>`_)
+* Expand test timeout to deflake rmw_connext (`#449 <https://github.com/ros2/rclpy/issues/449>`_)
+* Support array parameter types (`#444 <https://github.com/ros2/rclpy/issues/444>`_)
+* Make use of Clock class for throttling logs (`#441 <https://github.com/ros2/rclpy/issues/441>`_)
+* Drop rclpy test_remove_ros_args_empty test case. (`#445 <https://github.com/ros2/rclpy/issues/445>`_)
+* Add Rate (`#443 <https://github.com/ros2/rclpy/issues/443>`_)
+* Action server: catch exception from user execute callback (`#437 <https://github.com/ros2/rclpy/issues/437>`_)
+* Make cppcheck happy (`#438 <https://github.com/ros2/rclpy/issues/438>`_)
+* Contributors: Brian Marchi, Jacob Perron, Michael Carroll, Michel Hidalgo, Shane Loretz
+
 0.8.0 (2019-09-26)
 ------------------
 * Take parameter overrides provided through the CLI. (`#434 <https://github.com/ros2/rclpy/issues/434>`_)
