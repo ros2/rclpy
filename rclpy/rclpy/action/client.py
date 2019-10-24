@@ -364,7 +364,7 @@ class ActionClient(Waitable):
             nonlocal event
             event.set()
 
-        send_goal_future = self.send_goal_async(goal, kwargs)
+        send_goal_future = self.send_goal_async(goal, **kwargs)
         send_goal_future.add_done_callback(unblock)
 
         event.wait()
