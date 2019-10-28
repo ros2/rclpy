@@ -716,8 +716,9 @@ class Node:
         if not result.successful:
             return result
         elif self._parameters_callback:
-            for parameter in parameter_list:
-                result = self._parameters_callback(parameter)
+            # calling each callback before setting the parameters
+           for callback in self._parameters_callback:
+               result = callback(parameter_list)
         else:
             result = SetParametersResult(successful=True)
 
@@ -780,7 +781,7 @@ class Node:
         if callback in self._parameters_callback:
             self._parameters_callback.remove(callback)
         else:
-            print("Callback does not exist")
+            print('Callback does not exist')
 
     def _apply_descriptors(
         self,
