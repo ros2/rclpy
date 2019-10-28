@@ -780,7 +780,7 @@ class Node:
         if callback in self._parameters_callback:
             self._parameters_callback.remove(callback)
         else:
-            print("Callback does not exist")
+            print('Callback does not exist')
 
     def _apply_descriptors(
         self,
