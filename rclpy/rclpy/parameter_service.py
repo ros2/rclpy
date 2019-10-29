@@ -90,6 +90,9 @@ class ParameterService:
                 names_with_prefixes.append(name)
                 continue
             elif request.prefixes:
+                for prefix in request.prefixes:
+                    if name.startswith(prefix):
+                        response.result.names.append(name)
                 continue
             else:
                 response.result.names.append(name)
