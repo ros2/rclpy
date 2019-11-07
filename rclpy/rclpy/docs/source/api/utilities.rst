@@ -1,4 +1,0 @@
-Utilities
-=========
-
-.. automodule:: rclpy.utilities

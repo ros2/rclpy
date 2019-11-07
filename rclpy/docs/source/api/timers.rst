@@ -1,4 +1,0 @@
-Timer
-=====
-
-.. automodule:: rclpy.timer

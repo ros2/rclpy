@@ -1,4 +1,0 @@
-Node
-====
-
-.. automodule:: rclpy.node

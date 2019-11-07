@@ -1,5 +1,0 @@
-/**:
-  ros__parameters:
-    initial_fizz: 23
-    initial_baz: 1.0
-    initial_foobar: False
