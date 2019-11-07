@@ -1461,12 +1461,18 @@ class Node:
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
 
-        self.__publishers.clear()
-        self.__subscriptions.clear()
-        self.__clients.clear()
-        self.__services.clear()
-        self.__timers.clear()
-        self.__guards.clear()
+        for p in self.__publishers:
+            self.destroy_publisher(p) 
+        for s in self.__subscriptions:
+            self.destroy_subscriber(s) 
+        for c in self.__clients:
+            self.destroy_client(c) 
+        for s in self.__services:
+            self.destroy_service(s) 
+        for t in self.__timers:
+            self.destroy_timer(t) 
+        for g in self.__guards:
+            self.destroy_guard(g) 
         self.handle.destroy()
         self._wake_executor()
 
