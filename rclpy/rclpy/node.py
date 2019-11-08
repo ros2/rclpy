@@ -1472,7 +1472,7 @@ class Node:
         while self.__timers:
             self.destroy_timer(self.__timers.pop())
         while self.__guards:
-            self.destroy_guard(self.__guards.pop())
+            self.destroy_guard_condition(self.__guards.pop())
         self.handle.destroy()
         self._wake_executor()
 
