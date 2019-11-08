@@ -1462,17 +1462,17 @@ class Node:
         self._parameter_event_publisher = None
 
         while self.__publishers:
-            self.destroy_publisher(self.__publishers.pop()) 
+            self.destroy_publisher(self.__publishers.pop())
         while self.__subscriptions:
-            self.destroy_subscriber(self.__subscriptions.pop()) 
+            self.destroy_subscription(self.__subscriptions.pop())
         while self.__clients:
-            self.destroy_client(self.__clients.pop()) 
+            self.destroy_client(self.__clients.pop())
         while self.__services:
-            self.destroy_service(self.__services.pop()) 
+            self.destroy_service(self.__services.pop())
         while self.__timers:
-            self.destroy_timer(self.__timers.pop()) 
+            self.destroy_timer(self.__timers.pop())
         while self.__guards:
-            self.destroy_guard(self.__guards.pop()) 
+            self.destroy_guard(self.__guards.pop())
         self.handle.destroy()
         self._wake_executor()
 
