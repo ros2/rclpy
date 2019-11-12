@@ -359,6 +359,22 @@ class TestLogging(unittest.TestCase):
             rclpy.logging._root_logger.get_effective_level(),
             my_logger.get_effective_level())
 
+    def test_logging_severity_from_string(self):
+        log_levels = {
+            'UNSET': 0,
+            'DEBUG': 10,
+            'INFO': 20,
+            'WARN': 30,
+            'ERROR': 40,
+            'FATAL': 50
+        }
+        for level, severity in log_levels.items():
+            self.assertEqual(rclpy.logging.get_logging_severity_from_string(level), severity)
+
+    def test_nonexistent_logging_severity_from_string(self):
+        with self.assertRaises(RuntimeError):
+            rclpy.logging.get_logging_severity_from_string('non_existent_severity')
+
 
 if __name__ == '__main__':
     unittest.main()

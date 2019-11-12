@@ -14,6 +14,7 @@
 
 #include <Python.h>
 
+#include <rcutils/allocator.h>
 #include <rcutils/error_handling.h>
 #include <rcutils/logging.h>
 #include <rcutils/time.h>
@@ -169,6 +170,36 @@ rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Get the log severity based on the log level string representation
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ * Raises RuntimeError if invalid log level name is given.
+ * Raises ValueError if log_level is not a string
+ *
+ * \param[in] log_level Name of the log level.
+ * \return NULL on failure
+           Log level associated with the string representation
+ */
+static PyObject *
+rclpy_logging_severity_level_from_string(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  int severity;
+  const char * log_level = NULL;
+  if (!PyArg_ParseTuple(args, "s", &log_level)) {
+    return NULL;
+  }
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcutils_ret_t ret = rcutils_logging_severity_level_from_string(log_level, allocator, &severity);
+  if (ret != RCUTILS_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError,
+      "Failed to get log severity from name \"%s\", return code: %d\n",
+      log_level, ret);
+    rcutils_reset_error();
+    return NULL;
+  }
+  return PyLong_FromLongLong(severity);
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_logging_methods[] = {
   {
@@ -195,6 +226,10 @@ static PyMethodDef rclpy_logging_methods[] = {
   {
     "rclpy_logging_rcutils_log", rclpy_logging_rcutils_log, METH_VARARGS,
     "Log a message with the specified severity"
+  },
+  {
+    "rclpy_logging_severity_level_from_string", rclpy_logging_severity_level_from_string,
+    METH_VARARGS, "Determine log level from string"
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
