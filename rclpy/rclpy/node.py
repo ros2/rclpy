@@ -1461,12 +1461,20 @@ class Node:
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
 
-        self.__publishers.clear()
-        self.__subscriptions.clear()
-        self.__clients.clear()
-        self.__services.clear()
-        self.__timers.clear()
-        self.__guards.clear()
+        # Destroy dependent items eagerly to work around a possible hang
+        # https://github.com/ros2/build_cop/issues/248
+        while self.__publishers:
+            self.destroy_publisher(self.__publishers[0])
+        while self.__subscriptions:
+            self.destroy_subscription(self.__subscriptions[0])
+        while self.__clients:
+            self.destroy_client(self.__clients[0])
+        while self.__services:
+            self.destroy_service(self.__services[0])
+        while self.__timers:
+            self.destroy_timer(self.__timers[0])
+        while self.__guards:
+            self.destroy_guard_condition(self.__guards[0])
         self.handle.destroy()
         self._wake_executor()
 
