@@ -919,6 +919,9 @@ _get_info_by_topic(
     if (ret == RCL_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "Failed to get information by topic for %s: %s",
         type, rcl_get_error_string().str);
+    } else if (ret == RCL_RET_UNSUPPORTED) {
+      PyErr_Format(PyExc_NotImplementedError, "Failed to get information by topic for %s: "
+                                       "function not supported by RMW_IMPLEMENTATION", type);
     } else {
       PyErr_Format(PyExc_RuntimeError, "Failed to get information by topic for %s: %s",
         type, rcl_get_error_string().str);
@@ -926,7 +929,7 @@ _get_info_by_topic(
     rcl_reset_error();
     fini_ret = rmw_topic_info_array_fini(&allocator, &info_array);
     if (fini_ret != RMW_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed.");
+      PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed: %s", rmw_get_error_string().str);
       rmw_reset_error();
     }
     return NULL;
