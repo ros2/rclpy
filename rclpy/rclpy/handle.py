@@ -165,7 +165,7 @@ class Handle:
         # assumes self.__rlock is held
         deps_lock = self.__dependents_rlock
         # Turn weak references to regular references
-        dependent_handles = [dep for dep in self.__dependent_handles]
+        dependent_handles = list(self.__dependent_handles)
 
         if not dependent_handles:
             # no dependents to wait on
