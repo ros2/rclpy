@@ -167,9 +167,10 @@ _requested_incompatible_qos_to_py_object(_qos_event_callback_data_t * data)
 {
   rmw_requested_incompatible_qos_status_t * actual_data = &data->requested_incompatible_qos;
   PyObject * args = Py_BuildValue(
-      "ii",
+      "iii",
       actual_data->total_count,
-      actual_data->total_count_change);
+      actual_data->total_count_change,
+      actual_data->last_policy_id);
   if (!args) {
     return NULL;
   }
@@ -212,9 +213,10 @@ _offered_incompatible_qos_to_py_object(_qos_event_callback_data_t * data)
 {
   rmw_offered_incompatible_qos_status_t * actual_data = &data->offered_incompatible_qos;
   PyObject * args = Py_BuildValue(
-      "ii",
+      "iii",
       actual_data->total_count,
-      actual_data->total_count_change);
+      actual_data->total_count_change,
+      actual_data->last_policy_id);
   if (!args) {
     return NULL;
   }

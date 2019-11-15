@@ -82,6 +82,7 @@ QoSRequestedIncompatibleQoSInfo = NamedTuple(
     'QoSRequestedIncompatibleQoSInfo', [
         ('total_count', 'int'),
         ('total_count_change', 'int'),
+        ('last_policy_id', 'int'),
     ])
 
 """
@@ -115,6 +116,7 @@ QoSOfferedIncompatibleQoSInfo = NamedTuple(
     'QoSOfferedIncompatibleQoSInfo', [
         ('total_count', 'int'),
         ('total_count_change', 'int'),
+        ('last_policy_id', 'int'),
     ])
 
 
