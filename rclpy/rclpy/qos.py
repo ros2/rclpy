@@ -251,6 +251,17 @@ class QoSPolicyEnum(IntEnum):
         """Retrieve a policy type from a short name, case-insensitive."""
         return cls[name.upper()].value
 
+    @property
+    def short_key(self):
+        for k, v in self.__class__.__members__.items():
+            if k.startswith('RMW'):
+                continue
+            if self.value == v:
+                return k.lower()
+        raise AttributeError(
+            'failed to find value %s in %s' %
+            (self.value, self.__class__.__name__))
+
 
 class HistoryPolicy(QoSPolicyEnum):
     """
