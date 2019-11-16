@@ -50,17 +50,6 @@ TEST_NAMESPACE = '/my_ns'
 TEST_RESOURCES_DIR = pathlib.Path(__file__).resolve().parent / 'resources' / 'test_node'
 
 
-def are_qos_equal(qos_profile, qos_dict):
-    # Depth and history are skipped because they are not retrieved.
-    return qos_profile.durability == qos_dict['durability'] and \
-           qos_profile.reliability == qos_dict['reliability'] and \
-           qos_profile.deadline == qos_dict['deadline'] and \
-           qos_profile.lifespan == qos_dict['lifespan'] and \
-           qos_profile.liveliness == qos_dict['liveliness'] and \
-           qos_profile.liveliness_lease_duration == \
-           qos_dict['liveliness_lease_duration']
-
-
 class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
     @classmethod
@@ -188,6 +177,22 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names_and_namespaces()
 
+    def assert_qos_equal(self, qos_profile, qos_dict):
+        # Depth and history are skipped because they are not retrieved.
+        self.assertEqual(qos_profile.durability, qos_dict['durability'],
+                         'Durability is unequal')
+        self.assertEqual(qos_profile.reliability, qos_dict['reliability'],
+                         'Reliability is unequal')
+        self.assertEqual(qos_profile.deadline, qos_dict['deadline'],
+                         'Deadline is unequal')
+        self.assertEqual(qos_profile.lifespan, qos_dict['lifespan'],
+                         'lifespan is unequal')
+        self.assertEqual(qos_profile.liveliness, qos_dict['liveliness'],
+                         'liveliness is unequal')
+        self.assertEqual(qos_profile.liveliness_lease_duration,
+                         qos_dict['liveliness_lease_duration'],
+                         'liveliness_lease_duration is unequal')
+
     def test_get_publishers_subscriptions_info_by_topic(self):
         topic_name = 'test_topic_info'
         fq_topic_name = '{namespace}/{name}'.format(namespace=TEST_NAMESPACE, name=topic_name)
@@ -216,7 +221,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
         self.assertEqual('test_msgs::msg::dds_::BasicTypes_', publisher_list[0].get('topic_type'))
         actual_qos_profile = publisher_list[0].get('qos_profile')
-        self.assertTrue(are_qos_equal(qos_profile, actual_qos_profile))
+        self.assert_qos_equal(qos_profile, actual_qos_profile)
 
         # Add a subscription
         qos_profile2 = QoSProfile(
@@ -243,8 +248,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
                          subscription_list[0].get('topic_type'))
         publisher_qos_profile = publisher_list[0].get('qos_profile')
         subscription_qos_profile = subscription_list[0].get('qos_profile')
-        self.assertTrue(are_qos_equal(qos_profile, publisher_qos_profile))
-        self.assertTrue(are_qos_equal(qos_profile2, subscription_qos_profile))
+        self.assert_qos_equal(qos_profile, publisher_qos_profile)
+        self.assert_qos_equal(qos_profile2, subscription_qos_profile)
 
         # Error cases
         with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
