@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.3 (2019-11-18)
+------------------
+* Future invokes done callbacks when done (`#461 <https://github.com/ros2/rclpy/issues/461>`_)
+* Make short key of a QoS policy accessible (`#463 <https://github.com/ros2/rclpy/issues/463>`_)
+* Fix new linter warnings as of flake8-comprehensions 3.1.0 (`#462 <https://github.com/ros2/rclpy/issues/462>`_)
+* Contributors: Dirk Thomas, Shane Loretz
+
 0.8.2 (2019-11-13)
 ------------------
 * Explicitly destroy a node's objects before the node. (`#456 <https://github.com/ros2/rclpy/issues/456>`_)
