@@ -42,6 +42,7 @@ from rclpy.qos import QoSLivelinessPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.time_source import USE_SIM_TIME_NAME
+from rclpy.utilities import get_rmw_implementation_identifier
 from test_msgs.msg import BasicTypes
 
 TEST_NODE = 'my_node'
@@ -193,6 +194,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
                          qos_dict['liveliness_lease_duration'],
                          'liveliness_lease_duration is unequal')
 
+    @unittest.skipIf(get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp',
+                     'Implementation is not supported')
     def test_get_publishers_subscriptions_info_by_topic(self):
         topic_name = 'test_topic_info'
         fq_topic_name = '{namespace}/{name}'.format(namespace=TEST_NAMESPACE, name=topic_name)
