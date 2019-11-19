@@ -184,10 +184,10 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
                          'Durability is unequal')
         self.assertEqual(qos_profile.reliability, qos_dict['reliability'],
                          'Reliability is unequal')
-        self.assertEqual(qos_profile.deadline, qos_dict['deadline'],
-                         'Deadline is unequal')
         self.assertEqual(qos_profile.lifespan, qos_dict['lifespan'],
                          'lifespan is unequal')
+        self.assertEqual(qos_profile.deadline, qos_dict['deadline'],
+                         'Deadline is unequal')
         self.assertEqual(qos_profile.liveliness, qos_dict['liveliness'],
                          'liveliness is unequal')
         self.assertEqual(qos_profile.liveliness_lease_duration,
