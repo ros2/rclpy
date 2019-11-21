@@ -49,6 +49,7 @@ class QoSSubscriptionEventType(IntEnum):
     RCL_SUBSCRIPTION_LIVELINESS_CHANGED = 1
     RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = 2
 
+
 """
 Payload type for Subscription Deadline callback.
 
