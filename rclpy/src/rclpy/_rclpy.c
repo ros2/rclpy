@@ -927,7 +927,7 @@ _get_info_by_topic(
         type, rcl_get_error_string().str);
     }
     rcl_reset_error();
-    fini_ret = rmw_topic_info_array_fini(&allocator, &info_array);
+    fini_ret = rmw_topic_info_array_fini(&info_array, &allocator);
     if (fini_ret != RMW_RET_OK) {
       PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed: %s",
         rmw_get_error_string().str);
@@ -936,7 +936,7 @@ _get_info_by_topic(
     return NULL;
   }
   PyObject * py_info_array = rclpy_convert_to_py_topic_info_list(&info_array);
-  fini_ret = rmw_topic_info_array_fini(&allocator, &info_array);
+  fini_ret = rmw_topic_info_array_fini(&info_array, &allocator);
   if (fini_ret != RMW_RET_OK) {
     PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed.");
     rmw_reset_error();
