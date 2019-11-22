@@ -361,12 +361,12 @@ class TestLogging(unittest.TestCase):
 
     def test_logging_severity_from_string(self):
         log_levels = {
-            'UNSET': 0,
-            'DEBUG': 10,
-            'INFO': 20,
-            'WARN': 30,
-            'ERROR': 40,
-            'FATAL': 50
+            'UNSET': rclpy.logging.LoggingSeverity.UNSET,
+            'DEBUG': rclpy.logging.LoggingSeverity.DEBUG,
+            'INFO': rclpy.logging.LoggingSeverity.INFO,
+            'WARN': rclpy.logging.LoggingSeverity.WARN,
+            'ERROR': rclpy.logging.LoggingSeverity.ERROR,
+            'FATAL': rclpy.logging.LoggingSeverity.FATAL
         }
         for level, severity in log_levels.items():
             self.assertEqual(rclpy.logging.get_logging_severity_from_string(level), severity)

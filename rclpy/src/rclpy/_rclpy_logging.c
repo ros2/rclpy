@@ -172,9 +172,8 @@ rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Get the log severity based on the log level string representation
 /**
- * On failure, an exception is raised and NULL is returned if:
- * Raises RuntimeError if invalid log level name is given.
- * Raises ValueError if log_level is not a string
+ * Raises RuntimeError if an invalid log level name is given.
+ * Raises ValueError if log level is not a string.
  *
  * \param[in] log_level Name of the log level.
  * \return NULL on failure
