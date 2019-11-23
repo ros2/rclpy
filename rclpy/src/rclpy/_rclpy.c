@@ -886,7 +886,7 @@ rclpy_count_subscribers(PyObject * Py_UNUSED(self), PyObject * args)
   return _count_subscribers_publishers(args, "subscribers", rcl_count_subscribers);
 }
 
-typedef rcl_ret_t (* rcl_get_info_by_topic_func)(
+typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
   const rcl_node_t * node,
   rcutils_allocator_t * allocator,
   const char * topic_name,
@@ -896,13 +896,13 @@ typedef rcl_ret_t (* rcl_get_info_by_topic_func)(
 static PyObject *
 _get_info_by_topic(
   PyObject * args, const char * type,
-  rcl_get_info_by_topic_func rcl_get_info_by_topic)
+  rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
 {
   PyObject * pynode;
   const char * topic_name;
-  PyObject * pyno_mangle;
+  int no_mangle;
 
-  if (!PyArg_ParseTuple(args, "OsO", &pynode, &topic_name, &pyno_mangle)) {
+  if (!PyArg_ParseTuple(args, "Osp", &pynode, &topic_name, &no_mangle)) {
     return NULL;
   }
 
@@ -910,7 +910,6 @@ _get_info_by_topic(
   if (!node) {
     return NULL;
   }
-  bool no_mangle = PyObject_IsTrue(pyno_mangle);
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
   rmw_topic_info_array_t info_array = rmw_get_zero_initialized_topic_info_array();
   rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
@@ -4974,11 +4973,11 @@ static PyMethodDef rclpy_methods[] = {
   },
   {
     "rclpy_get_publishers_info_by_topic", rclpy_get_publishers_info_by_topic, METH_VARARGS,
-    "Get a list of publishers for a topic."
+    "Get publishers info for a topic."
   },
   {
     "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
-    "Get a list of subscriptions for a topic."
+    "Get subscriptions info for a topic."
   },
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,

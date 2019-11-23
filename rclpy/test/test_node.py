@@ -220,8 +220,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # Subscription list should be empty
         self.assertFalse(self.node.get_subscriptions_info_by_topic(fq_topic_name))
         # Verify publisher list has the right data
-        # self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
-        # self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
+        self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
+        self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
         self.assertEqual('test_msgs::msg::dds_::BasicTypes_', publisher_list[0].get('topic_type'))
         actual_qos_profile = publisher_list[0].get('qos_profile')
         self.assert_qos_equal(qos_profile, actual_qos_profile)
@@ -243,8 +243,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(1, len(publisher_list))
         self.assertEqual(1, len(subscription_list))
         # Verify subscription list has the right data
-        # self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
-        # self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
+        self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
+        self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
         self.assertEqual('test_msgs::msg::dds_::BasicTypes_',
                          publisher_list[0].get('topic_type'))
         self.assertEqual('test_msgs::msg::dds_::BasicTypes_',
