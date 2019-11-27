@@ -369,29 +369,22 @@ _rclpy_convert_to_py_topic_info(const rmw_topic_info_t * topic_info)
   PyObject * py_gid = NULL;
   PyObject * py_topic_info_dict = NULL;
 
-  const rmw_qos_profile_t qos_profile = topic_info->qos_profile;
-  py_qos_profile = rclpy_common_convert_to_qos_dict(&qos_profile);
+  py_qos_profile = rclpy_common_convert_to_qos_dict(&topic_info->qos_profile);
   if (!py_qos_profile) {
     goto fail;
   }
-  const char * node_name = topic_info->node_name;
-  py_node_name = PyUnicode_FromString(node_name);
+  py_node_name = PyUnicode_FromString(topic_info->node_name);
   if (!py_node_name) {
     goto fail;
   }
-
-  const char * node_namespace = topic_info->node_namespace;
-  py_node_namespace = PyUnicode_FromString(node_namespace);
+  py_node_namespace = PyUnicode_FromString(topic_info->node_namespace);
   if (!py_node_namespace) {
     goto fail;
   }
-
-  const char * topic_type = topic_info->topic_type;
-  py_topic_type = PyUnicode_FromString(topic_type);
+  py_topic_type = PyUnicode_FromString(topic_info->topic_type);
   if (!py_topic_type) {
     goto fail;
   }
-
   py_gid = PyList_New(RMW_GID_STORAGE_SIZE);
   if (!py_gid) {
     goto fail;
@@ -422,12 +415,12 @@ _rclpy_convert_to_py_topic_info(const rmw_topic_info_t * topic_info)
   }
   return py_topic_info_dict;
 fail:
-  Py_DECREF(py_qos_profile);
-  Py_DECREF(py_node_name);
-  Py_DECREF(py_node_namespace);
-  Py_DECREF(py_topic_type);
-  Py_DECREF(py_gid);
-  Py_DECREF(py_topic_info_dict);
+  Py_XDECREF(py_qos_profile);
+  Py_XDECREF(py_node_name);
+  Py_XDECREF(py_node_namespace);
+  Py_XDECREF(py_topic_type);
+  Py_XDECREF(py_gid);
+  Py_XDECREF(py_topic_info_dict);
   return NULL;
 }
 
