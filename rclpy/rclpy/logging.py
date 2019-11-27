@@ -26,12 +26,12 @@ class LoggingSeverity(IntEnum):
     This enum must match the one defined in rcutils/logging.h
     """
 
-    UNSET = 0
-    DEBUG = 10
-    INFO = 20
-    WARN = 30
-    ERROR = 40
-    FATAL = 50
+    UNSET = _rclpy_logging.rclpy_get_unset_logging_severity()
+    DEBUG = _rclpy_logging.rclpy_get_debug_logging_severity()
+    INFO = _rclpy_logging.rclpy_get_info_logging_severity()
+    WARN = _rclpy_logging.rclpy_get_warn_logging_severity()
+    ERROR = _rclpy_logging.rclpy_get_error_logging_severity()
+    FATAL = _rclpy_logging.rclpy_get_fatal_logging_severity()
 
 
 _root_logger = rclpy.impl.rcutils_logger.RcutilsLogger()
