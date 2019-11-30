@@ -43,6 +43,7 @@
 static PyObject * RCLInvalidROSArgsError;
 static PyObject * UnknownROSArgsError;
 static PyObject * NodeNameNonExistentError;
+static PyObject * RCLError;
 
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
@@ -165,7 +166,7 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_guard_condition_init(gc, context, gc_options);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to create guard_condition: %s", rcl_get_error_string().str);
     rcl_reset_error();
     PyMem_Free(gc);
@@ -205,7 +206,7 @@ rclpy_trigger_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_trigger_guard_condition(gc);
 
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to trigger guard_condition: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -371,7 +372,7 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
         rcl_get_error_string().str);
     } else {
       PyErr_Format(
-        PyExc_RuntimeError,
+        RCLError,
         "Failed to init: %s",
         rcl_get_error_string().str);
     }
@@ -386,7 +387,7 @@ _rclpy_parse_args(PyObject * pyargs, rcl_arguments_t * parsed_args)
       parsed_args, allocator, &unparsed_ros_args_indices);
     if (RCL_RET_OK != ret) {
       PyErr_Format(
-        PyExc_RuntimeError,
+        RCLError,
         "Failed to get unparsed ROS arguments: %s",
         rcl_get_error_string().str);
       rcl_reset_error();
@@ -427,7 +428,7 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
 
   ret = rcl_parse_arguments(num_args, const_arg_values, allocator, &parsed_args);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+    PyErr_Format(RCLError, "Failed to init: %s", rcl_get_error_string().str);
     rcl_reset_error();
     _rclpy_arg_list_fini(num_args, arg_values);
     return NULL;
@@ -443,7 +444,7 @@ rclpy_remove_ros_args(PyObject * Py_UNUSED(self), PyObject * args)
     &nonros_argc,
     &nonros_argv);
   if (RCL_RET_OK != ret) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+    PyErr_Format(RCLError, "Failed to init: %s", rcl_get_error_string().str);
     rcl_reset_error();
     _rclpy_arg_list_fini(num_args, arg_values);
     return NULL;
@@ -483,7 +484,7 @@ cleanup:
     return NULL;
   }
   if (RCL_RET_OK != ret) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+    PyErr_Format(RCLError, "Failed to init: %s", rcl_get_error_string().str);
     rcl_reset_error();
     Py_DECREF(pyresult_list);
     return NULL;
@@ -559,12 +560,12 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_ret_t ret = rcl_init_options_init(&init_options, allocator);
     if (RCL_RET_OK != ret) {
       PyErr_Format(
-        PyExc_RuntimeError, "Failed to initialize init_options: %s", rcl_get_error_string().str);
+        RCLError, "Failed to initialize init_options: %s", rcl_get_error_string().str);
       rcl_reset_error();
     } else {
       ret = rcl_init(num_args, arg_values, &init_options, context);
       if (ret != RCL_RET_OK) {
-        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
+        PyErr_Format(RCLError, "Failed to init: %s", rcl_get_error_string().str);
         rcl_reset_error();
       }
     }
@@ -686,7 +687,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
       PyErr_Format(PyExc_ValueError,
         "invalid node namespace: %s", rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(RCLError,
         "Unknown error creating node: %s", rcl_get_error_string().str);
     }
     rcl_reset_error();
@@ -824,7 +825,7 @@ _count_subscribers_publishers(PyObject * args, const char * type, count_func cou
   size_t count = 0;
   rcl_ret_t ret = count_function(node, topic_name, &count);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to count %s: %s",
+    PyErr_Format(RCLError, "Failed to count %s: %s",
       type, rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -892,7 +893,7 @@ rclpy_get_validation_error_for_topic_name(PyObject * Py_UNUSED(self), PyObject *
     if (ret == RCL_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "%s", rcl_get_error_string().str);
+      PyErr_Format(RCLError, "%s", rcl_get_error_string().str);
     }
     rcl_reset_error();
     return NULL;
@@ -957,7 +958,7 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string().str);
+      PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     }
     rmw_reset_error();
     return NULL;
@@ -1020,7 +1021,7 @@ rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * 
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string().str);
+      PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     }
     rmw_reset_error();
     return NULL;
@@ -1083,7 +1084,7 @@ rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * 
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string().str);
+      PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     }
     rmw_reset_error();
     return NULL;
@@ -1129,7 +1130,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
     if (rcutils_ret == RCUTILS_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rcutils_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "%s", rcutils_get_error_string().str);
+      PyErr_Format(RCLError, "%s", rcutils_get_error_string().str);
     }
     rcutils_reset_error();
     return NULL;
@@ -1139,7 +1140,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
     if (ret == RCL_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "%s", rcl_get_error_string().str);
+      PyErr_Format(RCLError, "%s", rcl_get_error_string().str);
     }
     rcl_reset_error();
     // finalize the string map before returning
@@ -1165,7 +1166,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
 
   rcutils_ret = rcutils_string_map_fini(&substitutions_map);
   if (rcutils_ret != RCUTILS_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError, "%s", rcutils_get_error_string().str);
+    PyErr_Format(RCLError, "%s", rcutils_get_error_string().str);
     rcutils_reset_error();
     allocator.deallocate(expanded_topic, allocator.state);
     return NULL;
@@ -1186,7 +1187,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
       PyErr_Format(PyExc_ValueError,
         "node namespace '%s' is invalid: %s", namespace, rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "%s", rcl_get_error_string().str);
+      PyErr_Format(RCLError, "%s", rcl_get_error_string().str);
     }
     rcl_reset_error();
     return NULL;
@@ -1363,7 +1364,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
         "Failed to create publisher due to invalid topic name '%s': %s",
         topic, rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(RCLError,
         "Failed to create publisher: %s", rcl_get_error_string().str);
     }
     rcl_reset_error();
@@ -1407,7 +1408,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_publish(&(pub->publisher), raw_ros_message, NULL);
   destroy_ros_message(raw_ros_message);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to publish: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1440,7 +1441,7 @@ rclpy_publisher_get_subscription_count(PyObject * Py_UNUSED(self), PyObject * ar
   size_t count = 0;
   rmw_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
   if (RMW_RET_OK != ret) {
-    PyErr_Format(PyExc_RuntimeError, "%s", rmw_get_error_string().str);
+    PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     rmw_reset_error();
     return NULL;
   }
@@ -1522,7 +1523,7 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_timer_init(timer, clock, context, period_nsec, NULL, allocator);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to create timer: %s", rcl_get_error_string().str);
     rcl_reset_error();
     PyMem_Free(timer);
@@ -1563,7 +1564,7 @@ rclpy_get_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
   int64_t timer_period;
   rcl_ret_t ret = rcl_timer_get_period(timer, &timer_period);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get timer period: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1594,7 +1595,7 @@ rclpy_cancel_timer(PyObject * Py_UNUSED(self), PyObject * args)
   }
   rcl_ret_t ret = rcl_timer_cancel(timer);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to reset timer: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1627,7 +1628,7 @@ rclpy_is_timer_canceled(PyObject * Py_UNUSED(self), PyObject * args)
   bool is_canceled;
   rcl_ret_t ret = rcl_timer_is_canceled(timer, &is_canceled);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to check timer ready: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1661,7 +1662,7 @@ rclpy_reset_timer(PyObject * Py_UNUSED(self), PyObject * args)
   }
   rcl_ret_t ret = rcl_timer_reset(timer);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to reset timer: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1693,7 +1694,7 @@ rclpy_is_timer_ready(PyObject * Py_UNUSED(self), PyObject * args)
   bool is_ready;
   rcl_ret_t ret = rcl_timer_is_ready(timer, &is_ready);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to check timer ready: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1728,7 +1729,7 @@ rclpy_call_timer(PyObject * Py_UNUSED(self), PyObject * args)
   }
   rcl_ret_t ret = rcl_timer_call(timer);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to call timer: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1764,7 +1765,7 @@ rclpy_change_timer_period(PyObject * Py_UNUSED(self), PyObject * args)
   int64_t old_period;
   rcl_ret_t ret = rcl_timer_exchange_period(timer, period_nsec, &old_period);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to exchange timer period: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1798,7 +1799,7 @@ rclpy_time_until_next_call(PyObject * Py_UNUSED(self), PyObject * args)
   int64_t remaining_time;
   rcl_ret_t ret = rcl_timer_get_time_until_next_call(timer, &remaining_time);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get time until next timer call: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1829,7 +1830,7 @@ rclpy_time_since_last_call(PyObject * Py_UNUSED(self), PyObject * args)
   int64_t elapsed_time;
   rcl_ret_t ret = rcl_timer_get_time_since_last_call(timer, &elapsed_time);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get time since last timer call: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -1957,7 +1958,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
         "Failed to create subscription due to invalid topic name '%s': %s",
         topic, rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(RCLError,
         "Failed to create subscription: %s", rcl_get_error_string().str);
     }
     rcl_reset_error();
@@ -2092,7 +2093,7 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
         "Failed to create client due to invalid service name '%s': %s",
         service_name, rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(RCLError,
         "Failed to create client: %s", rcl_get_error_string().str);
     }
     rcl_reset_error();
@@ -2143,7 +2144,7 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_send_request(&(client->client), raw_ros_request, &sequence_number);
   destroy_ros_message(raw_ros_request);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to send request: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2269,7 +2270,7 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
         "Failed to create service due to invalid topic name '%s': %s",
         service_name, rcl_get_error_string().str);
     } else {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(RCLError,
         "Failed to create service: %s", rcl_get_error_string().str);
     }
     PyMem_Free(srv);
@@ -2327,7 +2328,7 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_send_response(&(srv->service), header, raw_ros_response);
   destroy_ros_message(raw_ros_response);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to send request: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2360,7 +2361,7 @@ rclpy_service_server_is_available(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_service_server_is_available(client->node, &(client->client), &is_ready);
 
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to check service availability: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2484,7 +2485,7 @@ rclpy_wait_set_init(PyObject * Py_UNUSED(self), PyObject * args)
     context,
     rcl_get_default_allocator());
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to initialize wait set: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2514,7 +2515,7 @@ rclpy_wait_set_clear_entities(PyObject * Py_UNUSED(self), PyObject * args)
   }
   rcl_ret_t ret = rcl_wait_set_clear(wait_set);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to clear wait set: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2587,12 +2588,12 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_wait_set_add_event(wait_set, event, &index);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "'%s' is not a known entity", entity_type);
     return NULL;
   }
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to add '%s' to wait set: %s", entity_type, rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2654,13 +2655,13 @@ rclpy_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
     entities = (void *)wait_set->events;
     num_entities = wait_set->size_of_events;
   } else {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "'%s' is not a known entity", entity_type);
     return NULL;
   }
 
   if (!entities) {
-    PyErr_Format(PyExc_RuntimeError, "Wait set '%s' isn't allocated", entity_type);
+    PyErr_Format(RCLError, "Wait set '%s' isn't allocated", entity_type);
     return NULL;
   }
   if (index >= num_entities) {
@@ -2695,7 +2696,7 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_wait_set_fini(wait_set);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to fini wait set: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2769,7 +2770,7 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     GET_LIST_READY_ENTITIES(guard_condition)
   }
   Py_DECREF(entity_ready_list);
-  PyErr_Format(PyExc_RuntimeError,
+  PyErr_Format(RCLError,
     "'%s' is not a known entity", entity_type);
   return NULL;
 }
@@ -2806,7 +2807,7 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
   Py_END_ALLOW_THREADS;
 
   if (ret != RCL_RET_OK && ret != RCL_RET_TIMEOUT) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to wait on wait set: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -2827,31 +2828,31 @@ rclpy_take_raw(rcl_subscription_t * subscription)
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
   rcl_ret_t ret = rmw_serialized_message_init(&msg, 0u, &allocator);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to initialize message: %s", rcl_get_error_string().str);
     rcl_reset_error();
     rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
     if (r_fini != RMW_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
+      PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     }
     return NULL;
   }
 
   ret = rcl_take_serialized_message(subscription, &msg, NULL, NULL);
   if (ret != RMW_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
     rcl_reset_error();
     rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
     if (r_fini != RMW_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
+      PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     }
     return NULL;
   }
   PyObject * python_bytes = PyBytes_FromStringAndSize((char *)(msg.buffer), msg.buffer_length);
   rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
   if (r_fini != RMW_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to deallocate message buffer: %d", r_fini);
+    PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     if (python_bytes) {
       Py_DECREF(python_bytes);
     }
@@ -2900,7 +2901,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, NULL, NULL);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to take from a subscription: %s", rcl_get_error_string().str);
     rcl_reset_error();
     destroy_ros_message(taken_msg);
@@ -2963,7 +2964,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_take_request(&(srv->service), header, taken_request);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Service failed to take request: %s", rcl_get_error_string().str);
     rcl_reset_error();
     destroy_ros_message(taken_request);
@@ -3122,7 +3123,7 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_shutdown(context);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to shutdown: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -3160,7 +3161,7 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
     rcutils_get_zero_initialized_string_array();
   rcl_ret_t ret = rcl_get_node_names(node, allocator, &node_names, &node_namespaces);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get_node_names: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -3204,14 +3205,14 @@ cleanup:
     return NULL;
   }
   if (fini_names_ret != RCUTILS_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to destroy node_names: %s", rcl_get_error_string().str);
     Py_DECREF(pynode_names_and_namespaces);
     rcl_reset_error();
     return NULL;
   }
   if (fini_namespaces_ret != RCUTILS_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to destroy node_namespaces: %s", rcl_get_error_string().str);
     Py_DECREF(pynode_names_and_namespaces);
     rcl_reset_error();
@@ -3254,7 +3255,7 @@ rclpy_get_service_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject *
     rcl_get_service_names_and_types_by_node(node, &allocator, node_name, node_namespace,
       &service_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyObject * error = PyExc_RuntimeError;
+    PyObject * error = RCLError;
     if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
       error = NodeNameNonExistentError;
     }
@@ -3306,7 +3307,7 @@ rclpy_get_client_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject * 
     rcl_get_client_names_and_types_by_node(node, &allocator, node_name, node_namespace,
       &client_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyObject * error = PyExc_RuntimeError;
+    PyObject * error = RCLError;
     if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
       error = NodeNameNonExistentError;
     }
@@ -3360,7 +3361,7 @@ rclpy_get_subscriber_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObjec
     rcl_get_subscriber_names_and_types_by_node(node, &allocator, no_demangle, node_name,
       node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyObject * error = PyExc_RuntimeError;
+    PyObject * error = RCLError;
     if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
       error = NodeNameNonExistentError;
     }
@@ -3413,7 +3414,7 @@ rclpy_get_publisher_names_and_types_by_node(PyObject * Py_UNUSED(self), PyObject
     rcl_get_publisher_names_and_types_by_node(node, &allocator, no_demangle, node_name,
       node_namespace, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyObject * error = PyExc_RuntimeError;
+    PyObject * error = RCLError;
     if (ret == RCL_RET_NODE_NAME_NON_EXISTENT) {
       error = NodeNameNonExistentError;
     }
@@ -3463,7 +3464,7 @@ rclpy_get_topic_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret =
     rcl_get_topic_names_and_types(node, &allocator, no_demangle, &topic_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get_topic_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -3511,7 +3512,7 @@ cleanup:
     return NULL;
   }
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to destroy topic_names_and_types: %s", rcl_get_error_string().str);
     Py_DECREF(pytopic_names_and_types);
     rcl_reset_error();
@@ -3550,7 +3551,7 @@ rclpy_get_service_names_and_types(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret =
     rcl_get_service_names_and_types(node, &allocator, &service_names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get_service_names_and_types: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -3599,7 +3600,7 @@ cleanup:
     return NULL;
   }
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to destroy service_names_and_types: %s", rcl_get_error_string().str);
     Py_DECREF(pyservice_names_and_types);
     rcl_reset_error();
@@ -3754,7 +3755,7 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameter_events);
   } else {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Requested unknown rmw_qos_profile: '%s'", pyrmw_profile);
     return NULL;
   }
@@ -3785,7 +3786,7 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
   if (PyCapsule_IsValid(pyentity, "rcl_node_t")) {
     rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pyentity, "rcl_node_t");
     if (RCL_RET_OK != rcl_node_assert_liveliness(node)) {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(RCLError,
         "Failed assert liveliness on the Node: %s", rcl_get_error_string().str);
       rcl_reset_error();
       return NULL;
@@ -3794,7 +3795,7 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
     rclpy_publisher_t * publisher = (rclpy_publisher_t *)PyCapsule_GetPointer(
       pyentity, "rclpy_publisher_t");
     if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(RCLError,
         "Failed to assert liveliness on the Publisher: %s", rcl_get_error_string().str);
       rcl_reset_error();
       return NULL;
@@ -3846,7 +3847,7 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
   if (!time_point) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
+    PyErr_Format(RCLError, "Failed to allocate memory for time point.");
     return NULL;
   }
 
@@ -3914,7 +3915,7 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_duration_t * duration = (rcl_duration_t *) PyMem_Malloc(sizeof(rcl_duration_t));
   if (!duration) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for duration.");
+    PyErr_Format(RCLError, "Failed to allocate memory for duration.");
     return NULL;
   }
 
@@ -3973,13 +3974,13 @@ rclpy_create_clock(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_clock_t * clock = (rcl_clock_t *)PyMem_Malloc(sizeof(rcl_clock_t));
   if (!clock) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for clock.");
+    PyErr_Format(RCLError, "Failed to allocate memory for clock.");
     return NULL;
   }
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_clock_init(clock_type, clock, &allocator);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to initialize clock: %s", rcl_get_error_string().str);
     rcl_reset_error();
     PyMem_Free(clock);
@@ -4016,7 +4017,7 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
   if (!time_point) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to allocate memory for time point.");
+    PyErr_Format(RCLError, "Failed to allocate memory for time point.");
     return NULL;
   }
   time_point->clock_type = clock->type;
@@ -4024,7 +4025,7 @@ rclpy_clock_get_now(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_clock_get_now(clock, &time_point->nanoseconds);
 
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get current value of clock: %s", rcl_get_error_string().str);
     rcl_reset_error();
     PyMem_Free(time_point);
@@ -4063,7 +4064,7 @@ rclpy_clock_get_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObjec
   bool is_enabled;
   rcl_ret_t ret = rcl_is_enabled_ros_time_override(clock, &is_enabled);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to get if ROS time override is enabled for clock: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -4110,7 +4111,7 @@ rclpy_clock_set_ros_time_override_is_enabled(PyObject * Py_UNUSED(self), PyObjec
     ret = rcl_disable_ros_time_override(clock);
   }
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to set ROS time override for clock: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -4158,7 +4159,7 @@ rclpy_clock_set_ros_time_override(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_ret_t ret = rcl_set_ros_time_override(clock, time_point->nanoseconds);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to set ROS time override for clock: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -4226,7 +4227,7 @@ _rclpy_on_time_jump(
         clock_change = "RCL_SYSTEM_TIME_NO_CHANGE";
         break;
       default:
-        PyErr_Format(PyExc_RuntimeError, "Unknown time jump type %d", time_jump->clock_change);
+        PyErr_Format(RCLError, "Unknown time jump type %d", time_jump->clock_change);
         Py_DECREF(pycallback);
         return;
     }
@@ -4295,7 +4296,7 @@ rclpy_add_clock_callback(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_clock_add_jump_callback(
     clock, threshold, _rclpy_on_time_jump, pyjump_handle);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to add time jump callback: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -4334,7 +4335,7 @@ rclpy_remove_clock_callback(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_clock_remove_jump_callback(
     clock, _rclpy_on_time_jump, pyjump_handle);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(RCLError,
       "Failed to remove time jump callback: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
@@ -4523,7 +4524,7 @@ _populate_node_parameters_from_rcl_params(
       parameter_dict = PyDict_GetItem(node_params_dict, py_node_name);
       if (!parameter_dict) {
         Py_DECREF(py_node_name);
-        PyErr_Format(PyExc_RuntimeError, "Error reading node_paramters from internal dict");
+        PyErr_Format(RCLError, "Error reading node_paramters from internal dict");
         return false;
       }
       /* This was a borrowed reference. INCREF'd so we can unconditionally DECREF below. */
@@ -4585,7 +4586,7 @@ _parse_param_overrides(
 {
   rcl_params_t * params = NULL;
   if (RCL_RET_OK != rcl_arguments_get_param_overrides(args, &params)) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to get parameters overrides: %s",
+    PyErr_Format(RCLError, "Failed to get parameters overrides: %s",
       rcl_get_error_string().str);
     return false;
   }
@@ -4631,7 +4632,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (!PyObject_HasAttrString(parameter_cls, "Type")) {
-    PyErr_Format(PyExc_RuntimeError, "Parameter class is missing 'Type' attribute");
+    PyErr_Format(RCLError, "Parameter class is missing 'Type' attribute");
     Py_DECREF(params_by_node_name);
     return NULL;
   }
@@ -5093,10 +5094,19 @@ PyMODINIT_FUNC PyInit__rclpy(void)
     return NULL;
   }
 
+  RCLError = PyErr_NewExceptionWithDoc(
+    "_rclpy.RCLError",
+    "Thrown when there is error in calling the rcl layers.",
+    PyExc_RuntimeError, NULL);
+  if(PyModule_AddObject(m, "RCLError", RCLError)){
+    Py_DECREF(m);
+    return NULL;
+  }
+
   RCLInvalidROSArgsError = PyErr_NewExceptionWithDoc(
     "_rclpy.RCLInvalidROSArgsError",
     "Thrown when invalid ROS arguments are found by rcl.",
-    PyExc_RuntimeError, NULL);
+    RCLError, NULL);
   if (NULL == RCLInvalidROSArgsError) {
     Py_DECREF(m);
     return NULL;
@@ -5109,7 +5119,7 @@ PyMODINIT_FUNC PyInit__rclpy(void)
   UnknownROSArgsError = PyErr_NewExceptionWithDoc(
     "_rclpy.UnknownROSArgsError",
     "Thrown when unknown ROS arguments are found.",
-    PyExc_RuntimeError, NULL);
+    RCLError, NULL);
   if (NULL == UnknownROSArgsError) {
     Py_DECREF(m);
     return NULL;
@@ -5122,7 +5132,7 @@ PyMODINIT_FUNC PyInit__rclpy(void)
   NodeNameNonExistentError = PyErr_NewExceptionWithDoc(
     "_rclpy.NodeNameNonExistentError",
     "Thrown when a node name is not found.",
-    PyExc_RuntimeError, NULL);
+    RCLError, NULL);
   if (PyModule_AddObject(m, "NodeNameNonExistentError", NodeNameNonExistentError)) {
     Py_DECREF(m);
     return NULL;
