@@ -21,6 +21,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import check_for_type_support
 from rclpy.qos import QoSProfile
@@ -129,9 +130,12 @@ class TimerWaitable(Waitable):
 
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         period_nanoseconds = 10000
-        with self._clock.handle as clock_capsule:
-            self.timer = _rclpy.rclpy_create_timer(
-                clock_capsule, node.context.handle, period_nanoseconds)
+        with self._clock.handle as clock_capsule, node.context.handle as context_handle:
+            self.timer = Handle(_rclpy.rclpy_create_timer(
+                clock_capsule, context_handle, period_nanoseconds))
+        self.timer.requires(self._clock.handle)
+        self.timer.requires(node.context.handle)
+
         self.timer_index = None
         self.timer_is_ready = False
 
@@ -148,7 +152,8 @@ class TimerWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.timer_is_ready:
             self.timer_is_ready = False
-            _rclpy.rclpy_call_timer(self.timer)
+            with self.timer as capsule:
+                _rclpy.rclpy_call_timer(capsule)
             return 'timer'
         return None
 
@@ -165,7 +170,8 @@ class TimerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.timer_index = _rclpy.rclpy_wait_set_add_entity('timer', wait_set, self.timer)
+        with self.timer as capsule:
+            self.timer_index = _rclpy.rclpy_wait_set_add_entity('timer', wait_set, capsule)
 
 
 class SubscriptionWaitable(Waitable):
@@ -216,8 +222,9 @@ class GuardConditionWaitable(Waitable):
 
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
-
-        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)
+        with node.context.handle as capsule:
+            self.guard_condition = Handle(_rclpy.rclpy_create_guard_condition(capsule))
+        self.guard_condition.requires(node.context.handle)
         self.guard_condition_index = None
         self.guard_is_ready = False
 
@@ -250,8 +257,9 @@ class GuardConditionWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.guard_condition_index = _rclpy.rclpy_wait_set_add_entity(
-            'guard_condition', wait_set, self.guard_condition)
+        with self.guard_condition as guard_condition_capsule:
+            self.guard_condition_index = _rclpy.rclpy_wait_set_add_entity(
+                'guard_condition', wait_set, guard_condition_capsule)
 
 
 class MutuallyExclusiveWaitable(Waitable):
@@ -366,7 +374,8 @@ class TestWaitable(unittest.TestCase):
         self.node.add_waitable(self.waitable)
 
         thr = self.start_spin_thread(self.waitable)
-        _rclpy.rclpy_trigger_guard_condition(self.waitable.guard_condition)
+        with self.waitable.guard_condition as capsule:
+            _rclpy.rclpy_trigger_guard_condition(capsule)
         thr.join()
 
         assert self.waitable.future.done()

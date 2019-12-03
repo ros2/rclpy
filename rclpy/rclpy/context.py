@@ -28,7 +28,8 @@ class Context:
 
     def __init__(self):
         from rclpy.impl.implementation_singleton import rclpy_implementation
-        self._handle = rclpy_implementation.rclpy_create_context()
+        from .handle import Handle
+        self._handle = Handle(rclpy_implementation.rclpy_create_context())
         self._lock = threading.Lock()
         self._callbacks = []
         self._callbacks_lock = threading.Lock()
@@ -41,8 +42,8 @@ class Context:
         """Check if context hasn't been shut down."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
-        with self._lock:
-            return rclpy_implementation.rclpy_ok(self._handle)
+        with self._handle as capsule, self._lock:
+            return rclpy_implementation.rclpy_ok(capsule)
 
     def _call_on_shutdown_callbacks(self):
         with self._callbacks_lock:
@@ -55,17 +56,17 @@ class Context:
         """Shutdown this context."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
-        with self._lock:
-            rclpy_implementation.rclpy_shutdown(self._handle)
+        with self._handle as capsule, self._lock:
+            rclpy_implementation.rclpy_shutdown(capsule)
         self._call_on_shutdown_callbacks()
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
-        with self._lock:
-            if rclpy_implementation.rclpy_ok(self._handle):
-                rclpy_implementation.rclpy_shutdown(self._handle)
+        with self._handle as capsule, self._lock:
+            if rclpy_implementation.rclpy_ok(capsule):
+                rclpy_implementation.rclpy_shutdown(capsule)
                 self._call_on_shutdown_callbacks()
 
     def _remove_callback(self, weak_method):

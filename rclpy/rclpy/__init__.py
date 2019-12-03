@@ -70,7 +70,8 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
     context = get_default_context() if context is None else context
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
-    return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context.handle)
+    with context.handle as capsule:
+        return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, capsule)
 
 
 # The global spin functions need an executor to do the work
