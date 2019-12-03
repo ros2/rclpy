@@ -198,3 +198,6 @@ class Handle:
                 self.__destroy_callbacks.pop()(self)
             # get rid of references to other handles to break reference cycles
             del self.__required_handles
+
+    def __del__(self):
+        print('destroying', self.__capsule_name, ' ', self.__capsule_pointer)

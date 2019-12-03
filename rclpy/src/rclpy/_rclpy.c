@@ -48,6 +48,7 @@ static PyObject * RCLError;
 void
 _rclpy_context_capsule_destructor(PyObject * capsule)
 {
+  fprintf(stderr, "context being destructed\n");
   rcl_context_t * context = (rcl_context_t *)PyCapsule_GetPointer(capsule, "rcl_context_t");
   if (!context) {
     return;
@@ -76,6 +77,7 @@ _rclpy_context_capsule_destructor(PyObject * capsule)
       rcl_reset_error();
     }
   }
+  fprintf(stderr, "context destructed\n");
   PyMem_FREE(context);
 }
 
@@ -614,6 +616,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
 static void
 _rclpy_destroy_node(PyObject * pyentity)
 {
+  fprintf(stderr, "destroying node\n");
   rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(
     pyentity, "rcl_node_t");
   if (!node) {
@@ -635,6 +638,7 @@ _rclpy_destroy_node(PyObject * pyentity)
       rcl_get_error_string().str);
   }
   PyMem_Free(node);
+  fprintf(stderr, "destroyed node\n");
 }
 
 /// Create a node
@@ -2176,6 +2180,7 @@ rclpy_send_request(PyObject * Py_UNUSED(self), PyObject * args)
 static void
 _rclpy_destroy_service(PyObject * pyentity)
 {
+  fprintf(stderr, "destroying service\n");
   rclpy_service_t * srv = (rclpy_service_t *)PyCapsule_GetPointer(
     pyentity, "rclpy_service_t");
   if (!srv) {
@@ -2197,6 +2202,7 @@ _rclpy_destroy_service(PyObject * pyentity)
       rcl_get_error_string().str);
   }
   PyMem_Free(srv);
+  fprintf(stderr, "destroyed service\n");
 }
 
 /// Create a service server
