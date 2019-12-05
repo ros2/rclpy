@@ -20,6 +20,7 @@ import rclpy
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.qos import qos_profile_action_status_default
 
 from test_msgs.action import Fibonacci
 
@@ -44,6 +45,10 @@ class MockActionServer():
             self.result_callback)
         self.feedback_pub = node.create_publisher(
             Fibonacci.Impl.FeedbackMessage, '/fibonacci/_action/feedback', 1)
+        self.status_pub = node.create_publisher(
+            Fibonacci.Impl.GoalStatusMessage,
+            '/fibonacci/_action/status',
+            qos_profile_action_status_default)
 
     def goal_callback(self, request, response):
         response.accepted = True
