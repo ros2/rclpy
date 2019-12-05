@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.5 (2019-12-05)
+------------------
+* Send feedback callbacks properly in send_goal() of action client (`#451 <https://github.com/ros2/rclpy/issues/451>`_) (`#467 <https://github.com/ros2/rclpy/issues/467>`_)
+* Action server: catch exception from user execute callback (`#437 <https://github.com/ros2/rclpy/issues/437>`_)
+* Contributors: Jacob Perron, Werner Neubauer
+
 0.6.4 (2019-03-29)
 ------------------
 * Backport fix sigint guard condition lifecycle bug (`#298 <https://github.com/ros2/rclpy/issues/298>`_)
