@@ -194,6 +194,7 @@ if(BUILD_TESTING)
     test/test_handle.py
     test/test_init_shutdown.py
     test/test_logging.py
+    test/test_logging_rosout.py
     test/test_messages.py
     test/test_node.py
     test/test_parameter.py

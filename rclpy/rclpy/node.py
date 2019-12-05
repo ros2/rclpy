@@ -108,6 +108,7 @@ class Node:
         cli_args: List[str] = None,
         namespace: str = None,
         use_global_arguments: bool = True,
+        enable_rosout: bool = True,
         start_parameter_services: bool = True,
         parameter_overrides: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
@@ -126,6 +127,7 @@ class Node:
             Validated by :func:`validate_namespace`.
         :param use_global_arguments: ``False`` if the node should ignore process-wide command line
             args.
+        :param enable_rosout: ``False`` if the node should ignore rosout logging.
         :param start_parameter_services: ``False`` if the node should not create parameter
             services.
         :param parameter_overrides: A list of overrides for initial values for parameters declared
@@ -157,7 +159,12 @@ class Node:
             raise NotInitializedException('cannot create node')
         try:
             self.__handle = Handle(_rclpy.rclpy_create_node(
-                node_name, namespace, self._context.handle, cli_args, use_global_arguments
+                node_name,
+                namespace,
+                self._context.handle,
+                cli_args,
+                use_global_arguments,
+                enable_rosout
             ))
         except ValueError:
             # these will raise more specific errors if the name or namespace is bad

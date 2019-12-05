@@ -637,9 +637,16 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pycontext;
   PyObject * py_cli_args;
   int use_global_arguments;
+  int enable_rosout;
 
   if (!PyArg_ParseTuple(
-      args, "ssOOp", &node_name, &namespace_, &pycontext, &py_cli_args, &use_global_arguments))
+      args, "ssOOpp",
+      &node_name,
+      &namespace_,
+      &pycontext,
+      &py_cli_args,
+      &use_global_arguments,
+      &enable_rosout))
   {
     return NULL;
   }
@@ -666,6 +673,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_node_options_t options = rcl_node_get_default_options();
   options.use_global_arguments = use_global_arguments;
   options.arguments = arguments;
+  options.enable_rosout = enable_rosout;
   ret = rcl_node_init(node, node_name, namespace_, context, &options);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_BAD_ALLOC) {

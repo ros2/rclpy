@@ -110,6 +110,7 @@ def create_node(
     cli_args: List[str] = None,
     namespace: str = None,
     use_global_arguments: bool = True,
+    enable_rosout: bool = True,
     start_parameter_services: bool = True,
     parameter_overrides: List[Parameter] = None,
     allow_undeclared_parameters: bool = False,
@@ -127,6 +128,7 @@ def create_node(
         (node name, topics, etc).
     :param use_global_arguments: ``False`` if the node should ignore process-wide command line
         arguments.
+    :param enable_rosout: ``False`` if the node should ignore rosout logging.
     :param start_parameter_services: ``False`` if the node should not create parameter services.
     :param parameter_overrides: A list of :class:`.Parameter` which are used to override the
         initial values of parameters declared on this node.
@@ -141,6 +143,7 @@ def create_node(
     return Node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
+        enable_rosout=enable_rosout,
         start_parameter_services=start_parameter_services,
         parameter_overrides=parameter_overrides,
         allow_undeclared_parameters=allow_undeclared_parameters,
