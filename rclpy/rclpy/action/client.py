@@ -148,6 +148,7 @@ class ActionClient(Waitable):
         check_for_type_support(action_type)
         self._node = node
         self._action_type = action_type
+        self._action_name = action_name
         with node.handle as node_capsule:
             self._client_handle = _rclpy_action.rclpy_action_create_client(
                 node_capsule,
@@ -278,27 +279,45 @@ class ActionClient(Waitable):
         """
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
-            goal_handle = ClientGoalHandle(
-                self,
-                self._sequence_number_to_goal_id[sequence_number],
-                goal_response)
+            if sequence_number in self._sequence_number_to_goal_id:
+                goal_handle = ClientGoalHandle(
+                    self,
+                    self._sequence_number_to_goal_id[sequence_number],
+                    goal_response)
 
-            if goal_handle.accepted:
-                goal_uuid = bytes(goal_handle.goal_id.uuid)
-                if goal_uuid in self._goal_handles:
-                    raise RuntimeError(
-                        'Two goals were accepted with the same ID ({})'.format(goal_handle))
-                self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
+                if goal_handle.accepted:
+                    goal_uuid = bytes(goal_handle.goal_id.uuid)
+                    if goal_uuid in self._goal_handles:
+                        raise RuntimeError(
+                            'Two goals were accepted with the same ID ({})'.format(goal_handle))
+                    self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
 
-            self._pending_goal_requests[sequence_number].set_result(goal_handle)
+                self._pending_goal_requests[sequence_number].set_result(goal_handle)
+            else:
+                self._node.get_logger().warning(
+                    'Ignoring unexpected goal response. '
+                    f"There may be two or more action servers for the action '{self._action_name}'"
+                )
 
         if 'cancel' in taken_data:
             sequence_number, cancel_response = taken_data['cancel']
-            self._pending_cancel_requests[sequence_number].set_result(cancel_response)
+            if sequence_number in self._pending_cancel_requests:
+                self._pending_cancel_requests[sequence_number].set_result(cancel_response)
+            else:
+                self._node.get_logger().warning(
+                    'Ignoring unexpected cancel response. '
+                    f"There may be two or more action servers for the action '{self._action_name}'"
+                )
 
         if 'result' in taken_data:
             sequence_number, result_response = taken_data['result']
-            self._pending_result_requests[sequence_number].set_result(result_response)
+            if sequence_number in self._pending_result_requests:
+                self._pending_result_requests[sequence_number].set_result(result_response)
+            else:
+                self._node.get_logger().warning(
+                    'Ignoring unexpected result response. '
+                    f"There may be two or more action servers for the action '{self._action_name}'"
+                )
 
         if 'feedback' in taken_data:
             feedback_msg = taken_data['feedback']
