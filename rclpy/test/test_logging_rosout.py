@@ -65,7 +65,7 @@ def test_enable_rosout(
     # create subscriber of 'rosout' topic
     node.create_subscription(
         Log,
-        'rosout',
+        '/rosout',
         raw_subscription_callback,
         1,
         raw=True
