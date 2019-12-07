@@ -295,8 +295,8 @@ class ActionClient(Waitable):
                 self._pending_goal_requests[sequence_number].set_result(goal_handle)
             else:
                 self._node.get_logger().warning(
-                    'Ignoring unexpected goal response. '
-                    f"There may be two or more action servers for the action '{self._action_name}'"
+                    'Ignoring unexpected goal response. There may be more than '
+                    f"one action server for the action '{self._action_name}'"
                 )
 
         if 'cancel' in taken_data:
@@ -305,8 +305,8 @@ class ActionClient(Waitable):
                 self._pending_cancel_requests[sequence_number].set_result(cancel_response)
             else:
                 self._node.get_logger().warning(
-                    'Ignoring unexpected cancel response. '
-                    f"There may be two or more action servers for the action '{self._action_name}'"
+                    'Ignoring unexpected cancel response. There may be more than '
+                    f"one action server for the action '{self._action_name}'"
                 )
 
         if 'result' in taken_data:
@@ -315,8 +315,8 @@ class ActionClient(Waitable):
                 self._pending_result_requests[sequence_number].set_result(result_response)
             else:
                 self._node.get_logger().warning(
-                    'Ignoring unexpected result response. '
-                    f"There may be two or more action servers for the action '{self._action_name}'"
+                    'Ignoring unexpected result response. There may be more than '
+                    f"one action server for the action '{self._action_name}'"
                 )
 
         if 'feedback' in taken_data:
