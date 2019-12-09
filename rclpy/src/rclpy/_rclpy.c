@@ -1130,7 +1130,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
     if (rcutils_ret == RCUTILS_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rcutils_get_error_string().str);
     } else {
-      PyErr_Format(RCLError, "%s", rcutils_get_error_string().str);
+      PyErr_Format(PyExc_RuntimeError, "%s", rcutils_get_error_string().str);
     }
     rcutils_reset_error();
     return NULL;
