@@ -5096,7 +5096,7 @@ PyMODINIT_FUNC PyInit__rclpy(void)
 
   RCLError = PyErr_NewExceptionWithDoc(
     "_rclpy.RCLError",
-    "Thrown when there is error in calling the rcl layers.",
+    "Thrown when there is an error in rcl.",
     PyExc_RuntimeError, NULL);
   if (PyModule_AddObject(m, "RCLError", RCLError)) {
     Py_DECREF(m);
