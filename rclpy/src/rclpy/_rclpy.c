@@ -5098,6 +5098,10 @@ PyMODINIT_FUNC PyInit__rclpy(void)
     "_rclpy.RCLError",
     "Thrown when there is an error in rcl.",
     PyExc_RuntimeError, NULL);
+    if (NULL == RCLError) {
+      Py_DECREF(m);
+      return NULL;
+    }
   if (PyModule_AddObject(m, "RCLError", RCLError)) {
     Py_DECREF(m);
     return NULL;
