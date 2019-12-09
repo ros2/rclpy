@@ -2770,7 +2770,7 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
     GET_LIST_READY_ENTITIES(guard_condition)
   }
   Py_DECREF(entity_ready_list);
-  PyErr_Format(RCLError,
+  PyErr_Format(PyExc_RuntimeError,
     "'%s' is not a known entity", entity_type);
   return NULL;
 }
