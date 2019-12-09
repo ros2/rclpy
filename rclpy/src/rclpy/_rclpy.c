@@ -2588,7 +2588,7 @@ rclpy_wait_set_add_entity(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_wait_set_add_event(wait_set, event, &index);
   } else {
     ret = RCL_RET_ERROR;  // to avoid a linter warning
-    PyErr_Format(RCLError,
+    PyErr_Format(PyExc_RuntimeError,
       "'%s' is not a known entity", entity_type);
     return NULL;
   }
