@@ -3755,7 +3755,7 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameter_events);
   } else {
-    PyErr_Format(RCLError,
+    PyErr_Format(PyExc_RuntimeError,
       "Requested unknown rmw_qos_profile: '%s'", pyrmw_profile);
     return NULL;
   }
