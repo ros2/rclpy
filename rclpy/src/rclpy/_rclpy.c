@@ -5102,7 +5102,7 @@ PyMODINIT_FUNC PyInit__rclpy(void)
       Py_DECREF(m);
       return NULL;
     }
-  if (PyModule_AddObject(m, "RCLError", RCLError)) {
+  if (PyModule_AddObject(m, "RCLError", RCLError) != 0) {
     Py_DECREF(m);
     return NULL;
   }
