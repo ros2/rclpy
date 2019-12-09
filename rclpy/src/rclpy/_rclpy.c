@@ -3915,7 +3915,7 @@ rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_duration_t * duration = (rcl_duration_t *) PyMem_Malloc(sizeof(rcl_duration_t));
   if (!duration) {
-    PyErr_Format(RCLError, "Failed to allocate memory for duration.");
+    PyErr_Format(PyErr_NoMemory, "Failed to allocate memory for duration.");
     return NULL;
   }
 
