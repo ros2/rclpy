@@ -4632,7 +4632,7 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (!PyObject_HasAttrString(parameter_cls, "Type")) {
-    PyErr_Format(RCLError, "Parameter class is missing 'Type' attribute");
+    PyErr_Format(PyExc_RuntimeError, "Parameter class is missing 'Type' attribute");
     Py_DECREF(params_by_node_name);
     return NULL;
   }
