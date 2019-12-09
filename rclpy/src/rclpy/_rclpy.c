@@ -3847,7 +3847,7 @@ rclpy_create_time_point(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_time_point_t * time_point = (rcl_time_point_t *) PyMem_Malloc(sizeof(rcl_time_point_t));
   if (!time_point) {
-    PyErr_Format(RCLError, "Failed to allocate memory for time point.");
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for time point.");
     return NULL;
   }
 
