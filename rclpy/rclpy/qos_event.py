@@ -163,7 +163,7 @@ class SubscriptionEventCallbacks:
         liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None,
     ) -> None:
         """
-        Constructor.
+        Create a SubscriptionEventCallbacks container.
 
         :param deadline: A user-defined callback that is called when a topic misses our
             requested Deadline.
@@ -202,7 +202,7 @@ class PublisherEventCallbacks:
         liveliness: Optional[Callable[[QoSLivelinessLostInfo], None]] = None
     ) -> None:
         """
-        Constructor.
+        Create and return a PublisherEventCallbacks container.
 
         :param deadline: A user-defined callback that is called when the Publisher misses
             its offered Deadline.

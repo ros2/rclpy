@@ -115,7 +115,7 @@ class Node:
         automatically_declare_parameters_from_overrides: bool = False
     ) -> None:
         """
-        Constructor.
+        Create a Node.
 
         :param node_name: A name to give to this node. Validated by :func:`validate_node_name`.
         :param context: The context to be associated with, or ``None`` for the default global
