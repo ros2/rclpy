@@ -4524,7 +4524,7 @@ _populate_node_parameters_from_rcl_params(
       parameter_dict = PyDict_GetItem(node_params_dict, py_node_name);
       if (!parameter_dict) {
         Py_DECREF(py_node_name);
-        PyErr_Format(RCLError, "Error reading node_paramters from internal dict");
+        PyErr_Format(PyExc_RuntimeError, "Error reading node_paramters from internal dict");
         return false;
       }
       /* This was a borrowed reference. INCREF'd so we can unconditionally DECREF below. */
