@@ -2661,7 +2661,7 @@ rclpy_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (!entities) {
-    PyErr_Format(RCLError, "Wait set '%s' isn't allocated", entity_type);
+    PyErr_Format(PyExc_RuntimeError, "Wait set '%s' isn't allocated", entity_type);
     return NULL;
   }
   if (index >= num_entities) {
