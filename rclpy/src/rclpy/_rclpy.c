@@ -1166,7 +1166,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
 
   rcutils_ret = rcutils_string_map_fini(&substitutions_map);
   if (rcutils_ret != RCUTILS_RET_OK) {
-    PyErr_Format(RCLError, "%s", rcutils_get_error_string().str);
+    PyErr_Format(PyExc_RuntimeError, "%s", rcutils_get_error_string().str);
     rcutils_reset_error();
     allocator.deallocate(expanded_topic, allocator.state);
     return NULL;
