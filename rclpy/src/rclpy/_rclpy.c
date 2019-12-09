@@ -2655,7 +2655,7 @@ rclpy_wait_set_is_ready(PyObject * Py_UNUSED(self), PyObject * args)
     entities = (void *)wait_set->events;
     num_entities = wait_set->size_of_events;
   } else {
-    PyErr_Format(RCLError,
+    PyErr_Format(PyExc_RuntimeError,
       "'%s' is not a known entity", entity_type);
     return NULL;
   }
