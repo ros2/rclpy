@@ -3974,7 +3974,7 @@ rclpy_create_clock(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcl_clock_t * clock = (rcl_clock_t *)PyMem_Malloc(sizeof(rcl_clock_t));
   if (!clock) {
-    PyErr_Format(PyErr_NoMemory, "Failed to allocate memory for clock.");
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for clock.");
     return NULL;
   }
   rcl_allocator_t allocator = rcl_get_default_allocator();
