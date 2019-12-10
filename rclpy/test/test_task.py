@@ -259,6 +259,54 @@ class TestFuture(unittest.TestCase):
         f.set_exception('Anything')
         self.assertTrue(executor.done_callbacks)
 
+    def test_cancel_invokes_callbacks(self):
+        called = False
+
+        def cb(fut):
+            nonlocal called
+            called = True
+
+        f = Future()
+        f.add_done_callback(cb)
+        f.cancel()
+        assert called
+
+    def test_set_result_invokes_callbacks(self):
+        called = False
+
+        def cb(fut):
+            nonlocal called
+            called = True
+
+        f = Future()
+        f.add_done_callback(cb)
+        f.set_result('Anything')
+        assert called
+
+    def test_set_exception_invokes_callbacks(self):
+        called = False
+
+        def cb(fut):
+            nonlocal called
+            called = True
+
+        f = Future()
+        f.add_done_callback(cb)
+        f.set_exception('Anything')
+        assert called
+
+    def test_add_done_callback_invokes_callback(self):
+        called = False
+
+        def cb(fut):
+            nonlocal called
+            called = True
+
+        f = Future()
+        f.set_result('Anything')
+        f.add_done_callback(cb)
+        assert called
+
 
 if __name__ == '__main__':
     unittest.main()
