@@ -1,5 +1,15 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.9 (2019-12-10)
+------------------
+* Added guard against unexpected action responses. (`#475 <https://github.com/ros2/rclpy/issues/475>`_)
+  Fixes https://github.com/ros2/demos/issues/417
+* Future invokes done callbacks when done (`#477 <https://github.com/ros2/rclpy/issues/477>`_)
+* Added missing exec depend on rcl_interfaces. (`#472 <https://github.com/ros2/rclpy/issues/472>`_)
+* Fixed import to use builtin_interfaces.msg. (`#473 <https://github.com/ros2/rclpy/issues/473>`_)
+* Fixed sending of feedback callbacks in send_goal() of action client. (`#466 <https://github.com/ros2/rclpy/issues/466>`_)
+* Contributors: Dirk Thomas, Jacob Perron, Steven! Ragnarök
+
 0.7.8 (2019-10-11)
 ------------------
 * Updated to accept tuples as parameter arrays. (`#442 <https://github.com/ros2/rclpy/issues/442>`_)
