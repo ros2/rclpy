@@ -296,7 +296,7 @@ class ActionClient(Waitable):
             else:
                 self._node.get_logger().warning(
                     'Ignoring unexpected goal response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
+                    "one action server for the action '{}'".format(self._action_name)
                 )
 
         if 'cancel' in taken_data:
@@ -306,7 +306,7 @@ class ActionClient(Waitable):
             else:
                 self._node.get_logger().warning(
                     'Ignoring unexpected cancel response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
+                    "one action server for the action '{}'".format(self._action_name)
                 )
 
         if 'result' in taken_data:
@@ -316,7 +316,7 @@ class ActionClient(Waitable):
             else:
                 self._node.get_logger().warning(
                     'Ignoring unexpected result response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
+                    "one action server for the action '{}'".format(self._action_name)
                 )
 
         if 'feedback' in taken_data:
