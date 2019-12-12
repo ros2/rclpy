@@ -1,5 +1,11 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.10 (2010-12-12)
+-------------------
+* Remove f-strings to restore Python 3.5 compatibility. (`#483 <https://github.com/ros2/rclpy/issues/483>`_)
+  The regression was accidentally introduced in `#475 <https://github.com/ros2/rclpy/issues/475>`_.
+* Contributors: Jacob Perron
+
 0.7.9 (2019-12-10)
 ------------------
 * Added guard against unexpected action responses. (`#475 <https://github.com/ros2/rclpy/issues/475>`_)
