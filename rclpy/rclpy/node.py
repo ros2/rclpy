@@ -525,7 +525,7 @@ class Node:
 
         return self._parameters.get(name, alternative_value)
 
-    def get_parameters_by_prefix(self, prefix: str) -> List[Parameter]:
+    def get_parameters_by_prefix(self, prefix: str) -> Dict[str, Parameter]:
         """
         Get parameters that have a given prefix in their names as a dictionary.
 
