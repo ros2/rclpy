@@ -1683,10 +1683,11 @@ class Node:
             _rclpy.rclpy_assert_liveliness(capsule)
 
     def _get_info_by_topic(
-            self,
-            topic_name: str,
-            no_mangle: bool,
-            func: Callable[[object, str, bool], List[Dict]]) -> List[Dict]:
+        self,
+        topic_name: str,
+        no_mangle: bool,
+        func: Callable[[object, str, bool], List[Dict]]
+    ) -> List[Dict]:
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
         validate_topic_name(fq_topic_name)
         with self.handle as node_capsule:

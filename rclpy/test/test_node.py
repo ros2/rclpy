@@ -222,7 +222,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # Verify publisher list has the right data
         self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
         self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
-        self.assertEqual('test_msgs::msg::dds_::BasicTypes_', publisher_list[0].get('topic_type'))
+        self.assertEqual('test_msgs/msg/BasicTypes', publisher_list[0].get('topic_type'))
         actual_qos_profile = publisher_list[0].get('qos_profile')
         self.assert_qos_equal(qos_profile, actual_qos_profile)
 
@@ -245,10 +245,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # Verify subscription list has the right data
         self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
         self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
-        self.assertEqual('test_msgs::msg::dds_::BasicTypes_',
-                         publisher_list[0].get('topic_type'))
-        self.assertEqual('test_msgs::msg::dds_::BasicTypes_',
-                         subscription_list[0].get('topic_type'))
+        self.assertEqual('test_msgs/msg/BasicTypes', publisher_list[0].get('topic_type'))
+        self.assertEqual('test_msgs/msg/BasicTypes', subscription_list[0].get('topic_type'))
         publisher_qos_profile = publisher_list[0].get('qos_profile')
         subscription_qos_profile = subscription_list[0].get('qos_profile')
         self.assert_qos_equal(qos_profile, publisher_qos_profile)
