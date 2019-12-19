@@ -558,16 +558,35 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   if (have_args) {
     rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
     rcl_ret_t ret = rcl_init_options_init(&init_options, allocator);
-    if (RCL_RET_OK != ret) {
-      PyErr_Format(
-        RCLError, "Failed to initialize init_options: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-    } else {
+    if (RCL_RET_OK == ret) {
       ret = rcl_init(num_args, arg_values, &init_options, context);
-      if (ret != RCL_RET_OK) {
-        PyErr_Format(RCLError, "Failed to init: %s", rcl_get_error_string().str);
+      if (RCL_RET_OK == ret) {
+        int unparsed_ros_args_count =
+          rcl_arguments_get_count_unparsed_ros(&context->global_arguments);
+        if (unparsed_ros_args_count > 0) {
+          int * unparsed_ros_args_indices = NULL;
+          ret = rcl_arguments_get_unparsed_ros(
+            &context->global_arguments, allocator, &unparsed_ros_args_indices);
+          if (RCL_RET_OK == ret) {
+            _rclpy_raise_unknown_ros_args(
+              pyargs, unparsed_ros_args_indices, unparsed_ros_args_count);
+            allocator.deallocate(unparsed_ros_args_indices, allocator.state);
+          } else {
+            PyErr_Format(
+              PyExc_RuntimeError,
+              "Failed to get unparsed ROS arguments: %s",
+              rcl_get_error_string().str);
+            rcl_reset_error();
+          }
+        }
+      } else {
+        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
         rcl_reset_error();
       }
+    } else {
+      PyErr_Format(
+        PyExc_RuntimeError, "Failed to initialize init_options: %s", rcl_get_error_string().str);
+      rcl_reset_error();
     }
   }
   if (NULL != arg_values) {
