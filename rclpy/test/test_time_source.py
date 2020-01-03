@@ -159,7 +159,7 @@ class TestTimeSource(unittest.TestCase):
         node2 = rclpy.create_node('TestTimeSource2', namespace='/rclpy', context=self.context)
         time_source.attach_node(node2)
         node2.destroy_node()
-        assert time_source._node == node2
+        assert time_source._get_node() == node2
         assert time_source._clock_sub is None
 
     def test_forwards_jump(self):

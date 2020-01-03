@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import weakref
+
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.clock import ClockType
 from rclpy.clock import ROSClock
@@ -27,7 +29,7 @@ class TimeSource:
 
     def __init__(self, *, node=None):
         self._clock_sub = None
-        self._node = None
+        self._node_weak_ref = None
         self._associated_clocks = []
         # Zero time is a special value that means time is uninitialzied
         self._last_time_set = Time(clock_type=ClockType.ROS_TIME)
@@ -49,27 +51,31 @@ class TimeSource:
         if enabled:
             self._subscribe_to_clock_topic()
         else:
-            if self._clock_sub is not None and self._node is not None:
-                self._node.destroy_subscription(self._clock_sub)
-                self._clock_sub = None
+            if self._clock_sub is not None:
+                node = self._get_node()
+                if node is not None:
+                    node.destroy_subscription(self._clock_sub)
+                    self._clock_sub = None
 
     def _subscribe_to_clock_topic(self):
-        if self._clock_sub is None and self._node is not None:
-            self._clock_sub = self._node.create_subscription(
-                rosgraph_msgs.msg.Clock,
-                CLOCK_TOPIC,
-                self.clock_callback,
-                10
-            )
+        if self._clock_sub is None:
+            node = self._get_node()
+            if node is not None:
+                self._clock_sub = node.create_subscription(
+                    rosgraph_msgs.msg.Clock,
+                    CLOCK_TOPIC,
+                    self.clock_callback,
+                    10
+                )
 
     def attach_node(self, node):
         from rclpy.node import Node
         if not isinstance(node, Node):
             raise TypeError('Node must be of type rclpy.node.Node')
         # Remove an existing node.
-        if self._node is not None:
+        if self._node_weak_ref is not None:
             self.detach_node()
-        self._node = node
+        self._node_weak_ref = weakref.ref(node)
 
         if not node.has_parameter(USE_SIM_TIME_NAME):
             node.declare_parameter(USE_SIM_TIME_NAME, False)
@@ -91,12 +97,14 @@ class TimeSource:
 
     def detach_node(self):
         # Remove the subscription to the clock topic.
+        error = RuntimeError('Unable to destroy previously created clock subscription')
         if self._clock_sub is not None:
-            if self._node is None:
-                raise RuntimeError('Unable to destroy previously created clock subscription')
-            self._node.destroy_subscription(self._clock_sub)
+            node = self._get_node()
+            if node is None:
+                raise error
+            node.destroy_subscription(self._clock_sub)
         self._clock_sub = None
-        self._node = None
+        node = None
 
     def attach_clock(self, clock):
         if not isinstance(clock, ROSClock):
@@ -119,9 +127,19 @@ class TimeSource:
                 if parameter.type_ == Parameter.Type.BOOL:
                     self.ros_time_is_active = parameter.value
                 else:
-                    self._node.get_logger().error(
-                        '{} parameter set to something besides a bool'
-                        .format(USE_SIM_TIME_NAME))
+                    node = self._get_node()
+                    if node:
+                        node.get_logger().error(
+                            '{} parameter set to something besides a bool'
+                            .format(USE_SIM_TIME_NAME))
                 break
 
         return SetParametersResult(successful=True)
+
+    def _get_node(self):
+        if self._node_weak_ref is not None:
+            node = self._node_weak_ref()
+            if node is None:
+                raise RuntimeError('Attached node has gone out of scope before expected')
+            return node
+        return None
