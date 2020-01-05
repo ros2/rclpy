@@ -41,7 +41,7 @@ class Subscription:
         """
         Create a container for a ROS subscription.
 
-        .. warning:: Users should not create a subscription with this constuctor, instead they
+        .. warning:: Users should not create a subscription with this constructor, instead they
            should call :meth:`.Node.create_subscription`.
 
         :param subscription_handle: :class:`Handle` wrapping the underlying ``rcl_subscription_t``
