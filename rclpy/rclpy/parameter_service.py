@@ -159,5 +159,5 @@ class ParameterService:
     def _get_node(self):
         node = self._node_weak_ref()
         if node is None:
-            raise RuntimeError('Expected valid node weak reference')
+            raise ReferenceError('Expected valid node weak reference')
         return node
