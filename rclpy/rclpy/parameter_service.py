@@ -66,36 +66,31 @@ class ParameterService:
         )
 
     def _describe_parameters_callback(self, request, response):
-        node = self._node_weak_ref()
-        if node is not None:
-            for name in request.names:
-                try:
-                    descriptor = node.describe_parameter(name)
-                except ParameterNotDeclaredException:
-                    descriptor = ParameterDescriptor()
-                response.descriptors.append(descriptor)
+        node = self._get_node()
+        for name in request.names:
+            try:
+                descriptor = node.describe_parameter(name)
+            except ParameterNotDeclaredException:
+                descriptor = ParameterDescriptor()
+            response.descriptors.append(descriptor)
         return response
 
     def _get_parameters_callback(self, request, response):
-        node = self._node_weak_ref()
-        if node is not None:
-            for name in request.names:
-                p = node.get_parameter_or(name)
-                response.values.append(p.get_parameter_value())
+        node = self._get_node()
+        for name in request.names:
+            p = node.get_parameter_or(name)
+            response.values.append(p.get_parameter_value())
         return response
 
     def _get_parameter_types_callback(self, request, response):
-        node = self._node_weak_ref()
-        if node is not None:
-            for name in request.names:
-                response.types.append(node.get_parameter_or(name).type_)
+        node = self._get_node()
+        for name in request.names:
+            response.types.append(node.get_parameter_or(name).type_)
         return response
 
     def _list_parameters_callback(self, request, response):
         names_with_prefixes = []
-        node = self._node_weak_ref()
-        if node is None:
-            return response
+        node = self._get_node()
         for name in node._parameters.keys():
             if PARAMETER_SEPARATOR_STRING in name:
                 names_with_prefixes.append(name)
@@ -136,29 +131,33 @@ class ParameterService:
         return response
 
     def _set_parameters_callback(self, request, response):
-        node = self._node_weak_ref()
-        if node is not None:
-            for p in request.parameters:
-                param = Parameter.from_parameter_msg(p)
-                try:
-                    result = node.set_parameters_atomically([param])
-                except ParameterNotDeclaredException as e:
-                    result = SetParametersResult(
-                        successful=False,
-                        reason=str(e)
-                    )
-                response.results.append(result)
+        node = self._get_node()
+        for p in request.parameters:
+            param = Parameter.from_parameter_msg(p)
+            try:
+                result = node.set_parameters_atomically([param])
+            except ParameterNotDeclaredException as e:
+                result = SetParametersResult(
+                    successful=False,
+                    reason=str(e)
+                )
+            response.results.append(result)
         return response
 
     def _set_parameters_atomically_callback(self, request, response):
-        node = self._node_weak_ref()
-        if node is not None:
-            try:
-                response.result = node.set_parameters_atomically([
-                    Parameter.from_parameter_msg(p) for p in request.parameters])
-            except ParameterNotDeclaredException as e:
-                response.result = SetParametersResult(
-                        successful=False,
-                        reason=str(e)
-                    )
+        node = self._get_node()
+        try:
+            response.result = node.set_parameters_atomically([
+                Parameter.from_parameter_msg(p) for p in request.parameters])
+        except ParameterNotDeclaredException as e:
+            response.result = SetParametersResult(
+                    successful=False,
+                    reason=str(e)
+                )
         return response
+
+    def _get_node(self):
+        node = self._node_weak_ref()
+        if node is None:
+            raise RuntimeError('Expected valid node weak reference')
+        return node
