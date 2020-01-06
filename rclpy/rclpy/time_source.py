@@ -97,14 +97,13 @@ class TimeSource:
 
     def detach_node(self):
         # Remove the subscription to the clock topic.
-        error = RuntimeError('Unable to destroy previously created clock subscription')
         if self._clock_sub is not None:
             node = self._get_node()
             if node is None:
-                raise error
+                raise RuntimeError('Unable to destroy previously created clock subscription')
             node.destroy_subscription(self._clock_sub)
         self._clock_sub = None
-        node = None
+        self._node_weak_ref = None
 
     def attach_clock(self, clock):
         if not isinstance(clock, ROSClock):
@@ -138,8 +137,5 @@ class TimeSource:
 
     def _get_node(self):
         if self._node_weak_ref is not None:
-            node = self._node_weak_ref()
-            if node is None:
-                raise RuntimeError('Attached node has gone out of scope before expected')
-            return node
+            return self._node_weak_ref()
         return None
