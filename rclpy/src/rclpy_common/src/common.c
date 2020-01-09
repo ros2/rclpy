@@ -71,6 +71,25 @@ rclpy_names_and_types_fini(rcl_names_and_types_t * names_and_types)
   return true;
 }
 
+void *
+rclpy_common_get_type_support(PyObject * pymsg_type)
+{
+  PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
+  if (!pymetaclass) {
+    return NULL;
+  }
+
+  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
+  Py_DECREF(pymetaclass);
+  if (!pyts) {
+    return NULL;
+  }
+
+  void * ts = PyCapsule_GetPointer(pyts, NULL);
+  Py_DECREF(pyts);
+  return ts;
+}
+
 PyObject *
 rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
 {

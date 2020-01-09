@@ -472,20 +472,8 @@ rclpy_action_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pymetaclass = PyObject_GetAttrString(pyaction_type, "__class__");
-  if (!pymetaclass) {
-    return NULL;
-  }
-
-  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
-  Py_DECREF(pymetaclass);
-  if (!pyts) {
-    return NULL;
-  }
-
   rosidl_action_type_support_t * ts =
-    (rosidl_action_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
-  Py_DECREF(pyts);
+    (rosidl_action_type_support_t *)rclpy_common_get_type_support(pyaction_type);
   if (!ts) {
     return NULL;
   }
@@ -604,20 +592,8 @@ rclpy_action_create_server(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pymetaclass = PyObject_GetAttrString(pyaction_type, "__class__");
-  if (!pymetaclass) {
-    return NULL;
-  }
-
-  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
-  Py_DECREF(pymetaclass);
-  if (!pyts) {
-    return NULL;
-  }
-
   rosidl_action_type_support_t * ts =
-    (rosidl_action_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
-  Py_DECREF(pyts);
+    (rosidl_action_type_support_t *)rclpy_common_get_type_support(pyaction_type);
   if (!ts) {
     return NULL;
   }
