@@ -166,6 +166,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   find_package(ament_cmake_pytest REQUIRED)
+  find_package(rosidl_generator_py REQUIRED)
 
   rosidl_generator_py_get_typesupports(_typesupport_impls)
   ament_index_get_prefix_path(ament_index_build_path SKIP_AMENT_PREFIX_PATH)
