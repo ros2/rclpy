@@ -4700,19 +4700,8 @@ rclpy_serialize(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   // Get type support
-  PyObject * pymetaclass = PyObject_GetAttrString(pymsg, "__class__");
-  if (!pymetaclass) {
-    return NULL;
-  }
-  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
-  Py_DECREF(pymetaclass);
-  if (!pyts) {
-    return NULL;
-  }
-
   rosidl_message_type_support_t * ts =
-    (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
-  Py_DECREF(pyts);
+    (rosidl_message_type_support_t *)rclpy_common_get_type_support(pymsg);
   if (!ts) {
     return NULL;
   }
@@ -4762,18 +4751,8 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   // Get type support
-  PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
-  if (!pymetaclass) {
-    return NULL;
-  }
-  PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
-  Py_DECREF(pymetaclass);
-  if (!pyts) {
-    return NULL;
-  }
   rosidl_message_type_support_t * ts =
-    (rosidl_message_type_support_t *)PyCapsule_GetPointer(pyts, NULL);
-  Py_DECREF(pyts);
+    (rosidl_message_type_support_t *)rclpy_common_get_type_support(pymsg_type);
   if (!ts) {
     return NULL;
   }
