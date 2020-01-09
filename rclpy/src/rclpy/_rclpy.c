@@ -4771,8 +4771,6 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   // Deserialize
-  // TODO(jacobperron): Deserializing floating-point types results in more digits than expected.
-  //                    For example, 3.14159 deserializes to 3.141590118408203
   rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg);
 
   if (RMW_RET_OK != rmw_ret) {
