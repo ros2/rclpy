@@ -4780,22 +4780,10 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
 
   // Create a serialized message object
   rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
-  rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  rcutils_ret_t rcutils_ret = rmw_serialized_message_init(
-    &serialized_msg, serialized_buffer_size, &allocator);
-  if (RCUTILS_RET_OK != rcutils_ret) {
-    PyErr_Format(RCLError,
-      "Failed to initialize serialized message: %s", rcutils_get_error_string().str);
-    return NULL;
-  }
-
-  // Copy the data
-  memcpy(serialized_msg.buffer, serialized_buffer, serialized_buffer_size);
+  // Just copy pointer to avoid extra allocation and copy
+  serialized_msg.buffer_capacity = serialized_buffer_size;
   serialized_msg.buffer_length = serialized_buffer_size;
-  // TODO(jacobperron): Try just copy pointer to avoid extra allocation and copy
-  // serialized_msg.buffer_capacity = pyserialized_buffer.len;
-  // serialized_msg.buffer_length = pyserialized_buffer.len;
-  // serialized_msg.buffer = (uint8_t *)pyserialized_buffer.buf;
+  serialized_msg.buffer = (uint8_t *)serialized_buffer;
 
   destroy_ros_message_signature * destroy_ros_message = NULL;
   void * deserialized_ros_msg = rclpy_create_from_py(pymsg_type, &destroy_ros_message);
@@ -4807,13 +4795,6 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
   // TODO(jacobperron): Deserializing floating-point types results in more digits than expected.
   //                    For example, 3.14159 deserializes to 3.141590118408203
   rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg);
-
-  rcutils_ret = rmw_serialized_message_fini(&serialized_msg);
-  if (RCUTILS_RET_OK != rcutils_ret) {
-    PyErr_Format(RCLError,
-      "Failed to finalize serialized message: %s", rcutils_get_error_string().str);
-    return NULL;
-  }
 
   if (RMW_RET_OK != rmw_ret) {
     destroy_ros_message(deserialized_ros_msg);
