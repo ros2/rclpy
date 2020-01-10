@@ -367,7 +367,7 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
   PyObject * py_node_namespace = NULL;
   PyObject * py_topic_type = NULL;
   PyObject * py_gid = NULL;
-  PyObject * py_topic_endpoint_info_dict = NULL;
+  PyObject * py_endpoint_info_dict = NULL;
 
   py_qos_profile = rclpy_common_convert_to_qos_dict(&topic_endpoint_info->qos_profile);
   if (!py_qos_profile) {
@@ -398,29 +398,29 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
   }
 
   // Create dictionary that represents rmw_topic_endpoint_info_t
-  py_topic_endpoint_info_dict = PyDict_New();
-  if (!py_topic_endpoint_info_dict) {
+  py_endpoint_info_dict = PyDict_New();
+  if (!py_endpoint_info_dict) {
     goto fail;
   }
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
   int set_result = 0;
-  set_result += PyDict_SetItemString(py_topic_endpoint_info_dict, "qos_profile", py_qos_profile);
-  set_result += PyDict_SetItemString(py_topic_endpoint_info_dict, "node_name", py_node_name);
-  set_result += PyDict_SetItemString(py_topic_endpoint_info_dict, "node_namespace", py_node_namespace);
-  set_result += PyDict_SetItemString(py_topic_endpoint_info_dict, "topic_type", py_topic_type);
-  set_result += PyDict_SetItemString(py_topic_endpoint_info_dict, "gid", py_gid);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "qos_profile", py_qos_profile);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "node_name", py_node_name);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "node_namespace", py_node_namespace);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "topic_type", py_topic_type);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "gid", py_gid);
   if (set_result != 0) {
     goto fail;
   }
-  return py_topic_endpoint_info_dict;
+  return py_endpoint_info_dict;
 fail:
   Py_XDECREF(py_qos_profile);
   Py_XDECREF(py_node_name);
   Py_XDECREF(py_node_namespace);
   Py_XDECREF(py_topic_type);
   Py_XDECREF(py_gid);
-  Py_XDECREF(py_topic_endpoint_info_dict);
+  Py_XDECREF(py_endpoint_info_dict);
   return NULL;
 }
 
@@ -438,13 +438,14 @@ rclpy_convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array
 
   for (size_t i = 0; i < info_array->count; ++i) {
     rmw_topic_endpoint_info_t topic_endpoint_info = info_array->info_array[i];
-    PyObject * py_topic_endpoint_info_dict = _rclpy_convert_to_py_topic_endpoint_info(&topic_endpoint_info);
-    if (!py_topic_endpoint_info_dict) {
+    PyObject * py_endpoint_info_dict = _rclpy_convert_to_py_topic_endpoint_info(
+      &topic_endpoint_info);
+    if (!py_endpoint_info_dict) {
       Py_DECREF(py_info_array);
       return NULL;
     }
     // add this dict to the list
-    PyList_SET_ITEM(py_info_array, i, py_topic_endpoint_info_dict);
+    PyList_SET_ITEM(py_info_array, i, py_endpoint_info_dict);
   }
   return py_info_array;
 }
