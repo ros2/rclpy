@@ -132,13 +132,13 @@ RCLPY_COMMON_PUBLIC
 PyObject *
 rclpy_convert_to_py(void * message, PyObject * pyclass);
 
-/// Convert a C rmw_topic_info_array_t into a Python list.
+/// Convert a C rmw_topic_endpoint_info_array_t into a Python list.
 /**
- * \param[in] info_array a pointer to a rmw_topic_info_array_t
+ * \param[in] info_array a pointer to a rmw_topic_endpoint_info_array_t
  * \return Python list
  */
 RCLPY_COMMON_PUBLIC
 PyObject *
-rclpy_convert_to_py_topic_info_list(const rmw_topic_info_array_t * info_array);
+rclpy_convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array);
 
 #endif  // RCLPY_COMMON__COMMON_H_

@@ -31,7 +31,7 @@
 #include <rmw/error_handling.h>
 #include <rmw/rmw.h>
 #include <rmw/serialized_message.h>
-#include <rmw/topic_info_array.h>
+#include <rmw/topic_endpoint_info_array.h>
 #include <rmw/types.h>
 #include <rmw/validate_full_topic_name.h>
 #include <rmw/validate_namespace.h>
@@ -891,7 +891,7 @@ typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
   rcutils_allocator_t * allocator,
   const char * topic_name,
   bool no_mangle,
-  rmw_topic_info_array_t * info_array);
+  rmw_topic_endpoint_info_array_t * info_array);
 
 static PyObject *
 _get_info_by_topic(
@@ -911,7 +911,7 @@ _get_info_by_topic(
     return NULL;
   }
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  rmw_topic_info_array_t info_array = rmw_get_zero_initialized_topic_info_array();
+  rmw_topic_endpoint_info_array_t info_array = rmw_get_zero_initialized_topic_endpoint_info_array();
   rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
   rmw_ret_t fini_ret;
   if (ret != RCL_RET_OK) {
@@ -926,18 +926,18 @@ _get_info_by_topic(
         type, rcl_get_error_string().str);
     }
     rcl_reset_error();
-    fini_ret = rmw_topic_info_array_fini(&info_array, &allocator);
+    fini_ret = rmw_topic_endpoint_info_array_fini(&info_array, &allocator);
     if (fini_ret != RMW_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed: %s",
+      PyErr_Format(PyExc_RuntimeError, "rmw_topic_endpoint_info_array_fini failed: %s",
         rmw_get_error_string().str);
       rmw_reset_error();
     }
     return NULL;
   }
-  PyObject * py_info_array = rclpy_convert_to_py_topic_info_list(&info_array);
-  fini_ret = rmw_topic_info_array_fini(&info_array, &allocator);
+  PyObject * py_info_array = rclpy_convert_to_py_topic_endpoint_info_list(&info_array);
+  fini_ret = rmw_topic_endpoint_info_array_fini(&info_array, &allocator);
   if (fini_ret != RMW_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError, "rmw_topic_info_array_fini failed.");
+    PyErr_Format(PyExc_RuntimeError, "rmw_topic_endpoint_info_array_fini failed.");
     rmw_reset_error();
     return NULL;
   }
