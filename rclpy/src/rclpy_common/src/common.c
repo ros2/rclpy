@@ -390,7 +390,7 @@ _rclpy_convert_to_py_topic_info(const rmw_topic_info_t * topic_info)
     goto fail;
   }
   for (uint i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
-    PyObject * py_val_at_index = PyLong_FromUnsignedLong(topic_info->gid[i]);
+    PyObject * py_val_at_index = PyLong_FromUnsignedLong(topic_info->endpoint_gid[i]);
     if (!py_val_at_index) {
       goto fail;
     }
