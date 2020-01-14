@@ -56,12 +56,18 @@ def test_serialize_deserialize(msgs, msg_type):
         assert msg == msg_deserialized
 
 
-# TODO(jacobperron): Fix this failing test.
-#                    I'm pretty sure that during (de)serialization we convert to a C float before
-#                    converting to a PyObject. This causes a loss of precision.
-# def test_set_float32():
-#     msg = BasicTypes()
-#     msg.float32_value = 3.14
-#     msg_serialized = serialize_message(msg)
-#     msg_deserialized = deserialize_message(msg_serialized, BasicTypes)
-#     assert msg == msg_deserialized
+def test_set_float32():
+    """Test message serialization/deserialization of float32 type."""
+    # During (de)serialization we convert to a C float before converting to a PyObject.
+    # This can result in a loss of precision
+    msg = BasicTypes()
+    msg.float32_value = 1.125  # can be represented without rounding
+    msg_serialized = serialize_message(msg)
+    msg_deserialized = deserialize_message(msg_serialized, BasicTypes)
+    assert msg.float32_value == msg_deserialized.float32_value
+
+    msg = BasicTypes()
+    msg.float32_value = 3.14  # can NOT be represented without rounding
+    msg_serialized = serialize_message(msg)
+    msg_deserialized = deserialize_message(msg_serialized, BasicTypes)
+    assert msg.float32_value == round(msg_deserialized.float32_value, 2)
