@@ -23,9 +23,10 @@ def serialize_message(message) -> bytes:
     :param message: The ROS message to serialize.
     :return: The serialized bytes.
     """
+    message_type = type(message)
     # this line imports the typesupport for the message module if not already done
-    check_for_type_support(message)
-    return _rclpy.rclpy_serialize(message)
+    check_for_type_support(message_type)
+    return _rclpy.rclpy_serialize(message, message_type)
 
 
 def deserialize_message(serialized_message: bytes, message_type):

@@ -4695,13 +4695,14 @@ static PyObject *
 rclpy_serialize(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pymsg;
-  if (!PyArg_ParseTuple(args, "O", &pymsg)) {
+  PyObject * pymsg_type;
+  if (!PyArg_ParseTuple(args, "OO", &pymsg, &pymsg_type)) {
     return NULL;
   }
 
   // Get type support
   rosidl_message_type_support_t * ts =
-    (rosidl_message_type_support_t *)rclpy_common_get_type_support(pymsg);
+    (rosidl_message_type_support_t *)rclpy_common_get_type_support(pymsg_type);
   if (!ts) {
     return NULL;
   }
