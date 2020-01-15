@@ -16,6 +16,18 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.type_support import check_for_type_support
 
 
+def serialize_message(message) -> bytes:
+    """
+    Serialize a ROS message.
+
+    :param message: The ROS message to serialize.
+    :return: The serialized bytes.
+    """
+    # this line imports the typesupport for the message module if not already done
+    check_for_type_support(message)
+    return _rclpy.rclpy_serialize(message)
+
+
 def deserialize_message(serialized_message: bytes, message_type):
     """
     Deserialize a ROS message.
@@ -27,15 +39,3 @@ def deserialize_message(serialized_message: bytes, message_type):
     # this line imports the typesupport for the message module if not already done
     check_for_type_support(message_type)
     return _rclpy.rclpy_deserialize(serialized_message, message_type)
-
-
-def serialize_message(message) -> bytes:
-    """
-    Serialize a ROS message.
-
-    :param message: The ROS message to serialize.
-    :return: The serialized bytes.
-    """
-    # this line imports the typesupport for the message module if not already done
-    check_for_type_support(message)
-    return _rclpy.rclpy_serialize(message)
