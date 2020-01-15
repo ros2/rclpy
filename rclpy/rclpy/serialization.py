@@ -33,7 +33,7 @@ def deserialize_message(serialized_message: bytes, message_type):
     Deserialize a ROS message.
 
     :param serialized_message: The ROS message to deserialized.
-    :param message_types: The type of the serialized ROS message.
+    :param message_type: The type of the serialized ROS message.
     :return: The deserialized ROS message.
     """
     # this line imports the typesupport for the message module if not already done
