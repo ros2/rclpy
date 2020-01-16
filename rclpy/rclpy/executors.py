@@ -532,6 +532,7 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
 
+                context_capsule = context_stack.enter_context(self._context.handle)
                 _rclpy.rclpy_wait_set_init(
                     wait_set,
                     entity_count.num_subscriptions,
@@ -540,7 +541,7 @@ class Executor:
                     entity_count.num_clients,
                     entity_count.num_services,
                     entity_count.num_events,
-                    self._context.handle)
+                    context_capsule)
 
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)
                 for sub_capsule in sub_capsules:

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(rclpy C)
+project(rclpy)
 
 # Default to C11
 if(NOT CMAKE_C_STANDARD)
@@ -71,8 +71,9 @@ function(configure_python_c_extension_library _library_name)
   )
 endfunction()
 
-add_library(rclpy_common
-  SHARED src/rclpy_common/src/common.c
+add_library(rclpy_common SHARED
+  src/rclpy_common/src/common.c
+  src/rclpy_common/src/handle.c
 )
 target_link_libraries(rclpy_common
   ${PythonExtra_LIBRARIES}
@@ -142,6 +143,9 @@ add_library(
   rclpy_signal_handler
   SHARED src/rclpy/_rclpy_signal_handler.c
 )
+target_link_libraries(rclpy_signal_handler
+  rclpy_common
+)
 configure_python_c_extension_library(rclpy_signal_handler)
 ament_target_dependencies(rclpy_signal_handler
   "rcl"
@@ -155,6 +159,19 @@ add_library(
 )
 configure_python_c_extension_library(rclpy_pycapsule)
 
+# Handle library, used to keep dependencies between C objects.
+add_library(
+  rclpy_handle
+  SHARED src/rclpy/_rclpy_handle.c
+)
+target_link_libraries(rclpy_handle
+  rclpy_common
+)
+configure_python_c_extension_library(rclpy_handle)
+ament_target_dependencies(rclpy_handle
+  "rcutils"
+)
+
 if(NOT WIN32)
   ament_environment_hooks(
     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
@@ -167,6 +184,7 @@ if(BUILD_TESTING)
 
   find_package(ament_cmake_pytest REQUIRED)
   find_package(rosidl_generator_py REQUIRED)
+  find_package(ament_cmake_gtest REQUIRED)
 
   rosidl_generator_py_get_typesupports(_typesupport_impls)
   ament_index_get_prefix_path(ament_index_build_path SKIP_AMENT_PREFIX_PATH)
@@ -176,58 +194,63 @@ if(BUILD_TESTING)
     # On Windows prevent CMake errors and prevent it being evaluated as a list.
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
+
+  ament_add_gtest(test_c_handle
+    src/test/rclpy_common/test_handle.cpp)
+  target_link_libraries(test_c_handle
+    rclpy_common)
+
   if(NOT _typesupport_impls STREQUAL "")
-
-  # Run each test in its own pytest invocation to isolate any global state in rclpy
-  set(_rclpy_pytest_tests
-    test/test_action_client.py
-    test/test_action_graph.py
-    test/test_action_server.py
-    test/test_callback_group.py
-    test/test_client.py
-    test/test_clock.py
-    test/test_create_node.py
-    test/test_create_while_spinning.py
-    test/test_destruction.py
-    test/test_executor.py
-    test/test_expand_topic_name.py
-    test/test_guard_condition.py
-    test/test_handle.py
-    test/test_init_shutdown.py
-    test/test_logging.py
-    test/test_logging_rosout.py
-    test/test_messages.py
-    test/test_node.py
-    test/test_parameter.py
-    test/test_parameters_callback.py
-    test/test_qos.py
-    test/test_qos_event.py
-    test/test_rate.py
-    test/test_serialization.py
-    test/test_task.py
-    test/test_time_source.py
-    test/test_time.py
-    test/test_timer.py
-    test/test_topic_or_service_is_hidden.py
-    test/test_topic_endpoint_info.py
-    test/test_utilities.py
-    test/test_validate_full_topic_name.py
-    test/test_validate_namespace.py
-    test/test_validate_node_name.py
-    test/test_validate_topic_name.py
-    test/test_waitable.py
-  )
-
-  foreach(_test_path ${_rclpy_pytest_tests})
-    get_filename_component(_test_name ${_test_path} NAME_WE)
-    ament_add_pytest_test(${_test_name} ${_test_path}
-      PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
-      APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
-        PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
-      TIMEOUT 120
-      WERROR ON
+    # Run each test in its own pytest invocation to isolate any global state in rclpy
+    set(_rclpy_pytest_tests
+      test/test_action_client.py
+      test/test_action_graph.py
+      test/test_action_server.py
+      test/test_callback_group.py
+      test/test_client.py
+      test/test_clock.py
+      test/test_create_node.py
+      test/test_create_while_spinning.py
+      test/test_destruction.py
+      test/test_executor.py
+      test/test_expand_topic_name.py
+      test/test_guard_condition.py
+      test/test_handle.py
+      test/test_init_shutdown.py
+      test/test_logging.py
+      test/test_logging_rosout.py
+      test/test_messages.py
+      test/test_node.py
+      test/test_parameter.py
+      test/test_parameters_callback.py
+      test/test_qos.py
+      test/test_qos_event.py
+      test/test_rate.py
+      test/test_serialization.py
+      test/test_task.py
+      test/test_time_source.py
+      test/test_time.py
+      test/test_timer.py
+      test/test_topic_or_service_is_hidden.py
+      test/test_topic_endpoint_info.py
+      test/test_utilities.py
+      test/test_validate_full_topic_name.py
+      test/test_validate_namespace.py
+      test/test_validate_node_name.py
+      test/test_validate_topic_name.py
+      test/test_waitable.py
     )
-  endforeach()
+
+    foreach(_test_path ${_rclpy_pytest_tests})
+      get_filename_component(_test_name ${_test_path} NAME_WE)
+      ament_add_pytest_test(${_test_name} ${_test_path}
+        PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
+        APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
+          PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
+        TIMEOUT 120
+        WERROR ON
+      )
+    endforeach()
   endif()
 endif()
 set(PYTHON_EXECUTABLE "${_PYTHON_EXECUTABLE}")

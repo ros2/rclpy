@@ -13,13 +13,15 @@
 // limitations under the License.
 
 #include <Python.h>
-
-#include <rcl/error_handling.h>
-#include <rcl/rcl.h>
-#include <rcutils/allocator.h>
-#include <rcutils/stdatomic_helper.h>
-
 #include <signal.h>
+
+#include "rcl/error_handling.h"
+#include "rcl/rcl.h"
+
+#include "rclpy_common/handle.h"
+
+#include "rcutils/allocator.h"
+#include "rcutils/stdatomic_helper.h"
 
 #if __APPLE__ || _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE
 
@@ -236,8 +238,7 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
     return NULL;
   }
 
-  rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(
-    pygc, "rcl_guard_condition_t");
+  rcl_guard_condition_t * gc = rclpy_handle_get_pointer_from_capsule(pygc, "rcl_guard_condition_t");
   if (!gc) {
     return NULL;
   }
@@ -300,8 +301,7 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     return NULL;
   }
 
-  rcl_guard_condition_t * gc = (rcl_guard_condition_t *)PyCapsule_GetPointer(
-    pygc, "rcl_guard_condition_t");
+  rcl_guard_condition_t * gc = rclpy_handle_get_pointer_from_capsule(pygc, "rcl_guard_condition_t");
   if (!gc) {
     return NULL;
   }

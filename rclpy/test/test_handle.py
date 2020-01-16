@@ -49,7 +49,7 @@ def test_handle_destroyed_when_not_used():
         rclpy.shutdown(context=context)
 
 
-def test_handle_destroys_dependents():
+def test_handle_destroyed_before_dependents():
     context = rclpy.context.Context()
     rclpy.init(context=context)
 
@@ -67,9 +67,8 @@ def test_handle_destroys_dependents():
         with pytest.raises(InvalidHandle):
             with node1.handle:
                 pass
-        with pytest.raises(InvalidHandle):
-            with node2.handle:
-                pass
+        with node2.handle:
+            pass
     finally:
         rclpy.shutdown(context=context)
 
