@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.4 (2020-01-17)
+------------------
+* Guard against unexpected action responses (`#474 <https://github.com/ros2/rclpy/issues/474>`_) (`#476 <https://github.com/ros2/rclpy/issues/476>`_)
+* Send feedback callbacks properly in send_goal() of action client (`#451 <https://github.com/ros2/rclpy/issues/451>`_) (`#465 <https://github.com/ros2/rclpy/issues/465>`_)
+* Contributors: Jacob Perron, Werner Neubauer
+
 0.8.3 (2019-11-18)
 ------------------
 * Future invokes done callbacks when done (`#461 <https://github.com/ros2/rclpy/issues/461>`_)
