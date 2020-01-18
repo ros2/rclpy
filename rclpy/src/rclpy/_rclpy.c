@@ -951,8 +951,8 @@ _get_info_by_topic(
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the publishers for.
- * \param[in] no_mangle if true the given topic name will be
- *            expanded to its fully qualified name.
+ * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
+ *            otherwise it should be a valid ROS topic name.
  * \return list of publishers
  */
 static PyObject *
@@ -968,8 +968,8 @@ rclpy_get_publishers_info_by_topic(PyObject * Py_UNUSED(self), PyObject * args)
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the subscriptions for.
- * \param[in] no_mangle if true the given topic name will be
- *            expanded to its fully qualified name.
+ * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
+ *            otherwise it should be a valid ROS topic name.
  * \return list of subscriptions.
  */
 static PyObject *

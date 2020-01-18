@@ -1701,17 +1701,18 @@ class Node:
         The returned parameter is a list of dictionaries, where each dictionary will
         contain the node name, node namespace, topic type, participant's GID and its QoS profile.
 
-        'topic_name' may be a relative, private or fully qualified topic name.
-        A relative or private topic will be expanded using this node's namespace and name, if
-        the 'no_mangle' param is set to false.
+        When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
+        name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
+        When the `no_mangle` parameter is `false`, the provided `topic_name` should follow
+        ROS topic name conventions.
 
-        The queried topic name is not remapped.
-
-        'no_mangle' defaults to false.
+        `topic_name` may be a relative, private, or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name.
+        The queried `topic_name` is not remapped.
 
         :param topic_name: the topic_name on which to find the publishers.
-        :param no_mangle: if false, the given topic name will be expanded
-                          to its fully qualified name.
+        :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
+                          name, otherwise it should be a valid ROS topic name. Defaults to `false`.
         :return: a list of dictionaries representing all the publishers on this topic.
         """
         return self._get_info_by_topic(
@@ -1727,17 +1728,18 @@ class Node:
         The returned parameter is a list of dictionaries, where each dictionary will contain
         the node name, node namespace, topic type, participant's GID and its QoS profile.
 
-        'topic_name' may be a relative, private or fully qualified topic name.
-        A relative or private topic will be expanded using this node's namespace and name, if
-        the 'no_mangle' param is set to false.
+        When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
+        name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
+        When the `no_mangle` parameter is `false`, the provided `topic_name` should follow
+        ROS topic name conventions.
 
-        The queried topic name is not remapped.
-
-        'no_mangle' defaults to false.
+        `topic_name` may be a relative, private, or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name.
+        The queried `topic_name` is not remapped.
 
         :param topic_name: the topic_name on which to find the subscriptions.
-        :param no_mangle: if false, the given topic name will be expanded
-                          to its fully qualified name.
+        :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
+                          name, otherwise it should be a valid ROS topic name. Defaults to `false`.
         :return: a list of dictionaries representing all the subscriptions on this topic.
         """
         return self._get_info_by_topic(
