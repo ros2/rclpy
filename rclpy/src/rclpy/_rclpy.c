@@ -922,13 +922,13 @@ _get_info_by_topic(
       PyErr_Format(PyExc_NotImplementedError, "Failed to get information by topic for %s: "
         "function not supported by RMW_IMPLEMENTATION", type);
     } else {
-      PyErr_Format(PyExc_RuntimeError, "Failed to get information by topic for %s: %s",
+      PyErr_Format(RCLError, "Failed to get information by topic for %s: %s",
         type, rcl_get_error_string().str);
     }
     rcl_reset_error();
     fini_ret = rmw_topic_endpoint_info_array_fini(&info_array, &allocator);
     if (fini_ret != RMW_RET_OK) {
-      PyErr_Format(PyExc_RuntimeError, "rmw_topic_endpoint_info_array_fini failed: %s",
+      PyErr_Format(RCLError, "rmw_topic_endpoint_info_array_fini failed: %s",
         rmw_get_error_string().str);
       rmw_reset_error();
     }
@@ -937,7 +937,7 @@ _get_info_by_topic(
   PyObject * py_info_array = rclpy_convert_to_py_topic_endpoint_info_list(&info_array);
   fini_ret = rmw_topic_endpoint_info_array_fini(&info_array, &allocator);
   if (fini_ret != RMW_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError, "rmw_topic_endpoint_info_array_fini failed.");
+    PyErr_Format(RCLError, "rmw_topic_endpoint_info_array_fini failed.");
     rmw_reset_error();
     return NULL;
   }
