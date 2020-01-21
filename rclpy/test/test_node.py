@@ -181,18 +181,18 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def assert_qos_equal(self, qos_profile, qos_dict):
         # Depth and history are skipped because they are not retrieved.
         self.assertEqual(qos_profile.durability, qos_dict['durability'],
-                         'Durability is unequal')
+            'Durability is unequal')
         self.assertEqual(qos_profile.reliability, qos_dict['reliability'],
-                         'Reliability is unequal')
+            'Reliability is unequal')
         self.assertEqual(qos_profile.lifespan, qos_dict['lifespan'],
-                         'lifespan is unequal')
+            'lifespan is unequal')
         self.assertEqual(qos_profile.deadline, qos_dict['deadline'],
-                         'Deadline is unequal')
+            'Deadline is unequal')
         self.assertEqual(qos_profile.liveliness, qos_dict['liveliness'],
-                         'liveliness is unequal')
+            'liveliness is unequal')
         self.assertEqual(qos_profile.liveliness_lease_duration,
-                         qos_dict['liveliness_lease_duration'],
-                         'liveliness_lease_duration is unequal')
+            qos_dict['liveliness_lease_duration'],
+            'liveliness_lease_duration is unequal')
 
     @unittest.skipIf(get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp',
                      'Implementation is not supported')

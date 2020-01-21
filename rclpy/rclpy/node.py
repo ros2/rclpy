@@ -1642,7 +1642,7 @@ class Node:
 
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
-        validate_topic_name(fq_topic_name)
+        validate_full_topic_name(fq_topic_name)
         with self.handle as node_capsule:
             return func(node_capsule, fq_topic_name)
 
@@ -1689,7 +1689,7 @@ class Node:
         func: Callable[[object, str, bool], List[Dict]]
     ) -> List[Dict]:
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
-        validate_topic_name(fq_topic_name)
+        validate_full_topic_name(fq_topic_name)
         with self.handle as node_capsule:
             return func(node_capsule, fq_topic_name, no_mangle)
 
@@ -1698,8 +1698,8 @@ class Node:
         """
         Return a list of publishers publishing to a given topic.
 
-        The returned parameter is a list of dictionaries, where each dictionary will
-        contain the node name, node namespace, topic type, participant's GID and its QoS profile.
+        The returned parameter is a list of dictionaries, where each dictionary will contain
+        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
 
         When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
         name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
@@ -1712,7 +1712,7 @@ class Node:
 
         :param topic_name: the topic_name on which to find the publishers.
         :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
-                          name, otherwise it should be a valid ROS topic name. Defaults to `false`.
+            name, otherwise it should be a valid ROS topic name. Defaults to `false`.
         :return: a list of dictionaries representing all the publishers on this topic.
         """
         return self._get_info_by_topic(
@@ -1726,7 +1726,7 @@ class Node:
         Return a list of subscriptions to a given topic.
 
         The returned parameter is a list of dictionaries, where each dictionary will contain
-        the node name, node namespace, topic type, participant's GID and its QoS profile.
+        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
 
         When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
         name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
@@ -1739,7 +1739,7 @@ class Node:
 
         :param topic_name: the topic_name on which to find the subscriptions.
         :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
-                          name, otherwise it should be a valid ROS topic name. Defaults to `false`.
+            name, otherwise it should be a valid ROS topic name. Defaults to `false`.
         :return: a list of dictionaries representing all the subscriptions on this topic.
         """
         return self._get_info_by_topic(

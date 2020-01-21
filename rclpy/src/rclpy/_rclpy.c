@@ -891,11 +891,12 @@ typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
   rcutils_allocator_t * allocator,
   const char * topic_name,
   bool no_mangle,
-  rmw_topic_endpoint_info_array_t * info_array);
+  rcl_topic_endpoint_info_array_t * info_array);
 
 static PyObject *
 _get_info_by_topic(
-  PyObject * args, const char * type,
+  PyObject * args,
+  const char * type,
   rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
 {
   PyObject * pynode;
@@ -911,9 +912,9 @@ _get_info_by_topic(
     return NULL;
   }
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  rmw_topic_endpoint_info_array_t info_array = rmw_get_zero_initialized_topic_endpoint_info_array();
+  rcl_topic_endpoint_info_array_t info_array = rcl_get_zero_initialized_topic_endpoint_info_array();
   rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
-  rmw_ret_t fini_ret;
+  rcl_ret_t fini_ret;
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "Failed to get information by topic for %s: %s",
@@ -926,33 +927,33 @@ _get_info_by_topic(
         type, rcl_get_error_string().str);
     }
     rcl_reset_error();
-    fini_ret = rmw_topic_endpoint_info_array_fini(&info_array, &allocator);
-    if (fini_ret != RMW_RET_OK) {
-      PyErr_Format(RCLError, "rmw_topic_endpoint_info_array_fini failed: %s",
-        rmw_get_error_string().str);
-      rmw_reset_error();
+    fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
+    if (fini_ret != RCL_RET_OK) {
+      PyErr_Format(RCLError, "rcl_topic_endpoint_info_array_fini failed: %s",
+        rcl_get_error_string().str);
+      rcl_reset_error();
     }
     return NULL;
   }
   PyObject * py_info_array = rclpy_convert_to_py_topic_endpoint_info_list(&info_array);
-  fini_ret = rmw_topic_endpoint_info_array_fini(&info_array, &allocator);
-  if (fini_ret != RMW_RET_OK) {
-    PyErr_Format(RCLError, "rmw_topic_endpoint_info_array_fini failed.");
-    rmw_reset_error();
+  fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
+  if (fini_ret != RCL_RET_OK) {
+    PyErr_Format(RCLError, "rcl_topic_endpoint_info_array_fini failed.");
+    rcl_reset_error();
     return NULL;
   }
   return py_info_array;
 }
 
-/// Returns a list of publishers, publishing to a topic
-/// The returned publisher information includes node name, node namespace,
-/// topic type, gid and qos profile
+/// Return a list of publishers on a given topic.
 /**
+ * The returned publisher information includes node name, node namespace, topic type, gid,
+ * and qos profile
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the publishers for.
  * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
- *            otherwise it should be a valid ROS topic name.
+ *     otherwise it should be a valid ROS topic name.
  * \return list of publishers
  */
 static PyObject *
@@ -961,15 +962,15 @@ rclpy_get_publishers_info_by_topic(PyObject * Py_UNUSED(self), PyObject * args)
   return _get_info_by_topic(args, "publishers", rcl_get_publishers_info_by_topic);
 }
 
-/// Returns a list of subscriptions to a topic
-/// The returned subscription information includes node name, node namespace,
-/// topic type, gid and qos profile
+/// Return a list of subscriptions on a given topic.
 /**
+ * The returned subscription information includes node name, node namespace, topic type, gid,
+ * and qos profile
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the subscriptions for.
  * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
- *            otherwise it should be a valid ROS topic name.
+ *     otherwise it should be a valid ROS topic name.
  * \return list of subscriptions.
  */
 static PyObject *
@@ -1073,7 +1074,7 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_full_topic_name(topic_name, &validation_result, &invalid_index);
-  if (ret != RMW_RET_OK) {
+  if (ret != RCL_RET_OK) {
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
@@ -1136,7 +1137,7 @@ rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * 
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_namespace(namespace_, &validation_result, &invalid_index);
-  if (ret != RMW_RET_OK) {
+  if (ret != RCL_RET_OK) {
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
@@ -1199,7 +1200,7 @@ rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * 
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_node_name(node_name, &validation_result, &invalid_index);
-  if (ret != RMW_RET_OK) {
+  if (ret != RCL_RET_OK) {
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
@@ -1553,7 +1554,7 @@ rclpy_publisher_get_subscription_count(PyObject * Py_UNUSED(self), PyObject * ar
 
   size_t count = 0;
   rmw_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
-  if (RMW_RET_OK != ret) {
+  if (RCL_RET_OK != ret) {
     PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     rmw_reset_error();
     return NULL;
@@ -2920,27 +2921,27 @@ rclpy_take_raw(rcl_subscription_t * subscription)
       "Failed to initialize message: %s", rcl_get_error_string().str);
     rcl_reset_error();
     rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-    if (r_fini != RMW_RET_OK) {
+    if (r_fini != RCL_RET_OK) {
       PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     }
     return NULL;
   }
 
   ret = rcl_take_serialized_message(subscription, &msg, NULL, NULL);
-  if (ret != RMW_RET_OK) {
+  if (ret != RCL_RET_OK) {
     PyErr_Format(
       RCLError,
       "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
     rcl_reset_error();
     rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-    if (r_fini != RMW_RET_OK) {
+    if (r_fini != RCL_RET_OK) {
       PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     }
     return NULL;
   }
   PyObject * python_bytes = PyBytes_FromStringAndSize((char *)(msg.buffer), msg.buffer_length);
   rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-  if (r_fini != RMW_RET_OK) {
+  if (r_fini != RCL_RET_OK) {
     PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     if (python_bytes) {
       Py_DECREF(python_bytes);
@@ -4874,7 +4875,7 @@ rclpy_serialize(PyObject * Py_UNUSED(self), PyObject * args)
   // Serialize
   rmw_ret_t rmw_ret = rmw_serialize(ros_msg, ts, &serialized_msg);
   destroy_ros_message(ros_msg);
-  if (RMW_RET_OK != rmw_ret) {
+  if (RCL_RET_OK != rmw_ret) {
     PyErr_Format(RCLError, "Failed to serialize ROS message");
     rcutils_ret = rmw_serialized_message_fini(&serialized_msg);
     if (RCUTILS_RET_OK != rcutils_ret) {
@@ -4922,7 +4923,7 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
   // Deserialize
   rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg);
 
-  if (RMW_RET_OK != rmw_ret) {
+  if (RCL_RET_OK != rmw_ret) {
     destroy_ros_message(deserialized_ros_msg);
     PyErr_Format(RCLError, "Failed to deserialize ROS message");
     return NULL;
