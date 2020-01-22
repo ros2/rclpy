@@ -1,9 +1,10 @@
 # rclpy
 ROS Client Library for the Python language.
 
+
 ## Building documentation
 
-Documentation can be built for `rclpy` using [Sphinx](http://www.sphinx-doc.org/en/master/).
+Documentation can be built for `rclpy` using [Sphinx](http://www.sphinx-doc.org/en/master/), or accessed [online](http://docs.ros2.org/latest/api/rclpy/index.html)
 
 #### Install dependencies
 
