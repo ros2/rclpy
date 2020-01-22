@@ -1074,7 +1074,7 @@ rclpy_get_validation_error_for_full_topic_name(PyObject * Py_UNUSED(self), PyObj
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_full_topic_name(topic_name, &validation_result, &invalid_index);
-  if (ret != RCL_RET_OK) {
+  if (ret != RMW_RET_OK) {
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
@@ -1137,7 +1137,7 @@ rclpy_get_validation_error_for_namespace(PyObject * Py_UNUSED(self), PyObject * 
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_namespace(namespace_, &validation_result, &invalid_index);
-  if (ret != RCL_RET_OK) {
+  if (ret != RMW_RET_OK) {
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
@@ -1200,7 +1200,7 @@ rclpy_get_validation_error_for_node_name(PyObject * Py_UNUSED(self), PyObject * 
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_node_name(node_name, &validation_result, &invalid_index);
-  if (ret != RCL_RET_OK) {
+  if (ret != RMW_RET_OK) {
     if (ret == RMW_RET_BAD_ALLOC) {
       PyErr_Format(PyExc_MemoryError, "%s", rmw_get_error_string().str);
     } else {
@@ -1554,7 +1554,7 @@ rclpy_publisher_get_subscription_count(PyObject * Py_UNUSED(self), PyObject * ar
 
   size_t count = 0;
   rmw_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
-  if (RCL_RET_OK != ret) {
+  if (RMW_RET_OK != ret) {
     PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     rmw_reset_error();
     return NULL;
@@ -2921,7 +2921,7 @@ rclpy_take_raw(rcl_subscription_t * subscription)
       "Failed to initialize message: %s", rcl_get_error_string().str);
     rcl_reset_error();
     rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-    if (r_fini != RCL_RET_OK) {
+    if (r_fini != RMW_RET_OK) {
       PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     }
     return NULL;
@@ -2934,14 +2934,14 @@ rclpy_take_raw(rcl_subscription_t * subscription)
       "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
     rcl_reset_error();
     rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-    if (r_fini != RCL_RET_OK) {
+    if (r_fini != RMW_RET_OK) {
       PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     }
     return NULL;
   }
   PyObject * python_bytes = PyBytes_FromStringAndSize((char *)(msg.buffer), msg.buffer_length);
   rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-  if (r_fini != RCL_RET_OK) {
+  if (r_fini != RMW_RET_OK) {
     PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
     if (python_bytes) {
       Py_DECREF(python_bytes);
@@ -4875,7 +4875,7 @@ rclpy_serialize(PyObject * Py_UNUSED(self), PyObject * args)
   // Serialize
   rmw_ret_t rmw_ret = rmw_serialize(ros_msg, ts, &serialized_msg);
   destroy_ros_message(ros_msg);
-  if (RCL_RET_OK != rmw_ret) {
+  if (RMW_RET_OK != rmw_ret) {
     PyErr_Format(RCLError, "Failed to serialize ROS message");
     rcutils_ret = rmw_serialized_message_fini(&serialized_msg);
     if (RCUTILS_RET_OK != rcutils_ret) {
@@ -4923,7 +4923,7 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
   // Deserialize
   rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg);
 
-  if (RCL_RET_OK != rmw_ret) {
+  if (RMW_RET_OK != rmw_ret) {
     destroy_ros_message(deserialized_ros_msg);
     PyErr_Format(RCLError, "Failed to deserialize ROS message");
     return NULL;
