@@ -105,7 +105,9 @@ class TestQosProfile(unittest.TestCase):
 
     def test_policy_short_names(self):
         # Full test on History to show the mechanism works
-        assert QoSHistoryPolicy.short_keys() == ['system_default', 'keep_last', 'keep_all']
+        assert (
+            QoSHistoryPolicy.short_keys() ==
+            ['system_default', 'keep_last', 'keep_all', 'unknown'])
         assert (
             QoSHistoryPolicy.get_from_short_key('system_default') ==
             QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT.value)

@@ -1553,8 +1553,8 @@ rclpy_publisher_get_subscription_count(PyObject * Py_UNUSED(self), PyObject * ar
   }
 
   size_t count = 0;
-  rmw_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
-  if (RMW_RET_OK != ret) {
+  rcl_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
+  if (RCL_RET_OK != ret) {
     PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     rmw_reset_error();
     return NULL;
@@ -3852,6 +3852,8 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_system_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_services_default")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_services_default);
+  } else if (0 == strcmp(pyrmw_profile, "qos_profile_unknown")) {
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_unknown);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameters")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameters);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {

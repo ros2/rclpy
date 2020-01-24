@@ -67,6 +67,7 @@ from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
+from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_support import check_for_type_support
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
@@ -1687,14 +1688,16 @@ class Node:
         topic_name: str,
         no_mangle: bool,
         func: Callable[[object, str, bool], List[Dict]]
-    ) -> List[Dict]:
+    ) -> List[TopicEndpointInfo]:
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
         validate_full_topic_name(fq_topic_name)
         with self.handle as node_capsule:
-            return func(node_capsule, fq_topic_name, no_mangle)
+            info_dicts = func(node_capsule, fq_topic_name, no_mangle)
+            infos = [TopicEndpointInfo(**x) for x in info_dicts]
+            return infos
 
     def get_publishers_info_by_topic(
-            self, topic_name: str, no_mangle: bool = False) -> List[Dict]:
+            self, topic_name: str, no_mangle: bool = False) -> List[TopicEndpointInfo]:
         """
         Return a list of publishers publishing to a given topic.
 
@@ -1713,7 +1716,7 @@ class Node:
         :param topic_name: the topic_name on which to find the publishers.
         :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
             name, otherwise it should be a valid ROS topic name. Defaults to `false`.
-        :return: a list of dictionaries representing all the publishers on this topic.
+        :return: a list of TopicEndpointInfo for all the publishers on this topic.
         """
         return self._get_info_by_topic(
             topic_name,
@@ -1721,7 +1724,7 @@ class Node:
             _rclpy.rclpy_get_publishers_info_by_topic)
 
     def get_subscriptions_info_by_topic(
-            self, topic_name: str, no_mangle: bool = False) -> List[Dict]:
+            self, topic_name: str, no_mangle: bool = False) -> List[TopicEndpointInfo]:
         """
         Return a list of subscriptions to a given topic.
 
@@ -1740,7 +1743,7 @@ class Node:
         :param topic_name: the topic_name on which to find the subscriptions.
         :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
             name, otherwise it should be a valid ROS topic name. Defaults to `false`.
-        :return: a list of dictionaries representing all the subscriptions on this topic.
+        :return: a list of TopicEndpointInfo for all the subscriptions on this topic.
         """
         return self._get_info_by_topic(
             topic_name,

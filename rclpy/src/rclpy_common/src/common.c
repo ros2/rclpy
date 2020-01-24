@@ -362,17 +362,14 @@ rclpy_convert_to_py(void * message, PyObject * pyclass)
 PyObject *
 _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpoint_info)
 {
-  PyObject * py_qos_profile = NULL;
   PyObject * py_node_name = NULL;
   PyObject * py_node_namespace = NULL;
   PyObject * py_topic_type = NULL;
-  PyObject * py_gid = NULL;
+  PyObject * py_endpoint_type = NULL;
+  PyObject * py_endpoint_gid = NULL;
+  PyObject * py_qos_profile = NULL;
   PyObject * py_endpoint_info_dict = NULL;
 
-  py_qos_profile = rclpy_common_convert_to_qos_dict(&topic_endpoint_info->qos_profile);
-  if (!py_qos_profile) {
-    goto fail;
-  }
   py_node_name = PyUnicode_FromString(topic_endpoint_info->node_name);
   if (!py_node_name) {
     goto fail;
@@ -385,8 +382,13 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
   if (!py_topic_type) {
     goto fail;
   }
-  py_gid = PyList_New(RMW_GID_STORAGE_SIZE);
-  if (!py_gid) {
+  py_endpoint_type = PyLong_FromUnsignedLong(topic_endpoint_info->endpoint_type);
+  if (!py_endpoint_type) {
+    goto fail;
+  }
+
+  py_endpoint_gid = PyList_New(RMW_GID_STORAGE_SIZE);
+  if (!py_endpoint_gid) {
     goto fail;
   }
   for (uint i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
@@ -394,7 +396,12 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
     if (!py_val_at_index) {
       goto fail;
     }
-    PyList_SET_ITEM(py_gid, i, py_val_at_index);
+    PyList_SET_ITEM(py_endpoint_gid, i, py_val_at_index);
+  }
+
+  py_qos_profile = rclpy_common_convert_to_qos_dict(&topic_endpoint_info->qos_profile);
+  if (!py_qos_profile) {
+    goto fail;
   }
 
   // Create dictionary that represents rmw_topic_endpoint_info_t
@@ -405,21 +412,24 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
   int set_result = 0;
-  set_result += PyDict_SetItemString(py_endpoint_info_dict, "qos_profile", py_qos_profile);
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "node_name", py_node_name);
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "node_namespace", py_node_namespace);
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "topic_type", py_topic_type);
-  set_result += PyDict_SetItemString(py_endpoint_info_dict, "gid", py_gid);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "endpoint_type", py_endpoint_type);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "endpoint_gid", py_endpoint_gid);
+  set_result += PyDict_SetItemString(py_endpoint_info_dict, "qos_profile", py_qos_profile);
   if (set_result != 0) {
     goto fail;
   }
   return py_endpoint_info_dict;
+
 fail:
-  Py_XDECREF(py_qos_profile);
   Py_XDECREF(py_node_name);
   Py_XDECREF(py_node_namespace);
   Py_XDECREF(py_topic_type);
-  Py_XDECREF(py_gid);
+  Py_XDECREF(py_endpoint_type);
+  Py_XDECREF(py_endpoint_gid);
+  Py_XDECREF(py_qos_profile);
   Py_XDECREF(py_endpoint_info_dict);
   return NULL;
 }

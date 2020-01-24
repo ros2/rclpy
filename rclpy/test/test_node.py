@@ -178,20 +178,31 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names_and_namespaces()
 
-    def assert_qos_equal(self, qos_profile, qos_dict):
+    def assert_qos_equal(self, expected_qos_profile, actual_qos_profile):
         # Depth and history are skipped because they are not retrieved.
-        self.assertEqual(qos_profile.durability, qos_dict['durability'],
+        self.assertEqual(
+            expected_qos_profile.durability,
+            actual_qos_profile.durability,
             'Durability is unequal')
-        self.assertEqual(qos_profile.reliability, qos_dict['reliability'],
+        self.assertEqual(
+            expected_qos_profile.reliability,
+            actual_qos_profile.reliability,
             'Reliability is unequal')
-        self.assertEqual(qos_profile.lifespan, qos_dict['lifespan'],
+        self.assertEqual(
+            expected_qos_profile.lifespan,
+            actual_qos_profile.lifespan,
             'lifespan is unequal')
-        self.assertEqual(qos_profile.deadline, qos_dict['deadline'],
+        self.assertEqual(
+            expected_qos_profile.deadline,
+            actual_qos_profile.deadline,
             'Deadline is unequal')
-        self.assertEqual(qos_profile.liveliness, qos_dict['liveliness'],
+        self.assertEqual(
+            expected_qos_profile.liveliness,
+            actual_qos_profile.liveliness,
             'liveliness is unequal')
-        self.assertEqual(qos_profile.liveliness_lease_duration,
-            qos_dict['liveliness_lease_duration'],
+        self.assertEqual(
+            expected_qos_profile.liveliness_lease_duration,
+            actual_qos_profile.liveliness_lease_duration,
             'liveliness_lease_duration is unequal')
 
     @unittest.skipIf(get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp',
@@ -220,10 +231,10 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # Subscription list should be empty
         self.assertFalse(self.node.get_subscriptions_info_by_topic(fq_topic_name))
         # Verify publisher list has the right data
-        self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
-        self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
-        self.assertEqual('test_msgs/msg/BasicTypes', publisher_list[0].get('topic_type'))
-        actual_qos_profile = publisher_list[0].get('qos_profile')
+        self.assertEqual(self.node.get_name(), publisher_list[0].node_name)
+        self.assertEqual(self.node.get_namespace(), publisher_list[0].node_namespace)
+        self.assertEqual('test_msgs/msg/BasicTypes', publisher_list[0].topic_type)
+        actual_qos_profile = publisher_list[0].qos_profile
         self.assert_qos_equal(qos_profile, actual_qos_profile)
 
         # Add a subscription
@@ -243,12 +254,12 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(1, len(publisher_list))
         self.assertEqual(1, len(subscription_list))
         # Verify subscription list has the right data
-        self.assertEqual(self.node.get_name(), publisher_list[0].get('node_name'))
-        self.assertEqual(self.node.get_namespace(), publisher_list[0].get('node_namespace'))
-        self.assertEqual('test_msgs/msg/BasicTypes', publisher_list[0].get('topic_type'))
-        self.assertEqual('test_msgs/msg/BasicTypes', subscription_list[0].get('topic_type'))
-        publisher_qos_profile = publisher_list[0].get('qos_profile')
-        subscription_qos_profile = subscription_list[0].get('qos_profile')
+        self.assertEqual(self.node.get_name(), publisher_list[0].node_name)
+        self.assertEqual(self.node.get_namespace(), publisher_list[0].node_namespace)
+        self.assertEqual('test_msgs/msg/BasicTypes', publisher_list[0].topic_type)
+        self.assertEqual('test_msgs/msg/BasicTypes', subscription_list[0].topic_type)
+        publisher_qos_profile = publisher_list[0].qos_profile
+        subscription_qos_profile = subscription_list[0].qos_profile
         self.assert_qos_equal(qos_profile, publisher_qos_profile)
         self.assert_qos_equal(qos_profile2, subscription_qos_profile)
 
