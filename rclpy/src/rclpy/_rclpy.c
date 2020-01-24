@@ -915,11 +915,11 @@ _get_info_by_topic(
   rcl_topic_endpoint_info_array_t info_array = rcl_get_zero_initialized_topic_endpoint_info_array();
   rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
   rcl_ret_t fini_ret;
-  if (ret != RCL_RET_OK) {
-    if (ret == RCL_RET_BAD_ALLOC) {
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_BAD_ALLOC == ret) {
       PyErr_Format(PyExc_MemoryError, "Failed to get information by topic for %s: %s",
         type, rcl_get_error_string().str);
-    } else if (ret == RCL_RET_UNSUPPORTED) {
+    } else if (RCL_RET_UNSUPPORTED == ret) {
       PyErr_Format(PyExc_NotImplementedError, "Failed to get information by topic for %s: "
         "function not supported by RMW_IMPLEMENTATION", type);
     } else {
@@ -937,7 +937,7 @@ _get_info_by_topic(
   }
   PyObject * py_info_array = rclpy_convert_to_py_topic_endpoint_info_list(&info_array);
   fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
-  if (fini_ret != RCL_RET_OK) {
+  if (RCL_RET_OK != fini_ret) {
     PyErr_Format(RCLError, "rcl_topic_endpoint_info_array_fini failed.");
     rcl_reset_error();
     return NULL;
