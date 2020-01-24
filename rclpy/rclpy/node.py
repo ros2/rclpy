@@ -1701,7 +1701,7 @@ class Node:
         """
         Return a list of publishers publishing to a given topic.
 
-        The returned parameter is a list of dictionaries, where each dictionary will contain
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
         the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
 
         When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
@@ -1728,7 +1728,7 @@ class Node:
         """
         Return a list of subscriptions to a given topic.
 
-        The returned parameter is a list of dictionaries, where each dictionary will contain
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
         the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
 
         When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
