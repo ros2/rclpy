@@ -30,9 +30,7 @@ class TopicEndpointTypeEnum(IntEnum):
 
 
 class TopicEndpointInfo:
-    """
-    Information on a topic endpoint.
-    """
+    """Information on a topic endpoint."""
 
     __slots__ = [
         '_node_name',
