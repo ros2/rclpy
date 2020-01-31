@@ -63,7 +63,8 @@ rclpy_names_and_types_fini(rcl_names_and_types_t * names_and_types)
   }
   rcl_ret_t ret = rcl_names_and_types_fini(names_and_types);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(
+      PyExc_RuntimeError,
       "Failed to destroy rcl_names_and_types_t: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return false;

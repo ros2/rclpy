@@ -125,7 +125,8 @@ static PyMethodDef rclpy_pycapsule_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
-PyDoc_STRVAR(rclpy_pycapsule__doc__,
+PyDoc_STRVAR(
+  rclpy_pycapsule__doc__,
   "rclpy module for working with PyCapsule objects.");
 
 /// Define the Python module
