@@ -340,6 +340,8 @@ class LivelinessPolicy(QoSPolicyEnum):
 # Alias with the old name, for retrocompatibility
 QoSLivelinessPolicy = LivelinessPolicy
 
+qos_profile_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_default'))
 qos_profile_system_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_system_default'))
 qos_profile_sensor_data = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
@@ -355,6 +357,7 @@ qos_profile_action_status_default = QoSProfile(
 
 
 class QoSPresetProfiles(Enum):
+    DEFAULT = qos_profile_default
     SYSTEM_DEFAULT = qos_profile_system_default
     SENSOR_DATA = qos_profile_sensor_data
     SERVICES_DEFAULT = qos_profile_services_default
