@@ -30,7 +30,8 @@ bool
 _check_rcl_return(rcl_ret_t ret, const char * error_msg)
 {
   if (RCL_RET_OK != ret) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(
+      PyExc_RuntimeError,
       "%s: %s", error_msg, rcl_get_error_string().str);
     rcl_reset_error();
     return false;
@@ -198,7 +199,8 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LO
       case RCL_SUBSCRIPTION_LIVELINESS_CHANGED:
         return &_liveliness_changed_to_py_object;
       default:
-        PyErr_Format(PyExc_ValueError,
+        PyErr_Format(
+          PyExc_ValueError,
           "Event type %llu for Subscriptions not understood by rclpy.", event_type);
     }
   } else if (_is_pycapsule_rcl_publisher(pyparent)) {
@@ -208,11 +210,13 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LO
       case RCL_PUBLISHER_LIVELINESS_LOST:
         return &_liveliness_lost_to_py_object;
       default:
-        PyErr_Format(PyExc_ValueError,
+        PyErr_Format(
+          PyExc_ValueError,
           "Event type %llu for Publishers not understood by rclpy.", event_type);
     }
   } else {
-    PyErr_Format(PyExc_TypeError,
+    PyErr_Format(
+      PyExc_TypeError,
       "Parent handle was not a valid Publisher or Subscription.");
   }
   return NULL;
@@ -333,7 +337,8 @@ rclpy_take_event(PyObject * Py_UNUSED(self), PyObject * args)
 
   ret = rcl_take_event(event, &event_data);
   if (RCL_RET_UNSUPPORTED == ret) {
-    PyErr_Format(PyExc_NotImplementedError,
+    PyErr_Format(
+      PyExc_NotImplementedError,
       "Take event is not implemented in the current RMW implementation: %s",
       rcl_get_error_string().str);
     rcl_reset_error();

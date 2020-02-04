@@ -29,7 +29,8 @@ rclpy_logging_initialize(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcutils_ret_t ret = rcutils_logging_initialize();
   if (ret != RCUTILS_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(
+      PyExc_RuntimeError,
       "Failed to initialize logging system, return code: %d\n", ret);
     rcutils_reset_error();
     return NULL;
@@ -48,7 +49,8 @@ rclpy_logging_shutdown(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
   // TODO(dhood): error checking
   rcutils_ret_t ret = rcutils_logging_shutdown();
   if (ret != RCUTILS_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(
+      PyExc_RuntimeError,
       "Failed to shutdown logging system, return code: %d\n", ret);
     rcutils_reset_error();
     return NULL;
@@ -75,7 +77,8 @@ rclpy_logging_set_logger_level(PyObject * Py_UNUSED(self), PyObject * args)
 
   rcutils_ret_t ret = rcutils_logging_set_logger_level(name, level);
   if (ret != RCUTILS_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(
+      PyExc_RuntimeError,
       "Failed to set level \"%d\" for logger \"%s\", return code: %d\n",
       level, name, ret);
     rcutils_reset_error();
@@ -104,7 +107,8 @@ rclpy_logging_get_logger_effective_level(PyObject * Py_UNUSED(self), PyObject * 
   int logger_level = rcutils_logging_get_logger_effective_level(name);
 
   if (logger_level < 0) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(
+      PyExc_RuntimeError,
       "Failed to get effective level for logger \"%s\", return code: %d\n",
       name, logger_level);
     rcutils_reset_error();
@@ -158,8 +162,10 @@ rclpy_logging_rcutils_log(PyObject * Py_UNUSED(self), PyObject * args)
   const char * function_name;
   const char * file_name;
   unsigned PY_LONG_LONG line_number;
-  if (!PyArg_ParseTuple(args, "issssK",
-    &severity, &name, &message, &function_name, &file_name, &line_number))
+  if (
+    !PyArg_ParseTuple(
+      args, "issssK", &severity, &name, &message, &function_name, &file_name,
+      &line_number))
   {
     return NULL;
   }
@@ -190,7 +196,8 @@ rclpy_logging_severity_level_from_string(PyObject * Py_UNUSED(self), PyObject * 
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
   rcutils_ret_t ret = rcutils_logging_severity_level_from_string(log_level, allocator, &severity);
   if (ret != RCUTILS_RET_OK) {
-    PyErr_Format(PyExc_RuntimeError,
+    PyErr_Format(
+      PyExc_RuntimeError,
       "Failed to get log severity from name \"%s\", return code: %d\n",
       log_level, ret);
     rcutils_reset_error();
@@ -306,8 +313,7 @@ static PyMethodDef rclpy_logging_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
-PyDoc_STRVAR(rclpy_logging__doc__,
-  "RCLPY module for logging.");
+PyDoc_STRVAR(rclpy_logging__doc__, "RCLPY module for logging.");
 
 /// Define the Python module
 static struct PyModuleDef _rclpy_logging_module = {

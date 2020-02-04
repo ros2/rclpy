@@ -382,8 +382,8 @@ static PyMethodDef rclpy_signal_handler_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
-PyDoc_STRVAR(rclpy_signal_handler__doc__,
-  "RCLPY module for handling signals.");
+PyDoc_STRVAR(
+  rclpy_signal_handler__doc__, "RCLPY module for handling signals.");
 
 /// Define the Python module
 static struct PyModuleDef _rclpy_signal_handler_module = {
