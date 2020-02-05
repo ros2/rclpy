@@ -587,6 +587,11 @@ class TestNode(unittest.TestCase):
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
 
+    def reject_parameter_callback_1(self, parameter_list):
+        rejected_parameters = (
+            param for param in parameter_list if 'refuse' in param.name)
+        return SetParametersResult(successful=(not any(rejected_parameters)))
+
     def test_use_sim_time(self):
         self.assertTrue(self.node.has_parameter(USE_SIM_TIME_NAME))
         self.assertFalse(self.node.get_parameter(USE_SIM_TIME_NAME).value)
@@ -823,7 +828,6 @@ class TestNode(unittest.TestCase):
             True,
             ParameterDescriptor()
         )
-
         self.node.declare_parameter(*reject_parameter_tuple)
         self.node.set_parameters_callback(self.reject_parameter_callback)
         result = self.node.set_parameters(
@@ -837,6 +841,130 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], SetParametersResult)
         self.assertFalse(result[0].successful)
+
+    def test_node_set_parameters_rejection_list(self):
+        # Declare a new parameters and set a list of callbacks so that it's rejected when set.
+        reject_list_parameter_tuple = [
+            ('reject', True, ParameterDescriptor()),
+            ('accept', True, ParameterDescriptor()),
+            ('accept', True, ParameterDescriptor())
+        ]
+        self.node.declare_parameters('', reject_list_parameter_tuple)
+        self.node.add_on_set_parameters_callback(self.reject_parameter_callback)
+        self.node.add_on_set_parameters_callback(self.reject_parameter_callback_1)
+
+        result = self.node.set_parameters(
+            [
+                Parameter(
+                    name=reject_list_parameter_tuple[0][0],
+                    value=reject_list_parameter_tuple[0][1]
+                ),
+                Parameter(
+                    name=reject_list_parameter_tuple[1][0],
+                    value=reject_list_parameter_tuple[1][1]
+                ),
+                Parameter(
+                    name=reject_list_parameter_tuple[2][0],
+                    value=reject_list_parameter_tuple[2][1]
+                )
+            ]
+        )
+        self.assertEqual(3, len(result))
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertFalse(result[0].successful)
+        self.assertIsInstance(result[1], SetParametersResult)
+        self.assertTrue(result[1].successful)
+        self.assertIsInstance(result[2], SetParametersResult)
+        self.assertTrue(result[2].successful)
+
+    def test_node_add_on_set_parameter_callback(self):
+        # Add callbacks to the list of callbacks.
+        callbacks = [
+            self.reject_parameter_callback,
+            self.reject_parameter_callback_1
+        ]
+        for callback in callbacks:
+            self.node.add_on_set_parameters_callback(callback)
+        for callback in callbacks:
+            self.assertTrue(callback in self.node._parameters_callbacks)
+        for callback in callbacks:
+            self.node.remove_on_set_parameters_callback(callback)
+
+        # Adding the parameters which will be accepted without any rejections.
+        non_reject_parameter_tuple = [
+            ('accept_1', True, ParameterDescriptor()),
+            ('accept_2', True, ParameterDescriptor())
+        ]
+        self.node.declare_parameters('', non_reject_parameter_tuple)
+
+        for callback in callbacks:
+            self.node.add_on_set_parameters_callback(callback)
+
+        result = self.node.set_parameters(
+            [
+                Parameter(
+                    name=non_reject_parameter_tuple[0][0],
+                    value=non_reject_parameter_tuple[0][1]
+                ),
+                Parameter(
+                    name=non_reject_parameter_tuple[1][0],
+                    value=non_reject_parameter_tuple[1][1]
+                )
+            ]
+        )
+        self.assertEqual(2, len(result))
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertTrue(result[0].successful)
+        self.assertIsInstance(result[1], SetParametersResult)
+        self.assertTrue(result[1].successful)
+
+    def test_node_remove_from_set_callback(self):
+        # Remove callbacks from list of callbacks.
+        parameter_tuple = (
+            'refuse', True, ParameterDescriptor()
+        )
+        self.node.declare_parameter(*parameter_tuple)
+
+        callbacks = [
+            self.reject_parameter_callback_1,
+        ]
+        # Checking if the callbacks are not already present.
+        for callback in callbacks:
+            self.assertFalse(callback in self.node._parameters_callbacks)
+
+        for callback in callbacks:
+            self.node.add_on_set_parameters_callback(callback)
+
+        result = self.node.set_parameters(
+            [
+                Parameter(
+                    name=parameter_tuple[0],
+                    value=parameter_tuple[1]
+                )
+            ]
+        )
+        self.assertEqual(1, len(result))
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertFalse(result[0].successful)
+        # Removing the callback which is causing the rejection.
+        self.node.remove_on_set_parameters_callback(self.reject_parameter_callback_1)
+        self.assertFalse(self.reject_parameter_callback_1 in self.node._parameters_callbacks)
+        # Now the setting its value again.
+        result = self.node.set_parameters(
+            [
+                Parameter(
+                    name=parameter_tuple[0],
+                    value=parameter_tuple[1]
+                )
+            ]
+        )
+        self.assertEqual(1, len(result))
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], SetParametersResult)
+        self.assertTrue(result[0].successful)
 
     def test_node_set_parameters_read_only(self):
         integer_value = 42
