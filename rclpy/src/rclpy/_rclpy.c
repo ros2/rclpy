@@ -20,10 +20,11 @@
 #include <rcl/node.h>
 #include <rcl/publisher.h>
 #include <rcl/rcl.h>
+#include <rcl/remap.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
-#include <rcl_yaml_param_parser/parser.h>
 #include <rcl_interfaces/msg/parameter_type__struct.h>
+#include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/allocator.h>
 #include <rcutils/format_string.h>
 #include <rcutils/strdup.h>
@@ -917,19 +918,23 @@ _get_info_by_topic(
   rcl_ret_t fini_ret;
   if (RCL_RET_OK != ret) {
     if (RCL_RET_BAD_ALLOC == ret) {
-      PyErr_Format(PyExc_MemoryError, "Failed to get information by topic for %s: %s",
+      PyErr_Format(
+        PyExc_MemoryError, "Failed to get information by topic for %s: %s",
         type, rcl_get_error_string().str);
     } else if (RCL_RET_UNSUPPORTED == ret) {
-      PyErr_Format(PyExc_NotImplementedError, "Failed to get information by topic for %s: "
+      PyErr_Format(
+        PyExc_NotImplementedError, "Failed to get information by topic for %s: "
         "function not supported by RMW_IMPLEMENTATION", type);
     } else {
-      PyErr_Format(RCLError, "Failed to get information by topic for %s: %s",
+      PyErr_Format(
+        RCLError, "Failed to get information by topic for %s: %s",
         type, rcl_get_error_string().str);
     }
     rcl_reset_error();
     fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
     if (fini_ret != RCL_RET_OK) {
-      PyErr_Format(RCLError, "rcl_topic_endpoint_info_array_fini failed: %s",
+      PyErr_Format(
+        RCLError, "rcl_topic_endpoint_info_array_fini failed: %s",
         rcl_get_error_string().str);
       rcl_reset_error();
     }
@@ -1327,7 +1332,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
  * \param[in] topic_name topic string to be expanded
  * \param[in] node_name name of the node to be used during expansion
  * \param[in] node_namespace namespace of the node to be used during expansion
- * \return expanded node namespace
+ * \return expanded topic name
  */
 static PyObject *
 rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
@@ -1356,19 +1361,82 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   char * expanded_topic = _expand_topic_name_with_exceptions(topic, node_name, node_namespace);
-
   if (!expanded_topic) {
     // exception already set
     return NULL;
   }
 
   PyObject * result = PyUnicode_FromString(expanded_topic);
-  if (!result) {
-    return NULL;
-  }
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
   allocator.deallocate(expanded_topic, allocator.state);
+
+  return result;
+}
+
+static char *
+_remap_topic_name_with_exceptions(const rcl_node_t * node_handle, const char * topic_name)
+{
+  // Get the node options
+  const rcl_node_options_t * node_options = rcl_node_get_options(node_handle);
+  if (node_options == NULL) {
+    return NULL;
+  }
+  const rcl_arguments_t * global_args = NULL;
+  if (node_options->use_global_arguments) {
+    global_args = &(node_handle->context->global_arguments);
+  }
+
+  char * remapped_topic = NULL;
+  rcl_ret_t ret = rcl_remap_topic_name(
+    &(node_options->arguments),
+    global_args,
+    topic_name,
+    rcl_node_get_name(node_handle),
+    rcl_node_get_namespace(node_handle),
+    node_options->allocator,
+    &remapped_topic);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to remap topic name %s", topic_name);
+    return NULL;
+  }
+
+  return remapped_topic;
+}
+
+/// Remap a topic name
+/**
+ * Raises ValueError if the capsule is not the correct type
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] topic_name topic string to be remapped
+ * \return remapped topic name
+ */
+static PyObject *
+rclpy_remap_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  const char * topic_name;
+
+  if (!PyArg_ParseTuple(args, "Os", &pynode, &topic_name)) {
+    return NULL;
+  }
+
+  const rcl_node_t * node = (const rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (node == NULL) {
+    return NULL;
+  }
+
+  char * remapped_topic_name = _remap_topic_name_with_exceptions(node, topic_name);
+  if (remapped_topic_name == NULL) {
+    return PyUnicode_FromString(topic_name);
+  }
+
+  PyObject * result = PyUnicode_FromString(remapped_topic_name);
+
+  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  rcl_allocator_t allocator = node_options->allocator;
+  allocator.deallocate(remapped_topic_name, allocator.state);
 
   return result;
 }
@@ -4985,6 +5053,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
     "Expand a topic name."
+  },
+  {
+    "rclpy_remap_topic_name", rclpy_remap_topic_name, METH_VARARGS,
+    "Remap a topic name."
   },
   {
     "rclpy_get_validation_error_for_topic_name",

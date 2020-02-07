@@ -1689,9 +1689,15 @@ class Node:
         no_mangle: bool,
         func: Callable[[object, str, bool], List[Dict]]
     ) -> List[TopicEndpointInfo]:
-        fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
-        validate_full_topic_name(fq_topic_name)
         with self.handle as node_capsule:
+            if no_mangle:
+                fq_topic_name = topic_name
+            else:
+                fq_topic_name = expand_topic_name(
+                    topic_name, self.get_name(), self.get_namespace())
+                validate_full_topic_name(fq_topic_name)
+                fq_topic_name = _rclpy.rclpy_remap_topic_name(node_capsule, fq_topic_name)
+
             info_dicts = func(node_capsule, fq_topic_name, no_mangle)
             infos = [TopicEndpointInfo(**x) for x in info_dicts]
             return infos
