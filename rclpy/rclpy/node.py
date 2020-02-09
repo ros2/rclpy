@@ -1703,9 +1703,12 @@ class Node:
             return infos
 
     def get_publishers_info_by_topic(
-            self, topic_name: str, no_mangle: bool = False) -> List[TopicEndpointInfo]:
+        self,
+        topic_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
         """
-        Return a list of publishers publishing to a given topic.
+        Return a list of publishers on a given topic.
 
         The returned parameter is a list of TopicEndpointInfo objects, where each will contain
         the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
@@ -1730,9 +1733,12 @@ class Node:
             _rclpy.rclpy_get_publishers_info_by_topic)
 
     def get_subscriptions_info_by_topic(
-            self, topic_name: str, no_mangle: bool = False) -> List[TopicEndpointInfo]:
+        self,
+        topic_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
         """
-        Return a list of subscriptions to a given topic.
+        Return a list of subscriptions on a given topic.
 
         The returned parameter is a list of TopicEndpointInfo objects, where each will contain
         the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
