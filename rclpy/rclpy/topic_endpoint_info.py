@@ -14,7 +14,7 @@
 
 from enum import IntEnum
 
-from rclpy.qos import QoSProfile, QoSPresetProfiles
+from rclpy.qos import QoSPresetProfiles, QoSProfile
 
 
 class TopicEndpointTypeEnum(IntEnum):
@@ -49,7 +49,7 @@ class TopicEndpointInfo:
         self.node_namespace = kwargs.get('node_namespace', '')
         self.topic_type = kwargs.get('topic_type', '')
         self.endpoint_type = kwargs.get('endpoint_type', TopicEndpointTypeEnum.INVALID)
-        self.endpoint_gid = kwargs.get('endpoint_gid', list())
+        self.endpoint_gid = kwargs.get('endpoint_gid', [])
         self.qos_profile = kwargs.get('qos_profile', QoSPresetProfiles.UNKNOWN.value)
 
     @property

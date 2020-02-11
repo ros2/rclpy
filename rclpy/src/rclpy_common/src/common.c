@@ -391,7 +391,7 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
   if (!py_endpoint_gid) {
     goto fail;
   }
-  for (uint i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
+  for (int i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
     PyObject * py_val_at_index = PyLong_FromUnsignedLong(topic_endpoint_info->endpoint_gid[i]);
     if (!py_val_at_index) {
       goto fail;
