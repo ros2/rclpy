@@ -158,7 +158,11 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
+  rclpy_handle_t * context_handle = PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (!context_handle) {
+    return NULL;
+  }
+  rcl_context_t * context = _rclpy_handle_get_pointer(context_handle);
   if (!context) {
     return NULL;
   }
@@ -181,14 +185,24 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pygc = rclpy_create_handle_capsule(
-    gc, "rcl_guard_condition_t", _rclpy_destroy_guard_condition);
-  if (!pygc) {
+  rclpy_handle_t * gc_handle = _rclpy_create_handle(gc, _rclpy_destroy_guard_condition);
+  if (!gc_handle) {
     ret = rcl_guard_condition_fini(gc);
+    (void)ret;
     PyMem_Free(gc);
     return NULL;
   }
-  return pygc;
+  _rclpy_handle_add_dependency(gc_handle, context_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(gc_handle);
+    return NULL;
+  }
+  PyObject * gc_capsule = _rclpy_create_handle_capsule(gc_handle, "rcl_guard_condition_t");
+  if (!gc_capsule) {
+    _rclpy_handle_dec_ref(gc_handle);
+    return NULL;
+  }
+  return gc_capsule;
 }
 
 /// Trigger a general purpose guard condition
@@ -678,13 +692,16 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
+  rclpy_handle_t * context_handle = PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (!context_handle) {
+    return NULL;
+  }
+  rcl_context_t * context = _rclpy_handle_get_pointer(context_handle);
   if (!context) {
     return NULL;
   }
 
   rcl_arguments_t arguments = rcl_get_zero_initialized_arguments();
-
   ret = _rclpy_parse_args(py_cli_args, &arguments);
   if (RCL_RET_OK != ret) {
     // exception set
@@ -722,26 +739,44 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(node);
 
     if (RCL_RET_OK != rcl_arguments_fini(&arguments)) {
-      rcl_reset_error();
       // Warn because an exception is already raised
       // Warning should use line number of the current stack frame
       int stack_level = 1;
       PyErr_WarnFormat(
         PyExc_RuntimeWarning, stack_level, "Failed to fini arguments during error handling: %s",
         rcl_get_error_string().str);
+      rcl_reset_error();
     }
     return NULL;
   }
   if (RCL_RET_OK != rcl_arguments_fini(&arguments)) {
-    rcl_reset_error();
     // Warn because the node was successfully created
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
       PyExc_RuntimeWarning, stack_level, "Failed to fini arguments: %s",
       rcl_get_error_string().str);
+    rcl_reset_error();
   }
-  return rclpy_create_handle_capsule(node, "rcl_node_t", _rclpy_destroy_node);
+
+  rclpy_handle_t * node_handle = _rclpy_create_handle(node, _rclpy_destroy_node);
+  if (!node_handle) {
+    rcl_ret_t ret = rcl_node_fini(node);
+    (void)ret;
+    PyMem_Free(node);
+    return NULL;
+  }
+  _rclpy_handle_add_dependency(node_handle, context_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(node_handle);
+    return NULL;
+  }
+  PyObject * node_capsule = _rclpy_create_handle_capsule(node_handle, "rcl_node_t");
+  if (!node_capsule) {
+    _rclpy_handle_dec_ref(node_handle);
+    return NULL;
+  }
+  return node_capsule;
 }
 
 /// Get the name of a node.
@@ -1501,7 +1536,11 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
+  rclpy_handle_t * node_handle = PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node_handle) {
+    return NULL;
+  }
+  rcl_node_t * node = _rclpy_handle_get_pointer(node_handle);
   if (!node) {
     return NULL;
   }
@@ -1549,8 +1588,25 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(pub);
     return NULL;
   }
-  return rclpy_create_handle_capsule(
-    pub, "rclpy_publisher_t", _rclpy_destroy_publisher);
+
+  rclpy_handle_t * pub_handle = _rclpy_create_handle(pub, _rclpy_destroy_publisher);
+  if (!pub_handle) {
+    rcl_ret_t ret = rcl_publisher_fini(&(pub->publisher), pub->node);
+    (void)ret;
+    PyMem_Free(pub);
+    return NULL;
+  }
+  _rclpy_handle_add_dependency(pub_handle, node_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(pub_handle);
+    return NULL;
+  }
+  PyObject * pub_capsule = _rclpy_create_handle_capsule(pub_handle, "rclpy_publisher_t");
+  if (!pub_capsule) {
+    _rclpy_handle_dec_ref(pub_handle);
+    return NULL;
+  }
+  return pub_capsule;
 }
 
 /// Publish a message
@@ -1679,12 +1735,20 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
+  rclpy_handle_t * context_handle = PyCapsule_GetPointer(pycontext, "rcl_context_t");
+  if (!context_handle) {
+    return NULL;
+  }
+  rcl_context_t * context = _rclpy_handle_get_pointer(context_handle);
   if (!context) {
     return NULL;
   }
 
-  rcl_clock_t * clock = rclpy_handle_get_pointer_from_capsule(pyclock, "rcl_clock_t");
+  rclpy_handle_t * clock_handle = PyCapsule_GetPointer(pyclock, "rcl_clock_t");
+  if (!clock_handle) {
+    return NULL;
+  }
+  rcl_clock_t * clock = _rclpy_handle_get_pointer(clock_handle);
   if (!clock) {
     return NULL;
   }
@@ -1706,14 +1770,29 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pytimer = rclpy_create_handle_capsule(timer, "rcl_timer_t", _rclpy_destroy_timer);
-  if (!pytimer) {
+  rclpy_handle_t * timer_handle = _rclpy_create_handle(timer, _rclpy_destroy_timer);
+  if (!timer_handle) {
     ret = rcl_timer_fini(timer);
     (void)ret;
     PyMem_Free(timer);
     return NULL;
   }
-  return pytimer;
+  _rclpy_handle_add_dependency(timer_handle, context_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(timer_handle);
+    return NULL;
+  }
+  _rclpy_handle_add_dependency(timer_handle, clock_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(timer_handle);
+    return NULL;
+  }
+  PyObject * timer_capsule = _rclpy_create_handle_capsule(timer_handle, "rcl_timer_t");
+  if (!timer_capsule) {
+    _rclpy_handle_dec_ref(timer_handle);
+    return NULL;
+  }
+  return timer_capsule;
 }
 
 /// Returns the period of the timer in nanoseconds
@@ -2080,7 +2159,11 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
+  rclpy_handle_t * node_handle = PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node_handle) {
+    return NULL;
+  }
+  rcl_node_t * node = _rclpy_handle_get_pointer(node_handle);
   if (!node) {
     return NULL;
   }
@@ -2130,15 +2213,24 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pysubscription = rclpy_create_handle_capsule(
-    sub, "rclpy_subscription_t", _rclpy_destroy_subscription);
-  if (!pysubscription) {
+  rclpy_handle_t * sub_handle = _rclpy_create_handle(sub, _rclpy_destroy_subscription);
+  if (!sub_handle) {
     ret = rcl_subscription_fini(&(sub->subscription), node);
     (void)ret;
     PyMem_Free(sub);
     return NULL;
   }
-  return pysubscription;
+  _rclpy_handle_add_dependency(sub_handle, node_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(sub_handle);
+    return NULL;
+  }
+  PyObject * sub_capsule = _rclpy_create_handle_capsule(sub_handle, "rclpy_subscription_t");
+  if (!sub_capsule) {
+    _rclpy_handle_dec_ref(sub_handle);
+    return NULL;
+  }
+  return sub_capsule;
 }
 
 /// Handle destructor for client
@@ -2203,7 +2295,11 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
+  rclpy_handle_t * node_handle = PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node_handle) {
+    return NULL;
+  }
+  rcl_node_t * node = _rclpy_handle_get_pointer(node_handle);
   if (!node) {
     return NULL;
   }
@@ -2251,16 +2347,25 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
     PyMem_Free(client);
     return NULL;
   }
-  PyObject * pyclient = rclpy_create_handle_capsule(
-    client, "rclpy_client_t", _rclpy_destroy_client);
-  if (!pyclient) {
+  rclpy_handle_t * client_handle = _rclpy_create_handle(
+    client, _rclpy_destroy_client);
+  if (!client_handle) {
     ret = rcl_client_fini(&(client->client), node);
     (void)ret;
     PyMem_Free(client);
     return NULL;
   }
-
-  return pyclient;
+  _rclpy_handle_add_dependency(client_handle, node_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(client_handle);
+    return NULL;
+  }
+  PyObject * client_capsule = _rclpy_create_handle_capsule(client_handle, "rclpy_client_t");
+  if (!client_capsule) {
+    _rclpy_handle_dec_ref(client_handle);
+    return NULL;
+  }
+  return client_capsule;
 }
 
 /// Publish a request message
@@ -2366,7 +2471,11 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
+  rclpy_handle_t * node_handle = PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node_handle) {
+    return NULL;
+  }
+  rcl_node_t * node = _rclpy_handle_get_pointer(node_handle);
   if (!node) {
     return NULL;
   }
@@ -2415,15 +2524,24 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * pyservice = rclpy_create_handle_capsule(
-    srv, "rclpy_service_t", _rclpy_destroy_service);
-  if (!pyservice) {
+  rclpy_handle_t * service_handle = _rclpy_create_handle(srv, _rclpy_destroy_service);
+  if (!service_handle) {
     ret = rcl_service_fini(&(srv->service), node);
     (void)ret;
     PyMem_Free(srv);
     return NULL;
   }
-  return pyservice;
+  _rclpy_handle_add_dependency(service_handle, node_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(service_handle);
+    return NULL;
+  }
+  PyObject * service_capsule = _rclpy_create_handle_capsule(service_handle, "rclpy_service_t");
+  if (!service_capsule) {
+    _rclpy_handle_dec_ref(service_handle);
+    return NULL;
+  }
+  return service_capsule;
 }
 
 /// Publish a response message

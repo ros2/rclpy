@@ -23,7 +23,6 @@ class GuardCondition:
         self._context = get_default_context() if context is None else context
         with self._context.handle as capsule:
             self.__handle = Handle(_rclpy.rclpy_create_guard_condition(capsule))
-        self.__handle.requires(self._context.handle)
         self.callback = callback
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor

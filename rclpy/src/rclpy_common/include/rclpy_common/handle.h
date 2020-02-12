@@ -36,6 +36,7 @@ typedef void (* rclpy_handle_destructor_t)(void *);
 /**
  * \sa _rclpy_create_handle
  * \param name Name of the PyCapsule.
+ * \returns PyCapsule wrapping the rclpy_handle_t.
  */
 PyObject *
 rclpy_create_handle_capsule(void * ptr, const char * name, rclpy_handle_destructor_t destructor);
@@ -52,16 +53,32 @@ rclpy_handle_get_pointer_from_capsule(PyObject * capsule, const char * name);
 rclpy_handle_t *
 _rclpy_create_handle(void * ptr, rclpy_handle_destructor_t destructor);
 
+/// Create a PyCapsule wrapping a rclpy_handle_t object.
+/**
+ * \param rclpy_handle_t Already constructed handle.
+ * \param name Name of the PyCapsule.
+ * \returns PyCapsule wrapping the rclpy_handle_t, using _rclpy_handle_dec_ref as destructor.
+ */
+PyObject *
+_rclpy_create_handle_capsule(rclpy_handle_t * ptr, const char * name);
+
 /// Returns the object managed by the rclpy_handle_t.
+/**
+ * PyExc_RuntimeError is set, if `handle` is NULL, o if the managed pointer is NULL.
+ *
+ * \param handle
+ */
 void *
 _rclpy_handle_get_pointer(rclpy_handle_t * handle);
 
 /// Adds a dependency to a handle.
 /**
+ * PyExc_RuntimeError is set, if `handle` is NULL, o if the managed pointer is NULL.
+ *
  * \param dependency Handle object which its reference count will be incremented.
  * \param dependent Handle object that keeps a reference to the `dependency`.
  */
-rcutils_ret_t
+void
 _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * dependency);
 
 /// Decrements the reference count of a handle.

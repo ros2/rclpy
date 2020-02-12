@@ -115,7 +115,6 @@ class QoSEventHandler(Waitable):
         with parent_handle as parent_capsule:
             event_capsule = _rclpy.rclpy_create_event(event_type, parent_capsule)
         self._event_handle = Handle(event_capsule)
-        self._event_handle.requires(self._parent_handle)
         self._ready_to_take_data = False
         self._event_index = None
 

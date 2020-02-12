@@ -52,11 +52,7 @@ _rclpy_create_handle(void * ptr, rclpy_handle_destructor_t destructor)
 }
 
 /// Adds a dependency to a handle.
-/**
- * The `dependency` handle reference count is incresead.
- * The `dependent` handle stores `dependency` into its dependencies list.
- */
-rcutils_ret_t
+void
 _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * dependency)
 {
   assert(dependent);
@@ -69,13 +65,15 @@ _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * depend
     (dependent->num_of_dependencies + 1u) * sizeof(rclpy_handle_t *),
     allocator.state);
   if (!new_dependencies) {
-    return RCUTILS_RET_ERROR;
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed to add dependency to handle");
+    return;
   }
   new_dependencies[dependent->num_of_dependencies] = dependency;
   dependent->num_of_dependencies++;
   dependent->dependencies = new_dependencies;
   dependency->ref_count++;
-  return RCUTILS_RET_OK;
 }
 
 /// Decrements the reference count of a handle.
@@ -120,6 +118,13 @@ _rclpy_handle_capsule_destructor(PyObject * capsule)
 
 /// Creates a PyCapsule wrapping a handle object.
 PyObject *
+_rclpy_create_handle_capsule(rclpy_handle_t * ptr, const char * name)
+{
+  return PyCapsule_New(ptr, name, _rclpy_handle_capsule_destructor);
+}
+
+/// Creates a PyCapsule wrapping a handle object.
+PyObject *
 rclpy_create_handle_capsule(void * ptr, const char * name, rclpy_handle_destructor_t destructor)
 {
   rclpy_handle_t * handle = _rclpy_create_handle(ptr, destructor);
@@ -132,7 +137,10 @@ rclpy_create_handle_capsule(void * ptr, const char * name, rclpy_handle_destruct
 void *
 _rclpy_handle_get_pointer(rclpy_handle_t * handle)
 {
-  if (!handle) {
+  if (!handle || !handle->ptr) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed to get pointer from handle");
     return NULL;
   }
   return handle->ptr;

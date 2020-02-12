@@ -29,8 +29,6 @@ class Timer:
         with self._clock.handle as clock_capsule, self._context.handle as context_capsule:
             self.__handle = Handle(_rclpy.rclpy_create_timer(
                 clock_capsule, context_capsule, timer_period_ns))
-        self.__handle.requires(self._clock.handle)
-        self.__handle.requires(self._context.handle)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group

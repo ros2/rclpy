@@ -94,23 +94,6 @@ class Handle:
             if 0 == self.__use_count:
                 self.__destroy()
 
-    def requires(self, req_handle):
-        """
-        Add a required handle.
-
-        Indicates that the object manged by `req_handle` has to live longer than the object
-        managed by this handle.
-        """
-        assert isinstance(req_handle, Handle)
-        with self.__lock, req_handle.__lock:
-            if not self.__valid:
-                raise InvalidHandle('Cannot require a new handle if already destroyed')
-            if req_handle.__valid:
-                _rclpy_handle.rclpy_handle_add_dependency(self.__capsule, req_handle.__capsule)
-            else:
-                # required handle destroyed before we could link to it, destroy self
-                self.destroy()
-
     def _get_capsule(self):
         """
         Get the pycapsule managed by this handle.

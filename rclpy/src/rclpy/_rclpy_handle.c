@@ -21,33 +21,6 @@
 
 #include "rclpy_common/handle.h"
 
-
-static PyObject *
-rclpy_handle_add_dependency(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * dependent_capsule;
-  PyObject * dependency_capsule;
-  if (!PyArg_ParseTuple(args, "OO", &dependent_capsule, &dependency_capsule)) {
-    return NULL;
-  }
-
-  rclpy_handle_t * dependent =
-    PyCapsule_GetPointer(dependent_capsule, PyCapsule_GetName(dependent_capsule));
-  rclpy_handle_t * dependency =
-    PyCapsule_GetPointer(dependency_capsule, PyCapsule_GetName(dependency_capsule));
-
-  if (PyErr_Occurred()) {
-    return NULL;
-  }
-
-  if (RCUTILS_RET_OK != _rclpy_handle_add_dependency(dependent, dependency)) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to add dependency to handle");
-    return NULL;
-  }
-
-  return Py_None;
-}
-
 static PyObject *
 rclpy_handle_get_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
@@ -87,11 +60,6 @@ rclpy_handle_get_pointer(PyObject * Py_UNUSED(self), PyObject * args)
 /// Define the public methods of this module
 static PyMethodDef rclpy_handle_methods[] = {
   {
-    "rclpy_handle_add_dependency", rclpy_handle_add_dependency,
-    METH_VARARGS,
-    "Add a dependency to a handle."
-  },
-  {
     "rclpy_handle_get_name", rclpy_handle_get_name,
     METH_VARARGS,
     "Get handle name."
@@ -104,7 +72,8 @@ static PyMethodDef rclpy_handle_methods[] = {
   {NULL, NULL, 0, NULL}  /* sentinel */
 };
 
-PyDoc_STRVAR(rclpy_handle__doc__,
+PyDoc_STRVAR(
+  rclpy_handle__doc__,
   "rclpy module for working with Handle objects.");
 
 /// Define the Python module
