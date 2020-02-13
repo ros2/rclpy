@@ -68,7 +68,6 @@ def init(*, args: Optional[List[str]] = None, context: Context = None) -> None:
         (see :func:`.get_default_context`).
     """
     context = get_default_context() if context is None else context
-    # imported locally to avoid loading extensions on module import
     return context.init(args)
 
 

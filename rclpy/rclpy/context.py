@@ -41,6 +41,7 @@ class Context:
         return self._handle
 
     def init(self, args: Optional[List[str]] = None):
+        # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
             rclpy_implementation.rclpy_init(
