@@ -41,6 +41,11 @@ class Context:
         return self._handle
 
     def init(self, args: Optional[List[str]] = None):
+        """
+        Initialize ROS communications for a given context.
+
+        :param args: List of command line arguments.
+        """
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._lock:
