@@ -124,7 +124,7 @@ _rclpy_destroy_guard_condition(void * p)
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_guard_condition failed to get pointer");
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_guard_condition got NULL pointer");
     return;
   }
 
@@ -187,9 +187,7 @@ rclpy_create_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
 
   rclpy_handle_t * gc_handle = _rclpy_create_handle(gc, _rclpy_destroy_guard_condition);
   if (!gc_handle) {
-    ret = rcl_guard_condition_fini(gc);
-    (void)ret;
-    PyMem_Free(gc);
+    _rclpy_destroy_guard_condition(gc);
     return NULL;
   }
   _rclpy_handle_add_dependency(gc_handle, context_handle);
@@ -643,7 +641,7 @@ _rclpy_destroy_node(void * p)
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_node failed to get pointer");
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_node got a NULL pointer");
     return;
   }
 
@@ -761,9 +759,7 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
 
   rclpy_handle_t * node_handle = _rclpy_create_handle(node, _rclpy_destroy_node);
   if (!node_handle) {
-    rcl_ret_t ret = rcl_node_fini(node);
-    (void)ret;
-    PyMem_Free(node);
+    _rclpy_destroy_node(node);
     return NULL;
   }
   _rclpy_handle_add_dependency(node_handle, context_handle);
@@ -1486,7 +1482,7 @@ _rclpy_destroy_publisher(void * p)
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_publisher failed to get pointer");
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_publisher got NULL pointer");
     return;
   }
 
@@ -1591,9 +1587,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
 
   rclpy_handle_t * pub_handle = _rclpy_create_handle(pub, _rclpy_destroy_publisher);
   if (!pub_handle) {
-    rcl_ret_t ret = rcl_publisher_fini(&(pub->publisher), pub->node);
-    (void)ret;
-    PyMem_Free(pub);
+    _rclpy_destroy_publisher(pub);
     return NULL;
   }
   _rclpy_handle_add_dependency(pub_handle, node_handle);
@@ -1692,7 +1686,7 @@ _rclpy_destroy_timer(void * p)
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_timer failed to get pointer");
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_timer got NULL pointer");
     return;
   }
 
@@ -1772,9 +1766,7 @@ rclpy_create_timer(PyObject * Py_UNUSED(self), PyObject * args)
 
   rclpy_handle_t * timer_handle = _rclpy_create_handle(timer, _rclpy_destroy_timer);
   if (!timer_handle) {
-    ret = rcl_timer_fini(timer);
-    (void)ret;
-    PyMem_Free(timer);
+    _rclpy_destroy_timer(timer);
     return NULL;
   }
   _rclpy_handle_add_dependency(timer_handle, context_handle);
@@ -2106,7 +2098,7 @@ _rclpy_destroy_subscription(void * p)
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_subscrition failed to get pointer");
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_subscrition got NULL pointer");
     return;
   }
 
@@ -2215,9 +2207,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
 
   rclpy_handle_t * sub_handle = _rclpy_create_handle(sub, _rclpy_destroy_subscription);
   if (!sub_handle) {
-    ret = rcl_subscription_fini(&(sub->subscription), node);
-    (void)ret;
-    PyMem_Free(sub);
+    _rclpy_destroy_subscription(sub);
     return NULL;
   }
   _rclpy_handle_add_dependency(sub_handle, node_handle);
@@ -2244,7 +2234,7 @@ _rclpy_destroy_client(void * p)
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_client failed to get pointer");
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_client got NULL pointer");
     return;
   }
 
@@ -2350,9 +2340,7 @@ rclpy_create_client(PyObject * Py_UNUSED(self), PyObject * args)
   rclpy_handle_t * client_handle = _rclpy_create_handle(
     client, _rclpy_destroy_client);
   if (!client_handle) {
-    ret = rcl_client_fini(&(client->client), node);
-    (void)ret;
-    PyMem_Free(client);
+    _rclpy_destroy_client(client);
     return NULL;
   }
   _rclpy_handle_add_dependency(client_handle, node_handle);
@@ -2419,7 +2407,7 @@ _rclpy_destroy_service(void * p)
     // Warning should use line number of the current stack frame
     int stack_level = 1;
     PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_service failed to get pointer");
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_service got NULL pointer");
     return;
   }
 
@@ -2526,9 +2514,7 @@ rclpy_create_service(PyObject * Py_UNUSED(self), PyObject * args)
 
   rclpy_handle_t * service_handle = _rclpy_create_handle(srv, _rclpy_destroy_service);
   if (!service_handle) {
-    ret = rcl_service_fini(&(srv->service), node);
-    (void)ret;
-    PyMem_Free(srv);
+    _rclpy_destroy_service(srv);
     return NULL;
   }
   _rclpy_handle_add_dependency(service_handle, node_handle);
