@@ -40,8 +40,8 @@ all ROS nodes associated with the context), the :func:`shutdown` function should
 This will invalidate all entities derived from the context.
 """
 
-import sys
 from typing import List
+from typing import Optional
 from typing import TYPE_CHECKING
 
 from rclpy.context import Context
@@ -59,7 +59,7 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
 
 
-def init(*, args: List[str] = None, context: Context = None) -> None:
+def init(*, args: Optional[List[str]] = None, context: Context = None) -> None:
     """
     Initialize ROS communications for a given context.
 
@@ -68,9 +68,7 @@ def init(*, args: List[str] = None, context: Context = None) -> None:
         (see :func:`.get_default_context`).
     """
     context = get_default_context() if context is None else context
-    # imported locally to avoid loading extensions on module import
-    from rclpy.impl.implementation_singleton import rclpy_implementation
-    return rclpy_implementation.rclpy_init(args if args is not None else sys.argv, context.handle)
+    return context.init(args)
 
 
 # The global spin functions need an executor to do the work

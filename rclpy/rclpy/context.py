@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import threading
 from typing import Callable
+from typing import List
+from typing import Optional
 import weakref
 
 
@@ -36,6 +39,18 @@ class Context:
     @property
     def handle(self):
         return self._handle
+
+    def init(self, args: Optional[List[str]] = None):
+        """
+        Initialize ROS communications for a given context.
+
+        :param args: List of command line arguments.
+        """
+        # imported locally to avoid loading extensions on module import
+        from rclpy.impl.implementation_singleton import rclpy_implementation
+        with self._lock:
+            rclpy_implementation.rclpy_init(
+                args if args is not None else sys.argv, self._handle)
 
     def ok(self):
         """Check if context hasn't been shut down."""
