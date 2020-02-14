@@ -67,6 +67,7 @@ from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
+from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_support import check_for_type_support
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
@@ -1642,7 +1643,7 @@ class Node:
 
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
-        validate_topic_name(fq_topic_name)
+        validate_full_topic_name(fq_topic_name)
         with self.handle as node_capsule:
             return func(node_capsule, fq_topic_name)
 
@@ -1681,3 +1682,82 @@ class Node:
         """
         with self.handle as capsule:
             _rclpy.rclpy_assert_liveliness(capsule)
+
+    def _get_info_by_topic(
+        self,
+        topic_name: str,
+        no_mangle: bool,
+        func: Callable[[object, str, bool], List[Dict]]
+    ) -> List[TopicEndpointInfo]:
+        with self.handle as node_capsule:
+            if no_mangle:
+                fq_topic_name = topic_name
+            else:
+                fq_topic_name = expand_topic_name(
+                    topic_name, self.get_name(), self.get_namespace())
+                validate_full_topic_name(fq_topic_name)
+                fq_topic_name = _rclpy.rclpy_remap_topic_name(node_capsule, fq_topic_name)
+
+            info_dicts = func(node_capsule, fq_topic_name, no_mangle)
+            infos = [TopicEndpointInfo(**x) for x in info_dicts]
+            return infos
+
+    def get_publishers_info_by_topic(
+        self,
+        topic_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
+        """
+        Return a list of publishers on a given topic.
+
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
+        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
+
+        When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
+        name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
+        When the `no_mangle` parameter is `false`, the provided `topic_name` should follow
+        ROS topic name conventions.
+
+        `topic_name` may be a relative, private, or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name.
+        The queried `topic_name` is not remapped.
+
+        :param topic_name: the topic_name on which to find the publishers.
+        :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
+            name, otherwise it should be a valid ROS topic name. Defaults to `false`.
+        :return: a list of TopicEndpointInfo for all the publishers on this topic.
+        """
+        return self._get_info_by_topic(
+            topic_name,
+            no_mangle,
+            _rclpy.rclpy_get_publishers_info_by_topic)
+
+    def get_subscriptions_info_by_topic(
+        self,
+        topic_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
+        """
+        Return a list of subscriptions on a given topic.
+
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
+        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
+
+        When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
+        name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
+        When the `no_mangle` parameter is `false`, the provided `topic_name` should follow
+        ROS topic name conventions.
+
+        `topic_name` may be a relative, private, or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name.
+        The queried `topic_name` is not remapped.
+
+        :param topic_name: the topic_name on which to find the subscriptions.
+        :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
+            name, otherwise it should be a valid ROS topic name. Defaults to `false`.
+        :return: a list of TopicEndpointInfo for all the subscriptions on this topic.
+        """
+        return self._get_info_by_topic(
+            topic_name,
+            no_mangle,
+            _rclpy.rclpy_get_subscriptions_info_by_topic)

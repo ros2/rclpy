@@ -276,6 +276,8 @@ class HistoryPolicy(QoSPolicyEnum):
     KEEP_LAST = RMW_QOS_POLICY_HISTORY_KEEP_LAST
     RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
     KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
+    RMW_QOS_POLICY_HISTORY_UNKNOWN = 3
+    UNKNOWN = RMW_QOS_POLICY_HISTORY_UNKNOWN
 
 
 # Alias with the old name, for retrocompatibility
@@ -295,6 +297,8 @@ class ReliabilityPolicy(QoSPolicyEnum):
     RELIABLE = RMW_QOS_POLICY_RELIABILITY_RELIABLE
     RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
     BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
+    RMW_QOS_POLICY_RELIABILITY_UNKNOWN = 3
+    UNKNOWN = RMW_QOS_POLICY_RELIABILITY_UNKNOWN
 
 
 # Alias with the old name, for retrocompatibility
@@ -314,6 +318,8 @@ class DurabilityPolicy(QoSPolicyEnum):
     TRANSIENT_LOCAL = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
     RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
     VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
+    RMW_QOS_POLICY_DURABILITY_UNKNOWN = 3
+    UNKNOWN = RMW_QOS_POLICY_DURABILITY_UNKNOWN
 
 
 # Alias with the old name, for retrocompatibility
@@ -335,11 +341,15 @@ class LivelinessPolicy(QoSPolicyEnum):
     MANUAL_BY_NODE = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE
     RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
     MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
+    RMW_QOS_POLICY_LIVELINESS_UNKNOWN = 4
+    UNKNOWN = RMW_QOS_POLICY_LIVELINESS_UNKNOWN
 
 
 # Alias with the old name, for retrocompatibility
 QoSLivelinessPolicy = LivelinessPolicy
 
+qos_profile_unknown = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
+    'qos_profile_unknown'))
 qos_profile_system_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_system_default'))
 qos_profile_sensor_data = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
@@ -350,11 +360,12 @@ qos_profile_parameters = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameters'))
 qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events'))
-qos_profile_action_status_default = QoSProfile(
-    **_rclpy_action.rclpy_action_get_rmw_qos_profile('rcl_action_qos_profile_status_default'))
+qos_profile_action_status_default = QoSProfile(**_rclpy_action.rclpy_action_get_rmw_qos_profile(
+    'rcl_action_qos_profile_status_default'))
 
 
 class QoSPresetProfiles(Enum):
+    UNKNOWN = qos_profile_unknown
     SYSTEM_DEFAULT = qos_profile_system_default
     SENSOR_DATA = qos_profile_sensor_data
     SERVICES_DEFAULT = qos_profile_services_default

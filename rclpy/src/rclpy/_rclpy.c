@@ -20,10 +20,11 @@
 #include <rcl/node.h>
 #include <rcl/publisher.h>
 #include <rcl/rcl.h>
+#include <rcl/remap.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
-#include <rcl_yaml_param_parser/parser.h>
 #include <rcl_interfaces/msg/parameter_type__struct.h>
+#include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/allocator.h>
 #include <rcutils/format_string.h>
 #include <rcutils/strdup.h>
@@ -31,6 +32,7 @@
 #include <rmw/error_handling.h>
 #include <rmw/rmw.h>
 #include <rmw/serialized_message.h>
+#include <rmw/topic_endpoint_info_array.h>
 #include <rmw/types.h>
 #include <rmw/validate_full_topic_name.h>
 #include <rmw/validate_namespace.h>
@@ -885,6 +887,104 @@ rclpy_count_subscribers(PyObject * Py_UNUSED(self), PyObject * args)
   return _count_subscribers_publishers(args, "subscribers", rcl_count_subscribers);
 }
 
+typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
+  const rcl_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * topic_name,
+  bool no_mangle,
+  rcl_topic_endpoint_info_array_t * info_array);
+
+static PyObject *
+_get_info_by_topic(
+  PyObject * args,
+  const char * type,
+  rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
+{
+  PyObject * pynode;
+  const char * topic_name;
+  int no_mangle;
+
+  if (!PyArg_ParseTuple(args, "Osp", &pynode, &topic_name, &no_mangle)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = (rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcl_topic_endpoint_info_array_t info_array = rcl_get_zero_initialized_topic_endpoint_info_array();
+  rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
+  rcl_ret_t fini_ret;
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_BAD_ALLOC == ret) {
+      PyErr_Format(
+        PyExc_MemoryError, "Failed to get information by topic for %s: %s",
+        type, rcl_get_error_string().str);
+    } else if (RCL_RET_UNSUPPORTED == ret) {
+      PyErr_Format(
+        PyExc_NotImplementedError, "Failed to get information by topic for %s: "
+        "function not supported by RMW_IMPLEMENTATION", type);
+    } else {
+      PyErr_Format(
+        RCLError, "Failed to get information by topic for %s: %s",
+        type, rcl_get_error_string().str);
+    }
+    rcl_reset_error();
+    fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
+    if (fini_ret != RCL_RET_OK) {
+      PyErr_Format(
+        RCLError, "rcl_topic_endpoint_info_array_fini failed: %s",
+        rcl_get_error_string().str);
+      rcl_reset_error();
+    }
+    return NULL;
+  }
+  PyObject * py_info_array = rclpy_convert_to_py_topic_endpoint_info_list(&info_array);
+  fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
+  if (RCL_RET_OK != fini_ret) {
+    PyErr_Format(RCLError, "rcl_topic_endpoint_info_array_fini failed.");
+    rcl_reset_error();
+    return NULL;
+  }
+  return py_info_array;
+}
+
+/// Return a list of publishers on a given topic.
+/**
+ * The returned publisher information includes node name, node namespace, topic type, gid,
+ * and qos profile
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \param[in] topic_name the topic name to get the publishers for.
+ * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
+ *     otherwise it should be a valid ROS topic name.
+ * \return list of publishers
+ */
+static PyObject *
+rclpy_get_publishers_info_by_topic(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  return _get_info_by_topic(args, "publishers", rcl_get_publishers_info_by_topic);
+}
+
+/// Return a list of subscriptions on a given topic.
+/**
+ * The returned subscription information includes node name, node namespace, topic type, gid,
+ * and qos profile
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \param[in] topic_name the topic name to get the subscriptions for.
+ * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
+ *     otherwise it should be a valid ROS topic name.
+ * \return list of subscriptions.
+ */
+static PyObject *
+rclpy_get_subscriptions_info_by_topic(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  return _get_info_by_topic(args, "subscriptions", rcl_get_subscriptions_info_by_topic);
+}
+
+
 /// Validate a topic name and return error message and index of invalidation.
 /**
  * Does not have to be a fully qualified topic name.
@@ -1232,7 +1332,7 @@ _expand_topic_name_with_exceptions(const char * topic, const char * node, const 
  * \param[in] topic_name topic string to be expanded
  * \param[in] node_name name of the node to be used during expansion
  * \param[in] node_namespace namespace of the node to be used during expansion
- * \return expanded node namespace
+ * \return expanded topic name
  */
 static PyObject *
 rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
@@ -1261,19 +1361,82 @@ rclpy_expand_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   char * expanded_topic = _expand_topic_name_with_exceptions(topic, node_name, node_namespace);
-
   if (!expanded_topic) {
     // exception already set
     return NULL;
   }
 
   PyObject * result = PyUnicode_FromString(expanded_topic);
-  if (!result) {
-    return NULL;
-  }
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
   allocator.deallocate(expanded_topic, allocator.state);
+
+  return result;
+}
+
+static char *
+_remap_topic_name_with_exceptions(const rcl_node_t * node_handle, const char * topic_name)
+{
+  // Get the node options
+  const rcl_node_options_t * node_options = rcl_node_get_options(node_handle);
+  if (node_options == NULL) {
+    return NULL;
+  }
+  const rcl_arguments_t * global_args = NULL;
+  if (node_options->use_global_arguments) {
+    global_args = &(node_handle->context->global_arguments);
+  }
+
+  char * remapped_topic = NULL;
+  rcl_ret_t ret = rcl_remap_topic_name(
+    &(node_options->arguments),
+    global_args,
+    topic_name,
+    rcl_node_get_name(node_handle),
+    rcl_node_get_namespace(node_handle),
+    node_options->allocator,
+    &remapped_topic);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to remap topic name %s", topic_name);
+    return NULL;
+  }
+
+  return remapped_topic;
+}
+
+/// Remap a topic name
+/**
+ * Raises ValueError if the capsule is not the correct type
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] topic_name topic string to be remapped
+ * \return remapped topic name
+ */
+static PyObject *
+rclpy_remap_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+  const char * topic_name;
+
+  if (!PyArg_ParseTuple(args, "Os", &pynode, &topic_name)) {
+    return NULL;
+  }
+
+  const rcl_node_t * node = (const rcl_node_t *)PyCapsule_GetPointer(pynode, "rcl_node_t");
+  if (node == NULL) {
+    return NULL;
+  }
+
+  char * remapped_topic_name = _remap_topic_name_with_exceptions(node, topic_name);
+  if (remapped_topic_name == NULL) {
+    return PyUnicode_FromString(topic_name);
+  }
+
+  PyObject * result = PyUnicode_FromString(remapped_topic_name);
+
+  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  rcl_allocator_t allocator = node_options->allocator;
+  allocator.deallocate(remapped_topic_name, allocator.state);
 
   return result;
 }
@@ -1458,8 +1621,8 @@ rclpy_publisher_get_subscription_count(PyObject * Py_UNUSED(self), PyObject * ar
   }
 
   size_t count = 0;
-  rmw_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
-  if (RMW_RET_OK != ret) {
+  rcl_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
+  if (RCL_RET_OK != ret) {
     PyErr_Format(RCLError, "%s", rmw_get_error_string().str);
     rmw_reset_error();
     return NULL;
@@ -2833,7 +2996,7 @@ rclpy_take_raw(rcl_subscription_t * subscription)
   }
 
   ret = rcl_take_serialized_message(subscription, &msg, NULL, NULL);
-  if (ret != RMW_RET_OK) {
+  if (ret != RCL_RET_OK) {
     PyErr_Format(
       RCLError,
       "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
@@ -3757,6 +3920,8 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_system_default);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_services_default")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_services_default);
+  } else if (0 == strcmp(pyrmw_profile, "qos_profile_unknown")) {
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_unknown);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameters")) {
     pyqos_profile = rclpy_common_convert_to_qos_dict(&rmw_qos_profile_parameters);
   } else if (0 == strcmp(pyrmw_profile, "qos_profile_parameter_events")) {
@@ -4878,8 +5043,20 @@ static PyMethodDef rclpy_methods[] = {
     "Count subscribers for a topic."
   },
   {
+    "rclpy_get_publishers_info_by_topic", rclpy_get_publishers_info_by_topic, METH_VARARGS,
+    "Get publishers info for a topic."
+  },
+  {
+    "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
+    "Get subscriptions info for a topic."
+  },
+  {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
     "Expand a topic name."
+  },
+  {
+    "rclpy_remap_topic_name", rclpy_remap_topic_name, METH_VARARGS,
+    "Remap a topic name."
   },
   {
     "rclpy_get_validation_error_for_topic_name",
