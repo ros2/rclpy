@@ -33,7 +33,7 @@ class Handle:
 
     :meth:`destroy` allows early destruction of the pycapsule.
 
-    The managed `rclpy_handle_t` blocks destruction as long as another rcl object needs this one
+    A managed `rclpy_handle_t` blocks destruction as long as another `rclpy_handler_t` needs it
     to exist.
     If :meth:`destroy` is never called then the pycapsule will be destructed when it is
     garbage collected.

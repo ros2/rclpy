@@ -75,7 +75,7 @@ _rclpy_handle_get_pointer(rclpy_handle_t * handle);
 /**
  * PyExc_RuntimeError is set, if `handle` is NULL, o if the managed pointer is NULL.
  *
- * \param dependency Handle object which its reference count will be incremented.
+ * \param dependency Handle object whose reference count will be incremented.
  * \param dependent Handle object that keeps a reference to the `dependency`.
  */
 void
