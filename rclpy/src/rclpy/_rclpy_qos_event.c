@@ -289,8 +289,13 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
   _rclpy_handle_add_dependency(event_handle, parent_handle);
   if (PyErr_Occurred()) {
     _rclpy_handle_dec_ref(event_handle);
+    return NULL;
   }
   PyObject * event_capsule = _rclpy_create_handle_capsule(event_handle, "rcl_event_t");
+  if (!event_capsule) {
+    _rclpy_handle_dec_ref(event_handle);
+    return NULL;
+  }
   return event_capsule;
 }
 
