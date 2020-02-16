@@ -1646,6 +1646,53 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Publish a serialized message
+/**
+ * Raises ValueError if pypublisher is not a publisher capsule
+ * Raises RuntimeError if the message cannot be published
+ *
+ * \param[in] pypublisher Capsule pointing to the publisher
+ * \param[in] pymsg serialized message to send
+ * \return NULL
+ */
+static PyObject *
+rclpy_publish_raw(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pypublisher;
+  PyBytesObject * pymsg;
+  const char * pymsg_buffer;
+  Py_ssize_t pymsg_size;
+
+  if (!PyArg_ParseTuple(args, "OS", &pypublisher, &pymsg)) {
+    return NULL;
+  }
+
+  PyBytes_AsStringAndSize((PyObject *)pymsg, &pymsg_buffer, &pymsg_size);
+
+  rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
+  serialized_msg.buffer_capacity = pymsg_size;
+  serialized_msg.buffer_length = pymsg_size;
+  serialized_msg.buffer = (uint8_t *)pymsg_buffer;
+
+  rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+    pypublisher, "rclpy_publisher_t");
+
+  if (!pub) {
+    return NULL;
+  }
+
+  rcl_ret_t ret = rcl_publish_serialized_message(&(pub->publisher), &serialized_msg, NULL);
+
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(
+      RCLError, "Failed to publish: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
 /// Count subscribers from a publisher.
 /**
  *
@@ -5188,6 +5235,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_publish", rclpy_publish, METH_VARARGS,
     "Publish a message."
+  },
+  {
+    "rclpy_publish_raw", rclpy_publish_raw, METH_VARARGS,
+    "Publish a serialized message."
   },
   {
     "rclpy_publisher_get_subscription_count", rclpy_publisher_get_subscription_count, METH_VARARGS,
