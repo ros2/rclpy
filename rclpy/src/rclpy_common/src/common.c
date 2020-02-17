@@ -441,12 +441,12 @@ rclpy_convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array
     return NULL;
   }
 
-  PyObject * py_info_array = PyList_New(info_array->count);
+  PyObject * py_info_array = PyList_New(info_array->size);
   if (!py_info_array) {
     return NULL;
   }
 
-  for (size_t i = 0; i < info_array->count; ++i) {
+  for (size_t i = 0; i < info_array->size; ++i) {
     rmw_topic_endpoint_info_t topic_endpoint_info = info_array->info_array[i];
     PyObject * py_endpoint_info_dict = _rclpy_convert_to_py_topic_endpoint_info(
       &topic_endpoint_info);
