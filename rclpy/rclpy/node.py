@@ -1054,9 +1054,10 @@ class Node:
         callback: Callable[[List[Parameter]], SetParametersResult]
     ) -> None:
         """
-        DEPRECATED. Register a set parameters callback.
+        Register a set parameters callback.
 
-        This function is deprecated, instead use :func:`add_on_set_parameters_callback()`.
+        .. deprecated:: Foxy
+           Use :func:`add_on_set_parameters_callback()` instead.
 
         Calling this function will add a callback to the self._parameter_callbacks list.
 
