@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Must be before Python.h; makes #-formats use ssize_t instead of int
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 #include <rcl/error_handling.h>
@@ -4964,7 +4966,7 @@ static PyObject *
 rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
 {
   const char * serialized_buffer;
-  int serialized_buffer_size;
+  Py_ssize_t serialized_buffer_size;
   PyObject * pymsg_type;
   if (!PyArg_ParseTuple(args, "y#O", &serialized_buffer, &serialized_buffer_size, &pymsg_type)) {
     return NULL;
