@@ -68,7 +68,7 @@ class Client:
         """
         Make a service request and wait for the result.
 
-        Do not call this method in a callback or a deadlock may occur.
+        .. warning:: Do not call this method in a callback or a deadlock may occur.
 
         :param request: The service request.
         :return: The service response.
