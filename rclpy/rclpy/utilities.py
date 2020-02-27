@@ -18,6 +18,8 @@ import threading
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
 
+import ament_index_python
+
 g_default_context = None
 g_context_lock = threading.Lock()
 
@@ -66,6 +68,12 @@ def get_rmw_implementation_identifier():
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
     return rclpy_implementation.rclpy_get_rmw_implementation_identifier()
+
+
+def get_available_rmw_implementations():
+    """Return the set of all available RMW implementations as registered in the ament index."""
+    rmw_implementations = ament_index_python.get_resources('rmw_typesupport')
+    return {name for name in rmw_implementations if name != 'rmw_implementation'}
 
 
 def timeout_sec_to_nsec(timeout_sec):
