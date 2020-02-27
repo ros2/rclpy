@@ -12,13 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 import rclpy
 from rclpy.node import Node
-from rclpy.utilities import get_default_context
 
-from test_msgs.msg import BasicTypes
 
 def test_destruction_order():
     context = rclpy.context.Context()
