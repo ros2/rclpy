@@ -25,7 +25,7 @@ extern "C"
 
 #include "rcutils/types/rcutils_ret.h"
 
-/// Wrapper that manages the lifetime of another object,
+/// Wrapper that manages the lifetime of an object,
 /// allowing to establish dependencies between them.
 typedef struct rclpy_handle_t rclpy_handle_t;
 
@@ -34,6 +34,22 @@ typedef void (* rclpy_handle_destructor_t)(void *);
 
 /// Create a PyCapsule wrapping a rclpy_handle_t object.
 /**
+ * Handles are used to manage lifetime of rcl objects.
+ * The main reason to use them, is that destruction order can't be controlled in Python.
+ * From PEP 442:
+ * > Cyclic isolate (CI)
+ * > A standalone subgraph of objects in which no object is referenced from the outside,
+ * > containing one or several reference cycles, and whose objects are still in a usable,
+ * > non-broken state: they can access each other from their respective finalizers.
+ * >
+ * > For CI objects, the order in which finalizers are called (step 2 above) is undefined.
+ *
+ * Handles provide a basic way of establishing dependencies and keeping the reference count,
+ * with a mechanism completly decoupled of Python reference counting.
+ *
+ * If in the future this library is migrated to use `pybind11`, this class can be dropped and
+ * `std::shared_ptr` be used directly.
+ *
  * \sa _rclpy_create_handle
  * \param name Name of the PyCapsule.
  * \returns PyCapsule wrapping the rclpy_handle_t.
