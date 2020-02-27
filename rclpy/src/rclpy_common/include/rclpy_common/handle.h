@@ -71,7 +71,7 @@ _rclpy_create_handle(void * ptr, rclpy_handle_destructor_t destructor);
 
 /// Create a PyCapsule wrapping a rclpy_handle_t object.
 /**
- * \param rclpy_handle_t Already constructed handle.
+ * \param ptr Already constructed handle.
  * \param name Name of the PyCapsule.
  * \returns PyCapsule wrapping the rclpy_handle_t, using _rclpy_handle_dec_ref as destructor.
  */

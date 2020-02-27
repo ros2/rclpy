@@ -1473,7 +1473,7 @@ rclpy_remap_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   return result;
 }
 
-/// Handles destructor for publisher
+/// Handle destructor for publisher
 static void
 _rclpy_destroy_publisher(void * p)
 {
