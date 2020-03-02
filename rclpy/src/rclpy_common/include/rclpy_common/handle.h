@@ -25,6 +25,8 @@ extern "C"
 
 #include "rcutils/types/rcutils_ret.h"
 
+#include "rclpy_common/visibility_control.h"
+
 /// Wrapper that manages the lifetime of an object,
 /// allowing to establish dependencies between them.
 typedef struct rclpy_handle_t rclpy_handle_t;
@@ -53,10 +55,12 @@ typedef void (* rclpy_handle_destructor_t)(void *);
  * \param name Name of the PyCapsule.
  * \returns PyCapsule wrapping the rclpy_handle_t.
  */
+RCLPY_COMMON_PUBLIC
 PyObject *
 rclpy_create_handle_capsule(void * ptr, const char * name, rclpy_handle_destructor_t destructor);
 
 /// Returns the object managed by the rclpy_handle_t wrapped in a PyCapsule.
+RCLPY_COMMON_PUBLIC
 void *
 rclpy_handle_get_pointer_from_capsule(PyObject * capsule, const char * name);
 
@@ -65,6 +69,7 @@ rclpy_handle_get_pointer_from_capsule(PyObject * capsule, const char * name);
  * \param ptr Opaque pointer to the object being wrapped.
  * \param destructor Function that will be called when the handle is destructed.
  */
+RCLPY_COMMON_PUBLIC
 rclpy_handle_t *
 _rclpy_create_handle(void * ptr, rclpy_handle_destructor_t destructor);
 
@@ -74,6 +79,7 @@ _rclpy_create_handle(void * ptr, rclpy_handle_destructor_t destructor);
  * \param name Name of the PyCapsule.
  * \returns PyCapsule wrapping the rclpy_handle_t, using _rclpy_handle_dec_ref as destructor.
  */
+RCLPY_COMMON_PUBLIC
 PyObject *
 _rclpy_create_handle_capsule(rclpy_handle_t * ptr, const char * name);
 
@@ -83,6 +89,7 @@ _rclpy_create_handle_capsule(rclpy_handle_t * ptr, const char * name);
  *
  * \param handle
  */
+RCLPY_COMMON_PUBLIC
 void *
 _rclpy_handle_get_pointer(rclpy_handle_t * handle);
 
@@ -93,6 +100,7 @@ _rclpy_handle_get_pointer(rclpy_handle_t * handle);
  * \param dependency Handle object whose reference count will be incremented.
  * \param dependent Handle object that keeps a reference to the `dependency`.
  */
+RCLPY_COMMON_PUBLIC
 void
 _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * dependency);
 
@@ -105,6 +113,7 @@ _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * depend
  *
  * \param handle Object which reference count will be decremented.
  */
+RCLPY_COMMON_PUBLIC
 void
 _rclpy_handle_dec_ref(rclpy_handle_t * handle);
 
