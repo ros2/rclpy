@@ -34,8 +34,7 @@ typedef void (* rclpy_handle_destructor_t)(void *);
 
 /// Create a PyCapsule wrapping a rclpy_handle_t object.
 /**
- * Handles are used to manage lifetime of rcl objects.
- * The main reason to use them, is that destruction order can't be controlled in Python.
+ * The main reason to use them, is that destruction order cannot be guaranteed in Python.
  * From PEP 442:
  * > Cyclic isolate (CI)
  * > A standalone subgraph of objects in which no object is referenced from the outside,
@@ -44,11 +43,11 @@ typedef void (* rclpy_handle_destructor_t)(void *);
  * >
  * > For CI objects, the order in which finalizers are called (step 2 above) is undefined.
  *
- * Handles provide a basic way of establishing dependencies and keeping the reference count,
- * with a mechanism completly decoupled of Python reference counting.
+ * Handles provide a way of establishing dependencies, keeping a reference count separately from
+ * Python's, ensuring proper destruction order.
+ * No protection against reference cycles is provided.
  *
- * If in the future this library is migrated to use `pybind11`, this class can be dropped and
- * `std::shared_ptr` be used directly.
+ * It could be replaced with `std::shared_ptr` if this library is migrated to `pybind11`.
  *
  * \sa _rclpy_create_handle
  * \param name Name of the PyCapsule.
