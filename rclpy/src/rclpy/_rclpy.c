@@ -19,6 +19,7 @@
 #include <rcl/error_handling.h>
 #include <rcl/expand_topic_name.h>
 #include <rcl/graph.h>
+#include <rcl/logging.h>
 #include <rcl/node.h>
 #include <rcl/publisher.h>
 #include <rcl/rcl.h>
@@ -629,6 +630,56 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   Py_DECREF(pyseqlist);
 
   if (PyErr_Occurred()) {
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+/// Initialize rcl logging
+/**
+ * Raises RuntimeError if rcl logging could not be initialized
+ */
+static PyObject *
+rclpy_logging_configure(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  // Expect one argument, a context.
+  PyObject * pycontext;
+  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
+    // Exception raised
+    return NULL;
+  }
+  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
+  if (!context) {
+    return NULL;
+  }
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_logging_configure(
+    &context->global_arguments,
+    &allocator);
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(
+      RCLError,
+      "Failed to initialize logging: %s", rcl_get_error_string().str);
+    return NULL;
+  }
+  Py_RETURN_NONE;
+}
+
+/// Finalize rcl logging
+/**
+ * Raises RuntimeError if rcl logging could not be finalized
+ */
+static PyObject *
+rclpy_logging_fini(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  rcl_ret_t ret = rcl_logging_fini();
+  if (RCL_RET_OK != ret) {
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning,
+      stack_level,
+      "Failed to fini logging: %s",
+      rcl_get_error_string().str);
     return NULL;
   }
   Py_RETURN_NONE;
@@ -5256,6 +5307,14 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_init", rclpy_init, METH_VARARGS,
     "Initialize RCL."
+  },
+  {
+    "rclpy_logging_configure", rclpy_logging_configure, METH_VARARGS,
+    "Initialize RCL logging."
+  },
+  {
+    "rclpy_logging_fini", rclpy_logging_fini, METH_NOARGS,
+    "Finalize RCL logging."
   },
   {
     "rclpy_remove_ros_args", rclpy_remove_ros_args, METH_VARARGS,
