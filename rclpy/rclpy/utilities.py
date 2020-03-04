@@ -15,10 +15,10 @@
 import sys
 import threading
 
+import ament_index_python
+
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
-
-import ament_index_python
 
 g_default_context = None
 g_context_lock = threading.Lock()
