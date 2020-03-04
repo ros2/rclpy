@@ -136,7 +136,8 @@ class TestQoSEvent(unittest.TestCase):
         # Make no assumptions about being able to actually receive the events
         publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
         wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
+        with self.context.handle as context_handle:
+            _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, context_handle)
 
         deadline_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
@@ -189,7 +190,8 @@ class TestQoSEvent(unittest.TestCase):
         # Make no assumptions about being able to actually receive the events
         subscription = self.node.create_subscription(EmptyMsg, 'test_topic', Mock(), 10)
         wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, self.context.handle)
+        with self.context.handle as context_handle:
+            _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 2, context_handle)
 
         deadline_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)

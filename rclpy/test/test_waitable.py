@@ -129,9 +129,9 @@ class TimerWaitable(Waitable):
 
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         period_nanoseconds = 10000
-        with self._clock.handle as clock_capsule:
+        with self._clock.handle as clock_capsule, node.context.handle as context_capsule:
             self.timer = _rclpy.rclpy_create_timer(
-                clock_capsule, node.context.handle, period_nanoseconds)
+                clock_capsule, context_capsule, period_nanoseconds)
         self.timer_index = None
         self.timer_is_ready = False
 
@@ -217,7 +217,8 @@ class GuardConditionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        self.guard_condition = _rclpy.rclpy_create_guard_condition(node.context.handle)
+        with node.context.handle as context_capsule:
+            self.guard_condition = _rclpy.rclpy_create_guard_condition(context_capsule)
         self.guard_condition_index = None
         self.guard_is_ready = False
 

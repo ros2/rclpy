@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <rcl/event.h>
+#include "rcl/event.h"
+#include "rclpy_common/handle.h"
 
 typedef union _qos_event_callback_data {
   // Subscription events
@@ -41,9 +42,9 @@ _check_rcl_return(rcl_ret_t ret, const char * error_msg)
 
 static
 void
-_destroy_event_capsule(PyObject * pycapsule)
+_destroy_event_capsule(void * p)
 {
-  rcl_event_t * event = (rcl_event_t *)PyCapsule_GetPointer(pycapsule, "rcl_event_t");
+  rcl_event_t * event = p;
   if (!event) {
     PyErr_Clear();
     int stack_level = 1;
@@ -77,7 +78,7 @@ static
 rcl_event_t *
 _pycapsule_to_rcl_event(PyObject * pycapsule)
 {
-  return (rcl_event_t *)PyCapsule_GetPointer(pycapsule, "rcl_event_t");
+  return rclpy_handle_get_pointer_from_capsule(pycapsule, "rcl_event_t");
 }
 
 static
@@ -247,19 +248,16 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_publisher_t * publisher = NULL;
   rcl_event_t * event = NULL;
 
-  PyObject * pyevent = NULL;
-
   if (!PyArg_ParseTuple(args, "KO", &event_type, &pyparent)) {
     return NULL;
   }
 
+  rclpy_handle_t * parent_handle = PyCapsule_GetPointer(pyparent, PyCapsule_GetName(pyparent));
   if (_is_pycapsule_rcl_subscription(pyparent)) {
-    rclpy_subscription_t * py_subscription =
-      (rclpy_subscription_t *)PyCapsule_GetPointer(pyparent, "rclpy_subscription_t");
+    rclpy_subscription_t * py_subscription = _rclpy_handle_get_pointer(parent_handle);
     subscription = py_subscription ? &py_subscription->subscription : NULL;
   } else if (_is_pycapsule_rcl_publisher(pyparent)) {
-    rclpy_publisher_t * py_publisher =
-      (rclpy_publisher_t *)PyCapsule_GetPointer(pyparent, "rclpy_publisher_t");
+    rclpy_publisher_t * py_publisher = _rclpy_handle_get_pointer(parent_handle);
     publisher = py_publisher ? &py_publisher->publisher : NULL;
   } else {
     PyErr_Format(PyExc_TypeError, "Event parent was not a valid Publisher or Subscription.");
@@ -281,15 +279,24 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  pyevent = PyCapsule_New(event, "rcl_event_t", _destroy_event_capsule);
-  if (!pyevent) {
+  rclpy_handle_t * event_handle = _rclpy_create_handle(event, _destroy_event_capsule);
+  if (!event_handle) {
     ret = rcl_event_fini(event);
     PyMem_Free(event);
     _check_rcl_return(ret, "Failed to fini 'rcl_event_t'");
     return NULL;
   }
-
-  return pyevent;
+  _rclpy_handle_add_dependency(event_handle, parent_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(event_handle);
+    return NULL;
+  }
+  PyObject * event_capsule = _rclpy_create_handle_capsule(event_handle, "rcl_event_t");
+  if (!event_capsule) {
+    _rclpy_handle_dec_ref(event_handle);
+    return NULL;
+  }
+  return event_capsule;
 }
 
 /// Get a pending QoS event's data.
