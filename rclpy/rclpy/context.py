@@ -62,7 +62,7 @@ class Context:
                 with g_logging_configure_lock:
                     g_logging_ref_count += 1
                     if g_logging_ref_count == 1:
-                        rclpy_implementation.rclpy_logging_configure(self._handle)
+                        rclpy_implementation.rclpy_logging_configure(capsule)
 
     def ok(self):
         """Check if context hasn't been shut down."""
