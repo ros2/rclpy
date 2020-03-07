@@ -96,7 +96,7 @@ def get_available_rmw_implementations():
         if missing_rmw_implementations:
             raise RuntimeError(
                 f'The RMW implementations {missing_rmw_implementations} '
-                "specified in 'RMW_IMPLEMENTATIONS' are not available ("
+                "specified in 'RMW_IMPLEMENTATIONS' are not available (" +
                 ', '.join(sorted(available_rmw_implementations)) + ')')
         available_rmw_implementations = {
             name for name in available_rmw_implementations
