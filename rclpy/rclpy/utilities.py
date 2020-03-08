@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 import threading
 
@@ -71,9 +72,37 @@ def get_rmw_implementation_identifier():
 
 
 def get_available_rmw_implementations():
-    """Return the set of all available RMW implementations as registered in the ament index."""
-    rmw_implementations = ament_index_python.get_resources('rmw_typesupport')
-    return {name for name in rmw_implementations if name != 'rmw_implementation'}
+    """
+    Return the set of all available RMW implementations as registered in the ament index.
+
+    The result can be overridden by setting an environment variable named
+    ``RMW_IMPLEMENTATIONS``.
+    The variable can contain RMW implementation names separated by the platform
+    specific path separator.
+    Including an unavailable RMW implementation results in a RuntimeError.
+    """
+    available_rmw_implementations = ament_index_python.get_resources(
+        'rmw_typesupport')
+    available_rmw_implementations = {
+        name for name in available_rmw_implementations
+        if name != 'rmw_implementation'}
+
+    # filter by implementations in environment variable if provided
+    rmw_implementations = os.environ.get('RMW_IMPLEMENTATIONS')
+    if rmw_implementations:
+        rmw_implementations = rmw_implementations.split(os.pathsep)
+        missing_rmw_implementations = set(rmw_implementations) - \
+            available_rmw_implementations
+        if missing_rmw_implementations:
+            raise RuntimeError(
+                f'The RMW implementations {missing_rmw_implementations} '
+                "specified in 'RMW_IMPLEMENTATIONS' are not available (" +
+                ', '.join(sorted(available_rmw_implementations)) + ')')
+        available_rmw_implementations = {
+            name for name in available_rmw_implementations
+            if name in rmw_implementations}
+
+    return available_rmw_implementations
 
 
 def timeout_sec_to_nsec(timeout_sec):
