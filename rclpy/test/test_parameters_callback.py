@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import unittest
+import warnings
 
 from rcl_interfaces.msg import SetParametersResult
 import rclpy
@@ -44,7 +45,11 @@ class TestParametersCallback(unittest.TestCase):
             nonlocal callback_called
             callback_called = True
             return SetParametersResult(successful=True)
-        self.node.set_parameters_callback(callback)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.node.set_parameters_callback(callback)
+            assert issubclass(w[0].category, UserWarning)
         result = self.node.set_parameters_atomically(
             [Parameter('foo', Parameter.Type.STRING, 'Hello')]
         )
@@ -59,7 +64,11 @@ class TestParametersCallback(unittest.TestCase):
             nonlocal callback_called
             callback_called = True
             return SetParametersResult(successful=False)
-        self.node.set_parameters_callback(callback)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.node.set_parameters_callback(callback)
+            assert issubclass(w[0].category, UserWarning)
         result = self.node.set_parameters_atomically(
             [Parameter('foo', Parameter.Type.STRING, 'Hello')]
         )
@@ -84,7 +93,10 @@ class TestParametersCallback(unittest.TestCase):
                     r.reason = 'Integer must be even'
                     return r
             return r
-        self.node.set_parameters_callback(callback)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.node.set_parameters_callback(callback)
+            assert issubclass(w[0].category, UserWarning)
         result = self.node.set_parameters_atomically(
             [Parameter('foo', Parameter.Type.STRING, 'Hello')]
         )

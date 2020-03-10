@@ -528,7 +528,7 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 '', 'raise', ParameterDescriptor())
 
-        self.node.set_parameters_callback(self.reject_parameter_callback)
+        self.node.add_on_set_parameters_callback(self.reject_parameter_callback)
         with self.assertRaises(InvalidParameterValueException):
             self.node.declare_parameter(
                 'reject_me', 'raise', ParameterDescriptor())
@@ -646,7 +646,7 @@ class TestNode(unittest.TestCase):
             ('im_also_ok', 'world', ParameterDescriptor()),
             ('reject_me', 2.41, ParameterDescriptor()),
         ]
-        self.node.set_parameters_callback(self.reject_parameter_callback)
+        self.node.add_on_set_parameters_callback(self.reject_parameter_callback)
         with self.assertRaises(InvalidParameterValueException):
             self.node.declare_parameters('', parameters)
 
@@ -926,7 +926,7 @@ class TestNode(unittest.TestCase):
             ParameterDescriptor()
         )
         self.node.declare_parameter(*reject_parameter_tuple)
-        self.node.set_parameters_callback(self.reject_parameter_callback)
+        self.node.add_on_set_parameters_callback(self.reject_parameter_callback)
         result = self.node.set_parameters(
             [
                 Parameter(
@@ -1274,7 +1274,7 @@ class TestNode(unittest.TestCase):
         )
 
         self.node.declare_parameter(*reject_parameter_tuple)
-        self.node.set_parameters_callback(self.reject_parameter_callback)
+        self.node.add_on_set_parameters_callback(self.reject_parameter_callback)
         result = self.node.set_parameters_atomically(
             [
                 Parameter(

@@ -93,7 +93,7 @@ class TimeSource:
                 "'{}' parameter not set, using wall time by default"
                 .format(USE_SIM_TIME_NAME))
 
-        node.set_parameters_callback(self._on_parameter_event)
+        node.add_on_set_parameters_callback(self._on_parameter_event)
 
     def detach_node(self):
         # Remove the subscription to the clock topic.
