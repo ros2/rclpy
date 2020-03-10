@@ -177,7 +177,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names_and_namespaces()
 
-    def assert_qos_equal(self, expected_qos_profile, actual_qos_profile):
+    def assert_qos_equal(self, expected_qos_profile, actual_qos_profile, *, is_publisher):
         # Depth and history are skipped because they are not retrieved.
         self.assertEqual(
             expected_qos_profile.durability,
@@ -187,10 +187,11 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             expected_qos_profile.reliability,
             actual_qos_profile.reliability,
             'Reliability is unequal')
-        self.assertEqual(
-            expected_qos_profile.lifespan,
-            actual_qos_profile.lifespan,
-            'lifespan is unequal')
+        if is_publisher:
+            self.assertEqual(
+                expected_qos_profile.lifespan,
+                actual_qos_profile.lifespan,
+                'lifespan is unequal')
         self.assertEqual(
             expected_qos_profile.deadline,
             actual_qos_profile.deadline,
@@ -232,7 +233,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(self.node.get_namespace(), publisher_list[0].node_namespace)
         self.assertEqual('test_msgs/msg/BasicTypes', publisher_list[0].topic_type)
         actual_qos_profile = publisher_list[0].qos_profile
-        self.assert_qos_equal(qos_profile, actual_qos_profile)
+        self.assert_qos_equal(qos_profile, actual_qos_profile, is_publisher=True)
 
         # Add a subscription
         qos_profile2 = QoSProfile(
@@ -257,8 +258,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual('test_msgs/msg/BasicTypes', subscription_list[0].topic_type)
         publisher_qos_profile = publisher_list[0].qos_profile
         subscription_qos_profile = subscription_list[0].qos_profile
-        self.assert_qos_equal(qos_profile, publisher_qos_profile)
-        self.assert_qos_equal(qos_profile2, subscription_qos_profile)
+        self.assert_qos_equal(qos_profile, publisher_qos_profile, is_publisher=True)
+        self.assert_qos_equal(qos_profile2, subscription_qos_profile, is_publisher=False)
 
         # Error cases
         with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
