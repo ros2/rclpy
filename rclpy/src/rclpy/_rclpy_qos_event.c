@@ -14,16 +14,17 @@
 
 #include "rcl/event.h"
 #include "rclpy_common/handle.h"
+#include "rmw/incompatible_qos_events_statuses.h"
 
 typedef union _qos_event_callback_data {
   // Subscription events
   rmw_requested_deadline_missed_status_t requested_deadline_missed;
   rmw_liveliness_changed_status_t liveliness_changed;
-  rmw_requested_incompatible_qos_status_t requested_incompatible_qos;
+  rmw_requested_qos_incompatible_event_status_t requested_incompatible_qos;
   // Publisher events
   rmw_offered_deadline_missed_status_t offered_deadline_missed;
   rmw_liveliness_lost_status_t liveliness_lost;
-  rmw_offered_incompatible_qos_status_t offered_incompatible_qos;
+  rmw_offered_qos_incompatible_event_status_t offered_incompatible_qos;
 } _qos_event_callback_data_t;
 
 typedef PyObject * (* _qos_event_data_filler_function)(_qos_event_callback_data_t *);
@@ -165,12 +166,12 @@ static
 PyObject *
 _requested_incompatible_qos_to_py_object(_qos_event_callback_data_t * data)
 {
-  rmw_requested_incompatible_qos_status_t * actual_data = &data->requested_incompatible_qos;
+  rmw_requested_qos_incompatible_event_status_t * actual_data = &data->requested_incompatible_qos;
   PyObject * args = Py_BuildValue(
     "iii",
     actual_data->total_count,
     actual_data->total_count_change,
-    actual_data->last_policy_id);
+    actual_data->last_policy_kind);
   if (!args) {
     return NULL;
   }
@@ -211,12 +212,12 @@ static
 PyObject *
 _offered_incompatible_qos_to_py_object(_qos_event_callback_data_t * data)
 {
-  rmw_offered_incompatible_qos_status_t * actual_data = &data->offered_incompatible_qos;
+  rmw_offered_qos_incompatible_event_status_t * actual_data = &data->offered_incompatible_qos;
   PyObject * args = Py_BuildValue(
     "iii",
     actual_data->total_count,
     actual_data->total_count_change,
-    actual_data->last_policy_id);
+    actual_data->last_policy_kind);
   if (!args) {
     return NULL;
   }
