@@ -441,7 +441,7 @@ class Executor:
         timeout_timer = None
         timeout_nsec = timeout_sec_to_nsec(timeout_sec)
         if timeout_nsec > 0:
-            timeout_timer = Timer(None, None, timeout_nsec, self._clock)
+            timeout_timer = Timer(None, None, timeout_nsec, self._clock, context=self._context)
 
         yielded_work = False
         while not yielded_work and not self._is_shutdown:
