@@ -38,17 +38,17 @@ from test_msgs.msg import Empty as EmptyMsg
 class TestQoSEvent(unittest.TestCase):
     is_fastrtps = False
 
-    @classmethod
-    def setUpClass(cls):
-        cls.context = rclpy.context.Context()
-        rclpy.init(context=cls.context)
-        cls.node = rclpy.create_node('TestQoSEvent', namespace='/rclpy/test', context=cls.context)
-        cls.is_fastrtps = 'rmw_fastrtps' in get_rmw_implementation_identifier()
+    def setUp(self):
+        self.context = rclpy.context.Context()
+        rclpy.init(context=self.context)
+        self.node = rclpy.create_node('TestQoSEvent',
+                                      namespace='/rclpy/test',
+                                      context=self.context)
+        self.is_fastrtps = 'rmw_fastrtps' in get_rmw_implementation_identifier()
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.node.destroy_node()
-        rclpy.shutdown(context=cls.context)
+    def tearDown(self):
+        self.node.destroy_node()
+        rclpy.shutdown(context=self.context)
 
     def test_publisher_constructor(self):
         callbacks = PublisherEventCallbacks()
