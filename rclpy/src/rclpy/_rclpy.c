@@ -1660,7 +1660,7 @@ rclpy_publish_raw(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pypublisher;
   PyBytesObject * pymsg;
-  const char * pymsg_buffer;
+  char * pymsg_buffer;
   Py_ssize_t pymsg_size;
 
   if (!PyArg_ParseTuple(args, "OS", &pypublisher, &pymsg)) {
@@ -1674,7 +1674,7 @@ rclpy_publish_raw(PyObject * Py_UNUSED(self), PyObject * args)
   serialized_msg.buffer_length = pymsg_size;
   serialized_msg.buffer = (uint8_t *)pymsg_buffer;
 
-  rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+  rclpy_publisher_t * pub = rclpy_handle_get_pointer_from_capsule(
     pypublisher, "rclpy_publisher_t");
 
   if (!pub) {
