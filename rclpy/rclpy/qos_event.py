@@ -26,22 +26,6 @@ from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
 
-class QoSPolicyKind(IntEnum):
-    """
-    Enum for types of QoS policies that a Publisher or Subscription can set.
-
-    This enum matches the one defined in rmw/incompatible_qos_events_statuses.h
-    """
-
-    RMW_QOS_POLICY_INVALID = 1 << 0
-    RMW_QOS_POLICY_DURABILITY = 1 << 1
-    RMW_QOS_POLICY_DEADLINE = 1 << 2
-    RMW_QOS_POLICY_LIVELINESS = 1 << 3
-    RMW_QOS_POLICY_RELIABILITY = 1 << 4
-    RMW_QOS_POLICY_HISTORY = 1 << 5
-    RMW_QOS_POLICY_LIFESPAN = 1 << 6
-
-
 class QoSPublisherEventType(IntEnum):
     """
     Enum for types of QoS events that a Publisher can receive.
@@ -130,6 +114,13 @@ Payload type for Publisher Incompatible QoS callback.
 Mirrors rmw_offered_incompatible_qos_status_t from rmw/types.h
 """
 QoSOfferedIncompatibleQoSInfo = QoSRequestedIncompatibleQoSInfo
+
+
+class UnsupportedEventTypeException(Exception):
+    """Raised when registering a callback for an event type that is not supported."""
+
+    def __init__(self, *args):
+        Exception.__init__(self, 'QoS event type is unsupported', *args)
 
 
 class QoSEventHandler(Waitable):

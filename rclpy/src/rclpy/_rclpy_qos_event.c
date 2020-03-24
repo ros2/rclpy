@@ -33,14 +33,36 @@ static
 bool
 _check_rcl_return(rcl_ret_t ret, const char * error_msg)
 {
-  if (RCL_RET_OK != ret) {
-    PyErr_Format(
-      PyExc_RuntimeError,
-      "%s: %s", error_msg, rcl_get_error_string().str);
-    rcl_reset_error();
-    return false;
+  if (RCL_RET_OK == ret) {
+    return true;
   }
-  return true;
+
+  PyObject * exception = PyExc_RuntimeError;
+  PyObject * pyqos_event_module = NULL;
+  PyObject * pyqos_event_exception = NULL;
+
+  if (RCL_RET_UNSUPPORTED == ret) {
+    PyObject * pyqos_event_module = PyImport_ImportModule("rclpy.qos_event");
+    if (NULL == pyqos_event_module) {
+      goto throw_exception;
+    }
+
+    PyObject * pyqos_event_exception = PyObject_GetAttrString(pyqos_event_module, "UnsupportedEventTypeException");
+    if (NULL == pyqos_event_exception) {
+      goto throw_exception;
+    }
+
+    exception = pyqos_event_exception;
+  }
+
+throw_exception:
+  PyErr_Format(exception, "%s: %s", error_msg, rcl_get_error_string().str);
+  rcl_reset_error();
+
+  Py_XDECREF(pyqos_event_module);
+  Py_XDECREF(pyqos_event_exception);
+
+  return false;
 }
 
 static
