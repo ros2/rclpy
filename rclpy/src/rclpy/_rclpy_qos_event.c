@@ -37,7 +37,7 @@ _check_rcl_return(rcl_ret_t ret, const char * error_msg)
     return true;
   }
 
-  PyObject * exception = PyExc_RuntimeError;
+  PyObject * exception = RCLError;
   PyObject * pyqos_event_module = NULL;
   PyObject * pyqos_event_exception = NULL;
 
@@ -47,7 +47,8 @@ _check_rcl_return(rcl_ret_t ret, const char * error_msg)
       goto throw_exception;
     }
 
-    PyObject * pyqos_event_exception = PyObject_GetAttrString(pyqos_event_module, "UnsupportedEventTypeException");
+    PyObject * pyqos_event_exception = PyObject_GetAttrString(
+      pyqos_event_module, "UnsupportedEventTypeError");
     if (NULL == pyqos_event_exception) {
       goto throw_exception;
     }

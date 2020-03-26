@@ -43,12 +43,13 @@
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
-#include "./_rclpy_qos_event.c"
 
 static PyObject * RCLInvalidROSArgsError;
 static PyObject * UnknownROSArgsError;
 static PyObject * NodeNameNonExistentError;
 static PyObject * RCLError;
+
+#include "./_rclpy_qos_event.c"
 
 void
 _rclpy_context_handle_destructor(void * p)

@@ -27,29 +27,28 @@ class QoSPolicyKind(IntEnum):
     This enum matches the one defined in rmw/incompatible_qos_events_statuses.h
     """
 
-    RMW_QOS_POLICY_INVALID = 1 << 0
-    RMW_QOS_POLICY_DURABILITY = 1 << 1
-    RMW_QOS_POLICY_DEADLINE = 1 << 2
-    RMW_QOS_POLICY_LIVELINESS = 1 << 3
-    RMW_QOS_POLICY_RELIABILITY = 1 << 4
-    RMW_QOS_POLICY_HISTORY = 1 << 5
-    RMW_QOS_POLICY_LIFESPAN = 1 << 6
+    INVALID = 1 << 0
+    DURABILITY = 1 << 1
+    DEADLINE = 1 << 2
+    LIVELINESS = 1 << 3
+    RELIABILITY = 1 << 4
+    HISTORY = 1 << 5
+    LIFESPAN = 1 << 6
 
 
 def qos_policy_name_from_kind(policy_kind: QoSPolicyKind):
     """Get QoS policy name from QoSPolicyKind enum."""
-
-    if policy_kind == RMW_QOS_POLICY_DURABILITY:
+    if policy_kind == QoSPolicyKind.DURABILITY:
         return 'DURABILITY_QOS_POLICY'
-    elif policy_kind == RMW_QOS_POLICY_DEADLINE:
+    elif policy_kind == QoSPolicyKind.DEADLINE:
         return 'DEADLINE_QOS_POLICY'
-    elif policy_kind == RMW_QOS_POLICY_LIVELINESS:
+    elif policy_kind == QoSPolicyKind.LIVELINESS:
         return 'LIVELINESS_QOS_POLICY'
-    elif policy_kind == RMW_QOS_POLICY_RELIABILITY:
+    elif policy_kind == QoSPolicyKind.RELIABILITY:
         return 'RELIABILITY_QOS_POLICY'
-    elif policy_kind == RMW_QOS_POLICY_HISTORY:
+    elif policy_kind == QoSPolicyKind.HISTORY:
         return 'HISTORY_QOS_POLICY'
-    elif policy_kind == RMW_QOS_POLICY_LIFESPAN:
+    elif policy_kind == QoSPolicyKind.LIFESPAN:
         return 'LIFESPAN_QOS_POLICY'
     else:
         return 'INVALID_QOS_POLICY'
