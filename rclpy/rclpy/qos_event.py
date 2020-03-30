@@ -116,11 +116,8 @@ Mirrors rmw_offered_incompatible_qos_status_t from rmw/types.h
 QoSOfferedIncompatibleQoSInfo = QoSRequestedIncompatibleQoSInfo
 
 
-class UnsupportedEventTypeError(Exception):
-    """Raised when registering a callback for an event type that is not supported."""
-
-    def __init__(self, *args):
-        Exception.__init__(self, 'QoS event type is unsupported', *args)
+"""Raised when registering a callback for an event type that is not supported."""
+UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
 
 
 class QoSEventHandler(Waitable):

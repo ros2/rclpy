@@ -27,6 +27,7 @@ class QoSPolicyKind(IntEnum):
     This enum matches the one defined in rmw/incompatible_qos_events_statuses.h
     """
 
+    # TODO(mm3188): obtain these enum values from the rmw layer, instead of hardcoding
     INVALID = 1 << 0
     DURABILITY = 1 << 1
     DEADLINE = 1 << 2

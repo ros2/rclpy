@@ -44,10 +44,11 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
-static PyObject * RCLInvalidROSArgsError;
-static PyObject * UnknownROSArgsError;
 static PyObject * NodeNameNonExistentError;
 static PyObject * RCLError;
+static PyObject * RCLInvalidROSArgsError;
+static PyObject * UnknownROSArgsError;
+static PyObject * UnsupportedEventTypeError;
 
 #include "./_rclpy_qos_event.c"
 
@@ -5514,6 +5515,15 @@ PyMODINIT_FUNC PyInit__rclpy(void)
     "Thrown when a node name is not found.",
     RCLError, NULL);
   if (PyModule_AddObject(m, "NodeNameNonExistentError", NodeNameNonExistentError)) {
+    Py_DECREF(m);
+    return NULL;
+  }
+
+  UnsupportedEventTypeError = PyErr_NewExceptionWithDoc(
+    "_rclpy.UnsupportedEventTypeError",
+    "Thrown when registering a callback for an event type that is not supported.",
+    RCLError, NULL);
+  if (PyModule_AddObject(m, "UnsupportedEventTypeError", UnsupportedEventTypeError)) {
     Py_DECREF(m);
     return NULL;
   }
