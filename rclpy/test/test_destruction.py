@@ -261,3 +261,56 @@ def test_destroy_timer_asap():
             node.destroy_node()
     finally:
         rclpy.shutdown(context=context)
+
+
+triggered_function = False
+
+
+def test_context_on_shutdown_function():
+
+    class TestShutdown():
+
+        def __init__(self):
+            self.callback_triggered = False
+
+        def on_shutdown_method(self):
+            self.callback_triggered = True
+
+    def callback_function():
+        global triggered_function
+        triggered_function = True
+
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    context.on_shutdown(callback_function)
+    cb_class = TestShutdown()
+    context.on_shutdown(cb_class.on_shutdown_method)
+    rclpy.shutdown(context=context)
+    assert triggered_function, 'function should have been triggered'
+    assert cb_class.callback_triggered, 'method should have been triggered'
+
+
+def test_context_on_shutdown_weak_pointers():
+
+    class TestShutdown():
+
+        def __init__(self):
+            self.callback_triggered = False
+
+        def on_shutdown_method(self):
+            self.callback_triggered = True
+
+    def callback_function():
+        pass
+
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    context.on_shutdown(callback_function)
+    cb_class = TestShutdown()
+    context.on_shutdown(cb_class.on_shutdown_method)
+
+    # Check weakpointer logic
+    del cb_class
+    del callback_function
+
+    rclpy.shutdown(context=context)
