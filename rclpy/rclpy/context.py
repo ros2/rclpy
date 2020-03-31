@@ -14,6 +14,7 @@
 
 import sys
 import threading
+from types import MethodType
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -94,4 +95,7 @@ class Context:
             if not self.ok():
                 callback()
             else:
-                self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
+                if isinstance(callback, MethodType):
+                    self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
+                else:
+                    self._callbacks.append(weakref.ref(callback, self._remove_callback))
