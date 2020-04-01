@@ -20,8 +20,43 @@ from rclpy.impl.implementation_singleton import rclpy_action_implementation as _
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
+class QoSPolicyKind(IntEnum):
+    """
+    Enum for types of QoS policies that a Publisher or Subscription can set.
+
+    This enum matches the one defined in rmw/incompatible_qos_events_statuses.h
+    """
+
+    # TODO(mm3188): obtain these enum values from the rmw layer, instead of hardcoding
+    INVALID = 1 << 0
+    DURABILITY = 1 << 1
+    DEADLINE = 1 << 2
+    LIVELINESS = 1 << 3
+    RELIABILITY = 1 << 4
+    HISTORY = 1 << 5
+    LIFESPAN = 1 << 6
+
+
+def qos_policy_name_from_kind(policy_kind: QoSPolicyKind):
+    """Get QoS policy name from QoSPolicyKind enum."""
+    if policy_kind == QoSPolicyKind.DURABILITY:
+        return 'DURABILITY_QOS_POLICY'
+    elif policy_kind == QoSPolicyKind.DEADLINE:
+        return 'DEADLINE_QOS_POLICY'
+    elif policy_kind == QoSPolicyKind.LIVELINESS:
+        return 'LIVELINESS_QOS_POLICY'
+    elif policy_kind == QoSPolicyKind.RELIABILITY:
+        return 'RELIABILITY_QOS_POLICY'
+    elif policy_kind == QoSPolicyKind.HISTORY:
+        return 'HISTORY_QOS_POLICY'
+    elif policy_kind == QoSPolicyKind.LIFESPAN:
+        return 'LIFESPAN_QOS_POLICY'
+    else:
+        return 'INVALID_QOS_POLICY'
+
+
 class InvalidQoSProfileException(Exception):
-    """Raised when concstructing a QoSProfile with invalid arguments."""
+    """Raised when constructing a QoSProfile with invalid arguments."""
 
     def __init__(self, *args):
         Exception.__init__(self, 'Invalid QoSProfile', *args)
