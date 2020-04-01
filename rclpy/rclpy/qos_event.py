@@ -35,7 +35,6 @@ class QoSPublisherEventType(IntEnum):
 
     RCL_PUBLISHER_OFFERED_DEADLINE_MISSED = 0
     RCL_PUBLISHER_LIVELINESS_LOST = 1
-    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS = 2
 
 
 class QoSSubscriptionEventType(IntEnum):
@@ -47,7 +46,6 @@ class QoSSubscriptionEventType(IntEnum):
 
     RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED = 0
     RCL_SUBSCRIPTION_LIVELINESS_CHANGED = 1
-    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = 2
 
 
 """
@@ -75,18 +73,6 @@ QoSLivelinessChangedInfo = NamedTuple(
     ])
 
 """
-Payload type for Subscription Incompatible QoS callback.
-
-Mirrors rmw_requested_incompatible_qos_status_t from rmw/types.h
-"""
-QoSRequestedIncompatibleQoSInfo = NamedTuple(
-    'QoSRequestedIncompatibleQoSInfo', [
-        ('total_count', 'int'),
-        ('total_count_change', 'int'),
-        ('last_policy_kind', 'int'),
-    ])
-
-"""
 Payload type for Publisher Deadline callback.
 
 Mirrors rmw_offered_deadline_missed_status_t from rmw/types.h
@@ -107,17 +93,6 @@ QoSLivelinessLostInfo = NamedTuple(
         ('total_count', 'int'),
         ('total_count_change', 'int'),
     ])
-
-"""
-Payload type for Publisher Incompatible QoS callback.
-
-Mirrors rmw_offered_incompatible_qos_status_t from rmw/types.h
-"""
-QoSOfferedIncompatibleQoSInfo = QoSRequestedIncompatibleQoSInfo
-
-
-"""Raised when registering a callback for an event type that is not supported."""
-UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
 
 
 class QoSEventHandler(Waitable):
@@ -185,7 +160,6 @@ class SubscriptionEventCallbacks:
         *,
         deadline: Optional[Callable[[QoSRequestedDeadlineMissedInfo], None]] = None,
         liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None,
-        incompatible_qos: Optional[Callable[[QoSRequestedIncompatibleQoSInfo], None]] = None,
     ) -> None:
         """
         Create a SubscriptionEventCallbacks container.
@@ -197,7 +171,6 @@ class SubscriptionEventCallbacks:
         """
         self.deadline = deadline
         self.liveliness = liveliness
-        self.incompatible_qos = incompatible_qos
 
     def create_event_handlers(
         self, callback_group: CallbackGroup, subscription_handle: Handle,
@@ -215,12 +188,6 @@ class SubscriptionEventCallbacks:
                 callback=self.liveliness,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED,
                 parent_handle=subscription_handle))
-        if self.incompatible_qos:
-            event_handlers.append(QoSEventHandler(
-                callback_group=callback_group,
-                callback=self.incompatible_qos,
-                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS,
-                parent_handle=subscription_handle))
         return event_handlers
 
 
@@ -231,8 +198,7 @@ class PublisherEventCallbacks:
         self,
         *,
         deadline: Optional[Callable[[QoSOfferedDeadlineMissedInfo], None]] = None,
-        liveliness: Optional[Callable[[QoSLivelinessLostInfo], None]] = None,
-        incompatible_qos: Optional[Callable[[QoSRequestedIncompatibleQoSInfo], None]] = None
+        liveliness: Optional[Callable[[QoSLivelinessLostInfo], None]] = None
     ) -> None:
         """
         Create and return a PublisherEventCallbacks container.
@@ -244,7 +210,6 @@ class PublisherEventCallbacks:
         """
         self.deadline = deadline
         self.liveliness = liveliness
-        self.incompatible_qos = incompatible_qos
 
     def create_event_handlers(
         self, callback_group: CallbackGroup, publisher_handle: Handle,
@@ -261,11 +226,5 @@ class PublisherEventCallbacks:
                 callback_group=callback_group,
                 callback=self.liveliness,
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST,
-                parent_handle=publisher_handle))
-        if self.incompatible_qos:
-            event_handlers.append(QoSEventHandler(
-                callback_group=callback_group,
-                callback=self.incompatible_qos,
-                event_type=QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS,
                 parent_handle=publisher_handle))
         return event_handlers

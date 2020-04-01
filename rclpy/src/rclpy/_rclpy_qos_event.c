@@ -14,17 +14,14 @@
 
 #include "rcl/event.h"
 #include "rclpy_common/handle.h"
-#include "rmw/incompatible_qos_events_statuses.h"
 
 typedef union _qos_event_callback_data {
   // Subscription events
   rmw_requested_deadline_missed_status_t requested_deadline_missed;
   rmw_liveliness_changed_status_t liveliness_changed;
-  rmw_requested_qos_incompatible_event_status_t requested_incompatible_qos;
   // Publisher events
   rmw_offered_deadline_missed_status_t offered_deadline_missed;
   rmw_liveliness_lost_status_t liveliness_lost;
-  rmw_offered_qos_incompatible_event_status_t offered_incompatible_qos;
 } _qos_event_callback_data_t;
 
 typedef PyObject * (* _qos_event_data_filler_function)(_qos_event_callback_data_t *);
@@ -33,15 +30,14 @@ static
 bool
 _check_rcl_return(rcl_ret_t ret, const char * error_msg)
 {
-  if (RCL_RET_OK == ret) {
-    return true;
+  if (RCL_RET_OK != ret) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "%s: %s", error_msg, rcl_get_error_string().str);
+    rcl_reset_error();
+    return false;
   }
-
-  PyObject * exception = (RCL_RET_UNSUPPORTED == ret) ? UnsupportedEventTypeError : RCLError;
-  PyErr_Format(exception, "%s: %s", error_msg, rcl_get_error_string().str);
-  rcl_reset_error();
-
-  return false;
+  return true;
 }
 
 static
@@ -165,22 +161,6 @@ _liveliness_changed_to_py_object(_qos_event_callback_data_t * data)
 
 static
 PyObject *
-_requested_incompatible_qos_to_py_object(_qos_event_callback_data_t * data)
-{
-  rmw_requested_qos_incompatible_event_status_t * actual_data = &data->requested_incompatible_qos;
-  PyObject * args = Py_BuildValue(
-    "iii",
-    actual_data->total_count,
-    actual_data->total_count_change,
-    actual_data->last_policy_kind);
-  if (!args) {
-    return NULL;
-  }
-  return _create_py_qos_event("QoSRequestedIncompatibleQoSInfo", args);
-}
-
-static
-PyObject *
 _offered_deadline_missed_to_py_object(_qos_event_callback_data_t * data)
 {
   rmw_offered_deadline_missed_status_t * actual_data = &data->offered_deadline_missed;
@@ -210,22 +190,6 @@ _liveliness_lost_to_py_object(_qos_event_callback_data_t * data)
 }
 
 static
-PyObject *
-_offered_incompatible_qos_to_py_object(_qos_event_callback_data_t * data)
-{
-  rmw_offered_qos_incompatible_event_status_t * actual_data = &data->offered_incompatible_qos;
-  PyObject * args = Py_BuildValue(
-    "iii",
-    actual_data->total_count,
-    actual_data->total_count_change,
-    actual_data->last_policy_kind);
-  if (!args) {
-    return NULL;
-  }
-  return _create_py_qos_event("QoSOfferedIncompatibleQoSInfo", args);
-}
-
-static
 _qos_event_data_filler_function
 _get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LONG event_type)
 {
@@ -235,8 +199,6 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LO
         return &_requested_deadline_missed_to_py_object;
       case RCL_SUBSCRIPTION_LIVELINESS_CHANGED:
         return &_liveliness_changed_to_py_object;
-      case RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS:
-        return &_requested_incompatible_qos_to_py_object;
       default:
         PyErr_Format(
           PyExc_ValueError,
@@ -248,8 +210,6 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LO
         return &_offered_deadline_missed_to_py_object;
       case RCL_PUBLISHER_LIVELINESS_LOST:
         return &_liveliness_lost_to_py_object;
-      case RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS:
-        return &_offered_incompatible_qos_to_py_object;
       default:
         PyErr_Format(
           PyExc_ValueError,

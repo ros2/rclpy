@@ -95,7 +95,7 @@ class Context:
             if not self.ok():
                 callback()
             else:
-                if isinstance(callback, MethodType):
+                if type(callback) == MethodType:
                     self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
                 else:
                     self._callbacks.append(weakref.ref(callback, self._remove_callback))
