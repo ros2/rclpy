@@ -22,6 +22,7 @@ import rclpy
 from rclpy.callback_groups import CallbackGroup
 from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
@@ -180,6 +181,8 @@ class QoSEventHandler(Waitable):
 class SubscriptionEventCallbacks:
     """Container to provide middleware event callbacks for a Subscription."""
 
+    _logger = rclpy.logging.get_logger('SubscriptionEventCallbacks')
+
     def __init__(
         self,
         *,
@@ -199,6 +202,13 @@ class SubscriptionEventCallbacks:
         self.liveliness = liveliness
         self.incompatible_qos = incompatible_qos
 
+    def _default_incompatible_qos_callback(self, event):
+        policy_name = qos_policy_name_from_kind(event.last_policy_kind)
+        self._logger.warn(
+            'New publisher discovered on this topic, offering incompatible QoS. '
+            'No messages will be received from it. '
+            'Last incompatible policy: {}'.format(policy_name))
+
     def create_event_handlers(
         self, callback_group: CallbackGroup, subscription_handle: Handle,
     ) -> List[QoSEventHandler]:
@@ -215,17 +225,35 @@ class SubscriptionEventCallbacks:
                 callback=self.liveliness,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED,
                 parent_handle=subscription_handle))
+
         if self.incompatible_qos:
             event_handlers.append(QoSEventHandler(
                 callback_group=callback_group,
                 callback=self.incompatible_qos,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS,
                 parent_handle=subscription_handle))
+        else:
+            # Register default callback when not specified
+            try:
+                event_type = QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS
+                event_handlers.append(QoSEventHandler(
+                    callback_group=callback_group,
+                    callback=self._default_incompatible_qos_callback,
+                    event_type=event_type,
+                    parent_handle=subscription_handle))
+            except UnsupportedEventTypeError:
+                self._logger.warn(
+                    'This rmw implementation does not support ON_REQUESTED_INCOMPATIBLE_QOS '
+                    'events, you will not be notified when Subscriptions request an incompatible '
+                    'QoS profile from Publishers on the same topic.',
+                    once=True)
         return event_handlers
 
 
 class PublisherEventCallbacks:
     """Container to provide middleware event callbacks for a Publisher."""
+
+    _logger = rclpy.logging.get_logger('SubscriptionEventCallbacks')
 
     def __init__(
         self,
@@ -246,6 +274,13 @@ class PublisherEventCallbacks:
         self.liveliness = liveliness
         self.incompatible_qos = incompatible_qos
 
+    def _default_incompatible_qos_callback(self, event):
+        policy_name = qos_policy_name_from_kind(event.last_policy_kind)
+        self._logger.warn(
+            'New subscription discovered on this topic, requesting incompatible QoS. '
+            'No messages will be sent to it. '
+            'Last incompatible policy: {}'.format(policy_name))
+
     def create_event_handlers(
         self, callback_group: CallbackGroup, publisher_handle: Handle,
     ) -> List[QoSEventHandler]:
@@ -262,10 +297,25 @@ class PublisherEventCallbacks:
                 callback=self.liveliness,
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST,
                 parent_handle=publisher_handle))
+
         if self.incompatible_qos:
             event_handlers.append(QoSEventHandler(
                 callback_group=callback_group,
                 callback=self.incompatible_qos,
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS,
                 parent_handle=publisher_handle))
+        else:
+            # Register default callback when not specified
+            try:
+                event_handlers.append(QoSEventHandler(
+                    callback_group=callback_group,
+                    callback=self._default_incompatible_qos_callback,
+                    event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_OFFERED_INCOMPATIBLE_QOS,
+                    parent_handle=publisher_handle))
+            except UnsupportedEventTypeError:
+                self._logger.warn(
+                    'This rmw implementation does not support ON_OFFERED_INCOMPATIBLE_QOS '
+                    'events, you will not be notified when Publishers offer an incompatible '
+                    'QoS profile to Subscriptions on the same topic.',
+                    once=True)
         return event_handlers
