@@ -2999,7 +2999,20 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
-#define GET_LIST_READY_ENTITIES(ENTITY_TYPE) \
+// this macro is intended to be used within the following macro only
+#define APPEND_TIMESTAMP(ENTITY_TYPE) \
+  { \
+    PyObject * obj = sizeof(int64_t) == sizeof(long) ? \
+      PyLong_FromLong(wait_set->ENTITY_TYPE ## s_timestamps[idx]) : \
+      PyLong_FromLongLong(wait_set->ENTITY_TYPE ## s_timestamps[idx]); \
+    int rc = PyList_Append(timestamp_list, obj); \
+    if(rc != 0) { \
+      Py_DECREF(rt); \
+      return NULL; \
+    } \
+  }
+
+#define GET_LIST_READY_ENTITIES(ENTITY_TYPE, extra_append) \
   size_t idx; \
   size_t idx_max; \
   idx_max = wait_set->size_of_ ## ENTITY_TYPE ## s; \
@@ -3011,16 +3024,17 @@ rclpy_destroy_wait_set(PyObject * Py_UNUSED(self), PyObject * args)
         int rc = PyList_Append(entity_ready_list, obj); \
         Py_DECREF(obj); \
         if (rc != 0) { \
-          Py_DECREF(entity_ready_list); \
+          Py_DECREF(rt); \
           return NULL; \
         } \
+        extra_append \
       } else { \
-        Py_DECREF(entity_ready_list); \
+        Py_DECREF(rt); \
         return NULL; \
       } \
     } \
   } \
-  return entity_ready_list;
+  return rt;
 /// Get list of non-null entities in wait set
 /**
  * Raises ValueError if pywait_set is not a wait set capsule
@@ -3045,18 +3059,24 @@ rclpy_get_ready_entities(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   PyObject * entity_ready_list = PyList_New(0);
-  if (0 == strcmp(entity_type, "subscription")) {
-    GET_LIST_READY_ENTITIES(subscription)
-  } else if (0 == strcmp(entity_type, "client")) {
-    GET_LIST_READY_ENTITIES(client)
-  } else if (0 == strcmp(entity_type, "service")) {
-    GET_LIST_READY_ENTITIES(service)
-  } else if (0 == strcmp(entity_type, "timer")) {
-    GET_LIST_READY_ENTITIES(timer)
-  } else if (0 == strcmp(entity_type, "guard_condition")) {
-    GET_LIST_READY_ENTITIES(guard_condition)
-  }
+  PyObject * timestamp_list = PyList_New(0);
+  PyObject * rt = PyTuple_Pack(2, entity_ready_list, timestamp_list);
+  // we can decref, since the tuple holds a reference
   Py_DECREF(entity_ready_list);
+  Py_DECREF(timestamp_list);
+
+  if (0 == strcmp(entity_type, "subscription")) {
+    GET_LIST_READY_ENTITIES(subscription, APPEND_TIMESTAMP(subscription))
+  } else if (0 == strcmp(entity_type, "client")) {
+    GET_LIST_READY_ENTITIES(client, )
+  } else if (0 == strcmp(entity_type, "service")) {
+    GET_LIST_READY_ENTITIES(service, )
+  } else if (0 == strcmp(entity_type, "timer")) {
+    GET_LIST_READY_ENTITIES(timer, )
+  } else if (0 == strcmp(entity_type, "guard_condition")) {
+    GET_LIST_READY_ENTITIES(guard_condition, )
+  }
+  Py_DECREF(rt);
   PyErr_Format(
     PyExc_RuntimeError, "'%s' is not a known entity", entity_type);
   return NULL;

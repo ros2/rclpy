@@ -565,11 +565,11 @@ class Executor:
                     raise ExternalShutdownException()
 
                 # get ready entities
-                subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
-                guards_ready = _rclpy.rclpy_get_ready_entities('guard_condition', wait_set)
-                timers_ready = _rclpy.rclpy_get_ready_entities('timer', wait_set)
-                clients_ready = _rclpy.rclpy_get_ready_entities('client', wait_set)
-                services_ready = _rclpy.rclpy_get_ready_entities('service', wait_set)
+                subs_ready, _ = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
+                guards_ready, _ = _rclpy.rclpy_get_ready_entities('guard_condition', wait_set)
+                timers_ready, _ = _rclpy.rclpy_get_ready_entities('timer', wait_set)
+                clients_ready, _ = _rclpy.rclpy_get_ready_entities('client', wait_set)
+                services_ready, _ = _rclpy.rclpy_get_ready_entities('service', wait_set)
 
                 # Mark all guards as triggered before yielding since they're auto-taken
                 for gc in guards:
