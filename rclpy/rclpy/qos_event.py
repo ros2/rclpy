@@ -253,7 +253,7 @@ class SubscriptionEventCallbacks:
 class PublisherEventCallbacks:
     """Container to provide middleware event callbacks for a Publisher."""
 
-    _logger = rclpy.logging.get_logger('SubscriptionEventCallbacks')
+    _logger = rclpy.logging.get_logger('PublisherEventCallbacks')
 
     def __init__(
         self,
@@ -310,7 +310,7 @@ class PublisherEventCallbacks:
                 event_handlers.append(QoSEventHandler(
                     callback_group=callback_group,
                     callback=self._default_incompatible_qos_callback,
-                    event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_OFFERED_INCOMPATIBLE_QOS,
+                    event_type=QoSSubscriptionEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS,
                     parent_handle=publisher_handle))
             except UnsupportedEventTypeError:
                 self._logger.warn(
