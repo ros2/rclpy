@@ -59,30 +59,33 @@ class TestQoSEvent(unittest.TestCase):
         liveliness_callback = Mock()
         deadline_callback = Mock()
         incompatible_qos_callback = Mock()
+        expected_num_event_handlers = 0 if self.is_fastrtps else 1
 
         # No arg
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
-        self.assertEqual(len(publisher.event_handlers), 0)
+        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
         self.node.destroy_publisher(publisher)
 
         # Arg with no callbacks
         publisher = self.node.create_publisher(
             EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), 0)
+        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
         self.node.destroy_publisher(publisher)
 
         # Arg with one of the callbacks
         callbacks.deadline = deadline_callback
+        expected_num_event_handlers += 1
         publisher = self.node.create_publisher(
             EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), 1)
+        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
         self.node.destroy_publisher(publisher)
 
         # Arg with two callbacks
         callbacks.liveliness = liveliness_callback
+        expected_num_event_handlers += 1
         publisher = self.node.create_publisher(
             EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), 2)
+        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
         self.node.destroy_publisher(publisher)
 
         # Arg with three callbacks
@@ -101,31 +104,34 @@ class TestQoSEvent(unittest.TestCase):
         deadline_callback = Mock()
         message_callback = Mock()
         incompatible_qos_callback = Mock()
+        expected_num_event_handlers = 0 if self.is_fastrtps else 1
 
         # No arg
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10)
-        self.assertEqual(len(subscription.event_handlers), 0)
+        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
         self.node.destroy_subscription(subscription)
 
         # Arg with no callbacks
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), 0)
+        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
         self.node.destroy_subscription(subscription)
 
         # Arg with one of the callbacks
         callbacks.deadline = deadline_callback
+        expected_num_event_handlers += 1
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), 1)
+        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
         self.node.destroy_subscription(subscription)
 
         # Arg with two callbacks
         callbacks.liveliness = liveliness_callback
+        expected_num_event_handlers += 1
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), 2)
+        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
         self.node.destroy_subscription(subscription)
 
         # Arg with three callbacks
@@ -142,22 +148,25 @@ class TestQoSEvent(unittest.TestCase):
         original_pub_logger = PublisherEventCallbacks._logger
         original_sub_logger = SubscriptionEventCallbacks._logger
 
+        pub_log_msg = None
+        sub_log_msg = None
+        log_msgs_future = Future()
         class MockLogger:
-            pub_log_msg = None
-            sub_log_msg = None
-            log_msgs_future = Future()
 
             def __init__(self, name):
                 self.name = name
 
             def warn(self, message, once=False):
-                if self.name == 'PublisherEventCallbacks':
-                    self.pub_log_msg = message
-                elif self.name == 'SubscriptionEventCallbacks':
-                    self.sub_log_msg = message
+                nonlocal pub_log_msg, sub_log_msg, log_msgs_future
 
-                if self.pub_log_msg is not None and self.sub_log_msg is not None:
-                    self.log_msgs_future.set_result(True)
+                if self.name == 'PublisherEventCallbacks':
+                    pub_log_msg = message
+                elif self.name == 'SubscriptionEventCallbacks':
+                    sub_log_msg = message
+
+                if pub_log_msg is not None and sub_log_msg is not None:
+                    log_msgs_future.set_result(True)
+
         PublisherEventCallbacks._logger = MockLogger('PublisherEventCallbacks')
         SubscriptionEventCallbacks._logger = MockLogger('SubscriptionEventCallbacks')
 
@@ -172,17 +181,19 @@ class TestQoSEvent(unittest.TestCase):
             EmptyMsg, self.topic_name, message_callback, qos_profile_subscription)
 
         executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
-        rclpy.spin_until_future_complete(self.node, MockLogger.log_msgs_future, executor, 10.0)
+        rclpy.spin_until_future_complete(self.node, log_msgs_future, executor, 10.0)
 
         if not self.is_fastrtps:
             self.assertEqual(
-                MockLogger.pub_log_msg,
+                pub_log_msg,
                 'New subscription discovered on this topic, requesting incompatible QoS. '
-                'No messages will be sent to it. Last incompatible policy: DURABILITY_QOS_POLICY')
+                'No messages will be sent to it. '
+                'Last incompatible policy: DURABILITY_QOS_POLICY')
             self.assertEqual(
-                MockLogger.sub_log_msg,
+                sub_log_msg,
                 'New publisher discovered on this topic, offering incompatible QoS. '
-                'No messages will be sent to it. Last incompatible policy: DURABILITY_QOS_POLICY')
+                'No messages will be received from it. '
+                'Last incompatible policy: DURABILITY_QOS_POLICY')
 
         PublisherEventCallbacks._logger = original_pub_logger
         SubscriptionEventCallbacks._logger = original_sub_logger
