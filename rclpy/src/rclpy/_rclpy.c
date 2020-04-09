@@ -3513,6 +3513,116 @@ cleanup:
   return pynode_names_and_namespaces;
 }
 
+/// Get the list of nodes discovered by the provided node, with their respective security contexts.
+/**
+ *  Raises ValueError if pynode is not a node capsule
+ *  Raises RuntimeError  if there is an rcl error
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \return Python list of tuples where each tuple contains three strings:
+ *   the node name,node namespace and the security context.
+ */
+static PyObject *
+rclpy_get_node_names_and_namespaces_with_security_contexts(
+  PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+  rcutils_string_array_t node_names = rcutils_get_zero_initialized_string_array();
+  rcutils_string_array_t node_namespaces = rcutils_get_zero_initialized_string_array();
+  rcutils_string_array_t security_contexts = rcutils_get_zero_initialized_string_array();
+  rcl_ret_t ret = rcl_get_node_names_with_security_contexts(
+    node, allocator, &node_names, &node_namespaces, &security_contexts);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(
+      RCLError, "Failed to get node names: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  rcutils_ret_t fini_names_ret;
+  rcutils_ret_t fini_namespaces_ret;
+  rcutils_ret_t fini_security_contexts_ret;
+  PyObject * pynode_names_and_namespaces = PyList_New(node_names.size);
+  if (!pynode_names_and_namespaces) {
+    goto cleanup;
+  }
+  size_t idx;
+  for (idx = 0; idx < node_names.size; ++idx) {
+    PyObject * pytuple = PyTuple_New(3);
+    if (!pytuple) {
+      goto cleanup;
+    }
+    PyObject * pynode_name = PyUnicode_FromString(node_names.data[idx]);
+    if (!pynode_name) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
+    // Steals the reference
+    PyTuple_SET_ITEM(pytuple, 0, pynode_name);
+    PyObject * pynode_namespace = PyUnicode_FromString(node_namespaces.data[idx]);
+    if (!pynode_namespace) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
+    // Steals the reference
+    PyTuple_SET_ITEM(pytuple, 1, pynode_namespace);
+    PyObject * pynode_security_contexts = PyUnicode_FromString(security_contexts.data[idx]);
+    if (!pynode_security_contexts) {
+      Py_DECREF(pytuple);
+      goto cleanup;
+    }
+    // Steals the reference
+    PyTuple_SET_ITEM(pytuple, 2, pynode_security_contexts);
+    // Steals the reference
+    PyList_SET_ITEM(pynode_names_and_namespaces, idx, pytuple);
+  }
+
+cleanup:
+  fini_names_ret = rcutils_string_array_fini(&node_names);
+  fini_namespaces_ret = rcutils_string_array_fini(&node_namespaces);
+  fini_security_contexts_ret = rcutils_string_array_fini(&security_contexts);
+  if (PyErr_Occurred()) {
+    Py_XDECREF(pynode_names_and_namespaces);
+    return NULL;
+  }
+  if (fini_names_ret != RCUTILS_RET_OK) {
+    PyErr_Format(
+      RCLError,
+      "Failed to destroy node_names: %s", rcl_get_error_string().str);
+    Py_DECREF(pynode_names_and_namespaces);
+    rcl_reset_error();
+    return NULL;
+  }
+  if (fini_namespaces_ret != RCUTILS_RET_OK) {
+    PyErr_Format(
+      RCLError,
+      "Failed to destroy node_namespaces: %s", rcl_get_error_string().str);
+    Py_DECREF(pynode_names_and_namespaces);
+    rcl_reset_error();
+    return NULL;
+  }
+  if (fini_security_contexts_ret != RCUTILS_RET_OK) {
+    PyErr_Format(
+      RCLError,
+      "Failed to destroy security_contexts: %s", rcl_get_error_string().str);
+    Py_DECREF(pynode_names_and_namespaces);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  return pynode_names_and_namespaces;
+}
+
 /// Get a list of service names and types associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
@@ -5377,6 +5487,12 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_node_names_and_namespaces", rclpy_get_node_names_and_namespaces, METH_VARARGS,
     "Get node names and namespaces list from graph API."
+  },
+  {
+    "rclpy_get_node_names_and_namespaces_with_security_contexts",
+    rclpy_get_node_names_and_namespaces_with_security_contexts,
+    METH_VARARGS,
+    "Get node names, namespaces, and security contexts list from graph API."
   },
   {
     "rclpy_get_node_parameters", rclpy_get_node_parameters, METH_VARARGS,

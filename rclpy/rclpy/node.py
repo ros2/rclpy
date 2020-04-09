@@ -1644,6 +1644,15 @@ class Node:
         with self.handle as capsule:
             return _rclpy.rclpy_get_node_names_and_namespaces(capsule)
 
+    def get_node_names_and_namespaces_with_security_contexts(self) -> List[Tuple[str, str, str]]:
+        """
+        Get a list of names, namespaces and security contexts for discovered nodes.
+
+        :return: List of tuples containing two strings: the node name and node namespace.
+        """
+        with self.handle as capsule:
+            return _rclpy.rclpy_get_node_names_and_namespaces_with_security_contexts(capsule)
+
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
         validate_full_topic_name(fq_topic_name)

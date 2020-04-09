@@ -177,6 +177,10 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names_and_namespaces()
 
+    def test_node_names_and_namespaces_with_security_contexts(self):
+        # test that it doesn't raise
+        self.node.get_node_names_and_namespaces_with_security_contexts()
+
     def assert_qos_equal(self, expected_qos_profile, actual_qos_profile, *, is_publisher):
         # Depth and history are skipped because they are not retrieved.
         self.assertEqual(
