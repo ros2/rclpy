@@ -1648,7 +1648,8 @@ class Node:
         """
         Get a list of names, namespaces and security contexts for discovered nodes.
 
-        :return: List of tuples containing two strings: the node name and node namespace.
+        :return: List of tuples containing three strings: the node name, node namespace
+            and security context.
         """
         with self.handle as capsule:
             return _rclpy.rclpy_get_node_names_and_namespaces_with_security_contexts(capsule)
