@@ -39,7 +39,7 @@
 #include <rmw/validate_full_topic_name.h>
 #include <rmw/validate_namespace.h>
 #include <rmw/validate_node_name.h>
-#include <rosidl_generator_c/message_type_support_struct.h>
+#include <rosidl_runtime_c/message_type_support_struct.h>
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
