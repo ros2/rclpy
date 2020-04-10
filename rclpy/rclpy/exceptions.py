@@ -71,7 +71,8 @@ class ParameterException(Exception):
     """Base exception for parameter-related errors."""
 
     def __init__(self, error_msg, parameters, *args):
-        Exception.__init__(self, '{error_msg}: {parameters}'.format(error_msg, parameters), *args)
+        Exception.__init__(self, '{error_msg}: {parameters}'.format(
+            error_msg=error_msg, parameters=parameters), *args)
 
 
 class ParameterNotDeclaredException(ParameterException):
