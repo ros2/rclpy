@@ -3423,6 +3423,18 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * args)
   Py_RETURN_NONE;
 }
 
+/// Get the list of nodes discovered by the provided node
+/**
+ *  Raises ValueError if pynode is not a node capsule
+ *  Raises RuntimeError  if there is an rcl error
+ *
+ * \param[in] args arguments tuple, composed by only one argument:
+ *  - node: Capsule pointing to the node
+ * \param[in] use_security_contexts specifies if the output includes the security context or not
+ * \return Python list of tuples, containing:
+ *  node name, node namespace, and
+ *  security_context if `use_security_contexts` is true.
+ */
 static PyObject *
 rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
 {
