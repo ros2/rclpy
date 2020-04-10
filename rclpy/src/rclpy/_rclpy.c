@@ -3567,7 +3567,7 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
  *
  * \param[in] pynode Capsule pointing to the node
  * \return Python list of tuples where each tuple contains three strings:
- *   the node name,node namespace and the security context.
+ *   node name, namespace and security context.
  */
 static PyObject *
 rclpy_get_node_names_and_namespaces_with_security_contexts(
