@@ -1646,7 +1646,7 @@ class Node:
 
     def get_node_names_and_namespaces_with_enclaves(self) -> List[Tuple[str, str, str]]:
         """
-        Get a list of names, namespaces and security contexts for discovered nodes.
+        Get a list of names, namespaces and enclaves for discovered nodes.
 
         :return: List of tuples containing three strings: the node name, node namespace
             and enclave.
