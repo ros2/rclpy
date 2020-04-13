@@ -3475,10 +3475,9 @@ rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
     goto cleanup;
   }
 
-  size_t tuple_size = use_security_contexts ? 3 : 2;
   size_t idx;
   for (idx = 0; idx < node_names.size; ++idx) {
-    PyObject * pytuple = PyTuple_New(tuple_size);
+    PyObject * pytuple = PyTuple_New(use_security_contexts ? 3 : 2);
     if (!pytuple) {
       goto cleanup;
     }
