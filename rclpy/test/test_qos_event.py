@@ -145,30 +145,24 @@ class TestQoSEvent(unittest.TestCase):
             self.assertTrue(self.is_fastrtps)
 
     def test_default_incompatible_qos_callbacks(self):
-        original_pub_logger = PublisherEventCallbacks._logger
-        original_sub_logger = SubscriptionEventCallbacks._logger
-
         pub_log_msg = None
         sub_log_msg = None
         log_msgs_future = Future()
-        class MockLogger:
 
-            def __init__(self, name):
-                self.name = name
+        class MockLogger:
 
             def warn(self, message, once=False):
                 nonlocal pub_log_msg, sub_log_msg, log_msgs_future
 
-                if self.name == 'PublisherEventCallbacks':
+                if message.startswith('New subscription discovered'):
                     pub_log_msg = message
-                elif self.name == 'SubscriptionEventCallbacks':
+                elif message.startswith('New publisher discovered'):
                     sub_log_msg = message
 
                 if pub_log_msg is not None and sub_log_msg is not None:
                     log_msgs_future.set_result(True)
 
-        PublisherEventCallbacks._logger = MockLogger('PublisherEventCallbacks')
-        SubscriptionEventCallbacks._logger = MockLogger('SubscriptionEventCallbacks')
+        self.node._logger = MockLogger()
 
         qos_profile_publisher = QoSProfile(
             depth=10, durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE)
@@ -194,9 +188,6 @@ class TestQoSEvent(unittest.TestCase):
                 'New publisher discovered on this topic, offering incompatible QoS. '
                 'No messages will be received from it. '
                 'Last incompatible policy: DURABILITY_QOS_POLICY')
-
-        PublisherEventCallbacks._logger = original_pub_logger
-        SubscriptionEventCallbacks._logger = original_sub_logger
 
     def _create_event_handle(self, parent_entity, event_type):
         with parent_entity.handle as parent_capsule:

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import math
 
 from typing import Any
@@ -1150,9 +1151,14 @@ class Node:
 
         publisher_handle = Handle(publisher_capsule)
 
+        if event_callbacks:
+            event_callbacks_with_logger = copy.copy(event_callbacks)
+        else:
+            event_callbacks_with_logger = PublisherEventCallbacks()
+        event_callbacks_with_logger._logger = self.get_logger()
         publisher = Publisher(
             publisher_handle, msg_type, topic, qos_profile,
-            event_callbacks=event_callbacks or PublisherEventCallbacks(),
+            event_callbacks=event_callbacks_with_logger,
             callback_group=callback_group)
         self.__publishers.append(publisher)
         self._wake_executor()
@@ -1208,10 +1214,15 @@ class Node:
 
         subscription_handle = Handle(subscription_capsule)
 
+        if event_callbacks:
+            event_callbacks_with_logger = copy.copy(event_callbacks)
+        else:
+            event_callbacks_with_logger = PublisherEventCallbacks()
+        event_callbacks_with_logger._logger = self.get_logger()
         subscription = Subscription(
             subscription_handle, msg_type,
             topic, callback, callback_group, qos_profile, raw,
-            event_callbacks=event_callbacks or SubscriptionEventCallbacks())
+            event_callbacks=event_callbacks_with_logger)
         self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
 

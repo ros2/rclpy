@@ -22,7 +22,6 @@ import rclpy
 from rclpy.callback_groups import CallbackGroup
 from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
@@ -182,14 +181,13 @@ class QoSEventHandler(Waitable):
 class SubscriptionEventCallbacks:
     """Container to provide middleware event callbacks for a Subscription."""
 
-    _logger = get_logger('SubscriptionEventCallbacks')
-
     def __init__(
         self,
         *,
         deadline: Optional[Callable[[QoSRequestedDeadlineMissedInfo], None]] = None,
         liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None,
         incompatible_qos: Optional[Callable[[QoSRequestedIncompatibleQoSInfo], None]] = None,
+        use_default_callbacks: bool = True,
     ) -> None:
         """
         Create a SubscriptionEventCallbacks container.
@@ -198,10 +196,15 @@ class SubscriptionEventCallbacks:
             requested Deadline.
         :param liveliness: A user-defined callback that is called when the Liveliness of
             a Publisher on subscribed topic changes.
+        :param incompatible_qos: A user-defined callback that is called when a Publisher
+            with incompatible QoS policies is discovered on subscribed topic.
+        :param use_default_callbacks: Whether or not to use default callbacks when the user
+            doesn't supply one
         """
         self.deadline = deadline
         self.liveliness = liveliness
         self.incompatible_qos = incompatible_qos
+        self.use_default_callbacks = use_default_callbacks
 
     def _default_incompatible_qos_callback(self, event):
         policy_name = qos_policy_name_from_kind(event.last_policy_kind)
@@ -234,7 +237,7 @@ class SubscriptionEventCallbacks:
                 callback=self.incompatible_qos,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS,
                 parent_handle=subscription_handle))
-        else:
+        elif self.use_default_callbacks:
             # Register default callback when not specified
             try:
                 event_type = QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS
@@ -256,14 +259,13 @@ class SubscriptionEventCallbacks:
 class PublisherEventCallbacks:
     """Container to provide middleware event callbacks for a Publisher."""
 
-    _logger = get_logger('PublisherEventCallbacks')
-
     def __init__(
         self,
         *,
         deadline: Optional[Callable[[QoSOfferedDeadlineMissedInfo], None]] = None,
         liveliness: Optional[Callable[[QoSLivelinessLostInfo], None]] = None,
-        incompatible_qos: Optional[Callable[[QoSRequestedIncompatibleQoSInfo], None]] = None
+        incompatible_qos: Optional[Callable[[QoSRequestedIncompatibleQoSInfo], None]] = None,
+        use_default_callbacks: bool = True,
     ) -> None:
         """
         Create and return a PublisherEventCallbacks container.
@@ -272,10 +274,15 @@ class PublisherEventCallbacks:
             its offered Deadline.
         :param liveliness: A user-defined callback that is called when this Publisher
             fails to signal its Liveliness and is reported as not-alive.
+        :param incompatible_qos: A user-defined callback that is called when a Subscription
+            with incompatible QoS policies is discovered on subscribed topic.
+        :param use_default_callbacks: Whether or not to use default callbacks when the user
+            doesn't supply one
         """
         self.deadline = deadline
         self.liveliness = liveliness
         self.incompatible_qos = incompatible_qos
+        self.use_default_callbacks = use_default_callbacks
 
     def _default_incompatible_qos_callback(self, event):
         policy_name = qos_policy_name_from_kind(event.last_policy_kind)
@@ -308,7 +315,7 @@ class PublisherEventCallbacks:
                 callback=self.incompatible_qos,
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS,
                 parent_handle=publisher_handle))
-        else:
+        elif self.use_default_callbacks:
             # Register default callback when not specified
             try:
                 event_handlers.append(QoSEventHandler(
