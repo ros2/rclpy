@@ -3430,13 +3430,13 @@ rclpy_shutdown(PyObject * Py_UNUSED(self), PyObject * args)
  *
  * \param[in] args arguments tuple, composed by only one argument:
  *  - node: Capsule pointing to the node
- * \param[in] use_security_contexts specifies if the output includes the security context or not
+ * \param[in] get_enclaves specifies if the output includes the enclaves names or not
  * \return Python list of tuples, containing:
  *  node name, node namespace, and
- *  security_context if `use_security_contexts` is true.
+ *  enclave if `get_enclaves` is true.
  */
 static PyObject *
-rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
+rclpy_get_node_names_impl(PyObject * args, bool get_enclaves)
 {
   PyObject * pynode;
 
@@ -3451,11 +3451,11 @@ rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
   }
   rcutils_string_array_t node_names = rcutils_get_zero_initialized_string_array();
   rcutils_string_array_t node_namespaces = rcutils_get_zero_initialized_string_array();
-  rcutils_string_array_t security_contexts = rcutils_get_zero_initialized_string_array();
+  rcutils_string_array_t enclaves = rcutils_get_zero_initialized_string_array();
   rcl_ret_t ret = RCL_RET_OK;
-  if (use_security_contexts) {
-    ret = rcl_get_node_names_with_security_contexts(
-      node, allocator, &node_names, &node_namespaces, &security_contexts);
+  if (get_enclaves) {
+    ret = rcl_get_node_names_with_enclaves(
+      node, allocator, &node_names, &node_namespaces, &enclaves);
   } else {
     ret = rcl_get_node_names(
       node, allocator, &node_names, &node_namespaces);
@@ -3469,7 +3469,7 @@ rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
 
   rcutils_ret_t fini_names_ret;
   rcutils_ret_t fini_namespaces_ret;
-  rcutils_ret_t fini_security_contexts_ret;
+  rcutils_ret_t fini_enclaves_ret;
   PyObject * pynode_names_and_namespaces = PyList_New(node_names.size);
   if (!pynode_names_and_namespaces) {
     goto cleanup;
@@ -3477,7 +3477,7 @@ rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
 
   size_t idx;
   for (idx = 0; idx < node_names.size; ++idx) {
-    PyObject * pytuple = PyTuple_New(use_security_contexts ? 3 : 2);
+    PyObject * pytuple = PyTuple_New(get_enclaves ? 3 : 2);
     if (!pytuple) {
       goto cleanup;
     }
@@ -3495,14 +3495,14 @@ rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
     }
     // Steals the reference
     PyTuple_SET_ITEM(pytuple, 1, pynode_namespace);
-    if (use_security_contexts) {
-      PyObject * pynode_security_contexts = PyUnicode_FromString(security_contexts.data[idx]);
-      if (!pynode_security_contexts) {
+    if (get_enclaves) {
+      PyObject * pynode_enclaves = PyUnicode_FromString(enclaves.data[idx]);
+      if (!pynode_enclaves) {
         Py_DECREF(pytuple);
         goto cleanup;
       }
       // Steals the reference
-      PyTuple_SET_ITEM(pytuple, 2, pynode_security_contexts);
+      PyTuple_SET_ITEM(pytuple, 2, pynode_enclaves);
     }
     // Steals the reference
     PyList_SET_ITEM(pynode_names_and_namespaces, idx, pytuple);
@@ -3511,7 +3511,7 @@ rclpy_get_node_names_impl(PyObject * args, bool use_security_contexts)
 cleanup:
   fini_names_ret = rcutils_string_array_fini(&node_names);
   fini_namespaces_ret = rcutils_string_array_fini(&node_namespaces);
-  fini_security_contexts_ret = rcutils_string_array_fini(&security_contexts);
+  fini_enclaves_ret = rcutils_string_array_fini(&enclaves);
   if (PyErr_Occurred()) {
     Py_XDECREF(pynode_names_and_namespaces);
     return NULL;
@@ -3532,10 +3532,10 @@ cleanup:
     rcl_reset_error();
     return NULL;
   }
-  if (fini_security_contexts_ret != RCUTILS_RET_OK) {
+  if (fini_enclaves_ret != RCUTILS_RET_OK) {
     PyErr_Format(
       RCLError,
-      "Failed to destroy security_contexts: %s", rcl_get_error_string().str);
+      "Failed to destroy enclaves string array: %s", rcl_get_error_string().str);
     Py_DECREF(pynode_names_and_namespaces);
     rcl_reset_error();
     return NULL;
@@ -3559,17 +3559,17 @@ rclpy_get_node_names_and_namespaces(PyObject * Py_UNUSED(self), PyObject * args)
   return rclpy_get_node_names_impl(args, false);
 }
 
-/// Get the list of nodes discovered by the provided node, with their respective security contexts.
+/// Get the list of nodes discovered by the provided node, with their respective enclaves.
 /**
  *  Raises ValueError if pynode is not a node capsule
  *  Raises RuntimeError  if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node
  * \return Python list of tuples where each tuple contains three strings:
- *   node name, namespace and security context.
+ *   node name, node namespace, and enclave.
  */
 static PyObject *
-rclpy_get_node_names_and_namespaces_with_security_contexts(
+rclpy_get_node_names_and_namespaces_with_enclaves(
   PyObject * Py_UNUSED(self), PyObject * args)
 {
   return rclpy_get_node_names_impl(args, true);
@@ -5441,10 +5441,10 @@ static PyMethodDef rclpy_methods[] = {
     "Get node names and namespaces list from graph API."
   },
   {
-    "rclpy_get_node_names_and_namespaces_with_security_contexts",
-    rclpy_get_node_names_and_namespaces_with_security_contexts,
+    "rclpy_get_node_names_and_namespaces_with_enclaves",
+    rclpy_get_node_names_and_namespaces_with_enclaves,
     METH_VARARGS,
-    "Get node names, namespaces, and security contexts list from graph API."
+    "Get node names, namespaces, and enclaves list from graph API."
   },
   {
     "rclpy_get_node_parameters", rclpy_get_node_parameters, METH_VARARGS,
