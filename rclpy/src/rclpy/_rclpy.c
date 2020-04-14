@@ -25,7 +25,7 @@
 #include <rcl/remap.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
-#include <rcl_interfaces/msg/parameter_type__struct.h>
+#include <rcl_interfaces/msg/detail/parameter_type__struct.h>
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/allocator.h>
 #include <rcutils/format_string.h>
