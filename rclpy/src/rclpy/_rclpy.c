@@ -3166,10 +3166,11 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 /// Take a raw message from a given subscription (internal- for rclpy_take with raw=True)
 /**
  * \param[in] rcl subscription pointer pointing to the subscription to process the message
+ * \param[in] message_info struct pointer, may be null. if non-null, will be filled with message info
  * \return Python byte array with the raw serialized message contents
  */
 static PyObject *
-rclpy_take_raw(rcl_subscription_t * subscription)
+rclpy_take_raw_with_info(rcl_subscription_t * subscription, rmw_message_info_t * message_info)
 {
   // Create a serialized message object
   rcl_serialized_message_t msg = rmw_get_zero_initialized_serialized_message();
@@ -3187,7 +3188,7 @@ rclpy_take_raw(rcl_subscription_t * subscription)
     return NULL;
   }
 
-  ret = rcl_take_serialized_message(subscription, &msg, NULL, NULL);
+  ret = rcl_take_serialized_message(subscription, &msg, message_info, NULL);
   if (ret != RCL_RET_OK) {
     PyErr_Format(
       RCLError,
@@ -3211,14 +3212,41 @@ rclpy_take_raw(rcl_subscription_t * subscription)
   return python_bytes;
 }
 
-/// Take a message from a given subscription
-/**
- * \param[in] pysubscription Capsule pointing to the subscription to process the message
- * \param[in] pymsg_type Instance of the message type to take
- * \return Python message with all fields populated with received message
- */
 static PyObject *
-rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
+__rclpy_message_info_to_dict(rmw_message_info_t * message_info)
+{
+  PyObject * dict = PyDict_New();
+  if (dict == NULL) {
+    PyErr_Format(PyExc_RuntimeError, "Failed to create dictionary object");
+    return NULL;
+  }
+
+  // we bail out at the end in case of errors
+  PyObject * source_timestamp = PyLong_FromUnsignedLong(
+    (message_info->source_timestamp.sec * 1000000000) + message_info->source_timestamp.nsec);
+  if (source_timestamp != NULL) {
+    PyDict_SetItemString(dict, "source_timestamp", source_timestamp);
+  }
+  PyObject * received_timestamp = PyLong_FromUnsignedLong(
+    (message_info->source_timestamp.sec * 1000000000) + message_info->source_timestamp.nsec);
+  if (received_timestamp != NULL) {
+    PyDict_SetItemString(dict, "received_timestamp", source_timestamp);
+  }
+
+  // check for errors
+  if (source_timestamp == NULL || received_timestamp == NULL) {
+    Py_DECREF(dict);
+    dict = NULL;
+  }
+
+  return dict;
+}
+
+/// internal method to support both take and take_with_info
+static PyObject *
+__rclpy_take_with_info(
+  PyObject * Py_UNUSED(
+    self), PyObject * args, rmw_message_info_t * message_info)
 {
   PyObject * pysubscription;
   PyObject * pymsg_type;
@@ -3239,7 +3267,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (PyObject_IsTrue(pyraw) == 1) {  // raw=True
-    return rclpy_take_raw(&(sub->subscription));
+    return rclpy_take_raw_with_info(&(sub->subscription), message_info);
   }
 
   destroy_ros_message_signature * destroy_ros_message = NULL;
@@ -3248,7 +3276,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, NULL, NULL);
+  rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, message_info, NULL);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
     PyErr_Format(
@@ -3272,7 +3300,53 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
   // if take failed, just do nothing
   destroy_ros_message(taken_msg);
-  Py_RETURN_NONE;
+  return NULL;
+}
+
+/// Take a message from a given subscription
+/**
+ * \param[in] pysubscription Capsule pointing to the subscription to process the message
+ * \param[in] pymsg_type Instance of the message type to take
+ * \return Python message with all fields populated with received message
+ */
+static PyObject *
+rclpy_take(PyObject * self, PyObject * args)
+{
+  PyObject * result = __rclpy_take_with_info(self, args, NULL);
+  if (result != NULL) {
+    return result;
+  } else {
+    Py_RETURN_NONE;
+  }
+}
+/// Take a message and its message_info from a given subscription
+/**
+ * \param[in] pysubscription Capsule pointing to the subscription to process the message
+ * \param[in] pymsg_type Instance of the message type to take
+ * \return Tuple of (Python message with all fields populated with received message, message_info)
+ */
+static PyObject *
+rclpy_take_with_info(PyObject * self, PyObject * args)
+{
+  rmw_message_info_t message_info;
+  PyObject * msg = __rclpy_take_with_info(self, args, &message_info);
+  if (msg == NULL) {
+    Py_RETURN_NONE;
+  }
+
+  PyObject * mi_dict = __rclpy_message_info_to_dict(&message_info);
+  if (mi_dict == NULL) {
+    Py_DECREF(msg);
+    Py_RETURN_NONE;
+  }
+  PyObject * rt = PyTuple_Pack(2, msg, mi_dict);
+  if (rt == NULL) {
+    Py_DECREF(msg);
+    Py_DECREF(mi_dict);
+    Py_RETURN_NONE;
+  }
+
+  return rt;
 }
 
 /// Take a request from a given service
@@ -5477,6 +5551,11 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_take", rclpy_take, METH_VARARGS,
     "rclpy_take."
+  },
+
+  {
+    "rclpy_take_with_info", rclpy_take_with_info, METH_VARARGS,
+    "rclpy_take_with_info."
   },
 
   {
