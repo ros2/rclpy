@@ -145,11 +145,16 @@ class TestQoSEvent(unittest.TestCase):
             self.assertTrue(self.is_fastrtps)
 
     def test_default_incompatible_qos_callbacks(self):
+        original_logger = rclpy.logging._root_logger
+
         pub_log_msg = None
         sub_log_msg = None
         log_msgs_future = Future()
 
         class MockLogger:
+
+            def get_child(self, name):
+                return self
 
             def warn(self, message, once=False):
                 nonlocal pub_log_msg, sub_log_msg, log_msgs_future
@@ -162,7 +167,7 @@ class TestQoSEvent(unittest.TestCase):
                 if pub_log_msg is not None and sub_log_msg is not None:
                     log_msgs_future.set_result(True)
 
-        self.node._logger = MockLogger()
+        rclpy.logging._root_logger = MockLogger()
 
         qos_profile_publisher = QoSProfile(
             depth=10, durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE)
@@ -188,6 +193,8 @@ class TestQoSEvent(unittest.TestCase):
                 'New publisher discovered on this topic, offering incompatible QoS. '
                 'No messages will be received from it. '
                 'Last incompatible policy: DURABILITY_QOS_POLICY')
+
+        rclpy.logging._root_logger = original_logger
 
     def _create_event_handle(self, parent_entity, event_type):
         with parent_entity.handle as parent_capsule:
