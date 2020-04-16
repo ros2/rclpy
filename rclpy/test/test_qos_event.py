@@ -18,9 +18,7 @@ from unittest.mock import Mock
 import rclpy
 from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSPolicyKind
-from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import QoSLivelinessChangedInfo
 from rclpy.qos_event import QoSLivelinessLostInfo
@@ -32,7 +30,6 @@ from rclpy.qos_event import QoSRequestedIncompatibleQoSInfo
 from rclpy.qos_event import QoSSubscriptionEventType
 from rclpy.qos_event import SubscriptionEventCallbacks
 from rclpy.qos_event import UnsupportedEventTypeError
-from rclpy.task import Future
 from rclpy.utilities import get_rmw_implementation_identifier
 
 from test_msgs.msg import Empty as EmptyMsg
@@ -40,7 +37,6 @@ from test_msgs.msg import Empty as EmptyMsg
 
 class TestQoSEvent(unittest.TestCase):
     is_fastrtps = False
-    topic_name = 'test_topic'
 
     def setUp(self):
         self.context = rclpy.context.Context()
@@ -59,40 +55,37 @@ class TestQoSEvent(unittest.TestCase):
         liveliness_callback = Mock()
         deadline_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 0 if self.is_fastrtps else 1
 
         # No arg
-        publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
-        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
+        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
+        self.assertEqual(len(publisher.event_handlers), 0)
         self.node.destroy_publisher(publisher)
 
         # Arg with no callbacks
         publisher = self.node.create_publisher(
-            EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
+            EmptyMsg, 'test_topic', 10, event_callbacks=callbacks)
+        self.assertEqual(len(publisher.event_handlers), 0)
         self.node.destroy_publisher(publisher)
 
         # Arg with one of the callbacks
         callbacks.deadline = deadline_callback
-        expected_num_event_handlers += 1
         publisher = self.node.create_publisher(
-            EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
+            EmptyMsg, 'test_topic', 10, event_callbacks=callbacks)
+        self.assertEqual(len(publisher.event_handlers), 1)
         self.node.destroy_publisher(publisher)
 
         # Arg with two callbacks
         callbacks.liveliness = liveliness_callback
-        expected_num_event_handlers += 1
         publisher = self.node.create_publisher(
-            EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
+            EmptyMsg, 'test_topic', 10, event_callbacks=callbacks)
+        self.assertEqual(len(publisher.event_handlers), 2)
         self.node.destroy_publisher(publisher)
 
         # Arg with three callbacks
         callbacks.incompatible_qos = incompatible_qos_callback
         try:
             publisher = self.node.create_publisher(
-                EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
+                EmptyMsg, 'test_topic', 10, event_callbacks=callbacks)
             self.assertEqual(len(publisher.event_handlers), 3)
             self.node.destroy_publisher(publisher)
         except UnsupportedEventTypeError:
@@ -104,97 +97,41 @@ class TestQoSEvent(unittest.TestCase):
         deadline_callback = Mock()
         message_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 0 if self.is_fastrtps else 1
 
         # No arg
-        subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10)
-        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
+        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', message_callback, 10)
+        self.assertEqual(len(subscription.event_handlers), 0)
         self.node.destroy_subscription(subscription)
 
         # Arg with no callbacks
         subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
+            EmptyMsg, 'test_topic', message_callback, 10, event_callbacks=callbacks)
+        self.assertEqual(len(subscription.event_handlers), 0)
         self.node.destroy_subscription(subscription)
 
         # Arg with one of the callbacks
         callbacks.deadline = deadline_callback
-        expected_num_event_handlers += 1
         subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
+            EmptyMsg, 'test_topic', message_callback, 10, event_callbacks=callbacks)
+        self.assertEqual(len(subscription.event_handlers), 1)
         self.node.destroy_subscription(subscription)
 
         # Arg with two callbacks
         callbacks.liveliness = liveliness_callback
-        expected_num_event_handlers += 1
         subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
+            EmptyMsg, 'test_topic', message_callback, 10, event_callbacks=callbacks)
+        self.assertEqual(len(subscription.event_handlers), 2)
         self.node.destroy_subscription(subscription)
 
         # Arg with three callbacks
         callbacks.incompatible_qos = incompatible_qos_callback
         try:
             subscription = self.node.create_subscription(
-                EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
+                EmptyMsg, 'test_topic', message_callback, 10, event_callbacks=callbacks)
             self.assertEqual(len(subscription.event_handlers), 3)
             self.node.destroy_subscription(subscription)
         except UnsupportedEventTypeError:
             self.assertTrue(self.is_fastrtps)
-
-    def test_default_incompatible_qos_callbacks(self):
-        original_logger = rclpy.logging._root_logger
-
-        pub_log_msg = None
-        sub_log_msg = None
-        log_msgs_future = Future()
-
-        class MockLogger:
-
-            def get_child(self, name):
-                return self
-
-            def warn(self, message, once=False):
-                nonlocal pub_log_msg, sub_log_msg, log_msgs_future
-
-                if message.startswith('New subscription discovered'):
-                    pub_log_msg = message
-                elif message.startswith('New publisher discovered'):
-                    sub_log_msg = message
-
-                if pub_log_msg is not None and sub_log_msg is not None:
-                    log_msgs_future.set_result(True)
-
-        rclpy.logging._root_logger = MockLogger()
-
-        qos_profile_publisher = QoSProfile(
-            depth=10, durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE)
-        self.node.create_publisher(EmptyMsg, self.topic_name, qos_profile_publisher)
-
-        message_callback = Mock()
-        qos_profile_subscription = QoSProfile(
-            depth=10, durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL)
-        self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, qos_profile_subscription)
-
-        executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
-        rclpy.spin_until_future_complete(self.node, log_msgs_future, executor, 10.0)
-
-        if not self.is_fastrtps:
-            self.assertEqual(
-                pub_log_msg,
-                'New subscription discovered on this topic, requesting incompatible QoS. '
-                'No messages will be sent to it. '
-                'Last incompatible policy: DURABILITY_QOS_POLICY')
-            self.assertEqual(
-                sub_log_msg,
-                'New publisher discovered on this topic, offering incompatible QoS. '
-                'No messages will be received from it. '
-                'Last incompatible policy: DURABILITY_QOS_POLICY')
-
-        rclpy.logging._root_logger = original_logger
 
     def _create_event_handle(self, parent_entity, event_type):
         with parent_entity.handle as parent_capsule:
@@ -207,7 +144,7 @@ class TestQoSEvent(unittest.TestCase):
         handle.destroy()
 
     def test_publisher_event_create_destroy(self):
-        publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
+        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
         self._do_create_destroy(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
         self._do_create_destroy(
@@ -221,8 +158,7 @@ class TestQoSEvent(unittest.TestCase):
 
     def test_subscription_event_create_destroy(self):
         message_callback = Mock()
-        subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10)
+        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', message_callback, 10)
         self._do_create_destroy(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
         self._do_create_destroy(
@@ -237,7 +173,7 @@ class TestQoSEvent(unittest.TestCase):
     def test_call_publisher_rclpy_event_apis(self):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
-        publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
+        publisher = self.node.create_publisher(EmptyMsg, 'test_topic', 10)
         wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
         with self.context.handle as context_handle:
             _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 3, context_handle)
@@ -319,7 +255,7 @@ class TestQoSEvent(unittest.TestCase):
     def test_call_subscription_rclpy_event_apis(self):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
-        subscription = self.node.create_subscription(EmptyMsg, self.topic_name, Mock(), 10)
+        subscription = self.node.create_subscription(EmptyMsg, 'test_topic', Mock(), 10)
         wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
         with self.context.handle as context_handle:
             _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 3, context_handle)
