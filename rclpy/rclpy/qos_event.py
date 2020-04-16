@@ -252,11 +252,7 @@ class SubscriptionEventCallbacks:
                     parent_handle=subscription_handle))
 
             except UnsupportedEventTypeError:
-                logger.warn(
-                    'This rmw implementation does not support ON_REQUESTED_INCOMPATIBLE_QOS '
-                    'events, you will not be notified when Subscriptions request an incompatible '
-                    'QoS profile from Publishers on the same topic.',
-                    once=True)
+                pass
 
         return event_handlers
 
@@ -333,10 +329,6 @@ class PublisherEventCallbacks:
                     parent_handle=publisher_handle))
 
             except UnsupportedEventTypeError:
-                logger.warn(
-                    'This rmw implementation does not support ON_OFFERED_INCOMPATIBLE_QOS '
-                    'events, you will not be notified when Publishers offer an incompatible '
-                    'QoS profile to Subscriptions on the same topic.',
-                    once=True)
+                pass
 
         return event_handlers
