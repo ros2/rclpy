@@ -3213,7 +3213,7 @@ rclpy_take_raw_with_info(rcl_subscription_t * subscription, rmw_message_info_t *
 }
 
 static PyObject *
-__rclpy_message_info_to_dict(rmw_message_info_t * message_info)
+rclpy_message_info_to_dict(rmw_message_info_t * message_info)
 {
   PyObject * dict = PyDict_New();
   if (dict == NULL) {
@@ -3222,13 +3222,11 @@ __rclpy_message_info_to_dict(rmw_message_info_t * message_info)
   }
 
   // we bail out at the end in case of errors
-  PyObject * source_timestamp = PyLong_FromUnsignedLong(
-    (message_info->source_timestamp.sec * 1000000000) + message_info->source_timestamp.nsec);
+  PyObject * source_timestamp = PyLong_FromLong(message_info->source_timestamp);
   if (source_timestamp != NULL) {
     PyDict_SetItemString(dict, "source_timestamp", source_timestamp);
   }
-  PyObject * received_timestamp = PyLong_FromUnsignedLong(
-    (message_info->source_timestamp.sec * 1000000000) + message_info->source_timestamp.nsec);
+  PyObject * received_timestamp = PyLong_FromLong(message_info->source_timestamp);
   if (received_timestamp != NULL) {
     PyDict_SetItemString(dict, "received_timestamp", source_timestamp);
   }
@@ -3242,15 +3240,19 @@ __rclpy_message_info_to_dict(rmw_message_info_t * message_info)
   return dict;
 }
 
-/// internal method to support both take and take_with_info
+/// Take a message and its message_info from a given subscription
+/**
+ * \param[in] pysubscription Capsule pointing to the subscription to process the message
+ * \param[in] pymsg_type Instance of the message type to take
+ * \return Tuple of (Python message with all fields populated with received message, message_info)
+ */
 static PyObject *
-__rclpy_take_with_info(
-  PyObject * Py_UNUSED(
-    self), PyObject * args, rmw_message_info_t * message_info)
+rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pysubscription;
   PyObject * pymsg_type;
   PyObject * pyraw;
+  PyObject * pytaken_msg;
 
   if (!PyArg_ParseTuple(args, "OOO", &pysubscription, &pymsg_type, &pyraw)) {
     return NULL;
@@ -3266,87 +3268,53 @@ __rclpy_take_with_info(
     return NULL;
   }
 
+  rmw_message_info_t message_info;
   if (PyObject_IsTrue(pyraw) == 1) {  // raw=True
-    return rclpy_take_raw_with_info(&(sub->subscription), message_info);
-  }
-
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  void * taken_msg = rclpy_create_from_py(pymsg_type, &destroy_ros_message);
-  if (!taken_msg) {
-    return NULL;
-  }
-
-  rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, message_info, NULL);
-
-  if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
-    PyErr_Format(
-      RCLError,
-      "Failed to take from a subscription: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    destroy_ros_message(taken_msg);
-    return NULL;
-  }
-
-  if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
-    PyObject * pytaken_msg = rclpy_convert_to_py(taken_msg, pymsg_type);
-    destroy_ros_message(taken_msg);
-    if (!pytaken_msg) {
-      // the function has set the Python error
+    pytaken_msg = rclpy_take_raw_with_info(&(sub->subscription), &message_info);
+  } else {
+    destroy_ros_message_signature * destroy_ros_message = NULL;
+    void * taken_msg = rclpy_create_from_py(pymsg_type, &destroy_ros_message);
+    if (!taken_msg) {
       return NULL;
     }
 
-    return pytaken_msg;
+    rcl_ret_t ret = rcl_take(&(sub->subscription), taken_msg, &message_info, NULL);
+
+    if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+      PyErr_Format(
+        RCLError,
+        "Failed to take from a subscription: %s", rcl_get_error_string().str);
+      rcl_reset_error();
+      destroy_ros_message(taken_msg);
+      return NULL;
+    }
+
+    if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+      pytaken_msg = rclpy_convert_to_py(taken_msg, pymsg_type);
+      destroy_ros_message(taken_msg);
+      if (!pytaken_msg) {
+        // the function has set the Python error
+        return NULL;
+      } else {
+        // if take failed, just do nothing
+        destroy_ros_message(taken_msg);
+        return NULL;
+      }
+    }
   }
 
-  // if take failed, just do nothing
-  destroy_ros_message(taken_msg);
-  return NULL;
-}
-
-/// Take a message from a given subscription
-/**
- * \param[in] pysubscription Capsule pointing to the subscription to process the message
- * \param[in] pymsg_type Instance of the message type to take
- * \return Python message with all fields populated with received message
- */
-static PyObject *
-rclpy_take(PyObject * self, PyObject * args)
-{
-  PyObject * result = __rclpy_take_with_info(self, args, NULL);
-  if (result != NULL) {
-    return result;
-  } else {
-    Py_RETURN_NONE;
-  }
-}
-/// Take a message and its message_info from a given subscription
-/**
- * \param[in] pysubscription Capsule pointing to the subscription to process the message
- * \param[in] pymsg_type Instance of the message type to take
- * \return Tuple of (Python message with all fields populated with received message, message_info)
- */
-static PyObject *
-rclpy_take_with_info(PyObject * self, PyObject * args)
-{
-  rmw_message_info_t message_info;
-  PyObject * msg = __rclpy_take_with_info(self, args, &message_info);
-  if (msg == NULL) {
-    Py_RETURN_NONE;
-  }
-
-  PyObject * mi_dict = __rclpy_message_info_to_dict(&message_info);
+  // make result tuple
+  PyObject * mi_dict = rclpy_message_info_to_dict(&message_info);
   if (mi_dict == NULL) {
-    Py_DECREF(msg);
-    Py_RETURN_NONE;
+    Py_DECREF(pytaken_msg);
+    return NULL;
   }
-  PyObject * rt = PyTuple_Pack(2, msg, mi_dict);
-  if (rt == NULL) {
-    Py_DECREF(msg);
+  PyObject * tuple = PyTuple_Pack(2, pytaken_msg, mi_dict);
+  if (tuple == NULL) {
+    Py_DECREF(pytaken_msg);
     Py_DECREF(mi_dict);
-    Py_RETURN_NONE;
   }
-
-  return rt;
+  return tuple;
 }
 
 /// Take a request from a given service
@@ -5551,11 +5519,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_take", rclpy_take, METH_VARARGS,
     "rclpy_take."
-  },
-
-  {
-    "rclpy_take_with_info", rclpy_take_with_info, METH_VARARGS,
-    "rclpy_take_with_info."
   },
 
   {
