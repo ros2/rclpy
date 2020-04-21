@@ -85,6 +85,7 @@ class Context:
         with self._handle as capsule, self._lock:
             rclpy_implementation.rclpy_shutdown(capsule)
         self._call_on_shutdown_callbacks()
+        self._logging_fini()
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
@@ -108,7 +109,7 @@ class Context:
             else:
                 self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
 
-    def __del__(self):
+    def _logging_fini(self):
         from rclpy.impl.implementation_singleton import rclpy_implementation
         global g_logging_ref_count
         if self._logging_initialized:
