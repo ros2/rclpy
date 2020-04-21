@@ -3310,10 +3310,8 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   PyObject * tuple = PyTuple_Pack(2, pytaken_msg, mi_dict);
-  if (tuple == NULL) {
-    Py_DECREF(pytaken_msg);
-    Py_DECREF(mi_dict);
-  }
+  Py_DECREF(pytaken_msg);
+  Py_DECREF(mi_dict);
   return tuple;
 }
 
