@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import pathlib
 import unittest
 from unittest.mock import Mock
@@ -24,6 +25,7 @@ from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
 import rclpy
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.clock import ClockType
 from rclpy.duration import Duration
 from rclpy.exceptions import InvalidParameterException
@@ -133,6 +135,29 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertNotEqual(len(self.raw_subscription_msg), 0, 'raw subscribe invalid length')
 
         executor.shutdown()
+
+    def dummy_cb(self, msg):
+        pass
+
+    def test_take(self):
+        basic_types_pub = self.node.create_publisher(BasicTypes, 'take_test', 1)
+        sub = self.node.create_subscription(
+            BasicTypes,
+            'take_test',
+            self.dummy_cb,
+            1)
+        basic_types_msg = BasicTypes()
+        basic_types_pub.publish(basic_types_msg)
+        cycle_count = 0
+        while cycle_count < 5:
+            with sub.handle as capsule:
+                result = _rclpy.rclpy_take(capsule, sub.msg_type, False)
+            if result is not None:
+                msg, info = result
+                self.assertNotEqual(0, info["source_timestamp"])
+                return
+            else:
+                time.sleep(0.1)
 
     def test_create_client(self):
         self.node.create_client(GetParameters, 'get/parameters')
