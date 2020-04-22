@@ -3222,11 +3222,11 @@ rclpy_message_info_to_dict(rmw_message_info_t * message_info)
   }
 
   // we bail out at the end in case of errors
-  PyObject * source_timestamp = PyLong_FromLong(message_info->source_timestamp);
+  PyObject * source_timestamp = PyLong_FromLongLong(message_info->source_timestamp);
   if (source_timestamp != NULL) {
     PyDict_SetItemString(dict, "source_timestamp", source_timestamp);
   }
-  PyObject * received_timestamp = PyLong_FromLong(message_info->source_timestamp);
+  PyObject * received_timestamp = PyLong_FromLongLong(message_info->source_timestamp);
   if (received_timestamp != NULL) {
     PyDict_SetItemString(dict, "received_timestamp", source_timestamp);
   }
