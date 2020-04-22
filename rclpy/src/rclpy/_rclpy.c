@@ -3295,10 +3295,6 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
       if (!pytaken_msg) {
         // the function has set the Python error
         return NULL;
-      } else {
-        // if take failed, just do nothing
-        destroy_ros_message(taken_msg);
-        return NULL;
       }
     }
   }
