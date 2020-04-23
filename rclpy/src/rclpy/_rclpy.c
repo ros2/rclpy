@@ -3383,13 +3383,17 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rmw_service_info_t header;
-  rcl_ret_t ret = rcl_take_response_with_info(&(client->client), &header, taken_response);
-  int64_t sequence = header.request_id.sequence_number;
+  rmw_service_info_t * header = PyMem_Malloc(sizeof(rmw_service_info_t));
+  if (!header) {
+    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for response header");
+    return NULL;
+  }
+  rcl_ret_t ret = rcl_take_response_with_info(&(client->client), header, taken_response);
 
   // Create the tuple to return
   PyObject * pytuple = PyTuple_New(2);
   if (!pytuple) {
+    PyMem_Free(header);
     return NULL;
   }
 
@@ -3399,16 +3403,18 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     if (!pytaken_response) {
       // the function has set the Python error
       Py_DECREF(pytuple);
+      PyMem_Free(header);
       return NULL;
     }
 
-    PyObject * pysequence = PyLong_FromLongLong(sequence);
-    if (!pysequence) {
+    PyObject * pyheader = PyCapsule_New(header, "rmw_service_info_t", NULL);
+    if (!pyheader) {
       Py_DECREF(pytaken_response);
       Py_DECREF(pytuple);
+      PyMem_Free(header);
       return NULL;
     }
-    PyTuple_SET_ITEM(pytuple, 0, pysequence);
+    PyTuple_SET_ITEM(pytuple, 0, pyheader);
     PyTuple_SET_ITEM(pytuple, 1, pytaken_response);
     return pytuple;
   }
@@ -5251,12 +5257,7 @@ _service_info_from_args(PyObject * args)
     return NULL;
   }
 
-  rmw_service_info_t * service_info =
-    rclpy_handle_get_pointer_from_capsule(pyservice_info, "rmw_service_info_t");
-  if (!service_info) {
-    return NULL;
-  }
-  return service_info;
+  return PyCapsule_GetPointer(pyservice_info, "rmw_service_info_t");
 }
 
 /// Retrieves the sequence number from a rmw_service_info_t capsule
@@ -5270,6 +5271,9 @@ static PyObject *
 rclpy_service_info_get_sequence_number(PyObject * Py_UNUSED(self), PyObject * args)
 {
   rmw_service_info_t * service_info = _service_info_from_args(args);
+  if (service_info == NULL) {
+    return NULL;
+  }
   return PyLong_FromLongLong(service_info->request_id.sequence_number);
 }
 
@@ -5284,6 +5288,9 @@ static PyObject *
 rclpy_service_info_get_source_timestamp(PyObject * Py_UNUSED(self), PyObject * args)
 {
   rmw_service_info_t * service_info = _service_info_from_args(args);
+  if (service_info == NULL) {
+    return NULL;
+  }
   return PyLong_FromLongLong(service_info->source_timestamp);
 }
 
@@ -5299,6 +5306,9 @@ static PyObject *
 rclpy_service_info_get_received_timestamp(PyObject * Py_UNUSED(self), PyObject * args)
 {
   rmw_service_info_t * service_info = _service_info_from_args(args);
+  if (service_info == NULL) {
+    return NULL;
+  }
   return PyLong_FromLongLong(service_info->received_timestamp);
 }
 
