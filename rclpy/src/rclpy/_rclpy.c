@@ -3383,15 +3383,10 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rmw_request_id_t * header = PyMem_Malloc(sizeof(rmw_request_id_t));
-  if (!header) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for response header");
-    return NULL;
-  }
-  rcl_ret_t ret = rcl_take_response(&(client->client), header, taken_response);
-  int64_t sequence = header->sequence_number;
-  PyMem_Free(header);
-
+  rmw_service_info_t header;
+  rcl_ret_t ret = rcl_take_response_with_info(&(client->client), &header, taken_response);
+  int64_t sequence = header.request_id.sequence_number;
+  
   // Create the tuple to return
   PyObject * pytuple = PyTuple_New(2);
   if (!pytuple) {
