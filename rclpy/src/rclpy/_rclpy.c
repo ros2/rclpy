@@ -654,8 +654,7 @@ rclpy_logging_configure(PyObject * Py_UNUSED(self), PyObject * args)
   }
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_logging_configure(
-    &context->global_arguments,
-    &allocator);
+    &context->global_arguments, &allocator);
   if (RCL_RET_OK != ret) {
     PyErr_Format(
       RCLError,

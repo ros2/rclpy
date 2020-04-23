@@ -57,12 +57,12 @@ class Context:
         global g_logging_ref_count
         with self._handle as capsule, self._lock:
             rclpy_implementation.rclpy_init(args if args is not None else sys.argv, capsule)
-            if initialize_logging:
-                self._logging_initialized = True
+            if initialize_logging and not self._logging_initialized:
                 with g_logging_configure_lock:
                     g_logging_ref_count += 1
                     if g_logging_ref_count == 1:
                         rclpy_implementation.rclpy_logging_configure(capsule)
+                self._logging_initialized = True
 
     def ok(self):
         """Check if context hasn't been shut down."""
@@ -112,8 +112,13 @@ class Context:
     def _logging_fini(self):
         from rclpy.impl.implementation_singleton import rclpy_implementation
         global g_logging_ref_count
-        if self._logging_initialized:
-            with g_logging_configure_lock:
-                g_logging_ref_count -= 1
-                if g_logging_ref_count == 0:
-                    rclpy_implementation.rclpy_logging_fini()
+        with self._lock:
+            if self._logging_initialized:
+                with g_logging_configure_lock:
+                    g_logging_ref_count -= 1
+                    if g_logging_ref_count == 0:
+                        rclpy_implementation.rclpy_logging_fini()
+                    if g_logging_ref_count < 0:
+                        raise RuntimeError(
+                            'Unexpected error: logger ref count should never be lower that zero')
+                self._logging_initialized = False
