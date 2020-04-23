@@ -3313,12 +3313,12 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rmw_request_id_t * header = PyMem_Malloc(sizeof(rmw_request_id_t));
+  rmw_service_info_t * header = PyMem_Malloc(sizeof(rmw_service_info_t));
   if (!header) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for request header");
     return NULL;
   }
-  rcl_ret_t ret = rcl_take_request(&(srv->service), header, taken_request);
+  rcl_ret_t ret = rcl_take_request_with_info(&(srv->service), header, taken_request);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyErr_Format(
@@ -3344,7 +3344,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
       Py_DECREF(pytaken_request);
       return NULL;
     }
-    PyObject * pyheader = PyCapsule_New(header, "rmw_request_id_t", NULL);
+    PyObject * pyheader = PyCapsule_New(header, "rmw_service_info_t", NULL);
     if (!pyheader) {
       PyMem_Free(header);
       Py_DECREF(pytaken_request);
