@@ -322,7 +322,7 @@ class Executor:
 
     def _take_subscription(self, sub):
         with sub.handle as capsule:
-            msg = _rclpy.rclpy_take(capsule, sub.msg_type, sub.raw)
+            msg, _ = _rclpy.rclpy_take(capsule, sub.msg_type, sub.raw)
         return msg
 
     async def _execute_subscription(self, sub, msg):

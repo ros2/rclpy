@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pathlib
+import time
 import unittest
 from unittest.mock import Mock
 
@@ -34,6 +35,7 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSDurabilityPolicy
@@ -133,6 +135,29 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertNotEqual(len(self.raw_subscription_msg), 0, 'raw subscribe invalid length')
 
         executor.shutdown()
+
+    def dummy_cb(self, msg):
+        pass
+
+    def test_take(self):
+        basic_types_pub = self.node.create_publisher(BasicTypes, 'take_test', 1)
+        sub = self.node.create_subscription(
+            BasicTypes,
+            'take_test',
+            self.dummy_cb,
+            1)
+        basic_types_msg = BasicTypes()
+        basic_types_pub.publish(basic_types_msg)
+        cycle_count = 0
+        while cycle_count < 5:
+            with sub.handle as capsule:
+                result = _rclpy.rclpy_take(capsule, sub.msg_type, False)
+            if result is not None:
+                msg, info = result
+                self.assertNotEqual(0, info['source_timestamp'])
+                return
+            else:
+                time.sleep(0.1)
 
     def test_create_client(self):
         self.node.create_client(GetParameters, 'get/parameters')
