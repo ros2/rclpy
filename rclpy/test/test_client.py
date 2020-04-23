@@ -18,6 +18,7 @@ import unittest
 from rcl_interfaces.srv import GetParameters
 import rclpy
 import rclpy.executors
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 # TODO(sloretz) Reduce fudge once wait_for_service uses node graph events
@@ -86,6 +87,30 @@ class TestClient(unittest.TestCase):
             rclpy.spin_until_future_complete(self.node, future2, executor=executor)
             self.assertTrue(future1.result() is not None)
             self.assertTrue(future2.result() is not None)
+        finally:
+            self.node.destroy_client(cli)
+            self.node.destroy_service(srv)
+
+    def test_service_timestamps(self):
+        cli = self.node.create_client(GetParameters, 'get/parameters')
+        srv = self.node.create_service(
+            GetParameters, 'get/parameters',
+            lambda request, response: response)
+        try:
+            self.assertTrue(cli.wait_for_service(timeout_sec=20))
+            cli.call_async(GetParameters.Request())
+            cycle_count = 0
+            while cycle_count < 5:
+                with srv.handle as capsule:
+                    result = _rclpy.rclpy_take_request(capsule, srv.srv_type.Request)
+                if result is not None:
+                    request, header = result
+                    source_timestamp = _rclpy.rclpy_service_info_get_source_timestamp(header)
+                    self.assertNotEqual(0, source_timestamp)
+                    return
+                else:
+                    time.sleep(0.1)
+            self.fail("Did not get a request in time")
         finally:
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
