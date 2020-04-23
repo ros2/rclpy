@@ -3386,7 +3386,7 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   rmw_service_info_t header;
   rcl_ret_t ret = rcl_take_response_with_info(&(client->client), &header, taken_response);
   int64_t sequence = header.request_id.sequence_number;
-  
+
   // Create the tuple to return
   PyObject * pytuple = PyTuple_New(2);
   if (!pytuple) {
@@ -5242,6 +5242,66 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
   return pydeserialized_ros_msg;
 }
 
+static rmw_service_info_t *
+_service_info_from_args(PyObject * args)
+{
+  PyObject * pyservice_info;
+
+  if (!PyArg_ParseTuple(args, "O", &pyservice_info)) {
+    return NULL;
+  }
+
+  rmw_service_info_t * service_info =
+    rclpy_handle_get_pointer_from_capsule(pyservice_info, "rmw_service_info_t");
+  if (!service_info) {
+    return NULL;
+  }
+  return service_info;
+}
+
+/// Retrieves the sequence number from a rmw_service_info_t capsule
+/**
+ * Raises RuntimeError on failure.
+ *
+ * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
+ * \return the sequence number as a long
+ */
+static PyObject *
+rclpy_service_info_get_sequence_number(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  rmw_service_info_t * service_info = _service_info_from_args(args);
+  return PyLong_FromLongLong(service_info->request_id.sequence_number);
+}
+
+/// Retrieves the source timestamp number from a rmw_service_info_t capsule
+/**
+ * Raises RuntimeError on failure.
+ *
+ * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
+ * \return the source timestamps as a long
+ */
+static PyObject *
+rclpy_service_info_get_source_timestamp(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  rmw_service_info_t * service_info = _service_info_from_args(args);
+  return PyLong_FromLongLong(service_info->source_timestamp);
+}
+
+
+/// Retrieves the received timestsamp number from a rmw_service_info_t capsule
+/**
+ * Raises RuntimeError on failure.
+ *
+ * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
+ * \return the receive timestamp as a long
+ */
+static PyObject *
+rclpy_service_info_get_received_timestamp(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  rmw_service_info_t * service_info = _service_info_from_args(args);
+  return PyLong_FromLongLong(service_info->received_timestamp);
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -5624,6 +5684,21 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_deserialize", rclpy_deserialize, METH_VARARGS,
     "Deserialize a ROS message."
+  },
+  {
+    "rclpy_service_info_get_sequence_number", rclpy_service_info_get_sequence_number,
+    METH_VARARGS,
+    "Retrieve sequence number from service_info"
+  },
+  {
+    "rclpy_service_info_get_source_timestamp", rclpy_service_info_get_source_timestamp,
+    METH_VARARGS,
+    "Retrieve source timestamp from service_info"
+  },
+  {
+    "rclpy_service_info_get_received_timestamp", rclpy_service_info_get_received_timestamp,
+    METH_VARARGS,
+    "Retrieve received timestamp from service_info"
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
