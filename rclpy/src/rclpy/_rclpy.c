@@ -2666,7 +2666,14 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   rmw_request_id_t * header = PyCapsule_GetPointer(
     pyheader, "rmw_request_id_t");
   if (!header) {
-    return NULL;
+    rmw_service_info_t * info_header = PyCapsule_GetPointer(
+      pyheader, "rmw_service_info_t");
+    if (!info_header) {
+      return NULL;
+    }
+    // clear previous error, work-around worked
+    PyErr_Restore(NULL, NULL, NULL);
+    header = &(info_header->request_id);
   }
 
   destroy_ros_message_signature * destroy_ros_message = NULL;
