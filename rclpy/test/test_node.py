@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import pathlib
+import time
 import unittest
 from unittest.mock import Mock
 
@@ -25,7 +25,6 @@ from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
 import rclpy
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.clock import ClockType
 from rclpy.duration import Duration
 from rclpy.exceptions import InvalidParameterException
@@ -36,6 +35,7 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSDurabilityPolicy
@@ -154,7 +154,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
                 result = _rclpy.rclpy_take(capsule, sub.msg_type, False)
             if result is not None:
                 msg, info = result
-                self.assertNotEqual(0, info["source_timestamp"])
+                self.assertNotEqual(0, info['source_timestamp'])
                 return
             else:
                 time.sleep(0.1)
