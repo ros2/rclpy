@@ -334,9 +334,10 @@ class Executor:
             return _rclpy.rclpy_take_response(capsule, client.srv_type.Response)
 
     async def _execute_client(self, client, seq_and_response):
-        sequence, response = seq_and_response
-        if sequence is not None:
+        header, response = seq_and_response
+        if header is not None:
             try:
+                sequence = _rclpy.rclpy_service_info_get_sequence_number(header)
                 future = client._pending_requests[sequence]
             except KeyError:
                 # The request was cancelled

@@ -2716,7 +2716,14 @@ rclpy_send_response(PyObject * Py_UNUSED(self), PyObject * args)
   rmw_request_id_t * header = PyCapsule_GetPointer(
     pyheader, "rmw_request_id_t");
   if (!header) {
-    return NULL;
+    rmw_service_info_t * info_header = PyCapsule_GetPointer(
+      pyheader, "rmw_service_info_t");
+    if (!info_header) {
+      return NULL;
+    }
+    // clear previous error, work-around worked
+    PyErr_Restore(NULL, NULL, NULL);
+    header = &(info_header->request_id);
   }
 
   destroy_ros_message_signature * destroy_ros_message = NULL;
@@ -3392,12 +3399,12 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rmw_request_id_t * header = PyMem_Malloc(sizeof(rmw_request_id_t));
+  rmw_service_info_t * header = PyMem_Malloc(sizeof(rmw_service_info_t));
   if (!header) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for request header");
     return NULL;
   }
-  rcl_ret_t ret = rcl_take_request(&(srv->service), header, taken_request);
+  rcl_ret_t ret = rcl_take_request_with_info(&(srv->service), header, taken_request);
 
   if (ret != RCL_RET_OK && ret != RCL_RET_SERVICE_TAKE_FAILED) {
     PyErr_Format(
@@ -3423,7 +3430,7 @@ rclpy_take_request(PyObject * Py_UNUSED(self), PyObject * args)
       Py_DECREF(pytaken_request);
       return NULL;
     }
-    PyObject * pyheader = PyCapsule_New(header, "rmw_request_id_t", NULL);
+    PyObject * pyheader = PyCapsule_New(header, "rmw_service_info_t", NULL);
     if (!pyheader) {
       PyMem_Free(header);
       Py_DECREF(pytaken_request);
@@ -3469,18 +3476,17 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rmw_request_id_t * header = PyMem_Malloc(sizeof(rmw_request_id_t));
+  rmw_service_info_t * header = PyMem_Malloc(sizeof(rmw_service_info_t));
   if (!header) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for response header");
     return NULL;
   }
-  rcl_ret_t ret = rcl_take_response(&(client->client), header, taken_response);
-  int64_t sequence = header->sequence_number;
-  PyMem_Free(header);
+  rcl_ret_t ret = rcl_take_response_with_info(&(client->client), header, taken_response);
 
   // Create the tuple to return
   PyObject * pytuple = PyTuple_New(2);
   if (!pytuple) {
+    PyMem_Free(header);
     return NULL;
   }
 
@@ -3490,16 +3496,18 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
     if (!pytaken_response) {
       // the function has set the Python error
       Py_DECREF(pytuple);
+      PyMem_Free(header);
       return NULL;
     }
 
-    PyObject * pysequence = PyLong_FromLongLong(sequence);
-    if (!pysequence) {
+    PyObject * pyheader = PyCapsule_New(header, "rmw_service_info_t", NULL);
+    if (!pyheader) {
       Py_DECREF(pytaken_response);
       Py_DECREF(pytuple);
+      PyMem_Free(header);
       return NULL;
     }
-    PyTuple_SET_ITEM(pytuple, 0, pysequence);
+    PyTuple_SET_ITEM(pytuple, 0, pyheader);
     PyTuple_SET_ITEM(pytuple, 1, pytaken_response);
     return pytuple;
   }
@@ -5333,6 +5341,70 @@ rclpy_deserialize(PyObject * Py_UNUSED(self), PyObject * args)
   return pydeserialized_ros_msg;
 }
 
+static rmw_service_info_t *
+_service_info_from_args(PyObject * args)
+{
+  PyObject * pyservice_info;
+
+  if (!PyArg_ParseTuple(args, "O", &pyservice_info)) {
+    return NULL;
+  }
+
+  return PyCapsule_GetPointer(pyservice_info, "rmw_service_info_t");
+}
+
+/// Retrieves the sequence number from a rmw_service_info_t capsule
+/**
+ * Raises RuntimeError on failure.
+ *
+ * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
+ * \return the sequence number as a long
+ */
+static PyObject *
+rclpy_service_info_get_sequence_number(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  rmw_service_info_t * service_info = _service_info_from_args(args);
+  if (service_info == NULL) {
+    return NULL;
+  }
+  return PyLong_FromLongLong(service_info->request_id.sequence_number);
+}
+
+/// Retrieves the source timestamp number from a rmw_service_info_t capsule
+/**
+ * Raises RuntimeError on failure.
+ *
+ * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
+ * \return the source timestamps as a long
+ */
+static PyObject *
+rclpy_service_info_get_source_timestamp(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  rmw_service_info_t * service_info = _service_info_from_args(args);
+  if (service_info == NULL) {
+    return NULL;
+  }
+  return PyLong_FromLongLong(service_info->source_timestamp);
+}
+
+
+/// Retrieves the received timestsamp number from a rmw_service_info_t capsule
+/**
+ * Raises RuntimeError on failure.
+ *
+ * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
+ * \return the receive timestamp as a long
+ */
+static PyObject *
+rclpy_service_info_get_received_timestamp(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  rmw_service_info_t * service_info = _service_info_from_args(args);
+  if (service_info == NULL) {
+    return NULL;
+  }
+  return PyLong_FromLongLong(service_info->received_timestamp);
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -5723,6 +5795,21 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_deserialize", rclpy_deserialize, METH_VARARGS,
     "Deserialize a ROS message."
+  },
+  {
+    "rclpy_service_info_get_sequence_number", rclpy_service_info_get_sequence_number,
+    METH_VARARGS,
+    "Retrieve sequence number from service_info"
+  },
+  {
+    "rclpy_service_info_get_source_timestamp", rclpy_service_info_get_source_timestamp,
+    METH_VARARGS,
+    "Retrieve source timestamp from service_info"
+  },
+  {
+    "rclpy_service_info_get_received_timestamp", rclpy_service_info_get_received_timestamp,
+    METH_VARARGS,
+    "Retrieve received timestamp from service_info"
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
