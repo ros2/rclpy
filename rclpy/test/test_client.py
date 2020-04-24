@@ -110,7 +110,7 @@ class TestClient(unittest.TestCase):
                     return
                 else:
                     time.sleep(0.1)
-            self.fail("Did not get a request in time")
+            self.fail('Did not get a request in time')
         finally:
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
