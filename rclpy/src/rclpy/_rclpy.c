@@ -5225,17 +5225,20 @@ rclpy_get_node_parameters(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  PyObject * current_key, * current_value;
-  Py_ssize_t current_index = 0;
-  while (PyDict_Next(params_by_node_name, &current_index, &current_key, &current_value)) {
-    // TODO(cottsay) implement further wildcard matching
-    if (PyObject_RichCompareBool(current_key, py_wildcard_name, Py_EQ) == 1 ||
-      PyObject_RichCompareBool(current_key, py_node_name_with_namespace, Py_EQ) == 1)
-    {
-      if (-1 == PyDict_Update(node_params, current_value)) {
-        Py_DECREF(node_params);
-        node_params = NULL;
-        break;
+  // Enforce wildcard matching precedence
+  // TODO(cottsay) implement further wildcard matching
+  PyObject * py_node_names[] = {py_wildcard_name, py_node_name_with_namespace};
+  size_t name_count = sizeof(py_node_names) / sizeof(PyObject *);
+  for (size_t name_index = 0U; name_index < name_count && NULL != node_params; ++name_index) {
+    PyObject * current_key, * current_value;
+    Py_ssize_t current_index = 0;
+    while (PyDict_Next(params_by_node_name, &current_index, &current_key, &current_value)) {
+      if (PyObject_RichCompareBool(current_key, py_node_names[name_index], Py_EQ) == 1) {
+        if (-1 == PyDict_Update(node_params, current_value)) {
+          Py_DECREF(node_params);
+          node_params = NULL;
+          break;
+        }
       }
     }
   }
