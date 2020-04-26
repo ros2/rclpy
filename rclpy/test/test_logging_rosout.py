@@ -19,6 +19,7 @@ import rclpy
 from rclpy.executors import SingleThreadedExecutor
 
 TEST_PARAMETERS = [
+    # name, enable_global_rosout_logs, enable_node_rosout, expected_data
     ('enable_global_rosout_enable_node_rosout', True, True, True),
     ('enable_global_rosout_disable_node_rosout', True, False, False),
     ('disable_global_rosout_enable_node_rosout', False, True, False),
@@ -71,8 +72,11 @@ def test_enable_rosout(
         raw=True
     )
 
-    node.get_logger().info('SOMETHING')
-    executor.spin_once(timeout_sec=1)
+    cycle_count = 0
+    while cycle_count < 5 and raw_subscription_msg is None:
+        node.get_logger().info('SOMETHING')
+        cycle_count += 1
+        executor.spin_once(timeout_sec=1)
 
     if expected_data:
         assert (raw_subscription_msg is not None)
