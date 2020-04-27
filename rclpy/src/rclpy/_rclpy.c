@@ -3346,13 +3346,15 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
       return NULL;
     }
 
-    if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
-      pytaken_msg = rclpy_convert_to_py(taken_msg, pymsg_type);
-      destroy_ros_message(taken_msg);
-      if (!pytaken_msg) {
-        // the function has set the Python error
-        return NULL;
-      }
+    if (RCL_RET_SUBSCRIPTION_TAKE_FAILED == ret) {
+      return PyTuple_Pack(2, Py_None, Py_None);
+    }
+
+    pytaken_msg = rclpy_convert_to_py(taken_msg, pymsg_type);
+    destroy_ros_message(taken_msg);
+    if (!pytaken_msg) {
+      // the function has set the Python error
+      return NULL;
     }
   }
 
