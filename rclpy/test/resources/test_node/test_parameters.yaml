@@ -1,5 +1,8 @@
 /**:
   ros__parameters:
-    initial_fizz: 23
+    initial_fizz: -23
     initial_baz: 1.0
     initial_foobar: False
+/my_ns/my_node:
+  ros__parameters:
+    initial_fizz: 23
