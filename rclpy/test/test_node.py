@@ -152,7 +152,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         while cycle_count < 5:
             with sub.handle as capsule:
                 result = _rclpy.rclpy_take(capsule, sub.msg_type, False)
-            if result is not None:
+            if result[0] is not None:
                 msg, info = result
                 self.assertNotEqual(0, info['source_timestamp'])
                 return
