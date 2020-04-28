@@ -3352,14 +3352,9 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
     pytaken_msg = rclpy_convert_to_py(taken_msg, pymsg_type);
     destroy_ros_message(taken_msg);
-    if (!pytaken_msg) {
-      // the function has set the Python error
-      return NULL;
-    }
   }
   if (!pytaken_msg) {
-    // This should be impossible
-    PyErr_Format(PyExc_RuntimeError, "Unable to take message");
+    // the function has set the Python error
     return NULL;
   }
 
