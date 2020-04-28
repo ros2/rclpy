@@ -3309,7 +3309,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pysubscription;
   PyObject * pymsg_type;
   PyObject * pyraw;
-  PyObject * pytaken_msg;
+  PyObject * pytaken_msg = NULL;
 
   if (!PyArg_ParseTuple(args, "OOO", &pysubscription, &pymsg_type, &pyraw)) {
     return NULL;
@@ -3356,6 +3356,11 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
       // the function has set the Python error
       return NULL;
     }
+  }
+  if (!pytaken_msg) {
+    // This should be impossible
+    PyErr_Format(PyExc_RuntimeError, "Unable to take message");
+    return NULL;
   }
 
   // make result tuple
