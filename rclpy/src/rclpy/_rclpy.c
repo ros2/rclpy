@@ -3309,7 +3309,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pysubscription;
   PyObject * pymsg_type;
   PyObject * pyraw;
-  PyObject * pytaken_msg;
+  PyObject * pytaken_msg = NULL;
 
   if (!PyArg_ParseTuple(args, "OOO", &pysubscription, &pymsg_type, &pyraw)) {
     return NULL;
@@ -3352,10 +3352,10 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
 
     pytaken_msg = rclpy_convert_to_py(taken_msg, pymsg_type);
     destroy_ros_message(taken_msg);
-    if (!pytaken_msg) {
-      // the function has set the Python error
-      return NULL;
-    }
+  }
+  if (!pytaken_msg) {
+    // the function has set the Python error
+    return NULL;
   }
 
   // make result tuple
