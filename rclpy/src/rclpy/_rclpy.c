@@ -3301,7 +3301,8 @@ rclpy_message_info_to_dict(rmw_message_info_t * message_info)
 /**
  * \param[in] pysubscription Capsule pointing to the subscription to process the message
  * \param[in] pymsg_type Instance of the message type to take
- * \return Tuple of (Python message with all fields populated with received message, message_info)
+ * \return Tuple of (Python message with all fields populated with received message, message_info),
+ *         or (None, None) if ther was no message to take.
  */
 static PyObject *
 rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
