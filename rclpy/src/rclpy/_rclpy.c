@@ -3302,7 +3302,7 @@ rclpy_message_info_to_dict(rmw_message_info_t * message_info)
  * \param[in] pysubscription Capsule pointing to the subscription to process the message
  * \param[in] pymsg_type Instance of the message type to take
  * \return Tuple of (Python message with all fields populated with received message, message_info),
- *         or (None, None) if ther was no message to take.
+ *         or None if there was no message to take.
  */
 static PyObject *
 rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
@@ -3348,7 +3348,7 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
     }
 
     if (RCL_RET_SUBSCRIPTION_TAKE_FAILED == ret) {
-      return PyTuple_Pack(2, Py_None, Py_None);
+      Py_RETURN_NONE;
     }
 
     pytaken_msg = rclpy_convert_to_py(taken_msg, pymsg_type);
