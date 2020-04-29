@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import time
 
 from rcl_interfaces.msg import Log
 import rclpy
@@ -27,13 +28,12 @@ TEST_PARAMETERS = [
     ('disable_global_rosout_disable_node_rosout', False, False, False),
 ]
 
-receive_expected_rosout_msg = False  # True if expected rosout msg is received
+rosout_subscription_msg = None  # None=No result yet
 
 
 def rosout_subscription_callback(msg):
-    global receive_expected_rosout_msg
-    if (LoggingSeverity(msg.level) == LoggingSeverity.INFO and msg.msg == 'SOMETHING'):
-        receive_expected_rosout_msg = True
+    global rosout_subscription_msg
+    rosout_subscription_msg = msg
 
 
 @pytest.mark.parametrize(
@@ -63,8 +63,8 @@ def test_enable_rosout(
     )
     executor.add_node(node)
 
-    global receive_expected_rosout_msg
-    receive_expected_rosout_msg = False
+    global rosout_subscription_msg
+    rosout_subscription_msg = None
     # create subscriber of 'rosout' topic
     node.create_subscription(
         Log,
@@ -73,16 +73,21 @@ def test_enable_rosout(
         1
     )
 
-    cycle_count = 0
-    while cycle_count < 5 and receive_expected_rosout_msg is False:
-        node.get_logger().info('SOMETHING')
-        cycle_count += 1
+    max_difference_time = 5
+    begin_time = time.time()
+    message_data = 'SOMETHING'
+    while rosout_subscription_msg is None and int(time.time() - begin_time) <= max_difference_time:
+        node.get_logger().info(message_data)
         executor.spin_once(timeout_sec=1)
 
     if expected_data:
-        assert (receive_expected_rosout_msg is True)
+        assert (rosout_subscription_msg is not None)
+        assert (type(rosout_subscription_msg) == Log)
+        assert (LoggingSeverity(rosout_subscription_msg.level) == LoggingSeverity.INFO)
+        assert (len(rosout_subscription_msg.msg) != 0)
+        assert (rosout_subscription_msg.msg == message_data)
     else:
-        assert (receive_expected_rosout_msg is False)
+        assert (rosout_subscription_msg is None)
 
     node.destroy_node()
     rclpy.shutdown(context=context)
