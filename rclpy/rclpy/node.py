@@ -1154,7 +1154,7 @@ class Node:
                 publisher_handle, msg_type, topic, qos_profile,
                 event_callbacks=event_callbacks or PublisherEventCallbacks(),
                 callback_group=callback_group)
-        except:
+        except Exception:
             publisher_handle.destroy()
             raise
         self.__publishers.append(publisher)
@@ -1215,7 +1215,7 @@ class Node:
                 subscription_handle, msg_type,
                 topic, callback, callback_group, qos_profile, raw,
                 event_callbacks=event_callbacks or SubscriptionEventCallbacks())
-        except:
+        except Exception:
             subscription_handle.destroy()
             raise
         self.__subscriptions.append(subscription)
