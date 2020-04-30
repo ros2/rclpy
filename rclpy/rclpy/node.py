@@ -1149,11 +1149,14 @@ class Node:
             self._validate_topic_or_service_name(topic)
 
         publisher_handle = Handle(publisher_capsule)
-
-        publisher = Publisher(
-            publisher_handle, msg_type, topic, qos_profile,
-            event_callbacks=event_callbacks or PublisherEventCallbacks(),
-            callback_group=callback_group)
+        try:
+            publisher = Publisher(
+                publisher_handle, msg_type, topic, qos_profile,
+                event_callbacks=event_callbacks or PublisherEventCallbacks(),
+                callback_group=callback_group)
+        except:
+            publisher_handle.destroy()
+            raise
         self.__publishers.append(publisher)
         self._wake_executor()
 
@@ -1207,11 +1210,14 @@ class Node:
             self._validate_topic_or_service_name(topic)
 
         subscription_handle = Handle(subscription_capsule)
-
-        subscription = Subscription(
-            subscription_handle, msg_type,
-            topic, callback, callback_group, qos_profile, raw,
-            event_callbacks=event_callbacks or SubscriptionEventCallbacks())
+        try:
+            subscription = Subscription(
+                subscription_handle, msg_type,
+                topic, callback, callback_group, qos_profile, raw,
+                event_callbacks=event_callbacks or SubscriptionEventCallbacks())
+        except:
+            subscription_handle.destroy()
+            raise
         self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
 
