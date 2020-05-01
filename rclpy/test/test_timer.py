@@ -23,7 +23,12 @@ from rclpy.executors import SingleThreadedExecutor
 
 TEST_PERIODS = (
     0.1,
-    0.01,
+    pytest.param(
+        0.01,
+        marks=(
+            pytest.mark.skipif(os.name == 'nt', reason='Flaky on windows'),
+        )
+    ),
     pytest.param(
         0.001,
         marks=(
