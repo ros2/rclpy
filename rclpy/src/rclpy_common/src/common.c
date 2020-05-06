@@ -162,9 +162,9 @@ _convert_rmw_time_to_ns(const rmw_time_t * duration, int64_t * nanoseconds)
   return true;
 fail_convert_rmw_time_to_ns:
   PyErr_Format(
-      PyExc_RuntimeError,
-      "Failed to convert rmw_time_t (sec: %llu, nsec: %llu) to int64_t",
-      duration->sec, duration->nsec);
+    PyExc_RuntimeError,
+    "Failed to convert rmw_time_t (sec: %llu, nsec: %llu) to int64_t",
+    duration->sec, duration->nsec);
   return false;
 }
 
