@@ -140,34 +140,6 @@ rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
   return pynames_and_types;
 }
 
-// TODO(hidmic): revisit after discussions in
-// https://github.com/ros2/rmw/issues/210 and
-// https://github.com/ros2/rmw/issues/215 have
-// settled.
-static
-bool
-_convert_rmw_time_to_ns(const rmw_time_t * duration, int64_t * nanoseconds)
-{
-  assert(duration != NULL);
-  assert(nanoseconds != NULL);
-  int64_t partial = RCUTILS_S_TO_NS(duration->sec);
-  if (partial < 0LL || (uint64_t)partial < duration->sec) {
-    goto fail_convert_rmw_time_to_ns;
-  }
-  int64_t total = partial + duration->nsec;
-  if (total < 0LL || total < partial || (uint64_t)total < duration->nsec) {
-    goto fail_convert_rmw_time_to_ns;
-  }
-  *nanoseconds = total;
-  return true;
-fail_convert_rmw_time_to_ns:
-  PyErr_Format(
-    PyExc_RuntimeError,
-    "Failed to convert rmw_time_t (sec: %llu, nsec: %llu) to int64_t",
-    duration->sec, duration->nsec);
-  return false;
-}
-
 static
 PyObject *
 _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
@@ -190,11 +162,7 @@ _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
   if (!args) {
     goto cleanup;
   }
-  int64_t total_nanoseconds = 0;
-  if (!_convert_rmw_time_to_ns(duration, &total_nanoseconds)) {
-    goto cleanup;
-  }
-  kwargs = Py_BuildValue("{sL}", "nanoseconds", total_nanoseconds);
+  kwargs = Py_BuildValue("{sKsK}", "seconds", duration->sec, "nanoseconds", duration->nsec);
   if (!kwargs) {
     goto cleanup;
   }
