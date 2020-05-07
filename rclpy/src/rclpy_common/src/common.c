@@ -144,7 +144,6 @@ static
 PyObject *
 _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
 {
-  uint64_t total_nanoseconds = RCUTILS_S_TO_NS(duration->sec) + duration->nsec;
   PyObject * pyduration_module = NULL;
   PyObject * pyduration_class = NULL;
   PyObject * args = NULL;
@@ -163,7 +162,7 @@ _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
   if (!args) {
     goto cleanup;
   }
-  kwargs = Py_BuildValue("{sK}", "nanoseconds", total_nanoseconds);
+  kwargs = Py_BuildValue("{sKsK}", "seconds", duration->sec, "nanoseconds", duration->nsec);
   if (!kwargs) {
     goto cleanup;
   }
