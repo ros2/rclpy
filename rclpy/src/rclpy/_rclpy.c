@@ -4300,16 +4300,7 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (PyCapsule_IsValid(pyentity, "rcl_node_t")) {
-    rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pyentity, "rcl_node_t");
-    if (RCL_RET_OK != rcl_node_assert_liveliness(node)) {
-      PyErr_Format(
-        RCLError,
-        "Failed assert liveliness on the Node: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-      return NULL;
-    }
-  } else if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
+  if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
     rclpy_publisher_t * publisher = rclpy_handle_get_pointer_from_capsule(
       pyentity, "rclpy_publisher_t");
     if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
