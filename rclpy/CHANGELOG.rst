@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix bad rmw_time_t to nanoseconds conversion. (`#555 <https://github.com/ros2/rclpy/issues/555>`_)
+* Skip flaky timer test on windows (`#554 <https://github.com/ros2/rclpy/issues/554>`_)
+* Cleanup rmw publisher/subscription on exception (`#553 <https://github.com/ros2/rclpy/issues/553>`_)
+* Contributors: Ivan Santiago Paunovic, Miaofei Mei, Michel Hidalgo
+
 0.9.0 (2020-04-29)
 ------------------
 * Fix flaky test expecting wrong return type of rclpy_take (`#552 <https://github.com/ros2/rclpy/issues/552>`_)
