@@ -4281,12 +4281,12 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Manually assert that an entity is alive.
 /**
-  * When using RMW_QOS_POLICY_MANUAL_BY_*, the application must call this function at least as
+  * When using RMW_QOS_POLICY_MANUAL_BY_TOPIC, the application must call this function at least as
   * often as the qos policy liveliness_lease_duration.
-  * The passed entity can be a Publisher or a Node.
+  * The passed entity can be a Publisher.
   *
   * Raises RuntimeError on failure to assert liveliness
-  * Raises TypeError if passed object is not a valid Publisher or Node
+  * Raises TypeError if passed object is not a valid Publisher
   *
   * \param[in] pyentity A capsule containing an rcl_node_t or rcl_publisher_t
   * \return None
