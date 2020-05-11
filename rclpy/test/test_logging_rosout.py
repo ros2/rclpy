@@ -12,25 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 import pytest
 
 from rcl_interfaces.msg import Log
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.logging import LoggingSeverity
 
 TEST_PARAMETERS = [
+    # name, enable_global_rosout_logs, enable_node_rosout, expected_data
     ('enable_global_rosout_enable_node_rosout', True, True, True),
     ('enable_global_rosout_disable_node_rosout', True, False, False),
     ('disable_global_rosout_enable_node_rosout', False, True, False),
     ('disable_global_rosout_disable_node_rosout', False, False, False),
 ]
 
-raw_subscription_msg = None  # None=No result yet
+rosout_subscription_msg = None  # None=No result yet
 
 
-def raw_subscription_callback(msg):
-    global raw_subscription_msg
-    raw_subscription_msg = msg
+def rosout_subscription_callback(msg):
+    global rosout_subscription_msg
+    rosout_subscription_msg = msg
 
 
 @pytest.mark.parametrize(
@@ -60,26 +64,31 @@ def test_enable_rosout(
     )
     executor.add_node(node)
 
-    global raw_subscription_msg
-    raw_subscription_msg = None
+    global rosout_subscription_msg
+    rosout_subscription_msg = None
     # create subscriber of 'rosout' topic
     node.create_subscription(
         Log,
         '/rosout',
-        raw_subscription_callback,
-        1,
-        raw=True
+        rosout_subscription_callback,
+        1
     )
 
-    node.get_logger().info('SOMETHING')
-    executor.spin_once(timeout_sec=1)
+    max_difference_time = 5
+    begin_time = time.time()
+    message_data = 'SOMETHING'
+    while rosout_subscription_msg is None and int(time.time() - begin_time) <= max_difference_time:
+        node.get_logger().info(message_data)
+        executor.spin_once(timeout_sec=1)
 
     if expected_data:
-        assert (raw_subscription_msg is not None)
-        assert (type(raw_subscription_msg) == bytes)
-        assert (len(raw_subscription_msg) != 0)
+        assert (rosout_subscription_msg is not None)
+        assert (type(rosout_subscription_msg) == Log)
+        assert (LoggingSeverity(rosout_subscription_msg.level) == LoggingSeverity.INFO)
+        assert (len(rosout_subscription_msg.msg) != 0)
+        assert (rosout_subscription_msg.msg == message_data)
     else:
-        assert (raw_subscription_msg is None)
+        assert (rosout_subscription_msg is None)
 
     node.destroy_node()
     rclpy.shutdown(context=context)
