@@ -273,7 +273,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_RELIABLE,
             durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE,
             liveliness_lease_duration=Duration(seconds=5, nanoseconds=23456),
-            liveliness=QoSLivelinessPolicy.MANUAL_BY_NODE)
+            liveliness=QoSLivelinessPolicy.AUTOMATIC)
         self.node.create_subscription(BasicTypes, topic_name, lambda msg: print(msg), qos_profile2)
         # Both lists should have one item
         publisher_list = self.node.get_publishers_info_by_topic(fq_topic_name)

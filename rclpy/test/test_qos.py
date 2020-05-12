@@ -89,7 +89,7 @@ class TestQosProfile(unittest.TestCase):
             durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE,
             lifespan=Duration(seconds=4),
             deadline=Duration(nanoseconds=1e6),
-            liveliness=QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE,
+            liveliness=QoSLivelinessPolicy.RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC,
             liveliness_lease_duration=Duration(nanoseconds=12),
             avoid_ros_namespace_conventions=True
         )

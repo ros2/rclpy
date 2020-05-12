@@ -4281,14 +4281,14 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
 
 /// Manually assert that an entity is alive.
 /**
-  * When using RMW_QOS_POLICY_MANUAL_BY_*, the application must call this function at least as
+  * When using RMW_QOS_POLICY_MANUAL_BY_TOPIC, the application must call this function at least as
   * often as the qos policy liveliness_lease_duration.
-  * The passed entity can be a Publisher or a Node.
+  * The passed entity can be a Publisher.
   *
   * Raises RuntimeError on failure to assert liveliness
-  * Raises TypeError if passed object is not a valid Publisher or Node
+  * Raises TypeError if passed object is not a valid Publisher
   *
-  * \param[in] pyentity A capsule containing an rcl_node_t or rcl_publisher_t
+  * \param[in] pyentity A capsule containing an rcl_publisher_t
   * \return None
   */
 static PyObject *
@@ -4300,16 +4300,7 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  if (PyCapsule_IsValid(pyentity, "rcl_node_t")) {
-    rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pyentity, "rcl_node_t");
-    if (RCL_RET_OK != rcl_node_assert_liveliness(node)) {
-      PyErr_Format(
-        RCLError,
-        "Failed assert liveliness on the Node: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-      return NULL;
-    }
-  } else if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
+  if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
     rclpy_publisher_t * publisher = rclpy_handle_get_pointer_from_capsule(
       pyentity, "rclpy_publisher_t");
     if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
@@ -4321,7 +4312,7 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
     }
   } else {
     PyErr_Format(
-      PyExc_TypeError, "Passed capsule is not a valid Node or Publisher.");
+      PyExc_TypeError, "Passed capsule is not a valid Publisher.");
     return NULL;
   }
 

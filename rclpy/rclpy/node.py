@@ -1692,16 +1692,6 @@ class Node:
         """
         return self._count_publishers_or_subscribers(topic_name, _rclpy.rclpy_count_subscribers)
 
-    def assert_liveliness(self) -> None:
-        """
-        Manually assert that this Node is alive.
-
-        If the QoS Liveliness policy is set to RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_NODE, the
-        application must call this at least as often as ``QoSProfile.liveliness_lease_duration``.
-        """
-        with self.handle as capsule:
-            _rclpy.rclpy_assert_liveliness(capsule)
-
     def _get_info_by_topic(
         self,
         topic_name: str,
