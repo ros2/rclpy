@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2020-05-12)
+------------------
+* Remove MANUAL_BY_NODE liveliness API (`#556 <https://github.com/ros2/rclpy/issues/556>`_)
+* Fix bug that not to get expected data because use less timeout (`#548 <https://github.com/ros2/rclpy/issues/548>`_)
+* Contributors: Barry Xu, Ivan Santiago Paunovic
+
 0.9.1 (2020-05-08)
 ------------------
 * Fix bad rmw_time_t to nanoseconds conversion. (`#555 <https://github.com/ros2/rclpy/issues/555>`_)
