@@ -4288,7 +4288,7 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   * Raises RuntimeError on failure to assert liveliness
   * Raises TypeError if passed object is not a valid Publisher
   *
-  * \param[in] pyentity A capsule containing an rcl_node_t or rcl_publisher_t
+  * \param[in] pyentity A capsule containing an rcl_publisher_t
   * \return None
   */
 static PyObject *
@@ -4312,7 +4312,7 @@ rclpy_assert_liveliness(PyObject * Py_UNUSED(self), PyObject * args)
     }
   } else {
     PyErr_Format(
-      PyExc_TypeError, "Passed capsule is not a valid Node or Publisher.");
+      PyExc_TypeError, "Passed capsule is not a valid Publisher.");
     return NULL;
   }
 
