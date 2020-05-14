@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import importlib
+import os
 import sys
 
 assert 'rclpy' not in sys.modules, 'rclpy should not have been imported before running tests'
@@ -23,7 +24,19 @@ import test_rclpy  # noqa
 
 
 def _custom_import(name):
-    return importlib.import_module(name, package='test_rclpy')
+    # New in Python 3.8: on Windows we should call 'add_dll_directory()' for directories
+    # containing DLLs we depend on.
+    # https://docs.python.org/3/whatsnew/3.8.html#bpo-36085-whatsnew
+    dll_dir_handles = []
+    if os.name == 'nt' and hasattr(os, 'add_dll_directory'):
+        path_env = os.environ['PATH'].split(';')
+        for prefix_path in path_env:
+            if os.path.exists(prefix_path):
+                dll_dir_handles.append(os.add_dll_directory(prefix_path))
+    import_module = importlib.import_module(name, package='test_rclpy')
+    for handle in dll_dir_handles:
+        handle.close()
+    return import_module
 
 
 rclpy.impl._import = _custom_import
