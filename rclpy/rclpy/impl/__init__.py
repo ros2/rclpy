@@ -17,8 +17,20 @@ import os
 
 
 def _import(name):
+    dll_dir_handles = []
     try:
-        return importlib.import_module(name, package='rclpy')
+        # New in Python 3.8: on Windows we should call 'add_dll_directory()' for directories
+        # containing DLLs we depend on.
+        # https://docs.python.org/3/whatsnew/3.8.html#bpo-36085-whatsnew
+        if os.name == 'nt':
+            path_env = os.environ['PATH'].split(';')
+            for prefix_path in path_env:
+                if os.path.exists(prefix_path):
+                    dll_dir_handles.append(os.add_dll_directory(prefix_path))
+
+        imported_module = importlib.import_module(name, package='rclpy')
+
+        return imported_module
     except ImportError as e:
         if e.path is not None and os.path.isfile(e.path):
             e.msg += \
@@ -27,3 +39,6 @@ def _import(name):
                 (e.path, 'https://index.ros.org/doc/ros2/Troubleshooting/'
                          '#import-failing-even-with-library-present-on-the-system')
         raise
+    finally:
+        for handle in dll_dir_handles:
+            handle.close()
