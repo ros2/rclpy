@@ -15,6 +15,8 @@
 import importlib
 import sys
 
+from rpyutils import add_dll_directories_from_env
+
 assert 'rclpy' not in sys.modules, 'rclpy should not have been imported before running tests'
 
 # this will make the extensions load from the build folder
@@ -23,7 +25,11 @@ import test_rclpy  # noqa
 
 
 def _custom_import(name):
-    return importlib.import_module(name, package='test_rclpy')
+    # Since Python 3.8, on Windows we should ensure DLL directories are explicitly added
+    # to the search path.
+    # See https://docs.python.org/3/whatsnew/3.8.html#bpo-36085-whatsnew
+    with add_dll_directories_from_env('PATH'):
+        return importlib.import_module(name, package='test_rclpy')
 
 
 rclpy.impl._import = _custom_import

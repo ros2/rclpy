@@ -15,10 +15,16 @@
 import importlib
 import os
 
+from rpyutils import add_dll_directories_from_env
+
 
 def _import(name):
     try:
-        return importlib.import_module(name, package='rclpy')
+        # Since Python 3.8, on Windows we should ensure DLL directories are explicitly added
+        # to the search path.
+        # See https://docs.python.org/3/whatsnew/3.8.html#bpo-36085-whatsnew
+        with add_dll_directories_from_env('PATH'):
+            return importlib.import_module(name, package='rclpy')
     except ImportError as e:
         if e.path is not None and os.path.isfile(e.path):
             e.msg += \
