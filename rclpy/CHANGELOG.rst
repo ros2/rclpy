@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.1 (2020-05-18)
+------------------
+* Explicitly add DLL directories for Windows before importing (`#558 <https://github.com/ros2/rclpy/issues/558>`_)
+* Contributors: Jacob Perron
+
 1.0.0 (2020-05-12)
 ------------------
 * Remove MANUAL_BY_NODE liveliness API (`#556 <https://github.com/ros2/rclpy/issues/556>`_)
