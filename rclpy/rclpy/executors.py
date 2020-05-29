@@ -280,20 +280,20 @@ class Executor:
 
     def spin(self) -> None:
         """Execute callbacks until shutdown."""
-        while self._context.ok():
+        while self._context.ok() and not self._is_shutdown:
             self.spin_once()
 
     def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
         """Execute callbacks until a given future is done or a timeout occurs."""
         if timeout_sec is None or timeout_sec < 0:
-            while self._context.ok() and not future.done():
+            while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once(timeout_sec=timeout_sec)
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = timeout_sec
 
-            while self._context.ok() and not future.done():
+            while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once(timeout_sec=timeout_left)
                 now = time.monotonic()
 
@@ -677,15 +677,17 @@ class SingleThreadedExecutor(Executor):
 
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
-            handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+            ready_callback = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
         except ShutdownException:
             pass
         except TimeoutException:
             pass
         else:
-            handler()
-            if handler.exception() is not None:
-                raise handler.exception()
+            if ready_callback is not None:
+                handler, entity, node = ready_callback
+                handler()
+                if handler.exception() is not None:
+                    raise handler.exception()
 
 
 class MultiThreadedExecutor(Executor):
@@ -709,7 +711,7 @@ class MultiThreadedExecutor(Executor):
 
     def spin_once(self, timeout_sec: float = None) -> None:
         try:
-            handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+            ready_callback = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
         except ExternalShutdownException:
             pass
         except ShutdownException:
@@ -717,4 +719,6 @@ class MultiThreadedExecutor(Executor):
         except TimeoutException:
             pass
         else:
-            self._executor.submit(handler)
+            if ready_callback is not None:
+                handler, entity, node = ready_callback
+                self._executor.submit(handler)
