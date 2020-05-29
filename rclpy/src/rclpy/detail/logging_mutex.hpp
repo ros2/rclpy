@@ -38,7 +38,7 @@ namespace detail
 // it at destruction time can keep it alive.
 // In that way, a destruction ordering problem between static objects is avoided.
 RCUTILS_LOCAL
-std::shared_ptr<std::recursive_mutex>
+std::recursive_mutex &
 get_global_logging_mutex();
 
 }  // namespace detail

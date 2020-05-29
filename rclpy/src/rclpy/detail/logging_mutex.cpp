@@ -19,12 +19,9 @@
 
 #include "rcutils/macros.h"
 
-std::shared_ptr<std::recursive_mutex>
+std::recursive_mutex &
 rclpy::detail::get_global_logging_mutex()
 {
-  static auto mutex = std::make_shared<std::recursive_mutex>();
-  if (RCUTILS_UNLIKELY(!mutex)) {
-    throw std::runtime_error("rclpy global logging mutex is a nullptr");
-  }
+  static std::recursive_mutex mutex;
   return mutex;
 }

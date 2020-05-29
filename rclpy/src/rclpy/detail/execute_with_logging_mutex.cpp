@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "./execute_with_logging_mutex.h"
+#include "./execute_with_logging_mutex.h"  // NOLINT(build/include)
 
 // Must be before Python.h; makes #-formats use ssize_t instead of int
 #define PY_SSIZE_T_CLEAN
@@ -25,7 +25,6 @@
 
 extern "C"
 {
-
 PyObject *
 rclpy_detail_execute_with_logging_mutex(
   rclpy_detail_execute_with_logging_mutex_sig function,
@@ -33,8 +32,7 @@ rclpy_detail_execute_with_logging_mutex(
   PyObject * args)
 {
   try {
-    std::shared_ptr<std::recursive_mutex> mutex = rclpy::detail::get_global_logging_mutex();
-    std::lock_guard<std::recursive_mutex> guard(*mutex);
+    std::lock_guard<std::recursive_mutex> guard(rclpy::detail::get_global_logging_mutex());
     return function(self, args);
   } catch (std::exception & ex) {
     PyErr_Format(
@@ -55,8 +53,7 @@ rclpy_detail_execute_with_logging_mutex2(
   void * arg)
 {
   try {
-    std::shared_ptr<std::recursive_mutex> mutex = rclpy::detail::get_global_logging_mutex();
-    std::lock_guard<std::recursive_mutex> guard(*mutex);
+    std::lock_guard<std::recursive_mutex> guard(rclpy::detail::get_global_logging_mutex());
     function(arg);
   } catch (std::exception & ex) {
     // Warning should use line number of the current stack frame
@@ -72,5 +69,4 @@ rclpy_detail_execute_with_logging_mutex2(
       "Failed to acquire logging mutex");
   }
 }
-
 }  // extern "C"

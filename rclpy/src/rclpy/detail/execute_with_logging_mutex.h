@@ -27,7 +27,7 @@ extern "C"
 {
 #endif
 
-typedef PyObject * (*rclpy_detail_execute_with_logging_mutex_sig)(PyObject *, PyObject *);
+typedef PyObject * (* rclpy_detail_execute_with_logging_mutex_sig)(PyObject *, PyObject *);
 
 /// Execute the given function pointer after acquiring the logging mutex.
 RCUTILS_LOCAL
@@ -37,7 +37,7 @@ rclpy_detail_execute_with_logging_mutex(
   PyObject * self,
   PyObject * args);
 
-typedef void (*rclpy_detail_execute_with_logging_mutex_sig2)(void *);
+typedef void (* rclpy_detail_execute_with_logging_mutex_sig2)(void *);
 
 /// Execute the given function pointer after acquiring the logging mutex.
 /**
