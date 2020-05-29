@@ -42,6 +42,8 @@
 #include <rmw/validate_node_name.h>
 #include <rosidl_runtime_c/message_type_support_struct.h>
 
+#include "./detail/thread_safe_logging_output_handler.h"
+#include "./detail/execute_with_logging_mutex.h"
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
@@ -640,7 +642,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
  * Raises RuntimeError if rcl logging could not be initialized
  */
 static PyObject *
-rclpy_logging_configure(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_logging_configure_impl(PyObject * Py_UNUSED(self), PyObject * args)
 {
   // Expect one argument, a context.
   PyObject * pycontext;
@@ -653,23 +655,33 @@ rclpy_logging_configure(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_logging_configure(
-    &context->global_arguments, &allocator);
+  rcl_ret_t ret = rcl_logging_configure_with_output_handler(
+    &context->global_arguments,
+    &allocator,
+    rclpy_detail_thread_safe_logging_output_handler);
   if (RCL_RET_OK != ret) {
     PyErr_Format(
       RCLError,
       "Failed to initialize logging: %s", rcl_get_error_string().str);
+    rcl_reset_error();
     return NULL;
   }
   Py_RETURN_NONE;
 }
 
+/// See rclpy_logging_configure_impl above.
+static PyObject *
+rclpy_logging_configure(PyObject * self, PyObject * args)
+{
+  return rclpy_detail_execute_with_logging_mutex(rclpy_logging_configure_impl, self, args);
+}
+
 /// Finalize rcl logging
 /**
- * Raises RuntimeError if rcl logging could not be finalized
+ * Produces a RuntimeWarning if rcl logging could not be finalized
  */
 static PyObject *
-rclpy_logging_fini(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+rclpy_logging_fini_impl(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
   rcl_ret_t ret = rcl_logging_fini();
   if (RCL_RET_OK != ret) {
@@ -679,14 +691,22 @@ rclpy_logging_fini(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
       stack_level,
       "Failed to fini logging: %s",
       rcl_get_error_string().str);
+    rcl_reset_error();
     return NULL;
   }
   Py_RETURN_NONE;
 }
 
+/// See rclpy_logging_fini_impl above.
+static PyObject *
+rclpy_logging_fini(PyObject * self, PyObject * args)
+{
+  return rclpy_detail_execute_with_logging_mutex(rclpy_logging_fini_impl, self, args);
+}
+
 /// Handle destructor for node
 static void
-_rclpy_destroy_node(void * p)
+_rclpy_destroy_node_impl(void * p)
 {
   rcl_node_t * node = p;
   if (!node) {
@@ -708,6 +728,13 @@ _rclpy_destroy_node(void * p)
   PyMem_Free(node);
 }
 
+/// See _rclpy_destroy_node_impl above.
+static void
+_rclpy_destroy_node(void * p)
+{
+  rclpy_detail_execute_with_logging_mutex2(_rclpy_destroy_node_impl, p);
+}
+
 /// Create a node
 /**
  * Raises ValueError if the node name or namespace is invalid
@@ -720,7 +747,7 @@ _rclpy_destroy_node(void * p)
  * \return NULL on failure
  */
 static PyObject *
-rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_create_node_impl(PyObject * Py_UNUSED(self), PyObject * args)
 {
   rcl_ret_t ret;
   const char * node_name;
@@ -825,6 +852,13 @@ rclpy_create_node(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   return node_capsule;
+}
+
+/// See rclpy_create_node_impl above.
+static PyObject *
+rclpy_create_node(PyObject * self, PyObject * args)
+{
+  return rclpy_detail_execute_with_logging_mutex(rclpy_create_node_impl, self, args);
 }
 
 /// Get the name of a node.
