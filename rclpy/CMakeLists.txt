@@ -102,9 +102,11 @@ install(TARGETS rclpy_common
   RUNTIME DESTINATION bin
 )
 
-add_library(
-  rclpy
-  SHARED src/rclpy/_rclpy.c
+add_library(rclpy SHARED
+  src/rclpy/_rclpy.c
+  src/rclpy/detail/execute_with_logging_mutex.cpp
+  src/rclpy/detail/logging_mutex.cpp
+  src/rclpy/detail/thread_safe_logging_output_handler.cpp
 )
 target_link_libraries(rclpy
   rclpy_common
