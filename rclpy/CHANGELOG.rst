@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.2 (2020-06-01)
+------------------
+* Protect access to global logging calls with a mutex (`#562 <https://github.com/ros2/rclpy/issues/562>`_)
+* Ensure executors' spinning API handles shutdown properly (`#563 <https://github.com/ros2/rclpy/issues/563>`_)
+* Contributors: Michel Hidalgo, William Woodall
+
 1.0.1 (2020-05-18)
 ------------------
 * Explicitly add DLL directories for Windows before importing (`#558 <https://github.com/ros2/rclpy/issues/558>`_)
