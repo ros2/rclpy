@@ -15,6 +15,10 @@ For building documentation, you need an installation of ROS 2.
 
 #### Build
 
+Source your ROS 2 installation, for example:
+
+    . /opt/ros/foxy/setup.bash
+
 Build code:
 
     mkdir -p rclpy_ws/src
