@@ -383,7 +383,7 @@ class Node:
         :raises: ParameterAlreadyDeclaredException if the parameter had already been declared.
         :raises: InvalidParameterException if the parameter name is invalid.
         :raises: InvalidParameterValueException if the registered callback rejects any parameter.
-        :raises: TypeError if any tuple in :param:`parameters` does not match the annotated type.
+        :raises: TypeError if any tuple in **parameters** does not match the annotated type.
         """
         parameter_list = []
         descriptors = {}
@@ -1006,7 +1006,7 @@ class Node:
         """
         Set a new descriptor for a given parameter.
 
-        The name in the descriptor is ignored and set to :param:`name`.
+        The name in the descriptor is ignored and set to **name**.
 
         :param name: Fully-qualified name of the parameter to set the descriptor to.
         :param descriptor: New descriptor to apply to the parameter.
