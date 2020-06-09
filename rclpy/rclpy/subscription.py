@@ -76,7 +76,8 @@ class Subscription:
 
     def destroy(self):
         self.handle.destroy()
-    
-    def resolved_name(self):
-        with self.handle as capsule:
-            return _rclpy.rclpy_get_resolved_subscription_name(capsule)
+
+    @property
+    def topic_name(self):
+        with self.handle as h:
+            return _rclpy.rclpy_get_resolved_subscription_name(h)
