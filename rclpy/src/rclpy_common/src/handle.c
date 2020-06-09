@@ -150,5 +150,9 @@ void *
 rclpy_handle_get_pointer_from_capsule(PyObject * capsule, const char * name)
 {
   rclpy_handle_t * handle = PyCapsule_GetPointer(capsule, name);
+  if (!handle) {
+    // Exception already set
+    return NULL;
+  }
   return _rclpy_handle_get_pointer(handle);
 }
