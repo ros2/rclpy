@@ -61,12 +61,12 @@ rclpy_create_handle_capsule(void * ptr, const char * name, rclpy_handle_destruct
 
 /// Returns the object managed by the rclpy_handle_t wrapped in a PyCapsule.
 /**
- *  PyExec_RuntimeError is set if the PyCapsule is valid by the `rclpy_handle_t` is not
+ *  PyExec_RuntimeError is set if the PyCapsule is valid but the `rclpy_handle_t` is not
  *  Any exception set by PyCapsule_GetPointer() may be set.
  *
- * \param capsule A valid PyCapsule pointer created using rclpy_create_handle_capsule().
+ * \param capsule A valid PyCapsule created using rclpy_create_handle_capsule().
  * \param name Name of the PyCapsule.
- * \returns Pointer to the object whos lifetime is managed by the rclpy_handle_t, or NULL.
+ * \returns Pointer to the object managed by the rclpy_handle_t, or NULL on error.
  */
 RCLPY_COMMON_PUBLIC
 void *
