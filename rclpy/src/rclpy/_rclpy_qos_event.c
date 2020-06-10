@@ -20,6 +20,7 @@ typedef union _qos_event_callback_data {
   // Subscription events
   rmw_requested_deadline_missed_status_t requested_deadline_missed;
   rmw_liveliness_changed_status_t liveliness_changed;
+  rmw_message_lost_status_t message_lost;
   rmw_requested_qos_incompatible_event_status_t requested_incompatible_qos;
   // Publisher events
   rmw_offered_deadline_missed_status_t offered_deadline_missed;
@@ -165,6 +166,21 @@ _liveliness_changed_to_py_object(_qos_event_callback_data_t * data)
 
 static
 PyObject *
+_message_lost_to_py_object(_qos_event_callback_data_t * data)
+{
+  rmw_message_lost_status_t * actual_data = &data->message_lost;
+  PyObject * args = Py_BuildValue(
+    "ii",
+    actual_data->total_count,
+    actual_data->total_count_change);
+  if (!args) {
+    return NULL;
+  }
+  return _create_py_qos_event("QoSMessageLostInfo", args);
+}
+
+static
+PyObject *
 _requested_incompatible_qos_to_py_object(_qos_event_callback_data_t * data)
 {
   rmw_requested_qos_incompatible_event_status_t * actual_data = &data->requested_incompatible_qos;
@@ -235,6 +251,8 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LO
         return &_requested_deadline_missed_to_py_object;
       case RCL_SUBSCRIPTION_LIVELINESS_CHANGED:
         return &_liveliness_changed_to_py_object;
+      case RCL_SUBSCRIPTION_MESSAGE_LOST:
+        return &_message_lost_to_py_object;
       case RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS:
         return &_requested_incompatible_qos_to_py_object;
       default:
