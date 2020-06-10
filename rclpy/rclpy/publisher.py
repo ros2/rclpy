@@ -77,9 +77,10 @@ class Publisher:
         with self.handle as capsule:
             return _rclpy.rclpy_publisher_get_subscription_count(capsule)
 
-    def resolved_name(self) -> str:
+    @property
+    def topic_name(self) -> str:
         with self.handle as capsule:
-            return _rclpy.rclpy_publisher_get_resolved_name(capsule)
+            return _rclpy.rclpy_publisher_get_topic_name(capsule)
 
     @property
     def handle(self):

@@ -5418,7 +5418,6 @@ rclpy_service_info_get_source_timestamp(PyObject * Py_UNUSED(self), PyObject * a
   return PyLong_FromLongLong(service_info->source_timestamp);
 }
 
-
 /// Retrieves the received timestsamp number from a rmw_service_info_t capsule
 /**
  * Raises RuntimeError on failure.
@@ -5436,24 +5435,21 @@ rclpy_service_info_get_received_timestamp(PyObject * Py_UNUSED(self), PyObject *
   return PyLong_FromLongLong(service_info->received_timestamp);
 }
 
+/// Retrieve the topic name from a rclpy_publisher_t
 static PyObject *
-rclpy_publisher_get_resolved_name(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_publisher_get_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
     PyObject * pyentity;
     if (!PyArg_ParseTuple(args, "O", &pyentity)) {
         return NULL;
     }
 
-    if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
-        rclpy_publisher_t *publisher = rclpy_handle_get_pointer_from_capsule(
-            pyentity, "rclpy_publisher_t");
-        const char * topic_name = rcl_publisher_get_topic_name(&publisher->publisher);
-        return Py_BuildValue("s", topic_name);
-    } else {
-        PyErr_Format(
-            PyExc_TypeError, "Passed capsule is not a valid Publisher.");
+    rclpy_publisher_t * publisher = rclpy_handle_get_pointer_from_capsule(
+        pyentity, "rclpy_publisher_t");
+    if (!publisher) {
         return NULL;
     }
+    return PyUnicode_FromString(rcl_publisher_get_topic_name(&publisher->publisher));
 }
 
 /// Define the public methods of this module
@@ -5863,7 +5859,7 @@ static PyMethodDef rclpy_methods[] = {
     "Retrieve received timestamp from service_info"
   },
   {
-    "rclpy_publisher_get_resolved_name", rclpy_publisher_get_resolved_name,
+    "rclpy_publisher_get_topic_name", rclpy_publisher_get_topic_name,
     METH_VARARGS,
     "Get the resolved name(topic) of publisher"
   },
