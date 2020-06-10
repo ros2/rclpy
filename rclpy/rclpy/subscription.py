@@ -80,4 +80,4 @@ class Subscription:
     @property
     def topic_name(self):
         with self.handle as h:
-            return _rclpy.rclpy_get_resolved_subscription_name(h)
+            return _rclpy.rclpy_get_subscription_topic_name(h)

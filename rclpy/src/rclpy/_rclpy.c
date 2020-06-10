@@ -1162,7 +1162,7 @@ rclpy_get_subscriptions_info_by_topic(PyObject * Py_UNUSED(self), PyObject * arg
 }
 
 static PyObject *
-rclpy_get_resolved_subscription_name(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_get_subscription_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pysubscription;
   if (!PyArg_ParseTuple(args, "O", &pysubscription)) {
@@ -5520,8 +5520,8 @@ static PyMethodDef rclpy_methods[] = {
     "Get subscriptions info for a topic."
   },
   {
-    "rclpy_get_resolved_subscription_name", rclpy_get_resolved_subscription_name, METH_VARARGS,
-    "Get the name of a resolved subscription."
+    "rclpy_get_subscription_topic_name", rclpy_get_subscription_topic_name, METH_VARARGS,
+    "Get the topic name of a subscription."
   },
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
