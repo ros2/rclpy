@@ -1161,6 +1161,13 @@ rclpy_get_subscriptions_info_by_topic(PyObject * Py_UNUSED(self), PyObject * arg
   return _get_info_by_topic(args, "subscriptions", rcl_get_subscriptions_info_by_topic);
 }
 
+/// Return the resolved topic name of a subscription.
+/**
+ * The returned string is the resolved topic name after remappings have be applied.
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \return a string with the topic name
+ */
 static PyObject *
 rclpy_get_subscription_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
