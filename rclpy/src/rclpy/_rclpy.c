@@ -30,6 +30,7 @@
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/allocator.h>
 #include <rcutils/format_string.h>
+#include <rcutils/macros.h>
 #include <rcutils/strdup.h>
 #include <rcutils/types.h>
 #include <rmw/error_handling.h>
