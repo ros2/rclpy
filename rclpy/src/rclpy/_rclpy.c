@@ -49,7 +49,6 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
-
 static PyObject * NodeNameNonExistentError;
 static PyObject * RCLError;
 static PyObject * RCLInvalidROSArgsError;
