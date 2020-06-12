@@ -55,8 +55,10 @@ def test_get_subscription_topic_name(topic_name, namespace, expected):
 @pytest.mark.parametrize('topic_name, namespace, cli_args, expected', [
     ('topic', None, ['--ros-args', '--remap', 'topic:=new_topic'], '/new_topic'),
     ('topic', 'ns', ['--ros-args', '--remap', 'topic:=new_topic'], '/ns/new_topic'),
-    ('topic', 'ns', ['--ros-args', '--remap', 'topic:=example/new_topic'], '/ns/example/new_topic'),
-    ('example/topic', 'ns', ['--ros-args', '--remap', 'example/topic:=new_topic'], '/ns/new_topic'),
+    ('topic', 'ns', ['--ros-args', '--remap', 'topic:=example/new_topic'],
+     '/ns/example/new_topic'),
+    ('example/topic', 'ns', ['--ros-args', '--remap', 'example/topic:=new_topic'],
+     '/ns/new_topic'),
 ])
 def test_get_subscription_topic_name_after_remapping(topic_name, namespace, cli_args, expected):
     sub = make_mock_subscription(namespace, topic_name, cli_args)
