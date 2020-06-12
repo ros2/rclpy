@@ -30,7 +30,6 @@
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/allocator.h>
 #include <rcutils/format_string.h>
-#include <rcutils/macros.h>
 #include <rcutils/strdup.h>
 #include <rcutils/types.h>
 #include <rmw/error_handling.h>
@@ -43,10 +42,13 @@
 #include <rmw/validate_node_name.h>
 #include <rosidl_runtime_c/message_type_support_struct.h>
 
+#include "rcutils/macros.h"
+
 #include "./detail/thread_safe_logging_output_handler.h"
 #include "./detail/execute_with_logging_mutex.h"
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
+
 
 static PyObject * NodeNameNonExistentError;
 static PyObject * RCLError;
