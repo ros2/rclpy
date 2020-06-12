@@ -1179,15 +1179,15 @@ rclpy_get_subscription_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   rclpy_subscription_t * sub =
     rclpy_handle_get_pointer_from_capsule(pysubscription, "rclpy_subscription_t");
   if (NULL == sub) {
-    PyErr_Format(
-      RCLError, "Failed to get subscription topic name: %s", 
-      rcl_get_error_string().str);
-    rcl_reset_error();
+    return NULL;
   }
 
   const char * subscription_name = rcl_subscription_get_topic_name(&(sub->subscription));
   if (NULL == subscription_name) {
-    Py_RETURN_NONE;
+    PyErr_Format(
+      RCLError, "Failed to get subscription topic name: %s",
+      rcl_get_error_string().str);
+    rcl_reset_error();
   }
 
   return PyUnicode_FromString(subscription_name);
