@@ -5439,17 +5439,27 @@ rclpy_service_info_get_received_timestamp(PyObject * Py_UNUSED(self), PyObject *
 static PyObject *
 rclpy_publisher_get_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
-    PyObject * pyentity;
-    if (!PyArg_ParseTuple(args, "O", &pyentity)) {
-        return NULL;
-    }
+  PyObject * pyentity;
+  if (!PyArg_ParseTuple(args, "O", &pyentity)) {
+    return NULL;
+  }
 
-    rclpy_publisher_t * publisher = rclpy_handle_get_pointer_from_capsule(
-        pyentity, "rclpy_publisher_t");
-    if (!publisher) {
-        return NULL;
-    }
-    return PyUnicode_FromString(rcl_publisher_get_topic_name(&publisher->publisher));
+  rclpy_publisher_t * publisher = rclpy_handle_get_pointer_from_capsule(
+    pyentity, "rclpy_publisher_t");
+  if (!publisher) {
+    return NULL;
+  }
+
+  const char * topic_name = rcl_publisher_get_topic_name(&publisher->publisher);
+  if (!topic_name) {
+    PyErr_Format(
+      RCLError,
+      "Failed to get topic name: %s",
+      rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+  return PyUnicode_FromString(topic_name);
 }
 
 /// Define the public methods of this module
