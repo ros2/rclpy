@@ -280,7 +280,7 @@ class Executor:
 
     def spin(self) -> None:
         """Execute callbacks until shutdown."""
-        while self._context.ok():
+        while self._context.ok() and not self._is_shutdown:
             self.spin_once()
 
     def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
