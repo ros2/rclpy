@@ -19,6 +19,7 @@ import unittest
 
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import ShutdownException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.task import Future
 
@@ -86,6 +87,27 @@ class TestExecutor(unittest.TestCase):
             self.assertFalse(got_callback)
         finally:
             executor.shutdown()
+
+    def test_shutdown_executor_before_waiting_for_callbacks(self):
+        self.assertIsNotNone(self.node.handle)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            executor = cls(context=self.context)
+            executor.shutdown()
+            self.assertRaises(
+                ShutdownException,
+                executor.wait_for_ready_callbacks
+            )
+
+    def test_shutdown_exception_from_callback_generator(self):
+        self.assertIsNotNone(self.node.handle)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            executor = cls(context=self.context)
+            cb_generator = executor._wait_for_ready_callbacks()
+            executor.shutdown()
+            self.assertRaises(
+                ShutdownException,
+                lambda: next(cb_generator)
+            )
 
     def test_remove_node(self):
         self.assertIsNotNone(self.node.handle)
