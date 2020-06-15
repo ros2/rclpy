@@ -641,6 +641,8 @@ class Executor:
                 (timeout_timer is not None and timeout_timer.handle.pointer in timers_ready)
             ):
                 raise TimeoutException()
+        if self._is_shutdown:
+            raise ShutdownException
 
     def wait_for_ready_callbacks(self, *args, **kwargs) -> Tuple[Task, WaitableEntityType, 'Node']:
         """
