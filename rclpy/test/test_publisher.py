@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import unittest
+
 import rclpy
 
 from test_msgs.msg import BasicTypes
@@ -27,6 +28,7 @@ TEST_FQN_TOPIC_TO = '/remapped/another_ns/new_topic'
 
 
 class TestPublisher(unittest.TestCase):
+
     @classmethod
     def setUp(cls):
         cls.context = rclpy.context.Context()
@@ -53,16 +55,20 @@ class TestPublisher(unittest.TestCase):
 
     @classmethod
     def do_test_topic_name(cls, test_topics, node):
-        """ Test the topic names of publishers created by the given node
+        """
+        Test the topic names of publishers created by the given node.
+
         The node will create publishers with topic in test_topics, and then test if
         the publisher's topic_name property is equal to the expected value.
 
         Args:
+        ----
             test_topics: A list of binary tuple in the form (topic, expected topic), the
             former will be passed to node.create_publisher and the latter will be compared
             with publisher.topic_name
             node: The node used to create the publisher. The node's namespace will have
             an effect on the publisher's topic_name.
+
         """
         for topic, target_topic in test_topics:
             publisher = node.create_publisher(BasicTypes, topic, 0)
