@@ -64,8 +64,7 @@ class TestPublisher(unittest.TestCase):
             node: The node used to create the publisher. The node's namespace will have
             an effect on the publisher's topic_name.
         """
-        for topic_tuple in test_topics:
-            topic, target_topic = topic_tuple
+        for topic, target_topic in test_topics:
             publisher = node.create_publisher(BasicTypes, topic, 0)
             assert publisher.topic_name == target_topic
             publisher.destroy()
