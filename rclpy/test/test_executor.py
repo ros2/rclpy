@@ -93,10 +93,8 @@ class TestExecutor(unittest.TestCase):
         for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             executor = cls(context=self.context)
             executor.shutdown()
-            self.assertRaises(
-                ShutdownException,
-                executor.wait_for_ready_callbacks
-            )
+            with self.assertRaises(ShutdownException):
+                executor.wait_for_ready_callbacks()
 
     def test_shutdown_exception_from_callback_generator(self):
         self.assertIsNotNone(self.node.handle)
@@ -104,10 +102,8 @@ class TestExecutor(unittest.TestCase):
             executor = cls(context=self.context)
             cb_generator = executor._wait_for_ready_callbacks()
             executor.shutdown()
-            self.assertRaises(
-                ShutdownException,
-                lambda: next(cb_generator)
-            )
+            with self.assertRaises(ShutdownException):
+                next(cb_generator)
 
     def test_remove_node(self):
         self.assertIsNotNone(self.node.handle)
