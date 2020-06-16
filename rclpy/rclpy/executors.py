@@ -311,7 +311,7 @@ class Executor:
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _take_timer(self, tmr):
         with tmr.handle as capsule:
@@ -642,7 +642,7 @@ class Executor:
             ):
                 raise TimeoutException()
         if self._is_shutdown:
-            raise ShutdownException
+            raise ShutdownException()
 
     def wait_for_ready_callbacks(self, *args, **kwargs) -> Tuple[Task, WaitableEntityType, 'Node']:
         """
