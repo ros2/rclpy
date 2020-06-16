@@ -17,6 +17,7 @@ from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.handle import Handle
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import SubscriptionEventCallbacks
 
@@ -75,3 +76,8 @@ class Subscription:
 
     def destroy(self):
         self.handle.destroy()
+
+    @property
+    def topic_name(self):
+        with self.handle as h:
+            return _rclpy.rclpy_get_subscription_topic_name(h)

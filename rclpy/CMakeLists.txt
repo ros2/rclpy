@@ -234,6 +234,7 @@ if(BUILD_TESTING)
       test/test_qos_event.py
       test/test_rate.py
       test/test_serialization.py
+      test/test_subscription.py
       test/test_task.py
       test/test_time_source.py
       test/test_time.py
