@@ -293,7 +293,7 @@ class Executor:
             end = start + timeout_sec
             timeout_left = timeout_sec
 
-            while self._context.ok() and not future.done():
+            while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once(timeout_sec=timeout_left)
                 now = time.monotonic()
 
