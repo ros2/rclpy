@@ -185,6 +185,9 @@ if(NOT WIN32)
 endif()
 
 if(BUILD_TESTING)
+  # Give cppcheck hints about macro definitions coming from outside this package
+  set(ament_cmake_cppcheck_ADDITIONAL_INCLUDE_DIRS ${rcutils_INCLUDE_DIRS})
+
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
