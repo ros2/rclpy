@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.0 (2020-06-18)
+------------------
 * Add message lost subscription event (`#572 <https://github.com/ros2/rclpy/issues/572>`_)
 * Fix executor behavior on shutdown (`#574 <https://github.com/ros2/rclpy/issues/574>`_)
 * Add missing rcutils/macros.h header (`#573 <https://github.com/ros2/rclpy/issues/573>`_)
