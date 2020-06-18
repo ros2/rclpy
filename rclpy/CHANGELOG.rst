@@ -2,6 +2,17 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add message lost subscription event (`#572 <https://github.com/ros2/rclpy/issues/572>`_)
+* Fix executor behavior on shutdown (`#574 <https://github.com/ros2/rclpy/issues/574>`_)
+* Add missing rcutils/macros.h header (`#573 <https://github.com/ros2/rclpy/issues/573>`_)
+* Add `topic_name` property to Subscription (`#571 <https://github.com/ros2/rclpy/issues/571>`_)
+* Add `topic_name` property to publisher (`#568 <https://github.com/ros2/rclpy/issues/568>`_)
+* Fix and document rclpy_handle_get_pointer_from_capsule() (`#569 <https://github.com/ros2/rclpy/issues/569>`_)
+* Fix docstrings (`#566 <https://github.com/ros2/rclpy/issues/566>`_)
+* Contributors: Audrow, Audrow Nash, Claire Wang, Ivan Santiago Paunovic, Jacob Perron, Shane Loretz, Zhen Ju
+
 1.0.2 (2020-06-01)
 ------------------
 * Protect access to global logging calls with a mutex (`#562 <https://github.com/ros2/rclpy/issues/562>`_)
