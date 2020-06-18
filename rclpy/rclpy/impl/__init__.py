@@ -14,6 +14,7 @@
 
 import importlib
 import os
+from pathlib import Path
 
 from rpyutils import add_dll_directories_from_env
 
@@ -28,10 +29,9 @@ def _import(name):
     except ImportError as e:
         if e.path is None:
             import sysconfig
-            expected_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
+            expected_path = Path(__file__).parents[1] / (
                 name[1:] + sysconfig.get_config_var('EXT_SUFFIX'))
-            assert not os.path.isfile(expected_path)
+            assert not expected_path.is_file()
             e.msg += \
                 f"\nThe C extension '{expected_path}' isn't present on the " \
                 "system. Please refer to 'https://index.ros.org/doc/ros2/" \
