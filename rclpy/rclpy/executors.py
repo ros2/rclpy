@@ -311,7 +311,7 @@ class Executor:
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _take_timer(self, tmr):
         with tmr.handle as capsule:
@@ -637,6 +637,8 @@ class Executor:
                 (timeout_timer is not None and timeout_timer.handle.pointer in timers_ready)
             ):
                 raise TimeoutException()
+        if self._is_shutdown:
+            raise ShutdownException()
 
     def wait_for_ready_callbacks(self, *args, **kwargs) -> Tuple[Task, WaitableEntityType, 'Node']:
         """
@@ -648,15 +650,12 @@ class Executor:
         .. Including the docstring for the hidden function for reference
         .. automethod:: _wait_for_ready_callbacks
         """
-        # if an old generator is done, this var makes the loop get a new one before returning
-        got_generator = False
-        while not got_generator:
+        while True:
             if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
                 # Create a new generator
                 self._last_args = args
                 self._last_kwargs = kwargs
                 self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
-                got_generator = True
 
             try:
                 return next(self._cb_iter)
