@@ -1161,6 +1161,37 @@ rclpy_get_subscriptions_info_by_topic(PyObject * Py_UNUSED(self), PyObject * arg
   return _get_info_by_topic(args, "subscriptions", rcl_get_subscriptions_info_by_topic);
 }
 
+/// Return the resolved topic name of a subscription.
+/**
+ * The returned string is the resolved topic name after remappings have be applied.
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \return a string with the topic name
+ */
+static PyObject *
+rclpy_get_subscription_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pysubscription;
+  if (!PyArg_ParseTuple(args, "O", &pysubscription)) {
+    return NULL;
+  }
+
+  rclpy_subscription_t * sub =
+    rclpy_handle_get_pointer_from_capsule(pysubscription, "rclpy_subscription_t");
+  if (NULL == sub) {
+    return NULL;
+  }
+
+  const char * subscription_name = rcl_subscription_get_topic_name(&(sub->subscription));
+  if (NULL == subscription_name) {
+    PyErr_Format(
+      RCLError, "Failed to get subscription topic name: %s",
+      rcl_get_error_string().str);
+    rcl_reset_error();
+  }
+
+  return PyUnicode_FromString(subscription_name);
+}
 
 /// Validate a topic name and return error message and index of invalidation.
 /**
@@ -5497,6 +5528,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
     "Get subscriptions info for a topic."
+  },
+  {
+    "rclpy_get_subscription_topic_name", rclpy_get_subscription_topic_name, METH_VARARGS,
+    "Get the topic name of a subscription."
   },
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
