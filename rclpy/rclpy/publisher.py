@@ -70,7 +70,7 @@ class Publisher:
             elif isinstance(msg, bytes):
                 _rclpy.rclpy_publish_raw(capsule, msg)
             else:
-                raise  TypeError('Expected {}, got {}'.format(self.msg_type, type(msg)))
+                raise TypeError('Expected {}, got {}'.format(self.msg_type, type(msg)))
 
     def get_subscription_count(self) -> int:
         """Get the amount of subscribers that this publisher has."""
