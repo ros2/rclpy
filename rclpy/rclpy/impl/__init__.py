@@ -34,8 +34,9 @@ def _import(name):
                 'possible solutions' % expected_path
         if e.path is not None and os.path.isfile(e.path):
             e.msg += \
-                "\nThe C extension '%s' failed to be imported while being present on the system." \
-                " Please refer to 'https://index.ros.org/doc/ros2/Troubleshooting/Installation-" \
-                "Troubleshooting/#import-failing-even-with-library-present-on-the-system' for " \
-                'possible solutions' % e.path
+                "\nThe C extension '%s' failed to be imported while " \
+                "being present on the system. Please refer to 'https://" \
+                'index.ros.org/doc/ros2/Troubleshooting/Installation-' \
+                'Troubleshooting/#import-failing-even-with-library-present-' \
+                "on-the-system' for possible solutions" % e.path
         raise
