@@ -21,8 +21,8 @@ from rpyutils import add_dll_directories_from_env
 
 def _import(name):
     try:
-        # Since Python 3.8, on Windows we should ensure DLL directories are explicitly added
-        # to the search path.
+        # Since Python 3.8, on Windows we should ensure DLL directories are
+        # explicitly added to the search path.
         # See https://docs.python.org/3/whatsnew/3.8.html#bpo-36085-whatsnew
         with add_dll_directories_from_env('PATH'):
             return importlib.import_module(name, package='rclpy')
@@ -40,8 +40,9 @@ def _import(name):
                 'possible solutions'
         if e.path is not None and os.path.isfile(e.path):
             e.msg += \
-                "\nThe C extension '%s' failed to be imported while being present on the system." \
-                " Please refer to '%s' for possible solutions" % \
-                (e.path, 'https://index.ros.org/doc/ros2/Troubleshooting/Installation-Troubleshooting/'
-                         '#import-failing-even-with-library-present-on-the-system')
+                f"\nThe C extension '{e.path}' failed to be imported while " \
+                "being present on the system. Please refer to 'https://" \
+                'index.ros.org/doc/ros2/Troubleshooting/Installation-' \
+                'Troubleshooting/#import-failing-even-with-library-present-' \
+                "on-the-system' for possible solutions"
         raise
