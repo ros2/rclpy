@@ -532,7 +532,9 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pyargs;
   PyObject * pyseqlist;
   PyObject * pycontext;
-  if (!PyArg_ParseTuple(args, "OO", &pyargs, &pycontext)) {
+  PY_LONG_LONG domain_id;
+
+  if (!PyArg_ParseTuple(args, "OOK", &pyargs, &pycontext, &domain_id)) {
     // Exception raised
     return NULL;
   }
@@ -587,6 +589,13 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
     rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
     rcl_ret_t ret = rcl_init_options_init(&init_options, allocator);
     if (RCL_RET_OK == ret) {
+      // Set domain id
+      ret = rcl_init_options_set_domain_id(&init_options, (size_t)domain_id);
+      if (RCL_RET_OK != ret) {
+        PyErr_Format(PyExc_RuntimeError, "Failed to set domain id to init_options: %s",
+          rcl_get_error_string().str);
+        rcl_reset_error();
+      }
       ret = rcl_init(num_args, arg_values, &init_options, context);
       if (RCL_RET_OK == ret) {
         int unparsed_ros_args_count =
@@ -5494,6 +5503,24 @@ rclpy_publisher_get_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(topic_name);
 }
 
+
+/// Retrieves default domain id defined in rcl layer
+/**
+ *
+ * \return the defined domain id
+ */
+static PyObject *
+rclpy_get_default_domain_id(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  (void)args;
+#if __WORDSIZE == 64
+  return PyLong_FromUnsignedLongLong(RCL_DEFAULT_DOMAIN_ID);
+#else
+  return PyLong_FromUnsignedLong(RCL_DEFAULT_DOMAIN_ID);
+#endif
+}
+
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -5908,6 +5935,11 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_publisher_get_topic_name", rclpy_publisher_get_topic_name,
     METH_VARARGS,
     "Get the resolved name(topic) of publisher"
+  },
+  {
+    "rclpy_get_default_domain_id", rclpy_get_default_domain_id,
+    METH_NOARGS,
+    "Retrieve default domain ID"
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */

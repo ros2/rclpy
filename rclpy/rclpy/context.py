@@ -18,6 +18,7 @@ from typing import Callable
 from typing import List
 from typing import Optional
 import weakref
+from rclpy.impl.implementation_singleton import rclpy_implementation
 
 
 g_logging_configure_lock = threading.Lock()
@@ -46,7 +47,11 @@ class Context:
     def handle(self):
         return self._handle
 
-    def init(self, args: Optional[List[str]] = None, *, initialize_logging: bool = True):
+    def init(self,
+             args: Optional[List[str]] = None,
+             *,
+             initialize_logging: bool = True,
+             domain_id: int = rclpy_implementation.rclpy_get_default_domain_id()):
         """
         Initialize ROS communications for a given context.
 
@@ -56,7 +61,7 @@ class Context:
         from rclpy.impl.implementation_singleton import rclpy_implementation
         global g_logging_ref_count
         with self._handle as capsule, self._lock:
-            rclpy_implementation.rclpy_init(args if args is not None else sys.argv, capsule)
+            rclpy_implementation.rclpy_init(args if args is not None else sys.argv, capsule, domain_id)
             if initialize_logging and not self._logging_initialized:
                 with g_logging_configure_lock:
                     g_logging_ref_count += 1
