@@ -61,7 +61,10 @@ class Context:
         from rclpy.impl.implementation_singleton import rclpy_implementation
         global g_logging_ref_count
         with self._handle as capsule, self._lock:
-            rclpy_implementation.rclpy_init(args if args is not None else sys.argv, capsule, domain_id)
+            rclpy_implementation.rclpy_init(
+                args if args is not None else sys.argv,
+                capsule,
+                domain_id)
             if initialize_logging and not self._logging_initialized:
                 with g_logging_configure_lock:
                     g_logging_ref_count += 1

@@ -38,6 +38,7 @@ def get_default_context(*, shutting_down=False):
             return old_context
         return g_default_context
 
+
 def get_default_domain_id():
     """Return default domain id from rcl"""
     from rclpy.impl.implementation_singleton import rclpy_implementation

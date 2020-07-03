@@ -60,7 +60,12 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
 
 
-def init(*, args: Optional[List[str]] = None, context: Context = None, domain_id: int = get_default_domain_id()) -> None:
+def init(
+    *,
+    args: Optional[List[str]] = None,
+    context: Context = None,
+    domain_id: int = get_default_domain_id()
+) -> None:
     """
     Initialize ROS communications for a given context.
 
