@@ -593,7 +593,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
       ret = rcl_init_options_set_domain_id(&init_options, (size_t)domain_id);
       if (RCL_RET_OK != ret) {
         PyErr_Format(
-		  PyExc_RuntimeError,
+          PyExc_RuntimeError,
           "Failed to set domain id to init_options: %s",
           rcl_get_error_string().str);
         rcl_reset_error();
