@@ -48,6 +48,13 @@ class TestUtilities(unittest.TestCase):
         self.assertEqual(0, rclpy.utilities.timeout_sec_to_nsec(0.5 / S_TO_NS))
         self.assertEqual(int(1.5 * S_TO_NS), rclpy.utilities.timeout_sec_to_nsec(1.5))
 
+    def test_get_domain_id_in_context(self):
+        import rclpy
+        context = rclpy.context.Context()
+        rclpy.init(context=context, domain_id=123)
+        self.assertEqual(123, rclpy.utilities.get_domain_id_in_context(context))
+        rclpy.shutdown(context=context)
+
 
 if __name__ == '__main__':
     unittest.main()
