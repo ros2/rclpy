@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.4 (2020-07-07)
+------------------
+* Wrap lines to shorten line length (`#586 <https://github.com/ros2/rclpy/issues/586>`_)
+* Improve error message if rclpy C extensions are not found (`#580 <https://github.com/ros2/rclpy/issues/580>`_)
+* Fix moved troubleshooting URL (`#579 <https://github.com/ros2/rclpy/issues/579>`_)
+* Add resolved_name() method to publisher (`#568 <https://github.com/ros2/rclpy/issues/568>`_) (`#576 <https://github.com/ros2/rclpy/issues/576>`_)
+* Contributors: Dirk Thomas, Shane Loretz
+
 1.0.3 (2020-06-23)
 ------------------
 * Fix executor wait_for_ready_callbacks returning None on shutdown (`#574 <https://github.com/ros2/rclpy/issues/574>`_) (`#583 <https://github.com/ros2/rclpy/issues/583>`_)
