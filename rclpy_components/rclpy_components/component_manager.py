@@ -28,7 +28,7 @@ logger = get_logger('ComponentManager')
 
 class ComponentManager(Node):
 
-    def __init__(self, executor: Executor, *args, name="py_component_manager", **kwargs):
+    def __init__(self, executor: Executor, name="py_component_manager", *args, **kwargs):
         # TODO Handle the py args equivalent to rclcpp 'NodeOptions'
         super().__init__(name, *args, **kwargs)
         self.executor = executor
@@ -93,7 +93,6 @@ class ComponentManager(Node):
             component = component_class(node_name, **params_dict)
 
             # TODO Handle the node_name, node_namespace, and remapping rules.
-
             res.unique_id = self.gen_unique_id()
             res.full_node_name = '/{}'.format(node_name)
 

@@ -15,7 +15,8 @@
 import signal
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
-from rclpy.component import ComponentManager
+from .component_manager import ComponentManager
+
 
 def main():
     print("run component_container")
