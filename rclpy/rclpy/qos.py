@@ -268,6 +268,11 @@ class QoSProfile:
             self.__getattribute__(slot) == other.__getattribute__(slot)
             for slot in self.__slots__)
 
+    def __str__(self):
+        return f'{type(self).__name__}(%s)' % (
+            ', '.join(f'{slot[1:]}=%s' % getattr(self, slot) for slot in self.__slots__)
+        )
+
 
 class QoSPolicyEnum(IntEnum):
     """
