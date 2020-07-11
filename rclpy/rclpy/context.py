@@ -61,6 +61,11 @@ class Context:
 
         if domain_id is None:
             domain_id = rclpy_implementation.rclpy_get_default_domain_id()
+        else:
+            if domain_id < 0:
+                raise RuntimeError(
+                    'Unexpected error: domain id ({}) should never be lower than zero.'
+                    .format(domain_id))
 
         global g_logging_ref_count
         with self._handle as capsule, self._lock:

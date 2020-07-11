@@ -87,3 +87,8 @@ def test_init_with_domain_id():
     context = rclpy.context.Context()
     rclpy.init(context=context, domain_id=123)
     rclpy.shutdown(context=context)
+
+
+def test_init_with_invalid_domain_id():
+    with pytest.raises(RuntimeError):
+        rclpy.init(domain_id=-1)
