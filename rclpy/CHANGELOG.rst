@@ -1,5 +1,11 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.11 (2020-07-10)
+-------------------
+* Fix moved troubleshooting url. (`#590 <https://github.com/ros2/rclpy/issues/590>`_)
+* Improve error message if rclpy C extensions are not found. (`#592 <https://github.com/ros2/rclpy/issues/592>`_)
+* Contributors: Dirk Thomas
+
 0.7.10 (2010-12-12)
 -------------------
 * Remove f-strings to restore Python 3.5 compatibility. (`#483 <https://github.com/ros2/rclpy/issues/483>`_)
