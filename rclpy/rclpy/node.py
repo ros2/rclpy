@@ -1660,6 +1660,11 @@ class Node:
         with self.handle as capsule:
             return _rclpy.rclpy_get_node_names_and_namespaces_with_enclaves(capsule)
 
+    def get_fully_qualified_name(self) -> str:
+        """Get the node's fully qualified name"""
+        with self.handle as capsule:
+            return _rclpy.rclpy_node_get_fully_qualified_name(capsule)
+
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
         validate_full_topic_name(fq_topic_name)
