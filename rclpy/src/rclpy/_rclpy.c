@@ -5513,14 +5513,9 @@ rclpy_publisher_get_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
  * \return the defined domain id
  */
 static PyObject *
-rclpy_get_default_domain_id(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_get_default_domain_id(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
 {
-  (void)args;
-#if __WORDSIZE == 64
-  return PyLong_FromUnsignedLongLong(RCL_DEFAULT_DOMAIN_ID);
-#else
-  return PyLong_FromUnsignedLong(RCL_DEFAULT_DOMAIN_ID);
-#endif
+  return PyLong_FromSize_t(RCL_DEFAULT_DOMAIN_ID);
 }
 
 /// Retrieves domain id from init_options of context
@@ -5554,7 +5549,7 @@ rclpy_get_domain_id_in_context(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   size_t domain_id;
-  rcl_ret_t ret = rcl_init_options_get_domain_id((rcl_init_options_t *)init_options, &domain_id);
+  rcl_ret_t ret = rcl_init_options_get_domain_id(init_options, &domain_id);
   if (RCL_RET_OK != ret) {
     PyErr_Format(
       RCLError,
@@ -5563,11 +5558,7 @@ rclpy_get_domain_id_in_context(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-#if __WORDSIZE == 64
-  return PyLong_FromUnsignedLongLong(domain_id);
-#else
-  return PyLong_FromUnsignedLong(domain_id);
-#endif
+  return PyLong_FromSize_t(domain_id);
 }
 
 
