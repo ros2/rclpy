@@ -64,7 +64,7 @@ class Context:
         else:
             if domain_id < 0:
                 raise RuntimeError(
-                    'Unexpected error: domain id ({}) should never be lower than zero.'
+                    'Domain id ({}) should never be lower than zero.'
                     .format(domain_id))
 
         global g_logging_ref_count
