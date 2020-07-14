@@ -28,16 +28,15 @@ logger = get_logger('ComponentManager')
 
 class ComponentManager(Node):
 
-    def __init__(self, executor: Executor, name="py_component_manager", *args, **kwargs):
+    def __init__(self, executor: Executor, name="py_component_manager", **kwargs):
         # TODO Handle the py args equivalent to rclcpp 'NodeOptions'
-        super().__init__(name, *args, **kwargs)
+        super().__init__(name, **kwargs)
         self.executor = executor
         # Implement the 3 services described in
         # http://design.ros2.org/articles/roslaunch.html#command-line-arguments
         self.list_node_srv_ = self.create_service(ListNodes, "~/_container/list_nodes", self.on_list_node)
         self.load_node_srv_ = self.create_service(LoadNode, "~/_container/load_node", self.on_load_node)
         self.unload_node_srv_ = self.create_service(UnloadNode, "~/_container/unload_node", self.on_unload_node)
-        # self.unload_node_srv_ = self.create_service(Empty, "~/_container/supported_types", self.on_supported_types)
 
         self.components = {}  # key: unique_id, value: full node name and component instance
         self.unique_id_index = 0
@@ -76,7 +75,7 @@ class ComponentManager(Node):
         node_name = req.node_name if req.node_name else \
             str.lower(str.split(component_entry_point.value, ':')[1])
 
-        params_dict = {}
+        params_dict = {'use_global_arguments': False}
         if req.parameters:
             params_dict['parameter_overrides'] = req.parameters
 
@@ -88,19 +87,18 @@ class ComponentManager(Node):
             for rule in req.remap_rules:
                 params_dict['cli_args'].extend(['-r', rule])
 
-        # TODO Handle the priority of req.node_namespace and req.remap_rules '__ns:=<ns>'
         try:
+            logger.info('Instantiating {} with {}, {}'.format(component_entry_point.value, node_name, params_dict))
             component = component_class(node_name, **params_dict)
 
-            # TODO Handle the node_name, node_namespace, and remapping rules.
             res.unique_id = self.gen_unique_id()
+            # TODO Assign the full_node_name with node.get_fully_qualified_name
             res.full_node_name = '/{}'.format(node_name)
-
             if req.node_namespace:
                 res.full_node_name = '/{}{}'.format(req.node_namespace, res.full_node_name)
+            res.success = True
             self.components[str(res.unique_id)] = (res.full_node_name, component)
             self.executor.add_node(component)
-            res.success = True
             return res
         except (InvalidNodeNameException, InvalidNamespaceException, TypeError) as e:
             error_message = str(e)
@@ -120,7 +118,3 @@ class ComponentManager(Node):
         self.executor.remove_node(component_instance)
         res.success = True
         return res
-
-    # def on_supported_types(self, req: SupportedComponentTypes.Request, res: SupportedComponentTypes.Response):
-    #     res.supported_types = ['rclpy_components']
-    #     return res

@@ -19,7 +19,6 @@ from .component_manager import ComponentManager
 
 
 def main():
-    print("run component_container")
     try:
         _main()
     except KeyboardInterrupt:
