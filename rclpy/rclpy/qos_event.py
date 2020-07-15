@@ -242,20 +242,6 @@ class SubscriptionEventCallbacks:
                 callback=self.incompatible_qos,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS,
                 parent_handle=subscription_handle))
-
-        if self.liveliness:
-            event_handlers.append(QoSEventHandler(
-                callback_group=callback_group,
-                callback=self.liveliness,
-                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED,
-                parent_handle=subscription_handle))
-
-        if self.message_lost:
-            event_handlers.append(QoSEventHandler(
-                callback_group=callback_group,
-                callback=self.message_lost,
-                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_MESSAGE_LOST,
-                parent_handle=subscription_handle))
         elif self.use_default_callbacks:
             # Register default callback when not specified
             try:
@@ -275,6 +261,20 @@ class SubscriptionEventCallbacks:
 
             except UnsupportedEventTypeError:
                 pass
+
+        if self.liveliness:
+            event_handlers.append(QoSEventHandler(
+                callback_group=callback_group,
+                callback=self.liveliness,
+                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED,
+                parent_handle=subscription_handle))
+
+        if self.message_lost:
+            event_handlers.append(QoSEventHandler(
+                callback_group=callback_group,
+                callback=self.message_lost,
+                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_MESSAGE_LOST,
+                parent_handle=subscription_handle))
 
         return event_handlers
 
