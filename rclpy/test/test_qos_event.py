@@ -54,8 +54,8 @@ class TestQoSEvent(unittest.TestCase):
     def tearDown(self):
         self.node.destroy_node()
         rclpy.shutdown(context=self.context)
-        del self.context
         del self.node
+        del self.context
         gc.collect()
 
     def test_publisher_constructor(self):
