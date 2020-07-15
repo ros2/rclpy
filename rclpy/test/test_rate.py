@@ -22,7 +22,8 @@ from rclpy.executors import SingleThreadedExecutor
 # Hz
 FREQ = 10.0
 PERIOD = 1.0 / FREQ
-PASS_MAX_JITTER = PERIOD * 0.1
+PASS_MAX_AVERAGE_JITTER = PERIOD * 0.1
+PASS_MAX_SINGLE_JITTER = PERIOD * 0.25
 
 
 class RateRunner:
@@ -84,8 +85,8 @@ class TestRate:
         while not runner.done:
             self.executor.spin_once()
 
-        assert runner.max_jitter <= PASS_MAX_JITTER, str(runner)
-        assert abs(runner.avg_period - PERIOD) <= PASS_MAX_JITTER, str(runner)
+        assert runner.max_jitter <= PASS_MAX_SINGLE_JITTER, str(runner)
+        assert abs(runner.avg_period - PERIOD) <= PASS_MAX_AVERAGE_JITTER, str(runner)
 
     def test_rate_invalid_period(self):
         with pytest.raises(TypeError):
