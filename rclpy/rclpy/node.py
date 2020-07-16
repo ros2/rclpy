@@ -1661,7 +1661,11 @@ class Node:
             return _rclpy.rclpy_get_node_names_and_namespaces_with_enclaves(capsule)
 
     def get_fully_qualified_name(self) -> str:
-        """Get the node's fully qualified name"""
+        """
+        Get the node's fully qualified name.
+
+        :return: Fully qualified node name.
+        """
         with self.handle as capsule:
             return _rclpy.rclpy_node_get_fully_qualified_name(capsule)
 

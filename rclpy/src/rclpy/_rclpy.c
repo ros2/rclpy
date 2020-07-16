@@ -3797,6 +3797,15 @@ rclpy_get_node_names_and_namespaces_with_enclaves(
   return rclpy_get_node_names_impl(args, true);
 }
 
+/// Get the fully qualified name of the node.
+/**
+ *  Raises ValueError if pynode is not a node capsule
+ *  Raises RuntimeError  if there is an rcl error
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \return None on failure
+ *         String containing the fully qualified name of the node otherwise
+ */
 static PyObject *
 rclpy_node_get_fully_qualified_name(PyObject * Py_UNUSED(self), PyObject * args)
 {

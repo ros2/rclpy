@@ -1862,7 +1862,8 @@ class TestCreateNode(unittest.TestCase):
             context=context,
             cli_args=['--ros-args', '-r', '__ns:=' + remapped_ns]
         )
-        assert node_with_remapped_ns.get_fully_qualified_name() == '{}/{}'.format(remapped_ns, name)
+        expected_name = '{}/{}'.format(remapped_ns, name)
+        assert node_with_remapped_ns.get_fully_qualified_name() == expected_name
         node_with_remapped_ns.destroy_node()
 
         node_with_remapped_name = rclpy.create_node(
@@ -1871,7 +1872,8 @@ class TestCreateNode(unittest.TestCase):
             context=context,
             cli_args=['--ros-args', '-r', '__node:=' + remapped_name]
         )
-        assert node_with_remapped_name.get_fully_qualified_name() == '{}/{}'.format(ns, remapped_name)
+        expected_name = '{}/{}'.format(ns, remapped_name)
+        assert node_with_remapped_name.get_fully_qualified_name() == expected_name
         node_with_remapped_name.destroy_node()
 
         node_with_remapped_ns_name = rclpy.create_node(
@@ -1880,7 +1882,8 @@ class TestCreateNode(unittest.TestCase):
             context=context,
             cli_args=['--ros-args', '-r', '__node:=' + remapped_name, '-r', '__ns:=' + remapped_ns]
         )
-        assert node_with_remapped_ns_name.get_fully_qualified_name() == '{}/{}'.format(remapped_ns, remapped_name)
+        expected_name = '{}/{}'.format(remapped_ns, remapped_name)
+        assert node_with_remapped_ns_name.get_fully_qualified_name() == expected_name
         node_with_remapped_ns_name.destroy_node()
 
         rclpy.shutdown(context=context)
@@ -1896,7 +1899,8 @@ class TestCreateNode(unittest.TestCase):
             namespace=ns,
             context=g_context,
         )
-        assert node_with_global_arguments.get_fully_qualified_name() == '{}/{}'.format(ns, global_remap_name)
+        expected_name = '{}/{}'.format(ns, global_remap_name)
+        assert node_with_global_arguments.get_fully_qualified_name() == expected_name
         node_with_global_arguments.destroy_node()
 
         node_skip_global_params = rclpy.create_node(
