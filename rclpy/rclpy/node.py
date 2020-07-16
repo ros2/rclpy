@@ -1392,6 +1392,8 @@ class Node:
         """
         if publisher in self.__publishers:
             self.__publishers.remove(publisher)
+            for event_handler in publisher.event_handlers:
+                self.__waitables.remove(event_handler)
             try:
                 publisher.destroy()
             except InvalidHandle:
@@ -1408,6 +1410,8 @@ class Node:
         """
         if subscription in self.__subscriptions:
             self.__subscriptions.remove(subscription)
+            for event_handler in subscription.event_handlers:
+                self.__waitables.remove(event_handler)
             try:
                 subscription.destroy()
             except InvalidHandle:
