@@ -287,14 +287,14 @@ class Executor:
         """Execute callbacks until a given future is done or a timeout occurs."""
         if timeout_sec is None or timeout_sec < 0:
             while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once(timeout_sec=timeout_sec)
+                self.spin_once_until_future_complete(future, timeout_sec)
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = timeout_sec
 
             while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once(timeout_sec=timeout_left)
+                self.spin_once_until_future_complete(future, timeout_left)
                 now = time.monotonic()
 
                 if now >= end:
@@ -309,6 +309,19 @@ class Executor:
         A custom executor should use :meth:`wait_for_ready_callbacks` to get work.
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        """
+        raise NotImplementedError()
+
+    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        """
+        Wait for and execute a single callback.
+
+        This should behave in the same way as :meth:`spin_once`.
+        If needed by the implementation, it should be awake other threads waiting.
+
+        :param future: The executor will wait until this future is done.
+        :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
         raise NotImplementedError()
@@ -686,6 +699,9 @@ class SingleThreadedExecutor(Executor):
             if handler.exception() is not None:
                 raise handler.exception()
 
+    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        self.spin_once(timeout_sec)
+
 
 class MultiThreadedExecutor(Executor):
     """
@@ -717,3 +733,8 @@ class MultiThreadedExecutor(Executor):
             pass
         else:
             self._executor.submit(handler)
+
+    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        self.spin_once(timeout_sec)
+        if future.done():
+            self.wake()
