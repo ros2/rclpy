@@ -136,6 +136,12 @@ class ExternalShutdownException(Exception):
     pass
 
 
+class ConditionReachedException(Exception):
+    """Future has been completed."""
+
+    pass
+
+
 class Executor:
     """
     The base class for an executor.
@@ -442,7 +448,8 @@ class Executor:
     def _wait_for_ready_callbacks(
         self,
         timeout_sec: float = None,
-        nodes: List['Node'] = None
+        nodes: List['Node'] = None,
+        condition: Callable[[], bool] = lambda: True,
     ) -> Generator[Tuple[Task, WaitableEntityType, 'Node'], None, None]:
         """
         Yield callbacks that are ready to be executed.
@@ -453,6 +460,7 @@ class Executor:
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         :param nodes: A list of nodes to wait on. Wait on all nodes if ``None``.
+        :param condition: A callable that makes the function return immedaitely when it's True.
         """
         timeout_timer = None
         timeout_nsec = timeout_sec_to_nsec(timeout_sec)
@@ -460,7 +468,7 @@ class Executor:
             timeout_timer = Timer(None, None, timeout_nsec, self._clock, context=self._context)
 
         yielded_work = False
-        while not yielded_work and not self._is_shutdown:
+        while not yielded_work and not self._is_shutdown and not condition():
             # Refresh "all" nodes in case executor was woken by a node being added or removed
             nodes_to_use = nodes
             if nodes is None:
@@ -656,6 +664,8 @@ class Executor:
                 raise TimeoutException()
         if self._is_shutdown:
             raise ShutdownException()
+        if condition():
+            raise ConditionReachedException()
 
     def wait_for_ready_callbacks(self, *args, **kwargs) -> Tuple[Task, WaitableEntityType, 'Node']:
         """
@@ -722,19 +732,27 @@ class MultiThreadedExecutor(Executor):
                 num_threads = 1
         self._executor = ThreadPoolExecutor(num_threads)
 
-    def spin_once(self, timeout_sec: float = None) -> None:
+    def _spin_once_impl(
+        self,
+        timeout_sec: float = None,
+        wait_condition: Callable[[], bool] = lambda: True
+    ) -> None:
         try:
-            handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+            handler, entity, node = self.wait_for_ready_callbacks(
+                timeout_sec, None, wait_condition)
         except ExternalShutdownException:
             pass
         except ShutdownException:
             pass
         except TimeoutException:
             pass
+        except ConditionReachedException:
+            pass
         else:
             self._executor.submit(handler)
 
+    def spin_once(self, timeout_sec: float = None) -> None:
+        self._spin_once_impl(timeout_sec)
+
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
-        self.spin_once(timeout_sec)
-        if future.done():
-            self.wake()
+        self._spin_once_impl(timeout_sec, future.done)
