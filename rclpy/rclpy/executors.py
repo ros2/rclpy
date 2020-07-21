@@ -287,14 +287,14 @@ class Executor:
         """Execute callbacks until a given future is done or a timeout occurs."""
         if timeout_sec is None or timeout_sec < 0:
             while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once(timeout_sec=timeout_sec)
+                self.spin_once_impl(timeout_sec=timeout_sec)
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = timeout_sec
 
             while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once(timeout_sec=timeout_left)
+                self.spin_once_impl(timeout_sec=timeout_left)
                 now = time.monotonic()
 
                 if now >= end:
@@ -312,6 +312,18 @@ class Executor:
             Don't wait if 0.
         """
         raise NotImplementedError()
+
+    def spin_once_impl(self, timeout_sec: float = None) -> None:
+        try:
+            handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+        except ShutdownException:
+            pass
+        except TimeoutException:
+            pass
+        else:
+            handler()
+            if handler.exception() is not None:
+                raise handler.exception()
 
     def _take_timer(self, tmr):
         with tmr.handle as capsule:
