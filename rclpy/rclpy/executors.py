@@ -449,7 +449,7 @@ class Executor:
         self,
         timeout_sec: float = None,
         nodes: List['Node'] = None,
-        condition: Callable[[], bool] = lambda: True,
+        condition: Callable[[], bool] = lambda: False,
     ) -> Generator[Tuple[Task, WaitableEntityType, 'Node'], None, None]:
         """
         Yield callbacks that are ready to be executed.
