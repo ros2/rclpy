@@ -735,7 +735,7 @@ class MultiThreadedExecutor(Executor):
     def _spin_once_impl(
         self,
         timeout_sec: float = None,
-        wait_condition: Callable[[], bool] = lambda: True
+        wait_condition: Callable[[], bool] = lambda: False
     ) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(
