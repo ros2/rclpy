@@ -64,7 +64,7 @@ class Context:
         else:
             if domain_id < 0:
                 raise RuntimeError(
-                    'Domain id ({}) should never be lower than zero.'
+                    'Domain id ({}) should not be lower than zero.'
                     .format(domain_id))
 
         global g_logging_ref_count
@@ -143,4 +143,4 @@ class Context:
         """Get domain id of context."""
         from rclpy.impl.implementation_singleton import rclpy_implementation
         with self._handle as capsule, self._lock:
-            return rclpy_implementation.rclpy_get_domain_id_in_context(capsule)
+            return rclpy_implementation.rclpy_context_get_domain_id(capsule)

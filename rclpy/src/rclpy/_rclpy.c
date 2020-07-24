@@ -5524,7 +5524,7 @@ rclpy_get_default_domain_id(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(arg
  * \return domain id
  */
 static PyObject *
-rclpy_get_domain_id_in_context(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_context_get_domain_id(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pycontext;
 
@@ -5983,7 +5983,7 @@ static PyMethodDef rclpy_methods[] = {
     "Retrieve default domain ID"
   },
   {
-    "rclpy_get_domain_id_in_context", rclpy_get_domain_id_in_context,
+    "rclpy_context_get_domain_id", rclpy_context_get_domain_id,
     METH_VARARGS,
     "Retrieves domain ID from init_options of context"
   },
