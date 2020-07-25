@@ -533,10 +533,17 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pyargs;
   PyObject * pyseqlist;
   PyObject * pycontext;
-  PY_LONG_LONG domain_id;
+  PY_LONG_LONG domain_id = (PY_LONG_LONG) RCL_DEFAULT_DOMAIN_ID;
 
-  if (!PyArg_ParseTuple(args, "OOK", &pyargs, &pycontext, &domain_id)) {
+  if (!PyArg_ParseTuple(args, "OO|K", &pyargs, &pycontext, &domain_id)) {
     // Exception raised
+    return NULL;
+  }
+
+  if (domain_id != (PY_LONG_LONG)RCL_DEFAULT_DOMAIN_ID && domain_id < 0) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Domain id (%ll) should not be lower than zero.", domain_id);
     return NULL;
   }
 
@@ -5506,18 +5513,6 @@ rclpy_publisher_get_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(topic_name);
 }
 
-
-/// Retrieves default domain id defined in rcl layer
-/**
- *
- * \return the defined domain id
- */
-static PyObject *
-rclpy_get_default_domain_id(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
-{
-  return PyLong_FromSize_t(RCL_DEFAULT_DOMAIN_ID);
-}
-
 /// Retrieves domain id from init_options of context
 /**
  * \param[in] pyargs context Python object
@@ -5976,11 +5971,6 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_publisher_get_topic_name", rclpy_publisher_get_topic_name,
     METH_VARARGS,
     "Get the resolved name(topic) of publisher"
-  },
-  {
-    "rclpy_get_default_domain_id", rclpy_get_default_domain_id,
-    METH_NOARGS,
-    "Retrieve default domain ID"
   },
   {
     "rclpy_context_get_domain_id", rclpy_context_get_domain_id,

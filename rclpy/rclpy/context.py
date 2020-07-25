@@ -59,20 +59,21 @@ class Context:
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation
 
-        if domain_id is None:
-            domain_id = rclpy_implementation.rclpy_get_default_domain_id()
-        else:
-            if domain_id < 0:
-                raise RuntimeError(
-                    'Domain id ({}) should not be lower than zero.'
-                    .format(domain_id))
-
         global g_logging_ref_count
         with self._handle as capsule, self._lock:
-            rclpy_implementation.rclpy_init(
-                args if args is not None else sys.argv,
-                capsule,
-                domain_id)
+            if domain_id is not None:
+                if domain_id < 0:
+                    raise RuntimeError(
+                        'Domain id ({}) should not be lower than zero.'
+                        .format(domain_id))
+                rclpy_implementation.rclpy_init(
+                    args if args is not None else sys.argv,
+                    capsule,
+                    domain_id)
+            else:
+                rclpy_implementation.rclpy_init(
+                    args if args is not None else sys.argv,
+                    capsule)
             if initialize_logging and not self._logging_initialized:
                 with g_logging_configure_lock:
                     g_logging_ref_count += 1
