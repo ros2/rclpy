@@ -755,4 +755,5 @@ class MultiThreadedExecutor(Executor):
         self._spin_once_impl(timeout_sec)
 
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        future.add_done_callback(lambda x: self.wake())
         self._spin_once_impl(timeout_sec, future.done)
