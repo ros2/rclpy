@@ -522,6 +522,29 @@ cleanup:
   return pyresult_list;
 }
 
+int pyobj_to_long(PyObject * obj, void * i)
+{
+  PY_LONG_LONG tmp;
+  PY_LONG_LONG * val = (PY_LONG_LONG *)i;
+
+  if (obj == Py_None) {
+    return 1;  // Return success if object is None
+  }
+
+  if (PyLong_Check(obj)) {
+    tmp = PyLong_AsLongLong(obj);
+    if (PyErr_Occurred()) {
+      return 0;  // Conversion failed.
+    } else {
+      *val = tmp;
+      return 1;  // Successful conversion.
+    }
+  }
+
+  PyErr_SetString(PyExc_TypeError, "PyObject must be long or None.");
+  return 0;  // Conversion failed
+}
+
 /// Initialize rcl with default options, ignoring parameters
 /**
  * Raises RuntimeError if rcl could not be initialized
@@ -535,7 +558,7 @@ rclpy_init(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pycontext;
   PY_LONG_LONG domain_id = (PY_LONG_LONG) RCL_DEFAULT_DOMAIN_ID;
 
-  if (!PyArg_ParseTuple(args, "OO|K", &pyargs, &pycontext, &domain_id)) {
+  if (!PyArg_ParseTuple(args, "OO|O&", &pyargs, &pycontext, pyobj_to_long, (void *)&domain_id)) {
     // Exception raised
     return NULL;
   }
