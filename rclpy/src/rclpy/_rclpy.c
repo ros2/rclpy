@@ -27,6 +27,7 @@
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
 #include <rcl/init_options.h>
+#include <rcl/context.h>
 #include <rcl_interfaces/msg/parameter_type.h>
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/allocator.h>
@@ -5557,21 +5558,12 @@ rclpy_context_get_domain_id(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  const rcl_init_options_t * init_options = rcl_context_get_init_options(context);
-  if (!init_options) {
-    PyErr_Format(
-      RCLError,
-      "Failed to get init_options from context: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
   size_t domain_id;
-  rcl_ret_t ret = rcl_init_options_get_domain_id(init_options, &domain_id);
+  rcl_ret_t ret = rcl_context_get_domain_id(context, &domain_id);
   if (RCL_RET_OK != ret) {
     PyErr_Format(
       RCLError,
-      "Failed to get domain id from init_options: %s", rcl_get_error_string().str);
+      "Failed to get domain id from rcl_context_get_domain_id: %s", rcl_get_error_string().str);
     rcl_reset_error();
     return NULL;
   }

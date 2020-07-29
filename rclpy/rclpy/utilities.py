@@ -39,13 +39,6 @@ def get_default_context(*, shutting_down=False):
         return g_default_context
 
 
-def get_domain_id_in_context(context=None):
-    """Return domain id in context."""
-    if context is None:
-        context = get_default_context()
-    return context.get_domain_id()
-
-
 def remove_ros_args(args=None):
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
