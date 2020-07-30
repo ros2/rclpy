@@ -83,9 +83,11 @@ def test_create_node_without_init():
 
 def test_init_with_domain_id():
     rclpy.init(domain_id=123)
+    assert rclpy.get_default_context().get_domain_id() == 123
     rclpy.shutdown()
     context = rclpy.context.Context()
     rclpy.init(context=context, domain_id=123)
+    assert context.get_domain_id() == 123
     rclpy.shutdown(context=context)
 
 
