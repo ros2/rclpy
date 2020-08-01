@@ -24,7 +24,7 @@ import rpyutils  # noqa
 import test_rclpy  # noqa
 
 
-def _custom_import(name):
+def _custom_import(name, package):
     # Since Python 3.8, on Windows we should ensure DLL directories are explicitly added
     # to the search path.
     # See https://docs.python.org/3/whatsnew/3.8.html#bpo-36085-whatsnew
