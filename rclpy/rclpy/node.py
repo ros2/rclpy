@@ -186,7 +186,7 @@ class Node:
         self.__executor_weakref = None
 
         self._parameter_event_publisher = self.create_publisher(
-            ParameterEvent, 'parameter_events', qos_profile_parameter_events)
+            ParameterEvent, '/parameter_events', qos_profile_parameter_events)
 
         with self.handle as capsule:
             self._parameter_overrides = _rclpy.rclpy_get_node_parameters(Parameter, capsule)
