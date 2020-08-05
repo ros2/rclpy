@@ -59,7 +59,12 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
 
 
-def init(*, args: Optional[List[str]] = None, context: Context = None) -> None:
+def init(
+    *,
+    args: Optional[List[str]] = None,
+    context: Context = None,
+    domain_id: Optional[int] = None
+) -> None:
     """
     Initialize ROS communications for a given context.
 
@@ -68,7 +73,7 @@ def init(*, args: Optional[List[str]] = None, context: Context = None) -> None:
         (see :func:`.get_default_context`).
     """
     context = get_default_context() if context is None else context
-    return context.init(args)
+    return context.init(args, domain_id=domain_id)
 
 
 # The global spin functions need an executor to do the work
