@@ -19,6 +19,7 @@ from rcl_interfaces.srv import GetParameters
 import rclpy
 import rclpy.executors
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.utilities import get_rmw_implementation_identifier
 
 
 # TODO(sloretz) Reduce fudge once wait_for_service uses node graph events
@@ -91,6 +92,10 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
+    # https://github.com/ros2/rmw_connext/issues/405
+    @unittest.skipIf(
+        get_rmw_implementation_identifier() == 'rmw_connext_cpp',
+        reason='Source timestamp not implemented for Connext')
     def test_service_timestamps(self):
         cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(

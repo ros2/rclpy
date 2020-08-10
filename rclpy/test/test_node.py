@@ -44,6 +44,7 @@ from rclpy.qos import QoSLivelinessPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.time_source import USE_SIM_TIME_NAME
+from rclpy.utilities import get_rmw_implementation_identifier
 from test_msgs.msg import BasicTypes
 
 TEST_NODE = 'my_node'
@@ -139,6 +140,10 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def dummy_cb(self, msg):
         pass
 
+    # https://github.com/ros2/rmw_connext/issues/405
+    @unittest.skipIf(
+        get_rmw_implementation_identifier() == 'rmw_connext_cpp',
+        reason='Source timestamp not implemented for Connext')
     def test_take(self):
         basic_types_pub = self.node.create_publisher(BasicTypes, 'take_test', 1)
         sub = self.node.create_subscription(
