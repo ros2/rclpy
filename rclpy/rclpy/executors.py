@@ -324,7 +324,7 @@ class Executor:
         Wait for and execute a single callback.
 
         This should behave in the same way as :meth:`spin_once`.
-        If needed by the implementation, it should be awake other threads waiting.
+        If needed by the implementation, it should awake other threads waiting.
 
         :param future: The executor will wait until this future is done.
         :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
