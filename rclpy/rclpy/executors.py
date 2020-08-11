@@ -460,7 +460,8 @@ class Executor:
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         :param nodes: A list of nodes to wait on. Wait on all nodes if ``None``.
-        :param condition: A callable that makes the function return immediately when it evaluates to True.
+        :param condition: A callable that makes the function return immediately when it evaluates
+            to True.
         """
         timeout_timer = None
         timeout_nsec = timeout_sec_to_nsec(timeout_sec)
