@@ -3840,6 +3840,37 @@ rclpy_get_node_names_and_namespaces_with_enclaves(
   return rclpy_get_node_names_impl(args, true);
 }
 
+/// Get the fully qualified name of the node.
+/**
+ *  Raises ValueError if pynode is not a node capsule
+ *  Raises RuntimeError  if there is an rcl error
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \return None on failure
+ *         String containing the fully qualified name of the node otherwise
+ */
+static PyObject *
+rclpy_node_get_fully_qualified_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode;
+
+  if (!PyArg_ParseTuple(args, "O", &pynode)) {
+    return NULL;
+  }
+
+  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
+  if (!node) {
+    return NULL;
+  }
+
+  const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(node);
+  if (!fully_qualified_node_name) {
+    Py_RETURN_NONE;
+  }
+
+  return PyUnicode_FromString(fully_qualified_node_name);
+}
+
 /// Get a list of service names and types associated with the given node name.
 /**
  * Raises ValueError if pynode is not a node capsule
@@ -5849,6 +5880,12 @@ static PyMethodDef rclpy_methods[] = {
     rclpy_get_node_names_and_namespaces_with_enclaves,
     METH_VARARGS,
     "Get node names, namespaces, and enclaves list from graph API."
+  },
+  {
+    "rclpy_node_get_fully_qualified_name",
+    rclpy_node_get_fully_qualified_name,
+    METH_VARARGS,
+    "Get the fully qualified name of node."
   },
   {
     "rclpy_get_node_parameters", rclpy_get_node_parameters, METH_VARARGS,
