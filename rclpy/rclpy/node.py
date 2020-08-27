@@ -92,14 +92,17 @@ NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
 
 
 class Node:
-
-    PARAM_REL_TOL = 1e-6
-
     """
     A Node in the ROS graph.
 
     A Node is the primary entrypoint in a ROS system for communication.
     It can be used to create ROS entities such as publishers, subscribers, services, etc.
+    """
+
+    PARAM_REL_TOL = 1e-6
+    """
+    Relative tolerance for floating point parameter values' comparison.
+    See `math.isclose` documentation.
     """
 
     def __init__(
