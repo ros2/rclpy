@@ -18,7 +18,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.clock import ClockType
 from rclpy.clock import ROSClock
 from rclpy.parameter import Parameter
-from rclpy.qos import QosProfile
+from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from rclpy.time import Time
 import rosgraph_msgs.msg
