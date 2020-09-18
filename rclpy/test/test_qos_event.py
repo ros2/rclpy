@@ -185,14 +185,14 @@ class TestQoSEvent(unittest.TestCase):
         if not self.is_fastrtps:
             self.assertEqual(
                 pub_log_msg,
-                'New subscription discovered on this topic, requesting incompatible QoS. '
+                "New subscription discovered on topic '{}', requesting incompatible QoS. "
                 'No messages will be sent to it. '
-                'Last incompatible policy: DURABILITY_QOS_POLICY')
+                'Last incompatible policy: DURABILITY_QOS_POLICY'.format(self.topic_name))
             self.assertEqual(
                 sub_log_msg,
-                'New publisher discovered on this topic, offering incompatible QoS. '
+                "New publisher discovered on topic '{}', offering incompatible QoS. "
                 'No messages will be received from it. '
-                'Last incompatible policy: DURABILITY_QOS_POLICY')
+                'Last incompatible policy: DURABILITY_QOS_POLICY'.format(self.topic_name))
 
         rclpy.logging._root_logger = original_logger
 
