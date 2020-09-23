@@ -55,7 +55,7 @@ class Publisher:
         self.qos_profile = qos_profile
 
         self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
-            callback_group, publisher_handle)
+            callback_group, publisher_handle, topic)
 
     def publish(self, msg: Union[MsgType, bytes]) -> None:
         """
