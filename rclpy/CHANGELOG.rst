@@ -2,6 +2,30 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update maintainers (`#627 <https://github.com/ros2/rclpy/issues/627>`_)
+* Add in semicolon on RCUTILS_LOGGING_AUTOINIT. (`#624 <https://github.com/ros2/rclpy/issues/624>`_)
+* Add in the topic name when QoS events are fired. (`#621 <https://github.com/ros2/rclpy/issues/621>`_)
+* Use best effort, keep last, history depth 1 QoS Profile for '/clock' subscriptions (`#619 <https://github.com/ros2/rclpy/issues/619>`_)
+* PARAM_REL_TOL documentation fix (`#559 <https://github.com/ros2/rclpy/issues/559>`_)
+* Node get fully qualified name (`#598 <https://github.com/ros2/rclpy/issues/598>`_)
+* MultiThreadedExecutor spin_until_future complete should not continue waiting when the future is done (`#605 <https://github.com/ros2/rclpy/issues/605>`_)
+* skip test relying on source timestamps with Connext (`#615 <https://github.com/ros2/rclpy/issues/615>`_)
+* Use the rpyutils shared import_c_library function. (`#610 <https://github.com/ros2/rclpy/issues/610>`_)
+* Add ability to configure domain ID (`#596 <https://github.com/ros2/rclpy/issues/596>`_)
+* Use absolute parameter events topic name (`#612 <https://github.com/ros2/rclpy/issues/612>`_)
+* Destroy event handlers owned by publishers/subscriptions when calling publisher.destroy()/subscription.destroy() (`#603 <https://github.com/ros2/rclpy/issues/603>`_)
+* Default incompatible qos callback should be set when there's no user specified callback (`#601 <https://github.com/ros2/rclpy/issues/601>`_)
+* relax rate jitter test for individual periods (`#602 <https://github.com/ros2/rclpy/issues/602>`_)
+* add QoSProfile.__str_\_ (`#593 <https://github.com/ros2/rclpy/issues/593>`_)
+* Add useful debug info when trying to publish the wrong type (`#581 <https://github.com/ros2/rclpy/issues/581>`_)
+* Pass rcutils_include_dirs to cppcheck  (`#577 <https://github.com/ros2/rclpy/issues/577>`_)
+* wrap lines to shorten line length (`#586 <https://github.com/ros2/rclpy/issues/586>`_)
+* fix moved troubleshooting url (`#579 <https://github.com/ros2/rclpy/issues/579>`_)
+* improve error message if rclpy C extensions are not found (`#580 <https://github.com/ros2/rclpy/issues/580>`_)
+* Contributors: Barry Xu, Chris Lalancette, Claire Wang, Dereck Wonnacott, Dirk Thomas, Emerson Knapp, Ivan Santiago Paunovic, Loy, Zhen Ju
+
 1.1.0 (2020-06-18)
 ------------------
 * Add message lost subscription event (`#572 <https://github.com/ros2/rclpy/issues/572>`_)
