@@ -4254,7 +4254,7 @@ cleanup:
     PyErr_Format(
       RCLError,
       "Failed to destroy service_names_and_types: %s", rcl_get_error_string().str);
-    Py_DECREF(pyservice_names_and_types);
+    Py_XDECREF(pyservice_names_and_types);
     rcl_reset_error();
     return NULL;
   }
