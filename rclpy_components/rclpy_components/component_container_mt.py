@@ -12,29 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import signal
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.component import ComponentManager
+from .component_manager import ComponentManager
 
 
 def main():
-    try:
-        _main()
-    except KeyboardInterrupt:
-        print('KeyboardInterrupt received, exit')
-        return signal.SIGINT
-
-
-def _main():
     rclpy.init()
 
     executor = MultiThreadedExecutor()
     component_manager = ComponentManager(executor, "PyComponentManager")
 
     executor.add_node(component_manager)
-    executor.spin()
 
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        print('KeyboardInterrupt received, exit')
+        pass
+
+    component_manager.destroy_node()
     rclpy.shutdown()
 
 
