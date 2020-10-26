@@ -15,6 +15,8 @@
 from enum import Enum
 from enum import IntEnum
 
+import warnings
+
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -34,25 +36,15 @@ class QoSPolicyKind(IntEnum):
     LIVELINESS = 1 << 3
     RELIABILITY = 1 << 4
     HISTORY = 1 << 5
-    LIFESPAN = 1 << 6
+    LIFESPAN = 1 << 6,
+    DEPTH = 1 << 7,
+    LIVELINESS_LEASE_DURATION = 1 << 8,
+    AVOID_ROS_NAMESPACE_CONVENTIONS = 1 << 9,
 
 
 def qos_policy_name_from_kind(policy_kind: QoSPolicyKind):
     """Get QoS policy name from QoSPolicyKind enum."""
-    if policy_kind == QoSPolicyKind.DURABILITY:
-        return 'DURABILITY_QOS_POLICY'
-    elif policy_kind == QoSPolicyKind.DEADLINE:
-        return 'DEADLINE_QOS_POLICY'
-    elif policy_kind == QoSPolicyKind.LIVELINESS:
-        return 'LIVELINESS_QOS_POLICY'
-    elif policy_kind == QoSPolicyKind.RELIABILITY:
-        return 'RELIABILITY_QOS_POLICY'
-    elif policy_kind == QoSPolicyKind.HISTORY:
-        return 'HISTORY_QOS_POLICY'
-    elif policy_kind == QoSPolicyKind.LIFESPAN:
-        return 'LIFESPAN_QOS_POLICY'
-    else:
-        return 'INVALID_QOS_POLICY'
+    return policy_kind.name
 
 
 class InvalidQoSProfileException(Exception):
@@ -87,12 +79,12 @@ class QoSProfile:
         if 'history' not in kwargs:
             if 'depth' not in kwargs:
                 raise InvalidQoSProfileException('History and/or depth settings are required.')
-            kwargs['history'] = QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST
+            kwargs['history'] = QoSHistoryPolicy.KEEP_LAST
 
         self.history = kwargs.get('history')
 
         if (
-            QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST == self.history and
+            QoSHistoryPolicy.KEEP_LAST == self.history and
             'depth' not in kwargs
         ):
             raise InvalidQoSProfileException('History set to KEEP_LAST without a depth setting.')
@@ -303,6 +295,38 @@ class QoSPolicyEnum(IntEnum):
             (self.value, self.__class__.__name__))
 
 
+class _DeprecatedPolicyValueAlias:
+    """Helper to deprecate a policy value."""
+
+    def __init__(self, replacement_name, deprecated_name):
+        self.replacement_name = replacement_name
+        self.deprecated_name = deprecated_name
+
+    def __get__(self, obj, policy_cls):
+        warnings.warn(
+            f'{policy_cls.__name__}.{self.deprecated_name} is deprecated. '
+            f'Use {policy_cls.__name__}.{self.replacement_name} instead.'
+        )
+        return policy_cls[self.replacement_name]
+
+
+def _deprecated_policy_value_aliases(pairs):
+    def decorator(policy_cls):
+        for deprecated_name, replacement_name in pairs:
+            setattr(
+                policy_cls,
+                deprecated_name,
+                _DeprecatedPolicyValueAlias(replacement_name, deprecated_name)
+            )
+        return policy_cls
+    return decorator
+
+@_deprecated_policy_value_aliases((
+    ('RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
+    ('RMW_QOS_POLICY_HISTORY_KEEP_LAST', 'KEEP_LAST'),
+    ('RMW_QOS_POLICY_HISTORY_KEEP_ALL', 'KEEP_ALL'),
+    ('RMW_QOS_POLICY_HISTORY_UNKNOWN', 'UNKNOWN'),
+))
 class HistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
@@ -310,20 +334,22 @@ class HistoryPolicy(QoSPolicyEnum):
     This enum matches the one defined in rmw/types.h
     """
 
-    RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT = 0
-    SYSTEM_DEFAULT = RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT
-    RMW_QOS_POLICY_HISTORY_KEEP_LAST = 1
-    KEEP_LAST = RMW_QOS_POLICY_HISTORY_KEEP_LAST
-    RMW_QOS_POLICY_HISTORY_KEEP_ALL = 2
-    KEEP_ALL = RMW_QOS_POLICY_HISTORY_KEEP_ALL
-    RMW_QOS_POLICY_HISTORY_UNKNOWN = 3
-    UNKNOWN = RMW_QOS_POLICY_HISTORY_UNKNOWN
+    SYSTEM_DEFAULT = 0
+    KEEP_LAST = 1
+    KEEP_ALL = 2
+    UNKNOWN = 3
 
 
 # Alias with the old name, for retrocompatibility
 QoSHistoryPolicy = HistoryPolicy
 
 
+@_deprecated_policy_value_aliases((
+    ('RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
+    ('RMW_QOS_POLICY_RELIABILITY_RELIABLE', 'RELIABLE'),
+    ('RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT', 'BEST_EFFORT'),
+    ('RMW_QOS_POLICY_RELIABILITY_UNKNOWN', 'UNKNOWN'),
+))
 class ReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
@@ -331,20 +357,22 @@ class ReliabilityPolicy(QoSPolicyEnum):
     This enum matches the one defined in rmw/types.h
     """
 
-    RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT = 0
-    SYSTEM_DEFAULT = RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT
-    RMW_QOS_POLICY_RELIABILITY_RELIABLE = 1
-    RELIABLE = RMW_QOS_POLICY_RELIABILITY_RELIABLE
-    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT = 2
-    BEST_EFFORT = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT
-    RMW_QOS_POLICY_RELIABILITY_UNKNOWN = 3
-    UNKNOWN = RMW_QOS_POLICY_RELIABILITY_UNKNOWN
+    SYSTEM_DEFAULT = 0
+    RELIABLE = 1
+    BEST_EFFORT = 2
+    UNKNOWN = 3
 
 
 # Alias with the old name, for retrocompatibility
 QoSReliabilityPolicy = ReliabilityPolicy
 
 
+@_deprecated_policy_value_aliases((
+    ('RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
+    ('RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL', 'TRANSIENT_LOCAL'),
+    ('RMW_QOS_POLICY_DURABILITY_VOLATILE', 'VOLATILE'),
+    ('RMW_QOS_POLICY_DURABILITY_UNKNOWN', 'UNKNOWN'),
+))
 class DurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
@@ -352,20 +380,22 @@ class DurabilityPolicy(QoSPolicyEnum):
     This enum matches the one defined in rmw/types.h
     """
 
-    RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT = 0
-    SYSTEM_DEFAULT = RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT
-    RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL = 1
-    TRANSIENT_LOCAL = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL
-    RMW_QOS_POLICY_DURABILITY_VOLATILE = 2
-    VOLATILE = RMW_QOS_POLICY_DURABILITY_VOLATILE
-    RMW_QOS_POLICY_DURABILITY_UNKNOWN = 3
-    UNKNOWN = RMW_QOS_POLICY_DURABILITY_UNKNOWN
+    SYSTEM_DEFAULT = 0
+    TRANSIENT_LOCAL = 1
+    VOLATILE = 2
+    UNKNOWN = 3
 
 
 # Alias with the old name, for retrocompatibility
 QoSDurabilityPolicy = DurabilityPolicy
 
 
+@_deprecated_policy_value_aliases((
+    ('RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
+    ('RMW_QOS_POLICY_LIVELINESS_AUTOMATIC', 'AUTOMATIC'),
+    ('RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC', 'MANUAL_BY_TOPIC'),
+    ('RMW_QOS_POLICY_DURABILITY_UNKNOWN', 'UNKNOWN'),
+))
 class LivelinessPolicy(QoSPolicyEnum):
     """
     Enum for QoS Liveliness settings.
@@ -373,14 +403,10 @@ class LivelinessPolicy(QoSPolicyEnum):
     This enum matches the one defined in rmw/types.h
     """
 
-    RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT = 0
-    SYSTEM_DEFAULT = RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT
-    RMW_QOS_POLICY_LIVELINESS_AUTOMATIC = 1
-    AUTOMATIC = RMW_QOS_POLICY_LIVELINESS_AUTOMATIC
-    RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC = 3
-    MANUAL_BY_TOPIC = RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC
-    RMW_QOS_POLICY_LIVELINESS_UNKNOWN = 4
-    UNKNOWN = RMW_QOS_POLICY_LIVELINESS_UNKNOWN
+    SYSTEM_DEFAULT = 0
+    AUTOMATIC = 1
+    MANUAL_BY_TOPIC = 3
+    UNKNOWN = 4
 
 
 # Alias with the old name, for retrocompatibility

@@ -170,12 +170,12 @@ class TestQoSEvent(unittest.TestCase):
         rclpy.logging._root_logger = MockLogger()
 
         qos_profile_publisher = QoSProfile(
-            depth=10, durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE)
+            depth=10, durability=QoSDurabilityPolicy.VOLATILE)
         self.node.create_publisher(EmptyMsg, self.topic_name, qos_profile_publisher)
 
         message_callback = Mock()
         qos_profile_subscription = QoSProfile(
-            depth=10, durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL)
+            depth=10, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, qos_profile_subscription)
 
