@@ -321,6 +321,7 @@ def _deprecated_policy_value_aliases(pairs):
         return policy_cls
     return decorator
 
+
 @_deprecated_policy_value_aliases((
     ('RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
     ('RMW_QOS_POLICY_HISTORY_KEEP_LAST', 'KEEP_LAST'),
