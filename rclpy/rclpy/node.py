@@ -24,7 +24,6 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
-import warnings
 import weakref
 
 from rcl_interfaces.msg import FloatingPointRange
@@ -1053,26 +1052,6 @@ class Node:
 
         self._descriptors[name] = descriptor
         return self.get_parameter(name).get_parameter_value()
-
-    def set_parameters_callback(
-        self,
-        callback: Callable[[List[Parameter]], SetParametersResult]
-    ) -> None:
-        """
-        Register a set parameters callback.
-
-        .. deprecated:: Foxy
-           Use :func:`add_on_set_parameters_callback()` instead.
-
-        Calling this function will add a callback to the self._parameter_callbacks list.
-
-        :param callback: The function that is called whenever parameters are set for the node.
-        """
-        warnings.warn(
-            'set_parameters_callback() is deprecated. '
-            'Use add_on_set_parameters_callback() instead'
-        )
-        self._parameters_callbacks = [callback]
 
     def _validate_topic_or_service_name(self, topic_or_service_name, *, is_service=False):
         name = self.get_name()
