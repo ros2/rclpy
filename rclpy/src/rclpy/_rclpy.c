@@ -1693,6 +1693,61 @@ rclpy_remap_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   return result;
 }
 
+
+/// Expand and remap a topic name
+/**
+ * Raises ValueError if the capsule is not the correct type
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] topic_name topic string to be remapped
+ * \param[in] only_expand when `false`, remapping rules are ignored
+ * \param[in] is_service `true` for service names, `false` for topic names
+ * \return expanded and remapped topic name
+ */
+static PyObject *
+rclpy_resolve_name(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pynode = NULL;
+  const char * name = NULL;
+  bool only_expand = false;
+  bool is_service = false;
+
+
+  if (!PyArg_ParseTuple(args, "Ospp", &pynode, &name, &only_expand, &is_service)) {
+    return NULL;
+  }
+
+  const rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
+  if (node == NULL) {
+    return NULL;
+  }
+  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  if (node_options == NULL) {
+    return NULL;
+  }
+
+  char * output_cstr = NULL;
+  rcl_ret_t ret = rcl_node_resolve_name(
+    node,
+    name,
+    node_options->allocator,
+    is_service,
+    only_expand,
+    &output_cstr);
+  if (ret != RCL_RET_OK) {
+    PyErr_Format(
+      PyExc_RuntimeError, "Failed to resolve name %s: %s", name, rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  PyObject * result = PyUnicode_FromString(output_cstr);
+  node_options->allocator.deallocate(output_cstr, node_options->allocator.state);
+
+  return result;
+}
+
+
 /// Handle destructor for publisher
 static void
 _rclpy_destroy_publisher(void * p)
@@ -5696,6 +5751,10 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_get_validation_error_for_node_name",
     rclpy_get_validation_error_for_node_name, METH_VARARGS,
     "Get the error message and invalid index of a node name or None if valid."
+  },
+  {
+    "rclpy_resolve_name", rclpy_resolve_name, METH_VARARGS,
+    "Expand and remap a topic or service name."
   },
   {
     "rclpy_create_publisher", rclpy_create_publisher, METH_VARARGS,

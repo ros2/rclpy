@@ -1091,6 +1091,21 @@ class Node:
         self.__waitables.remove(waitable)
         self._wake_executor()
 
+    def resolve_topic_or_service_name(
+        self, name: str, *, only_expand: bool, is_service: bool
+    ) -> str:
+        """
+        Return a topic or service name expanded and remapped.
+
+        :param name: topic or service name to be expanded and remapped.
+        :param only_expand: if `True`, remapping rules won't be applied.
+        :param is_service: `True` when wanting to expand a service name, `False` for topics.
+        :return: a fully qualified topic name,
+            result of applying expansion and remapping to the given `name`.
+        """
+        with self.handle as capsule:
+            return _rclpy.rclpy_resolve_name(capsule, name, only_expand, is_service)
+
     def create_publisher(
         self,
         msg_type,
