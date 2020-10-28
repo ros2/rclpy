@@ -26,8 +26,8 @@ from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
-from rclpy.qos import QoSProfile
 from rclpy.qos import QoSPolicyKind
+from rclpy.qos import QoSProfile
 from rclpy.subscription import Subscription
 
 
@@ -36,16 +36,14 @@ class InvalidQosOverridesError(Exception):
 
 
 class QoSOverridingOptions:
-    """
-    Options to customize qos parameter overrides.
-    """
+    """Options to customize qos parameter overrides."""
 
     def __init__(
         self,
         *,
         policy_kinds: Iterable[QoSPolicyKind],
         callback: Optional[Callable[[QoSProfile], bool]] = None,
-        id: Optional[Text] = None
+        entity_id: Optional[Text] = None
     ):
         """
         Construct a QoSOverridingOptions object.
@@ -53,12 +51,12 @@ class QoSOverridingOptions:
         :param policy_kinds: Qos kinds that will have a declared parameter.
         :param callback: Callback that will be used to validate the qos profile
             after the paramter overrides get applied.
-        :param id: Optional identifier, to disambiguate in the case that different qos
+        :param entity_id: Optional identifier, to disambiguate in the case that different qos
             policies for the same topic are desired.
         """
         self._policy_kinds = policy_kinds
         self._callback = callback
-        self._id = id
+        self._entity_id = entity_id
 
     @property
     def policy_kinds(self) -> Iterable[QoSPolicyKind]:
@@ -71,20 +69,20 @@ class QoSOverridingOptions:
         return self._callback
 
     @property
-    def id(self) -> Optional[Text]:
+    def entity_id(self) -> Optional[Text]:
         """Get the optional entity id."""
-        return self._id
+        return self._entity_id
 
     @classmethod
     def with_default_policies(
         cls, *,
         callback: Optional[Callable[[QoSProfile], bool]] = None,
-        id: Optional[Text] = None
+        entity_id: Optional[Text] = None
     ) -> 'QoSOverridingOptions':
         return cls(
             policy_kinds=(QoSPolicyKind.HISTORY, QoSPolicyKind.DEPTH, QoSPolicyKind.RELIABILITY),
             callback=callback,
-            id=id,
+            entity_id=entity_id,
         )
 
 
@@ -95,8 +93,7 @@ def _declare_qos_parameteres(
     qos: QoSProfile,
     options: QoSOverridingOptions) -> QoSProfile:
     """
-    Internal.
-    Declares qos parameters for a Publisher or a Subscription.
+    Internal, declare qos parameters for a Publisher or a Subscription.
 
     :param entity_type: Either `rclpy.node.Publisher` or `rclpy.node.Subscription`.
     :param node: Node used to declare the parameters.
@@ -108,9 +105,9 @@ def _declare_qos_parameteres(
     if not issubclass(entity_type, (Publisher, Subscription)):
         raise TypeError("Argument `entity_type` should be a subclass of Publisher or Subscription")
     entity_type_str = 'publisher' if issubclass(entity_type, Publisher) else Subscription
-    id_suffix = '' if options.id is None else f'_{options.id}'
+    id_suffix = '' if options.entity_id is None else f'_{options.entity_id}'
     name = f'qos_overrides.{topic_name}.{entity_type_str}{id_suffix}.' '{}'
-    description = '{}' f' for {entity_type_str} `{topic_name}` with id `{id}`'
+    description = '{}' f' for {entity_type_str} `{topic_name}` with id `{options.entity_id}`'
     allowed_policies = _get_allowed_policies(entity_type)
     for policy in options.policy_kinds:
         if policy not in allowed_policies:
@@ -153,12 +150,6 @@ def _get_qos_policy_parameter(qos: QoSProfile, policy: QoSPolicyKind) -> Paramet
 
 
 def _override_qos_policy_with_param(qos: QoSProfile, policy: QoSPolicyKind, param: Parameter):
-    # policy_enum_map = {
-    #     QoSPolicyKind.LIVELINESS: rclpy.qos.LivelinessPolicy,
-    #     QoSPolicyKind.RELIABILITY: rclpy.qos.LivelinessPolicy,
-    #     QoSPolicyKind.LIVELINESS: rclpy.qos.LivelinessPolicy,
-    #     QoSPolicyKind.LIVELINESS: rclpy.qos.LivelinessPolicy,
-    # }
     value = param.value
     policy_name = policy.name.lower()
     if policy in (

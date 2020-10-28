@@ -18,15 +18,22 @@ import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
-from rclpy.qos import QoSPolicyKind, QoSProfile
+from rclpy.qos import QoSPolicyKind
+from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameteres
 from rclpy.qos_overriding_options import InvalidQosOverridesError
 from rclpy.qos_overriding_options import QoSOverridingOptions
 
 
-def test_declare_qos_parameters():
+@pytest.fixture(autouse=True)
+def init_shutdown():
     rclpy.init()
-    node = Node("my_node")
+    yield
+    rclpy.shutdown()
+
+
+def test_declare_qos_parameters():
+    node = Node('my_node')
     _declare_qos_parameteres(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
         QoSOverridingOptions.with_default_policies()
@@ -38,18 +45,15 @@ def test_declare_qos_parameters():
         ('/my_topic.publisher.history', 'keep_last'),
         ('/my_topic.publisher.reliability', 'reliable'),
     )
-    for actual, expected in zip (
+    for actual, expected in zip(
         sorted(qos_overrides.items(), key=lambda x: x[0]), expected_params
     ):
         assert actual[0] == expected[0]  # same param name
         assert actual[1].value == expected[1]  # same param value
 
-    rclpy.shutdown()
-
 
 def test_declare_qos_parameters_with_overrides():
-    rclpy.init()
-    node = Node("my_node", parameter_overrides=[
+    node = Node('my_node', parameter_overrides=[
         Parameter('qos_overrides./my_topic.publisher.depth', value=100),
         Parameter('qos_overrides./my_topic.publisher.reliability', value='best_effort'),
     ])
@@ -64,17 +68,14 @@ def test_declare_qos_parameters_with_overrides():
         ('/my_topic.publisher.history', 'keep_last'),
         ('/my_topic.publisher.reliability', 'best_effort'),
     )
-    for actual, expected in zip (
+    for actual, expected in zip(
         sorted(qos_overrides.items(), key=lambda x: x[0]), expected_params
     ):
         assert actual[0] == expected[0]  # same param name
         assert actual[1].value == expected[1]  # same param value
 
-    rclpy.shutdown()
-
 
 def test_declare_qos_parameters_with_happy_callback():
-    rclpy.init()
     node = Node("my_node")
     _declare_qos_parameteres(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
@@ -87,27 +88,28 @@ def test_declare_qos_parameters_with_happy_callback():
         ('/my_topic.publisher.history', 'keep_last'),
         ('/my_topic.publisher.reliability', 'reliable'),
     )
-    rclpy.shutdown()
+    for actual, expected in zip(
+        sorted(qos_overrides.items(), key=lambda x: x[0]), expected_params
+    ):
+        assert actual[0] == expected[0]  # same param name
+        assert actual[1].value == expected[1]  # same param value
 
 
 def test_declare_qos_parameters_with_unhappy_callback():
-    rclpy.init()
-    node = Node("my_node")
+    node = Node('my_node')
 
     with pytest.raises(InvalidQosOverridesError):
         _declare_qos_parameteres(
             Publisher, node, '/my_topic', QoSProfile(depth=10),
             QoSOverridingOptions.with_default_policies(callback=lambda x: False)
         )
-    rclpy.shutdown()
 
 
 def test_declare_qos_parameters_with_id():
-    rclpy.init()
-    node = Node("my_node")
+    node = Node('my_node')
     _declare_qos_parameteres(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
-        QoSOverridingOptions.with_default_policies(id='i_have_an_id')
+        QoSOverridingOptions.with_default_policies(entity_id='i_have_an_id')
     )
     qos_overrides = node.get_parameters_by_prefix('qos_overrides')
     assert len(qos_overrides) == 3
@@ -116,10 +118,8 @@ def test_declare_qos_parameters_with_id():
         ('/my_topic.publisher_i_have_an_id.history', 'keep_last'),
         ('/my_topic.publisher_i_have_an_id.reliability', 'reliable'),
     )
-    for actual, expected in zip (
+    for actual, expected in zip(
         sorted(qos_overrides.items(), key=lambda x: x[0]), expected_params
     ):
         assert actual[0] == expected[0]  # same param name
         assert actual[1].value == expected[1]  # same param value
-
-    rclpy.shutdown()
