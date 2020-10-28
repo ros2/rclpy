@@ -17,18 +17,21 @@ from typing import Iterable
 from typing import Optional
 from typing import Text
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import Union
 
 from rcl_interfaces.msg import ParameterDescriptor
 
 import rclpy
 from rclpy.duration import Duration
-from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
 from rclpy.subscription import Subscription
+
+if TYPE_CHECKING:
+    from rclpy.node import Node
 
 
 class InvalidQosOverridesError(Exception):
@@ -40,8 +43,8 @@ class QoSOverridingOptions:
 
     def __init__(
         self,
-        *,
         policy_kinds: Iterable[QoSPolicyKind],
+        *,
         callback: Optional[Callable[[QoSProfile], bool]] = None,
         entity_id: Optional[Text] = None
     ):
@@ -88,12 +91,13 @@ class QoSOverridingOptions:
 
 def _declare_qos_parameteres(
     entity_type: Union[Type[Publisher], Type[Subscription]],
-    node: Node,
+    node: 'Node',
     topic_name: Text,
     qos: QoSProfile,
-    options: QoSOverridingOptions) -> QoSProfile:
+    options: QoSOverridingOptions
+) -> QoSProfile:
     """
-    Internal, declare qos parameters for a Publisher or a Subscription.
+    Declare qos parameters for a Publisher or a Subscription.
 
     :param entity_type: Either `rclpy.node.Publisher` or `rclpy.node.Subscription`.
     :param node: Node used to declare the parameters.
@@ -103,7 +107,7 @@ def _declare_qos_parameteres(
     :param options: Options that indicates which parameters are going to be declared.
     """
     if not issubclass(entity_type, (Publisher, Subscription)):
-        raise TypeError("Argument `entity_type` should be a subclass of Publisher or Subscription")
+        raise TypeError('Argument `entity_type` should be a subclass of Publisher or Subscription')
     entity_type_str = 'publisher' if issubclass(entity_type, Publisher) else Subscription
     id_suffix = '' if options.entity_id is None else f'_{options.entity_id}'
     name = f'qos_overrides.{topic_name}.{entity_type_str}{id_suffix}.' '{}'
@@ -160,7 +164,7 @@ def _override_qos_policy_with_param(qos: QoSProfile, policy: QoSPolicyKind, para
             return x[0].upper() + x[1:]
         # e.g. `policy=QosPolicyKind.LIVELINESS` -> `policy_enum_class=rclpy.qos.LivelinessPolicy`
         policy_enum_class = getattr(
-            rclpy.qos, f"{capitalize_first_letter(policy_name)}Policy")
+            rclpy.qos, f'{capitalize_first_letter(policy_name)}Policy')
         try:
             value = policy_enum_class[value.upper()]
         except KeyError:

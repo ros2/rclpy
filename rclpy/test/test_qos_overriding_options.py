@@ -18,7 +18,6 @@ import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
-from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameteres
 from rclpy.qos_overriding_options import InvalidQosOverridesError
@@ -76,7 +75,7 @@ def test_declare_qos_parameters_with_overrides():
 
 
 def test_declare_qos_parameters_with_happy_callback():
-    node = Node("my_node")
+    node = Node('my_node')
     _declare_qos_parameteres(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
         QoSOverridingOptions.with_default_policies(callback=lambda x: True)

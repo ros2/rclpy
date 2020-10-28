@@ -63,6 +63,8 @@ from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import SubscriptionEventCallbacks
+from rclpy.qos_overriding_options import _declare_qos_parameteres
+from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
@@ -1127,6 +1129,7 @@ class Node:
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
     ) -> Publisher:
         """
         Create a new publisher.
@@ -1146,9 +1149,21 @@ class Node:
 
         callback_group = callback_group or self.default_callback_group
 
+        failed = False
+        try:
+            final_topic = self.resolve_topic_or_service_name(topic)
+        except RuntimeError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(topic)
+
+        if qos_overriding_options is None:
+            qos_overriding_options = QoSOverridingOptions([])
+        _declare_qos_parameteres(
+            Publisher, self, final_topic, qos_profile, qos_overriding_options)
+
         # this line imports the typesupport for the message module if not already done
         check_for_type_support(msg_type)
-        failed = False
         try:
             with self.handle as node_capsule:
                 publisher_capsule = _rclpy.rclpy_create_publisher(
@@ -1184,6 +1199,7 @@ class Node:
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False
     ) -> Subscription:
         """
@@ -1207,9 +1223,21 @@ class Node:
 
         callback_group = callback_group or self.default_callback_group
 
+        failed = False
+        try:
+            final_topic = self.resolve_topic_or_service_name(topic)
+        except RuntimeError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(topic)
+
+        if qos_overriding_options is None:
+            qos_overriding_options = QoSOverridingOptions([])
+        _declare_qos_parameteres(
+            Subscription, self, final_topic, qos_profile, qos_overriding_options)
+
         # this line imports the typesupport for the message module if not already done
         check_for_type_support(msg_type)
-        failed = False
         try:
             with self.handle as capsule:
                 subscription_capsule = _rclpy.rclpy_create_subscription(
