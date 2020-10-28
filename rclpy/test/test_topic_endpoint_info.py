@@ -95,10 +95,10 @@ class TestQosProfile(unittest.TestCase):
             'Endpoint type: INVALID\n' \
             'GID: \n' \
             'QoS profile:\n' \
-            '  Reliability: RMW_QOS_POLICY_RELIABILITY_UNKNOWN\n' \
-            '  Durability: RMW_QOS_POLICY_DURABILITY_UNKNOWN\n' \
+            '  Reliability: UNKNOWN\n' \
+            '  Durability: UNKNOWN\n' \
             '  Lifespan: 0 nanoseconds\n' \
             '  Deadline: 0 nanoseconds\n' \
-            '  Liveliness: RMW_QOS_POLICY_LIVELINESS_UNKNOWN\n' \
+            '  Liveliness: UNKNOWN\n' \
             '  Liveliness lease duration: 0 nanoseconds'
         self.assertEqual(expected_info_str, actual_info_str)

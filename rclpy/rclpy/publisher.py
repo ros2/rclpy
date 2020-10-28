@@ -96,7 +96,7 @@ class Publisher:
         """
         Manually assert that this Publisher is alive.
 
-        If the QoS Liveliness policy is set to RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC, the
+        If the QoS Liveliness policy is set to MANUAL_BY_TOPIC, the
         application must call this at least as often as ``QoSProfile.liveliness_lease_duration``.
         """
         with self.handle as capsule:

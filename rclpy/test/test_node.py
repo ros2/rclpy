@@ -249,11 +249,11 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # Add a publisher
         qos_profile = QoSProfile(
             depth=10,
-            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_ALL,
+            history=QoSHistoryPolicy.KEEP_ALL,
             deadline=Duration(seconds=1, nanoseconds=12345),
             lifespan=Duration(seconds=20, nanoseconds=9887665),
-            reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
-            durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
             liveliness_lease_duration=Duration(seconds=5, nanoseconds=23456),
             liveliness=QoSLivelinessPolicy.MANUAL_BY_TOPIC)
         self.node.create_publisher(BasicTypes, topic_name, qos_profile)
@@ -272,11 +272,11 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # Add a subscription
         qos_profile2 = QoSProfile(
             depth=0,
-            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+            history=QoSHistoryPolicy.KEEP_LAST,
             deadline=Duration(seconds=15, nanoseconds=1678),
             lifespan=Duration(seconds=29, nanoseconds=2345),
-            reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_RELIABLE,
-            durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=QoSDurabilityPolicy.VOLATILE,
             liveliness_lease_duration=Duration(seconds=5, nanoseconds=23456),
             liveliness=QoSLivelinessPolicy.AUTOMATIC)
         self.node.create_subscription(BasicTypes, topic_name, lambda msg: print(msg), qos_profile2)
