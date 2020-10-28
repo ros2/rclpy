@@ -20,6 +20,7 @@ from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
@@ -530,7 +531,10 @@ class Node:
 
         return self._parameters.get(name, alternative_value)
 
-    def get_parameters_by_prefix(self, prefix: str) -> List[Parameter]:
+    def get_parameters_by_prefix(self, prefix: str) -> Dict[str, Optional[Union[
+        bool, int, float, str, bytes,
+        Sequence[bool], Sequence[int], Sequence[float], Sequence[str]
+    ]]]:
         """
         Get parameters that have a given prefix in their names as a dictionary.
 
@@ -547,16 +551,14 @@ class Node:
         :param prefix: The prefix of the parameters to get.
         :return: Dict of parameters with the given prefix.
         """
-        parameters_with_prefix = {}
         if prefix:
             prefix = prefix + PARAMETER_SEPARATOR_STRING
         prefix_len = len(prefix)
-        for parameter_name in self._parameters:
-            if parameter_name.startswith(prefix):
-                parameters_with_prefix.update(
-                    {parameter_name[prefix_len:]: self._parameters.get(parameter_name)})
-
-        return parameters_with_prefix
+        return {
+            param_name[prefix_len:]: param_value
+            for param_name, param_value in self._parameters.items()
+            if param_name.startswith(prefix)
+        }
 
     def set_parameters(self, parameter_list: List[Parameter]) -> List[SetParametersResult]:
         """
