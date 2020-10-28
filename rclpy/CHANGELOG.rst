@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Deprecate verbose qos policy value names (`#634 <https://github.com/ros2/rclpy/issues/634>`_)
+* Remove deprecated set_parameters_callback (`#633 <https://github.com/ros2/rclpy/issues/633>`_)
+* Make sure to use Py_XDECREF in rclpy_get_service_names_and_types (`#632 <https://github.com/ros2/rclpy/issues/632>`_)
+* Contributors: Chris Lalancette, Ivan Santiago Paunovic
+
 1.2.0 (2020-10-19)
 ------------------
 * Update maintainers (`#627 <https://github.com/ros2/rclpy/issues/627>`_)
