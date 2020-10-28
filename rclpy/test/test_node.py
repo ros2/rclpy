@@ -1920,5 +1920,22 @@ class TestCreateNode(unittest.TestCase):
         rclpy.shutdown(context=g_context)
 
 
+def test_node_resolve_name():
+    context = rclpy.Context()
+    rclpy.init(
+        args=['--ros-args', '-r', 'foo:=bar'],
+        context=context,
+    )
+    node = rclpy.create_node('test_rclpy_node_resolve_name', namespace='/my_ns', context=context)
+    assert node.resolve_topic_or_service_name('foo') == '/my_ns/bar'
+    assert node.resolve_topic_or_service_name('/abs') == '/abs'
+    assert node.resolve_topic_or_service_name('foo', only_expand=True) == '/my_ns/foo'
+    assert node.resolve_topic_or_service_name('foo', is_service=True) == '/my_ns/bar'
+    assert node.resolve_topic_or_service_name('/abs', is_service=True) == '/abs'
+    assert node.resolve_topic_or_service_name(
+        'foo', only_expand=True, is_service=True) == '/my_ns/foo'
+    rclpy.shutdown(context=context)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -1092,7 +1092,7 @@ class Node:
         self._wake_executor()
 
     def resolve_topic_or_service_name(
-        self, name: str, *, only_expand: bool, is_service: bool
+        self, name: str, *, only_expand: bool = False, is_service: bool = False
     ) -> str:
         """
         Return a topic or service name expanded and remapped.
