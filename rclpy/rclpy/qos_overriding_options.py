@@ -75,6 +75,18 @@ class QoSOverridingOptions:
         """Get the optional entity id."""
         return self._id
 
+    @classmethod
+    def with_default_policies(
+        cls, *,
+        callback: Optional[Callable[[QoSProfile], bool]] = None,
+        id: Optional[Text] = None
+    ) -> 'QoSOverridingOptions':
+        return cls(
+            policy_kinds=(QoSPolicyKind.HISTORY, QoSPolicyKind.DEPTH, QoSPolicyKind.RELIABILITY),
+            callback=callback,
+            id=id,
+        )
+
 
 def _declare_qos_parameteres(
     entity_type: Union[Type[Publisher], Type[Subscription]],
