@@ -1709,8 +1709,8 @@ rclpy_resolve_name(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pynode = NULL;
   const char * name = NULL;
-  bool only_expand = false;
-  bool is_service = false;
+  int only_expand = false;
+  int is_service = false;
 
 
   if (!PyArg_ParseTuple(args, "Ospp", &pynode, &name, &only_expand, &is_service)) {
