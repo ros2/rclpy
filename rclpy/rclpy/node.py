@@ -63,7 +63,7 @@ from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import SubscriptionEventCallbacks
-from rclpy.qos_overriding_options import _declare_qos_parameteres
+from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import Subscription
@@ -1159,7 +1159,7 @@ class Node:
 
         if qos_overriding_options is None:
             qos_overriding_options = QoSOverridingOptions([])
-        _declare_qos_parameteres(
+        _declare_qos_parameters(
             Publisher, self, final_topic, qos_profile, qos_overriding_options)
 
         # this line imports the typesupport for the message module if not already done
@@ -1233,7 +1233,7 @@ class Node:
 
         if qos_overriding_options is None:
             qos_overriding_options = QoSOverridingOptions([])
-        _declare_qos_parameteres(
+        _declare_qos_parameters(
             Subscription, self, final_topic, qos_profile, qos_overriding_options)
 
         # this line imports the typesupport for the message module if not already done

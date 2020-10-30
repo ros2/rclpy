@@ -19,7 +19,7 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
-from rclpy.qos_overriding_options import _declare_qos_parameteres
+from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import InvalidQosOverridesError
 from rclpy.qos_overriding_options import QoSOverridingOptions
 
@@ -33,7 +33,7 @@ def init_shutdown():
 
 def test_declare_qos_parameters():
     node = Node('my_node')
-    _declare_qos_parameteres(
+    _declare_qos_parameters(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
         QoSOverridingOptions.with_default_policies()
     )
@@ -56,7 +56,7 @@ def test_declare_qos_parameters_with_overrides():
         Parameter('qos_overrides./my_topic.publisher.depth', value=100),
         Parameter('qos_overrides./my_topic.publisher.reliability', value='best_effort'),
     ])
-    _declare_qos_parameteres(
+    _declare_qos_parameters(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
         QoSOverridingOptions.with_default_policies()
     )
@@ -76,7 +76,7 @@ def test_declare_qos_parameters_with_overrides():
 
 def test_declare_qos_parameters_with_happy_callback():
     node = Node('my_node')
-    _declare_qos_parameteres(
+    _declare_qos_parameters(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
         QoSOverridingOptions.with_default_policies(callback=lambda x: True)
     )
@@ -98,7 +98,7 @@ def test_declare_qos_parameters_with_unhappy_callback():
     node = Node('my_node')
 
     with pytest.raises(InvalidQosOverridesError):
-        _declare_qos_parameteres(
+        _declare_qos_parameters(
             Publisher, node, '/my_topic', QoSProfile(depth=10),
             QoSOverridingOptions.with_default_policies(callback=lambda x: False)
         )
@@ -106,7 +106,7 @@ def test_declare_qos_parameters_with_unhappy_callback():
 
 def test_declare_qos_parameters_with_id():
     node = Node('my_node')
-    _declare_qos_parameteres(
+    _declare_qos_parameters(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
         QoSOverridingOptions.with_default_policies(entity_id='i_have_an_id')
     )

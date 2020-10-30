@@ -89,7 +89,7 @@ class QoSOverridingOptions:
         )
 
 
-def _declare_qos_parameteres(
+def _declare_qos_parameters(
     entity_type: Union[Type[Publisher], Type[Subscription]],
     node: 'Node',
     topic_name: Text,
