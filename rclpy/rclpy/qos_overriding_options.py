@@ -137,7 +137,7 @@ def _get_allowed_policies(entity_type: Union[Type[Publisher], Type[Subscription]
     return allowed_policies
 
 
-def _get_qos_policy_parameter(qos: QoSProfile, policy: QoSPolicyKind) -> Parameter:
+def _get_qos_policy_parameter(qos: QoSProfile, policy: QoSPolicyKind) -> Union[str, int, bool]:
     value = getattr(qos, policy.name.lower())
     if policy in (
         QoSPolicyKind.LIVELINESS, QoSPolicyKind.RELIABILITY,
