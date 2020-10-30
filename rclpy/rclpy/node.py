@@ -1108,7 +1108,7 @@ class Node:
         """
         Return a service name expanded and remapped.
 
-        :param name: service name to be expanded and remapped.
+        :param service: service name to be expanded and remapped.
         :param only_expand: if `True`, remapping rules won't be applied.
         :return: a fully qualified service name,
             result of applying expansion and remapping to the given `service`.
