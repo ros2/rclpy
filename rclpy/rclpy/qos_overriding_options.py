@@ -108,7 +108,7 @@ def _declare_qos_parameteres(
     """
     if not issubclass(entity_type, (Publisher, Subscription)):
         raise TypeError('Argument `entity_type` should be a subclass of Publisher or Subscription')
-    entity_type_str = 'publisher' if issubclass(entity_type, Publisher) else Subscription
+    entity_type_str = 'publisher' if issubclass(entity_type, Publisher) else 'subscription'
     id_suffix = '' if options.entity_id is None else f'_{options.entity_id}'
     name = f'qos_overrides.{topic_name}.{entity_type_str}{id_suffix}.' '{}'
     description = '{}' f' for {entity_type_str} `{topic_name}` with id `{options.entity_id}`'
