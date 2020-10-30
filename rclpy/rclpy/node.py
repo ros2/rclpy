@@ -1095,6 +1095,7 @@ class Node:
         """
         Return a topic name expanded and remapped.
 
+        :param topic: topic name to be expanded and remapped.
         :param only_expand: if `True`, remapping rules won't be applied.
         :return: a fully qualified topic name,
             result of applying expansion and remapping to the given `topic`.
