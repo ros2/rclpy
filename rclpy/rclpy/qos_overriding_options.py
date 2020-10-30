@@ -97,7 +97,7 @@ def _declare_qos_parameteres(
     options: QoSOverridingOptions
 ) -> QoSProfile:
     """
-    Declare qos parameters for a Publisher or a Subscription.
+    Declare QoS parameters for a Publisher or a Subscription.
 
     :param entity_type: Either `rclpy.node.Publisher` or `rclpy.node.Subscription`.
     :param node: Node used to declare the parameters.
