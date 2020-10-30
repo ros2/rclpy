@@ -39,7 +39,7 @@ class InvalidQosOverridesError(Exception):
 
 
 class QoSOverridingOptions:
-    """Options to customize qos parameter overrides."""
+    """Options to customize QoS parameter overrides."""
 
     def __init__(
         self,
