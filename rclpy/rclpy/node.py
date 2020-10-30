@@ -1151,7 +1151,7 @@ class Node:
 
         failed = False
         try:
-            final_topic = self.resolve_topic_or_service_name(topic)
+            final_topic = self.resolve_topic_name(topic)
         except RuntimeError:
             failed = True
         if failed:
@@ -1225,7 +1225,7 @@ class Node:
 
         failed = False
         try:
-            final_topic = self.resolve_topic_or_service_name(topic)
+            final_topic = self.resolve_topic_name(topic)
         except RuntimeError:
             failed = True
         if failed:
