@@ -51,7 +51,7 @@ class QoSOverridingOptions:
         """
         Construct a QoSOverridingOptions object.
 
-        :param policy_kinds: Qos kinds that will have a declared parameter.
+        :param policy_kinds: QoS kinds that will have a declared parameter.
         :param callback: Callback that will be used to validate the qos profile
             after the paramter overrides get applied.
         :param entity_id: Optional identifier, to disambiguate in the case that different qos
