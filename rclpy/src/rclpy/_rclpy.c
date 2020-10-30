@@ -1734,8 +1734,6 @@ rclpy_resolve_name(PyObject * Py_UNUSED(self), PyObject * args)
     is_service,
     only_expand,
     &output_cstr);
-
-  fprintf(stderr, "output_cstr: %s\n", output_cstr);
   if (ret != RCL_RET_OK) {
     PyErr_Format(
       PyExc_RuntimeError, "Failed to resolve name %s: %s", name, rcl_get_error_string().str);
@@ -1745,7 +1743,6 @@ rclpy_resolve_name(PyObject * Py_UNUSED(self), PyObject * args)
 
   PyObject * result = PyUnicode_FromString(output_cstr);
   node_options->allocator.deallocate(output_cstr, node_options->allocator.state);
-  fprintf(stderr, "resolved pyname: %s\n", PyUnicode_AsUTF8(result));
 
   return result;
 }
