@@ -1103,7 +1103,7 @@ class Node:
             return _rclpy.rclpy_resolve_name(capsule, topic, only_expand, False)
 
     def resolve_service_name(
-        self, service: str, *, only_expand: bool = False, is_service: bool = False
+        self, service: str, *, only_expand: bool = False
     ) -> str:
         """
         Return a service name expanded and remapped.
