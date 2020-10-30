@@ -127,7 +127,7 @@ def _declare_qos_parameteres(
         _override_qos_policy_with_param(qos, policy, param)
     if options.callback is not None and not options.callback(qos):
         raise InvalidQosOverridesError(
-            description.format('Provided qos overrides') + ', are not valid')
+            description.format('Provided QoS overrides') + ', are not valid')
 
 
 def _get_allowed_policies(entity_type: Union[Type[Publisher], Type[Subscription]]):
