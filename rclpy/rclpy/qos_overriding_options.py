@@ -145,7 +145,7 @@ def _get_qos_policy_parameter(qos: QoSProfile, policy: QoSPolicyKind) -> Paramet
     ):
         value = value.name.lower()
         if value == 'unknown':
-            raise ValueError('User provided qos profile is invalid')
+            raise ValueError('User provided QoS profile is invalid')
     if policy in (
         QoSPolicyKind.LIFESPAN, QoSPolicyKind.DEADLINE, QoSPolicyKind.LIVELINESS_LEASE_DURATION
     ):
