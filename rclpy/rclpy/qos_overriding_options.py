@@ -73,7 +73,7 @@ class QoSOverridingOptions:
 
     @property
     def entity_id(self) -> Optional[Text]:
-        """Get the optional entity id."""
+        """Get the optional entity ID."""
         return self._entity_id
 
     @classmethod
