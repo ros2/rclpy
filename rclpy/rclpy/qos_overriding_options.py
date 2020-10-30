@@ -169,7 +169,7 @@ def _override_qos_policy_with_param(qos: QoSProfile, policy: QoSPolicyKind, para
             value = policy_enum_class[value.upper()]
         except KeyError:
             raise RuntimeError(
-                f'Unexpected qos override for policy `{policy.name.lower()}`: `{value}`')
+                f'Unexpected QoS override for policy `{policy.name.lower()}`: `{value}`')
     if policy in (
         QoSPolicyKind.LIFESPAN, QoSPolicyKind.DEADLINE, QoSPolicyKind.LIVELINESS_LEASE_DURATION
     ):
