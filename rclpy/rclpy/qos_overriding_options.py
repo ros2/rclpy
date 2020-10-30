@@ -63,7 +63,7 @@ class QoSOverridingOptions:
 
     @property
     def policy_kinds(self) -> Iterable[QoSPolicyKind]:
-        """Get qos policy kinds that will have a parameter override."""
+        """Get QoS policy kinds that will have a parameter override."""
         return self._policy_kinds
 
     @property
