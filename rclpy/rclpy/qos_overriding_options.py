@@ -102,7 +102,7 @@ def _declare_qos_parameteres(
     :param entity_type: Either `rclpy.node.Publisher` or `rclpy.node.Subscription`.
     :param node: Node used to declare the parameters.
     :param topic_name: Topic name of the entity being created.
-    :param qos: Default qos settings of the entity being created, that will be overriden
+    :param qos: Default QoS settings of the entity being created, that will be overridden
         with the user provided qos parameter overrides.
     :param options: Options that indicates which parameters are going to be declared.
     """
