@@ -103,7 +103,7 @@ def _declare_qos_parameteres(
     :param node: Node used to declare the parameters.
     :param topic_name: Topic name of the entity being created.
     :param qos: Default QoS settings of the entity being created, that will be overridden
-        with the user provided qos parameter overrides.
+        with the user provided QoS parameter overrides.
     :param options: Options that indicates which parameters are going to be declared.
     """
     if not issubclass(entity_type, (Publisher, Subscription)):
