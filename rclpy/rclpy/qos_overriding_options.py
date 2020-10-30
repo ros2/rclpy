@@ -54,7 +54,7 @@ class QoSOverridingOptions:
         :param policy_kinds: QoS kinds that will have a declared parameter.
         :param callback: Callback that will be used to validate the QoS profile
             after the paramter overrides get applied.
-        :param entity_id: Optional identifier, to disambiguate in the case that different qos
+        :param entity_id: Optional identifier, to disambiguate in the case that different QoS
             policies for the same topic are desired.
         """
         self._policy_kinds = policy_kinds
