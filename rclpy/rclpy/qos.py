@@ -14,6 +14,7 @@
 
 from enum import Enum
 from enum import IntEnum
+from typing import Union
 
 import warnings
 
@@ -42,9 +43,9 @@ class QoSPolicyKind(IntEnum):
     AVOID_ROS_NAMESPACE_CONVENTIONS = 1 << 9,
 
 
-def qos_policy_name_from_kind(policy_kind: QoSPolicyKind):
+def qos_policy_name_from_kind(policy_kind: Union[QoSPolicyKind, int]):
     """Get QoS policy name from QoSPolicyKind enum."""
-    return policy_kind.name
+    return QoSPolicyKind(policy_kind).name
 
 
 class InvalidQoSProfileException(Exception):
