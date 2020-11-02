@@ -1153,9 +1153,10 @@ class Node:
         try:
             final_topic = self.resolve_topic_name(topic)
         except RuntimeError:
-            failed = True
-        if failed:
+            # if it's name validation error, raise a more appropriate exception.
             self._validate_topic_or_service_name(topic)
+            # else reraise the previous exception
+            raise
 
         if qos_overriding_options is None:
             qos_overriding_options = QoSOverridingOptions([])
@@ -1163,6 +1164,7 @@ class Node:
             Publisher, self, final_topic, qos_profile, qos_overriding_options)
 
         # this line imports the typesupport for the message module if not already done
+        failed = False
         check_for_type_support(msg_type)
         try:
             with self.handle as node_capsule:
@@ -1223,13 +1225,13 @@ class Node:
 
         callback_group = callback_group or self.default_callback_group
 
-        failed = False
         try:
             final_topic = self.resolve_topic_name(topic)
         except RuntimeError:
-            failed = True
-        if failed:
+            # if it's name validation error, raise a more appropriate exception.
             self._validate_topic_or_service_name(topic)
+            # else reraise the previous exception
+            raise
 
         if qos_overriding_options is None:
             qos_overriding_options = QoSOverridingOptions([])
@@ -1237,6 +1239,7 @@ class Node:
             Subscription, self, final_topic, qos_profile, qos_overriding_options)
 
         # this line imports the typesupport for the message module if not already done
+        failed = False
         check_for_type_support(msg_type)
         try:
             with self.handle as capsule:
