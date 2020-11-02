@@ -187,12 +187,12 @@ class TestQoSEvent(unittest.TestCase):
                 pub_log_msg,
                 "New subscription discovered on topic '{}', requesting incompatible QoS. "
                 'No messages will be sent to it. '
-                'Last incompatible policy: DURABILITY_QOS_POLICY'.format(self.topic_name))
+                'Last incompatible policy: DURABILITY'.format(self.topic_name))
             self.assertEqual(
                 sub_log_msg,
                 "New publisher discovered on topic '{}', offering incompatible QoS. "
                 'No messages will be received from it. '
-                'Last incompatible policy: DURABILITY_QOS_POLICY'.format(self.topic_name))
+                'Last incompatible policy: DURABILITY'.format(self.topic_name))
 
         rclpy.logging._root_logger = original_logger
 
