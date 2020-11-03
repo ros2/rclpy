@@ -43,8 +43,8 @@ from rclpy.clock import Clock
 from rclpy.clock import ROSClock
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
-from rclpy.exceptions import InvalidTopicNameException
 from rclpy.exceptions import InvalidParameterValueException
+from rclpy.exceptions import InvalidTopicNameException
 from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
