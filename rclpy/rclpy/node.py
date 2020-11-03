@@ -43,6 +43,7 @@ from rclpy.clock import Clock
 from rclpy.clock import ROSClock
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
+from rclpy.exceptions import InvalidTopicNameException
 from rclpy.exceptions import InvalidParameterValueException
 from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import ParameterAlreadyDeclaredException
@@ -1154,7 +1155,10 @@ class Node:
             final_topic = self.resolve_topic_name(topic)
         except RuntimeError:
             # if it's name validation error, raise a more appropriate exception.
-            self._validate_topic_or_service_name(topic)
+            try:
+                self._validate_topic_or_service_name(topic)
+            except InvalidTopicNameException as ex:
+                raise ex from None
             # else reraise the previous exception
             raise
 
@@ -1229,7 +1233,10 @@ class Node:
             final_topic = self.resolve_topic_name(topic)
         except RuntimeError:
             # if it's name validation error, raise a more appropriate exception.
-            self._validate_topic_or_service_name(topic)
+            try:
+                self._validate_topic_or_service_name(topic)
+            except InvalidTopicNameException as ex:
+                raise ex from None
             # else reraise the previous exception
             raise
 
