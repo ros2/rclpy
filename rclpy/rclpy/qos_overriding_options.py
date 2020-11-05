@@ -24,6 +24,7 @@ from rcl_interfaces.msg import ParameterDescriptor
 
 import rclpy
 from rclpy.duration import Duration
+from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from rclpy.qos import QoSPolicyKind
@@ -120,10 +121,13 @@ def _declare_qos_parameters(
         descriptor = ParameterDescriptor()
         descriptor.description = description.format(policy_name)
         descriptor.read_only = True
-        param = node.declare_parameter(
-            name.format(policy_name),
-            _get_qos_policy_parameter(qos, policy),
-            descriptor)
+        try:
+            param = node.declare_parameter(
+                name.format(policy_name),
+                _get_qos_policy_parameter(qos, policy),
+                descriptor)
+        except ParameterAlreadyDeclaredException:
+            param = node.get_parameter(name.format(policy_name))
         _override_qos_policy_with_param(qos, policy, param)
     if options.callback is not None and not options.callback(qos):
         raise InvalidQosOverridesError(
