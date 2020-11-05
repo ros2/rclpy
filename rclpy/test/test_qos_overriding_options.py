@@ -56,22 +56,23 @@ def test_declare_qos_parameters_with_overrides():
         Parameter('qos_overrides./my_topic.publisher.depth', value=100),
         Parameter('qos_overrides./my_topic.publisher.reliability', value='best_effort'),
     ])
-    _declare_qos_parameters(
-        Publisher, node, '/my_topic', QoSProfile(depth=10),
-        QoSOverridingOptions.with_default_policies()
-    )
-    qos_overrides = node.get_parameters_by_prefix('qos_overrides')
-    assert len(qos_overrides) == 3
-    expected_params = (
-        ('/my_topic.publisher.depth', 100),
-        ('/my_topic.publisher.history', 'keep_last'),
-        ('/my_topic.publisher.reliability', 'best_effort'),
-    )
-    for actual, expected in zip(
-        sorted(qos_overrides.items(), key=lambda x: x[0]), expected_params
-    ):
-        assert actual[0] == expected[0]  # same param name
-        assert actual[1].value == expected[1]  # same param value
+    for i in range(2):  # try twice, the second time the parameters will be get and not declared
+        _declare_qos_parameters(
+            Publisher, node, '/my_topic', QoSProfile(depth=10),
+            QoSOverridingOptions.with_default_policies()
+        )
+        qos_overrides = node.get_parameters_by_prefix('qos_overrides')
+        assert len(qos_overrides) == 3
+        expected_params = (
+            ('/my_topic.publisher.depth', 100),
+            ('/my_topic.publisher.history', 'keep_last'),
+            ('/my_topic.publisher.reliability', 'best_effort'),
+        )
+        for actual, expected in zip(
+            sorted(qos_overrides.items(), key=lambda x: x[0]), expected_params
+        ):
+            assert actual[0] == expected[0]  # same param name
+            assert actual[1].value == expected[1]  # same param value
 
 
 def test_declare_qos_parameters_with_happy_callback():
