@@ -176,7 +176,9 @@ class QoSEventHandler(Waitable):
         """Add entites to wait set."""
         with self._event_handle as event_capsule:
             self._event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, event_capsule)
-    # End Waitable API
+
+    def destroy(self):
+        self._event_handle.destroy()
 
 
 class SubscriptionEventCallbacks:
