@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 from rcl_interfaces.msg import ParameterDescriptor
+from rcl_interfaces.msg import SetParametersResult
 
 import rclpy
 from rclpy.duration import Duration
@@ -39,6 +40,12 @@ class InvalidQosOverridesError(Exception):
     pass
 
 
+# Return type of qos validation callbacks
+QosCallbackResult = SetParametersResult
+# Qos callback type annotation
+QosCallbackType = Callable[[QoSProfile], QosCallbackResult]
+
+
 class QoSOverridingOptions:
     """Options to customize QoS parameter overrides."""
 
@@ -46,7 +53,7 @@ class QoSOverridingOptions:
         self,
         policy_kinds: Iterable[QoSPolicyKind],
         *,
-        callback: Optional[Callable[[QoSProfile], bool]] = None,
+        callback: Optional[QosCallbackType] = None,
         entity_id: Optional[Text] = None
     ):
         """
@@ -68,7 +75,7 @@ class QoSOverridingOptions:
         return self._policy_kinds
 
     @property
-    def callback(self) -> Optional[Callable[[QoSProfile], bool]]:
+    def callback(self) -> Optional[QosCallbackType]:
         """Get the validation callback."""
         return self._callback
 
@@ -80,7 +87,7 @@ class QoSOverridingOptions:
     @classmethod
     def with_default_policies(
         cls, *,
-        callback: Optional[Callable[[QoSProfile], bool]] = None,
+        callback: Optional[QosCallbackType] = None,
         entity_id: Optional[Text] = None
     ) -> 'QoSOverridingOptions':
         return cls(
@@ -129,9 +136,11 @@ def _declare_qos_parameters(
         except ParameterAlreadyDeclaredException:
             param = node.get_parameter(name.format(policy_name))
         _override_qos_policy_with_param(qos, policy, param)
-    if options.callback is not None and not options.callback(qos):
-        raise InvalidQosOverridesError(
-            description.format('Provided QoS overrides') + ', are not valid')
+    if options.callback is not None:
+        result = options.callback(qos)
+        if not result.successful:
+            raise InvalidQosOverridesError(
+                f"{description.format('Provided QoS overrides')}, are not valid: {result.reason}")
 
 
 def _get_allowed_policies(entity_type: Union[Type[Publisher], Type[Subscription]]):

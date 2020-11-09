@@ -21,6 +21,7 @@ from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import InvalidQosOverridesError
+from rclpy.qos_overriding_options import QosCallbackResult
 from rclpy.qos_overriding_options import QoSOverridingOptions
 
 
@@ -76,10 +77,15 @@ def test_declare_qos_parameters_with_overrides():
 
 
 def test_declare_qos_parameters_with_happy_callback():
+    def qos_validation_callback(qos):
+        result = QosCallbackResult()
+        result.successful = True
+        return result
+
     node = Node('my_node')
     _declare_qos_parameters(
         Publisher, node, '/my_topic', QoSProfile(depth=10),
-        QoSOverridingOptions.with_default_policies(callback=lambda x: True)
+        QoSOverridingOptions.with_default_policies(callback=qos_validation_callback)
     )
     qos_overrides = node.get_parameters_by_prefix('qos_overrides')
     assert len(qos_overrides) == 3
@@ -96,13 +102,20 @@ def test_declare_qos_parameters_with_happy_callback():
 
 
 def test_declare_qos_parameters_with_unhappy_callback():
+    def qos_validation_callback(qos):
+        result = QosCallbackResult()
+        result.successful = False
+        result.reason = 'my_custom_error_message'
+        return result
+
     node = Node('my_node')
 
-    with pytest.raises(InvalidQosOverridesError):
+    with pytest.raises(InvalidQosOverridesError) as err:
         _declare_qos_parameters(
             Publisher, node, '/my_topic', QoSProfile(depth=10),
-            QoSOverridingOptions.with_default_policies(callback=lambda x: False)
+            QoSOverridingOptions.with_default_policies(callback=qos_validation_callback)
         )
+    assert 'my_custom_error_message' in str(err.value)
 
 
 def test_declare_qos_parameters_with_id():
