@@ -20,6 +20,7 @@ from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
@@ -43,6 +44,7 @@ from rclpy.clock import ROSClock
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
 from rclpy.exceptions import InvalidParameterValueException
+from rclpy.exceptions import InvalidTopicNameException
 from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
@@ -62,6 +64,8 @@ from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import SubscriptionEventCallbacks
+from rclpy.qos_overriding_options import _declare_qos_parameters
+from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
@@ -530,7 +534,10 @@ class Node:
 
         return self._parameters.get(name, alternative_value)
 
-    def get_parameters_by_prefix(self, prefix: str) -> List[Parameter]:
+    def get_parameters_by_prefix(self, prefix: str) -> Dict[str, Optional[Union[
+        bool, int, float, str, bytes,
+        Sequence[bool], Sequence[int], Sequence[float], Sequence[str]
+    ]]]:
         """
         Get parameters that have a given prefix in their names as a dictionary.
 
@@ -547,16 +554,14 @@ class Node:
         :param prefix: The prefix of the parameters to get.
         :return: Dict of parameters with the given prefix.
         """
-        parameters_with_prefix = {}
         if prefix:
             prefix = prefix + PARAMETER_SEPARATOR_STRING
         prefix_len = len(prefix)
-        for parameter_name in self._parameters:
-            if parameter_name.startswith(prefix):
-                parameters_with_prefix.update(
-                    {parameter_name[prefix_len:]: self._parameters.get(parameter_name)})
-
-        return parameters_with_prefix
+        return {
+            param_name[prefix_len:]: param_value
+            for param_name, param_value in self._parameters.items()
+            if param_name.startswith(prefix)
+        }
 
     def set_parameters(self, parameter_list: List[Parameter]) -> List[SetParametersResult]:
         """
@@ -1125,6 +1130,7 @@ class Node:
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
     ) -> Publisher:
         """
         Create a new publisher.
@@ -1144,9 +1150,26 @@ class Node:
 
         callback_group = callback_group or self.default_callback_group
 
-        # this line imports the typesupport for the message module if not already done
-        check_for_type_support(msg_type)
         failed = False
+        try:
+            final_topic = self.resolve_topic_name(topic)
+        except RuntimeError:
+            # if it's name validation error, raise a more appropriate exception.
+            try:
+                self._validate_topic_or_service_name(topic)
+            except InvalidTopicNameException as ex:
+                raise ex from None
+            # else reraise the previous exception
+            raise
+
+        if qos_overriding_options is None:
+            qos_overriding_options = QoSOverridingOptions([])
+        _declare_qos_parameters(
+            Publisher, self, final_topic, qos_profile, qos_overriding_options)
+
+        # this line imports the typesupport for the message module if not already done
+        failed = False
+        check_for_type_support(msg_type)
         try:
             with self.handle as node_capsule:
                 publisher_capsule = _rclpy.rclpy_create_publisher(
@@ -1182,6 +1205,7 @@ class Node:
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False
     ) -> Subscription:
         """
@@ -1205,9 +1229,25 @@ class Node:
 
         callback_group = callback_group or self.default_callback_group
 
+        try:
+            final_topic = self.resolve_topic_name(topic)
+        except RuntimeError:
+            # if it's name validation error, raise a more appropriate exception.
+            try:
+                self._validate_topic_or_service_name(topic)
+            except InvalidTopicNameException as ex:
+                raise ex from None
+            # else reraise the previous exception
+            raise
+
+        if qos_overriding_options is None:
+            qos_overriding_options = QoSOverridingOptions([])
+        _declare_qos_parameters(
+            Subscription, self, final_topic, qos_profile, qos_overriding_options)
+
         # this line imports the typesupport for the message module if not already done
-        check_for_type_support(msg_type)
         failed = False
+        check_for_type_support(msg_type)
         try:
             with self.handle as capsule:
                 subscription_capsule = _rclpy.rclpy_create_subscription(
