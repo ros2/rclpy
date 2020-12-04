@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.5 (2020-12-04)
+------------------
+* fix moved troubleshooting url (`#579 <https://github.com/ros2/rclpy/issues/579>`_) (`#589 <https://github.com/ros2/rclpy/issues/589>`_)
+* improve error message if rclpy C extensions are not found (`#580 <https://github.com/ros2/rclpy/issues/580>`_) (`#591 <https://github.com/ros2/rclpy/issues/591>`_)
+* Contributors: Dirk Thomas
+
 0.8.4 (2020-01-17)
 ------------------
 * Guard against unexpected action responses (`#474 <https://github.com/ros2/rclpy/issues/474>`_) (`#476 <https://github.com/ros2/rclpy/issues/476>`_)
