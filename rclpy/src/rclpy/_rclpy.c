@@ -3446,10 +3446,12 @@ rclpy_message_info_to_dict(rmw_message_info_t * message_info)
   PyObject * source_timestamp = PyLong_FromLongLong(message_info->source_timestamp);
   if (source_timestamp != NULL) {
     PyDict_SetItemString(dict, "source_timestamp", source_timestamp);
+    Py_DecRef(source_timestamp);
   }
-  PyObject * received_timestamp = PyLong_FromLongLong(message_info->source_timestamp);
+  PyObject * received_timestamp = PyLong_FromLongLong(message_info->received_timestamp);
   if (received_timestamp != NULL) {
-    PyDict_SetItemString(dict, "received_timestamp", source_timestamp);
+    PyDict_SetItemString(dict, "received_timestamp", received_timestamp);
+    Py_DecRef(received_timestamp);
   }
 
   // check for errors
