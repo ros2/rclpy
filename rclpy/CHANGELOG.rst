@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix Enum not being comparable with ints in get_parameter_types service
+* Qos configurability (`#635 <https://github.com/ros2/rclpy/issues/635>`_)
+* Use Py_XDECREF for pytopic_names_and_types. (`#638 <https://github.com/ros2/rclpy/issues/638>`_)
+* Contributors: Chris Lalancette, Ivan Santiago Paunovic, tomoya
+
 1.3.0 (2020-11-02)
 ------------------
 * qos_policy_name_from_kind() should accept either a QoSPolicyKind or an int (`#637 <https://github.com/ros2/rclpy/issues/637>`_)
