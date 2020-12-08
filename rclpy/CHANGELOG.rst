@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.4.0 (2020-12-08)
+------------------
 * Fix Enum not being comparable with ints in get_parameter_types service
 * Qos configurability (`#635 <https://github.com/ros2/rclpy/issues/635>`_)
 * Use Py_XDECREF for pytopic_names_and_types. (`#638 <https://github.com/ros2/rclpy/issues/638>`_)
