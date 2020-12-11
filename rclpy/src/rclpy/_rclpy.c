@@ -3436,30 +3436,14 @@ rclpy_take_raw_with_info(rcl_subscription_t * subscription, rmw_message_info_t *
 static PyObject *
 rclpy_message_info_to_dict(rmw_message_info_t * message_info)
 {
-  PyObject * dict = PyDict_New();
+  PyObject * dict = Py_BuildValue(
+    "{s:L,s:L}",
+    "source_timestamp", message_info->source_timestamp,
+    "received_timestamp", message_info->received_timestamp);
   if (dict == NULL) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to create dictionary object");
+    PyErr_Format(PyExc_RuntimeError, "Failed to create dictionary object for message info");
     return NULL;
   }
-
-  // we bail out at the end in case of errors
-  PyObject * source_timestamp = PyLong_FromLongLong(message_info->source_timestamp);
-  if (source_timestamp != NULL) {
-    PyDict_SetItemString(dict, "source_timestamp", source_timestamp);
-    Py_DecRef(source_timestamp);
-  }
-  PyObject * received_timestamp = PyLong_FromLongLong(message_info->received_timestamp);
-  if (received_timestamp != NULL) {
-    PyDict_SetItemString(dict, "received_timestamp", received_timestamp);
-    Py_DecRef(received_timestamp);
-  }
-
-  // check for errors
-  if (source_timestamp == NULL || received_timestamp == NULL) {
-    Py_DECREF(dict);
-    dict = NULL;
-  }
-
   return dict;
 }
 
