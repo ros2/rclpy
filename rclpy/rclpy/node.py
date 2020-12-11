@@ -1268,6 +1268,7 @@ class Node:
             raise
         self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
+        self._wake_executor()
 
         for event_handler in subscription.event_handlers:
             self.add_waitable(event_handler)
