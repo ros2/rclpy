@@ -17,6 +17,7 @@ import time
 
 import pytest
 import rclpy
+from rclpy.exceptions import ROSInterruptException
 from rclpy.executors import SingleThreadedExecutor
 
 # Hz
@@ -110,6 +111,15 @@ class TestRate:
         self._thread.join()
 
 
+def sleep_check_exception(rate):
+    try:
+        rate.sleep()
+    except ROSInterruptException:
+        # rate.sleep() can raise ROSInterruptException if the context is
+        # shutdown while it is sleeping.  Just ignore it here.
+        pass
+
+
 def test_shutdown_wakes_rate():
     context = rclpy.context.Context()
     rclpy.init(context=context)
@@ -119,7 +129,7 @@ def test_shutdown_wakes_rate():
 
     rate = node.create_rate(0.0000001)
 
-    _thread = threading.Thread(target=rate.sleep, daemon=True)
+    _thread = threading.Thread(target=sleep_check_exception, args=(rate,), daemon=True)
     _thread.start()
     executor.shutdown()
     node.destroy_node()
