@@ -17,6 +17,7 @@ import time
 
 import pytest
 import rclpy
+from rclpy.exceptions import ROSInterruptException
 from rclpy.executors import SingleThreadedExecutor
 
 # Hz
@@ -129,7 +130,7 @@ def test_shutdown_wakes_rate():
 
     rate = node.create_rate(0.0000001)
 
-    _thread = threading.Thread(target=sleep_check_exception, args=rate, daemon=True)
+    _thread = threading.Thread(target=sleep_check_exception, args=(rate,), daemon=True)
     _thread.start()
     executor.shutdown()
     node.destroy_node()
