@@ -131,6 +131,7 @@ class Rate:
                 self._event.clear()
         if self._is_shutdown:
             self.destroy()
+            raise ROSInterruptException()
 
     def sleep(self):
         """
