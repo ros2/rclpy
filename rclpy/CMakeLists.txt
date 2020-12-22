@@ -166,8 +166,9 @@ pybind11_add_module(_rclpy_pycapsule SHARED
 )
 # Install into test_rclpy folder in build space for unit tests to import
 set_target_properties(_rclpy_pycapsule PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy")
+  # Use generator expression to avoid prepending a build type specific directory on Windows
+  LIBRARY_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>
+  RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>)
 # Install library for actual use
 install(
   TARGETS _rclpy_pycapsule
