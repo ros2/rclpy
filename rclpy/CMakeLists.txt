@@ -25,6 +25,8 @@ find_package(rmw_implementation_cmake REQUIRED)
 
 find_package(python_cmake_module REQUIRED)
 find_package(PythonExtra MODULE REQUIRED)
+find_package(pybind11_vendor REQUIRED)
+find_package(pybind11 REQUIRED)
 
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 
@@ -159,11 +161,18 @@ ament_target_dependencies(rclpy_signal_handler
 )
 
 # Pycapsule handling library
-add_library(
-  rclpy_pycapsule
-  SHARED src/rclpy/_rclpy_pycapsule.c
+pybind11_add_module(_rclpy_pycapsule SHARED
+  src/rclpy/_rclpy_pycapsule.c
 )
-configure_python_c_extension_library(rclpy_pycapsule)
+# Install into test_rclpy folder in build space for unit tests to import
+set_target_properties(_rclpy_pycapsule PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy")
+# Install library for actual use
+install(
+  TARGETS _rclpy_pycapsule
+  DESTINATION "${PYTHON_INSTALL_DIR}/rclpy"
+)
 
 # Handle library, used to keep dependencies between C objects.
 add_library(
