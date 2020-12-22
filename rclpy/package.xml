@@ -18,7 +18,7 @@
   <buildtool_depend>pybind11_vendor</buildtool_depend>
   <buildtool_depend>python_cmake_module</buildtool_depend>
 
-  <build_depend>pybind11</build_depend>
+  <build_depend>pybind11-dev</build_depend>
   <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
 
