@@ -85,7 +85,7 @@ class ParameterService:
     def _get_parameter_types_callback(self, request, response):
         node = self._get_node()
         for name in request.names:
-            response.types.append(node.get_parameter_or(name).type_)
+            response.types.append(node.get_parameter_or(name).type_.value)
         return response
 
     def _list_parameters_callback(self, request, response):
