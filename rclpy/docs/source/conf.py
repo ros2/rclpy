@@ -197,6 +197,6 @@ epub_exclude_files = ['search.html']
 autoclass_content = 'both'
 
 autodoc_default_options = {
-    'members': None,
-    'undoc-members': True,
+    'members': True,  # document members
+    'undoc-members': True,  # also document members without documentation
 }
