@@ -135,7 +135,7 @@ def create_node(
     :param start_parameter_services: ``False`` if the node should not create parameter services.
     :param parameter_overrides: A list of :class:`.Parameter` which are used to override the
         initial values of parameters declared on this node.
-     :param allow_undeclared_parameters: if True undeclared parameters are allowed, default False.
+    :param allow_undeclared_parameters: if True undeclared parameters are allowed, default False.
         This option doesn't affect `parameter_overrides`.
     :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides" will
         be used to implicitly declare parameters on the node during creation, default False.
