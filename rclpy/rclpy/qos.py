@@ -381,18 +381,37 @@ class LivelinessPolicy(QoSPolicyEnum):
 # Alias with the old name, for retrocompatibility
 QoSLivelinessPolicy = LivelinessPolicy
 
+# The details of the following profiles can be found at
+# 1. ROS QoS principles:
+#    https://design.ros2.org/articles/qos.html
+# 2. ros2/rmw : rmw/include/rmw/qos_profiles.h
+
+#: Used for initialization. Should not be used as the actual QoS profile.
 qos_profile_unknown = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_unknown'))
+#: Uses the default QoS settings defined in the DDS vendor tool
 qos_profile_system_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_system_default'))
+#: For sensor data, using best effort reliability and small
+#: queue depth
 qos_profile_sensor_data = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_sensor_data'))
+#: For services, using reliable reliability and volatile durability
 qos_profile_services_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_services_default'))
+#: For parameter communication. Similar to service QoS profile but with larger
+#: queue depth so that requests do not get lost.
 qos_profile_parameters = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameters'))
+#: For parameter change events. Currently same as the QoS profile for
+#: parameters.
 qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
     'qos_profile_parameter_events'))
+
+# Separate rcl_action profile defined at
+# ros2/rcl : rcl/rcl_action/include/rcl_action/default_qos.h
+#
+#: For actions, using reliable reliability, transient-local durability.
 qos_profile_action_status_default = QoSProfile(**_rclpy_action.rclpy_action_get_rmw_qos_profile(
     'rcl_action_qos_profile_status_default'))
 
