@@ -2,6 +2,20 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.5 (2021-01-05)
+------------------
+* [documentation] Use only True to avoid confusion in autodoc config
+  `None` and `True` have the same meaning:
+  https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html?highlight=autoclass#confval-autodoc_default_options
+* [documentation] Document QoS profile constants
+* Fix Enum not being comparable with ints in get_parameter_types service (`#644 <https://github.com/ros2/rclpy/issues/644>`_)
+* Make sure to catch the ROSInterruptException when calling rate.sleep (`#650 <https://github.com/ros2/rclpy/issues/650>`_)
+* Fix memory leak (`#643 <https://github.com/ros2/rclpy/issues/643>`_) (`#646 <https://github.com/ros2/rclpy/issues/646>`_)
+* Destroy event handlers owned by publishers/subscriptions when calling publisher.destroy()/subscription.destroy() (`#603 <https://github.com/ros2/rclpy/issues/603>`_) (`#625 <https://github.com/ros2/rclpy/issues/625>`_)
+* Use absolute parameter events topic name (`#612 <https://github.com/ros2/rclpy/issues/612>`_) (`#614 <https://github.com/ros2/rclpy/issues/614>`_)
+* MultiThreadedExecutor spin_until_future complete should not continue waiting when the future is done (`#605 <https://github.com/ros2/rclpy/issues/605>`_) (`#626 <https://github.com/ros2/rclpy/issues/626>`_)
+* Contributors: Chen Lihui Chris Lalancette, Gökçe Aydos, Ivan Santiago Paunovic, Jacob Perron, Tomoya Fujita
+
 1.0.4 (2020-07-07)
 ------------------
 * Wrap lines to shorten line length (`#586 <https://github.com/ros2/rclpy/issues/586>`_)
