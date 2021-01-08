@@ -14,9 +14,9 @@
 
 import inspect
 import os
+from pathlib import Path
 import time
 import unittest
-from pathlib import Path
 
 import rclpy
 from rclpy.clock import Clock, ROSClock
