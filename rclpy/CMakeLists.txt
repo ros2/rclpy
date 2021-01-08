@@ -17,6 +17,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rcl REQUIRED)
+find_package(rcl_logging_interface REQUIRED)
 find_package(rcl_action REQUIRED)
 find_package(rcl_yaml_param_parser REQUIRED)
 find_package(rcutils REQUIRED)
@@ -142,6 +143,7 @@ add_library(
 configure_python_c_extension_library(rclpy_logging)
 ament_target_dependencies(rclpy_logging
   "rcutils"
+  "rcl_logging_interface"
 )
 
 # Signal handling library

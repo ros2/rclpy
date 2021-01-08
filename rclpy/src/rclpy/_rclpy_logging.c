@@ -19,6 +19,8 @@
 #include <rcutils/logging.h>
 #include <rcutils/time.h>
 
+#include <rcl_logging_interface/rcl_logging_interface.h>
+
 /// Initialize the logging system.
 /**
  * \return None or
@@ -254,6 +256,27 @@ rclpy_get_fatal_logging_severity(PyObject * Py_UNUSED(self), PyObject * Py_UNUSE
   return PyLong_FromLongLong(RCUTILS_LOG_SEVERITY_FATAL);
 }
 
+/// Get the current logging directory from rcutils.
+/// \return Unicode UTF8 object containing the current logging directory.
+static PyObject *
+rclpy_logging_get_logging_directory(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
+{
+  char * log_dir = NULL;
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcl_logging_ret_t ret = rcl_logging_get_logging_directory(allocator, &log_dir);
+  if (RCL_LOGGING_RET_OK != ret) {
+    PyErr_Format(
+      PyExc_RuntimeError,
+      "Failed to get current logging directory, error: \"%s\", return code: \"%d\"\n",
+      rcutils_get_error_string().str, ret);
+    rcutils_reset_error();
+    return NULL;
+  }
+  PyObject * py_log_dir = PyUnicode_DecodeFSDefault(log_dir);
+  allocator.deallocate(log_dir, allocator.state);
+  return py_log_dir;
+}
+
 /// Define the public methods of this module
 static PyMethodDef rclpy_logging_methods[] = {
   {
@@ -308,6 +331,10 @@ static PyMethodDef rclpy_logging_methods[] = {
   {
     "rclpy_get_fatal_logging_severity", rclpy_get_fatal_logging_severity,
     METH_VARARGS, "Get log fatal severity level as int from rcutils"
+  },
+  {
+    "rclpy_logging_get_logging_directory", rclpy_logging_get_logging_directory,
+    METH_VARARGS, "Get the current logging directory from rcutils"
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
