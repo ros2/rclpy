@@ -27,12 +27,12 @@ class LoggingSeverity(IntEnum):
     This enum must match the one defined in rcutils/logging.h
     """
 
-    UNSET = _rclpy_logging.rclpy_get_unset_logging_severity()
-    DEBUG = _rclpy_logging.rclpy_get_debug_logging_severity()
-    INFO = _rclpy_logging.rclpy_get_info_logging_severity()
-    WARN = _rclpy_logging.rclpy_get_warn_logging_severity()
-    ERROR = _rclpy_logging.rclpy_get_error_logging_severity()
-    FATAL = _rclpy_logging.rclpy_get_fatal_logging_severity()
+    UNSET = _rclpy_logging.lib.RCUTILS_LOG_SEVERITY_UNSET
+    DEBUG = _rclpy_logging.lib.RCUTILS_LOG_SEVERITY_DEBUG
+    INFO = _rclpy_logging.lib.RCUTILS_LOG_SEVERITY_INFO
+    WARN = _rclpy_logging.lib.RCUTILS_LOG_SEVERITY_WARN
+    ERROR = _rclpy_logging.lib.RCUTILS_LOG_SEVERITY_ERROR
+    FATAL = _rclpy_logging.lib.RCUTILS_LOG_SEVERITY_FATAL
 
 
 _root_logger = rclpy.impl.rcutils_logger.RcutilsLogger()
@@ -45,11 +45,17 @@ def get_logger(name):
 
 
 def initialize():
-    return _rclpy_logging.rclpy_logging_initialize()
+    ret = _rclpy_logging.lib.rcutils_logging_initialize()
+    if ret != _rclpy_logging.lib.RCUTILS_RET_OK:
+        _rclpy_logging.lib.rcutils_reset_error()
+        raise RuntimeError(f"Failed to initialize logging system, return code: {ret}")
 
 
 def shutdown():
-    return _rclpy_logging.rclpy_logging_shutdown()
+    ret = _rclpy_logging.lib.rcutils_logging_shutdown()
+    if ret != _rclpy_logging.lib.RCUTILS_RET_OK:
+        _rclpy_logging.lib.rcutils_reset_error()
+        raise RuntimeError(f"Failed to shutdown logging system, return code: {ret}")
 
 
 def clear_config():
@@ -60,17 +66,33 @@ def clear_config():
 
 def set_logger_level(name, level):
     level = LoggingSeverity(level)
-    return _rclpy_logging.rclpy_logging_set_logger_level(name, level)
+    ret = _rclpy_logging.lib.rcutils_logging_set_logger_level(name.encode('utf-8'), level)
+    if ret != _rclpy_logging.lib.RCUTILS_RET_OK:
+        _rclpy_logging.lib.rcutils_reset_error()
+        raise RuntimeError('Failed to set level "{level}" for logger "{name}", return code: {ret}')
 
 
 def get_logger_effective_level(name):
-    logger_level = _rclpy_logging.rclpy_logging_get_logger_effective_level(name)
+    logger_level = _rclpy_logging.lib.rcutils_logging_get_logger_effective_level(
+        name.encode('utf-8'))
+    if logger_level < 0:
+        _rclpy_logging.lib.rcutils_reset_error()
+        raise RuntimeError(
+            'Failed to get effective level for logger "{name}", return code: {logger_level}')
     return LoggingSeverity(logger_level)
 
 
 def get_logging_severity_from_string(log_severity):
-    return LoggingSeverity(
-        _rclpy_logging.rclpy_logging_severity_level_from_string(log_severity))
+    allocator = _rclpy_logging.lib.rcutils_get_default_allocator()
+    severity = _rclpy_logging.ffi.new("int *")
+    ret = _rclpy_logging.lib.rcutils_logging_severity_level_from_string(
+        log_severity.encode('utf-8'), allocator, severity)
+    if ret != _rclpy_logging.lib.RCUTILS_RET_OK:
+        _rclpy_logging.lib.rcutils_reset_error()
+        raise RuntimeError(
+            'Failed to get log severity from name "{log_severity}", return code: {ret}')
+
+    return LoggingSeverity(severity[0])
 
 
 def get_logging_directory() -> Path:
@@ -80,4 +102,14 @@ def get_logging_directory() -> Path:
     For more details, see .. c:function::
     rcl_logging_ret_t rcl_logging_get_logging_directory(rcutils_allocator_t, char **)
     """
-    return Path(_rclpy_logging.rclpy_logging_get_logging_directory())
+    allocator = _rclpy_logging.lib.rcutils_get_default_allocator()
+    log_dir = _rclpy_logging.ffi.new("char **")
+    ret = _rclpy_logging.lib.rcl_logging_get_logging_directory(allocator, log_dir)
+    if ret != _rclpy_logging.lib.RCL_LOGGING_RET_OK:
+        _rclpy_logging.lib.rcutils_reset_error()
+        raise RuntimeError('Failed to get current logging directory, return code: {ret}')
+
+    try:
+        return Path(_rclpy_logging.ffi.string(log_dir[0]).decode('utf-8'))
+    finally:
+        allocator.deallocate(log_dir[0], allocator.state)

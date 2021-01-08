@@ -225,20 +225,21 @@ class RcutilsLogger:
         return RcutilsLogger(name=name)
 
     def set_level(self, level):
-        from rclpy.logging import LoggingSeverity
-        level = LoggingSeverity(level)
-        return _rclpy_logging.rclpy_logging_set_logger_level(self.name, level)
+        # TODO(sloretz) Fix this circular dependency
+        from rclpy.logging import set_logger_level
+        set_logger_level(self.name, level)
 
     def get_effective_level(self):
-        from rclpy.logging import LoggingSeverity
-        level = LoggingSeverity(
-            _rclpy_logging.rclpy_logging_get_logger_effective_level(self.name))
-        return level
+        # TODO(sloretz) Fix this circular dependency
+        from rclpy.logging import get_logger_effective_level
+        return get_logger_effective_level(self.name)
 
     def is_enabled_for(self, severity):
+        # TODO(sloretz) Fix this circular dependency
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
-        return _rclpy_logging.rclpy_logging_logger_is_enabled_for(self.name, severity)
+        return _rclpy_logging.lib.rcutils_logging_logger_is_enabled_for(
+            self.name.encode('utf-8'), severity)
 
     def log(self, message, severity, **kwargs):
         r"""
@@ -317,10 +318,19 @@ class RcutilsLogger:
             if not supported_filters[logging_filter].should_log(context):
                 return False
 
+        logging_location = _rclpy_logging.ffi.new("rcutils_log_location_t *")
+        logging_location[0].function_name = _rclpy_logging.ffi.new(
+            "char []", caller_id.function_name.encode('utf-8'))
+        logging_location[0].file_name = _rclpy_logging.ffi.new(
+            "char []", caller_id.file_path.encode('utf-8'))
+        logging_location[0].line_number = caller_id.line_number
+
         # Call the relevant function from the C extension.
-        _rclpy_logging.rclpy_logging_rcutils_log(
-            severity, name, message,
-            caller_id.function_name, caller_id.file_path, caller_id.line_number)
+        _rclpy_logging.lib.rcutils_log(
+            logging_location, severity,
+            name.encode('utf-8'), "%s".encode('utf-8'),
+            _rclpy_logging.ffi.new("char []", message.encode('utf-8')))
+
         return True
 
     def debug(self, message, **kwargs):

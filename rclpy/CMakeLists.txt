@@ -76,6 +76,32 @@ function(configure_python_c_extension_library _library_name)
   )
 endfunction()
 
+function(cffi_generate_python_extension target)
+  cmake_parse_arguments(ARG "" "MODULE_NAME;OUTPUT_FILE;C_DEF_FILE;C_CODE_FILE" "" ${ARGN})
+
+  if(ARG_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "cffi_generate_python_extension() called with "
+      "unused/unsupported arguments: ${ARG_UNPARSED_ARGUMENTS}")
+  endif()
+
+  add_custom_command(
+    OUTPUT "${ARG_OUTPUT_FILE}"
+    COMMENT "Generating ${ARG_OUTPUT_FILE} from ${ARG_C_DEF_FILE} and ${ARG_C_CODE_FILE}"
+    DEPENDS
+      "${ARG_C_DEF_FILE}"
+      "${ARG_C_CODE_FILE}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/cffi_build.py"
+      --output-module-name "${ARG_MODULE_NAME}"
+      --output-file "${ARG_OUTPUT_FILE}"
+      --c-def-file "${ARG_C_DEF_FILE}"
+      --c-code-file "${ARG_C_CODE_FILE}"
+    VERBATIM
+  )
+
+  add_custom_target("${target}" DEPENDS "${ARG_OUTPUT_FILE}")
+endfunction()
+
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
   src/rclpy_common/src/handle.c
@@ -135,15 +161,40 @@ ament_target_dependencies(rclpy_action
   "rcutils"
 )
 
-# Logging support provided by rcutils
-add_library(
-  rclpy_logging
-  SHARED src/rclpy/_rclpy_logging.c
+cffi_generate_python_extension(_generate_logging_extension
+  MODULE_NAME "_rclpy_logging"
+  OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/_rclpy_logging.c"
+  C_DEF_FILE src/rclpy/_rclpy_logging.def.c
+  C_CODE_FILE src/rclpy/_rclpy_logging.src.c
 )
-configure_python_c_extension_library(rclpy_logging)
-ament_target_dependencies(rclpy_logging
-  "rcutils"
-  "rcl_logging_interface"
+add_library(
+  _rclpy_logging
+  SHARED "${CMAKE_CURRENT_BINARY_DIR}/_rclpy_logging.c"
+)
+add_dependencies(_rclpy_logging
+  _generate_logging_extension
+)
+target_include_directories(_rclpy_logging
+  PUBLIC
+  ${PythonExtra_INCLUDE_DIRS}
+)
+target_link_libraries(_rclpy_logging
+  rcutils::rcutils
+  rcl_logging_interface::rcl_logging_interface
+  ${PythonExtra_LIBRARIES}
+)
+# Install into test_rclpy folder in build space for unit tests to import
+set_target_properties(_rclpy_logging PROPERTIES
+  PREFIX "${PYTHON_MODULE_PREFIX}"
+  SUFFIX "${PythonExtra_EXTENSION_SUFFIX}${PythonExtra_EXTENSION_EXTENSION}"
+  # Use generator expression to avoid prepending a build type specific directory on Windows
+  LIBRARY_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>
+  RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>
+)
+# Install library for actual use
+install(
+  TARGETS _rclpy_logging
+  DESTINATION "${PYTHON_INSTALL_DIR}/rclpy"
 )
 
 # Signal handling library
