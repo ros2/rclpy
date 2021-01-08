@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+
 from cffi import FFI
 
 
@@ -44,5 +45,5 @@ def main():
     generate_cpython_extension(args.output_file, args.output_module_name, c_definitions, c_code)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
