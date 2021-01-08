@@ -74,5 +74,10 @@ def get_logging_severity_from_string(log_severity):
 
 
 def get_logging_directory() -> Path:
-    """Return the current logging directory being used."""
+    """
+    Return the current logging directory being used.
+    
+    For more details, see
+    .. c:function:: rcl_logging_ret_t rcl_logging_get_logging_directory(rcutils_allocator_t, char **)
+    """
     return Path(_rclpy_logging.rclpy_logging_get_logging_directory())
