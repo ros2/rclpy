@@ -183,6 +183,11 @@ target_link_libraries(_rclpy_logging
   rcl_logging_interface::rcl_logging_interface
   ${PythonExtra_LIBRARIES}
 )
+# TODO(sloretz) this shouldn't be necessary, checking if it solves windows build
+ament_target_dependencies(_rclpy_logging
+  "PythonExtra"
+)
+
 # Install into test_rclpy folder in build space for unit tests to import
 set_target_properties(_rclpy_logging PROPERTIES
   PREFIX "${PYTHON_MODULE_PREFIX}"
