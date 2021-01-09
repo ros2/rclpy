@@ -174,18 +174,16 @@ add_library(
 add_dependencies(_rclpy_logging
   _generate_logging_extension
 )
+message(STATUS "Got PythonExtra_INCLUDE_DIRS ${PythonExtra_INCLUDE_DIRS} and PythonExtra_LIBRARIES ${PythonExtra_LIBRARIES} and PythonExtra_LIBRARY_DIRS ${PythonExtra_LIBRARY_DIRS} and PythonExtra_LINK_FLAGS ${PythonExtra_LINK_FLAGS}")
 target_include_directories(_rclpy_logging
-  PUBLIC
+  PRIVATE
   ${PythonExtra_INCLUDE_DIRS}
 )
 target_link_libraries(_rclpy_logging
+  PRIVATE
   rcutils::rcutils
   rcl_logging_interface::rcl_logging_interface
   ${PythonExtra_LIBRARIES}
-)
-# TODO(sloretz) this shouldn't be necessary, checking if it solves windows build
-ament_target_dependencies(_rclpy_logging
-  "PythonExtra"
 )
 
 # Install into test_rclpy folder in build space for unit tests to import
