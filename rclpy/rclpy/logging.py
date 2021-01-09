@@ -48,14 +48,14 @@ def initialize():
     ret = _rclpy_logging.lib.rcutils_logging_initialize()
     if ret != _rclpy_logging.lib.RCUTILS_RET_OK:
         _rclpy_logging.lib.rcutils_reset_error()
-        raise RuntimeError(f"Failed to initialize logging system, return code: {ret}")
+        raise RuntimeError(f'Failed to initialize logging system, return code: {ret}')
 
 
 def shutdown():
     ret = _rclpy_logging.lib.rcutils_logging_shutdown()
     if ret != _rclpy_logging.lib.RCUTILS_RET_OK:
         _rclpy_logging.lib.rcutils_reset_error()
-        raise RuntimeError(f"Failed to shutdown logging system, return code: {ret}")
+        raise RuntimeError(f'Failed to shutdown logging system, return code: {ret}')
 
 
 def clear_config():
@@ -84,7 +84,7 @@ def get_logger_effective_level(name):
 
 def get_logging_severity_from_string(log_severity):
     allocator = _rclpy_logging.lib.rcutils_get_default_allocator()
-    severity = _rclpy_logging.ffi.new("int *")
+    severity = _rclpy_logging.ffi.new('int *')
     ret = _rclpy_logging.lib.rcutils_logging_severity_level_from_string(
         log_severity.encode('utf-8'), allocator, severity)
     if ret != _rclpy_logging.lib.RCUTILS_RET_OK:

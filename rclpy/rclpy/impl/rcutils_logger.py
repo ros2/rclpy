@@ -318,18 +318,18 @@ class RcutilsLogger:
             if not supported_filters[logging_filter].should_log(context):
                 return False
 
-        logging_location = _rclpy_logging.ffi.new("rcutils_log_location_t *")
+        logging_location = _rclpy_logging.ffi.new('rcutils_log_location_t *')
         logging_location[0].function_name = _rclpy_logging.ffi.new(
-            "char []", caller_id.function_name.encode('utf-8'))
+            'char []', caller_id.function_name.encode('utf-8'))
         logging_location[0].file_name = _rclpy_logging.ffi.new(
-            "char []", caller_id.file_path.encode('utf-8'))
+            'char []', caller_id.file_path.encode('utf-8'))
         logging_location[0].line_number = caller_id.line_number
 
         # Call the relevant function from the C extension.
         _rclpy_logging.lib.rcutils_log(
             logging_location, severity,
-            name.encode('utf-8'), "%s".encode('utf-8'),
-            _rclpy_logging.ffi.new("char []", message.encode('utf-8')))
+            name.encode('utf-8'), '%s'.encode('utf-8'),
+            _rclpy_logging.ffi.new('char []', message.encode('utf-8')))
 
         return True
 
