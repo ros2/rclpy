@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import inspect
+import os
+from pathlib import Path
 import time
 import unittest
 
@@ -367,6 +369,15 @@ class TestLogging(unittest.TestCase):
     def test_nonexistent_logging_severity_from_string(self):
         with self.assertRaises(RuntimeError):
             rclpy.logging.get_logging_severity_from_string('non_existent_severity')
+
+    def test_get_logging_directory(self):
+        os.environ['HOME'] = '/fake_home_dir'
+        os.environ.pop('USERPROFILE', None)
+        os.environ.pop('ROS_LOG_DIR', None)
+        os.environ.pop('ROS_HOME', None)
+        log_dir = rclpy.logging.get_logging_directory()
+        assert isinstance(log_dir, Path)
+        assert log_dir == Path('/fake_home_dir') / '.ros' / 'log'
 
 
 if __name__ == '__main__':

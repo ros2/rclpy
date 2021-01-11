@@ -14,6 +14,7 @@
 
 
 from enum import IntEnum
+from pathlib import Path
 
 from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
 import rclpy.impl.rcutils_logger
@@ -70,3 +71,13 @@ def get_logger_effective_level(name):
 def get_logging_severity_from_string(log_severity):
     return LoggingSeverity(
         _rclpy_logging.rclpy_logging_severity_level_from_string(log_severity))
+
+
+def get_logging_directory() -> Path:
+    """
+    Return the current logging directory being used.
+
+    For more details, see .. c:function::
+    rcl_logging_ret_t rcl_logging_get_logging_directory(rcutils_allocator_t, char **)
+    """
+    return Path(_rclpy_logging.rclpy_logging_get_logging_directory())
