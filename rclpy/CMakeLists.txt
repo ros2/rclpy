@@ -76,6 +76,28 @@ function(configure_python_c_extension_library _library_name)
   )
 endfunction()
 
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake )
+find_package(Cython REQUIRED)
+
+function(cythonize)
+  set(options)
+  set(oneValueArgs TARGET INPUT OUTPUT)
+  set(multiValueArgs DEPENDS)
+  cmake_parse_arguments(_ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  add_custom_command( OUTPUT ${_ARG_OUTPUT}
+    COMMAND ${CYTHON_EXECUTABLE}
+    ARGS -I rclpy/src --output-file ${_ARG_OUTPUT} ${_ARG_INPUT}
+    DEPENDS ${_ARG_INPUT} ${_ARG_DEPENDS}
+    COMMENT "Cython generating code to ${_ARG_OUTPUT}"
+  )
+  add_custom_target(${_ARG_TARGET} DEPENDS ${_ARG_OUTPUT})
+endfunction()
+
+set( _cython_output_dir "${CMAKE_CURRENT_BINARY_DIR}/cython_output")
+file(MAKE_DIRECTORY ${_cython_output_dir})
+
+
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
   src/rclpy_common/src/handle.c
@@ -136,15 +158,25 @@ ament_target_dependencies(rclpy_action
 )
 
 # Logging support provided by rcutils
+cythonize(
+  TARGET cythonize_logging
+  INPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/rclpy/_rclpy_logging.pyx"
+  OUTPUT "${_cython_output_dir}/_rclpy_logging.c"
+  DEPENDS
+    src/rclpy/rcutils.pxd
+    src/rclpy/rcl_logging_interface.pxd
+)
 add_library(
   rclpy_logging
-  SHARED src/rclpy/_rclpy_logging.c
+  SHARED ${_cython_output_dir}/_rclpy_logging.c
 )
+add_dependencies(rclpy_logging cythonize_logging)
 configure_python_c_extension_library(rclpy_logging)
 ament_target_dependencies(rclpy_logging
   "rcutils"
   "rcl_logging_interface"
 )
+
 
 # Signal handling library
 add_library(
