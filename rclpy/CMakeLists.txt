@@ -76,6 +76,38 @@ function(configure_python_c_extension_library _library_name)
   )
 endfunction()
 
+# TODO(sloretz) SIP find module
+find_program(SIP_EXECUTABLE NAMES sip REQUIRED)
+find_path(SIP_HEADER NAMES sip.h HINTS ${PYTHON_INCLUDE_PATH} REQUIRED)
+
+function(sip_generate_python_extension target)
+  cmake_parse_arguments(ARG "" "MODULE_NAME;OUTPUT_DIRECTORY;SIP_FILE" "" ${ARGN})
+
+  if(ARG_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "sip_generate_python_extension() called with "
+      "unused/unsupported arguments: ${ARG_UNPARSED_ARGUMENTS}")
+  endif()
+
+  add_custom_command(
+    OUTPUT
+    "${ARG_OUTPUT_DIRECTORY}/sipAPI${ARG_MODULE_NAME}.h"
+    "${ARG_OUTPUT_DIRECTORY}/sip${ARG_MODULE_NAME}cmodule.c"
+    COMMENT "Generating ${ARG_OUTPUT_FILE} from ${ARG_SIP_FILE}"
+    DEPENDS
+      "${ARG_SIP_FILE}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMAND "${SIP_EXECUTABLE}" -c "${ARG_OUTPUT_DIRECTORY}"
+      "${ARG_SIP_FILE}"
+    VERBATIM
+  )
+
+  add_custom_target("${target}"
+    DEPENDS
+      "${ARG_OUTPUT_DIRECTORY}/sipAPI${ARG_MODULE_NAME}.h"
+      "${ARG_OUTPUT_DIRECTORY}/sip${ARG_MODULE_NAME}cmodule.c"
+  )
+endfunction()
+
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
   src/rclpy_common/src/handle.c
@@ -136,10 +168,20 @@ ament_target_dependencies(rclpy_action
 )
 
 # Logging support provided by rcutils
-add_library(
-  rclpy_logging
-  SHARED src/rclpy/_rclpy_logging.c
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sip/_rclpy_logging")
+sip_generate_python_extension(
+  generate_rclpy_logging
+  MODULE_NAME _rclpy_logging
+  OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sip/_rclpy_logging"
+  SIP_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/rclpy/_rclpy_logging.sip"
 )
+add_library(rclpy_logging SHARED
+  "${CMAKE_CURRENT_BINARY_DIR}/sip/_rclpy_logging/sip_rclpy_loggingcmodule.c"
+)
+target_include_directories(rclpy_logging PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}/sip/_rclpy_logging"
+)
+add_dependencies(rclpy_logging generate_rclpy_logging)
 configure_python_c_extension_library(rclpy_logging)
 ament_target_dependencies(rclpy_logging
   "rcutils"
