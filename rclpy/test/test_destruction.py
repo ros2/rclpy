@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+import threading
+
 import pytest
 import rclpy
 from rclpy.handle import InvalidHandle
@@ -39,6 +42,28 @@ def test_destroy_node_twice():
             node.destroy_node()
     finally:
         rclpy.shutdown(context=context)
+
+
+def test_destroy_node_while_spinning():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    try:
+        executor = rclpy.executors.SingleThreadedExecutor(context=context)
+        node = rclpy.create_node('test_node1', context=context)
+        thread = threading.Thread(
+                target=rclpy.spin,
+                args=(node, executor),
+                daemon=True)
+        thread.start()
+        try:
+            # Let the spin thread get going
+            time.sleep(0.5)
+            node.destroy_node()
+            context.shutdown()
+        finally:
+            thread.join()
+    finally:
+        rclpy.try_shutdown(context=context)
 
 
 def test_destroy_timers():
