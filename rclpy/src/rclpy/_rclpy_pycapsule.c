@@ -95,6 +95,7 @@ rclpy_pycapsule_destroy(PyObject * Py_UNUSED(self), PyObject * args)
 
   if (!destructor) {
     PyErr_Format(PyExc_ValueError, "PyCapsule does not have a destructor.");
+    return NULL;
   }
 
   destructor(pycapsule);
