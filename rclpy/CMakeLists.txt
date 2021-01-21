@@ -213,11 +213,10 @@ clean_windows_flags(_rclpy_pycapsule)
 
 # Handle library, used to keep dependencies between C objects.
 pybind11_add_module(_rclpy_handle SHARED
-  src/rclpy/_rclpy_handle.c
+  src/rclpy/_rclpy_handle.cpp
 )
 target_link_libraries(_rclpy_handle PRIVATE
   rclpy_common
-  rcutils::rcutils
 )
 configure_build_install_location(_rclpy_handle)
 clean_windows_flags(_rclpy_handle)
