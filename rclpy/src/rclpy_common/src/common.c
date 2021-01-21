@@ -308,7 +308,8 @@ rclpy_create_from_py(PyObject * pymessage, destroy_ros_message_signature ** dest
 
   void * message = create_ros_message();
   if (!message) {
-    return PyErr_NoMemory();
+    PyErr_NoMemory();
+    return NULL;
   }
   return message;
 }
