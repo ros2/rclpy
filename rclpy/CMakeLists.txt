@@ -24,8 +24,8 @@ find_package(rcutils REQUIRED)
 find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
-find_package(python_cmake_module REQUIRED)
-find_package(PythonExtra MODULE REQUIRED)
+find_package(pybind11_vendor REQUIRED)
+find_package(pybind11 REQUIRED)
 
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 
@@ -38,15 +38,6 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
 
 ament_python_install_package(${PROJECT_NAME})
 
-function(set_properties _targetname _build_type)
-  set_target_properties(${_targetname} PROPERTIES
-    PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
-    RUNTIME_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
-    OUTPUT_NAME "_${_targetname}${PythonExtra_EXTENSION_SUFFIX}"
-    SUFFIX "${PythonExtra_EXTENSION_EXTENSION}")
-endfunction()
-
 # Only build the library if a C typesupport exists
 get_rmw_typesupport(typesupport_impls "rmw_implementation" LANGUAGE "c")
 if(typesupport_impls STREQUAL "")
@@ -54,23 +45,15 @@ if(typesupport_impls STREQUAL "")
   return()
 endif()
 
-function(configure_python_c_extension_library _library_name)
-  set_properties(${_library_name} "")
-  if(WIN32)
-    set_properties(${_library_name} "_DEBUG")
-    set_properties(${_library_name} "_MINSIZEREL")
-    set_properties(${_library_name} "_RELEASE")
-    set_properties(${_library_name} "_RELWITHDEBINFO")
-  endif()
+# Set the build location and install location for a CPython extension
+function(configure_build_install_location _library_name)
+  # Install into test_rclpy folder in build space for unit tests to import
+  set_target_properties(${_library_name} PROPERTIES
+    # Use generator expression to avoid prepending a build type specific directory on Windows
+    LIBRARY_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>
+    RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>)
 
-  target_link_libraries(${_library_name}
-    ${PythonExtra_LIBRARIES}
-  )
-
-  ament_target_dependencies(${_library_name}
-    "PythonExtra"
-  )
-
+  # Install library for actual use
   install(TARGETS ${_library_name}
     DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
   )
@@ -80,17 +63,14 @@ add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
   src/rclpy_common/src/handle.c
 )
-target_link_libraries(rclpy_common
-  ${PythonExtra_LIBRARIES}
+target_link_libraries(rclpy_common PUBLIC
+  pybind11::pybind11
+  ${PYTHON_LIBRARIES}
+  rcl::rcl
+  rmw::rmw
 )
-target_include_directories(rclpy_common
-  PUBLIC
+target_include_directories(rclpy_common PUBLIC
   src/rclpy_common/include
-)
-ament_target_dependencies(rclpy_common
-  "rcl"
-  "rmw"
-  "PythonExtra"
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
@@ -103,82 +83,69 @@ install(TARGETS rclpy_common
   RUNTIME DESTINATION bin
 )
 
-add_library(rclpy SHARED
+# Main extension with bulk of the code
+pybind11_add_module(_rclpy SHARED
   src/rclpy/_rclpy.c
   src/rclpy/detail/execute_with_logging_mutex.cpp
   src/rclpy/detail/logging_mutex.cpp
   src/rclpy/detail/thread_safe_logging_output_handler.cpp
 )
-target_link_libraries(rclpy
+target_link_libraries(_rclpy PRIVATE
   rclpy_common
+  rcl::rcl
+  rcl_yaml_param_parser::rcl_yaml_param_parser
+  rcutils::rcutils
 )
+configure_build_install_location(_rclpy)
 
-configure_python_c_extension_library(rclpy)
-ament_target_dependencies(rclpy
-  "rcl"
-  "rcl_yaml_param_parser"
-  "rcutils"
+# Extension with code for Action servers and clients
+pybind11_add_module(_rclpy_action SHARED
+  src/rclpy/_rclpy_action.c
 )
-
-add_library(
-  rclpy_action
-  SHARED src/rclpy/_rclpy_action.c
-)
-target_link_libraries(rclpy_action
+target_link_libraries(_rclpy_action PRIVATE
   rclpy_common
+  rcl::rcl
+  rcl_action::rcl_action
+  rcutils::rcutils
 )
-
-configure_python_c_extension_library(rclpy_action)
-ament_target_dependencies(rclpy_action
-  "rcl"
-  "rcl_action"
-  "rcutils"
-)
+configure_build_install_location(_rclpy_action)
 
 # Logging support provided by rcutils
-add_library(
-  rclpy_logging
-  SHARED src/rclpy/_rclpy_logging.c
+pybind11_add_module(_rclpy_logging SHARED
+  src/rclpy/_rclpy_logging.c
 )
-configure_python_c_extension_library(rclpy_logging)
-ament_target_dependencies(rclpy_logging
-  "rcutils"
-  "rcl_logging_interface"
+target_link_libraries(_rclpy_logging PRIVATE
+  rcl_logging_interface::rcl_logging_interface
+  rcutils::rcutils
 )
+configure_build_install_location(_rclpy_logging)
 
 # Signal handling library
-add_library(
-  rclpy_signal_handler
-  SHARED src/rclpy/_rclpy_signal_handler.c
+pybind11_add_module(_rclpy_signal_handler SHARED
+  src/rclpy/_rclpy_signal_handler.c
 )
-target_link_libraries(rclpy_signal_handler
+target_link_libraries(_rclpy_signal_handler PRIVATE
   rclpy_common
+  rcl::rcl
+  rcutils::rcutils
 )
-configure_python_c_extension_library(rclpy_signal_handler)
-ament_target_dependencies(rclpy_signal_handler
-  "rcl"
-  "rcutils"
-)
+configure_build_install_location(_rclpy_signal_handler)
 
-# Pycapsule handling library
-add_library(
-  rclpy_pycapsule
-  SHARED src/rclpy/_rclpy_pycapsule.c
+# Pycapsule library
+pybind11_add_module(_rclpy_pycapsule SHARED
+  src/rclpy/_rclpy_pycapsule.c
 )
-configure_python_c_extension_library(rclpy_pycapsule)
+configure_build_install_location(_rclpy_pycapsule)
 
 # Handle library, used to keep dependencies between C objects.
-add_library(
-  rclpy_handle
-  SHARED src/rclpy/_rclpy_handle.c
+pybind11_add_module(_rclpy_handle SHARED
+  src/rclpy/_rclpy_handle.c
 )
-target_link_libraries(rclpy_handle
+target_link_libraries(_rclpy_handle PRIVATE
   rclpy_common
+  rcutils::rcutils
 )
-configure_python_c_extension_library(rclpy_handle)
-ament_target_dependencies(rclpy_handle
-  "rcutils"
-)
+configure_build_install_location(_rclpy_handle)
 
 if(NOT WIN32)
   ament_environment_hooks(
