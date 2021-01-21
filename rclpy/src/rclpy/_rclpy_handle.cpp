@@ -13,84 +13,25 @@
 // limitations under the License.
 
 #include <Python.h>
-#include <stddef.h>
+#include <pybind11/pybind11.h>
 
-#include "rcutils/allocator.h"
-#include "rcutils/strdup.h"
-#include "rcutils/types/rcutils_ret.h"
+namespace py = pybind11;
 
 #include "rclpy_common/handle.h"
 
-static PyObject *
-rclpy_handle_get_name(PyObject * Py_UNUSED(self), PyObject * args)
+size_t
+rclpy_handle_get_pointer(py::capsule handle_capsule)
 {
-  PyObject * handle_capsule;
-  if (!PyArg_ParseTuple(args, "O", &handle_capsule)) {
-    return NULL;
+  void * ptr = rclpy_handle_get_pointer_from_capsule(handle_capsule.ptr(), handle_capsule.name());
+
+  if (!ptr) {
+    throw py::error_already_set();
   }
 
-  if (PyErr_Occurred()) {
-    return NULL;
-  }
-  return PyUnicode_FromString(PyCapsule_GetName(handle_capsule));
+  return reinterpret_cast<size_t>(ptr);
 }
 
-static PyObject *
-rclpy_handle_get_pointer(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * handle_capsule;
-  if (!PyArg_ParseTuple(args, "O", &handle_capsule)) {
-    return NULL;
-  }
-
-  if (PyErr_Occurred()) {
-    return NULL;
-  }
-
-  void * ptr = rclpy_handle_get_pointer_from_capsule(
-    handle_capsule, PyCapsule_GetName(handle_capsule));
-
-  if (!ptr || PyErr_Occurred()) {
-    return NULL;
-  }
-
-  return PyLong_FromVoidPtr(ptr);
-}
-
-/// Define the public methods of this module
-static PyMethodDef rclpy_handle_methods[] = {
-  {
-    "rclpy_handle_get_name", rclpy_handle_get_name,
-    METH_VARARGS,
-    "Get handle name."
-  },
-  {
-    "rclpy_handle_get_pointer", rclpy_handle_get_pointer,
-    METH_VARARGS,
-    "Get handle pointer."
-  },
-  {NULL, NULL, 0, NULL}  /* sentinel */
-};
-
-PyDoc_STRVAR(
-  rclpy_handle__doc__,
-  "rclpy module for working with Handle objects.");
-
-/// Define the Python module
-static struct PyModuleDef _rclpy_handle_module = {
-  PyModuleDef_HEAD_INIT,
-  "_rclpy_handle",
-  rclpy_handle__doc__,
-  -1,  /* -1 means that the module keeps state in global variables */
-  rclpy_handle_methods,
-  NULL,
-  NULL,
-  NULL,
-  NULL
-};
-
-/// Init function of this module
-PyMODINIT_FUNC PyInit__rclpy_handle(void)
-{
-  return PyModule_Create(&_rclpy_handle_module);
+PYBIND11_MODULE(_rclpy_handle, m) {
+  m.doc() = "rclpy module for working with Handle objects.";
+  m.def("rclpy_handle_get_pointer", &rclpy_handle_get_pointer, "Get handle pointer.");
 }

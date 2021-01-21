@@ -47,7 +47,7 @@ class Handle:
         self.__lock = Lock()
         # Called to give an opportunity to raise an exception if the object is not a pycapsule.
         self.__capsule_pointer = _rclpy_handle.rclpy_handle_get_pointer(pycapsule)
-        self.__handle_name = _rclpy_handle.rclpy_handle_get_name(pycapsule)
+        self.__handle_name = _rclpy_capsule.rclpy_pycapsule_name(pycapsule)
 
     def __bool__(self):
         """Return True if the handle is valid."""
