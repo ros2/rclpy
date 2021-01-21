@@ -181,7 +181,7 @@ configure_build_install_location(_rclpy_action)
 
 # Logging support provided by rcutils
 pybind11_add_module(_rclpy_logging SHARED
-  src/rclpy/_rclpy_logging.c
+  src/rclpy/_rclpy_logging.cpp
 )
 target_link_libraries(_rclpy_logging PRIVATE
   rcl_logging_interface::rcl_logging_interface
