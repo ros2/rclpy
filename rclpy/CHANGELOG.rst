@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.5.0 (2021-01-25)
+------------------
 * Fix dead stores. (`#669 <https://github.com/ros2/rclpy/issues/669>`_)
 * Fix two clang static analysis warnings. (`#664 <https://github.com/ros2/rclpy/issues/664>`_)
 * Add method to get the current logging directory (`#657 <https://github.com/ros2/rclpy/issues/657>`_)
