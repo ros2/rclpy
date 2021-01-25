@@ -2,6 +2,22 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix dead stores. (`#669 <https://github.com/ros2/rclpy/issues/669>`_)
+* Fix two clang static analysis warnings. (`#664 <https://github.com/ros2/rclpy/issues/664>`_)
+* Add method to get the current logging directory (`#657 <https://github.com/ros2/rclpy/issues/657>`_)
+* Fix docstring indent error in create_node (`#655 <https://github.com/ros2/rclpy/issues/655>`_)
+* use only True to avoid confusion in autodoc config
+* document QoS profile constants
+* Merge pull request `#649 <https://github.com/ros2/rclpy/issues/649>`_ from ros2/clalancette/dont-except-while-sleep
+* Fixes from review/CI.
+* Make sure to catch the ROSInterruptException when calling rate.sleep.
+* memory leak (`#643 <https://github.com/ros2/rclpy/issues/643>`_) (`#645 <https://github.com/ros2/rclpy/issues/645>`_)
+* Don't throw an exception if timer canceled while sleeping.
+* Wake executor in Node.create_subscription() (`#647 <https://github.com/ros2/rclpy/issues/647>`_)
+* Contributors: Chris Lalancette, Gökçe Aydos, Ivan Santiago Paunovic, Jacob Perron, Tully Foote, ssumoo, tomoya
+
 1.4.0 (2020-12-08)
 ------------------
 * Fix Enum not being comparable with ints in get_parameter_types service
