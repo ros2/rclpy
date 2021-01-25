@@ -70,7 +70,7 @@ class ParameterService:
             try:
                 descriptor = node.describe_parameter(name)
             except ParameterNotDeclaredException:
-                response.descriptors = []
+                response.descriptors = node.describe_parameters([])
                 return response
             response.descriptors.append(descriptor)
         return response
@@ -81,7 +81,7 @@ class ParameterService:
             try:
                 param = node.get_parameter(name)
             except ParameterNotDeclaredException:
-                response.values = []
+                response.values = node.get_parameters([])
                 return response
             response.values.append(param.get_parameter_value())
         return response
@@ -90,9 +90,9 @@ class ParameterService:
         node = self._get_node()
         for name in request.names:
             try:
-                value = node.get_parameter(name).type_.value
+                value = node.get_parameter_type(name)
             except ParameterNotDeclaredException:
-                response.types = []
+                response.types = node.get_parameter_types([])
                 return response
             response.types.append(value)
         return response
