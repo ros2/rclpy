@@ -54,7 +54,6 @@ rclpy_action_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
     ret = rcl_action_server_fini(action_server, node);
     PyMem_Free(action_server);
   } else {
-    ret = RCL_RET_ERROR;  // to avoid a linter warning
     const char * entity_name = PyCapsule_GetName(pyentity);
     if (!entity_name) {
       return NULL;
@@ -163,7 +162,6 @@ rclpy_action_wait_set_add(PyObject * Py_UNUSED(self), PyObject * args)
       (rcl_action_server_t *)PyCapsule_GetPointer(pyentity, "rcl_action_server_t");
     ret = rcl_action_wait_set_add_action_server(wait_set, action_server, NULL);
   } else {
-    ret = RCL_RET_ERROR;  // to avoid linter warning
     const char * entity_name = PyCapsule_GetName(pyentity);
     if (!entity_name) {
       return NULL;
@@ -232,7 +230,6 @@ rclpy_action_wait_set_get_num_entities(PyObject * Py_UNUSED(self), PyObject * ar
       &num_clients,
       &num_services);
   } else {
-    ret = RCL_RET_ERROR;  // to avoid linter warning
     const char * entity_name = PyCapsule_GetName(pyentity);
     if (!entity_name) {
       return NULL;
