@@ -1575,11 +1575,16 @@ rclpy_action_process_cancel_request(PyObject * Py_UNUSED(self), PyObject * args)
     action_server, cancel_request, &cancel_response);
   destroy_cancel_request(cancel_request);
   if (RCL_RET_OK != ret) {
+    const char * original_error = rcl_get_error_string().str;
+    const char * extra_error = "";
     ret = rcl_action_cancel_response_fini(&cancel_response);
+    if (RCL_RET_OK != ret) {
+      extra_error = ".  Also failed to cleanup response.";
+    }
     PyErr_Format(
       PyExc_RuntimeError,
-      "Failed to process cancel request: %s",
-      rcl_get_error_string().str);
+      "Failed to process cancel request: %s%s",
+      original_error, extra_error);
     rcl_reset_error();
     return NULL;
   }
