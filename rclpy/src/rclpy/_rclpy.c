@@ -516,7 +516,7 @@ cleanup:
   if (RCL_RET_OK != ret) {
     PyErr_Format(RCLError, "Failed to init: %s", rcl_get_error_string().str);
     rcl_reset_error();
-    Py_DECREF(pyresult_list);
+    Py_XDECREF(pyresult_list);
     return NULL;
   }
 
