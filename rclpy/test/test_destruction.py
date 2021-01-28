@@ -48,7 +48,7 @@ def test_destroy_node_while_spinning():
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
-        executor = rclpy.executors.SingleThreadedExecutor(context=context)
+        executor = rclpy.executors.MultiThreadedExecutor(context=context)
         node = rclpy.create_node('test_node1', context=context)
         thread = threading.Thread(
                 target=rclpy.spin,
