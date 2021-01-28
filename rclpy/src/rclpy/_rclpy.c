@@ -3825,7 +3825,7 @@ cleanup:
     PyErr_Format(
       RCLError,
       "Failed to destroy node_names: %s", rcl_get_error_string().str);
-    Py_DECREF(pynode_names_and_namespaces);
+    Py_XDECREF(pynode_names_and_namespaces);
     rcl_reset_error();
     return NULL;
   }
@@ -3833,7 +3833,7 @@ cleanup:
     PyErr_Format(
       RCLError,
       "Failed to destroy node_namespaces: %s", rcl_get_error_string().str);
-    Py_DECREF(pynode_names_and_namespaces);
+    Py_XDECREF(pynode_names_and_namespaces);
     rcl_reset_error();
     return NULL;
   }
@@ -3841,7 +3841,7 @@ cleanup:
     PyErr_Format(
       RCLError,
       "Failed to destroy enclaves string array: %s", rcl_get_error_string().str);
-    Py_DECREF(pynode_names_and_namespaces);
+    Py_XDECREF(pynode_names_and_namespaces);
     rcl_reset_error();
     return NULL;
   }
