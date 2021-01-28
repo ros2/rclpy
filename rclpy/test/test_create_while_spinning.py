@@ -48,9 +48,9 @@ class TestCreateWhileSpinning(unittest.TestCase):
 
     def tearDown(self):
         self.executor.shutdown()
-        self.node.destroy_node()
         rclpy.shutdown()
         self.exec_thread.join()
+        self.node.destroy_node()
 
     def test_publish_subscribe(self):
         evt = threading.Event()
