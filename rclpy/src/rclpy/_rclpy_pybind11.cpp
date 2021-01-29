@@ -15,6 +15,7 @@
 #include <Python.h>
 #include <pybind11/pybind11.h>
 
+#include "context.hpp"
 #include "exceptions.hpp"
 
 namespace py = pybind11;
@@ -30,4 +31,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
+
+  m.def(
+    "rclpy_context_get_domain_id", &rclpy::context_get_domain_id,
+    "Retrieves domain ID from init_options of context");
 }

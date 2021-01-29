@@ -15,11 +15,31 @@
 #ifndef RCLPY__EXCEPTIONS_HPP_
 #define RCLPY__EXCEPTIONS_HPP_
 
+#include <rcl/error_handling.h>
+
 #include <stdexcept>
+#include <string>
+
 namespace rclpy
 {
+
+std::string append_rcl_error(std::string prepend)
+{
+  prepend += ": ";
+  prepend += rcl_get_error_string().str;
+  rcl_reset_error();
+  return prepend;
+}
+
 class RCLError : public std::runtime_error
 {
+public:
+  explicit RCLError(const std::string & error_text)
+  : std::runtime_error(append_rcl_error(error_text))
+  {
+  }
+
+  ~RCLError() = default;
 };
 
 class RCLInvalidROSArgsError : public RCLError

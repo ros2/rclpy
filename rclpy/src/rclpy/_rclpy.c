@@ -5608,41 +5608,6 @@ rclpy_publisher_get_topic_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(topic_name);
 }
 
-/// Retrieves domain id from init_options of context
-/**
- * \param[in] pyargs context Python object
- * \return domain id
- */
-static PyObject *
-rclpy_context_get_domain_id(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pycontext;
-
-  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
-    // Exception raised
-    return NULL;
-  }
-
-  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
-  if (!context) {
-    PyErr_Format(PyExc_RuntimeError, "Failed to call rclpy_handle_get_pointer_from_capsule");
-    return NULL;
-  }
-
-  size_t domain_id;
-  rcl_ret_t ret = rcl_context_get_domain_id(context, &domain_id);
-  if (RCL_RET_OK != ret) {
-    PyErr_Format(
-      RCLError,
-      "Failed to get domain id from rcl_context_get_domain_id: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  return PyLong_FromSize_t(domain_id);
-}
-
-
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -6067,11 +6032,6 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_publisher_get_topic_name", rclpy_publisher_get_topic_name,
     METH_VARARGS,
     "Get the resolved name(topic) of publisher"
-  },
-  {
-    "rclpy_context_get_domain_id", rclpy_context_get_domain_id,
-    METH_VARARGS,
-    "Retrieves domain ID from init_options of context"
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
