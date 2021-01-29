@@ -35,3 +35,21 @@ rclpy_logging_implementation = import_c_library('._rclpy_logging', package)
 rclpy_signal_handler_implementation = import_c_library('._rclpy_signal_handler', package)
 rclpy_handle_implementation = import_c_library('._rclpy_handle', package)
 rclpy_pycapsule_implementation = import_c_library('._rclpy_pycapsule', package)
+
+
+# Temporary code for converting giant _rclpy module to pybind11
+def _combine_split_modules():
+    global rclpy_implementation
+    module = import_c_library('._rclpy_pybind11', package)
+    for attr in dir(module):
+        thing = getattr(module, attr)
+        if attr.startswith('rclpy_'):
+            # It's a wrapped C function
+            setattr(rclpy_implementation, attr, thing)
+        elif isinstance(thing, type) and issubclass(thing, BaseException):
+            # It's a custom exception
+            setattr(rclpy_implementation, attr, thing)
+
+
+_combine_split_modules()
+del _combine_split_modules

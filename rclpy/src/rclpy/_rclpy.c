@@ -6079,14 +6079,81 @@ static PyMethodDef rclpy_methods[] = {
 
 PyDoc_STRVAR(rclpy__doc__, "ROS 2 Python client library.");
 
+// Initialization function called after __spec__ and __package__ are set by loader
+// Purpose: relative imports work in this function
+static int rclpy_exec(PyObject * m)
+{
+  PyObject * globals = PyModule_GetDict(m);
+  if (NULL == globals) {
+    return -1;
+  }
+
+  PyObject * exceptions_module = PyImport_ImportModuleLevel(
+    "_rclpy_pybind11", globals, NULL, NULL, 1);
+  if (NULL == exceptions_module) {
+    return -1;
+  }
+
+  RCLError = PyObject_GetAttrString(exceptions_module, "RCLError");
+  if (NULL == RCLError) {
+    Py_DECREF(exceptions_module);
+    return -1;
+  }
+
+  RCLInvalidROSArgsError = PyObject_GetAttrString(exceptions_module, "RCLInvalidROSArgsError");
+  if (NULL == RCLInvalidROSArgsError) {
+    Py_DECREF(RCLError);
+    Py_DECREF(exceptions_module);
+    return -1;
+  }
+
+  UnknownROSArgsError = PyObject_GetAttrString(exceptions_module, "UnknownROSArgsError");
+  if (NULL == UnknownROSArgsError) {
+    Py_DECREF(RCLInvalidROSArgsError);
+    Py_DECREF(RCLError);
+    Py_DECREF(exceptions_module);
+    return -1;
+  }
+
+  NodeNameNonExistentError = PyObject_GetAttrString(exceptions_module, "NodeNameNonExistentError");
+  if (NULL == NodeNameNonExistentError) {
+    Py_DECREF(UnknownROSArgsError);
+    Py_DECREF(RCLInvalidROSArgsError);
+    Py_DECREF(RCLError);
+    Py_DECREF(exceptions_module);
+    return -1;
+  }
+
+  UnsupportedEventTypeError =
+    PyObject_GetAttrString(exceptions_module, "UnsupportedEventTypeError");
+  if (NULL == UnsupportedEventTypeError) {
+    Py_DECREF(NodeNameNonExistentError);
+    Py_DECREF(UnknownROSArgsError);
+    Py_DECREF(RCLInvalidROSArgsError);
+    Py_DECREF(RCLError);
+    Py_DECREF(exceptions_module);
+    return -1;
+  }
+
+  Py_DECREF(exceptions_module);
+
+  // 0 is success
+  return 0;
+}
+
+static PyModuleDef_Slot rclpy_slots[] = {
+  {Py_mod_exec, rclpy_exec},
+  {0, NULL}
+};
+
 /// Define the Python module
 static struct PyModuleDef _rclpymodule = {
   PyModuleDef_HEAD_INIT,
   "_rclpy",
   rclpy__doc__,
-  -1,   /* -1 means that the module keeps state in global variables */
+  0,
   rclpy_methods,
-  NULL,
+  rclpy_slots,
   NULL,
   NULL,
   NULL
@@ -6095,71 +6162,5 @@ static struct PyModuleDef _rclpymodule = {
 /// Init function of this module
 PyMODINIT_FUNC PyInit__rclpy(void)
 {
-  PyObject * m = PyModule_Create(&_rclpymodule);
-  if (NULL == m) {
-    return NULL;
-  }
-
-  RCLError = PyErr_NewExceptionWithDoc(
-    "_rclpy.RCLError",
-    "Thrown when there is an error in rcl.",
-    PyExc_RuntimeError, NULL);
-  if (NULL == RCLError) {
-    Py_DECREF(m);
-    return NULL;
-  }
-  if (PyModule_AddObject(m, "RCLError", RCLError) != 0) {
-    Py_DECREF(m);
-    return NULL;
-  }
-
-  RCLInvalidROSArgsError = PyErr_NewExceptionWithDoc(
-    "_rclpy.RCLInvalidROSArgsError",
-    "Thrown when invalid ROS arguments are found by rcl.",
-    RCLError, NULL);
-  if (NULL == RCLInvalidROSArgsError) {
-    Py_DECREF(m);
-    return NULL;
-  }
-  if (PyModule_AddObject(m, "RCLInvalidROSArgsError", RCLInvalidROSArgsError) != 0) {
-    Py_DECREF(m);
-    return NULL;
-  }
-
-  UnknownROSArgsError = PyErr_NewExceptionWithDoc(
-    "_rclpy.UnknownROSArgsError",
-    "Thrown when unknown ROS arguments are found.",
-    RCLError, NULL);
-  if (NULL == UnknownROSArgsError) {
-    Py_DECREF(m);
-    return NULL;
-  }
-  if (PyModule_AddObject(m, "UnknownROSArgsError", UnknownROSArgsError) != 0) {
-    Py_DECREF(m);
-    return NULL;
-  }
-
-  NodeNameNonExistentError = PyErr_NewExceptionWithDoc(
-    "_rclpy.NodeNameNonExistentError",
-    "Thrown when a node name is not found.",
-    RCLError, NULL);
-  if (PyModule_AddObject(m, "NodeNameNonExistentError", NodeNameNonExistentError)) {
-    Py_DECREF(m);
-    return NULL;
-  }
-
-  UnsupportedEventTypeError = PyErr_NewExceptionWithDoc(
-    "_rclpy.UnsupportedEventTypeError",
-    "Thrown when registering a callback for an event type that is not supported.",
-    RCLError, NULL);
-  if (PyModule_AddObject(m, "UnsupportedEventTypeError", UnsupportedEventTypeError)) {
-    Py_DECREF(m);
-    return NULL;
-  }
-
-  if (PyErr_Occurred()) {
-    Py_DECREF(m);
-    return NULL;
-  }
-  return m;
+  return PyModuleDef_Init(&_rclpymodule);
 }

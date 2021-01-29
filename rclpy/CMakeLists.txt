@@ -167,6 +167,18 @@ configure_build_install_location(_rclpy)
 clean_windows_flags(_rclpy)
 remove_py_debug_definition_on_win32(_rclpy)
 
+# Split from main extension and converted to pybind11
+pybind11_add_module(_rclpy_pybind11 SHARED
+  src/rclpy/_rclpy_pybind11.cpp
+)
+target_include_directories(_rclpy_pybind11 PRIVATE
+  src/rclpy/
+)
+target_link_libraries(_rclpy_pybind11 PRIVATE
+  rclpy_common
+)
+configure_build_install_location(_rclpy_pybind11)
+
 # Extension with code for Action servers and clients
 pybind11_add_module(_rclpy_action SHARED
   src/rclpy/_rclpy_action.cpp
