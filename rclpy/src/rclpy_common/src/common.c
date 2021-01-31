@@ -302,7 +302,7 @@ rclpy_create_from_py(PyObject * pymessage, destroy_ros_message_signature ** dest
   *destroy_ros_message = get_capsule_pointer(
     pymetaclass, "_DESTROY_ROS_MESSAGE");
   Py_DECREF(pymetaclass);
-  if (!destroy_ros_message) {
+  if (!(*destroy_ros_message)) {
     return NULL;
   }
 
