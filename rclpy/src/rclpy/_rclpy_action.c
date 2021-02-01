@@ -16,6 +16,7 @@
 
 #include <rcl/error_handling.h>
 #include <rcl_action/rcl_action.h>
+#include <rcutils/strdup.h>
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
@@ -1575,7 +1576,13 @@ rclpy_action_process_cancel_request(PyObject * Py_UNUSED(self), PyObject * args)
     action_server, cancel_request, &cancel_response);
   destroy_cancel_request(cancel_request);
   if (RCL_RET_OK != ret) {
-    const char * original_error = rcl_get_error_string().str;
+    rcl_allocator_t allocator = rcl_get_default_allocator();
+    bool allocated_error = true;
+    char * original_error = rcutils_strdup(rcl_get_error_string().str, allocator);
+    if (original_error == NULL) {
+      original_error = "Failed to allocate memory for error";
+      allocated_error = false;
+    }
     const char * extra_error = "";
     ret = rcl_action_cancel_response_fini(&cancel_response);
     if (RCL_RET_OK != ret) {
@@ -1585,6 +1592,9 @@ rclpy_action_process_cancel_request(PyObject * Py_UNUSED(self), PyObject * args)
       PyExc_RuntimeError,
       "Failed to process cancel request: %s%s",
       original_error, extra_error);
+    if (allocated_error) {
+      allocator.deallocate(original_error, allocator.state);
+    }
     rcl_reset_error();
     return NULL;
   }
