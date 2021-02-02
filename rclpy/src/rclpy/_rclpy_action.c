@@ -16,7 +16,6 @@
 
 #include <rcl/error_handling.h>
 #include <rcl_action/rcl_action.h>
-#include <rcutils/strdup.h>
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
