@@ -256,7 +256,7 @@ _rclpy_arg_list_fini(int num_args, char ** argv)
   for (int i = 0; i < num_args; ++i) {
     char * arg = argv[i];
     if (!arg) {
-      // NULL in list means array was partially inititialized when an error occurred
+      // NULL in list means array was partially initialized when an error occurred
       break;
     }
     allocator.deallocate(arg, allocator.state);
