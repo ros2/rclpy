@@ -16,7 +16,7 @@
 #include <pybind11/pybind11.h>
 
 #include "context.hpp"
-#include "exceptions.hpp"
+#include "rclpy_common/exceptions.hpp"
 
 namespace py = pybind11;
 

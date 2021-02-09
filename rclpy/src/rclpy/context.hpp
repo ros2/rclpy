@@ -27,7 +27,7 @@ extern "C" {
 }
 
 
-#include "exceptions.hpp"
+#include "rclpy_common/exceptions.hpp"
 
 namespace py = pybind11;
 

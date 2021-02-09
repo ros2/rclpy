@@ -128,6 +128,7 @@ endfunction()
 
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
+  src/rclpy_common/src/exceptions.cpp
   src/rclpy_common/src/handle.c
 )
 target_link_libraries(rclpy_common PUBLIC
