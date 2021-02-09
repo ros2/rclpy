@@ -19,14 +19,18 @@
 #include <rcl_action/rcl_action.h>
 
 #include <cstring>
+#include <memory>
+#include <string>
 
+extern "C" {
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
+}
 
 namespace py = pybind11;
 
 
-template <typename T>
+template<typename T>
 T
 get_pointer(py::capsule & capsule, const char * name)
 {
@@ -64,12 +68,11 @@ rclpy_action_destroy_entity(py::capsule pyentity, py::capsule pynode)
     auto action_client = get_pointer<rcl_action_client_t *>(pyentity, "rcl_action_client_t");
     ret = rcl_action_client_fini(action_client, node);
     PyMem_Free(action_client);
-  } else if (PyCapsule_IsValid(pyentity, "rcl_action_server_t")) {
+  } else if (0 == std::strcmp("rcl_action_server_t", pyentity.name())) {
     auto action_server = get_pointer<rcl_action_server_t *>(pyentity, "rcl_action_server_t");
     ret = rcl_action_server_fini(action_server, node);
     PyMem_Free(action_server);
   } else {
-
     std::string entity_name = pyentity.name();
     throw std::runtime_error(entity_name + " is not a known entity");
   }
@@ -140,21 +143,16 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
 void
 rclpy_action_wait_set_add(py::capsule pyentity, py::capsule pywait_set)
 {
-  if (strcmp("rcl_wait_set_t", pywait_set.name())) {
-    throw py::value_error("Expecting capsule with name rcl_wait_set_t");
-  }
   auto wait_set = get_pointer<rcl_wait_set_t *>(pywait_set, "rcl_wait_set_t");
 
   rcl_ret_t ret;
   if (0 == strcmp(pyentity.name(), "rcl_action_client_t")) {
     auto action_client = get_pointer<rcl_action_client_t *>(pyentity, "rcl_action_client_t");
-
     ret = rcl_action_wait_set_add_action_client(wait_set, action_client, NULL, NULL);
-  } else if (PyCapsule_IsValid(pyentity, "rcl_action_server_t")) {
+  } else if (0 == strcmp(pyentity.name(), "rcl_action_server_t")) {
     auto action_server = get_pointer<rcl_action_server_t *>(pyentity, "rcl_action_server_t");
     ret = rcl_action_wait_set_add_action_server(wait_set, action_server, NULL);
   } else {
-
     std::string error_text{"Unknown entity: "};
     error_text += pyentity.name();
     rcutils_reset_error();
@@ -213,7 +211,6 @@ rclpy_action_wait_set_get_num_entities(py::capsule pyentity)
       &num_clients,
       &num_services);
   } else {
-
     std::string error_text{"Unknown entity: "};
     error_text += pyentity.name();
     rcutils_reset_error();
@@ -266,7 +263,7 @@ rclpy_action_wait_set_is_ready(py::capsule pyentity, py::capsule pywait_set)
   auto wait_set = get_pointer<rcl_wait_set_t *>(pywait_set, "rcl_wait_set_t");
 
   if (0 == strcmp(pyentity.name(), "rcl_action_client_t")) {
-    auto action_client = get_pointer<rcl_action_client_t *>(pyentity, "rcl_wait_set_t");
+    auto action_client = get_pointer<rcl_action_client_t *>(pyentity, "rcl_action_client_t");
     bool is_feedback_ready = false;
     bool is_status_ready = false;
     bool is_goal_response_ready = false;
@@ -332,7 +329,7 @@ void
 copy_qos_profile(rmw_qos_profile_t & profile, py::capsule pyprofile)
 {
   auto qos_profile = get_pointer<rmw_qos_profile_t *>(pyprofile, "rmw_qos_profile_t");
-  profile = * qos_profile;
+  profile = *qos_profile;
   PyMem_Free(qos_profile);
   if (PyCapsule_SetName(pyprofile.ptr(), "_destructed_by_copy_qos_profile_")) {
     throw py::error_already_set();
@@ -400,7 +397,7 @@ rclpy_action_create_client(
   copy_qos_profile(action_client_ops.feedback_topic_qos, pyfeedback_topic_qos);
   copy_qos_profile(action_client_ops.status_topic_qos, pystatus_topic_qos);
 
-  auto deleter = [](rcl_action_client_t * ptr){PyMem_Free(ptr);};
+  auto deleter = [](rcl_action_client_t * ptr) {PyMem_Free(ptr);};
   auto action_client = std::unique_ptr<rcl_action_client_t, decltype(deleter)>(
     static_cast<rcl_action_client_t *>(PyMem_Malloc(sizeof(rcl_action_client_t))),
     deleter);
@@ -422,7 +419,7 @@ rclpy_action_create_client(
     error_text += rcl_get_error_string().str;
     rcutils_reset_error();
     throw py::value_error(error_text);
-  } else if (ret != RCL_RET_OK ) {
+  } else if (ret != RCL_RET_OK) {
     std::string error_text{"Failed to create action client: "};
     error_text += rcl_get_error_string().str;
     rcutils_reset_error();
@@ -502,7 +499,7 @@ rclpy_action_create_server(
   copy_qos_profile(action_server_ops.status_topic_qos, pystatus_topic_qos);
   action_server_ops.result_timeout.nanoseconds = (rcl_duration_value_t)RCL_S_TO_NS(result_timeout);
 
-  auto deleter = [](rcl_action_server_t * ptr){PyMem_Free(ptr);};
+  auto deleter = [](rcl_action_server_t * ptr) {PyMem_Free(ptr);};
   auto action_server = std::unique_ptr<rcl_action_server_t, decltype(deleter)>(
     static_cast<rcl_action_server_t *>(PyMem_Malloc(sizeof(rcl_action_server_t))),
     deleter);
@@ -525,7 +522,7 @@ rclpy_action_create_server(
     error_text += rcl_get_error_string().str;
     rcutils_reset_error();
     throw py::value_error(error_text);
-  } else if (ret != RCL_RET_OK){
+  } else if (ret != RCL_RET_OK) {
     std::string error_text{"Failed to create action server: "};
     error_text += rcl_get_error_string().str;
     rcutils_reset_error();
@@ -559,7 +556,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   rcl_ret_t ret = rcl_action_server_is_available(node, action_client, &is_available);
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to check if action server is available: "};
-    error_text =+ rcl_get_error_string().str;
+    error_text += rcl_get_error_string().str;
     rcutils_reset_error();
     throw std::runtime_error(error_text);
   }
@@ -569,13 +566,13 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
 #define SEND_SERVICE_REQUEST(Type) \
   auto action_client = get_pointer<rcl_action_client_t *>(pyaction_client, "rcl_action_client_t"); \
   destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * raw_ros_request = rclpy_convert_from_py(pyrequest.ptr(), & destroy_ros_message); \
+  void * raw_ros_request = rclpy_convert_from_py(pyrequest.ptr(), &destroy_ros_message); \
   if (!raw_ros_request) { \
     throw py::error_already_set(); \
   } \
   int64_t sequence_number; \
   rcl_ret_t ret = rcl_action_send_ ## Type ## _request( \
-    action_client, raw_ros_request, & sequence_number); \
+    action_client, raw_ros_request, &sequence_number); \
   destroy_ros_message(raw_ros_request); \
   if (ret != RCL_RET_OK) { \
     std::string error_text{"Failed to send " #Type " request: "}; \
@@ -589,7 +586,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t"); \
   auto header = get_pointer<rmw_request_id_t *>(pyheader, "rmw_request_id_t"); \
   destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * raw_ros_response = rclpy_convert_from_py(pyresponse, & destroy_ros_message); \
+  void * raw_ros_response = rclpy_convert_from_py(pyresponse.ptr(), &destroy_ros_message); \
   if (!raw_ros_response) { \
     throw py::error_already_set(); \
   } \
@@ -605,16 +602,19 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
 #define TAKE_SERVICE_REQUEST(Type) \
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t"); \
   destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), & destroy_ros_message); \
+  /* taken_msg is always destroyed in this function */ \
+  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message); \
   if (!taken_msg) { \
     throw py::error_already_set(); \
   } \
   auto taken_msg_ptr = \
-    std::unique_ptr<void, decltype(destroy_ros_message)>(taken_msg, destroy_ros_message); \
-  auto header_deleter = [](rmw_request_id_t * ptr){PyMem_Free(static_cast<void *>(ptr));}; \
+    std::unique_ptr<void, destroy_ros_message_signature *>(taken_msg, destroy_ros_message); \
+  auto header_deleter = [](rmw_request_id_t * ptr) {PyMem_Free(static_cast<void *>(ptr));}; \
+  /* header only destroyed on error in this function */ \
   auto header = std::unique_ptr<rmw_request_id_t, decltype(header_deleter)>( \
-      static_cast<rmw_request_id_t *>(PyMem_Malloc(sizeof(rmw_request_id_t))), header_deleter); \
-  rcl_ret_t ret = rcl_action_take_ ## Type ## _request(action_server, header.get(), taken_msg); \
+    static_cast<rmw_request_id_t *>(PyMem_Malloc(sizeof(rmw_request_id_t))), header_deleter); \
+  rcl_ret_t ret = \
+    rcl_action_take_ ## Type ## _request(action_server, header.get(), taken_msg_ptr.get()); \
   /* Create the tuple to return */ \
   py::tuple pytuple(2); \
   if (ret == RCL_RET_ACTION_CLIENT_TAKE_FAILED || ret == RCL_RET_ACTION_SERVER_TAKE_FAILED) { \
@@ -627,25 +627,25 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
     rcl_reset_error(); \
     throw std::runtime_error(error_text); \
   } \
-  auto pytaken_msg = py::reinterpret_steal<py::object>(rclpy_convert_to_py(taken_msg, pymsg_type)); \
-  /* TODO(sloretz) This looks suspicious, what is currently deleting this? */ \
-  PyObject * pyheader = py::capsule(header.release(), "rmw_request_id_t"); \
-  pytuple[0] = pyheader; \
-  pytuple[1] = pytaken_msg; \
-  return pytuple; \
+  /* TODO(sloretz) This looks suspicious, what is currently deleting header? */ \
+  pytuple[0] = py::capsule(header.release(), "rmw_request_id_t"); \
+  pytuple[1] = py::reinterpret_steal<py::object>( \
+    rclpy_convert_to_py(taken_msg_ptr.get(), pymsg_type.ptr())); \
+  return pytuple;
 
 #define TAKE_SERVICE_RESPONSE(Type) \
   auto action_client = get_pointer<rcl_action_client_t *>(pyaction_client, "rcl_action_client_t"); \
   destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), & destroy_ros_message); \
+  /* taken_msg is always destroyed in this function */ \
+  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message); \
   if (!taken_msg) { \
     throw py::error_already_set(); \
   } \
   auto taken_msg_ptr = \
-    std::unique_ptr<void, decltype(destroy_ros_message)>(taken_msg, destroy_ros_message); \
-  auto header_deleter = [](rmw_request_id_t * ptr){PyMem_Free(static_cast<void *>(ptr));}; \
+    std::unique_ptr<void, destroy_ros_message_signature *>(taken_msg, destroy_ros_message); \
+  auto header_deleter = [](rmw_request_id_t * ptr) {PyMem_Free(static_cast<void *>(ptr));}; \
   auto header = std::unique_ptr<rmw_request_id_t, decltype(header_deleter)>( \
-      static_cast<rmw_request_id_t *>(PyMem_Malloc(sizeof(rmw_request_id_t))), header_deleter); \
+    static_cast<rmw_request_id_t *>(PyMem_Malloc(sizeof(rmw_request_id_t))), header_deleter); \
   rcl_ret_t ret = rcl_action_take_ ## Type ## _response(action_client, header.get(), taken_msg); \
   int64_t sequence = header->sequence_number; \
   /* Create the tuple to return */ \
@@ -660,9 +660,9 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
     rcl_reset_error(); \
     throw std::runtime_error(error_text); \
   } \
-  auto pytaken_msg = py::reinterpret_steal<py::object>(rclpy_convert_to_py(taken_msg, pymsg_type)); \
   pytuple[0] = py::int_(sequence); \
-  pytuple[1] = pytaken_msg; \
+  pytuple[1] = py::reinterpret_steal<py::object>( \
+    rclpy_convert_to_py(taken_msg_ptr.release(), pymsg_type.ptr())); \
   return pytuple; \
 
 
@@ -677,7 +677,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
  * \return NULL if there is a failure.
  */
 int64_t
-rclpy_action_send_goal_request(py::capsule pyaction_client, py::capsule pyrequest)
+rclpy_action_send_goal_request(py::capsule pyaction_client, py::object pyrequest)
 {
   SEND_SERVICE_REQUEST(goal)
 }
@@ -695,7 +695,7 @@ rclpy_action_send_goal_request(py::capsule pyaction_client, py::capsule pyreques
  * \return NULL if there is a failure.
  */
 py::tuple
-rclpy_action_take_goal_request(py::capsule pyaction_server, py::capsule pymsg_type)
+rclpy_action_take_goal_request(py::capsule pyaction_server, py::object pymsg_type)
 {
   TAKE_SERVICE_REQUEST(goal)
 }
@@ -712,7 +712,8 @@ rclpy_action_take_goal_request(py::capsule pyaction_server, py::capsule pymsg_ty
  * \return NULL if there is a failure.
  */
 void
-rclpy_action_send_goal_response(py::capsule pyaction_server, py::capsule pyheader, py::capsule pyresponse)
+rclpy_action_send_goal_response(
+  py::capsule pyaction_server, py::capsule pyheader, py::object pyresponse)
 {
   SEND_SERVICE_RESPONSE(goal)
 }
@@ -729,7 +730,7 @@ rclpy_action_send_goal_response(py::capsule pyaction_server, py::capsule pyheade
  * \return NULL if there is a failure.
  */
 py::tuple
-rclpy_action_take_goal_response(py::capsule pyaction_client, py::capsule pymsg_type)
+rclpy_action_take_goal_response(py::capsule pyaction_client, py::object pymsg_type)
 {
   TAKE_SERVICE_RESPONSE(goal)
 }
@@ -745,7 +746,7 @@ rclpy_action_take_goal_response(py::capsule pyaction_client, py::capsule pymsg_t
  * \return NULL if there is a failure.
  */
 int64_t
-rclpy_action_send_result_request(py::capsule pyaction_client, py::capsule pyrequest)
+rclpy_action_send_result_request(py::capsule pyaction_client, py::object pyrequest)
 {
   SEND_SERVICE_REQUEST(result);
 }
@@ -763,7 +764,7 @@ rclpy_action_send_result_request(py::capsule pyaction_client, py::capsule pyrequ
  * \return NULL if there is a failure.
  */
 py::tuple
-rclpy_action_take_result_request(py::capsule pyaction_server, py::capsule pymsg_type)
+rclpy_action_take_result_request(py::capsule pyaction_server, py::object pymsg_type)
 {
   TAKE_SERVICE_REQUEST(result)
 }
@@ -780,7 +781,8 @@ rclpy_action_take_result_request(py::capsule pyaction_server, py::capsule pymsg_
  * \return NULL if there is a failure.
  */
 void
-rclpy_action_send_result_response(py::capsule pyaction_server, py::capsule pyheader, py::capsule pyresponse)
+rclpy_action_send_result_response(
+  py::capsule pyaction_server, py::capsule pyheader, py::object pyresponse)
 {
   SEND_SERVICE_RESPONSE(result)
 }
@@ -797,7 +799,7 @@ rclpy_action_send_result_response(py::capsule pyaction_server, py::capsule pyhea
  * \return NULL if there is a failure.
  */
 py::tuple
-rclpy_action_take_result_response(py::capsule pyaction_client, py::capsule pymsg_type)
+rclpy_action_take_result_response(py::capsule pyaction_client, py::object pymsg_type)
 {
   TAKE_SERVICE_RESPONSE(result);
 }
@@ -813,7 +815,7 @@ rclpy_action_take_result_response(py::capsule pyaction_client, py::capsule pymsg
  * \return NULL if there is a failure.
  */
 int64_t
-rclpy_action_send_cancel_request(py::capsule pyaction_client, py::capsule pyrequest)
+rclpy_action_send_cancel_request(py::capsule pyaction_client, py::object pyrequest)
 {
   SEND_SERVICE_REQUEST(cancel)
 }
@@ -831,7 +833,7 @@ rclpy_action_send_cancel_request(py::capsule pyaction_client, py::capsule pyrequ
  * \return NULL if there is a failure.
  */
 py::tuple
-rclpy_action_take_cancel_request(py::capsule pyaction_server, py::capsule pymsg_type)
+rclpy_action_take_cancel_request(py::capsule pyaction_server, py::object pymsg_type)
 {
   TAKE_SERVICE_REQUEST(cancel)
 }
@@ -848,7 +850,8 @@ rclpy_action_take_cancel_request(py::capsule pyaction_server, py::capsule pymsg_
  * \return NULL if there is a failure.
  */
 void
-rclpy_action_send_cancel_response(py::capsule pyaction_server, py::capsule pyheader, py::capsule pyresponse)
+rclpy_action_send_cancel_response(
+  py::capsule pyaction_server, py::capsule pyheader, py::object pyresponse)
 {
   SEND_SERVICE_RESPONSE(cancel)
 }
@@ -865,7 +868,7 @@ rclpy_action_send_cancel_response(py::capsule pyaction_server, py::capsule pyhea
  * \return NULL if there is a failure.
  */
 py::tuple
-rclpy_action_take_cancel_response(py::capsule pyaction_client, py::capsule pymsg_type)
+rclpy_action_take_cancel_response(py::capsule pyaction_client, py::object pymsg_type)
 {
   TAKE_SERVICE_RESPONSE(cancel)
 }
@@ -873,22 +876,24 @@ rclpy_action_take_cancel_response(py::capsule pyaction_client, py::capsule pymsg
 #define TAKE_MESSAGE(Type) \
   auto action_client = get_pointer<rcl_action_client_t *>(pyaction_client, "rcl_action_client_t"); \
   destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), & destroy_ros_message); \
+  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message); \
   if (!taken_msg) { \
     throw py::error_already_set(); \
   } \
   auto taken_msg_ptr = std::unique_ptr<void, decltype(destroy_ros_message)>( \
     taken_msg, destroy_ros_message); \
   rcl_ret_t ret = rcl_action_take_ ## Type(action_client, taken_msg); \
-  if (ret != RCL_RET_ACTION_CLIENT_TAKE_FAILED) { \
-    return py::none(); \
-  } else if (ret != RCL_RET_OK) { \
+  if (ret != RCL_RET_OK) { \
+    if (ret == RCL_RET_ACTION_CLIENT_TAKE_FAILED) { \
+      /* if take failed, just do nothing */ \
+      return py::none(); \
+    } \
     std::string error_text{"Failed to take " #Type " with an action client: "}; \
     error_text += rcl_get_error_string().str; \
     rcl_reset_error(); \
     throw std::runtime_error(error_text); \
   } \
-  return py::reinterpret_steal<py::object>(rclpy_convert_to_py(taken_msg, pymsg_type));
+  return py::reinterpret_steal<py::object>(rclpy_convert_to_py(taken_msg, pymsg_type.ptr()));
 
 /// Publish a feedback message from a given action server.
 /**
@@ -904,7 +909,7 @@ rclpy_action_publish_feedback(py::capsule pyaction_server, py::object pymsg)
 {
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t");
   destroy_ros_message_signature * destroy_ros_message = NULL;
-  void * raw_ros_message = rclpy_convert_from_py(pymsg.ptr(), & destroy_ros_message);
+  void * raw_ros_message = rclpy_convert_from_py(pymsg.ptr(), &destroy_ros_message);
   if (!raw_ros_message) {
     throw py::error_already_set();
   }
@@ -932,7 +937,7 @@ rclpy_action_publish_feedback(py::capsule pyaction_server, py::object pymsg)
  * \return NULL if there is a failure.
  */
 py::object
-rclpy_action_take_feedback(py::capsule pyaction_client, py::capsule pymsg_type)
+rclpy_action_take_feedback(py::capsule pyaction_client, py::object pymsg_type)
 {
   TAKE_MESSAGE(feedback)
 }
@@ -981,7 +986,7 @@ rclpy_action_publish_status(py::capsule pyaction_server)
  * \return NULL if there is a failure.
  */
 py::object
-rclpy_action_take_status(py::capsule pyaction_client, py::capsule pymsg_type)
+rclpy_action_take_status(py::capsule pyaction_client, py::object pymsg_type)
 {
   TAKE_MESSAGE(status)
 }
@@ -991,8 +996,8 @@ rclpy_action_accept_new_goal(py::capsule pyaction_server, py::object pygoal_info
 {
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t");
   destroy_ros_message_signature * destroy_ros_message = NULL;
-  rcl_action_goal_info_t * goal_info_msg = (rcl_action_goal_info_t *)rclpy_convert_from_py(
-    pygoal_info_msg.ptr(), &destroy_ros_message);
+  auto goal_info_msg = static_cast<rcl_action_goal_info_t *>(
+    rclpy_convert_from_py(pygoal_info_msg.ptr(), &destroy_ros_message));
   if (!goal_info_msg) {
     throw py::error_already_set();
   }
@@ -1025,11 +1030,6 @@ rclpy_action_notify_goal_done(py::capsule pyaction_server)
   }
 }
 
-#define MULTI_DECREF(Arr, Size) \
-  for (size_t i = 0; i < Size; ++i) { \
-    Py_DECREF(Arr[i]); \
-  }
-
 /// Convert from a Python GoalEvent code to an rcl goal event code.
 /**
  *  Raises std::runtime_error if conversion fails
@@ -1044,19 +1044,19 @@ convert_from_py_goal_event(const int64_t event)
   py::object goal_event_class = server_module.attr("GoalEvent");
   py::int_ pyevent(event);
 
-  if (goal_event_class.attr("EXECUTE").cast<py::int_>().is(pyevent)) {
+  if (goal_event_class.attr("EXECUTE").attr("value").cast<py::int_>().is(pyevent)) {
     return GOAL_EVENT_EXECUTE;
   }
-  if (goal_event_class.attr("CANCEL_GOAL").cast<py::int_>().is(pyevent)) {
+  if (goal_event_class.attr("CANCEL_GOAL").attr("value").cast<py::int_>().is(pyevent)) {
     return GOAL_EVENT_CANCEL_GOAL;
   }
-  if (goal_event_class.attr("SUCCEED").cast<py::int_>().is(pyevent)) {
+  if (goal_event_class.attr("SUCCEED").attr("value").cast<py::int_>().is(pyevent)) {
     return GOAL_EVENT_SUCCEED;
   }
-  if (goal_event_class.attr("ABORT").cast<py::int_>().is(pyevent)) {
+  if (goal_event_class.attr("ABORT").attr("value").cast<py::int_>().is(pyevent)) {
     return GOAL_EVENT_ABORT;
   }
-  if (goal_event_class.attr("CANCELED").cast<py::int_>().is(pyevent)) {
+  if (goal_event_class.attr("CANCELED").attr("value").cast<py::int_>().is(pyevent)) {
     return GOAL_EVENT_CANCELED;
   }
   throw std::runtime_error("Error converting goal event type: unknown goal event");
@@ -1136,7 +1136,7 @@ rclpy_action_process_cancel_request(
   }
   auto cancel_request_ptr =
     std::unique_ptr<rcl_action_cancel_request_t, decltype(destroy_cancel_request)>(
-      cancel_request, destroy_cancel_request);
+    cancel_request, destroy_cancel_request);
 
   rcl_action_cancel_response_t cancel_response = rcl_action_get_zero_initialized_cancel_response();
   rcl_ret_t ret = rcl_action_process_cancel_request(
@@ -1162,6 +1162,7 @@ rclpy_action_process_cancel_request(
     (void) ignore;
     throw py::error_already_set();
   }
+  py::object return_value = py::reinterpret_steal<py::object>(pycancel_response);
 
   ret = rcl_action_cancel_response_fini(&cancel_response);
 
@@ -1171,7 +1172,7 @@ rclpy_action_process_cancel_request(
     rcl_reset_error();
     throw std::runtime_error(error_text);
   }
-  return py::reinterpret_steal<py::object>(pycancel_response);
+  return return_value;
 }
 
 py::tuple
@@ -1200,9 +1201,8 @@ rclpy_action_expire_goals(py::capsule pyaction_server, int64_t max_num_goals)
   py::tuple result_tuple(num_expired);
 
   for (size_t i = 0; i < num_expired; ++i) {
-    PyObject * pygoal_info =
-      rclpy_convert_to_py(&(expired_goals.get()[i]), pygoal_info_type.ptr());
-    result_tuple[i] = py::reinterpret_steal<py::object>(pygoal_info);
+    result_tuple[i] = py::reinterpret_steal<py::object>(
+      rclpy_convert_to_py(&(expired_goals.get()[i]), pygoal_info_type.ptr()));
   }
 
   return result_tuple;
@@ -1213,8 +1213,8 @@ py::object
 rclpy_action_get_client_names_and_types_by_node(
   py::capsule pynode, const char * remote_node_name, const char * remote_node_namespace)
 {
-  rcl_node_t * node = static_cast<rcl_node_t *>(rclpy_handle_get_pointer_from_capsule(
-    pynode.ptr(), "rcl_node_t"));
+  rcl_node_t * node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
   if (!node) {
     throw py::error_already_set();
   }
@@ -1235,7 +1235,7 @@ rclpy_action_get_client_names_and_types_by_node(
   }
 
   py::object pynames_and_types = py::reinterpret_steal<py::object>(
-      rclpy_convert_to_py_names_and_types(&names_and_types));
+    rclpy_convert_to_py_names_and_types(&names_and_types));
   if (!rclpy_names_and_types_fini(&names_and_types)) {
     throw py::error_already_set();
   }
@@ -1246,8 +1246,8 @@ py::object
 rclpy_action_get_server_names_and_types_by_node(
   py::capsule pynode, const char * remote_node_name, const char * remote_node_namespace)
 {
-  rcl_node_t * node = static_cast<rcl_node_t *>(rclpy_handle_get_pointer_from_capsule(
-    pynode.ptr(), "rcl_node_t"));
+  rcl_node_t * node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
   if (!node) {
     throw py::error_already_set();
   }
@@ -1268,7 +1268,7 @@ rclpy_action_get_server_names_and_types_by_node(
   }
 
   py::object pynames_and_types = py::reinterpret_steal<py::object>(
-      rclpy_convert_to_py_names_and_types(&names_and_types));
+    rclpy_convert_to_py_names_and_types(&names_and_types));
   if (!rclpy_names_and_types_fini(&names_and_types)) {
     throw py::error_already_set();
   }
@@ -1278,8 +1278,8 @@ rclpy_action_get_server_names_and_types_by_node(
 py::object
 rclpy_action_get_names_and_types(py::capsule pynode)
 {
-  rcl_node_t * node = static_cast<rcl_node_t *>(rclpy_handle_get_pointer_from_capsule(
-    pynode.ptr(), "rcl_node_t"));
+  rcl_node_t * node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
   if (!node) {
     throw py::error_already_set();
   }
@@ -1295,7 +1295,7 @@ rclpy_action_get_names_and_types(py::capsule pynode)
   }
 
   py::object pynames_and_types = py::reinterpret_steal<py::object>(
-      rclpy_convert_to_py_names_and_types(&names_and_types));
+    rclpy_convert_to_py_names_and_types(&names_and_types));
   if (!rclpy_names_and_types_fini(&names_and_types)) {
     throw py::error_already_set();
   }
@@ -1306,78 +1306,114 @@ rclpy_action_get_names_and_types(py::capsule pynode)
 PYBIND11_MODULE(_rclpy_action, m) {
   m.doc() = "ROS 2 Python Action library.";
 
-  m.def("rclpy_action_destroy_entity", &rclpy_action_destroy_entity,
+  m.def(
+    "rclpy_action_destroy_entity", &rclpy_action_destroy_entity,
     "Destroy a rclpy_action entity.");
-  m.def("rclpy_action_destroy_server_goal_handle", &rclpy_action_destroy_server_goal_handle,
+  m.def(
+    "rclpy_action_destroy_server_goal_handle", &rclpy_action_destroy_server_goal_handle,
     "Destroy a ServerGoalHandle.");
-  m.def("rclpy_action_get_rmw_qos_profile", &rclpy_action_get_rmw_qos_profile,
+  m.def(
+    "rclpy_action_get_rmw_qos_profile", &rclpy_action_get_rmw_qos_profile,
     "Get an action RMW QoS profile.");
-  m.def("rclpy_action_wait_set_add", &rclpy_action_wait_set_add,
+  m.def(
+    "rclpy_action_wait_set_add", &rclpy_action_wait_set_add,
     "Add an action entitiy to a wait set.");
-  m.def("rclpy_action_wait_set_get_num_entities", &rclpy_action_wait_set_get_num_entities,
+  m.def(
+    "rclpy_action_wait_set_get_num_entities", &rclpy_action_wait_set_get_num_entities,
     "Get the number of wait set entities for an action entitity.");
-  m.def("rclpy_action_wait_set_is_ready", &rclpy_action_wait_set_is_ready,
+  m.def(
+    "rclpy_action_wait_set_is_ready", &rclpy_action_wait_set_is_ready,
     "Check if an action entity has any sub-entities ready in a wait set.");
-  m.def("rclpy_action_create_client", &rclpy_action_create_client,
+  m.def(
+    "rclpy_action_create_client", &rclpy_action_create_client,
     "Create an action client.");
-  m.def("rclpy_action_create_server", &rclpy_action_create_server,
+  m.def(
+    "rclpy_action_create_server", &rclpy_action_create_server,
     "Create an action server.");
-  m.def("rclpy_action_server_is_available", &rclpy_action_server_is_available,
+  m.def(
+    "rclpy_action_server_is_available", &rclpy_action_server_is_available,
     "Check if an action server is available for a given client.");
-  m.def("rclpy_action_send_goal_request", &rclpy_action_send_goal_request,
+  m.def(
+    "rclpy_action_send_goal_request", &rclpy_action_send_goal_request,
     "Send a goal request.");
-  m.def("rclpy_action_take_goal_request", &rclpy_action_take_goal_request,
+  m.def(
+    "rclpy_action_take_goal_request", &rclpy_action_take_goal_request,
     "Take a goal request.");
-  m.def("rclpy_action_send_goal_response", &rclpy_action_send_goal_response,
+  m.def(
+    "rclpy_action_send_goal_response", &rclpy_action_send_goal_response,
     "Send a goal response.");
-  m.def("rclpy_action_take_goal_response", &rclpy_action_take_goal_response,
+  m.def(
+    "rclpy_action_take_goal_response", &rclpy_action_take_goal_response,
     "Take a goal response.");
-  m.def("rclpy_action_send_result_request", &rclpy_action_send_result_request,
+  m.def(
+    "rclpy_action_send_result_request", &rclpy_action_send_result_request,
     "Send a result request.");
-  m.def("rclpy_action_take_result_request", &rclpy_action_take_result_request,
+  m.def(
+    "rclpy_action_take_result_request", &rclpy_action_take_result_request,
     "Take a result request.");
-  m.def("rclpy_action_send_result_response", &rclpy_action_send_result_response,
+  m.def(
+    "rclpy_action_send_result_response", &rclpy_action_send_result_response,
     "Send a result response.");
-  m.def("rclpy_action_take_result_response", &rclpy_action_take_result_response,
+  m.def(
+    "rclpy_action_take_result_response", &rclpy_action_take_result_response,
     "Take a result response.");
-  m.def("rclpy_action_send_cancel_request", &rclpy_action_send_cancel_request,
+  m.def(
+    "rclpy_action_send_cancel_request", &rclpy_action_send_cancel_request,
     "Send a cancel request.");
-  m.def("rclpy_action_take_cancel_request", &rclpy_action_take_cancel_request,
+  m.def(
+    "rclpy_action_take_cancel_request", &rclpy_action_take_cancel_request,
     "Take a cancel request.");
-  m.def("rclpy_action_send_cancel_response", &rclpy_action_send_cancel_response,
+  m.def(
+    "rclpy_action_send_cancel_response", &rclpy_action_send_cancel_response,
     "Send a cancel response.");
-  m.def("rclpy_action_take_cancel_response", &rclpy_action_take_cancel_response,
+  m.def(
+    "rclpy_action_take_cancel_response", &rclpy_action_take_cancel_response,
     "Take a cancel response.");
-  m.def("rclpy_action_publish_feedback", &rclpy_action_publish_feedback,
+  m.def(
+    "rclpy_action_publish_feedback", &rclpy_action_publish_feedback,
     "Publish a feedback message.");
-  m.def("rclpy_action_take_feedback", &rclpy_action_take_feedback,
+  m.def(
+    "rclpy_action_take_feedback", &rclpy_action_take_feedback,
     "Take a feedback message.");
-  m.def("rclpy_action_publish_status", &rclpy_action_publish_status,
+  m.def(
+    "rclpy_action_publish_status", &rclpy_action_publish_status,
     "Publish a status message.");
-  m.def("rclpy_action_take_status", &rclpy_action_take_status,
+  m.def(
+    "rclpy_action_take_status", &rclpy_action_take_status,
     "Take a status message.");
-  m.def("rclpy_action_accept_new_goal", &rclpy_action_accept_new_goal,
+  m.def(
+    "rclpy_action_accept_new_goal", &rclpy_action_accept_new_goal,
     "Accept a new goal using an action server.");
-  m.def("rclpy_action_notify_goal_done", &rclpy_action_notify_goal_done,
+  m.def(
+    "rclpy_action_notify_goal_done", &rclpy_action_notify_goal_done,
     "Notify and action server that a goal has reached a terminal state.");
-  m.def("rclpy_action_update_goal_state", &rclpy_action_update_goal_state,
+  m.def(
+    "rclpy_action_update_goal_state", &rclpy_action_update_goal_state,
     "Update a goal state.");
-  m.def("rclpy_action_goal_handle_is_active", &rclpy_action_goal_handle_is_active,
+  m.def(
+    "rclpy_action_goal_handle_is_active", &rclpy_action_goal_handle_is_active,
     "Check if a goal is active.");
-  m.def("rclpy_action_server_goal_exists", &rclpy_action_server_goal_exists,
+  m.def(
+    "rclpy_action_server_goal_exists", &rclpy_action_server_goal_exists,
     "Check if a goal being tracked by an action server.");
-  m.def("rclpy_action_goal_handle_get_status", &rclpy_action_goal_handle_get_status,
+  m.def(
+    "rclpy_action_goal_handle_get_status", &rclpy_action_goal_handle_get_status,
     "Get the status of a goal.");
-  m.def("rclpy_action_process_cancel_request", &rclpy_action_process_cancel_request,
+  m.def(
+    "rclpy_action_process_cancel_request", &rclpy_action_process_cancel_request,
     "Process a cancel request to determine what goals should be canceled.");
-  m.def("rclpy_action_expire_goals", &rclpy_action_expire_goals,
+  m.def(
+    "rclpy_action_expire_goals", &rclpy_action_expire_goals,
     "Expire goals associated with an action server.");
-  m.def("rclpy_action_get_client_names_and_types_by_node",
+  m.def(
+    "rclpy_action_get_client_names_and_types_by_node",
     &rclpy_action_get_client_names_and_types_by_node,
     "Get action client names and types by node.");
-  m.def("rclpy_action_get_server_names_and_types_by_node",
+  m.def(
+    "rclpy_action_get_server_names_and_types_by_node",
     &rclpy_action_get_server_names_and_types_by_node,
     "Get action server names and types by node.");
-  m.def("rclpy_action_get_names_and_types", &rclpy_action_get_names_and_types,
+  m.def(
+    "rclpy_action_get_names_and_types", &rclpy_action_get_names_and_types,
     "Get action names and types.");
 }
