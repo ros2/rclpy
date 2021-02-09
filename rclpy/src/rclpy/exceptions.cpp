@@ -12,40 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__EXCEPTIONS_HPP_
-#define RCLPY__EXCEPTIONS_HPP_
+#include "exceptions.hpp"
+
+#include <rcl/error_handling.h>
 
 #include <stdexcept>
 #include <string>
 
 namespace rclpy
 {
-
-std::string append_rcl_error(std::string prepend);
-
-class RCLError : public std::runtime_error
+std::string append_rcl_error(std::string prepend)
 {
-public:
-  explicit RCLError(const std::string & error_text);
+  prepend += ": ";
+  prepend += rcl_get_error_string().str;
+  rcl_reset_error();
+  return prepend;
+}
 
-  ~RCLError() = default;
-};
-
-class RCLInvalidROSArgsError : public RCLError
+RCLError::RCLError(const std::string & error_text)
+: std::runtime_error(append_rcl_error(error_text))
 {
-};
-
-class UnknownROSArgsError : public RCLError
-{
-};
-
-class NodeNameNonExistentError : public RCLError
-{
-};
-
-class UnsupportedEventTypeError : public RCLError
-{
-};
+}
 }  // namespace rclpy
-
-#endif  // RCLPY__EXCEPTIONS_HPP_
