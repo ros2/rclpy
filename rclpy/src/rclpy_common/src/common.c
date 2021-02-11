@@ -142,7 +142,7 @@ rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
 
 static
 PyObject *
-_convert_rmw_time_to_py_duration(const rmw_time_t * duration)
+_convert_rmw_duration_to_py_duration(const rmw_duration_t duration)
 {
   PyObject * pyduration_module = NULL;
   PyObject * pyduration_class = NULL;
@@ -162,7 +162,7 @@ _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
   if (!args) {
     goto cleanup;
   }
-  kwargs = Py_BuildValue("{sKsK}", "seconds", duration->sec, "nanoseconds", duration->nsec);
+  kwargs = Py_BuildValue("{sK}", "nanoseconds", duration);
   if (!kwargs) {
     goto cleanup;
   }
@@ -210,13 +210,13 @@ rclpy_common_convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
     return NULL;
   }
 
-  rclpy_qos.lifespan = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
+  rclpy_qos.lifespan = _convert_rmw_duration_to_py_duration(qos_profile->lifespan);
   if (!rclpy_qos.lifespan) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
   }
 
-  rclpy_qos.deadline = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
+  rclpy_qos.deadline = _convert_rmw_duration_to_py_duration(qos_profile->deadline);
   if (!rclpy_qos.deadline) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;
@@ -228,8 +228,8 @@ rclpy_common_convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
     return NULL;
   }
 
-  rclpy_qos.liveliness_lease_duration = _convert_rmw_time_to_py_duration(
-    &qos_profile->liveliness_lease_duration);
+  rclpy_qos.liveliness_lease_duration = _convert_rmw_duration_to_py_duration(
+    qos_profile->liveliness_lease_duration);
   if (!rclpy_qos.liveliness_lease_duration) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
     return NULL;

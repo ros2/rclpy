@@ -4302,23 +4302,20 @@ cleanup:
   return pyservice_names_and_types;
 }
 
-/// Fill a given rmw_time_t with python Duration info, if possible.
+/// Fill a given rmw_duration_t with python Duration info, if possible.
 /**
   * \param[in] pyobject Python Object that should be a Duration, error checking is done
-  * \param[out] out_time Valid destination for time data
+  * \param[out] out_duration Valid destination for time data
   * \return Whether or not conversion succeeded.
   */
 bool
-_convert_py_duration_to_rmw_time(PyObject * pyobject, rmw_time_t * out_time)
+_convert_py_duration_to_rmw_duration(PyObject * pyobject, rmw_duration_t * out_duration)
 {
   rcl_duration_t * duration = PyCapsule_GetPointer(pyobject, "rcl_duration_t");
   if (!duration) {
     return false;
   }
-  *out_time = (rmw_time_t) {
-    RCL_NS_TO_S(duration->nanoseconds),
-    duration->nanoseconds % (1000LL * 1000LL * 1000LL)
-  };
+  *out_duration = (rmw_duration_t) duration->nanoseconds;
   return true;
 }
 
@@ -4374,16 +4371,16 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   qos_profile->reliability = pyqos_reliability;
   qos_profile->durability = pyqos_durability;
 
-  if (!_convert_py_duration_to_rmw_time(pyqos_lifespan, &qos_profile->lifespan)) {
+  if (!_convert_py_duration_to_rmw_duration(pyqos_lifespan, &qos_profile->lifespan)) {
     return NULL;
   }
-  if (!_convert_py_duration_to_rmw_time(pyqos_deadline, &qos_profile->deadline)) {
+  if (!_convert_py_duration_to_rmw_duration(pyqos_deadline, &qos_profile->deadline)) {
     return NULL;
   }
 
   qos_profile->liveliness = pyqos_liveliness;
   if (
-    !_convert_py_duration_to_rmw_time(
+    !_convert_py_duration_to_rmw_duration(
       pyqos_liveliness_lease_duration,
       &qos_profile->liveliness_lease_duration))
   {
