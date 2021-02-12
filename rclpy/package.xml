@@ -16,9 +16,9 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <build_depend>pybind11_vendor</build_depend>
   <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
-  <build_depend>pybind11_vendor</build_depend>
 
   <depend>rmw_implementation</depend>
   <depend>rcl</depend>
