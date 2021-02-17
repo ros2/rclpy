@@ -202,6 +202,16 @@ if(NOT WIN32)
   )
 endif()
 
+# Workaround to ensure rclpy_common has same definition for Py_DEBUG
+# TODO(sloretz) remove this workaround when using pybind11 2.6+
+get_target_property(_rclpy_compile_definitions _rclpy COMPILE_DEFINITIONS)
+foreach(_rclpy_definition ${_rclpy_compile_definitions})
+  if("Py_DEBUG" STREQUAL _rclpy_definition)
+    target_compile_definitions(PRIVATE rclpy_common Py_DEBUG)
+    break()
+  endif()
+endforeach()
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # Give cppcheck hints about macro definitions coming from outside this package
