@@ -133,7 +133,7 @@ configure_build_install_location(_rclpy_signal_handler)
 
 # Pycapsule library
 pybind11_add_module(_rclpy_pycapsule SHARED
-  src/rclpy/_rclpy_pycapsule.c
+  src/rclpy/_rclpy_pycapsule.cpp
 )
 configure_build_install_location(_rclpy_pycapsule)
 
