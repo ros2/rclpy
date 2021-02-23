@@ -16,6 +16,7 @@ import pathlib
 import time
 import unittest
 from unittest.mock import Mock
+import warnings
 
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
@@ -516,7 +517,9 @@ class TestNode(unittest.TestCase):
             'bar', 'hello', ParameterDescriptor())
         result_baz = self.node.declare_parameter(
             'baz', 2.41, ParameterDescriptor())
-        result_value_not_set = self.node.declare_parameter('value_not_set')
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            result_value_not_set = self.node.declare_parameter('value_not_set')
 
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
@@ -591,7 +594,9 @@ class TestNode(unittest.TestCase):
             ('value_not_set',)
         ]
 
-        result = self.node.declare_parameters('', parameters)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            result = self.node.declare_parameters('', parameters)
 
         # OK cases - using overrides.
         self.assertIsInstance(result, list)
@@ -613,7 +618,9 @@ class TestNode(unittest.TestCase):
         self.assertIsNone(self.node.get_parameter('value_not_set').value)
         self.assertTrue(self.node.has_parameter('value_not_set'))
 
-        result = self.node.declare_parameters('namespace', parameters)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            result = self.node.declare_parameters('namespace', parameters)
 
         # OK cases.
         self.assertIsInstance(result, list)

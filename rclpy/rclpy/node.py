@@ -25,6 +25,7 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
+import warnings
 import weakref
 
 from rcl_interfaces.msg import FloatingPointRange
@@ -43,8 +44,10 @@ from rclpy.clock import Clock
 from rclpy.clock import ROSClock
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
+from rclpy.exceptions import InvalidParameterTypeException
 from rclpy.exceptions import InvalidParameterValueException
 from rclpy.exceptions import InvalidTopicNameException
+from rclpy.exceptions import NoParameterOverrideProvidedException
 from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
@@ -328,7 +331,7 @@ class Node:
         self,
         name: str,
         value: Any = None,
-        descriptor: ParameterDescriptor = ParameterDescriptor(),
+        descriptor: Optional[ParameterDescriptor] = None,
         ignore_override: bool = False
     ) -> Parameter:
         """
@@ -346,13 +349,20 @@ class Node:
         :raises: InvalidParameterException if the parameter name is invalid.
         :raises: InvalidParameterValueException if the registered callback rejects the parameter.
         """
-        return self.declare_parameters('', [(name, value, descriptor)], ignore_override)[0]
+        if value is None and descriptor is None:
+            # Temporal patch so we get deprecation warning if only a name is provided.
+            args = (name, )
+        else:
+            descriptor = ParameterDescriptor() if descriptor is None else descriptor
+            args = (name, value, descriptor)
+        return self.declare_parameters('', [args], ignore_override)[0]
 
     def declare_parameters(
         self,
         namespace: str,
         parameters: List[Union[
             Tuple[str],
+            Tuple[str, Parameter.Type],
             Tuple[str, Any],
             Tuple[str, Any, ParameterDescriptor],
         ]],
@@ -401,42 +411,57 @@ class Node:
                 )
 
             value = None
-            descriptor = ParameterDescriptor()
+            param_type = None
 
             # Get the values from the tuple, checking its types.
             # Use defaults if the tuple doesn't contain value and / or descriptor.
-            try:
-                name = parameter_tuple[0]
-                assert \
-                    isinstance(name, str), \
-                    (
-                        'First element {name} at index {index} in parameters list '
-                        'is not a str.'.format_map(locals())
-                    )
+            name = parameter_tuple[0]
+            second_arg = parameter_tuple[1] if 1 < len(parameter_tuple) else None
+            descriptor = parameter_tuple[2] if 2 < len(parameter_tuple) else ParameterDescriptor()
 
-                # Get value from parameter overrides, of from tuple if it doesn't exist.
-                if not ignore_override and name in self._parameter_overrides:
-                    value = self._parameter_overrides[name].value
+            if not isinstance(name, str):
+                raise TypeError(
+                        f'First element {name} at index {index} in parameters list '
+                        'is not a str.')
+            if not isinstance(descriptor, ParameterDescriptor):
+                raise TypeError(
+                    f'Third element {descriptor} at index {index} in parameters list '
+                    'is not a ParameterDescriptor.'
+                )
+
+            if len(parameter_tuple) == 1:
+                warnings.warn(
+                    f"when declaring parmater named '{name}', "
+                    'declaring a parameter only providing its name is deprecated. '
+                    'You have to either:\n'
+                    '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
+                    ' (and optionally a descriptor).\n'
+                    '\t- Pass a name and a parameter type.\n'
+                    '\t- Pass a name and a descriptor with `dynamic_typing=True',
+                    DeprecationWarning)
+                descriptor.dynamic_typing = True
+
+            if isinstance(second_arg, Parameter.Type):
+                param_type = second_arg
+            else:
+                value = second_arg
+
+            if not descriptor.dynamic_typing and value is not None:
+                # infer type from default value
+                if not isinstance(value, ParameterValue):
+                    descriptor.type = Parameter.Type.from_parameter_value(value).value
                 else:
-                    # This raises a TypeError if it's not possible to get a type from the tuple.
-                    value = parameter_tuple[1]
+                    descriptor.type = value.type
 
-                # Get descriptor from tuple.
-                descriptor = parameter_tuple[2]
-                assert \
-                    isinstance(descriptor, ParameterDescriptor), \
-                    (
-                        'Third element {descriptor} at index {index} in parameters list '
-                        'is not a ParameterDescriptor.'.format_map(locals())
-                    )
-            except AssertionError as assertion_error:
-                raise TypeError(assertion_error)
-            except IndexError:
-                # This means either value or descriptor were not defined which is fine.
-                pass
+            # Get value from parameter overrides, of from tuple if it doesn't exist.
+            if not ignore_override and name in self._parameter_overrides:
+                value = self._parameter_overrides[name].value
+
+            if value is None and not descriptor.dynamic_typing:
+                raise NoParameterOverrideProvidedException(name)
 
             if namespace:
-                name = '{namespace}.{name}'.format_map(locals())
+                name = f'{namespace}.{name}'
 
             # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
             validate_parameter_name(name)
@@ -643,6 +668,8 @@ class Node:
                 allow_not_set_type=allow_undeclared_parameters
             )
             if raise_on_failure and not result.successful:
+                if result.reason.startswith('Wrong parameter type'):
+                    raise InvalidParameterTypeException(param, descriptors[param._name])
                 raise InvalidParameterValueException(param.name, param.value, result.reason)
             results.append(result)
         return results
@@ -871,6 +898,15 @@ class Node:
 
         if parameter.type_ == Parameter.Type.DOUBLE and descriptor.floating_point_range:
             return self._apply_floating_point_range(parameter, descriptor.floating_point_range[0])
+
+        if not descriptor.dynamic_typing and descriptor.type != parameter.type_.value:
+            return SetParametersResult(
+                successful=False,
+                reason=(
+                    'Wrong parameter type, expected '
+                    f"'{Parameter.Type.from_parameter_msg(descriptor.type)}'"
+                    f" got '{parameter.type_}'")
+            )
 
         return SetParametersResult(successful=True)
 
