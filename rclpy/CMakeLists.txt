@@ -67,6 +67,29 @@ function(clean_windows_flags target)
   endif()
 endfunction()
 
+# pybind11_add_module sets a compile definition Py_DEBUG, but the CPython
+# pyconfig.h header on windows also sets Py_DEBUG when _DEBUG is set.
+# This leadds to a C4005 compiler warning for a duplicate definition of
+# Py_DEBUG.
+# The pybind11.h header has logic to work around that, but not all of these
+# CPython extensions are using pybind11.
+# This function strips the Py_DEBUG compile definition.
+# It should only be used if pybind11_add_module is used but the module does not
+# include pybind11.h.
+function(remove_py_debug_definition_on_win32 target)
+  if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  get_target_property(compile_definitions "${target}" COMPILE_DEFINITIONS)
+  set(compile_definitions_to_keep "")
+  foreach(definition ${compile_definitions})
+    if("Py_DEBUG" STREQUAL definition)
+      # Skip!
+      continue()
+    endif()
+    list(APPEND compile_definitions_to_keep "${definition}")
+  endforeach()
+  set_target_properties("${target}" PROPERTIES COMPILE_DEFINITIONS "${compile_definitions_to_keep}")
+  endif()
+endfunction()
 
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
@@ -142,6 +165,7 @@ target_link_libraries(_rclpy PRIVATE
 )
 configure_build_install_location(_rclpy)
 clean_windows_flags(_rclpy)
+remove_py_debug_definition_on_win32(_rclpy)
 
 # Extension with code for Action servers and clients
 pybind11_add_module(_rclpy_action SHARED
@@ -165,6 +189,7 @@ target_link_libraries(_rclpy_logging PRIVATE
 )
 configure_build_install_location(_rclpy_logging)
 clean_windows_flags(_rclpy_logging)
+remove_py_debug_definition_on_win32(_rclpy_logging)
 
 # Signal handling library
 pybind11_add_module(_rclpy_signal_handler SHARED
@@ -177,6 +202,7 @@ target_link_libraries(_rclpy_signal_handler PRIVATE
 )
 configure_build_install_location(_rclpy_signal_handler)
 clean_windows_flags(_rclpy_signal_handler)
+remove_py_debug_definition_on_win32(_rclpy_signal_handler)
 
 # Pycapsule library
 pybind11_add_module(_rclpy_pycapsule SHARED
@@ -195,22 +221,13 @@ target_link_libraries(_rclpy_handle PRIVATE
 )
 configure_build_install_location(_rclpy_handle)
 clean_windows_flags(_rclpy_handle)
+remove_py_debug_definition_on_win32(_rclpy_handle)
 
 if(NOT WIN32)
   ament_environment_hooks(
     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
   )
 endif()
-
-# Workaround to ensure rclpy_common has same definition for Py_DEBUG
-# TODO(sloretz) remove this workaround when using pybind11 2.6+
-get_target_property(_rclpy_compile_definitions _rclpy COMPILE_DEFINITIONS)
-foreach(_rclpy_definition ${_rclpy_compile_definitions})
-  if("Py_DEBUG" STREQUAL _rclpy_definition)
-    target_compile_definitions(rclpy_common PUBLIC Py_DEBUG)
-    break()
-  endif()
-endforeach()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
