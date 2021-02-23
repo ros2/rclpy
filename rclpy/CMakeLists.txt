@@ -100,7 +100,7 @@ configure_build_install_location(_rclpy)
 
 # Extension with code for Action servers and clients
 pybind11_add_module(_rclpy_action SHARED
-  src/rclpy/_rclpy_action.c
+  src/rclpy/_rclpy_action.cpp
 )
 target_link_libraries(_rclpy_action PRIVATE
   rclpy_common
