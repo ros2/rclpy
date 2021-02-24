@@ -1804,6 +1804,34 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('to_value_no_step').value, 10)
         self.assertEqual(self.node.get_parameter('in_range_no_step').value, 5)
 
+    def test_static_dynamic_typing(self):
+        dynamic_typing_descriptor = ParameterDescriptor()
+        dynamic_typing_descriptor.dynamic_typing = True
+        parameters = [
+            ('int_param', 0),
+            ('dynamic_param', None, dynamic_typing_descriptor),
+        ]
+        result = self.node.declare_parameters('', parameters)
+
+        result = self.node.set_parameters([Parameter('int_param', value='asd')])[0]
+        self.assertFalse(result.successful)
+        self.assertTrue(result.reason.startswith('Wrong parameter type'))
+
+        self.assertTrue(self.node.set_parameters([Parameter('int_param', value=3)])[0].successful)
+
+        self.assertTrue(self.node.set_parameters([Parameter('dynamic_param', value='asd')])[0].successful)
+        self.assertTrue(self.node.set_parameters([Parameter('dynamic_param', value=3)])[0].successful)
+
+        result = self.node.set_parameters_atomically([
+            Parameter('dynamic_param', value=3), Parameter('int_param', value='asd')])
+        self.assertFalse(result.successful)
+        self.assertTrue(result.reason.startswith('Wrong parameter type'))
+
+        self.assertTrue(self.node.set_parameters_atomically([
+            Parameter('dynamic_param', value=None), Parameter('int_param', value=4)]).successful)
+        self.assertEqual(self.node.get_parameter('int_param').value, 4)
+        self.assertFalse(self.node.has_parameter('dynamic_param'))
+
 
 class TestCreateNode(unittest.TestCase):
 
