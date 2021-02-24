@@ -33,6 +33,7 @@ from rcl_interfaces.msg import IntegerRange
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterEvent
+from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 
@@ -442,16 +443,22 @@ class Node:
                 descriptor.dynamic_typing = True
 
             if isinstance(second_arg, Parameter.Type):
-                param_type = second_arg
+                if second_arg.value == Parameter.Type.NOT_SET:
+                    raise ValueError(
+                        'Cannot declare a statically typed parameter of type NOT_SET')
+                descriptor.type = second_arg.value
             else:
                 value = second_arg
-
-            if not descriptor.dynamic_typing and value is not None:
-                # infer type from default value
-                if not isinstance(value, ParameterValue):
-                    descriptor.type = Parameter.Type.from_parameter_value(value).value
-                else:
-                    descriptor.type = value.type
+                if not descriptor.dynamic_typing and value is not None:
+                    # infer type from default value
+                    if not isinstance(value, ParameterValue):
+                        descriptor.type = Parameter.Type.from_parameter_value(value).value
+                    else:
+                        if value.type == ParameterType.PARAMETER_NOT_SET:
+                            raise ValueError(
+                                'Cannot declare a statically typed parameter with default value of '
+                                'type PARAMETER_NOT_SET')
+                        descriptor.type = value.type
 
             # Get value from parameter overrides, of from tuple if it doesn't exist.
             if not ignore_override and name in self._parameter_overrides:
@@ -669,7 +676,7 @@ class Node:
             )
             if raise_on_failure and not result.successful:
                 if result.reason.startswith('Wrong parameter type'):
-                    raise InvalidParameterTypeException(param, descriptors[param._name])
+                    raise InvalidParameterTypeException(param, Parameter.Type(descriptors[param._name].type).name)
                 raise InvalidParameterValueException(param.name, param.value, result.reason)
             results.append(result)
         return results
@@ -885,28 +892,27 @@ class Node:
         else:
             descriptor.name = parameter.name
 
-        # The type in the descriptor has to match the type of the parameter.
-        descriptor.type = parameter.type_.value
-
         if check_read_only and descriptor.read_only:
             return SetParametersResult(
                 successful=False,
                 reason='Trying to set a read-only parameter: {}.'.format(parameter.name))
+
+        if descriptor.dynamic_typing or self._allow_undeclared_parameters:
+            descriptor.type = parameter.type_.value
+        elif descriptor.type != parameter.type_.value:
+            return SetParametersResult(
+                successful=False,
+                reason=(
+                    'Wrong parameter type, expected '
+                    f"'{Parameter.Type(descriptor.type)}'"
+                    f" got '{parameter.type_}'")
+            )
 
         if parameter.type_ == Parameter.Type.INTEGER and descriptor.integer_range:
             return self._apply_integer_range(parameter, descriptor.integer_range[0])
 
         if parameter.type_ == Parameter.Type.DOUBLE and descriptor.floating_point_range:
             return self._apply_floating_point_range(parameter, descriptor.floating_point_range[0])
-
-        if not descriptor.dynamic_typing and descriptor.type != parameter.type_.value:
-            return SetParametersResult(
-                successful=False,
-                reason=(
-                    'Wrong parameter type, expected '
-                    f"'{Parameter.Type.from_parameter_msg(descriptor.type)}'"
-                    f" got '{parameter.type_}'")
-            )
 
         return SetParametersResult(successful=True)
 
