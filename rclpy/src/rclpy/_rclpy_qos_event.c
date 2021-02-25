@@ -36,7 +36,7 @@ _check_rcl_return(rclpy_module_state_t * module_state, rcl_ret_t ret, const char
 {
   if (!module_state) {
     PyErr_Format(PyExc_RuntimeError, "_check_rcl_return got NULL module state");
-    return NULL;
+    return false;
   }
   if (RCL_RET_OK == ret) {
     return true;
