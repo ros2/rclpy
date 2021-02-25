@@ -47,6 +47,7 @@
 
 #include "./detail/thread_safe_logging_output_handler.h"
 #include "./detail/execute_with_logging_mutex.h"
+#include "./detail/qos.h"
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
@@ -4417,6 +4418,83 @@ rclpy_convert_to_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   return rclpy_common_convert_to_qos_dict(profile);
 }
 
+/// Check the qos profiles for compatability
+/**
+ * TODO(audrow): write description
+  */
+static PyObject *
+rclpy_qos_check_compatible(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  // TODO(audrow) use cleanup_rclpy_qos_profile(&rclpy_qos);
+  PyObject * pyqos_publisher_profile = NULL;
+  PyObject * pyqos_subscription_profile = NULL;
+  if (!PyArg_ParseTuple(
+      args, "OO", 
+      &pyqos_publisher_profile,
+      &pyqos_subscription_profile
+      )) {
+    return NULL;
+  }
+
+  rmw_qos_profile_t * publisher_qos_profile = PyCapsule_GetPointer(
+    pyqos_publisher_profile, "rmw_qos_profile_t");
+  if (!publisher_qos_profile) {
+    return NULL;
+  }
+  rmw_qos_profile_t * subscription_qos_profile = PyCapsule_GetPointer(
+    pyqos_subscription_profile, "rmw_qos_profile_t");
+  if (!subscription_qos_profile) {
+    return NULL;
+  }
+
+  rmw_qos_compatibility_type_t compatible;
+  const size_t reason_size = 2048u;
+  char reason_c_str[reason_size];
+  rmw_ret_t ret = rmw_qos_profile_check_compatible(
+    *publisher_qos_profile,
+    *subscription_qos_profile,
+    &compatible,
+    reason_c_str,
+    reason_size);
+  if (RMW_RET_OK != ret) {
+      PyErr_Format(
+        RCLError,
+        "Failed to check QoS compatibility: %s", rcl_get_error_string().str);
+      rcl_reset_error();
+      return NULL;
+  }
+
+  switch (compatible) {
+    case RMW_QOS_COMPATIBILITY_OK:
+      break;
+    case RMW_QOS_COMPATIBILITY_WARNING:
+      break;
+    case RMW_QOS_COMPATIBILITY_ERROR:
+      break;
+    default:
+      PyErr_Format(
+        RCLError,
+        "Unexpected compatibility value returned by rmw '%s'", compatible);
+      return NULL;
+  }
+  
+  PyObject * results = PyDict_New();
+  if (!results) {
+    return NULL;
+  }
+  // Populate keyword arguments for QoSProfile object
+  // A success returns 0, and a failure returns -1
+  int set_result = 0;
+  set_result += PyDict_SetItemString(results, "reason", Py_BuildValue("s", reason_c_str));
+  set_result += PyDict_SetItemString(results, "compatability", Py_BuildValue("i", compatible));
+  if (0 != set_result) {
+    Py_DECREF(results);
+    return NULL;
+  }
+
+  return results;
+}
+
 /// Fetch a predefined qos_profile from rmw and convert it to a dictionary with QoSProfile args
 /**
  * Raises RuntimeError if there is an rcl error
@@ -5976,6 +6054,10 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_convert_to_py_qos_policy", rclpy_convert_to_py_qos_policy, METH_VARARGS,
     "Convert a rmw_qos_profile_t into a QoSPolicy Python object."
+  },
+  {
+    "rclpy_qos_check_compatible", rclpy_qos_check_compatible, METH_VARARGS,
+    "Check if a pub/sub pair has compatible QoS profiles."
   },
   {
     "rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
