@@ -349,11 +349,11 @@ void _rclpy_raise_unknown_ros_args(
   const int * unknown_ros_args_indices,
   int unknown_ros_args_count)
 {
+  PyObject * unknown_ros_pyargs = NULL;
   if (!module_state) {
     PyErr_Format(PyExc_RuntimeError, "_rclpy_raise_unknown_ros_args got NULL module state");
     goto cleanup;
   }
-  PyObject * unknown_ros_pyargs = NULL;
 
   pyargs = PySequence_List(pyargs);
   if (NULL == pyargs) {
