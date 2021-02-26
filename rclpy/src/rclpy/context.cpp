@@ -12,22 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__CONTEXT_HPP_
-#define RCLPY__CONTEXT_HPP_
+#include <rcl/context.h>
+#include <rcl/types.h>
 
-#include <pybind11/pybind11.h>
+#include <stdexcept>
 
-namespace py = pybind11;
+#include "rclpy_common/handle.h"
+
+#include "rclpy_common/exceptions.hpp"
+
+#include "context.hpp"
 
 namespace rclpy
 {
-/// Retrieves domain id from init_options of context
-/**
- * \param[in] pycontext Capsule containing rcl_context_t
- * \return domain id
- */
 size_t
-context_get_domain_id(py::capsule pycontext);
-}  // namespace rclpy
+context_get_domain_id(py::capsule pycontext)
+{
+  auto context = static_cast<rcl_context_t *>(
+    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
+  if (!context) {
+    throw py::error_already_set();
+  }
 
-#endif  // RCLPY__CONTEXT_HPP_
+  size_t domain_id;
+  rcl_ret_t ret = rcl_context_get_domain_id(context, &domain_id);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to get domain id");
+  }
+
+  return domain_id;
+}
+}  // namespace rclpy
