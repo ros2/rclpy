@@ -5625,7 +5625,7 @@ _parse_param_overrides(
 {
   if (!module_state) {
     PyErr_Format(PyExc_RuntimeError, "_parse_param_overrides got NULL module state");
-    return NULL;
+    return false;
   }
   rcl_params_t * params = NULL;
   if (RCL_RET_OK != rcl_arguments_get_param_overrides(args, &params)) {
