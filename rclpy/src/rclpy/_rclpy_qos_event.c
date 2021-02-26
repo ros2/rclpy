@@ -32,13 +32,18 @@ typedef PyObject * (* _qos_event_data_filler_function)(_qos_event_callback_data_
 
 static
 bool
-_check_rcl_return(rcl_ret_t ret, const char * error_msg)
+_check_rcl_return(rclpy_module_state_t * module_state, rcl_ret_t ret, const char * error_msg)
 {
+  if (!module_state) {
+    PyErr_Format(PyExc_RuntimeError, "_check_rcl_return got NULL module state");
+    return false;
+  }
   if (RCL_RET_OK == ret) {
     return true;
   }
 
-  PyObject * exception = (RCL_RET_UNSUPPORTED == ret) ? UnsupportedEventTypeError : RCLError;
+  PyObject * exception =
+    (RCL_RET_UNSUPPORTED == ret) ? module_state->UnsupportedEventTypeError : module_state->RCLError;
   PyErr_Format(exception, "%s: %s", error_msg, rcl_get_error_string().str);
   rcl_reset_error();
 
@@ -296,8 +301,13 @@ _get_qos_event_data_filler_function_for(PyObject * pyparent, unsigned PY_LONG_LO
   * \return NULL on failure.
   */
 static PyObject *
-rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
+rclpy_create_event(PyObject * module, PyObject * args)
 {
+  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
+  if (!module_state) {
+    // exception already raised
+    return NULL;
+  }
   unsigned PY_LONG_LONG event_type;
   PyObject * pyparent = NULL;
 
@@ -332,7 +342,7 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
   } else {
     ret = rcl_publisher_event_init(event, publisher, event_type);
   }
-  if (!_check_rcl_return(ret, "Failed to initialize event")) {
+  if (!_check_rcl_return(module_state, ret, "Failed to initialize event")) {
     PyMem_Free(event);
     return NULL;
   }
@@ -341,7 +351,7 @@ rclpy_create_event(PyObject * Py_UNUSED(self), PyObject * args)
   if (!event_handle) {
     ret = rcl_event_fini(event);
     PyMem_Free(event);
-    _check_rcl_return(ret, "Failed to fini 'rcl_event_t'");
+    _check_rcl_return(module_state, ret, "Failed to fini 'rcl_event_t'");
     return NULL;
   }
   _rclpy_handle_add_dependency(event_handle, parent_handle);
