@@ -27,7 +27,7 @@ rclpy_handle_get_pointer(py::capsule handle_capsule)
     throw py::error_already_set();
   }
 
-  static_assert(sizeof(size_t) >= sizeof(void *));
+  static_assert(sizeof(size_t) >= sizeof(void *), "Need size_t capable of holding void *");
   return reinterpret_cast<size_t>(ptr);
 }
 
