@@ -189,7 +189,6 @@ target_link_libraries(_rclpy_logging PRIVATE
 )
 configure_build_install_location(_rclpy_logging)
 clean_windows_flags(_rclpy_logging)
-remove_py_debug_definition_on_win32(_rclpy_logging)
 
 # Signal handling library
 pybind11_add_module(_rclpy_signal_handler SHARED
