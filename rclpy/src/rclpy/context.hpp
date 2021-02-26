@@ -22,9 +22,7 @@
 
 #include <stdexcept>
 
-extern "C" {
 #include "rclpy_common/handle.h"
-}
 
 #include "rclpy_common/exceptions.hpp"
 
