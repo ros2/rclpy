@@ -164,6 +164,8 @@ class TopicEndpointInfo:
         result += 'Endpoint type: %s\n' % self.endpoint_type.name
         result += 'GID: %s\n' % '.'.join(format(x, '02x') for x in self.endpoint_gid)
         result += 'QoS profile:\n'
+        result += '  History: %s\n' % self.qos_profile.history.name
+        result += '  Depth: %s\n' % self.qos_profile.depth
         result += '  Reliability: %s\n' % self.qos_profile.reliability.name
         result += '  Durability: %s\n' % self.qos_profile.durability.name
         result += '  Lifespan: %d nanoseconds\n' % self.qos_profile.lifespan.nanoseconds

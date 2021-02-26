@@ -95,6 +95,8 @@ class TestQosProfile(unittest.TestCase):
             'Endpoint type: INVALID\n' \
             'GID: \n' \
             'QoS profile:\n' \
+            '  History: UNKNOWN\n' \
+            '  Depth: 0\n' \
             '  Reliability: UNKNOWN\n' \
             '  Durability: UNKNOWN\n' \
             '  Lifespan: 0 nanoseconds\n' \
