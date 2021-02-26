@@ -220,7 +220,6 @@ target_link_libraries(_rclpy_handle PRIVATE
 )
 configure_build_install_location(_rclpy_handle)
 clean_windows_flags(_rclpy_handle)
-remove_py_debug_definition_on_win32(_rclpy_handle)
 
 if(NOT WIN32)
   ament_environment_hooks(
