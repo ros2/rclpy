@@ -180,6 +180,7 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rclpy_common
 )
 configure_build_install_location(_rclpy_pybind11)
+clean_windows_flags(_rclpy_pybind11)
 
 # Extension with code for Action servers and clients
 pybind11_add_module(_rclpy_action SHARED
@@ -192,6 +193,7 @@ target_link_libraries(_rclpy_action PRIVATE
   rcutils::rcutils
 )
 configure_build_install_location(_rclpy_action)
+clean_windows_flags(_rclpy_action)
 
 # Logging support provided by rcutils
 pybind11_add_module(_rclpy_logging SHARED
