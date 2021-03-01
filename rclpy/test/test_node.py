@@ -529,7 +529,7 @@ class TestNode(unittest.TestCase):
         result_baz = self.node.declare_parameter(
             'baz', 2.41, ParameterDescriptor())
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            warnings.filterwarnings('ignore', category=UserWarning)
             result_value_not_set = self.node.declare_parameter('value_not_set')
 
         # OK cases.
@@ -617,7 +617,7 @@ class TestNode(unittest.TestCase):
             3.14)
 
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            warnings.filterwarnings('ignore', category=UserWarning)
             result = self.node.declare_parameters('', parameters)
 
         # OK cases - using overrides.
@@ -641,7 +641,7 @@ class TestNode(unittest.TestCase):
         self.assertTrue(self.node.has_parameter('value_not_set'))
 
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=DeprecationWarning)
+            warnings.filterwarnings('ignore', category=UserWarning)
             result = self.node.declare_parameters('namespace', parameters)
 
         # OK cases.

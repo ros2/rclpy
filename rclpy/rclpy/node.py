@@ -438,8 +438,7 @@ class Node:
                     '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
                     ' (and optionally a descriptor).\n'
                     '\t- Pass a name and a parameter type.\n'
-                    '\t- Pass a name and a descriptor with `dynamic_typing=True',
-                    DeprecationWarning)
+                    '\t- Pass a name and a descriptor with `dynamic_typing=True')
                 descriptor.dynamic_typing = True
 
             if isinstance(second_arg, Parameter.Type):
