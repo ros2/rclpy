@@ -96,7 +96,7 @@ class InvalidParameterException(ParameterException):
 
 
 class InvalidParameterTypeException(ParameterException):
-    """Raised when rejected when applying a descriptor for being of an invalid type."""
+    """Raised when a parameter is rejected for having an invalid type."""
 
     def __init__(self, desired_parameter, expected_type, *args):
         from rclpy.parameter import Parameter
