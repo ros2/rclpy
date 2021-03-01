@@ -456,8 +456,8 @@ class Node:
                     else:
                         if value.type == ParameterType.PARAMETER_NOT_SET:
                             raise ValueError(
-                                'Cannot declare a statically typed parameter with default value of '
-                                'type PARAMETER_NOT_SET')
+                                'Cannot declare a statically typed parameter with default value '
+                                'of type PARAMETER_NOT_SET')
                         descriptor.type = value.type
 
             # Get value from parameter overrides, of from tuple if it doesn't exist.
@@ -676,7 +676,8 @@ class Node:
             )
             if raise_on_failure and not result.successful:
                 if result.reason.startswith('Wrong parameter type'):
-                    raise InvalidParameterTypeException(param, Parameter.Type(descriptors[param._name].type).name)
+                    raise InvalidParameterTypeException(
+                        param, Parameter.Type(descriptors[param._name].type).name)
                 raise InvalidParameterValueException(param.name, param.value, result.reason)
             results.append(result)
         return results

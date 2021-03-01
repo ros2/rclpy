@@ -544,7 +544,8 @@ class TestNode(unittest.TestCase):
         # initial_foo and initial_fizz get override values; initial_bar does not.
         self.assertEqual(result_initial_foo.value, 4321)
         self.assertEqual(result_initial_bar.value, 'ignoring_override')
-        self.assertEqual(result_initial_fizz.value, 'param_file_override')  # provided by CLI, overridden by file
+        # provided by CLI, overridden by file
+        self.assertEqual(result_initial_fizz.value, 'param_file_override')
         self.assertEqual(result_initial_baz.value, 3.14)  # provided by file, overridden manually
         self.assertEqual(result_initial_buzz.value, 1.)  # provided by CLI
         self.assertEqual(result_initial_foobar.value, False)  # provided by file
@@ -1450,7 +1451,8 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
         # Now undeclare one of them implicitly.
-        result = self.node.set_parameters_atomically([Parameter('bar', Parameter.Type.NOT_SET, None)])
+        result = self.node.set_parameters_atomically([
+            Parameter('bar', Parameter.Type.NOT_SET, None)])
         self.assertEqual(result.successful, True)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertFalse(self.node.has_parameter('bar'))
@@ -1574,7 +1576,7 @@ class TestNode(unittest.TestCase):
                 additional_constraints='some constraints',
                 read_only=False,
                 integer_range=[IntegerRange(from_value=-10, to_value=10, step=2)],
-                dynamic_typing = True
+                dynamic_typing=True
             )
         )
         self.assertEqual(value.type, Parameter.Type.STRING.value)
@@ -1819,8 +1821,10 @@ class TestNode(unittest.TestCase):
 
         self.assertTrue(self.node.set_parameters([Parameter('int_param', value=3)])[0].successful)
 
-        self.assertTrue(self.node.set_parameters([Parameter('dynamic_param', value='asd')])[0].successful)
-        self.assertTrue(self.node.set_parameters([Parameter('dynamic_param', value=3)])[0].successful)
+        self.assertTrue(
+            self.node.set_parameters([Parameter('dynamic_param', value='asd')])[0].successful)
+        self.assertTrue(
+            self.node.set_parameters([Parameter('dynamic_param', value=3)])[0].successful)
 
         result = self.node.set_parameters_atomically([
             Parameter('dynamic_param', value=3), Parameter('int_param', value='asd')])
