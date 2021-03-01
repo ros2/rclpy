@@ -21,6 +21,8 @@
 #include <memory>
 #include <string>
 
+#include "rclpy_common/exceptions.hpp"
+
 extern "C" {
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
@@ -79,10 +81,8 @@ rclpy_action_destroy_entity(py::capsule pyentity, py::capsule pynode)
   if (ret != RCL_RET_OK) {
     std::string error_text = "Failed to fini '";
     error_text += pyentity.name();
-    error_text += "': ";
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    error_text += "'";
+    throw rclpy::RCLError(error_text);
   }
 
   if (PyCapsule_SetName(pyentity.ptr(), "_destroyed_by_rclpy_action_destroy_entity_")) {
@@ -102,10 +102,7 @@ rclpy_action_destroy_server_goal_handle(py::capsule pygoal_handle)
 
   rcl_ret_t ret = rcl_action_goal_handle_fini(goal_handle);
   if (RCL_RET_OK != ret) {
-    std::string error_text = "Error destroying action goal handle: ";
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Error destroying action goal handle");
   }
 }
 
@@ -154,17 +151,14 @@ rclpy_action_wait_set_add(py::capsule pyentity, py::capsule pywait_set)
   } else {
     std::string error_text{"Unknown entity: "};
     error_text += pyentity.name();
-    rcutils_reset_error();
     throw std::runtime_error(error_text);
   }
 
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to add '"};
     error_text += pyentity.name();
-    error_text += "' to wait set: ";
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    error_text += "' to wait set";
+    throw rclpy::RCLError(error_text);
   }
 }
 
@@ -212,17 +206,14 @@ rclpy_action_wait_set_get_num_entities(py::capsule pyentity)
   } else {
     std::string error_text{"Unknown entity: "};
     error_text += pyentity.name();
-    rcutils_reset_error();
     throw std::runtime_error(error_text);
   }
 
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to get number of entities for '"};
     error_text += pyentity.name();
-    error_text += "': ";
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    error_text += "'";
+    throw rclpy::RCLError(error_text);
   }
 
   py::tuple result_tuple(5);
@@ -277,10 +268,7 @@ rclpy_action_wait_set_is_ready(py::capsule pyentity, py::capsule pywait_set)
       &is_cancel_response_ready,
       &is_result_response_ready);
     if (RCL_RET_OK != ret) {
-      std::string error_text{"Failed to get number of ready entities for action client: "};
-      error_text += rcl_get_error_string().str;
-      rcl_reset_error();
-      throw std::runtime_error(error_text);
+      throw rclpy::RCLError("Failed to get number of ready entities for action client");
     }
 
     py::tuple result_tuple(5);
@@ -304,10 +292,7 @@ rclpy_action_wait_set_is_ready(py::capsule pyentity, py::capsule pywait_set)
       &is_result_request_ready,
       &is_goal_expired);
     if (RCL_RET_OK != ret) {
-      std::string error_text{"Failed to get number of ready entities for action server: "};
-      error_text += rcl_get_error_string().str;
-      rcl_reset_error();
-      throw std::runtime_error(error_text);
+      throw rclpy::RCLError("Failed to get number of ready entities for action server");
     }
 
     py::tuple result_tuple(4);
@@ -320,7 +305,6 @@ rclpy_action_wait_set_is_ready(py::capsule pyentity, py::capsule pywait_set)
 
   std::string error_text{"Unknown entity: "};
   error_text += pyentity.name();
-  rcutils_reset_error();
   throw std::runtime_error(error_text);
 }
 
@@ -416,12 +400,12 @@ rclpy_action_create_client(
     error_text += action_name;
     error_text += "' : ";
     error_text += rcl_get_error_string().str;
-    rcutils_reset_error();
+    rcl_reset_error();
     throw py::value_error(error_text);
   } else if (ret != RCL_RET_OK) {
     std::string error_text{"Failed to create action client: "};
     error_text += rcl_get_error_string().str;
-    rcutils_reset_error();
+    rcl_reset_error();
     throw py::value_error(error_text);
   }
 
@@ -519,12 +503,12 @@ rclpy_action_create_server(
     error_text += action_name;
     error_text += "' : ";
     error_text += rcl_get_error_string().str;
-    rcutils_reset_error();
+    rcl_reset_error();
     throw py::value_error(error_text);
   } else if (ret != RCL_RET_OK) {
     std::string error_text{"Failed to create action server: "};
     error_text += rcl_get_error_string().str;
-    rcutils_reset_error();
+    rcl_reset_error();
     throw py::value_error(error_text);
   }
 
@@ -554,10 +538,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   bool is_available = false;
   rcl_ret_t ret = rcl_action_server_is_available(node, action_client, &is_available);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to check if action server is available: "};
-    error_text += rcl_get_error_string().str;
-    rcutils_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to check if action server is available");
   }
   return is_available;
 }
@@ -574,10 +555,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
     action_client, raw_ros_request, &sequence_number); \
   destroy_ros_message(raw_ros_request); \
   if (ret != RCL_RET_OK) { \
-    std::string error_text{"Failed to send " #Type " request: "}; \
-    error_text += rcl_get_error_string().str; \
-    rcl_reset_error(); \
-    throw std::runtime_error(error_text); \
+    throw rclpy::RCLError("Failed to send " #Type " request"); \
   } \
   return sequence_number;
 
@@ -592,10 +570,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   rcl_ret_t ret = rcl_action_send_ ## Type ## _response(action_server, header, raw_ros_response); \
   destroy_ros_message(raw_ros_response); \
   if (ret != RCL_RET_OK) { \
-    std::string error_text{"Failed to send " #Type " response: "}; \
-    error_text += rcl_get_error_string().str; \
-    rcl_reset_error(); \
-    throw std::runtime_error(error_text); \
+    throw rclpy::RCLError("Failed to send " #Type " response"); \
   }
 
 #define TAKE_SERVICE_REQUEST(Type) \
@@ -621,10 +596,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
     pytuple[1] = py::none(); \
     return pytuple; \
   } else if (ret != RCL_RET_OK) { \
-    std::string error_text{"Failed to take " #Type ": "}; \
-    error_text += rcl_get_error_string().str; \
-    rcl_reset_error(); \
-    throw std::runtime_error(error_text); \
+    throw rclpy::RCLError("Failed to take " #Type); \
   } \
   /* TODO(sloretz) This looks suspicious, what is currently deleting header? */ \
   pytuple[0] = py::capsule(header.release(), "rmw_request_id_t"); \
@@ -654,10 +626,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
     pytuple[1] = py::none(); \
     return pytuple; \
   } else if (ret != RCL_RET_OK) { \
-    std::string error_text{"Failed to take " #Type ": "}; \
-    error_text += rcl_get_error_string().str; \
-    rcl_reset_error(); \
-    throw std::runtime_error(error_text); \
+    throw rclpy::RCLError("Failed to take " #Type); \
   } \
   pytuple[0] = py::int_(sequence); \
   pytuple[1] = py::reinterpret_steal<py::object>( \
@@ -887,10 +856,7 @@ rclpy_action_take_cancel_response(py::capsule pyaction_client, py::object pymsg_
       /* if take failed, just do nothing */ \
       return py::none(); \
     } \
-    std::string error_text{"Failed to take " #Type " with an action client: "}; \
-    error_text += rcl_get_error_string().str; \
-    rcl_reset_error(); \
-    throw std::runtime_error(error_text); \
+    throw rclpy::RCLError("Failed to take " #Type " with an action client"); \
   } \
   return py::reinterpret_steal<py::object>(rclpy_convert_to_py(taken_msg, pymsg_type.ptr()));
 
@@ -916,10 +882,7 @@ rclpy_action_publish_feedback(py::capsule pyaction_server, py::object pymsg)
     raw_ros_message, destroy_ros_message);
   rcl_ret_t ret = rcl_action_publish_feedback(action_server, raw_ros_message);
   if (ret != RCL_RET_OK) {
-    std::string error_text{"Failed to publish feedback with an action server: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to publish feedback with an action server");
   }
 }
 
@@ -956,19 +919,13 @@ rclpy_action_publish_status(py::capsule pyaction_server)
     rcl_action_get_zero_initialized_goal_status_array();
   rcl_ret_t ret = rcl_action_get_goal_status_array(action_server, &status_message);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed get goal status array: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed get goal status array");
   }
 
   ret = rcl_action_publish_status(action_server, &status_message);
 
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed publish goal status array: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed publish goal status array");
   }
 }
 
@@ -1007,10 +964,7 @@ rclpy_action_accept_new_goal(py::capsule pyaction_server, py::object pygoal_info
   rcl_action_goal_handle_t * goal_handle = rcl_action_accept_new_goal(
     action_server, goal_info_msg);
   if (!goal_handle) {
-    std::string error_text{"Failed to accept new goal: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to accept new goal");
   }
   // TODO(sloretz) capsule destructor instead of rclpy_action_destroy_server_goal_handle()
   return py::capsule(goal_handle, "rcl_action_goal_handle_t");
@@ -1022,10 +976,7 @@ rclpy_action_notify_goal_done(py::capsule pyaction_server)
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t");
   rcl_ret_t ret = rcl_action_notify_goal_done(action_server);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to notfiy action server of goal done: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to notfiy action server of goal done");
   }
 }
 
@@ -1071,10 +1022,7 @@ rclpy_action_update_goal_state(py::capsule pygoal_handle, int64_t pyevent)
 
   rcl_ret_t ret = rcl_action_update_goal_state(goal_handle, event);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to update goal state: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to update goal state");
   }
 }
 
@@ -1112,10 +1060,7 @@ rclpy_action_goal_handle_get_status(py::capsule pygoal_handle)
   rcl_action_goal_state_t status;
   rcl_ret_t ret = rcl_action_goal_handle_get_status(goal_handle, &status);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to get goal status: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to get goal status");
   }
 
   return status;
@@ -1144,13 +1089,14 @@ rclpy_action_process_cancel_request(
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to process cancel request: "};
     error_text += rcl_get_error_string().str;
+    rcl_reset_error();
 
     ret = rcl_action_cancel_response_fini(&cancel_response);
     if (RCL_RET_OK != ret) {
       error_text += ".  Also failed to cleanup response: ";
       error_text += rcl_get_error_string().str;
+      rcl_reset_error();
     }
-    rcl_reset_error();
     throw std::runtime_error(error_text);
   }
 
@@ -1166,10 +1112,7 @@ rclpy_action_process_cancel_request(
   ret = rcl_action_cancel_response_fini(&cancel_response);
 
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to finalize cancel response: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to finalize cancel response");
   }
   return return_value;
 }
@@ -1185,10 +1128,7 @@ rclpy_action_expire_goals(py::capsule pyaction_server, int64_t max_num_goals)
   rcl_ret_t ret = rcl_action_expire_goals(
     action_server, expired_goals.get(), max_num_goals, &num_expired);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to expire goals: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to expire goals");
   }
 
   // Get Python GoalInfo type
@@ -1227,10 +1167,7 @@ rclpy_action_get_client_names_and_types_by_node(
     remote_node_namespace,
     &names_and_types);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to get action client names and type: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to get action client names and type");
   }
 
   py::object pynames_and_types = py::reinterpret_steal<py::object>(
@@ -1260,10 +1197,7 @@ rclpy_action_get_server_names_and_types_by_node(
     remote_node_namespace,
     &names_and_types);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to get action server names and type: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to get action server names and type");
   }
 
   py::object pynames_and_types = py::reinterpret_steal<py::object>(
@@ -1287,10 +1221,7 @@ rclpy_action_get_names_and_types(py::capsule pynode)
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_names_and_types(node, &allocator, &names_and_types);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to get action names and type: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw std::runtime_error(error_text);
+    throw rclpy::RCLError("Failed to get action names and type");
   }
 
   py::object pynames_and_types = py::reinterpret_steal<py::object>(
