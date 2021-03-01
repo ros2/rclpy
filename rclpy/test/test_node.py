@@ -528,9 +528,11 @@ class TestNode(unittest.TestCase):
             'bar', 'hello', ParameterDescriptor())
         result_baz = self.node.declare_parameter(
             'baz', 2.41, ParameterDescriptor())
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=UserWarning)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always', category=UserWarning)
             result_value_not_set = self.node.declare_parameter('value_not_set')
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
 
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
@@ -616,9 +618,11 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter('initial_decl_with_type', Parameter.Type.DOUBLE).value,
             3.14)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=UserWarning)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always', category=UserWarning)
             result = self.node.declare_parameters('', parameters)
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
 
         # OK cases - using overrides.
         self.assertIsInstance(result, list)
@@ -640,9 +644,10 @@ class TestNode(unittest.TestCase):
         self.assertIsNone(self.node.get_parameter('value_not_set').value)
         self.assertTrue(self.node.has_parameter('value_not_set'))
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=UserWarning)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always', category=UserWarning)
             result = self.node.declare_parameters('namespace', parameters)
+            assert len(w) == 1
 
         # OK cases.
         self.assertIsInstance(result, list)
