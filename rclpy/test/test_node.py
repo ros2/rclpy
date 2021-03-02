@@ -599,6 +599,12 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 'wrong_parameter_descriptor_type', 1, ParameterValue())
 
+        descriptor = ParameterDescriptor()
+        descriptor.dynamic_typing = True
+        with self.assertRaises(ValueError):
+            self.node.declare_parameter(
+                'dynamic_typing_and_static_type', Parameter.Type.DOUBLE, descriptor=descriptor)
+
     def test_declare_parameters(self):
         parameters = [
             ('initial_foo', 0, ParameterDescriptor()),

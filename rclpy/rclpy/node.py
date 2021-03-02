@@ -444,7 +444,11 @@ class Node:
             if isinstance(second_arg, Parameter.Type):
                 if second_arg.value == Parameter.Type.NOT_SET:
                     raise ValueError(
-                        'Cannot declare a statically typed parameter of type NOT_SET')
+                        f'Cannot declare parameter {{{name}}} as statically typed of type NOT_SET')
+                if descriptor.dynamic_typing is True:
+                    raise ValueError(
+                        f'When declaring parameter {{{name}}} passing a descriptor with'
+                        '`dynamic_typing=True` is not allowed when the parameter type is provided')
                 descriptor.type = second_arg.value
             else:
                 value = second_arg
