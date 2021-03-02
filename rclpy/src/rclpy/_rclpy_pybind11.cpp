@@ -34,4 +34,10 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_context_get_domain_id", &rclpy::context_get_domain_id,
     "Retrieves domain ID from init_options of context");
+  m.def(
+    "rclpy_create_context", &rclpy::create_context,
+    "Create a capsule with an rcl_context_t instance");
+  m.def(
+    "rclpy_ok", &rclpy::context_is_valid,
+    "Return true if the context is valid");
 }
