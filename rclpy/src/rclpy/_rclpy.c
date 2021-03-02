@@ -61,71 +61,6 @@ typedef struct
 
 #include "./_rclpy_qos_event.c"
 
-void
-_rclpy_context_handle_destructor(void * p)
-{
-  rcl_context_t * context = p;
-  if (!context) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_context_handle_destructor failed to get pointer");
-    return;
-  }
-  if (NULL != context->impl) {
-    rcl_ret_t ret;
-    if (rcl_context_is_valid(context)) {
-      // shutdown first, if still valid
-      ret = rcl_shutdown(context);
-      if (RCL_RET_OK != ret) {
-        fprintf(
-          stderr,
-          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-          "failed to shutdown rcl_context_t (%d) during PyCapsule destructor: %s\n",
-          ret,
-          rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-    }
-    ret = rcl_context_fini(context);
-    if (RCL_RET_OK != ret) {
-      fprintf(
-        stderr,
-        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "failed to fini rcl_context_t (%d) during PyCapsule destructor: %s\n",
-        ret,
-        rcl_get_error_string().str);
-      rcl_reset_error();
-    }
-  }
-  PyMem_FREE(context);
-}
-
-/// Create a rcl_context_t.
-/**
- * A successful call will return a Capsule with the pointer to the created
- * rcl_context_t structure.
- *
- * The returned context is zero-initialized for use with rclpy_init().
- *
- * Raises RuntimeError if creating the context fails.
- *
- * \return a list with the capsule and memory location, or
- * \return NULL on failure
- */
-static PyObject *
-rclpy_create_context(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
-{
-  rcl_context_t * context = PyMem_Malloc(sizeof(rcl_context_t));
-  if (!context) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for context");
-    return NULL;
-  }
-  *context = rcl_get_zero_initialized_context();
-  // if it fails, error is set and NULL is returned as it should
-  return rclpy_create_handle_capsule(context, "rcl_context_t", _rclpy_context_handle_destructor);
-}
-
 /// Handle destructor for guard condition
 static void
 _rclpy_destroy_guard_condition(void * p)
@@ -3923,32 +3858,6 @@ rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
   return pytuple;
 }
 
-/// Status of the the client library
-/**
- * \return True if rcl is running properly, False otherwise
- */
-static PyObject *
-rclpy_ok(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pycontext;
-
-  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
-    return NULL;
-  }
-
-  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
-  if (!context) {
-    return NULL;
-  }
-
-  bool ok = rcl_context_is_valid(context);
-  if (ok) {
-    Py_RETURN_TRUE;
-  } else {
-    Py_RETURN_FALSE;
-  }
-}
-
 /// Request shutdown of the client library
 /**
  * Raises RuntimeError if the library could not be shutdown
@@ -5978,10 +5887,6 @@ rclpy_publisher_get_topic_name(PyObject * module, PyObject * args)
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
-    "rclpy_create_context", rclpy_create_context, METH_VARARGS,
-    "Create a rcl context."
-  },
-  {
     "rclpy_init", rclpy_init, METH_VARARGS,
     "Initialize RCL."
   },
@@ -6235,11 +6140,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_take_event", rclpy_take_event, METH_VARARGS,
     "Get the pending data for a ready QoS Event."
-  },
-
-  {
-    "rclpy_ok", rclpy_ok, METH_VARARGS,
-    "rclpy_ok."
   },
 
   {
