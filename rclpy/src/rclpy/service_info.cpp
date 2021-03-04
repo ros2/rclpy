@@ -17,8 +17,6 @@
 
 #include <rmw/types.h>
 
-#include "rclpy_common/handle.h"
-
 #include "service_info.hpp"
 
 namespace rclpy
@@ -26,33 +24,30 @@ namespace rclpy
 int64_t
 service_info_get_sequence_number(py::capsule pyservice_info)
 {
-  auto service_info = static_cast<rmw_service_info_t *>(
-    PyCapsule_GetPointer(pyservice_info.ptr(), "rmw_service_info_t"));
-  if (!service_info) {
-    throw py::error_already_set();
+  if (0 != strcmp("rmw_service_info_t", pyservice_info.name())) {
+    throw py::value_error("capsule is not an rmw_service_info_t");
   }
+  auto service_info = static_cast<rmw_service_info_t *>(pyservice_info);
   return service_info->request_id.sequence_number;
 }
 
 int64_t
 service_info_get_source_timestamp(py::capsule pyservice_info)
 {
-  auto service_info = static_cast<rmw_service_info_t *>(
-    PyCapsule_GetPointer(pyservice_info.ptr(), "rmw_service_info_t"));
-  if (!service_info) {
-    throw py::error_already_set();
+  if (0 != strcmp("rmw_service_info_t", pyservice_info.name())) {
+    throw py::value_error("capsule is not an rmw_service_info_t");
   }
+  auto service_info = static_cast<rmw_service_info_t *>(pyservice_info);
   return service_info->source_timestamp;
 }
 
 int64_t
 service_info_get_received_timestamp(py::capsule pyservice_info)
 {
-  auto service_info = static_cast<rmw_service_info_t *>(
-    PyCapsule_GetPointer(pyservice_info.ptr(), "rmw_service_info_t"));
-  if (!service_info) {
-    throw py::error_already_set();
+  if (0 != strcmp("rmw_service_info_t", pyservice_info.name())) {
+    throw py::value_error("capsule is not an rmw_service_info_t");
   }
+  auto service_info = static_cast<rmw_service_info_t *>(pyservice_info);
   return service_info->received_timestamp;
 }
 }  // namespace rclpy
