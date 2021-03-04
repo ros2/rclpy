@@ -15,6 +15,7 @@
 #include <pybind11/pybind11.h>
 
 #include "context.hpp"
+#include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
 
 namespace py = pybind11;
@@ -40,4 +41,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_ok", &rclpy::context_is_valid,
     "Return true if the context is valid");
+
+  m.def(
+    "rclpy_publisher_get_subscription_count", &rclpy::publisher_get_subscription_count,
+    "Count subscribers from a publisher");
+  m.def(
+    "rclpy_publisher_get_topic_name", &rclpy::publisher_get_topic_name,
+    "Get the resolved name(topic) of publisher");
 }

@@ -2023,42 +2023,6 @@ rclpy_publish_raw(PyObject * module, PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Count subscribers from a publisher.
-/**
- *
- * \param[in] pynode Capsule pointing to the publisher
- * \return count of subscribers
- */
-static PyObject *
-rclpy_publisher_get_subscription_count(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pypublisher;
-
-  if (!PyArg_ParseTuple(args, "O", &pypublisher)) {
-    return NULL;
-  }
-
-  const rclpy_publisher_t * pub = rclpy_handle_get_pointer_from_capsule(
-    pypublisher, "rclpy_publisher_t");
-  if (!pub) {
-    return NULL;
-  }
-
-  size_t count = 0;
-  rcl_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
-  if (RCL_RET_OK != ret) {
-    PyErr_Format(module_state->RCLError, "%s", rmw_get_error_string().str);
-    rmw_reset_error();
-    return NULL;
-  }
-  return PyLong_FromSize_t(count);
-}
-
 /// Handle destructor for timer
 static void
 _rclpy_destroy_timer(void * p)
@@ -5852,38 +5816,6 @@ rclpy_service_info_get_received_timestamp(PyObject * Py_UNUSED(self), PyObject *
   return PyLong_FromLongLong(service_info->received_timestamp);
 }
 
-/// Retrieve the topic name from a rclpy_publisher_t
-static PyObject *
-rclpy_publisher_get_topic_name(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pyentity;
-  if (!PyArg_ParseTuple(args, "O", &pyentity)) {
-    return NULL;
-  }
-
-  rclpy_publisher_t * publisher = rclpy_handle_get_pointer_from_capsule(
-    pyentity, "rclpy_publisher_t");
-  if (!publisher) {
-    return NULL;
-  }
-
-  const char * topic_name = rcl_publisher_get_topic_name(&publisher->publisher);
-  if (!topic_name) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to get topic name: %s",
-      rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-  return PyUnicode_FromString(topic_name);
-}
-
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -6019,10 +5951,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_publish_raw", rclpy_publish_raw, METH_VARARGS,
     "Publish a serialized message."
-  },
-  {
-    "rclpy_publisher_get_subscription_count", rclpy_publisher_get_subscription_count, METH_VARARGS,
-    "Count subscribers from a publisher."
   },
   {
     "rclpy_send_request", rclpy_send_request, METH_VARARGS,
@@ -6294,11 +6222,6 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_service_info_get_received_timestamp", rclpy_service_info_get_received_timestamp,
     METH_VARARGS,
     "Retrieve received timestamp from service_info"
-  },
-  {
-    "rclpy_publisher_get_topic_name", rclpy_publisher_get_topic_name,
-    METH_VARARGS,
-    "Get the resolved name(topic) of publisher"
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
