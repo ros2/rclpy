@@ -17,6 +17,7 @@
 #include "context.hpp"
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
+#include "service_info.hpp"
 
 namespace py = pybind11;
 
@@ -57,4 +58,14 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_publish_raw", &rclpy::publisher_publish_raw,
     "Publish a serialized message");
+
+  m.def(
+    "rclpy_service_info_get_sequence_number", &rclpy::service_info_get_sequence_number,
+    "Retrieve sequence number from service_info");
+  m.def(
+    "rclpy_service_info_get_source_timestamp", &rclpy::service_info_get_source_timestamp,
+    "Retrieve source timestamp from service_info");
+  m.def(
+    "rclpy_service_info_get_received_timestamp", &rclpy::service_info_get_received_timestamp,
+    "Retrieve received timestamp from service_info");
 }
