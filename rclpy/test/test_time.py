@@ -32,9 +32,9 @@ class TestTime(unittest.TestCase):
         assert time.clock_type == ClockType.SYSTEM_TIME
 
         with self.assertRaises(OverflowError):
-            time = Time(nanoseconds=2**64)
-        time = Time(nanoseconds=2**64 - 1)
-        assert time.nanoseconds == 2**64 - 1
+            time = Time(nanoseconds=2**63)
+        time = Time(nanoseconds=2**63 - 1)
+        assert time.nanoseconds == 2**63 - 1
 
         with self.assertRaises(ValueError):
             time = Time(seconds=-1)
@@ -88,7 +88,7 @@ class TestTime(unittest.TestCase):
         assert time2.clock_type == ClockType.STEADY_TIME
 
         with self.assertRaises(OverflowError):
-            Duration(nanoseconds=1) + Time(nanoseconds=2**64 - 1)
+            Duration(nanoseconds=1) + Time(nanoseconds=2**63 - 1)
 
         with self.assertRaises(ValueError):
             Time(nanoseconds=1) - Duration(nanoseconds=2)

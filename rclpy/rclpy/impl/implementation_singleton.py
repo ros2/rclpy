@@ -46,8 +46,8 @@ def _combine_split_modules():
         if attr.startswith('rclpy_'):
             # It's a wrapped C function
             setattr(rclpy_implementation, attr, thing)
-        elif isinstance(thing, type) and issubclass(thing, BaseException):
-            # It's a custom exception
+        elif isinstance(thing, type):
+            # It's a custom type
             setattr(rclpy_implementation, attr, thing)
 
 
