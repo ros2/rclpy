@@ -35,14 +35,13 @@ namespace rclpy
  * - an integer representing the memory address of the created rcl_subscription_t
  *
  * Raises ValueError if the capsules are not the correct types
- * Raises RuntimeError if the subscription could not be created
+ * Raises RCLError if the subscription could not be created
  *
  * \param[in] pynode Capsule pointing to the node to add the subscriber to
  * \param[in] pymsg_type Message module associated with the subscriber
  * \param[in] topic The topic name
  * \param[in] pyqos_profile QoSProfile Python object for this subscription
  * \return list with the capsule and memory address, or
- * \return NULL on failure
  */
 py::capsule
 subscription_create(
@@ -64,7 +63,10 @@ subscription_get_logger_name(py::capsule pysubscription);
 /**
  * The returned string is the resolved topic name after remappings have be applied.
  *
- * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * Raises ValueError if pysubscription is not a subscription capsule
+ * Raises RCLError if the topic name could not be determined
+ *
+ * \param[in] pysubscription Capsule pointing to the subscription to get the topic name of
  * \return a string with the topic name
  */
 std::string
