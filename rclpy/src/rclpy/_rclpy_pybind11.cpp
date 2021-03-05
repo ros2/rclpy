@@ -43,9 +43,18 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Return true if the context is valid");
 
   m.def(
+    "rclpy_create_publisher", &rclpy::publisher_create,
+    "Create a Publisher");
+  m.def(
     "rclpy_publisher_get_subscription_count", &rclpy::publisher_get_subscription_count,
     "Count subscribers from a publisher");
   m.def(
     "rclpy_publisher_get_topic_name", &rclpy::publisher_get_topic_name,
     "Get the resolved name(topic) of publisher");
+  m.def(
+    "rclpy_publish", &rclpy::publisher_publish_message,
+    "Publish a message");
+  m.def(
+    "rclpy_publish_raw", &rclpy::publisher_publish_raw,
+    "Publish a serialized message");
 }

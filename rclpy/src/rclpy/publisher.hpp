@@ -23,6 +23,27 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/// Create a publisher
+/**
+ * This function will create a publisher and attach it to the provided topic name
+ * This publisher will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages over the wire.
+ *
+ * Raises ValueError if the topic name is invalid
+ * Raises ValueError if the capsules are not the correct types
+ * Raises RCLError if the publisher cannot be created
+ *
+ * \param[in] pynode Capsule pointing to the node to add the publisher to
+ * \param[in] pymsg_type Message type associated with the publisher
+ * \param[in] topic The name of the topic to attach the publisher to
+ * \param[in] pyqos_profile QoSProfile object with the profile of this publisher
+ * \return Capsule of the pointer to the created rcl_publisher_t * structure, or
+ */
+py::capsule
+publisher_create(
+  py::capsule pynode, py::object pymsg_type, std::string topic,
+  py::capsule pyqos_profile);
+
 /// Count subscribers from a publisher.
 /**
  * Raise ValueError if capsule is not a publisher
@@ -44,6 +65,28 @@ publisher_get_subscription_count(py::capsule pypublisher);
  */
 std::string
 publisher_get_topic_name(py::capsule pypublisher);
+
+/// Publish a message
+/**
+ * Raises ValueError if pypublisher is not a publisher capsule
+ * Raises RCLError if the message cannot be published
+ *
+ * \param[in] pypublisher Capsule pointing to the publisher
+ * \param[in] pymsg Message to send
+ */
+void
+publisher_publish_message(py::capsule pypublisher, py::object pymsg);
+
+/// Publish a serialized message
+/**
+ * Raises ValueError if pypublisher is not a publisher capsule
+ * Raises RCLError if the message cannot be published
+ *
+ * \param[in] pypublisher Capsule pointing to the publisher
+ * \param[in] msg serialized message to send
+ */
+void
+publisher_publish_raw(py::capsule pypublisher, std::string msg);
 }  // namespace rclpy
 
 #endif  // RCLPY__PUBLISHER_HPP_
