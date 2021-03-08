@@ -61,138 +61,6 @@ typedef struct
 
 #include "./_rclpy_qos_event.c"
 
-/// Handle destructor for guard condition
-static void
-_rclpy_destroy_guard_condition(void * p)
-{
-  rcl_guard_condition_t * gc = p;
-  if (!gc) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_guard_condition got NULL pointer");
-    return;
-  }
-
-  rcl_ret_t ret = rcl_guard_condition_fini(gc);
-  if (RCL_RET_OK != ret) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "Failed to fini guard condition: %s",
-      rcl_get_error_string().str);
-  }
-  PyMem_Free(gc);
-}
-
-/// Create a general purpose guard condition
-/**
- * A successful call will return a Capsule with the pointer of the created
- * rcl_guard_condition_t * structure
- *
- * Raises RuntimeError if initializing the guard condition fails
- *
- * \return a capsule, or
- * \return NULL on failure
- */
-static PyObject *
-rclpy_create_guard_condition(PyObject * module, PyObject * args)
-{
-  PyObject * pycontext;
-
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-
-  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
-    return NULL;
-  }
-
-  rclpy_handle_t * context_handle = PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (!context_handle) {
-    return NULL;
-  }
-  rcl_context_t * context = _rclpy_handle_get_pointer(context_handle);
-  if (!context) {
-    return NULL;
-  }
-
-  rcl_guard_condition_t * gc = PyMem_Malloc(sizeof(rcl_guard_condition_t));
-  if (!gc) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for guard condition");
-    return NULL;
-  }
-  *gc = rcl_get_zero_initialized_guard_condition();
-  rcl_guard_condition_options_t gc_options = rcl_guard_condition_get_default_options();
-
-  rcl_ret_t ret = rcl_guard_condition_init(gc, context, gc_options);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to create guard_condition: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    PyMem_Free(gc);
-    return NULL;
-  }
-
-  rclpy_handle_t * gc_handle = _rclpy_create_handle(gc, _rclpy_destroy_guard_condition);
-  if (!gc_handle) {
-    _rclpy_destroy_guard_condition(gc);
-    return NULL;
-  }
-  _rclpy_handle_add_dependency(gc_handle, context_handle);
-  if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(gc_handle);
-    return NULL;
-  }
-  PyObject * gc_capsule = _rclpy_create_handle_capsule(gc_handle, "rcl_guard_condition_t");
-  if (!gc_capsule) {
-    _rclpy_handle_dec_ref(gc_handle);
-    return NULL;
-  }
-  return gc_capsule;
-}
-
-/// Trigger a general purpose guard condition
-/**
- * Raises ValueError if pygc is not a guard condition capsule
- * Raises RuntimeError if the guard condition could not be triggered
- *
- * \param[in] pygc Capsule pointing to guard condtition
- */
-static PyObject *
-rclpy_trigger_guard_condition(PyObject * module, PyObject * args)
-{
-  PyObject * pygc;
-
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-
-  if (!PyArg_ParseTuple(args, "O", &pygc)) {
-    return NULL;
-  }
-
-  rcl_guard_condition_t * gc = rclpy_handle_get_pointer_from_capsule(
-    pygc, "rcl_guard_condition_t");
-  if (!gc) {
-    return NULL;
-  }
-  rcl_ret_t ret = rcl_trigger_guard_condition(gc);
-
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to trigger guard_condition: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-  Py_RETURN_NONE;
-}
 
 /// Deallocate a list of allocated strings.
 void
@@ -1871,13 +1739,6 @@ rclpy_create_publisher(PyObject * module, PyObject * args)
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
     rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     publisher_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(qos_profile);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rclpy_publisher_t * pub = PyMem_Malloc(sizeof(rclpy_publisher_t));
@@ -2059,468 +1920,6 @@ rclpy_publisher_get_subscription_count(PyObject * module, PyObject * args)
   return PyLong_FromSize_t(count);
 }
 
-/// Handle destructor for timer
-static void
-_rclpy_destroy_timer(void * p)
-{
-  rcl_timer_t * tmr = p;
-  if (!tmr) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_timer got NULL pointer");
-    return;
-  }
-
-  rcl_ret_t ret = rcl_timer_fini(tmr);
-  if (RCL_RET_OK != ret) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "Failed to fini timer: %s",
-      rcl_get_error_string().str);
-  }
-  PyMem_Free(tmr);
-}
-
-/// Create a timer
-/**
- * When successful a Capsule pointing to the pointer of the created rcl_timer_t * structure
- * is returned
- *
- * On failure, an exception is raised and NULL is returned if:
- *
- * Raises RuntimeError on initialization failure
- * Raises TypeError if argument of invalid type
- * Raises ValueError if argument cannot be converted to uint64_t
- *
- * \param[in] clock pycapsule containing an rcl_clock_t
- * \param[in] period_nsec unsigned PyLong object storing the period of the
- *   timer in nanoseconds in a 64-bit unsigned integer
- * \return a capsule
- * \return NULL on failure
- */
-static PyObject *
-rclpy_create_timer(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  unsigned PY_LONG_LONG period_nsec;
-  PyObject * pyclock;
-  PyObject * pycontext;
-
-  if (!PyArg_ParseTuple(args, "OOK", &pyclock, &pycontext, &period_nsec)) {
-    return NULL;
-  }
-
-  rclpy_handle_t * context_handle = PyCapsule_GetPointer(pycontext, "rcl_context_t");
-  if (!context_handle) {
-    return NULL;
-  }
-  rcl_context_t * context = _rclpy_handle_get_pointer(context_handle);
-  if (!context) {
-    return NULL;
-  }
-
-  rclpy_handle_t * clock_handle = PyCapsule_GetPointer(pyclock, "rcl_clock_t");
-  if (!clock_handle) {
-    return NULL;
-  }
-  rcl_clock_t * clock = _rclpy_handle_get_pointer(clock_handle);
-  if (!clock) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = PyMem_Malloc(sizeof(rcl_timer_t));
-  if (!timer) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for timer");
-    return NULL;
-  }
-  *timer = rcl_get_zero_initialized_timer();
-
-  rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_timer_init(timer, clock, context, period_nsec, NULL, allocator);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to create timer: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    PyMem_Free(timer);
-    return NULL;
-  }
-
-  rclpy_handle_t * timer_handle = _rclpy_create_handle(timer, _rclpy_destroy_timer);
-  if (!timer_handle) {
-    _rclpy_destroy_timer(timer);
-    return NULL;
-  }
-  _rclpy_handle_add_dependency(timer_handle, context_handle);
-  if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(timer_handle);
-    return NULL;
-  }
-  _rclpy_handle_add_dependency(timer_handle, clock_handle);
-  if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(timer_handle);
-    return NULL;
-  }
-  PyObject * timer_capsule = _rclpy_create_handle_capsule(timer_handle, "rcl_timer_t");
-  if (!timer_capsule) {
-    _rclpy_handle_dec_ref(timer_handle);
-    return NULL;
-  }
-  return timer_capsule;
-}
-
-/// Returns the period of the timer in nanoseconds
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RuntimeError if the timer period cannot be retrieved
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return NULL on failure:
- *         PyLong integer in nanoseconds on success
- */
-static PyObject *
-rclpy_get_timer_period(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  int64_t timer_period;
-  rcl_ret_t ret = rcl_timer_get_period(timer, &timer_period);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to get timer period: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-  return PyLong_FromUnsignedLongLong(timer_period);
-}
-
-/// Cancel the timer
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RuntimeError if the timmer cannot be canceled
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return NULL on failure:
- *         NULL on success
- */
-static PyObject *
-rclpy_cancel_timer(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  rcl_ret_t ret = rcl_timer_cancel(timer);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to reset timer: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
-}
-
-/// Checks if timer is cancelled
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises Runtime error if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return False on failure:
- *         True on success
- */
-static PyObject *
-rclpy_is_timer_canceled(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  bool is_canceled;
-  rcl_ret_t ret = rcl_timer_is_canceled(timer, &is_canceled);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to check timer ready: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-  if (is_canceled) {
-    Py_RETURN_TRUE;
-  } else {
-    Py_RETURN_FALSE;
-  }
-}
-
-/// Reset the timer
-/**
- * Raise ValueError if capsule is not a timer
- * Raises Runtime error if the timer cannot be reset
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return None
- */
-static PyObject *
-rclpy_reset_timer(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  rcl_ret_t ret = rcl_timer_reset(timer);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to reset timer: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
-}
-
-/// Checks if timer reached its timeout
-/**
- *  Raises ValueError if pytimer is not a timer capsule
- *  Raises RuntimeError if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return True if the timer is ready
- */
-static PyObject *
-rclpy_is_timer_ready(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  bool is_ready;
-  rcl_ret_t ret = rcl_timer_is_ready(timer, &is_ready);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to check timer ready: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-  if (is_ready) {
-    Py_RETURN_TRUE;
-  } else {
-    Py_RETURN_FALSE;
-  }
-}
-
-/// Set the last call time and start counting again
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RuntimeError if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return NULL on failure:
- *         NULL on success
- */
-static PyObject *
-rclpy_call_timer(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  rcl_ret_t ret = rcl_timer_call(timer);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to call timer: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
-}
-
-/// Update the timer period
-/**
- * The change in period will take effect after the next timer call
- *
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RuntimeError if the timer period could not be changed
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \param[in] period_nsec unsigned PyLongLong containing the new period in nanoseconds
- * \return None
- */
-static PyObject *
-rclpy_change_timer_period(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  unsigned PY_LONG_LONG period_nsec;
-  if (!PyArg_ParseTuple(args, "OK", &pytimer, &period_nsec)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  int64_t old_period;
-  rcl_ret_t ret = rcl_timer_exchange_period(timer, period_nsec, &old_period);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to exchange timer period: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
-}
-
-/// Get the time before the timer will be ready
-/**
- * the returned time can be negative, this means that the timer is ready and hasn't been called yet
- *
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RuntimeError there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return PyLongLong containing the time until next call in nanoseconds
- */
-static PyObject *
-rclpy_time_until_next_call(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  int64_t remaining_time;
-  rcl_ret_t ret = rcl_timer_get_time_until_next_call(timer, &remaining_time);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to get time until next timer call: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  return PyLong_FromLongLong(remaining_time);
-}
-
-/// Get the time since the timer has been called
-/**
- * Raises RuntimeError if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return unsigned PyLongLong containing the time since last call in nanoseconds
- */
-static PyObject *
-rclpy_time_since_last_call(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pytimer;
-  if (!PyArg_ParseTuple(args, "O", &pytimer)) {
-    return NULL;
-  }
-
-  rcl_timer_t * timer = rclpy_handle_get_pointer_from_capsule(pytimer, "rcl_timer_t");
-  if (!timer) {
-    return NULL;
-  }
-  int64_t elapsed_time;
-  rcl_ret_t ret = rcl_timer_get_time_since_last_call(timer, &elapsed_time);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to get time since last timer call: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  return PyLong_FromUnsignedLongLong(elapsed_time);
-}
-
 /// Handle destructor for subscription
 static void
 _rclpy_destroy_subscription(void * p)
@@ -2605,16 +2004,8 @@ rclpy_create_subscription(PyObject * module, PyObject * args)
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
-    void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
-    rmw_qos_profile_t * qos_profile = p;
+    rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     subscription_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rclpy_subscription_t * sub = PyMem_Malloc(sizeof(rclpy_subscription_t));
@@ -2660,7 +2051,7 @@ rclpy_create_subscription(PyObject * module, PyObject * args)
   return sub_capsule;
 }
 
-// Handle destructor for service
+/// Handle destructor for service
 static void
 _rclpy_destroy_service(void * p)
 {
@@ -2743,16 +2134,8 @@ rclpy_create_service(PyObject * module, PyObject * args)
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
-    void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
-    rmw_qos_profile_t * qos_profile = p;
+    rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     service_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rclpy_service_t * srv = PyMem_Malloc(sizeof(rclpy_service_t));
@@ -4231,6 +3614,13 @@ _convert_py_duration_to_rmw_time(PyObject * pyobject, rmw_time_t * out_time)
   return true;
 }
 
+/// Destructor for a QoSProfile
+void
+_rclpy_destroy_qos_profile(PyObject * pycapsule)
+{
+  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rmw_qos_profile_t"));
+}
+
 /// Return a Python QoSProfile object
 /**
  * This function creates a QoSProfile object from the QoS Policies provided
@@ -4300,7 +3690,8 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   qos_profile->avoid_ros_namespace_conventions = avoid_ros_namespace_conventions;
-  PyObject * pyqos_profile = PyCapsule_New(qos_profile, "rmw_qos_profile_t", NULL);
+  PyObject * pyqos_profile = PyCapsule_New(
+    qos_profile, "rmw_qos_profile_t", _rclpy_destroy_qos_profile);
   return pyqos_profile;
 }
 
@@ -5629,21 +5020,8 @@ static PyMethodDef rclpy_methods[] = {
     "Create a Service."
   },
   {
-    "rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
-    "Create a Timer."
-  },
-  {
     "rclpy_create_event", rclpy_create_event, METH_VARARGS,
     "Create an Event."
-  },
-
-  {
-    "rclpy_create_guard_condition", rclpy_create_guard_condition, METH_VARARGS,
-    "Create a general purpose guard_condition."
-  },
-  {
-    "rclpy_trigger_guard_condition", rclpy_trigger_guard_condition, METH_VARARGS,
-    "Trigger a general purpose guard_condition."
   },
 
   {
@@ -5696,51 +5074,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_ready_entities", rclpy_get_ready_entities, METH_VARARGS,
     "List non null entities in wait set."
-  },
-
-  {
-    "rclpy_reset_timer", rclpy_reset_timer, METH_VARARGS,
-    "Reset a timer."
-  },
-
-  {
-    "rclpy_call_timer", rclpy_call_timer, METH_VARARGS,
-    "Call a timer and starts counting again."
-  },
-
-  {
-    "rclpy_change_timer_period", rclpy_change_timer_period, METH_VARARGS,
-    "Set the period of a timer."
-  },
-
-  {
-    "rclpy_is_timer_ready", rclpy_is_timer_ready, METH_VARARGS,
-    "Check if a timer as reached timeout."
-  },
-
-  {
-    "rclpy_cancel_timer", rclpy_cancel_timer, METH_VARARGS,
-    "Cancel a timer."
-  },
-
-  {
-    "rclpy_is_timer_canceled", rclpy_is_timer_canceled, METH_VARARGS,
-    "Check if a timer is canceled."
-  },
-
-  {
-    "rclpy_time_until_next_call", rclpy_time_until_next_call, METH_VARARGS,
-    "Get the remaining time before timer is ready."
-  },
-
-  {
-    "rclpy_time_since_last_call", rclpy_time_since_last_call, METH_VARARGS,
-    "Get the elapsed time since last timer call."
-  },
-
-  {
-    "rclpy_get_timer_period", rclpy_get_timer_period, METH_VARARGS,
-    "Get the period of a timer."
   },
 
   {
