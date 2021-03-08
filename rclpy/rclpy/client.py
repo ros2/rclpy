@@ -64,14 +64,15 @@ class Client:
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
 
-    def call(self, request: SrvTypeRequest) -> SrvTypeResponse:
+    def call(self, request: SrvTypeRequest, timeout_sec: float = None) -> SrvTypeResponse:
         """
         Make a service request and wait for the result.
 
         .. warning:: Do not call this method in a callback or a deadlock may occur.
 
         :param request: The service request.
-        :return: The service response.
+        :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
+        :return: The service response if it doesn't timeout, ``None`` otherwise.
         :raises: TypeError if the type of the passed request isn't an instance
           of the Request type of the provided service when the client was
           constructed.
@@ -92,7 +93,7 @@ class Client:
         # The callback might have been added after the future is completed,
         # resulting in the event never being set.
         if not future.done():
-            event.wait()
+            event.wait(timeout_sec)
         if future.exception() is not None:
             raise future.exception()
         return future.result()
