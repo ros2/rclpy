@@ -41,7 +41,7 @@ namespace rclpy
  * \param[in] pymsg_type Message module associated with the subscriber
  * \param[in] topic The topic name
  * \param[in] pyqos_profile QoSProfile Python object for this subscription
- * \return list with the capsule and memory address, or
+ * \return capsule containing the rclpy_subscription_t
  */
 py::capsule
 subscription_create(
