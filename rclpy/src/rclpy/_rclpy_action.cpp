@@ -313,10 +313,6 @@ copy_qos_profile(rmw_qos_profile_t & profile, py::capsule pyprofile)
 {
   auto qos_profile = get_pointer<rmw_qos_profile_t *>(pyprofile, "rmw_qos_profile_t");
   profile = *qos_profile;
-  PyMem_Free(qos_profile);
-  if (PyCapsule_SetName(pyprofile.ptr(), "_destructed_by_copy_qos_profile_")) {
-    throw py::error_already_set();
-  }
 }
 
 /// Create an action client.
