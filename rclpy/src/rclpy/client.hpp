@@ -39,7 +39,7 @@ namespace rclpy
  * \param[in] pysrv_type Service module associated with the client
  * \param[in] service_name Python object containing the service name
  * \param[in] pyqos_profile QoSProfile Python object for this client
- * \return capsule
+ * \return capsule containing the rclpy_client_t
  */
 py::capsule
 client_create(
@@ -53,7 +53,7 @@ client_create(
  *
  * \param[in] pyclient Capsule pointing to the client
  * \param[in] pyrequest request message to send
- * \return sequence_number PyLong object representing the index of the sent request
+ * \return sequence_number Index of the sent request
  */
 uint64_t
 client_send_request(py::capsule pyclient, py::object pyrequest);
