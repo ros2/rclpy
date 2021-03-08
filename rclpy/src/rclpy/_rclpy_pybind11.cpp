@@ -15,6 +15,7 @@
 #include <pybind11/pybind11.h>
 
 #include "context.hpp"
+#include "guard_condition.hpp"
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "service_info.hpp"
@@ -68,4 +69,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_service_info_get_received_timestamp", &rclpy::service_info_get_received_timestamp,
     "Retrieve received timestamp from service_info");
+
+  m.def(
+    "rclpy_create_guard_condition", &rclpy::guard_condition_create,
+    "Create a general purpose guard condition");
+  m.def(
+    "rclpy_trigger_guard_condition", &rclpy::guard_condition_trigger,
+    "Trigger a general purpose guard condition");
 }
