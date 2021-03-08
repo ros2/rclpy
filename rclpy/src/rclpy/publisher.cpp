@@ -74,7 +74,7 @@ publisher_create(
 
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
 
-  if (!pyqos_profile.is(py::none())) {
+  if (!pyqos_profile.is_none()) {
     if (0 != strcmp("rmw_qos_profile_t", pyqos_profile.name())) {
       throw py::value_error("capsule is not an rmw_qos_profile_t");
     }
