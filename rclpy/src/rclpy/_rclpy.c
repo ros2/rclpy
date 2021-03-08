@@ -2660,192 +2660,7 @@ rclpy_create_subscription(PyObject * module, PyObject * args)
   return sub_capsule;
 }
 
-/// Handle destructor for client
-static void
-_rclpy_destroy_client(void * p)
-{
-  rclpy_client_t * cli = p;
-  if (!cli) {
-    // Don't want to raise an exception, who knows where it will get raised.
-    PyErr_Clear();
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_client got NULL pointer");
-    return;
-  }
-
-  rcl_ret_t ret = rcl_client_fini(&(cli->client), cli->node);
-  if (RCL_RET_OK != ret) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "Failed to fini client: %s",
-      rcl_get_error_string().str);
-  }
-  PyMem_Free(cli);
-}
-
-/// Create a client
-/**
- * This function will create a client for the given service name.
- * This client will use the typesupport defined in the service module
- * provided as pysrv_type to send messages over the wire.
- *
- * On a successful call a Capsule pointing to the pointer of the created rclpy_client_t * is
- * returned.
- *
- * Raises ValueError if the capsules are not the correct types
- * Raises RuntimeError if the client could not be created
- *
- * \param[in] pynode Capsule pointing to the node to add the client to
- * \param[in] pysrv_type Service module associated with the client
- * \param[in] pyservice_name Python object containing the service name
- * \param[in] pyqos_profile QoSProfile Python object for this client
- * \return capsule or,
- * \return NULL on failure
- */
-static PyObject *
-rclpy_create_client(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pynode;
-  PyObject * pysrv_type;
-  PyObject * pyservice_name;
-  PyObject * pyqos_profile;
-
-  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pysrv_type, &pyservice_name, &pyqos_profile)) {
-    return NULL;
-  }
-
-  const char * service_name = PyUnicode_AsUTF8(pyservice_name);
-  if (!service_name) {
-    return NULL;
-  }
-
-  rclpy_handle_t * node_handle = PyCapsule_GetPointer(pynode, "rcl_node_t");
-  if (!node_handle) {
-    return NULL;
-  }
-  rcl_node_t * node = _rclpy_handle_get_pointer(node_handle);
-  if (!node) {
-    return NULL;
-  }
-
-  rosidl_service_type_support_t * ts = rclpy_common_get_type_support(pysrv_type);
-  if (!ts) {
-    return NULL;
-  }
-
-  rcl_client_options_t client_ops = rcl_client_get_default_options();
-
-  if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
-    void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
-    rmw_qos_profile_t * qos_profile = p;
-    client_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
-  }
-
-  rclpy_client_t * client = PyMem_Malloc(sizeof(rclpy_client_t));
-  if (!client) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for client");
-    return NULL;
-  }
-  client->client = rcl_get_zero_initialized_client();
-  client->node = node;
-
-  rcl_ret_t ret = rcl_client_init(&(client->client), node, ts, service_name, &client_ops);
-  if (ret != RCL_RET_OK) {
-    if (ret == RCL_RET_SERVICE_NAME_INVALID) {
-      PyErr_Format(
-        PyExc_ValueError,
-        "Failed to create client due to invalid service name '%s': %s",
-        service_name, rcl_get_error_string().str);
-    } else {
-      PyErr_Format(
-        module_state->RCLError, "Failed to create client: %s", rcl_get_error_string().str);
-    }
-    rcl_reset_error();
-    PyMem_Free(client);
-    return NULL;
-  }
-  rclpy_handle_t * client_handle = _rclpy_create_handle(
-    client, _rclpy_destroy_client);
-  if (!client_handle) {
-    _rclpy_destroy_client(client);
-    return NULL;
-  }
-  _rclpy_handle_add_dependency(client_handle, node_handle);
-  if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(client_handle);
-    return NULL;
-  }
-  PyObject * client_capsule = _rclpy_create_handle_capsule(client_handle, "rclpy_client_t");
-  if (!client_capsule) {
-    _rclpy_handle_dec_ref(client_handle);
-    return NULL;
-  }
-  return client_capsule;
-}
-
-/// Publish a request message
-/**
- * Raises ValueError if pyclient is not a client capsule
- * Raises RuntimeError if the request could not be sent
- *
- * \param[in] pyclient Capsule pointing to the client
- * \param[in] pyrequest request message to send
- * \return sequence_number PyLong object representing the index of the sent request
- */
-static PyObject *
-rclpy_send_request(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pyclient;
-  PyObject * pyrequest;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyclient, &pyrequest)) {
-    return NULL;
-  }
-  rclpy_client_t * client = rclpy_handle_get_pointer_from_capsule(pyclient, "rclpy_client_t");
-  if (!client) {
-    return NULL;
-  }
-
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  void * raw_ros_request = rclpy_convert_from_py(pyrequest, &destroy_ros_message);
-  if (!raw_ros_request) {
-    return NULL;
-  }
-
-  int64_t sequence_number;
-  rcl_ret_t ret = rcl_send_request(&(client->client), raw_ros_request, &sequence_number);
-  destroy_ros_message(raw_ros_request);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to send request: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  return PyLong_FromLongLong(sequence_number);
-}
-
-/// Handle destructor for service
+// Handle destructor for service
 static void
 _rclpy_destroy_service(void * p)
 {
@@ -3040,49 +2855,6 @@ rclpy_send_response(PyObject * module, PyObject * args)
     return NULL;
   }
   Py_RETURN_NONE;
-}
-
-/// Check if a service server is available
-/**
- * Raises ValueError if the arguments are not capsules
- *
- * \param[in] pyclient Capsule pointing to the client
- * \return True if the service server is available
- */
-static PyObject *
-rclpy_service_server_is_available(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pyclient;
-
-  if (!PyArg_ParseTuple(args, "O", &pyclient)) {
-    return NULL;
-  }
-
-  rclpy_client_t * client = rclpy_handle_get_pointer_from_capsule(pyclient, "rclpy_client_t");
-  if (!client) {
-    return NULL;
-  }
-
-  bool is_ready;
-  rcl_ret_t ret = rcl_service_server_is_available(client->node, &(client->client), &is_ready);
-
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to check service availability: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  if (is_ready) {
-    Py_RETURN_TRUE;
-  }
-  Py_RETURN_FALSE;
 }
 
 /// Destructor for a clock
@@ -3785,77 +3557,6 @@ rclpy_take_request(PyObject * module, PyObject * args)
   PyMem_Free(header);
   destroy_ros_message(taken_request);
   Py_RETURN_NONE;
-}
-
-/// Take a response from a given client
-/**
- * Raises ValueError if pyclient is not a client capsule
- *
- * \param[in] pyclient Capsule pointing to the client to process the response
- * \param[in] pyresponse_type Instance of the message type to take
- * \return 2-tuple sequence number and received response or None, None if there is no response
- */
-static PyObject *
-rclpy_take_response(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pyclient;
-  PyObject * pyresponse_type;
-
-  if (!PyArg_ParseTuple(args, "OO", &pyclient, &pyresponse_type)) {
-    return NULL;
-  }
-  rclpy_client_t * client = rclpy_handle_get_pointer_from_capsule(pyclient, "rclpy_client_t");
-  if (!client) {
-    return NULL;
-  }
-
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  void * taken_response = rclpy_create_from_py(pyresponse_type, &destroy_ros_message);
-  if (!taken_response) {
-    return NULL;
-  }
-
-  rmw_service_info_t * header = PyMem_Malloc(sizeof(rmw_service_info_t));
-  if (!header) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for response header");
-    return NULL;
-  }
-  rcl_ret_t ret = rcl_take_response_with_info(&(client->client), header, taken_response);
-
-  // Create the tuple to return
-  PyObject * pytuple = PyTuple_New(2);
-  if (!pytuple) {
-    PyMem_Free(header);
-    return NULL;
-  }
-
-  if (ret != RCL_RET_CLIENT_TAKE_FAILED) {
-    PyObject * pytaken_response = rclpy_convert_to_py(taken_response, pyresponse_type);
-    destroy_ros_message(taken_response);
-    if (!pytaken_response) {
-      // the function has set the Python error
-      Py_DECREF(pytuple);
-      PyMem_Free(header);
-      return NULL;
-    }
-
-    PyObject * pyheader = PyCapsule_New(header, "rmw_service_info_t", NULL);
-    if (!pyheader) {
-      Py_DECREF(pytaken_response);
-      Py_DECREF(pytuple);
-      PyMem_Free(header);
-      return NULL;
-    }
-    PyTuple_SET_ITEM(pytuple, 0, pyheader);
-    PyTuple_SET_ITEM(pytuple, 1, pytaken_response);
-    return pytuple;
-  }
-  Py_INCREF(Py_None);
-  PyTuple_SET_ITEM(pytuple, 0, Py_None);
-  Py_INCREF(Py_None);
-  PyTuple_SET_ITEM(pytuple, 1, Py_None);
-  destroy_ros_message(taken_response);
-  return pytuple;
 }
 
 /// Request shutdown of the client library
@@ -5928,10 +5629,6 @@ static PyMethodDef rclpy_methods[] = {
     "Create a Service."
   },
   {
-    "rclpy_create_client", rclpy_create_client, METH_VARARGS,
-    "Create a Client."
-  },
-  {
     "rclpy_create_timer", rclpy_create_timer, METH_VARARGS,
     "Create a Timer."
   },
@@ -5962,17 +5659,8 @@ static PyMethodDef rclpy_methods[] = {
     "Count subscribers from a publisher."
   },
   {
-    "rclpy_send_request", rclpy_send_request, METH_VARARGS,
-    "Send a request."
-  },
-  {
     "rclpy_send_response", rclpy_send_response, METH_VARARGS,
     "Send a response."
-  },
-
-  {
-    "rclpy_service_server_is_available", rclpy_service_server_is_available, METH_VARARGS,
-    "Return true if the service server is available."
   },
 
   {
@@ -6070,10 +5758,6 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_take_request."
   },
 
-  {
-    "rclpy_take_response", rclpy_take_response, METH_VARARGS,
-    "rclpy_take_response."
-  },
   {
     "rclpy_take_event", rclpy_take_event, METH_VARARGS,
     "Get the pending data for a ready QoS Event."
