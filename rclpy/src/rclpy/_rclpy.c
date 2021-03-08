@@ -1739,13 +1739,6 @@ rclpy_create_publisher(PyObject * module, PyObject * args)
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
     rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     publisher_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(qos_profile);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rclpy_publisher_t * pub = PyMem_Malloc(sizeof(rclpy_publisher_t));
@@ -2473,16 +2466,8 @@ rclpy_create_subscription(PyObject * module, PyObject * args)
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
-    void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
-    rmw_qos_profile_t * qos_profile = p;
+    rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     subscription_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rclpy_subscription_t * sub = PyMem_Malloc(sizeof(rclpy_subscription_t));
@@ -2612,16 +2597,8 @@ rclpy_create_client(PyObject * module, PyObject * args)
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
-    void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
-    rmw_qos_profile_t * qos_profile = p;
+    rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     client_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rclpy_client_t * client = PyMem_Malloc(sizeof(rclpy_client_t));
@@ -2796,16 +2773,8 @@ rclpy_create_service(PyObject * module, PyObject * args)
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
-    void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
-    rmw_qos_profile_t * qos_profile = p;
+    rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     service_ops.qos = *qos_profile;
-    // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
-    // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
-    PyMem_Free(p);
-    if (PyCapsule_SetPointer(pyqos_profile, Py_None)) {
-      // exception set by PyCapsule_SetPointer
-      return NULL;
-    }
   }
 
   rclpy_service_t * srv = PyMem_Malloc(sizeof(rclpy_service_t));
@@ -4398,6 +4367,13 @@ _convert_py_duration_to_rmw_time(PyObject * pyobject, rmw_time_t * out_time)
   return true;
 }
 
+/// Destructor for a QoSProfile
+void
+_rclpy_destroy_qos_profile(PyObject * pycapsule)
+{
+  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rmw_qos_profile_t"));
+}
+
 /// Return a Python QoSProfile object
 /**
  * This function creates a QoSProfile object from the QoS Policies provided
@@ -4467,7 +4443,8 @@ rclpy_convert_from_py_qos_policy(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   qos_profile->avoid_ros_namespace_conventions = avoid_ros_namespace_conventions;
-  PyObject * pyqos_profile = PyCapsule_New(qos_profile, "rmw_qos_profile_t", NULL);
+  PyObject * pyqos_profile = PyCapsule_New(
+    qos_profile, "rmw_qos_profile_t", _rclpy_destroy_qos_profile);
   return pyqos_profile;
 }
 
