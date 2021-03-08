@@ -74,7 +74,7 @@ subscription_create(
 
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
-  if (!pyqos_profile.is(py::none())) {
+  if (!pyqos_profile.is_none()) {
     if (0 != strcmp("rmw_qos_profile_t", pyqos_profile.name())) {
       throw py::value_error("capsule is not an rmw_qos_profile_t");
     }
