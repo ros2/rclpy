@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 extern "C"
 {
@@ -122,7 +123,6 @@ service_create(
   auto node_handle = static_cast<rclpy_handle_t *>(pynode);
   _rclpy_handle_add_dependency(srv_handle, node_handle);
   if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(srv_handle);
     throw py::error_already_set();
   }
 
@@ -138,7 +138,7 @@ service_send_response(py::capsule pyservice, py::object pyresponse, py::capsule 
     throw py::error_already_set();
   }
 
-  destroy_ros_message_signature * destroy_ros_message = NULL;
+  destroy_ros_message_signature * destroy_ros_message = nullptr;
   void * raw_ros_response = rclpy_convert_from_py(pyresponse.ptr(), &destroy_ros_message);
   if (!raw_ros_response) {
     throw py::error_already_set();
@@ -172,7 +172,7 @@ service_take_request(py::capsule pyservice, py::object pyrequest_type)
     throw py::error_already_set();
   }
 
-  destroy_ros_message_signature * destroy_ros_message = NULL;
+  destroy_ros_message_signature * destroy_ros_message = nullptr;
   void * taken_request_ptr = rclpy_create_from_py(pyrequest_type.ptr(), &destroy_ros_message);
   if (!taken_request_ptr) {
     throw py::error_already_set();
