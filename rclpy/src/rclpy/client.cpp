@@ -208,7 +208,7 @@ client_take_response(py::capsule pyclient, py::object pyresponse_type)
   result_tuple[0] = py::capsule(header.release(), "rmw_service_info_t");
 
   PyObject * pytaken_response_c = rclpy_convert_to_py(taken_response.get(), pyresponse_type.ptr());
-  if (!pytaken_response) {
+  if (!pytaken_response_c) {
     throw py::error_already_set();
   }
   result_tuple[1] = py::reinterpret_steal<py::object>(pytaken_response_c);
