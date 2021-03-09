@@ -877,41 +877,6 @@ rclpy_get_publisher_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(node_logger_name);
 }
 
-/// Get the name of the logger associated with the node of the subscription.
-/**
- * Raises ValueError if pysubscription is not a subscription capsule
- *
- * \param[in] pysubscription Capsule pointing to the subscription to get the logger name of
- * \return logger_name, or
- * \return None on failure
- */
-static PyObject *
-rclpy_get_subscription_logger_name(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pysubscription;
-  if (!PyArg_ParseTuple(args, "O", &pysubscription)) {
-    return NULL;
-  }
-
-  rclpy_subscription_t * sub =
-    rclpy_handle_get_pointer_from_capsule(pysubscription, "rclpy_subscription_t");
-  if (NULL == sub) {
-    return NULL;
-  }
-
-  const char * node_logger_name = rcl_node_get_logger_name(sub->node);
-  if (NULL == node_logger_name) {
-    Py_RETURN_NONE;
-  }
-
-  return PyUnicode_FromString(node_logger_name);
-}
-
 typedef rcl_ret_t (* count_func)(const rcl_node_t * node, const char * topic_name, size_t * count);
 
 static PyObject *
@@ -1074,43 +1039,6 @@ static PyObject *
 rclpy_get_subscriptions_info_by_topic(PyObject * module, PyObject * args)
 {
   return _get_info_by_topic(module, args, "subscriptions", rcl_get_subscriptions_info_by_topic);
-}
-
-/// Return the resolved topic name of a subscription.
-/**
- * The returned string is the resolved topic name after remappings have be applied.
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from.
- * \return a string with the topic name
- */
-static PyObject *
-rclpy_get_subscription_topic_name(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pysubscription;
-  if (!PyArg_ParseTuple(args, "O", &pysubscription)) {
-    return NULL;
-  }
-
-  rclpy_subscription_t * sub =
-    rclpy_handle_get_pointer_from_capsule(pysubscription, "rclpy_subscription_t");
-  if (NULL == sub) {
-    return NULL;
-  }
-
-  const char * subscription_name = rcl_subscription_get_topic_name(&(sub->subscription));
-  if (NULL == subscription_name) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to get subscription topic name: %s",
-      rcl_get_error_string().str);
-    rcl_reset_error();
-  }
-
-  return PyUnicode_FromString(subscription_name);
 }
 
 /// Validate a topic name and return error message and index of invalidation.
@@ -1653,137 +1581,6 @@ rclpy_resolve_name(PyObject * Py_UNUSED(self), PyObject * args)
   node_options->allocator.deallocate(output_cstr, node_options->allocator.state);
 
   return result;
-}
-
-/// Handle destructor for subscription
-static void
-_rclpy_destroy_subscription(void * p)
-{
-  rclpy_subscription_t * sub = p;
-  if (!sub) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_subscrition got NULL pointer");
-    return;
-  }
-
-  rcl_ret_t ret = rcl_subscription_fini(&(sub->subscription), sub->node);
-  if (RCL_RET_OK != ret) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "Failed to fini subscription: %s",
-      rcl_get_error_string().str);
-  }
-  PyMem_Free(sub);
-}
-
-/// Create a subscription
-/**
- * This function will create a subscription for the given topic name.
- * This subscription will use the typesupport defined in the message module
- * provided as pymsg_type to send messages over the wire.
- *
- * On a successful call a list with two elements is returned:
- *
- * - a Capsule pointing to the pointer of the created rcl_subscription_t * structure
- * - an integer representing the memory address of the created rcl_subscription_t
- *
- * Raises ValueError if the capsules are not the correct types
- * Raises RuntimeError if the subscription could not be created
- *
- * \param[in] pynode Capsule pointing to the node to add the subscriber to
- * \param[in] pymsg_type Message module associated with the subscriber
- * \param[in] pytopic Python object containing the topic name
- * \param[in] pyqos_profile QoSProfile Python object for this subscription
- * \return list with the capsule and memory address, or
- * \return NULL on failure
- */
-static PyObject *
-rclpy_create_subscription(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pynode;
-  PyObject * pymsg_type;
-  PyObject * pytopic;
-  PyObject * pyqos_profile;
-
-  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pymsg_type, &pytopic, &pyqos_profile)) {
-    return NULL;
-  }
-
-  const char * topic = PyUnicode_AsUTF8(pytopic);
-  if (!topic) {
-    return NULL;
-  }
-
-  rclpy_handle_t * node_handle = PyCapsule_GetPointer(pynode, "rcl_node_t");
-  if (!node_handle) {
-    return NULL;
-  }
-  rcl_node_t * node = _rclpy_handle_get_pointer(node_handle);
-  if (!node) {
-    return NULL;
-  }
-
-  rosidl_message_type_support_t * ts = rclpy_common_get_type_support(pymsg_type);
-  if (!ts) {
-    return NULL;
-  }
-
-  rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
-
-  if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
-    rmw_qos_profile_t * qos_profile = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
-    subscription_ops.qos = *qos_profile;
-  }
-
-  rclpy_subscription_t * sub = PyMem_Malloc(sizeof(rclpy_subscription_t));
-  if (!sub) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for subscription");
-    return NULL;
-  }
-  sub->subscription = rcl_get_zero_initialized_subscription();
-  sub->node = node;
-
-  rcl_ret_t ret = rcl_subscription_init(&(sub->subscription), node, ts, topic, &subscription_ops);
-  if (ret != RCL_RET_OK) {
-    if (ret == RCL_RET_TOPIC_NAME_INVALID) {
-      PyErr_Format(
-        PyExc_ValueError,
-        "Failed to create subscription due to invalid topic name '%s': %s",
-        topic, rcl_get_error_string().str);
-    } else {
-      PyErr_Format(
-        module_state->RCLError,
-        "Failed to create subscription: %s", rcl_get_error_string().str);
-    }
-    rcl_reset_error();
-    PyMem_Free(sub);
-    return NULL;
-  }
-
-  rclpy_handle_t * sub_handle = _rclpy_create_handle(sub, _rclpy_destroy_subscription);
-  if (!sub_handle) {
-    _rclpy_destroy_subscription(sub);
-    return NULL;
-  }
-  _rclpy_handle_add_dependency(sub_handle, node_handle);
-  if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(sub_handle);
-    return NULL;
-  }
-  PyObject * sub_capsule = _rclpy_create_handle_capsule(sub_handle, "rclpy_subscription_t");
-  if (!sub_capsule) {
-    _rclpy_handle_dec_ref(sub_handle);
-    return NULL;
-  }
-  return sub_capsule;
 }
 
 /// Handle destructor for service
@@ -4120,10 +3917,6 @@ static PyMethodDef rclpy_methods[] = {
     "Get the logger name associated with the node of a publisher."
   },
   {
-    "rclpy_get_subscription_logger_name", rclpy_get_subscription_logger_name, METH_VARARGS,
-    "Get the logger name associated with the node of a subscription."
-  },
-  {
     "rclpy_count_publishers", rclpy_count_publishers, METH_VARARGS,
     "Count publishers for a topic."
   },
@@ -4138,10 +3931,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
     "Get subscriptions info for a topic."
-  },
-  {
-    "rclpy_get_subscription_topic_name", rclpy_get_subscription_topic_name, METH_VARARGS,
-    "Get the topic name of a subscription."
   },
   {
     "rclpy_expand_topic_name", rclpy_expand_topic_name, METH_VARARGS,
@@ -4174,10 +3963,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_resolve_name", rclpy_resolve_name, METH_VARARGS,
     "Expand and remap a topic or service name."
-  },
-  {
-    "rclpy_create_subscription", rclpy_create_subscription, METH_VARARGS,
-    "Create a Subscription."
   },
   {
     "rclpy_create_service", rclpy_create_service, METH_VARARGS,

@@ -21,6 +21,7 @@
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "service_info.hpp"
+#include "subscription.hpp"
 #include "time_point.hpp"
 #include "timer.hpp"
 
@@ -144,6 +145,16 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_create_timer", &rclpy::create_timer,
     "Create a Timer.");
+
+  m.def(
+    "rclpy_create_subscription", &rclpy::subscription_create,
+    "Create a Subscription");
+  m.def(
+    "rclpy_get_subscription_logger_name", &rclpy::subscription_get_logger_name,
+    "Get the logger name associated with the node of a subscription");
+  m.def(
+    "rclpy_get_subscription_topic_name", &rclpy::subscription_get_topic_name,
+    "Get the topic name of a subscription");
 
   m.def(
     "rclpy_create_time_point", &rclpy::create_time_point,
