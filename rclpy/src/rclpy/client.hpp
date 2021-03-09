@@ -55,7 +55,7 @@ client_create(
  * \param[in] pyrequest request message to send
  * \return sequence_number Index of the sent request
  */
-uint64_t
+int64_t
 client_send_request(py::capsule pyclient, py::object pyrequest);
 
 /// Check if a service server is available

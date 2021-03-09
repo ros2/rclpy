@@ -129,7 +129,7 @@ client_create(
   return pycli;
 }
 
-uint64_t
+int64_t
 client_send_request(py::capsule pyclient, py::object pyrequest)
 {
   auto client = static_cast<rclpy_client_t *>(
@@ -204,16 +204,17 @@ client_take_response(py::capsule pyclient, py::object pyresponse_type)
     return py::tuple(2);
   }
 
-  PyObject * pytaken_response = rclpy_convert_to_py(taken_response.get(), pyresponse_type.ptr());
+  py::tuple result_tuple(2);
+  result_tuple[0] = py::capsule(header.release(), "rmw_service_info_t");
+
+  PyObject * pytaken_response_c = rclpy_convert_to_py(taken_response.get(), pyresponse_type.ptr());
   if (!pytaken_response) {
     throw py::error_already_set();
   }
-  // pytaken_response now owns the message
+  result_tuple[1] = py::reinterpret_steal<py::object>(pytaken_response_c);
+  // result_tuple now owns the message
   taken_response.release();
 
-  py::tuple result_tuple(2);
-  result_tuple[0] = py::capsule(header.release(), "rmw_service_info_t");
-  result_tuple[1] = py::reinterpret_steal<py::object>(pytaken_response);
   return result_tuple;
 }
 }  // namespace rclpy
