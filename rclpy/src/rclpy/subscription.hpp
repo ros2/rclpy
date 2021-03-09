@@ -48,17 +48,6 @@ subscription_create(
   py::capsule pynode, py::object pymsg_type, std::string topic,
   py::capsule pyqos_profile);
 
-/// Get the name of the logger associated with the node of the subscription.
-/**
- * Raises ValueError if pysubscription is not a subscription capsule
- *
- * \param[in] pysubscription Capsule pointing to the subscription to get the logger name of
- * \return logger_name, or
- * \return None on failure
- */
-py::object
-subscription_get_logger_name(py::capsule pysubscription);
-
 /// Return the resolved topic name of a subscription.
 /**
  * The returned string is the resolved topic name after remappings have be applied.
