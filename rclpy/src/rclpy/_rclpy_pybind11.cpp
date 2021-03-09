@@ -14,6 +14,7 @@
 
 #include <pybind11/pybind11.h>
 
+#include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
 #include "guard_condition.hpp"
@@ -21,6 +22,7 @@
 #include "rclpy_common/exceptions.hpp"
 #include "service.hpp"
 #include "service_info.hpp"
+#include "subscription.hpp"
 #include "time_point.hpp"
 #include "timer.hpp"
 
@@ -57,6 +59,19 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
+
+  m.def(
+    "rclpy_create_client", &rclpy::client_create,
+    "Create a Client");
+  m.def(
+    "rclpy_send_request", &rclpy::client_send_request,
+    "Send a request");
+  m.def(
+    "rclpy_service_server_is_available", &rclpy::client_service_server_is_available,
+    "Return true if the service server is available");
+  m.def(
+    "rclpy_take_response", &rclpy::client_take_response,
+    "rclpy_take_response");
 
   m.def(
     "rclpy_context_get_domain_id", &rclpy::context_get_domain_id,
@@ -141,6 +156,16 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_create_timer", &rclpy::create_timer,
     "Create a Timer.");
+
+  m.def(
+    "rclpy_create_subscription", &rclpy::subscription_create,
+    "Create a Subscription");
+  m.def(
+    "rclpy_get_subscription_logger_name", &rclpy::subscription_get_logger_name,
+    "Get the logger name associated with the node of a subscription");
+  m.def(
+    "rclpy_get_subscription_topic_name", &rclpy::subscription_get_topic_name,
+    "Get the topic name of a subscription");
 
   m.def(
     "rclpy_create_time_point", &rclpy::create_time_point,
