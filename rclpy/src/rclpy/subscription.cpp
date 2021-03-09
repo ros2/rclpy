@@ -126,6 +126,23 @@ subscription_create(
   return pysub;
 }
 
+py::object
+subscription_get_logger_name(py::capsule pysubscription)
+{
+  auto sub = static_cast<rclpy_subscription_t *>(
+    rclpy_handle_get_pointer_from_capsule(pysubscription.ptr(), "rclpy_subscription_t"));
+  if (!sub) {
+    throw py::error_already_set();
+  }
+
+  const char * node_logger_name = rcl_node_get_logger_name(sub->node);
+  if (NULL == node_logger_name) {
+    return py::none();
+  }
+
+  return py::str(node_logger_name);
+}
+
 std::string
 subscription_get_topic_name(py::capsule pysubscription)
 {

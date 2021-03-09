@@ -97,6 +97,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_create_subscription", &rclpy::subscription_create,
     "Create a Subscription");
   m.def(
+    "rclpy_get_subscription_logger_name", &rclpy::subscription_get_logger_name,
+    "Get the logger name associated with the node of a subscription");
+  m.def(
     "rclpy_get_subscription_topic_name", &rclpy::subscription_get_topic_name,
     "Get the topic name of a subscription");
 }
