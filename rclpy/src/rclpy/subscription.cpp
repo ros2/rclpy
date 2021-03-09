@@ -119,7 +119,7 @@ subscription_create(
   auto node_handle = static_cast<rclpy_handle_t *>(pynode);
   _rclpy_handle_add_dependency(sub_handle, node_handle);
   if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(node_handle);
+    _rclpy_handle_dec_ref(sub_handle);
     throw py::error_already_set();
   }
 
