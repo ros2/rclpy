@@ -150,7 +150,7 @@ service_send_response(py::capsule pyservice, py::object pyresponse, py::capsule 
   rmw_request_id_t * header;
   if (0 == strcmp("rmw_request_id_t", pyheader.name())) {
     header = static_cast<rmw_request_id_t *>(pyheader);
-  } else if(0 == strcmp("rmw_service_info_t", pyheader.name())) {
+  } else if (0 == strcmp("rmw_service_info_t", pyheader.name())) {
     auto info_header = static_cast<rmw_service_info_t *>(pyheader);
     header = &(info_header->request_id);
   } else {
