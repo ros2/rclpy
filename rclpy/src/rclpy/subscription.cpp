@@ -119,7 +119,6 @@ subscription_create(
   auto node_handle = static_cast<rclpy_handle_t *>(pynode);
   _rclpy_handle_add_dependency(sub_handle, node_handle);
   if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(sub_handle);
     throw py::error_already_set();
   }
 
@@ -136,7 +135,7 @@ subscription_get_logger_name(py::capsule pysubscription)
   }
 
   const char * node_logger_name = rcl_node_get_logger_name(sub->node);
-  if (NULL == node_logger_name) {
+  if (nullptr == node_logger_name) {
     return py::none();
   }
 
@@ -153,7 +152,7 @@ subscription_get_topic_name(py::capsule pysubscription)
   }
 
   const char * subscription_name = rcl_subscription_get_topic_name(&(sub->subscription));
-  if (NULL == subscription_name) {
+  if (nullptr == subscription_name) {
     throw RCLError("failed to get subscription topic name");
   }
 
