@@ -101,7 +101,7 @@ publisher_create(
       std::string error_text{"Failed to create publisher due to invalid topic name '"};
       error_text += topic;
       error_text += "'";
-      throw RCLError(error_text);
+      throw py::value_error(error_text);
     }
     throw RCLError("Failed to create publisher");
   }
@@ -119,7 +119,7 @@ publisher_create(
   auto node_handle = static_cast<rclpy_handle_t *>(pynode);
   _rclpy_handle_add_dependency(pub_handle, node_handle);
   if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(node_handle);
+    _rclpy_handle_dec_ref(pub_handle);
     throw py::error_already_set();
   }
 
