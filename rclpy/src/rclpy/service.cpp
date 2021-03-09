@@ -208,6 +208,6 @@ service_take_request(py::capsule pyservice, py::object pyrequest_type)
   // result_list now owns the message
   taken_request.release();
 
-  return result_list;
+  return std::move(result_list);
 }
 }  // namespace rclpy
