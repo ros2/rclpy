@@ -29,10 +29,8 @@ namespace rclpy
  * This subscription will use the typesupport defined in the message module
  * provided as pymsg_type to send messages over the wire.
  *
- * On a successful call a list with two elements is returned:
- *
- * - a Capsule pointing to the pointer of the created rcl_subscription_t * structure
- * - an integer representing the memory address of the created rcl_subscription_t
+ * On a successful call a Capsule pointing to the pointer of the created
+ * rcl_subscription_t * structure is returned
  *
  * Raises ValueError if the capsules are not the correct types
  * Raises RCLError if the subscription could not be created
