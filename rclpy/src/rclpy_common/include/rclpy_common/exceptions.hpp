@@ -79,6 +79,10 @@ class UnsupportedEventTypeError : public RCLError
 {
   using RCLError::RCLError;
 };
+
+class QoSCheckCompatibleException : public RCLError
+{
+};
 }  // namespace rclpy
 
 #endif  // RCLPY_COMMON__EXCEPTIONS_HPP_

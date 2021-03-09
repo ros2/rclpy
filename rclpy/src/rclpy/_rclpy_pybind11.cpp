@@ -26,6 +26,7 @@
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
+#include "qos.hpp"
 #include "qos_events.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
@@ -84,6 +85,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
+  py::register_exception<rclpy::QoSCheckCompatibleException>(
+    m, "QoSCheckCompatibleException", rclerror.ptr());
 
   m.def(
     "rclpy_init", &rclpy::init,
@@ -157,6 +160,10 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_service_info_get_received_timestamp", &rclpy::service_info_get_received_timestamp,
     "Retrieve received timestamp from service_info");
+
+  m.def(
+    "rclpy_run_my_fn", &rclpy::run_my_fn,
+    "Test it out");
 
   m.def(
     "rclpy_create_guard_condition", &rclpy::guard_condition_create,
