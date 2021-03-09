@@ -253,7 +253,12 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # Give cppcheck hints about macro definitions coming from outside this package
   get_target_property(ament_cmake_cppcheck_ADDITIONAL_INCLUDE_DIRS rcutils::rcutils INTERFACE_INCLUDE_DIRECTORIES)
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE "ament_cmake_cppcheck")
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_cppcheck REQUIRED)
+  ament_cppcheck()
+  set_tests_properties(cppcheck PROPERTIES TIMEOUT 420)
 
   find_package(ament_cmake_pytest REQUIRED)
   find_package(rosidl_generator_py REQUIRED)
