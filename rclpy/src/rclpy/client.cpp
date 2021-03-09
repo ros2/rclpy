@@ -172,6 +172,12 @@ client_service_server_is_available(py::capsule pyclient)
   return is_ready;
 }
 
+static void
+_rclpy_destroy_service_info(PyObject * pycapsule)
+{
+  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rmw_service_info_t"));
+}
+
 py::tuple
 client_take_response(py::capsule pyclient, py::object pyresponse_type)
 {
@@ -205,7 +211,8 @@ client_take_response(py::capsule pyclient, py::object pyresponse_type)
   }
 
   py::tuple result_tuple(2);
-  result_tuple[0] = py::capsule(header.release(), "rmw_service_info_t");
+  result_tuple[0] = py::capsule(
+    header.release(), "rmw_service_info_t", _rclpy_destroy_service_info);
 
   PyObject * pytaken_response_c = rclpy_convert_to_py(taken_response.get(), pyresponse_type.ptr());
   if (!pytaken_response_c) {
