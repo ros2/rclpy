@@ -122,7 +122,6 @@ client_create(
   auto node_handle = static_cast<rclpy_handle_t *>(pynode);
   _rclpy_handle_add_dependency(cli_handle, node_handle);
   if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(cli_handle);
     throw py::error_already_set();
   }
 
@@ -138,7 +137,7 @@ client_send_request(py::capsule pyclient, py::object pyrequest)
     throw py::error_already_set();
   }
 
-  destroy_ros_message_signature * destroy_ros_message = NULL;
+  destroy_ros_message_signature * destroy_ros_message = nullptr;
   void * raw_ros_request = rclpy_convert_from_py(pyrequest.ptr(), &destroy_ros_message);
   if (!raw_ros_request) {
     throw py::error_already_set();
@@ -187,7 +186,7 @@ client_take_response(py::capsule pyclient, py::object pyresponse_type)
     throw py::error_already_set();
   }
 
-  destroy_ros_message_signature * destroy_ros_message = NULL;
+  destroy_ros_message_signature * destroy_ros_message = nullptr;
   void * taken_response_ptr = rclpy_create_from_py(pyresponse_type.ptr(), &destroy_ros_message);
   if (!taken_response_ptr) {
     throw py::error_already_set();
