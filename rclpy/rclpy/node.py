@@ -801,7 +801,9 @@ class Node:
                     if descriptors is not None:
                         self._descriptors[param.name] = descriptors[param.name]
                     elif param.name not in self._descriptors:
-                        self._descriptors[param.name] = ParameterDescriptor()
+                        descriptor = ParameterDescriptor()
+                        descriptor.dynamic_typing = True
+                        self._descriptors[param.name] = descriptor
 
                     if Parameter.Type.NOT_SET == self.get_parameter_or(param.name).type_:
                         #  Parameter is new. (Parameter had no value and new value is set)
@@ -901,7 +903,7 @@ class Node:
                 successful=False,
                 reason='Trying to set a read-only parameter: {}.'.format(parameter.name))
 
-        if descriptor.dynamic_typing or self._allow_undeclared_parameters:
+        if descriptor.dynamic_typing:
             descriptor.type = parameter.type_.value
         elif descriptor.type != parameter.type_.value:
             return SetParametersResult(

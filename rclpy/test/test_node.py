@@ -443,6 +443,26 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertIsInstance(self.node.get_parameter('unset'), Parameter)
         self.assertEqual(self.node.get_parameter('unset').type_, Parameter.Type.NOT_SET)
 
+    def test_node_declare_static_parameter(self):
+        value = self.node.declare_parameter('an_integer', 5)
+        self.assertEqual(value.value, 5)
+        self.assertFalse(
+            self.node.set_parameters([Parameter('an_integer', value='asd')])[0].successful)
+        self.assertEqual(self.node.get_parameter('an_integer').value, 5)
+
+    def test_node_undeclared_parameters_are_dynamically_typed(self):
+        self.assertTrue(self.node.set_parameters([Parameter('my_param', value=5)])[0].successful)
+        self.assertEqual(self.node.get_parameter('my_param').value, 5)
+        self.assertTrue(
+            self.node.set_parameters([Parameter('my_param', value='asd')])[0].successful)
+        self.assertEqual(self.node.get_parameter('my_param').value, 'asd')
+
+    def test_node_cannot_declare_after_set(self):
+        self.assertTrue(self.node.set_parameters([Parameter('my_param', value=5)])[0].successful)
+        self.assertEqual(self.node.get_parameter('my_param').value, 5)
+        with pytest.raises(rclpy.exceptions.ParameterAlreadyDeclaredException):
+            self.node.declare_parameter('my_param', 5)
+
     def test_node_has_parameter_services(self):
         service_names_and_types = self.node.get_service_names_and_types()
         self.assertIn(
