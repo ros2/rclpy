@@ -101,7 +101,7 @@ subscription_create(
       std::string error_text{"Failed to create subscription due to invalid topic name '"};
       error_text += topic;
       error_text += "'";
-      throw RCLError(error_text);
+      throw py::value_error(error_text);
     }
     throw RCLError("Failed to create subscription");
   }
