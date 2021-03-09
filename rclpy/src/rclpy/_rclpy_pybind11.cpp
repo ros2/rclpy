@@ -44,7 +44,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "ROS_TIME_DEACTIVATED", RCL_ROS_TIME_DEACTIVATED,
     "ROS TIME is being deactivated, the clock will report system time after the jump")
   .value(
-    "SYSTEM_TIME_NO_CHANGE ", RCL_SYSTEM_TIME_NO_CHANGE,
+    "SYSTEM_TIME_NO_CHANGE", RCL_SYSTEM_TIME_NO_CHANGE,
     "ROS time is inactive and the clock will keep reporting system time");
 
   auto rclerror = py::register_exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);
