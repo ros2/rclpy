@@ -12,36 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
-
 from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .duration import Duration
 
 
-class ClockType(IntEnum):
-    """
-    Enum for clock type.
-
-    This enum matches the one defined in rcl/time.h
-    """
-
-    ROS_TIME = 1
-    SYSTEM_TIME = 2
-    STEADY_TIME = 3
-
-
-class ClockChange(IntEnum):
-
-    # ROS time is active and will continue to be active
-    ROS_TIME_NO_CHANGE = 1
-    # ROS time is being activated
-    ROS_TIME_ACTIVATED = 2
-    # ROS TIME is being deactivated, the clock will report system time after the jump
-    ROS_TIME_DEACTIVATED = 3
-    # ROS time is inactive and the clock will keep reporting system time
-    SYSTEM_TIME_NO_CHANGE = 4
+ClockType = _rclpy.ClockType
+ClockChange = _rclpy.ClockChange
 
 
 class JumpThreshold:
@@ -169,17 +147,7 @@ class Clock:
 
             def callback_shim(jump_dict):
                 nonlocal original_callback
-                clock_change = None
-                if 'RCL_ROS_TIME_NO_CHANGE' == jump_dict['clock_change']:
-                    clock_change = ClockChange.ROS_TIME_NO_CHANGE
-                elif 'RCL_ROS_TIME_ACTIVATED' == jump_dict['clock_change']:
-                    clock_change = ClockChange.ROS_TIME_ACTIVATED
-                elif 'RCL_ROS_TIME_DEACTIVATED' == jump_dict['clock_change']:
-                    clock_change = ClockChange.ROS_TIME_DEACTIVATED
-                elif 'RCL_SYSTEM_TIME_NO_CHANGE' == jump_dict['clock_change']:
-                    clock_change = ClockChange.SYSTEM_TIME_NO_CHANGE
-                else:
-                    raise ValueError('Unknown clock jump type ' + repr(clock_change))
+                clock_change = jump_dict['clock_change']
                 duration = Duration(nanoseconds=jump_dict['delta'])
                 original_callback(TimeJump(clock_change, duration))
 
