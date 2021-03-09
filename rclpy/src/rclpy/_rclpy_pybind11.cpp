@@ -17,6 +17,7 @@
 #include "clock.hpp"
 #include "context.hpp"
 #include "guard_condition.hpp"
+#include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "service_info.hpp"
 #include "time_point.hpp"
@@ -65,6 +66,22 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_ok", &rclpy::context_is_valid,
     "Return true if the context is valid");
+
+  m.def(
+    "rclpy_create_publisher", &rclpy::publisher_create,
+    "Create a Publisher");
+  m.def(
+    "rclpy_publisher_get_subscription_count", &rclpy::publisher_get_subscription_count,
+    "Count subscribers from a publisher");
+  m.def(
+    "rclpy_publisher_get_topic_name", &rclpy::publisher_get_topic_name,
+    "Get the resolved name(topic) of publisher");
+  m.def(
+    "rclpy_publish", &rclpy::publisher_publish_message,
+    "Publish a message");
+  m.def(
+    "rclpy_publish_raw", &rclpy::publisher_publish_raw,
+    "Publish a serialized message");
 
   m.def(
     "rclpy_service_info_get_sequence_number", &rclpy::service_info_get_sequence_number,
