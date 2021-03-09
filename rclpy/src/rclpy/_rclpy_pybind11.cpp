@@ -19,6 +19,7 @@
 #include "guard_condition.hpp"
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
+#include "service.hpp"
 #include "service_info.hpp"
 #include "time_point.hpp"
 #include "timer.hpp"
@@ -82,6 +83,16 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_publish_raw", &rclpy::publisher_publish_raw,
     "Publish a serialized message");
+
+  m.def(
+    "rclpy_create_service", &rclpy::service_create,
+    "Create a service");
+  m.def(
+    "rclpy_send_response", &rclpy::service_send_response,
+    "Send a response");
+  m.def(
+    "rclpy_take_request", &rclpy::service_take_request,
+    "rclpy_take_request");
 
   m.def(
     "rclpy_service_info_get_sequence_number", &rclpy::service_info_get_sequence_number,
