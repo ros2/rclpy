@@ -70,7 +70,7 @@ wait_set_clear_entities(py::capsule pywait_set);
  * \return Index in waitset entity was added at
  */
 size_t
-wait_set_add_entity(const std::string entity_type, py::capsule pywait_set, py::capsule pyentity);
+wait_set_add_entity(const std::string & entity_type, py::capsule pywait_set, py::capsule pyentity);
 
 /// Check if an entity in the wait set is ready by its index
 /**
@@ -84,7 +84,7 @@ wait_set_add_entity(const std::string entity_type, py::capsule pywait_set, py::c
  * \return True if the entity at the index in the wait set is not NULL
  */
 bool
-wait_set_is_ready(const std::string entity_type, py::capsule pywait_set, size_t index);
+wait_set_is_ready(const std::string & entity_type, py::capsule pywait_set, size_t index);
 
 /// Get list of non-null entities in wait set
 /**
@@ -96,7 +96,7 @@ wait_set_is_ready(const std::string entity_type, py::capsule pywait_set, size_t 
  * \return List of wait set entities pointers ready for take
  */
 py::list
-get_ready_entities(const std::string entity_type, py::capsule pywait_set);
+get_ready_entities(const std::string & entity_type, py::capsule pywait_set);
 
 /// Wait until timeout is reached or event happened
 /**

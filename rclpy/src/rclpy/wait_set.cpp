@@ -118,7 +118,7 @@ wait_set_clear_entities(py::capsule pywait_set)
 }
 
 size_t
-wait_set_add_entity(const std::string entity_type, py::capsule pywait_set, py::capsule pyentity)
+wait_set_add_entity(const std::string & entity_type, py::capsule pywait_set, py::capsule pyentity)
 {
   if (0 != std::strcmp("rcl_wait_set_t", pywait_set.name())) {
     throw py::value_error("capsule is not an rcl_wait_set_t");
@@ -186,7 +186,7 @@ wait_set_add_entity(const std::string entity_type, py::capsule pywait_set, py::c
 }
 
 bool
-wait_set_is_ready(const std::string entity_type, py::capsule pywait_set, size_t index)
+wait_set_is_ready(const std::string & entity_type, py::capsule pywait_set, size_t index)
 {
   if (0 != std::strcmp("rcl_wait_set_t", pywait_set.name())) {
     throw py::value_error("capsule is not an rcl_wait_set_t");
@@ -247,7 +247,7 @@ _get_ready_entities(const EntityArray ** entities, const size_t num_entities)
 }
 
 py::list
-get_ready_entities(const std::string entity_type, py::capsule pywait_set)
+get_ready_entities(const std::string & entity_type, py::capsule pywait_set)
 {
   if (0 != std::strcmp("rcl_wait_set_t", pywait_set.name())) {
     throw py::value_error("capsule is not an rcl_wait_set_t");
