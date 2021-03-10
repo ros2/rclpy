@@ -86,6 +86,19 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
 
+  py::class_<rclpy::QoSCheckCompatibleResult>(m, "QoSCheckCompatibleResult")
+    .def(py::init<>())
+    .def("getCompatibility", [](const rclpy::QoSCheckCompatibleResult &result) {
+      return static_cast<int>(result.compatibility);
+    })
+    .def("getReason", [](const rclpy::QoSCheckCompatibleResult &result) {
+      return result.reason;
+    })
+    .def("__repr__", [](const rclpy::QoSCheckCompatibleResult &result) {
+      (void) result;
+      return "Result type for checking QoS compatibility with result";
+    });
+
   m.def(
     "rclpy_init", &rclpy::init,
     "Initialize RCL.");
@@ -160,8 +173,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Retrieve received timestamp from service_info");
 
   m.def(
-    "rclpy_run_my_fn", &rclpy::run_my_fn,
-    "Test it out");
+    "rclpy_qos_check_compatible", &rclpy::qos_check_compatible,
+    "Check if two QoS profiles are compatible.");
 
   m.def(
     "rclpy_create_guard_condition", &rclpy::guard_condition_create,

@@ -22,47 +22,74 @@
 
 namespace rclpy
 {
-void
-run_my_fn(py::capsule publisher_qos_profile)
+
+QoSCheckCompatibleResult
+qos_check_compatible(
+  const py::capsule &publisher_qos_profile, 
+  const py::capsule &subscription_qos_profile
+)
 {
-  std::cout << "it runs!\n";
-  if (0 != strcmp("rmw_qos_profile_t", publisher_qos_profile.name())) {
-    throw py::value_error("capsule is not an rmw_qos_profile_t");
-  }
-  auto qos_profile = static_cast<rmw_qos_profile_t *>(
+  auto publisher_qos = static_cast<rmw_qos_profile_t *>(
     rclpy_handle_get_pointer_from_capsule(
       publisher_qos_profile.ptr(),
       "rmw_qos_profile_t"
     )
   );
-  if (!qos_profile) {
+  if (!publisher_qos) {
+    throw py::error_already_set();
+  }
+
+  auto subscription_qos = static_cast<rmw_qos_profile_t *>(
+    rclpy_handle_get_pointer_from_capsule(
+      subscription_qos_profile.ptr(),
+      "rmw_qos_profile_t"
+    )
+  );
+  if (!subscription_qos) {
     throw py::error_already_set();
   }
 
   rmw_qos_compatibility_type_t compatible;
   const size_t reason_size = 2048u;
-  char reason_c_str[reason_size];
+  char reason_c_str[reason_size] = "";
+  // TODO(audrow) Fix segfault here
+  /*
   rmw_ret_t ret = rmw_qos_profile_check_compatible(
-    *qos_profile,
-    *qos_profile,
-    //*publisher_qos_profile,
-    //*publisher_qos_profile,
-    //*subscription_qos_profile,
+    *publisher_qos,
+    *subscription_qos,
     &compatible,
     reason_c_str,
     reason_size);
-  if (RMW_RET_OK != ret) {
-    //throw RCLError("Failed to check QoS compatibility: %s", rcl_get_error_string().str);
-    throw RCLError("Failed to check QoS compatibility");
-  }
-}
+  */
+  // TODO(audrow) remove once the above is fixed
+  rmw_ret_t ret = RMW_RET_OK;
+  compatible = RMW_QOS_COMPATIBILITY_OK;
 
-/*
-QoSCheckCompatibleResult
-qos_check_compatible(const py::object & publisher_qos, const py::object & subscription_qos)
-{
+  if (RMW_RET_OK != ret) {
+    auto error_str = rmw_get_error_string().str;
+    rmw_reset_error();
+    throw RCLError(error_str);
+  }
+
   QoSCheckCompatibleResult result;
+  result.reason = std::string(reason_c_str);
+
+  switch (compatible) {
+  case RMW_QOS_COMPATIBILITY_OK:
+    result.compatibility = QoSCompatibility::Ok;
+    break;
+  case RMW_QOS_COMPATIBILITY_WARNING:
+    result.compatibility = QoSCompatibility::Warning;
+    break;
+  case RMW_QOS_COMPATIBILITY_ERROR:
+    result.compatibility = QoSCompatibility::Error;
+    break;
+  default:
+    auto error_str = "Unexpected compatibility value returned by rmw '" + 
+      std::to_string(compatible) + "'";
+    throw RCLError(error_str);
+  }
   return result;
 }
-*/
+
 }  // namespace rclpy

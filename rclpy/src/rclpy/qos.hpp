@@ -36,8 +36,6 @@ enum class QoSCompatibility
   Error = RMW_QOS_COMPATIBILITY_ERROR,
 };
 
-void run_my_fn(py::capsule publisher_qos_profile);
-
 /// Result type for checking QoS compatibility
 /**
  * \see rclcpp::qos_check_compatible()
@@ -65,32 +63,21 @@ struct QoSCheckCompatibleResult
  * In this case, the value QoSCompatility::Warning is set as part of
  * the returned structure.
  *
- * Example usage:
- *
- * ```cpp
- * rclcpp::QoSCheckCompatibleResult result = rclcpp::qos_check_compatible(
- *   publisher_qos, subscription_qos);
- * if (rclcpp::QoSCompatibility::Error != result.compatibility) {
- *   // QoS not compatible ...
- *   // result.reason contains info about the incompatibility
- * } else if (rclcpp::QoSCompatibility::Warning != result.compatibility) {
- *   // QoS may not be compatible ...
- *   // result.reason contains info about the possible incompatibility
- * }
- * ```
- *
- * \param[in] publisher_qos: The QoS profile for a publisher.
- * \param[in] subscription_qos: The QoS profile for a subscription.
+ * \param[in] publisher_qos_profile: The QoS profile for a publisher.
+ * \param[in] subscription_qos_profile: The QoS profile for a subscription.
  * \return Struct with compatiblity set to QoSCompatibility::Ok if the QoS profiles are
  *   compatible, or
  * \return Struct with compatibility set to QoSCompatibility::Warning if there is a chance
  *   the QoS profiles are not compatible, or
  * \return Struct with compatibility set to QoSCompatibility::Error if the QoS profiles are
  *   not compatible.
- * \throws rclcpp::exceptions::QoSCheckCompatibilityException if an unexpected error occurs.
+ * \throws RCLError if an unexpected error occurs.
  */
-//QoSCheckCompatibleResult
-//qos_check_compatible(const py::object & publisher_qos, const py::object & subscription_qos);
+QoSCheckCompatibleResult
+qos_check_compatible(
+  const py::capsule &publisher_qos_profile, 
+  const py::capsule &subscription_qos_profile
+);
 
 }  // namespace rclpy
 
