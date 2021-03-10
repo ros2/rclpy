@@ -19,6 +19,7 @@
 #include "context.hpp"
 #include "duration.hpp"
 #include "guard_condition.hpp"
+#include "names.hpp"
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "service.hpp"
@@ -227,4 +228,27 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_wait", &rclpy::wait,
     "rclpy_wait.");
+
+  m.def(
+    "rclpy_expand_topic_name", &rclpy::expand_topic_name,
+    "Expand a topic name.");
+  m.def(
+    "rclpy_remap_topic_name", &rclpy::remap_topic_name,
+    "Remap a topic name.");
+  m.def(
+    "rclpy_get_validation_error_for_topic_name", &rclpy::get_validation_error_for_topic_name,
+    "Get the error message and invalid index of a topic name or None if valid.");
+  m.def(
+    "rclpy_get_validation_error_for_full_topic_name",
+    &rclpy::get_validation_error_for_full_topic_name,
+    "Get the error message and invalid index of a full topic name or None if valid.");
+  m.def(
+    "rclpy_get_validation_error_for_namespace", &rclpy::get_validation_error_for_namespace,
+    "Get the error message and invalid index of a namespace or None if valid.");
+  m.def(
+    "rclpy_get_validation_error_for_node_name", &rclpy::get_validation_error_for_node_name,
+    "Get the error message and invalid index of a node name or None if valid.");
+  m.def(
+    "rclpy_resolve_name", &rclpy::resolve_name,
+    "Expand and remap a topic or service name.");
 }

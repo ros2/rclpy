@@ -301,7 +301,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assert_qos_equal(qos_profile2, subscription_qos_profile, is_publisher=False)
 
         # Error cases
-        with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
+        with self.assertRaises(TypeError):
             self.node.get_subscriptions_info_by_topic(1)
             self.node.get_publishers_info_by_topic(1)
         with self.assertRaisesRegex(ValueError, 'is invalid'):
@@ -331,7 +331,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(2, short_topic_publisher.get_subscription_count())
 
         # error cases
-        with self.assertRaisesRegex(TypeError, 'bad argument type for built-in operation'):
+        with self.assertRaises(TypeError):
             self.node.count_subscribers(1)
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.count_subscribers('42')
