@@ -170,7 +170,7 @@ clock_set_ros_time_override(py::capsule pyclock, py::capsule pytime_point)
 /// Called when a time jump occurs.
 void
 _rclpy_on_time_jump(
-  const struct rcl_time_jump_t * time_jump,
+  const rcl_time_jump_t * time_jump,
   bool before_jump,
   void * user_data)
 {
