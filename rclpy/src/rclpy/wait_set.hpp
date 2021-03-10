@@ -38,6 +38,7 @@ get_zero_initialized_wait_set();
  * \param[in] number_of_timers int
  * \param[in] number_of_clients int
  * \param[in] number_of_services int
+ * \param[in] pycontext Capsule pointing to an rcl_context_t
  */
 void
 wait_set_init(
