@@ -254,7 +254,6 @@ get_ready_entities(const std::string entity_type, py::capsule pywait_set)
   }
   auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
 
-  py::list entity_ready_list;
   if ("subscription" == entity_type) {
     return _get_ready_entities(wait_set->subscriptions, wait_set->size_of_subscriptions);
   } else if ("client" == entity_type) {
