@@ -21,12 +21,25 @@
 
 namespace rclpy
 {
+std::string append_rcutils_error(std::string prepend)
+{
+  prepend += ": ";
+  prepend += rcutils_get_error_string().str;
+  rcutils_reset_error();
+  return prepend;
+}
+
 std::string append_rcl_error(std::string prepend)
 {
   prepend += ": ";
   prepend += rcl_get_error_string().str;
   rcl_reset_error();
   return prepend;
+}
+
+RCUtilsError::RCUtilsError(const std::string & error_text)
+: std::runtime_error(append_rcl_error(error_text))
+{
 }
 
 RCLError::RCLError(const std::string & error_text)
