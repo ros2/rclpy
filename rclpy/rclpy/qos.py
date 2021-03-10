@@ -266,6 +266,9 @@ class QoSProfile:
             ', '.join(f'{slot[1:]}=%s' % getattr(self, slot) for slot in self.__slots__)
         )
 
+    def is_compatible(self, qos_profile):
+        return qos_check_compatible(self, qos_profile)
+
 
 class QoSPolicyEnum(IntEnum):
     """
@@ -471,3 +474,21 @@ class QoSPresetProfiles(Enum):
     def get_from_short_key(cls, name):
         """Retrieve a policy type from a short name, case-insensitive."""
         return cls[name.upper()].value
+
+
+class QoSCompatibility(IntEnum):
+    Ok = 0
+    Warning = 1
+    Error = 2
+
+
+def qos_check_compatible(publisher_qos: QoSProfile, subscription_qos: QoSProfile):
+    result = _rclpy.rclpy_qos_check_compatible(
+        publisher_qos.get_c_qos_profile(),
+        subscription_qos.get_c_qos_profile()
+    )
+    compatibility = QoSCompatibility(
+        result.getCompatibility()
+    )
+    reason = result.getReason()
+    return compatibility, reason
