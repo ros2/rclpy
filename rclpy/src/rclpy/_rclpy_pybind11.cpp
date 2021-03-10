@@ -85,8 +85,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
-  py::register_exception<rclpy::QoSCheckCompatibleException>(
-    m, "QoSCheckCompatibleException", rclerror.ptr());
 
   m.def(
     "rclpy_init", &rclpy::init,
