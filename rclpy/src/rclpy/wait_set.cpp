@@ -61,6 +61,9 @@ get_zero_initialized_wait_set()
   auto wait_set = std::unique_ptr<rcl_wait_set_t, decltype(deleter)>(
     static_cast<rcl_wait_set_t *>(PyMem_Malloc(sizeof(rcl_wait_set_t))),
     deleter);
+  if (!wait_set) {
+    throw std::bad_alloc();
+  }
 
   *wait_set = rcl_get_zero_initialized_wait_set();
   return py::capsule(wait_set.release(), "rcl_wait_set_t", _rclpy_destroy_wait_set);
