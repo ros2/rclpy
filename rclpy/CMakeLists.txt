@@ -176,6 +176,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/context.cpp
   src/rclpy/guard_condition.cpp
   src/rclpy/publisher.cpp
+  src/rclpy/service.cpp
   src/rclpy/service_info.cpp
   src/rclpy/subscription.cpp
   src/rclpy/time_point.cpp
