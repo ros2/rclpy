@@ -25,6 +25,7 @@
 #include "subscription.hpp"
 #include "time_point.hpp"
 #include "timer.hpp"
+#include "wait_set.hpp"
 
 namespace py = pybind11;
 
@@ -195,4 +196,26 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_remove_clock_callback", &rclpy::remove_jump_callback,
     "Remove a time jump callback from a clock.");
+
+  m.def(
+    "rclpy_get_zero_initialized_wait_set", &rclpy::get_zero_initialized_wait_set,
+    "rclpy_get_zero_initialized_wait_set.");
+  m.def(
+    "rclpy_wait_set_init", &rclpy::wait_set_init,
+    "rclpy_wait_set_init.");
+  m.def(
+    "rclpy_wait_set_clear_entities", &rclpy::wait_set_clear_entities,
+    "rclpy_wait_set_clear_entities.");
+  m.def(
+    "rclpy_wait_set_add_entity", &rclpy::wait_set_add_entity,
+    "rclpy_wait_set_add_entity.");
+  m.def(
+    "rclpy_wait_set_is_ready", &rclpy::wait_set_is_ready,
+    "rclpy_wait_set_is_ready.");
+  m.def(
+    "rclpy_get_ready_entities", &rclpy::get_ready_entities,
+    "List non null entities in wait set.");
+  m.def(
+    "rclpy_wait", &rclpy::wait,
+    "rclpy_wait.");
 }
