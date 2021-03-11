@@ -181,6 +181,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/subscription.cpp
   src/rclpy/time_point.cpp
   src/rclpy/timer.cpp
+  src/rclpy/wait_set.cpp
 )
 target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/

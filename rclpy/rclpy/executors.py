@@ -60,17 +60,6 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
 
 
-class _WaitSet:
-    """Make sure the wait set gets destroyed when a generator exits."""
-
-    def __enter__(self):
-        self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        return self.wait_set
-
-    def __exit__(self, t, v, tb):
-        _rclpy.rclpy_destroy_wait_set(self.wait_set)
-
-
 class _WorkTracker:
     """Track the amount of work that is in progress."""
 
@@ -521,7 +510,8 @@ class Executor:
                 entity_count += waitable.get_num_entities()
 
             # Construct a wait set
-            with _WaitSet() as wait_set, ExitStack() as context_stack:
+            wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
+            with ExitStack() as context_stack:
                 sub_capsules = []
                 for sub in subscriptions:
                     try:
