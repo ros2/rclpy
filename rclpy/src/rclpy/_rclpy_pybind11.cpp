@@ -23,6 +23,7 @@
 #include "names.hpp"
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
+#include "serialization.hpp"
 #include "service.hpp"
 #include "service_info.hpp"
 #include "subscription.hpp"
@@ -278,4 +279,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_get_client_names_and_types_by_node",
     &rclpy::graph_get_client_names_and_types_by_node,
     "Get service names and types for which a remote node has clients.");
+
+  m.def(
+    "rclpy_serialize", &rclpy::serialize,
+    "Serialize a ROS message.");
+  m.def(
+    "rclpy_deserialize", &rclpy::deserialize,
+    "Deserialize a ROS message.");
 }

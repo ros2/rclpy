@@ -2036,110 +2036,6 @@ rclpy_get_node_parameters(PyObject * module, PyObject * args)
   return node_params;
 }
 
-static PyObject *
-rclpy_serialize(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pymsg;
-  PyObject * pymsg_type;
-  if (!PyArg_ParseTuple(args, "OO", &pymsg, &pymsg_type)) {
-    return NULL;
-  }
-
-  // Get type support
-  rosidl_message_type_support_t * ts = rclpy_common_get_type_support(pymsg_type);
-  if (!ts) {
-    return NULL;
-  }
-
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  void * ros_msg = rclpy_convert_from_py(pymsg, &destroy_ros_message);
-  if (!ros_msg) {
-    return NULL;
-  }
-
-  // Create a serialized message object
-  rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
-  rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  rcutils_ret_t rcutils_ret = rmw_serialized_message_init(&serialized_msg, 0u, &allocator);
-  if (RCUTILS_RET_OK != rcutils_ret) {
-    destroy_ros_message(ros_msg);
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to initialize serialized message: %s", rcutils_get_error_string().str);
-    return NULL;
-  }
-
-  // Serialize
-  rmw_ret_t rmw_ret = rmw_serialize(ros_msg, ts, &serialized_msg);
-  destroy_ros_message(ros_msg);
-  if (RMW_RET_OK != rmw_ret) {
-    PyErr_Format(module_state->RCLError, "Failed to serialize ROS message");
-    rcutils_ret = rmw_serialized_message_fini(&serialized_msg);
-    if (RCUTILS_RET_OK != rcutils_ret) {
-      PyErr_Format(
-        module_state->RCLError,
-        "Failed to finalize serialized message: %s", rcutils_get_error_string().str);
-    }
-    return NULL;
-  }
-
-  // Bundle serialized message in a bytes object
-  return Py_BuildValue("y#", serialized_msg.buffer, serialized_msg.buffer_length);
-}
-
-static PyObject *
-rclpy_deserialize(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  const char * serialized_buffer;
-  Py_ssize_t serialized_buffer_size;
-  PyObject * pymsg_type;
-  if (!PyArg_ParseTuple(args, "y#O", &serialized_buffer, &serialized_buffer_size, &pymsg_type)) {
-    return NULL;
-  }
-
-  // Get type support
-  rosidl_message_type_support_t * ts = rclpy_common_get_type_support(pymsg_type);
-  if (!ts) {
-    return NULL;
-  }
-
-  // Create a serialized message object
-  rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
-  // Just copy pointer to avoid extra allocation and copy
-  serialized_msg.buffer_capacity = serialized_buffer_size;
-  serialized_msg.buffer_length = serialized_buffer_size;
-  serialized_msg.buffer = (uint8_t *)serialized_buffer;
-
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  void * deserialized_ros_msg = rclpy_create_from_py(pymsg_type, &destroy_ros_message);
-  if (!deserialized_ros_msg) {
-    return NULL;
-  }
-
-  // Deserialize
-  rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg);
-
-  if (RMW_RET_OK != rmw_ret) {
-    destroy_ros_message(deserialized_ros_msg);
-    PyErr_Format(module_state->RCLError, "Failed to deserialize ROS message");
-    return NULL;
-  }
-
-  PyObject * pydeserialized_ros_msg = rclpy_convert_to_py(deserialized_ros_msg, pymsg_type);
-  destroy_ros_message(deserialized_ros_msg);
-  return pydeserialized_ros_msg;
-}
-
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -2255,15 +2151,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_assert_liveliness", rclpy_assert_liveliness, METH_VARARGS,
     "Assert the liveliness of an entity."
-  },
-
-  {
-    "rclpy_serialize", rclpy_serialize, METH_VARARGS,
-    "Serialize a ROS message."
-  },
-  {
-    "rclpy_deserialize", rclpy_deserialize, METH_VARARGS,
-    "Deserialize a ROS message."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */
