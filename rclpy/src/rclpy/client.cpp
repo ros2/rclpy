@@ -203,13 +203,15 @@ client_take_response(py::capsule pyclient, py::object pyresponse_type)
     throw std::bad_alloc();
   }
 
+  py::tuple result_tuple(2);
   rcl_ret_t ret = rcl_take_response_with_info(
     &(client->client), header.get(), taken_response.get());
   if (ret == RCL_RET_CLIENT_TAKE_FAILED) {
-    return py::tuple(2);
+    result_tuple[0] = py::none();
+    result_tuple[1] = py::none();
+    return result_tuple;
   }
 
-  py::tuple result_tuple(2);
   result_tuple[0] = py::capsule(
     header.release(), "rmw_service_info_t", _rclpy_destroy_service_info);
 
