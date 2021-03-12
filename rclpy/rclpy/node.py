@@ -76,7 +76,8 @@ from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
 from rclpy.topic_endpoint_info import TopicEndpointInfo
-from rclpy.type_support import check_for_type_support
+from rclpy.type_support import check_is_valid_msg_type
+from rclpy.type_support import check_is_valid_srv_type
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
@@ -1217,7 +1218,7 @@ class Node:
 
         # this line imports the typesupport for the message module if not already done
         failed = False
-        check_for_type_support(msg_type)
+        check_is_valid_msg_type(msg_type)
         try:
             with self.handle as node_capsule:
                 publisher_capsule = _rclpy.rclpy_create_publisher(
@@ -1295,7 +1296,7 @@ class Node:
 
         # this line imports the typesupport for the message module if not already done
         failed = False
-        check_for_type_support(msg_type)
+        check_is_valid_msg_type(msg_type)
         try:
             with self.handle as capsule:
                 subscription_capsule = _rclpy.rclpy_create_subscription(
@@ -1342,7 +1343,7 @@ class Node:
         """
         if callback_group is None:
             callback_group = self.default_callback_group
-        check_for_type_support(srv_type)
+        check_is_valid_srv_type(srv_type)
         failed = False
         try:
             with self.handle as node_capsule:
@@ -1389,7 +1390,7 @@ class Node:
         """
         if callback_group is None:
             callback_group = self.default_callback_group
-        check_for_type_support(srv_type)
+        check_is_valid_srv_type(srv_type)
         failed = False
         try:
             with self.handle as node_capsule:

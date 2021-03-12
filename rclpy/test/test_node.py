@@ -527,10 +527,8 @@ class TestNode(unittest.TestCase):
         with pytest.raises(ValueError):
             result_initial_foo = self.node.declare_parameter(
                 'initial_foo', ParameterValue(), ParameterDescriptor())
-        dynamic_typing_descriptor = ParameterDescriptor()
-        dynamic_typing_descriptor.dynamic_typing = True
         result_initial_foo = self.node.declare_parameter(
-                'initial_foo', ParameterValue(), dynamic_typing_descriptor)
+                'initial_foo', ParameterValue(), ParameterDescriptor(dynamic_typing=True))
         result_initial_bar = self.node.declare_parameter(
             'initial_bar', 'ignoring_override', ParameterDescriptor(), ignore_override=True)
         result_initial_fizz = self.node.declare_parameter(
@@ -619,11 +617,11 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 'wrong_parameter_descriptor_type', 1, ParameterValue())
 
-        descriptor = ParameterDescriptor()
-        descriptor.dynamic_typing = True
         with self.assertRaises(ValueError):
             self.node.declare_parameter(
-                'dynamic_typing_and_static_type', Parameter.Type.DOUBLE, descriptor=descriptor)
+                'dynamic_typing_and_static_type',
+                Parameter.Type.DOUBLE,
+                descriptor=ParameterDescriptor(dynamic_typing=True))
 
     def test_declare_parameters(self):
         parameters = [
@@ -1235,8 +1233,6 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('immutable_baz').value, 2.41)
 
     def test_node_set_parameters_implicit_undeclare(self):
-        dynamic_typing_descriptor = ParameterDescriptor()
-        dynamic_typing_descriptor.dynamic_typing = True
         parameter_tuples = [
             (
                 'foo',
@@ -1246,7 +1242,7 @@ class TestNode(unittest.TestCase):
             (
                 'bar',
                 'hello',
-                dynamic_typing_descriptor
+                ParameterDescriptor(dynamic_typing=True)
             ),
             (
                 'baz',
@@ -1454,8 +1450,6 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('immutable_baz').value, 2.41)
 
     def test_node_set_parameters_atomically_implicit_undeclare(self):
-        dynamic_typing_descriptor = ParameterDescriptor()
-        dynamic_typing_descriptor.dynamic_typing = True
         parameter_tuples = [
             (
                 'foo',
@@ -1465,7 +1459,7 @@ class TestNode(unittest.TestCase):
             (
                 'bar',
                 'hello',
-                dynamic_typing_descriptor
+                ParameterDescriptor(dynamic_typing=True)
             ),
             (
                 'baz',
@@ -1838,11 +1832,9 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('in_range_no_step').value, 5)
 
     def test_static_dynamic_typing(self):
-        dynamic_typing_descriptor = ParameterDescriptor()
-        dynamic_typing_descriptor.dynamic_typing = True
         parameters = [
             ('int_param', 0),
-            ('dynamic_param', None, dynamic_typing_descriptor),
+            ('dynamic_param', None, ParameterDescriptor(dynamic_typing=True)),
         ]
         result = self.node.declare_parameters('', parameters)
 
