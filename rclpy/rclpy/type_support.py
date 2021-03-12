@@ -40,7 +40,7 @@ def check_is_valid_msg_type(msg_type):
             msg_type.__class__._CONVERT_TO_PY,
             msg_type.__class__._DESTROY_ROS_MESSAGE,
         )
-    except (AttributeError, AssertionError) as e:
+    except (AssertionError, AttributeError):
         raise RuntimeError(
             f'The message type provided is not valid ({msg_type}),'
             ' this might be a service or action'
@@ -50,8 +50,10 @@ def check_is_valid_msg_type(msg_type):
 def check_is_valid_srv_type(srv_type):
     check_for_type_support(srv_type)
     try:
-        check_is_valid_msg_type(srv_type.__class__.Response)
-        check_is_valid_msg_type(srv_type.__class__.Request)
-    except (AttributeError, RuntimeError) as e:
+        assert None not in (
+            srv_type.__class__.Response,
+            srv_type.__class__.Request,
+        )
+    except (AssertionError, AttributeError):
         raise RuntimeError(
             f'The service type provided ({srv_type}), this might be a message or action') from None
