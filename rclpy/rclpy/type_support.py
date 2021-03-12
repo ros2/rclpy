@@ -51,8 +51,8 @@ def check_is_valid_srv_type(srv_type):
     check_for_type_support(srv_type)
     try:
         assert None not in (
-            srv_type.__class__.Response,
-            srv_type.__class__.Request,
+            srv_type.Response,
+            srv_type.Request,
         )
     except (AssertionError, AttributeError):
         raise RuntimeError(
