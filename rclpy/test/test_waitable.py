@@ -22,7 +22,7 @@ from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.node import check_for_type_support
+from rclpy.type_support import check_for_type_support
 from rclpy.qos import QoSProfile
 from rclpy.task import Future
 from rclpy.waitable import NumberOfEntities
