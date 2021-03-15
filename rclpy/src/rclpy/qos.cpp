@@ -29,41 +29,25 @@ qos_check_compatible(
   const py::capsule &subscription_qos_profile
 )
 {
-  auto publisher_qos = static_cast<rmw_qos_profile_t *>(
-    rclpy_handle_get_pointer_from_capsule(
-      publisher_qos_profile.ptr(),
-      "rmw_qos_profile_t"
-    )
-  );
-  if (!publisher_qos) {
-    throw py::error_already_set();
+  if (0 != strcmp("rmw_qos_profile_t", publisher_qos_profile.name())) {
+    throw py::value_error("capsule is not an rmw_qos_profile_t");
   }
+  auto publisher_qos_profile_ = static_cast<rmw_qos_profile_t *>(publisher_qos_profile);
 
-  auto subscription_qos = static_cast<rmw_qos_profile_t *>(
-    rclpy_handle_get_pointer_from_capsule(
-      subscription_qos_profile.ptr(),
-      "rmw_qos_profile_t"
-    )
-  );
-  if (!subscription_qos) {
-    throw py::error_already_set();
+  if (0 != strcmp("rmw_qos_profile_t", subscription_qos_profile.name())) {
+    throw py::value_error("capsule is not an rmw_qos_profile_t");
   }
+  auto subscription_qos_profile_ = static_cast<rmw_qos_profile_t *>(subscription_qos_profile);
 
   rmw_qos_compatibility_type_t compatible;
   const size_t reason_size = 2048u;
   char reason_c_str[reason_size] = "";
-  // TODO(audrow) Fix segfault here
-  /*
   rmw_ret_t ret = rmw_qos_profile_check_compatible(
-    *publisher_qos,
-    *subscription_qos,
+    *publisher_qos_profile_,
+    *subscription_qos_profile_,
     &compatible,
     reason_c_str,
     reason_size);
-  */
-  // TODO(audrow) remove once the above is fixed
-  rmw_ret_t ret = RMW_RET_OK;
-  compatible = RMW_QOS_COMPATIBILITY_OK;
 
   if (RMW_RET_OK != ret) {
     auto error_str = rmw_get_error_string().str;
