@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rclpy_common/exceptions.hpp"
+#include <pybind11/pybind11.h>
 
+#include <rcl/allocator.h>
+#include <rcl/arguments.h>
 #include <rcl/error_handling.h>
 #include <rcutils/error_handling.h>
 #include <rmw/error_handling.h>
 
+#include <memory>
 #include <stdexcept>
 #include <string>
+
+#include "rclpy_common/exceptions.hpp"
+
+namespace py = pybind11;
 
 namespace rclpy
 {
@@ -60,5 +67,40 @@ RCLError::RCLError(const std::string & error_text)
 RMWError::RMWError(const std::string & error_text)
 : std::runtime_error(append_rmw_error(error_text))
 {
+}
+
+void
+throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
+{
+  int unparsed_ros_args_count = rcl_arguments_get_count_unparsed_ros(&rcl_args);
+
+  if (unparsed_ros_args_count < 0) {
+    throw std::runtime_error("failed to count unparsed arguments");
+  } else if (0 == unparsed_ros_args_count) {
+    return;
+  }
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+
+  int * unparsed_indices_c = nullptr;
+  rcl_ret_t ret = rcl_arguments_get_unparsed_ros(&rcl_args, allocator, &unparsed_indices_c);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to get unparsed arguments");
+  }
+
+  auto deallocator = [&](int ptr[]) {allocator.deallocate(ptr, allocator.state);};
+  auto unparsed_indices = std::unique_ptr<int[], decltype(deallocator)>(
+    unparsed_indices_c, deallocator);
+
+  py::list unparsed_args;
+  for (int i = 0; i < unparsed_ros_args_count; ++i) {
+    int index = unparsed_indices_c[i];
+    if (index < 0 || static_cast<size_t>(index) >= pyargs.size()) {
+      throw std::runtime_error("got invalid unparsed ROS arg index");
+    }
+    unparsed_args.append(pyargs[index]);
+  }
+
+  throw UnknownROSArgsError(static_cast<std::string>(py::repr(unparsed_args)));
 }
 }  // namespace rclpy

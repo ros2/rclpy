@@ -1829,10 +1829,6 @@ rclpy_get_node_parameters(PyObject * module, PyObject * args)
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
-    "rclpy_init", rclpy_init, METH_VARARGS,
-    "Initialize RCL."
-  },
-  {
     "rclpy_logging_configure", rclpy_logging_configure, METH_VARARGS,
     "Initialize RCL logging."
   },
@@ -1871,11 +1867,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
     "Get subscriptions info for a topic."
-  },
-
-  {
-    "rclpy_shutdown", rclpy_shutdown, METH_VARARGS,
-    "rclpy_shutdown."
   },
 
   {
