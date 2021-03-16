@@ -23,7 +23,7 @@ namespace rclpy
 {
 /// Create a duration
 /**
- * Raises TypeError if argument of invalid type
+ * Raises TypeError if argument is of an invalid type
  *
  * \param[in] nanoseconds The nanoseconds value of the duration in a 64-bit signed integer
  * \return Capsule of the pointer to the created rcl_duration_t * structure
