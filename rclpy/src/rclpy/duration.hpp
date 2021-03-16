@@ -25,9 +25,7 @@ namespace rclpy
 /**
  * On failure, an exception is raised and NULL is returned if:
  *
- * Raises RuntimeError on initialization failure
  * Raises TypeError if argument of invalid type
- * Raises OverflowError if nanoseconds argument cannot be converted to int64_t
  *
  * \param[in] nanoseconds The nanoseconds value of the duration in a 64-bit signed integer
  * \return Capsule of the pointer to the created rcl_duration_t * structure
