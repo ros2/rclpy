@@ -56,4 +56,6 @@ def check_is_valid_srv_type(srv_type):
         )
     except (AssertionError, AttributeError):
         raise RuntimeError(
-            f'The service type provided ({srv_type}), this might be a message or action') from None
+            f'The service type provided is not valid ({srv_type}),'
+            ' this might be a message or action'
+        ) from None
