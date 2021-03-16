@@ -23,8 +23,6 @@ namespace rclpy
 {
 /// Create a duration
 /**
- * On failure, an exception is raised and NULL is returned if:
- *
  * Raises TypeError if argument of invalid type
  *
  * \param[in] nanoseconds The nanoseconds value of the duration in a 64-bit signed integer
