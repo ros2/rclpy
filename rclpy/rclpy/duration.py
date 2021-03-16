@@ -21,7 +21,7 @@ class Duration:
     def __init__(self, *, seconds=0, nanoseconds=0):
         total_nanoseconds = int(seconds * 1e9)
         total_nanoseconds += int(nanoseconds)
-        if total_nanoseconds >= 2**63:
+        if total_nanoseconds >= 2**63 or total_nanoseconds < -2**63:
             # pybind11 would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C duration.')

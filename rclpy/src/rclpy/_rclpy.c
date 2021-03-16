@@ -2608,73 +2608,6 @@ rclpy_assert_liveliness(PyObject * module, PyObject * args)
   Py_RETURN_NONE;
 }
 
-/// Destructor for a duration
-void
-_rclpy_destroy_duration(PyObject * pycapsule)
-{
-  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rcl_duration_t"));
-}
-
-/// Create a duration
-/**
- * On failure, an exception is raised and NULL is returned if:
- *
- * Raises RuntimeError on initialization failure
- * Raises TypeError if argument of invalid type
- * Raises OverflowError if nanoseconds argument cannot be converted to uint64_t
- *
- * \param[in] nanoseconds unsigned PyLong object storing the nanoseconds value
- *   of the duration in a 64-bit signed integer
- * \return Capsule of the pointer to the created rcl_duration_t * structure, or
- * \return NULL on failure
- */
-static PyObject *
-rclpy_create_duration(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PY_LONG_LONG nanoseconds;
-
-  if (!PyArg_ParseTuple(args, "L", &nanoseconds)) {
-    return NULL;
-  }
-
-  rcl_duration_t * duration = PyMem_Malloc(sizeof(rcl_duration_t));
-  if (!duration) {
-    PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for duration.");
-    return NULL;
-  }
-
-  duration->nanoseconds = nanoseconds;
-
-  return PyCapsule_New(duration, "rcl_duration_t", _rclpy_destroy_duration);
-}
-
-/// Returns the nanoseconds value of the duration
-/**
- * On failure, an exception is raised and NULL is returned if:
- *
- * Raises ValueError if pyduration is not a duration capsule
- *
- * \param[in] pyduration Capsule pointing to the duration
- * \return NULL on failure:
- *         PyLong integer in nanoseconds on success
- */
-static PyObject *
-rclpy_duration_get_nanoseconds(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pyduration;
-  if (!PyArg_ParseTuple(args, "O", &pyduration)) {
-    return NULL;
-  }
-
-  rcl_duration_t * duration = PyCapsule_GetPointer(
-    pyduration, "rcl_duration_t");
-  if (!duration) {
-    return NULL;
-  }
-
-  return PyLong_FromLongLong(duration->nanoseconds);
-}
-
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
 /**
  * On failure a Python exception is raised and NULL is returned if:
@@ -3351,16 +3284,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_assert_liveliness", rclpy_assert_liveliness, METH_VARARGS,
     "Assert the liveliness of an entity."
-  },
-
-  {
-    "rclpy_create_duration", rclpy_create_duration, METH_VARARGS,
-    "Create a duration."
-  },
-
-  {
-    "rclpy_duration_get_nanoseconds", rclpy_duration_get_nanoseconds, METH_VARARGS,
-    "Get the nanoseconds value of a duration."
   },
 
   {
