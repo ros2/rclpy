@@ -265,7 +265,7 @@ resolve_name(py::capsule pynode, const char * topic_name, bool only_expand, bool
     throw RCLError("failed to get node options");
   }
 
-  char * output_cstr = NULL;
+  char * output_cstr = nullptr;
   rcl_ret_t ret = rcl_node_resolve_name(
     node,
     topic_name,
