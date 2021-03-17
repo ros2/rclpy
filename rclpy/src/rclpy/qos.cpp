@@ -14,7 +14,7 @@
 
 // Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
-#include <iostream>
+#include <string>
 
 #include "rclpy_common/handle.h"
 
@@ -25,8 +25,8 @@ namespace rclpy
 
 QoSCheckCompatibleResult
 qos_check_compatible(
-  const py::capsule &publisher_qos_profile, 
-  const py::capsule &subscription_qos_profile
+  const py::capsule & publisher_qos_profile,
+  const py::capsule & subscription_qos_profile
 )
 {
   if (0 != strcmp("rmw_qos_profile_t", publisher_qos_profile.name())) {
@@ -59,19 +59,19 @@ qos_check_compatible(
   result.reason = std::string(reason_c_str);
 
   switch (compatible) {
-  case RMW_QOS_COMPATIBILITY_OK:
-    result.compatibility = QoSCompatibility::Ok;
-    break;
-  case RMW_QOS_COMPATIBILITY_WARNING:
-    result.compatibility = QoSCompatibility::Warning;
-    break;
-  case RMW_QOS_COMPATIBILITY_ERROR:
-    result.compatibility = QoSCompatibility::Error;
-    break;
-  default:
-    auto error_str = "Unexpected compatibility value returned by rmw '" + 
-      std::to_string(compatible) + "'";
-    throw RCLError(error_str);
+    case RMW_QOS_COMPATIBILITY_OK:
+      result.compatibility = QoSCompatibility::Ok;
+      break;
+    case RMW_QOS_COMPATIBILITY_WARNING:
+      result.compatibility = QoSCompatibility::Warning;
+      break;
+    case RMW_QOS_COMPATIBILITY_ERROR:
+      result.compatibility = QoSCompatibility::Error;
+      break;
+    default:
+      auto error_str = "Unexpected compatibility value returned by rmw '" +
+        std::to_string(compatible) + "'";
+      throw RCLError(error_str);
   }
   return result;
 }

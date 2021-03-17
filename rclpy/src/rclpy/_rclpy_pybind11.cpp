@@ -87,14 +87,17 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "UnsupportedEventTypeError", rclerror.ptr());
 
   py::class_<rclpy::QoSCheckCompatibleResult>(m, "QoSCheckCompatibleResult")
-    .def(py::init<>())
-    .def("getCompatibility", [](const rclpy::QoSCheckCompatibleResult &result) {
+  .def(py::init<>())
+  .def(
+    "getCompatibility", [](const rclpy::QoSCheckCompatibleResult & result) {
       return static_cast<int>(result.compatibility);
     })
-    .def("getReason", [](const rclpy::QoSCheckCompatibleResult &result) {
+  .def(
+    "getReason", [](const rclpy::QoSCheckCompatibleResult & result) {
       return result.reason;
     })
-    .def("__repr__", [](const rclpy::QoSCheckCompatibleResult &result) {
+  .def(
+    "__repr__", [](const rclpy::QoSCheckCompatibleResult & result) {
       (void) result;
       return "Result type for checking QoS compatibility with result";
     });

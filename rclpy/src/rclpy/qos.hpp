@@ -16,9 +16,9 @@
 #define RCLPY__QOS_HPP_
 
 #include <pybind11/pybind11.h>
+#include <string>
 
 #include "rclpy_common/exceptions.hpp"
-#include "rmw/qos_profiles.h"
 #include "rcl/logging_rosout.h"
 #include "rmw/incompatible_qos_events_statuses.h"
 #include "rmw/qos_profiles.h"
@@ -75,8 +75,8 @@ struct QoSCheckCompatibleResult
  */
 QoSCheckCompatibleResult
 qos_check_compatible(
-  const py::capsule &publisher_qos_profile, 
-  const py::capsule &subscription_qos_profile
+  const py::capsule & publisher_qos_profile,
+  const py::capsule & subscription_qos_profile
 );
 
 }  // namespace rclpy
