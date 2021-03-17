@@ -43,7 +43,7 @@ get_validation_error_for_topic_name(const char * topic_name);
  * Must be a fully qualified topic name.
  *
  * Raises MemoryError if memory could not be allocated
- * Raises RCLError if an unexpected error happened while validating the topic name
+ * Raises RMWError if an unexpected error happened while validating the topic name
  *
  * \param[in] topic_name name of the topic to be validated
  * \return tuple of error message and invalid index if invalid, or
@@ -55,7 +55,7 @@ get_validation_error_for_full_topic_name(const char * topic_name);
 /// Validate a namespace and return error message and index of invalidation.
 /**
  * Raises MemoryError if memory could not be allocated
- * Raises RCLError if an unexpected error happened while validating the namespace
+ * Raises RMWError if an unexpected error happened while validating the namespace
  *
  * \param[in] namespace namespace to be validated
  * \return tuple of error message and invalid index if invalid, or
@@ -67,7 +67,7 @@ get_validation_error_for_namespace(const char * namespace_);
 /// Validate a node name and return error message and index of invalidation.
 /**
  * Raises MemoryError if memory could not be allocated
- * Raises RuntimeError if an unexpected error happened while validating the node name
+ * Raises RMWError if an unexpected error happened while validating the node name
  *
  * \param[in] node_name name of the node to be validated
  * \return tuple of error message and invalid index if invalid, or
@@ -79,6 +79,7 @@ get_validation_error_for_node_name(const char * node_name);
 /// Expand a topic name
 /**
  * Raises ValueError if the topic name, node name, or namespace are not valid.
+ * Raises RCLError or RCUtilsError if an unexpected error happens
  *
  * \param[in] topic topic string to be expanded
  * \param[in] node_name name of the node to be used during expansion
@@ -91,6 +92,7 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
 /// Remap a topic name
 /**
  * Raises ValueError if the capsule is not the correct type
+ * Raises RCLError if an unexpected error happens
  *
  * \param[in] pynode Capsule pointing to the node
  * \param[in] topic_name topic string to be remapped
@@ -102,6 +104,7 @@ remap_topic_name(py::capsule pynode, const char * topic_name);
 /// Expand and remap a topic name
 /**
  * Raises ValueError if the capsule is not the correct type
+ * Raises RCLError if an unexpected error happens
  *
  * \param[in] pynode Capsule pointing to the node
  * \param[in] topic_name topic string to be remapped

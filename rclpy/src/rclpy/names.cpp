@@ -22,6 +22,8 @@
 #include <rcl/remap.h>
 #include <rcl/types.h>
 #include <rcl/validate_topic_name.h>
+#include <rcutils/error_handling.h>
+#include <rmw/error_handling.h>
 #include <rmw/validate_full_topic_name.h>
 #include <rmw/validate_namespace.h>
 #include <rmw/validate_node_name.h>
@@ -66,11 +68,11 @@ get_validation_error_for_full_topic_name(const char * topic_name)
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_full_topic_name(topic_name, &validation_result, &invalid_index);
-  if (ret == RCL_RET_BAD_ALLOC) {
-    rcl_reset_error();
+  if (ret == RMW_RET_BAD_ALLOC) {
+    rmw_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RCL_RET_OK) {
-    throw RCLError("failed to validate name");
+  } else if (ret != RMW_RET_OK) {
+    throw RMWError("failed to validate name");
   }
 
   if (validation_result == RMW_NAMESPACE_VALID) {
@@ -88,11 +90,11 @@ get_validation_error_for_namespace(const char * namespace_)
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_namespace(namespace_, &validation_result, &invalid_index);
-  if (ret == RCL_RET_BAD_ALLOC) {
-    rcl_reset_error();
+  if (ret == RMW_RET_BAD_ALLOC) {
+    rmw_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RCL_RET_OK) {
-    throw RCLError("failed to validate namespace");
+  } else if (ret != RMW_RET_OK) {
+    throw RMWError("failed to validate namespace");
   }
 
   if (validation_result == RMW_NAMESPACE_VALID) {
@@ -110,11 +112,11 @@ get_validation_error_for_node_name(const char * node_name)
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_node_name(node_name, &validation_result, &invalid_index);
-  if (ret == RCL_RET_BAD_ALLOC) {
-    rcl_reset_error();
+  if (ret == RMW_RET_BAD_ALLOC) {
+    rmw_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RCL_RET_OK) {
-    throw RCLError("failed to validate node name");
+  } else if (ret != RMW_RET_OK) {
+    throw RMWError("failed to validate node name");
   }
 
   if (validation_result == RMW_NODE_NAME_VALID) {
