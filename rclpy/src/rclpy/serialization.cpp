@@ -88,7 +88,7 @@ serialize(py::object pymsg, py::object pymsg_type)
   // Serialize
   rmw_ret_t rmw_ret = rmw_serialize(ros_msg.get(), ts, &serialized_msg.rcl_msg);
   if (RMW_RET_OK != rmw_ret) {
-    throw RCLError("Failed to serialize ROS message");
+    throw RMWError("Failed to serialize ROS message");
   }
 
   // Bundle serialized message in a bytes object
@@ -132,7 +132,7 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
   rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg.get());
 
   if (RMW_RET_OK != rmw_ret) {
-    throw RCLError("failed to deserialize ROS message");
+    throw RMWError("failed to deserialize ROS message");
   }
 
   PyObject * pydeserialized_ros_msg_c =
