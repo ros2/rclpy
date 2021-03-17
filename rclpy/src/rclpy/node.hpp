@@ -42,6 +42,21 @@ get_node_name(py::capsule pynode);
  */
 const char *
 get_node_namespace(py::capsule pynode);
+
+/// Get a list of parameters for the current node from rcl_yaml_param_parser
+/**
+ * On failure, an exception is raised and NULL is returned if:
+ *
+ * Raises ValueError if the argument is not a node handle.
+ * Raises RuntimeError if the parameters file fails to parse
+ *
+ * \param[in] parameter_cls The rclpy.parameter.Parameter class object.
+ * \param[in] node_capsule Capsule pointing to the node handle
+ * \return NULL on failure
+ *         A dict mapping parameter names to rclpy.parameter.Parameter on success (may be empty).
+ */
+py::dict
+get_node_parameters(py::object parameter_cls, py::capsule pynode);
 }  // namespace rclpy
 
 #endif  // RCLPY__NODE_HPP_
