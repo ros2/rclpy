@@ -39,17 +39,12 @@ namespace rclpy
 class SerializedMessage
 {
 public:
-  SerializedMessage()
+  SerializedMessage(rcutils_allocator_t allocator)
   {
     rcl_msg_ = rmw_get_zero_initialized_serialized_message();
-  }
-
-  void
-  init(rcutils_allocator_t allocator)
-  {
     rcutils_ret_t rcutils_ret = rmw_serialized_message_init(&rcl_msg_, 0u, &allocator);
     if (RCUTILS_RET_OK != rcutils_ret) {
-      throw RCLError("failed to initialize serialized message");
+      throw RCUtilsError("failed to initialize serialized message");
     }
   }
 
@@ -89,8 +84,7 @@ serialize(py::object pymsg, py::object pymsg_type)
   }
 
   // Create a serialized message object
-  SerializedMessage serialized_msg;
-  serialized_msg.init(rcutils_get_default_allocator());
+  SerializedMessage serialized_msg(rcutils_get_default_allocator());
 
   // Serialize
   rmw_ret_t rmw_ret = rmw_serialize(ros_msg.get(), ts, &serialized_msg.rcl_msg_);
