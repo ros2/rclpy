@@ -72,6 +72,6 @@ get_node_namespace(py::capsule pynode)
     return py::none();
   }
 
-  return py::str(node_namepace);
+  return py::str(node_namespace);
 }
-
+}  // namespace rclpy
