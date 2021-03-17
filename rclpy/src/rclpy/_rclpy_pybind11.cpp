@@ -20,6 +20,7 @@
 #include "duration.hpp"
 #include "guard_condition.hpp"
 #include "names.hpp"
+#include "node.hpp"
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "service.hpp"
@@ -252,4 +253,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_resolve_name", &rclpy::resolve_name,
     "Expand and remap a topic or service name.");
+
+  m.def(
+    "rclpy_get_node_name", &rclpy::get_node_name,
+    "Get the name of a node.");
+  m.def(
+    "rclpy_get_node_namespace", &rclpy::get_node_namespace,
+    "Get the namespace of a node.");
 }

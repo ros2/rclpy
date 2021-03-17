@@ -759,66 +759,6 @@ rclpy_create_node(PyObject * self, PyObject * args)
   return rclpy_detail_execute_with_logging_mutex(rclpy_create_node_impl, self, args);
 }
 
-/// Get the name of a node.
-/**
- * Raises ValueError if pynode is not a node capsule
- *
- * \param[in] pynode Capsule pointing to the node to get the name from
- * \return None on failure
- *         String containing the name of the node otherwise
- */
-static PyObject *
-rclpy_get_node_name(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pynode;
-
-  if (!PyArg_ParseTuple(args, "O", &pynode)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-
-  const char * node_name = rcl_node_get_name(node);
-  if (!node_name) {
-    Py_RETURN_NONE;
-  }
-
-  return PyUnicode_FromString(node_name);
-}
-
-/// Get the namespace of a node.
-/**
- * Raises ValueError if pynode is not a node capsule
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from
- * \return namespace, or
- * \return None on failure
- */
-static PyObject *
-rclpy_get_node_namespace(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pynode;
-
-  if (!PyArg_ParseTuple(args, "O", &pynode)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-
-  const char * node_namespace = rcl_node_get_namespace(node);
-  if (!node_namespace) {
-    Py_RETURN_NONE;
-  }
-
-  return PyUnicode_FromString(node_namespace);
-}
-
 /// Get the name of the logger associated with a node.
 /**
  * Raises ValueError if pynode is not a node capsule
@@ -2588,14 +2528,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_create_node", rclpy_create_node, METH_VARARGS,
     "Create a Node."
-  },
-  {
-    "rclpy_get_node_name", rclpy_get_node_name, METH_VARARGS,
-    "Get the name of a node."
-  },
-  {
-    "rclpy_get_node_namespace", rclpy_get_node_namespace, METH_VARARGS,
-    "Get the namespace of a node."
   },
   {
     "rclpy_get_node_logger_name", rclpy_get_node_logger_name, METH_VARARGS,
