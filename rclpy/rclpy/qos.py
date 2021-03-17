@@ -477,9 +477,9 @@ class QoSPresetProfiles(Enum):
 
 
 class QoSCompatibility(IntEnum):
-    Ok = 0
-    Warning = 1
-    Error = 2
+    OK = 0
+    WARNING = 1
+    ERROR = 2
 
 
 def qos_check_compatible(publisher_qos: QoSProfile, subscription_qos: QoSProfile):

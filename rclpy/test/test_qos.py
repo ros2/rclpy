@@ -17,7 +17,9 @@ import unittest
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import InvalidQoSProfileException
+from rclpy.qos import qos_check_compatible
 from rclpy.qos import qos_profile_system_default
+from rclpy.qos import QoSCompatibility
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSLivelinessPolicy
@@ -124,3 +126,52 @@ class TestQosProfile(unittest.TestCase):
         assert (
             QoSPresetProfiles.SYSTEM_DEFAULT.value ==
             QoSPresetProfiles.get_from_short_key('system_default'))
+
+
+class TestCheckQosCompatibility(unittest.TestCase):
+
+    def test_compatible(self):
+        qos = QoSProfile(
+            depth=1,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            lifespan=Duration(seconds=1),
+            deadline=Duration(seconds=1),
+            liveliness=QoSLivelinessPolicy.AUTOMATIC,
+            liveliness_lease_duration=Duration(seconds=1),
+        )
+        compatibility, reason = qos_check_compatible(
+            qos, qos
+        )
+
+        assert compatibility == QoSCompatibility.OK
+        assert reason == ''
+
+    def test_error(self):
+        pub_qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+        )
+        sub_qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+        )
+
+        compatibility, reason = qos_check_compatible(
+            pub_qos, sub_qos
+        )
+
+        assert compatibility == QoSCompatibility.ERROR
+        assert reason != ''
+
+    def test_warning(self):
+        pub_qos = QoSPresetProfiles.SYSTEM_DEFAULT.value
+        sub_qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+        )
+        compatibility, reason = qos_check_compatible(
+            pub_qos, sub_qos
+        )
+
+        assert compatibility == QoSCompatibility.WARNING
+        assert reason != ''
