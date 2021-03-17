@@ -146,7 +146,7 @@ class TestCheckQosCompatibility(unittest.TestCase):
         assert compatibility == QoSCompatibility.OK
         assert reason == ''
 
-    def test_error(self):
+    def test_incompatible(self):
         pub_qos = QoSProfile(
             depth=1,
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
@@ -163,7 +163,7 @@ class TestCheckQosCompatibility(unittest.TestCase):
         assert compatibility == QoSCompatibility.ERROR
         assert reason != ''
 
-    def test_warning(self):
+    def test_warn_of_possible_incompatibility(self):
         pub_qos = QoSPresetProfiles.SYSTEM_DEFAULT.value
         sub_qos = QoSProfile(
             depth=1,
