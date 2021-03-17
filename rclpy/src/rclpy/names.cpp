@@ -46,14 +46,14 @@ get_validation_error_for_topic_name(const char * topic_name)
   int validation_result;
   size_t invalid_index;
   rcl_ret_t ret = rcl_validate_topic_name(topic_name, &validation_result, &invalid_index);
-  if (ret == RCL_RET_BAD_ALLOC) {
+  if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RCL_RET_OK) {
+  } else if (RCL_RET_OK != ret) {
     throw RCLError("failed to validate name");
   }
 
-  if (validation_result == RCL_TOPIC_NAME_VALID) {
+  if (RCL_TOPIC_NAME_VALID == validation_result) {
     return py::none();
   }
 
@@ -68,10 +68,10 @@ get_validation_error_for_full_topic_name(const char * topic_name)
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_full_topic_name(topic_name, &validation_result, &invalid_index);
-  if (ret == RMW_RET_BAD_ALLOC) {
+  if (RMW_RET_BAD_ALLOC == ret) {
     rmw_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RMW_RET_OK) {
+  } else if (RMW_RET_OK != ret) {
     throw RMWError("failed to validate name");
   }
 
@@ -90,14 +90,14 @@ get_validation_error_for_namespace(const char * namespace_)
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_namespace(namespace_, &validation_result, &invalid_index);
-  if (ret == RMW_RET_BAD_ALLOC) {
+  if (RMW_RET_BAD_ALLOC == ret) {
     rmw_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RMW_RET_OK) {
+  } else if (RMW_RET_OK != ret) {
     throw RMWError("failed to validate namespace");
   }
 
-  if (validation_result == RMW_NAMESPACE_VALID) {
+  if (RMW_NAMESPACE_VALID == validation_result) {
     return py::none();
   }
 
@@ -112,14 +112,14 @@ get_validation_error_for_node_name(const char * node_name)
   int validation_result;
   size_t invalid_index;
   rmw_ret_t ret = rmw_validate_node_name(node_name, &validation_result, &invalid_index);
-  if (ret == RMW_RET_BAD_ALLOC) {
+  if (RMW_RET_BAD_ALLOC == ret) {
     rmw_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RMW_RET_OK) {
+  } else if (RMW_RET_OK != ret) {
     throw RMWError("failed to validate node name");
   }
 
-  if (validation_result == RMW_NODE_NAME_VALID) {
+  if (RMW_NODE_NAME_VALID == validation_result) {
     return py::none();
   }
 
@@ -135,22 +135,22 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
   rcutils_string_map_t substitutions_map = rcutils_get_zero_initialized_string_map();
 
   rcutils_ret_t rcutils_ret = rcutils_string_map_init(&substitutions_map, 0, rcutils_allocator);
-  if (rcutils_ret == RCUTILS_RET_BAD_ALLOC) {
+  if (RCUTILS_RET_BAD_ALLOC == rcutils_ret) {
     rcl_reset_error();
     throw std::bad_alloc();
-  } else if (rcutils_ret != RCUTILS_RET_OK) {
+  } else if (RCUTILS_RET_OK != rcutils_ret) {
     throw RCUtilsError("failed to initialize string map");
   }
 
   rcl_ret_t ret = rcl_get_default_topic_name_substitutions(&substitutions_map);
-  if (ret == RCL_RET_BAD_ALLOC) {
+  if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
     throw std::bad_alloc();
-  } else if (ret != RCL_RET_OK) {
+  } else if (RCL_RET_OK != ret) {
     auto exception = RCLError("failed to get default substitutions");
     // finalize the string map before returning
     rcutils_ret = rcutils_string_map_fini(&substitutions_map);
-    if (rcutils_ret != RCUTILS_RET_OK) {
+    if (RCUTILS_RET_OK != rcutils_ret) {
       RCUTILS_SAFE_FWRITE_TO_STDERR(
         "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
         "failed to fini string_map during error handling\n");
@@ -176,11 +176,11 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
     output_cstr, topic_deleter);
 
   rcutils_ret = rcutils_string_map_fini(&substitutions_map);
-  if (rcutils_ret != RCUTILS_RET_OK) {
+  if (RCUTILS_RET_OK != rcutils_ret) {
     throw RCUtilsError("failed to fini string map");
   }
 
-  if (ret == RCL_RET_BAD_ALLOC) {
+  if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
     throw std::bad_alloc();
   } else if (  // NOLINT
@@ -191,17 +191,17 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
     error_text += topic;
     error_text += "' is invalid";
     throw py::value_error(append_rcl_error(error_text));
-  } else if (ret == RCL_RET_NODE_INVALID_NAME) {
+  } else if (RCL_RET_NODE_INVALID_NAME == ret) {
     std::string error_text{"node name '"};
     error_text += node_name;
     error_text += "' is invalid";
     throw py::value_error(append_rcl_error(error_text));
-  } else if (ret == RCL_RET_NODE_INVALID_NAMESPACE) {
+  } else if (RCL_RET_NODE_INVALID_NAMESPACE == ret) {
     std::string error_text{"node namespace '"};
     error_text += node_namespace;
     error_text += "' is invalid";
     throw py::value_error(append_rcl_error(error_text));
-  } else if (ret != RCL_RET_OK) {
+  } else if (RCL_RET_OK != ret) {
     throw RCLError("failed to do name expansion");
   }
 
@@ -237,7 +237,7 @@ remap_topic_name(py::capsule pynode, const char * topic_name)
     rcl_node_get_namespace(node),
     node_options->allocator,
     &output_cstr);
-  if (ret != RCL_RET_OK) {
+  if (RCL_RET_OK != ret) {
     throw RCLError("failed to remap topic name");
   }
 
@@ -284,7 +284,7 @@ resolve_name(py::capsule pynode, const char * topic_name, bool only_expand, bool
   auto resolved_name = std::unique_ptr<char, decltype(name_deleter)>(
     output_cstr, name_deleter);
 
-  if (ret != RCL_RET_OK) {
+  if (RCL_RET_OK != ret) {
     throw RCLError("failed to resolve name");
   }
 
