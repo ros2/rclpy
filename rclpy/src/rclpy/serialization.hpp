@@ -35,7 +35,7 @@ serialize(py::object pymsg, py::object pymsg_type);
 
 /// Deserialize a ROS message
 /**
- * Raises RCLError on serialization failure
+ * Raises RCLError on deserialization failure
  * Raises TypeError if an argument has the wrong type
  *
  * \param[in] pybuffer a serialized ROS message
