@@ -36,13 +36,12 @@ extern "C"
 
 namespace rclpy
 {
-class SerializedMessage
+struct SerializedMessage
 {
-public:
-  SerializedMessage(rcutils_allocator_t allocator)
+  explicit SerializedMessage(rcutils_allocator_t allocator)
   {
-    rcl_msg_ = rmw_get_zero_initialized_serialized_message();
-    rcutils_ret_t rcutils_ret = rmw_serialized_message_init(&rcl_msg_, 0u, &allocator);
+    rcl_msg = rmw_get_zero_initialized_serialized_message();
+    rcutils_ret_t rcutils_ret = rmw_serialized_message_init(&rcl_msg, 0u, &allocator);
     if (RCUTILS_RET_OK != rcutils_ret) {
       throw RCUtilsError("failed to initialize serialized message");
     }
@@ -50,7 +49,7 @@ public:
 
   ~SerializedMessage()
   {
-    rcutils_ret_t ret = rmw_serialized_message_fini(&rcl_msg_);
+    rcutils_ret_t ret = rmw_serialized_message_fini(&rcl_msg);
     if (RCUTILS_RET_OK != ret) {
       fprintf(
         stderr,
@@ -62,7 +61,7 @@ public:
     }
   }
 
-  rcl_serialized_message_t rcl_msg_;
+  rcl_serialized_message_t rcl_msg;
 };
 
 py::bytes
@@ -87,15 +86,15 @@ serialize(py::object pymsg, py::object pymsg_type)
   SerializedMessage serialized_msg(rcutils_get_default_allocator());
 
   // Serialize
-  rmw_ret_t rmw_ret = rmw_serialize(ros_msg.get(), ts, &serialized_msg.rcl_msg_);
+  rmw_ret_t rmw_ret = rmw_serialize(ros_msg.get(), ts, &serialized_msg.rcl_msg);
   if (RMW_RET_OK != rmw_ret) {
     throw RCLError("Failed to serialize ROS message");
   }
 
   // Bundle serialized message in a bytes object
   return py::bytes(
-    reinterpret_cast<const char *>(serialized_msg.rcl_msg_.buffer),
-    serialized_msg.rcl_msg_.buffer_length);
+    reinterpret_cast<const char *>(serialized_msg.rcl_msg.buffer),
+    serialized_msg.rcl_msg.buffer_length);
 }
 
 py::object
