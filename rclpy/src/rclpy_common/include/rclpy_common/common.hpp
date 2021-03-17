@@ -1,0 +1,44 @@
+// Copyright 2021 Open Source Robotics Foundation, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef RCLPY_COMMON__COMMON_HPP_
+#define RCLPY_COMMON__COMMON_HPP_
+
+#include <pybind11/pybind11.h>
+
+#include <rcl/graph.h>  // rcl_names_and_types_t
+
+#include "rclpy_common/visibility_control.h"
+
+namespace py = pybind11;
+
+namespace rclpy
+{
+
+/// Convert a C rcl_names_and_types_t into a Python list.
+/**
+ * Raises ValueError if pywait_set is not a wait set capsule
+ * Raises RuntimeError if the entity type is not known
+ *
+ * \param[in] names_and_types The names and types struct to convert.
+ * \return List of tuples, where the first element of each tuple is a string
+ *   for the name and the second element is a list of strings for the types.
+ */
+RCLPY_COMMON_PUBLIC
+py::list
+convert_to_py_names_and_types(rcl_names_and_types_t * topic_names_and_types);
+
+}  // namespace rclpy
+
+#endif  // RCLPY_COMMON__COMMON_HPP_
