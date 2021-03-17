@@ -74,7 +74,7 @@ serialize(py::object pymsg, py::object pymsg_type)
     throw py::error_already_set();
   }
 
-  destroy_ros_message_signature * destroy_ros_message = NULL;
+  destroy_ros_message_signature * destroy_ros_message = nullptr;
   auto deleter = [&](void * ptr) {destroy_ros_message(ptr);};
   auto ros_msg = std::unique_ptr<void, decltype(deleter)>(
     rclpy_convert_from_py(pymsg.ptr(), &destroy_ros_message), deleter);
@@ -119,7 +119,7 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
   serialized_msg.buffer_length = length;
   serialized_msg.buffer = reinterpret_cast<uint8_t *>(serialized_buffer);
 
-  destroy_ros_message_signature * destroy_ros_message = NULL;
+  destroy_ros_message_signature * destroy_ros_message = nullptr;
   void * deserialized_ros_msg_c = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message);
   if (!deserialized_ros_msg_c) {
     throw py::error_already_set();
