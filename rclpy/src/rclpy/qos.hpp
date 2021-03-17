@@ -31,9 +31,9 @@ namespace rclpy
 {
 enum class QoSCompatibility
 {
-  Ok = RMW_QOS_COMPATIBILITY_OK,
-  Warning = RMW_QOS_COMPATIBILITY_WARNING,
-  Error = RMW_QOS_COMPATIBILITY_ERROR,
+  OK = RMW_QOS_COMPATIBILITY_OK,
+  WARNING = RMW_QOS_COMPATIBILITY_WARNING,
+  ERROR = RMW_QOS_COMPATIBILITY_ERROR,
 };
 
 /// Result type for checking QoS compatibility

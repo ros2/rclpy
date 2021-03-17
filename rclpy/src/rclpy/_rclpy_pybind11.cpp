@@ -88,12 +88,12 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
 
   py::class_<rclpy::QoSCheckCompatibleResult>(m, "QoSCheckCompatibleResult")
   .def(py::init<>())
-  .def(
-    "getCompatibility", [](const rclpy::QoSCheckCompatibleResult & result) {
+  .def_property_readonly(
+    "compatibility", [](const rclpy::QoSCheckCompatibleResult & result) {
       return static_cast<int>(result.compatibility);
     })
-  .def(
-    "getReason", [](const rclpy::QoSCheckCompatibleResult & result) {
+  .def_property_readonly(
+    "reason", [](const rclpy::QoSCheckCompatibleResult & result) {
       return result.reason;
     })
   .def(

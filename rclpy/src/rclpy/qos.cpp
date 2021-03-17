@@ -60,13 +60,13 @@ qos_check_compatible(
 
   switch (compatible) {
     case RMW_QOS_COMPATIBILITY_OK:
-      result.compatibility = QoSCompatibility::Ok;
+      result.compatibility = QoSCompatibility::OK;
       break;
     case RMW_QOS_COMPATIBILITY_WARNING:
-      result.compatibility = QoSCompatibility::Warning;
+      result.compatibility = QoSCompatibility::WARNING;
       break;
     case RMW_QOS_COMPATIBILITY_ERROR:
-      result.compatibility = QoSCompatibility::Error;
+      result.compatibility = QoSCompatibility::ERROR;
       break;
     default:
       auto error_str = "Unexpected compatibility value returned by rmw '" +

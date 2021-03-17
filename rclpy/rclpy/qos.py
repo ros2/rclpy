@@ -485,7 +485,7 @@ def qos_check_compatible(publisher_qos: QoSProfile, subscription_qos: QoSProfile
         subscription_qos.get_c_qos_profile()
     )
     compatibility = QoSCompatibility(
-        result.getCompatibility()
+        result.compatibility
     )
-    reason = result.getReason()
+    reason = result.reason
     return compatibility, reason
