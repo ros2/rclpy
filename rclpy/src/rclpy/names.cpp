@@ -139,7 +139,7 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
     rcl_reset_error();
     throw std::bad_alloc();
   } else if (rcutils_ret != RCUTILS_RET_OK) {
-    throw RCLError("failed to initialize string map");
+    throw RCUtilsError("failed to initialize string map");
   }
 
   rcl_ret_t ret = rcl_get_default_topic_name_substitutions(&substitutions_map);
