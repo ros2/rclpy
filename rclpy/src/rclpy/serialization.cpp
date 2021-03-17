@@ -51,12 +51,11 @@ struct SerializedMessage
   {
     rcutils_ret_t ret = rmw_serialized_message_fini(&rcl_msg);
     if (RCUTILS_RET_OK != ret) {
-      fprintf(
-        stderr,
+      RCUTILS_SAFE_FWRITE_TO_STDERR(
         "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "failed to fini rcl_serialized_msg_t (%d) in destructor: %s\n",
-        ret,
-        rcutils_get_error_string().str);
+        "failed to fini rcl_serialized_msg_t in destructor:");
+      RCUTILS_SAFE_FWRITE_TO_STDERR(rcutils_get_error_string().str);
+      RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
       rcutils_reset_error();
     }
   }
