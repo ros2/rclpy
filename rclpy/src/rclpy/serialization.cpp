@@ -111,9 +111,12 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
   rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
   // Just copy pointer to avoid extra allocation and copy
   char * serialized_buffer;
-  ssize_t length;
+  Py_ssize_t length;
   if (PYBIND11_BYTES_AS_STRING_AND_SIZE(pybuffer.ptr(), &serialized_buffer, &length)) {
-    throw std::runtime_error("Failed to get py::bytes data");
+    throw py::error_already_set();
+  }
+  if (length < 0) {
+    throw py::error_already_set();
   }
   serialized_msg.buffer_capacity = length;
   serialized_msg.buffer_length = length;
