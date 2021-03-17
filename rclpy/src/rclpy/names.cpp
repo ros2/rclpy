@@ -246,9 +246,13 @@ remap_topic_name(py::capsule pynode, const char * topic_name)
     return std::string{topic_name};
   }
 
-  auto output = std::string{output_cstr};
-  node_options->allocator.deallocate(output_cstr, node_options->allocator.state);
-  return output;
+  auto name_deleter = [&](char * name) {
+      node_options->allocator.deallocate(name, node_options->allocator.state);
+    };
+  auto remapped_name = std::unique_ptr<char, decltype(name_deleter)>(
+    output_cstr, name_deleter);
+
+  return std::string{remapped_name.get()};
 }
 
 std::string
