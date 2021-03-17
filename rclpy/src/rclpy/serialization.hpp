@@ -23,9 +23,8 @@ namespace rclpy
 {
 /// Serialize a ROS message
 /**
- * Raises RCLError on failure to initialize a serialized message
+ * Raises RCUtilsError on failure to initialize a serialized message
  * Raises RMWError on serialization failure
- * Raises TypeError if an argument has the wrong type
  *
  * \param[in] pymsg an instance of a ROS message
  * \param[in] pymsg_type the type of the ROS message
@@ -37,7 +36,6 @@ serialize(py::object pymsg, py::object pymsg_type);
 /// Deserialize a ROS message
 /**
  * Raises RMWError on deserialization failure
- * Raises TypeError if an argument has the wrong type
  *
  * \param[in] pybuffer a serialized ROS message
  * \param[in] pymsg_type the type of the ROS message to deserialize
