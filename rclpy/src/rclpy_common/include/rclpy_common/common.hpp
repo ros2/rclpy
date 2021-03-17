@@ -28,9 +28,6 @@ namespace rclpy
 
 /// Convert a C rcl_names_and_types_t into a Python list.
 /**
- * Raises ValueError if pywait_set is not a wait set capsule
- * Raises RuntimeError if the entity type is not known
- *
  * \param[in] names_and_types The names and types struct to convert.
  * \return List of tuples, where the first element of each tuple is a string
  *   for the name and the second element is a list of strings for the types.

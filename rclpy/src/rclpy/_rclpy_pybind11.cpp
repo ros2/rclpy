@@ -261,15 +261,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_publisher_names_and_types_by_node",
     &rclpy::graph_get_publisher_names_and_types_by_node,
-    "Get topic names and types for which a given remote node has publishers.");
+    "Get topic names and types for which a remote node has publishers.");
   m.def(
     "rclpy_get_subscriber_names_and_types_by_node",
     &rclpy::graph_get_subscriber_names_and_types_by_node,
-    "Get topic names and types for which a given remote node has subscribers.");
-  m.def(
-    "rclpy_get_service_names_and_types",
-    &rclpy::graph_get_service_names_and_types,
-    "Get all service names and types in the ROS graph.");
+    "Get topic names and types for which a remote node has subscribers.");
   m.def(
     "rclpy_get_service_names_and_types",
     &rclpy::graph_get_service_names_and_types,
@@ -277,9 +273,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_service_names_and_types_by_node",
     &rclpy::graph_get_service_names_and_types_by_node,
-    "Get service names and types for which a given remote node has servers.");
+    "Get service names and types for which a remote node has servers.");
   m.def(
     "rclpy_get_client_names_and_types_by_node",
     &rclpy::graph_get_client_names_and_types_by_node,
-    "Get service names and types for which a given remote node has clients.");
+    "Get service names and types for which a remote node has clients.");
 }

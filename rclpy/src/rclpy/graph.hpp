@@ -15,7 +15,6 @@
 #ifndef RCLPY__GRAPH_HPP_
 #define RCLPY__GRAPH_HPP_
 
-// Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
 
 #include <rcl/graph.h>
@@ -28,14 +27,15 @@ namespace py = pybind11;
 namespace rclpy
 {
 
-/// Get topic names and types for which a given remote node has publishers.
+/// Get topic names and types for which a remote node has publishers.
 /**
  * Raises ValueError if pynode is not a node capsule
+ * Raises NodeNameNonExistentError if remote node was not found
  * Raises RCLError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node.
- * \param[in] no_demangle Whether to demangle topic names
- *   following ROS conventions or not.
+ * \param[in] no_demangle Whether to demangle topic names following ROS
+ *   conventions or not.
  * \param[in] node_name Name of the remote node to query.
  * \param[in] node_namespace Namespace of the remote node to query.
  * \return List of tuples, where the first element of each tuple is the topic
@@ -48,13 +48,15 @@ graph_get_publisher_names_and_types_by_node(
   py::capsule pynode, bool no_demangle,
   std::string node_name, std::string node_namespace);
 
-/// Get topic names and types for which a given remote node has subscribers.
+/// Get topic names and types for which a remote node has subscribers.
 /**
  * Raises ValueError if pynode is not a node capsule
+ * Raises NodeNameNonExistentError if the remote node was not found
  * Raises RCLError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node.
- * \param[in] no_demangle Whether to demangle topic names following ROS conventions or not.
+ * \param[in] no_demangle Whether to demangle topic names following ROS
+ *   conventions or not.
  * \param[in] node_name Name of the remote node to query.
  * \param[in] node_namespace Namespace of the remote node to query.
  * \return List of tuples, where the first element of each tuple is the topic
@@ -67,9 +69,10 @@ graph_get_subscriber_names_and_types_by_node(
   py::capsule pynode, bool no_demangle,
   std::string node_name, std::string node_namespace);
 
-/// Get service names and types for which a given remote node has servers.
+/// Get service names and types for which a remote node has servers.
 /**
  * Raises ValueError if pynode is not a node capsule
+ * Raises NodeNameNonExistentError if the remote node was not found
  * Raises RCLError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node.
@@ -84,9 +87,10 @@ py::list
 graph_get_service_names_and_types_by_node(
   py::capsule pynode, std::string node_name, std::string node_namespace);
 
-/// Get service names and types for which a given remote node has clients.
+/// Get service names and types for which a remote node has clients.
 /**
  * Raises ValueError if pynode is not a node capsule
+ * Raises NodeNameNonExistentError if the remote node was not found
  * Raises RCLError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node.
