@@ -75,9 +75,8 @@ serialize(py::object pymsg, py::object pymsg_type)
   }
 
   destroy_ros_message_signature * destroy_ros_message = nullptr;
-  auto deleter = [&](void * ptr) {destroy_ros_message(ptr);};
-  auto ros_msg = std::unique_ptr<void, decltype(deleter)>(
-    rclpy_convert_from_py(pymsg.ptr(), &destroy_ros_message), deleter);
+  auto ros_msg = std::unique_ptr<void, decltype(destroy_ros_message)>(
+    rclpy_convert_from_py(pymsg.ptr(), &destroy_ros_message), destroy_ros_message);
   if (!ros_msg) {
     throw py::error_already_set();
   }
@@ -127,9 +126,8 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
   if (!deserialized_ros_msg_c) {
     throw py::error_already_set();
   }
-  auto message_deleter = [&](void * ptr) {destroy_ros_message(ptr);};
-  auto deserialized_ros_msg = std::unique_ptr<void, decltype(message_deleter)>(
-    deserialized_ros_msg_c, message_deleter);
+  auto deserialized_ros_msg = std::unique_ptr<void, decltype(destroy_ros_message)>(
+    deserialized_ros_msg_c, destroy_ros_message);
 
   // Deserialize
   rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg.get());
