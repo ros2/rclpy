@@ -24,7 +24,7 @@ namespace rclpy
 {
 
 py::list
-convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
+convert_to_py_names_and_types(const rcl_names_and_types_t * names_and_types)
 {
   assert(names_and_types);
 

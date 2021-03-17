@@ -34,7 +34,7 @@ namespace rclpy
  */
 RCLPY_COMMON_PUBLIC
 py::list
-convert_to_py_names_and_types(rcl_names_and_types_t * topic_names_and_types);
+convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_types);
 
 }  // namespace rclpy
 
