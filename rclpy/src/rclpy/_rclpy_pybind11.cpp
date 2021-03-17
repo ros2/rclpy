@@ -55,6 +55,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "ROS time is inactive and the clock will keep reporting system time");
 
   py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
+  py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
   auto rclerror = py::register_exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);
   py::register_exception<rclpy::RCLInvalidROSArgsError>(
     m, "RCLInvalidROSArgsError", rclerror.ptr());
