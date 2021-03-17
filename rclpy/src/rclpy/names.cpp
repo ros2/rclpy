@@ -151,12 +151,10 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
     // finalize the string map before returning
     rcutils_ret = rcutils_string_map_fini(&substitutions_map);
     if (rcutils_ret != RCUTILS_RET_OK) {
-      fprintf(
-        stderr,
+      RCUTILS_SAFE_FWRITE_TO_STDERR(
         "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "failed to fini string_map (%d) during error handling: %s\n",
-        rcutils_ret,
-        rcutils_get_error_string().str);
+        "failed to fini string_map during error handling\n");
+      RCUTILS_SAFE_FWRITE_TO_STDERR(rcutils_get_error_string().str);
       rcutils_reset_error();
     }
     throw exception;
