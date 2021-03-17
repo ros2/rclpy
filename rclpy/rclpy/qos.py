@@ -266,9 +266,6 @@ class QoSProfile:
             ', '.join(f'{slot[1:]}=%s' % getattr(self, slot) for slot in self.__slots__)
         )
 
-    def is_compatible(self, qos_profile):
-        return qos_check_compatible(self, qos_profile)
-
 
 class QoSPolicyEnum(IntEnum):
     """
