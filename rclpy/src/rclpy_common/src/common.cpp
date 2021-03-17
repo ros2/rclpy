@@ -30,14 +30,12 @@ convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
 
   py::list py_names_and_types(names_and_types->names.size);
   for (size_t i = 0u; i < names_and_types->names.size; ++i) {
-    py::tuple pytuple(2u);
-    pytuple[0] = py::str(names_and_types->names.data[i]);
-    py::list pytypes_list(names_and_types->types[i].size);
+    py::list py_types(names_and_types->types[i].size);
     for (size_t j = 0u; j < names_and_types->types[i].size; ++j) {
-      pytypes_list[j] = py::str(names_and_types->types[i].data[j]);
+      py_types[j] = py::str(names_and_types->types[i].data[j]);
     }
-    pytuple[1] = pytypes_list;
-    py_names_and_types[i] = pytuple;
+    py_names_and_types[i] = py::make_tuple(
+      py::str(names_and_types->names.data[i]), py_types);
   }
   return py_names_and_types;
 }
