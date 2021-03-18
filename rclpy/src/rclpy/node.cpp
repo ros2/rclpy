@@ -26,6 +26,7 @@
 #include <rcl/types.h>
 #include <rcl_interfaces/msg/parameter_type.h>
 #include <rcl_yaml_param_parser/parser.h>
+#include <rcpputils/scope_exit.hpp>
 #include <rcutils/format_string.h>
 
 #include <stdexcept>
@@ -301,34 +302,26 @@ _populate_node_parameters_from_rcl_params(
  * Raises RuntimeError if param_files cannot be extracted from arguments.
  * Raises RuntimeError if yaml files do not parse succesfully.
  *
- * \param[in] module_state the module state for the _rclpy module
  * \param[in] args The arguments to parse for parameters
  * \param[in] allocator Allocator to use for allocating and deallocating within the function.
  * \param[in] parameter_cls The PythonObject for the Parameter class.
  * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
  * \param[out] params_by_node_name A Python dict object to place parsed parameters into.
- *
- * Returns true when parameters are parsed successfully (including the trivial case)
- *         false when there was an error during parsing and a Python exception was raised.
- *
  */
-static bool
+void
 _parse_param_overrides(
   const rcl_arguments_t * args, rcl_allocator_t allocator, py::object parameter_cls,
   py::object parameter_type_cls, py::dict params_by_node_name)
 {
-  rcl_params_t * params = NULL;
+  rcl_params_t * params = nullptr;
   if (RCL_RET_OK != rcl_arguments_get_param_overrides(args, &params)) {
     throw RCLError("failed to get parameter overrrides");
   }
-  if (NULL == params) {
-    // No parameter overrides.
-    return true;
+  if (params) {
+    RCPPUTILS_SCOPE_EXIT({rcl_yaml_node_struct_fini(params);});
+    _populate_node_parameters_from_rcl_params(
+      params, allocator, parameter_cls.ptr(), parameter_type_cls.ptr(), params_by_node_name.ptr());
   }
-  bool success = _populate_node_parameters_from_rcl_params(
-    params, allocator, parameter_cls.ptr(), parameter_type_cls.ptr(), params_by_node_name.ptr());
-  rcl_yaml_node_struct_fini(params);
-  return success;
 }
 
 /// Get a list of parameters for the current node from rcl_yaml_param_parser
@@ -336,12 +329,11 @@ _parse_param_overrides(
  * On failure, an exception is raised and NULL is returned if:
  *
  * Raises ValueError if the argument is not a node handle.
- * Raises RuntimeError if the parameters file fails to parse
+ * Raises RCLError if the parameters file fails to parse
  *
  * \param[in] parameter_cls The rclpy.parameter.Parameter class object.
  * \param[in] node_capsule Capsule pointing to the node handle
- * \return NULL on failure
- *         A dict mapping parameter names to rclpy.parameter.Parameter on success (may be empty).
+ * \return A dict mapping parameter names to rclpy.parameter.Parameter (may be empty).
  */
 py::dict
 get_node_parameters(py::object parameter_cls, py::capsule pynode)
@@ -359,21 +351,14 @@ get_node_parameters(py::object parameter_cls, py::capsule pynode)
   const rcl_allocator_t allocator = node_options->allocator;
 
   if (node_options->use_global_arguments) {
-    if (!_parse_param_overrides(
-        &(node->context->global_arguments), allocator, parameter_cls,
-        parameter_type_cls, params_by_node_name))
-    {
-      throw py::error_already_set();
-    }
+    _parse_param_overrides(
+      &(node->context->global_arguments), allocator, parameter_cls,
+      parameter_type_cls, params_by_node_name);
   }
 
-  if (
-    !_parse_param_overrides(
-      &(node_options->arguments), allocator, parameter_cls,
-      parameter_type_cls, params_by_node_name))
-  {
-    throw py::error_already_set();
-  }
+  _parse_param_overrides(
+    &(node_options->arguments), allocator, parameter_cls,
+    parameter_type_cls, params_by_node_name);
 
   const char * node_fqn = rcl_node_get_fully_qualified_name(node);
   if (!node_fqn) {
