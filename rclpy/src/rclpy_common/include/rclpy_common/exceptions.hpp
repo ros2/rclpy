@@ -71,6 +71,7 @@ class UnknownROSArgsError : public RCLError
 
 class NodeNameNonExistentError : public RCLError
 {
+  using RCLError::RCLError;
 };
 
 class UnsupportedEventTypeError : public RCLError
