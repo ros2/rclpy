@@ -37,6 +37,7 @@ std::string append_rcl_error(std::string prepend);
 RCLPY_COMMON_PUBLIC
 std::string append_rmw_error(std::string prepend);
 
+RCLPY_COMMON_PUBLIC
 void
 throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args);
 
