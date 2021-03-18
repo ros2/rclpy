@@ -20,6 +20,7 @@ find_package(rcl REQUIRED)
 find_package(rcl_logging_interface REQUIRED)
 find_package(rcl_action REQUIRED)
 find_package(rcl_yaml_param_parser REQUIRED)
+find_package(rcpputils REQUIRED)
 find_package(rcutils REQUIRED)
 find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
@@ -128,6 +129,7 @@ endfunction()
 
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
+  src/rclpy_common/src/common.cpp
   src/rclpy_common/src/exceptions.cpp
   src/rclpy_common/src/handle.c
 )
@@ -175,10 +177,12 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/clock.cpp
   src/rclpy/context.cpp
   src/rclpy/duration.cpp
+  src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
   src/rclpy/names.cpp
   src/rclpy/node.cpp
   src/rclpy/publisher.cpp
+  src/rclpy/serialization.cpp
   src/rclpy/service.cpp
   src/rclpy/service_info.cpp
   src/rclpy/subscription.cpp
@@ -190,7 +194,7 @@ target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/
 )
 target_link_libraries(_rclpy_pybind11 PRIVATE
-  rclpy_common
+  rcpputils::rcpputils rclpy_common
 )
 configure_build_install_location(_rclpy_pybind11)
 clean_windows_flags(_rclpy_pybind11)

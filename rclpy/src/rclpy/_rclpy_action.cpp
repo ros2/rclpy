@@ -23,10 +23,8 @@
 
 #include "rclpy_common/exceptions.hpp"
 
-extern "C" {
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
-}
 
 namespace py = pybind11;
 

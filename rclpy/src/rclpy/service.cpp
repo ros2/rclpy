@@ -21,10 +21,7 @@
 #include <string>
 #include <utility>
 
-extern "C"
-{
 #include "rclpy_common/common.h"
-}
 #include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
