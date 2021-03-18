@@ -80,8 +80,7 @@ init(py::list pyargs, py::capsule pycontext, size_t domain_id)
     }
   }
 
-  rcl_allocator_t allocator = rcl_get_default_allocator();
-  InitOptions init_options(allocator);
+  InitOptions init_options(rcl_get_default_allocator());
 
   // Set domain id
   rcl_ret_t ret = rcl_init_options_set_domain_id(&init_options.rcl_options, domain_id);
