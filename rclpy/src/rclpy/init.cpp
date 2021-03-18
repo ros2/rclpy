@@ -48,12 +48,11 @@ struct InitOptions
   {
     rcl_ret_t ret = rcl_init_options_fini(&rcl_options);
     if (RCL_RET_OK != ret) {
-      fprintf(
-        stderr,
+      RCUTILS_SAFE_FWRITE_TO_STDERR(
         "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "failed to fini rcl_init_options_t (%d) in destructor: %s\n",
-        ret,
-        rcl_get_error_string().str);
+        "failed to fini rcl_init_options_t in destructor:");
+      RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+      RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
       rcl_reset_error();
     }
   }
