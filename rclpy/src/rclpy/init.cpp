@@ -106,7 +106,7 @@ shutdown(py::capsule pycontext)
   }
 
   rcl_ret_t ret = rcl_shutdown(context);
-  if (ret != RCL_RET_OK) {
+  if (RCL_RET_OK != ret) {
     throw RCLError("failed to shutdown");
   }
 }
