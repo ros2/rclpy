@@ -76,7 +76,8 @@ throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
 
   if (unparsed_ros_args_count < 0) {
     throw std::runtime_error("failed to count unparsed arguments");
-  } else if (0 == unparsed_ros_args_count) {
+  }
+  if (0 == unparsed_ros_args_count) {
     return;
   }
 
