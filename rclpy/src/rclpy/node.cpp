@@ -15,33 +15,21 @@
 // Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
 
-#include <rcl/context.h>
 #include <rcl/error_handling.h>
-#include <rcl/expand_topic_name.h>
 #include <rcl/rcl.h>
-#include <rcl/remap.h>
-#include <rcl/types.h>
-#include <rcl/validate_topic_name.h>
-#include <rcutils/error_handling.h>
-#include <rmw/error_handling.h>
-#include <rmw/validate_full_topic_name.h>
-#include <rmw/validate_namespace.h>
-#include <rmw/validate_node_name.h>
 
-#include <memory>
-#include <stdexcept>
 #include <string>
 
 #include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
-#include "names.hpp"
+#include "node.hpp"
 
 
 namespace rclpy
 {
-py::object
+const char *
 get_node_name(py::capsule pynode)
 {
   auto node = static_cast<rcl_node_t *>(
@@ -52,13 +40,13 @@ get_node_name(py::capsule pynode)
 
   const char * node_name = rcl_node_get_name(node);
   if (!node_name) {
-    return py::none();
+    throw RCLError("Node name not set");
   }
 
-  return py::str(node_name);
+  return node_name;
 }
 
-py::object
+const char *
 get_node_namespace(py::capsule pynode)
 {
   auto node = static_cast<rcl_node_t *>(
@@ -69,9 +57,9 @@ get_node_namespace(py::capsule pynode)
 
   const char * node_namespace = rcl_node_get_namespace(node);
   if (!node_namespace) {
-    return py::none();
+    throw RCLError("Node namespace not set");
   }
 
-  return py::str(node_namespace);
+  return node_namespace;
 }
 }  // namespace rclpy

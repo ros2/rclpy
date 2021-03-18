@@ -26,23 +26,23 @@ namespace rclpy
 /// Get the name of a node.
 /**
  * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if name is not set
  *
  * \param[in] pynode Capsule pointing to the node to get the name from
- * \return None on failure
- *         String containing the name of the node otherwise
+ * \return name of the node
  */
-py::object
+const char *
 get_node_name(py::capsule pynode);
 
 /// Get the namespace of a node.
 /**
  * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if namespace is not set
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from
- * \return namespace, or
- * \return None on failure
+ * \return namespace
  */
-py::object
+const char *
 get_node_namespace(py::capsule pynode);
 }  // namespace rclpy
 
