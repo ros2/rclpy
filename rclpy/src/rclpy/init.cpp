@@ -33,13 +33,12 @@
 
 namespace rclpy
 {
-class InitOptions
+struct InitOptions
 {
-public:
   explicit InitOptions(rcl_allocator_t allocator)
   {
-    rcl_options_ = rcl_get_zero_initialized_init_options();
-    rcl_ret_t ret = rcl_init_options_init(&rcl_options_, allocator);
+    rcl_options = rcl_get_zero_initialized_init_options();
+    rcl_ret_t ret = rcl_init_options_init(&rcl_options, allocator);
     if (RCL_RET_OK != ret) {
       throw RCLError("Failed to initialize init options");
     }
@@ -47,7 +46,7 @@ public:
 
   ~InitOptions()
   {
-    rcl_ret_t ret = rcl_init_options_fini(&rcl_options_);
+    rcl_ret_t ret = rcl_init_options_fini(&rcl_options);
     if (RCL_RET_OK != ret) {
       fprintf(
         stderr,
@@ -59,7 +58,7 @@ public:
     }
   }
 
-  rcl_init_options_t rcl_options_;
+  rcl_init_options_t rcl_options;
 };
 
 void
@@ -85,12 +84,12 @@ init(py::list pyargs, py::capsule pycontext, size_t domain_id)
   InitOptions init_options(allocator);
 
   // Set domain id
-  rcl_ret_t ret = rcl_init_options_set_domain_id(&init_options.rcl_options_, domain_id);
+  rcl_ret_t ret = rcl_init_options_set_domain_id(&init_options.rcl_options, domain_id);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to set domain id to init options");
   }
 
-  ret = rcl_init(arg_c_values.size(), &(arg_c_values[0]), &init_options.rcl_options_, context);
+  ret = rcl_init(arg_c_values.size(), &(arg_c_values[0]), &init_options.rcl_options, context);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to initialize rcl");
   }
