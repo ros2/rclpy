@@ -16,16 +16,23 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl/rcl.h>
+#include <rcl/types.h>
 
 #include <memory>
 #include <string>
 
 #include "rclpy_common/common.h"
+#include "rclpy_common/common.hpp"
+
 #include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
+#include "serialization.hpp"
 #include "subscription.hpp"
+
+using pybind11::literals::operator""_a;
 
 namespace rclpy
 {
@@ -120,6 +127,63 @@ subscription_create(
   }
 
   return pysub;
+}
+
+py::object
+subscription_take_message(py::capsule pysubscription, py::object pymsg_type, bool raw)
+{
+  auto wrapper = static_cast<rclpy_subscription_t *>(
+    rclpy_handle_get_pointer_from_capsule(pysubscription.ptr(), "rclpy_subscription_t"));
+  if (!wrapper) {
+    throw py::error_already_set();
+  }
+
+  py::object pytaken_msg;
+  rmw_message_info_t message_info;
+  if (raw) {
+    SerializedMessage taken{rcutils_get_default_allocator()};
+    rcl_ret_t ret = rcl_take_serialized_message(
+      &(wrapper->subscription), &taken.rcl_msg, &message_info, NULL);
+    if (RCL_RET_OK != ret) {
+      if (RCL_RET_BAD_ALLOC == ret) {
+        rcl_reset_error();
+        throw std::bad_alloc();
+      }
+      if (RCL_RET_SUBSCRIPTION_TAKE_FAILED == ret) {
+        return py::none();
+      }
+      throw RCLError("failed to take raw message from subscription");
+    }
+    pytaken_msg = py::bytes(
+      reinterpret_cast<const char *>(taken.rcl_msg.buffer),
+      taken.rcl_msg.buffer_length);
+  } else {
+    auto taken_msg = create_from_py(pymsg_type);
+
+    if (!taken_msg) {
+      throw py::error_already_set();
+    }
+
+    rcl_ret_t ret = rcl_take(
+      &(wrapper->subscription), taken_msg.get(), &message_info, NULL);
+    if (RCL_RET_OK != ret) {
+      if (RCL_RET_BAD_ALLOC == ret) {
+        rcl_reset_error();
+        throw std::bad_alloc();
+      }
+      if (RCL_RET_SUBSCRIPTION_TAKE_FAILED == ret) {
+        return py::none();
+      }
+      throw RCLError("failed to take message from subscription");
+    }
+
+    pytaken_msg = convert_to_py(taken_msg.get(), pymsg_type);
+  }
+
+  return py::make_tuple(
+    pytaken_msg, py::dict(
+      "source_timestamp"_a = message_info.source_timestamp,
+      "received_timestamp"_a = message_info.received_timestamp));
 }
 
 py::object
