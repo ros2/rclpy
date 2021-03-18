@@ -20,6 +20,7 @@
 #include <rcl/rcl.h>
 #include <rcl/types.h>
 
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -87,7 +88,11 @@ init(py::list pyargs, py::capsule pycontext, size_t domain_id)
     throw RCLError("failed to set domain id to init options");
   }
 
-  ret = rcl_init(arg_c_values.size(), &(arg_c_values[0]), &init_options.rcl_options, context);
+  if (arg_c_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::range_error("Too many cli arguments");
+  }
+  int arg_count = static_cast<int>(arg_c_values.size());
+  ret = rcl_init(arg_count, &(arg_c_values[0]), &init_options.rcl_options, context);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to initialize rcl");
   }
