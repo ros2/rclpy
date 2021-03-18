@@ -80,6 +80,7 @@ class UnknownROSArgsError : public std::runtime_error
 private:
   using std::runtime_error::runtime_error;
 
+  RCLPY_COMMON_PUBLIC
   friend void throw_if_unparsed_ros_args(py::list, const rcl_arguments_t &);
 };
 
