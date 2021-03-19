@@ -23,6 +23,7 @@
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
+#include "qos_events.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
 #include "service.hpp"
@@ -294,4 +295,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_node_namespace", &rclpy::get_node_namespace,
     "Get the namespace of a node.");
+
+  m.def(
+    "rclpy_create_event", &rclpy::create_event,
+    "Create an event for QoS event handling.");
+  m.def(
+    "rclpy_take_event", &rclpy::take_event,
+    "Get pending data from a ready QoS event.");
 }

@@ -76,6 +76,7 @@ class NodeNameNonExistentError : public RCLError
 
 class UnsupportedEventTypeError : public RCLError
 {
+  using RCLError::RCLError;
 };
 }  // namespace rclpy
 
