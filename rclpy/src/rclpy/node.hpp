@@ -17,8 +17,6 @@
 
 #include <pybind11/pybind11.h>
 
-#include <string>
-
 namespace py = pybind11;
 
 namespace rclpy
