@@ -129,9 +129,12 @@ endfunction()
 
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
+  src/rclpy_common/src/handle.c
+  # List C++ sources last to ensure pybind11 pragmas
+  # involving the Py_DEBUG macro override those from
+  # CPython
   src/rclpy_common/src/common.cpp
   src/rclpy_common/src/exceptions.cpp
-  src/rclpy_common/src/handle.c
 )
 target_link_libraries(rclpy_common PUBLIC
   pybind11::pybind11
