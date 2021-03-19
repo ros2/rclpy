@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY_UTILS__UTILS_HPP_
-#define RCLPY_UTILS__UTILS_HPP_
+#ifndef RCLPY__UTILS_HPP_
+#define RCLPY__UTILS_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -35,4 +35,4 @@ convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_type
 
 }  // namespace rclpy
 
-#endif  // RCLPY_UTILS__UTILS_HPP_
+#endif  // RCLPY__UTILS_HPP_
