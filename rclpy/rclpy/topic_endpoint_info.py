@@ -166,9 +166,9 @@ class TopicEndpointInfo:
         result += 'QoS profile:\n'
         result += '  Reliability: %s\n' % self.qos_profile.reliability.name
         result += '  Durability: %s\n' % self.qos_profile.durability.name
-        result += '  Lifespan: %d nanoseconds\n' % self.qos_profile.lifespan.nanoseconds
-        result += '  Deadline: %d nanoseconds\n' % self.qos_profile.deadline.nanoseconds
+        result += '  Lifespan: %s\n' % str(self.qos_profile.lifespan)
+        result += '  Deadline: %s\n' % str(self.qos_profile.deadline)
         result += '  Liveliness: %s\n' % self.qos_profile.liveliness.name
-        result += '  Liveliness lease duration: %d nanoseconds' % \
-            self.qos_profile.liveliness_lease_duration.nanoseconds
+        result += '  Liveliness lease duration: %s' % \
+            str(self.qos_profile.liveliness_lease_duration)
         return result

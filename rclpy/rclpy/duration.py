@@ -34,6 +34,11 @@ class Duration:
     def __repr__(self):
         return 'Duration(nanoseconds={0})'.format(self.nanoseconds)
 
+    def __str__(self):
+        if self == Duration.Infinite():
+            return 'Infinite'
+        return f'{self.nanoseconds} nanoseconds'
+
     def __eq__(self, other):
         if isinstance(other, Duration):
             return self.nanoseconds == other.nanoseconds
@@ -76,6 +81,10 @@ class Duration:
         if not isinstance(msg, builtin_interfaces.msg.Duration):
             raise TypeError('Must pass a builtin_interfaces.msg.Duration object')
         return cls(seconds=msg.sec, nanoseconds=msg.nanosec)
+
+    @classmethod
+    def Infinite(cls):
+        return cls(nanoseconds=_rclpy.rclpy_RMW_DURATION_INFINITE)
 
     def get_c_duration(self):
         return self._duration_handle

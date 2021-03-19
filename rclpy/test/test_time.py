@@ -228,3 +228,7 @@ class TestTime(unittest.TestCase):
         assert (1, int(5e8)) == Time(seconds=1, nanoseconds=5e8).seconds_nanoseconds()
         assert (1, int(5e8)) == Time(seconds=0, nanoseconds=15e8).seconds_nanoseconds()
         assert (0, 0) == Time().seconds_nanoseconds()
+
+    def test_infinite_duration(self):
+        duration = Duration.Infinite()
+        assert str(duration) == 'Infinite'

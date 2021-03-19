@@ -58,6 +58,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("STEADY_TIME", RCL_STEADY_TIME);
 
   m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
+  m.attr("RMW_DURATION_INFINITE") = py::int_(rmw_time_total_nsec(RMW_DURATION_INFINITE));
 
   py::enum_<rcl_clock_change_t>(m, "ClockChange")
   .value(
@@ -84,6 +85,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .def(py::init<>())
   .def_readonly("compatibility", &rclpy::QoSCheckCompatibleResult::compatibility)
   .def_readonly("reason", &rclpy::QoSCheckCompatibleResult::reason);
+
 
   py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
   py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
