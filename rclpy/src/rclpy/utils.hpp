@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY_COMMON__COMMON_HPP_
-#define RCLPY_COMMON__COMMON_HPP_
+#ifndef RCLPY_UTILS__UTILS_HPP_
+#define RCLPY_UTILS__UTILS_HPP_
 
 #include <pybind11/pybind11.h>
 
 #include <rcl/graph.h>  // rcl_names_and_types_t
-
-#include "rclpy_common/visibility_control.h"
 
 namespace py = pybind11;
 
@@ -32,10 +30,9 @@ namespace rclpy
  * \return List of tuples, where the first element of each tuple is a string
  *   for the name and the second element is a list of strings for the types.
  */
-RCLPY_COMMON_PUBLIC
 py::list
 convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_types);
 
 }  // namespace rclpy
 
-#endif  // RCLPY_COMMON__COMMON_HPP_
+#endif  // RCLPY_UTILS__UTILS_HPP_
