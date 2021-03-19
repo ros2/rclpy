@@ -160,10 +160,6 @@ subscription_take_message(py::capsule pysubscription, py::object pymsg_type, boo
   } else {
     auto taken_msg = create_from_py(pymsg_type);
 
-    if (!taken_msg) {
-      throw py::error_already_set();
-    }
-
     rcl_ret_t ret = rcl_take(
       &(wrapper->subscription), taken_msg.get(), &message_info, NULL);
     if (RCL_RET_OK != ret) {

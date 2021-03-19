@@ -47,9 +47,9 @@ create_from_py(py::object pymessage)
 {
   typedef void * create_ros_message_function (void);
 
-  py::object pymetaclass = py::getattr(pymessage, "__class__");
+  py::object pymetaclass = pymessage.attr("__class__");
 
-  py::object value = py::getattr(pymetaclass, "_CREATE_ROS_MESSAGE");
+  py::object value = pymetaclass.attr("_CREATE_ROS_MESSAGE");
   auto capsule_ptr = static_cast<void *>(value.cast<py::capsule>());
   auto create_ros_message =
     reinterpret_cast<create_ros_message_function *>(capsule_ptr);
@@ -57,7 +57,7 @@ create_from_py(py::object pymessage)
     throw py::error_already_set();
   }
 
-  value = py::getattr(pymetaclass, "_DESTROY_ROS_MESSAGE");
+  value = pymetaclass.attr("_DESTROY_ROS_MESSAGE");
   capsule_ptr = static_cast<void *>(value.cast<py::capsule>());
   auto destroy_ros_message =
     reinterpret_cast<destroy_ros_message_function *>(capsule_ptr);
@@ -76,10 +76,10 @@ create_from_py(py::object pymessage)
 py::object
 convert_to_py(void * message, py::object pyclass)
 {
-  py::object pymetaclass = py::getattr(pyclass, "__class__");
+  py::object pymetaclass = pyclass.attr("__class__");
 
   auto capsule_ptr = static_cast<void *>(
-    py::getattr(pymetaclass, "_CONVERT_TO_PY").cast<py::capsule>());
+    pymetaclass.attr("_CONVERT_TO_PY").cast<py::capsule>());
 
   typedef PyObject * convert_to_py_function (void *);
   auto convert = reinterpret_cast<convert_to_py_function *>(capsule_ptr);
