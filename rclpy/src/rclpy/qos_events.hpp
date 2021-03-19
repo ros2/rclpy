@@ -56,7 +56,8 @@ create_event(py::object pyevent_type, py::capsule pyparent);
  * \param[in] pyevent_type Type of event, matching the one used for \p pyevent creation.
  * \param[in] pyparent Capsule containing the same publisher or subscription used for
  *   \p pyevent creation.
- * \return event data as an instance of the corresponding rclpy.qos_event type.
+ * \return Event data as an instance of a suitable rclpy.qos_event type, or None
+ *   if no event was taken.
  */
 py::object
 take_event(py::capsule pyevent, py::capsule pyparent, py::object pyevent_type);

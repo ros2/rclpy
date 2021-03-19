@@ -339,9 +339,8 @@ take_event(py::capsule pyevent, py::capsule pyparent, py::object pyevent_type)
       rcl_reset_error();
       throw std::bad_alloc();
     }
-    if (RCL_RET_UNSUPPORTED == ret) {
-      rcl_reset_error();
-      throw std::runtime_error("take event is not implemented");
+    if (RCL_RET_EVENT_TAKE_FAILED == ret) {
+      return py::none();
     }
     throw RCLError("failed to take event");
   }
