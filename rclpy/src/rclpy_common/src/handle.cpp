@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <Python.h>
-#include <stddef.h>
+#include <pybind11/pybind11.h>
 
 #include "rcutils/allocator.h"
 #include "rcutils/strdup.h"
@@ -21,6 +20,10 @@
 
 #include "rclpy_common/handle.h"
 
+#include <cstddef>
+
+extern "C"
+{
 struct rclpy_handle_t
 {
   void * ptr;  // opaque pointer to the wrapped object.
@@ -156,3 +159,4 @@ rclpy_handle_get_pointer_from_capsule(PyObject * capsule, const char * name)
   }
   return _rclpy_handle_get_pointer(handle);
 }
+}  // extern "C"
