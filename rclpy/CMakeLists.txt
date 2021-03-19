@@ -180,6 +180,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
   src/rclpy/names.cpp
+  src/rclpy/node.cpp
   src/rclpy/publisher.cpp
   src/rclpy/serialization.cpp
   src/rclpy/service.cpp

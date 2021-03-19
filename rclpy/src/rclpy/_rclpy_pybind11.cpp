@@ -21,6 +21,7 @@
 #include "graph.hpp"
 #include "guard_condition.hpp"
 #include "names.hpp"
+#include "node.hpp"
 #include "publisher.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
@@ -286,4 +287,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_deserialize", &rclpy::deserialize,
     "Deserialize a ROS message.");
+
+  m.def(
+    "rclpy_get_node_name", &rclpy::get_node_name,
+    "Get the name of a node.");
+  m.def(
+    "rclpy_get_node_namespace", &rclpy::get_node_namespace,
+    "Get the namespace of a node.");
 }
