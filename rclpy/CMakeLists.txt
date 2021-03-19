@@ -28,12 +28,15 @@ find_package(rmw_implementation_cmake REQUIRED)
 # Find python before pybind11
 find_package(python_cmake_module REQUIRED)
 find_package(PythonExtra REQUIRED)
+
+set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   # Set the python debug interpreter.
   # pybind11 will setup the build for debug now.
   set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
+find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 
 if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -91,15 +94,6 @@ function(remove_py_debug_definition_on_win32 target)
   set_target_properties("${target}" PROPERTIES COMPILE_DEFINITIONS "${compile_definitions_to_keep}")
   endif()
 endfunction()
-
-find_package(pybind11_vendor REQUIRED)
-find_package(pybind11 REQUIRED)
-
-set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
-
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
-endif()
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
