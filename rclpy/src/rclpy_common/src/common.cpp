@@ -16,6 +16,8 @@
 
 #include <cassert>
 
+#include "rclpy_common/common.h"
+
 #include "rcl/error_handling.h"
 
 #include "rclpy_common/common.hpp"
@@ -103,16 +105,16 @@ rclpy_common_get_type_support(PyObject * pymsg_type)
 {
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
   if (!pymetaclass) {
-    return NULL;
+    return nullptr;
   }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
   Py_DECREF(pymetaclass);
   if (!pyts) {
-    return NULL;
+    return nullptr;
   }
 
-  void * ts = PyCapsule_GetPointer(pyts, NULL);
+  void * ts = PyCapsule_GetPointer(pyts, nullptr);
   Py_DECREF(pyts);
   return ts;
 }
@@ -121,12 +123,12 @@ PyObject *
 rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
 {
   if (!names_and_types) {
-    return NULL;
+    return nullptr;
   }
 
   PyObject * pynames_and_types = PyList_New(names_and_types->names.size);
   if (!pynames_and_types) {
-    return NULL;
+    return nullptr;
   }
 
   size_t i;
@@ -134,20 +136,20 @@ rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
     PyObject * pytuple = PyTuple_New(2);
     if (!pytuple) {
       Py_DECREF(pynames_and_types);
-      return NULL;
+      return nullptr;
     }
     PyObject * pyname = PyUnicode_FromString(names_and_types->names.data[i]);
     if (!pyname) {
       Py_DECREF(pynames_and_types);
       Py_DECREF(pytuple);
-      return NULL;
+      return nullptr;
     }
     PyTuple_SET_ITEM(pytuple, 0, pyname);
     PyObject * pytypes_list = PyList_New(names_and_types->types[i].size);
     if (!pytypes_list) {
       Py_DECREF(pynames_and_types);
       Py_DECREF(pytuple);
-      return NULL;
+      return nullptr;
     }
     size_t j;
     for (j = 0; j < names_and_types->types[i].size; ++j) {
@@ -156,7 +158,7 @@ rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
         Py_DECREF(pynames_and_types);
         Py_DECREF(pytuple);
         Py_DECREF(pytypes_list);
-        return NULL;
+        return nullptr;
       }
       PyList_SET_ITEM(pytypes_list, j, pytype);
     }
@@ -170,11 +172,11 @@ static
 PyObject *
 _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
 {
-  PyObject * pyduration_module = NULL;
-  PyObject * pyduration_class = NULL;
-  PyObject * args = NULL;
-  PyObject * kwargs = NULL;
-  PyObject * pyduration_object = NULL;
+  PyObject * pyduration_module = nullptr;
+  PyObject * pyduration_class = nullptr;
+  PyObject * args = nullptr;
+  PyObject * kwargs = nullptr;
+  PyObject * pyduration_object = nullptr;
 
   pyduration_module = PyImport_ImportModule("rclpy.duration");
   if (!pyduration_module) {
@@ -215,64 +217,64 @@ rclpy_common_convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
   rclpy_qos.depth = PyLong_FromSize_t(qos_profile->depth);
   if (!rclpy_qos.depth) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.history = PyLong_FromUnsignedLong(qos_profile->history);
   if (!rclpy_qos.history) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.reliability = PyLong_FromUnsignedLong(qos_profile->reliability);
   if (!rclpy_qos.reliability) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.durability = PyLong_FromUnsignedLong(qos_profile->durability);
   if (!rclpy_qos.durability) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.lifespan = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
   if (!rclpy_qos.lifespan) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.deadline = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
   if (!rclpy_qos.deadline) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.liveliness = PyLong_FromUnsignedLong(qos_profile->liveliness);
   if (!rclpy_qos.liveliness) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.liveliness_lease_duration = _convert_rmw_time_to_py_duration(
     &qos_profile->liveliness_lease_duration);
   if (!rclpy_qos.liveliness_lease_duration) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   rclpy_qos.avoid_ros_namespace_conventions =
     PyBool_FromLong(qos_profile->avoid_ros_namespace_conventions);
   if (!rclpy_qos.avoid_ros_namespace_conventions) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   // Create dictionary to hold QoSProfile keyword arguments
   PyObject * pyqos_kwargs = PyDict_New();
   if (!pyqos_kwargs) {
     cleanup_rclpy_qos_profile(&rclpy_qos);
-    return NULL;
+    return nullptr;
   }
 
   // Populate keyword arguments for QoSProfile object
@@ -292,7 +294,7 @@ rclpy_common_convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
   cleanup_rclpy_qos_profile(&rclpy_qos);
   if (0 != set_result) {
     Py_DECREF(pyqos_kwargs);
-    return NULL;
+    return nullptr;
   }
 
   return pyqos_kwargs;
@@ -303,9 +305,9 @@ get_capsule_pointer(PyObject * pymetaclass, const char * attr)
 {
   PyObject * pyattr = PyObject_GetAttrString(pymetaclass, attr);
   if (!pyattr) {
-    return NULL;
+    return nullptr;
   }
-  void * ptr = PyCapsule_GetPointer(pyattr, NULL);
+  void * ptr = PyCapsule_GetPointer(pyattr, nullptr);
   Py_DECREF(pyattr);
   return ptr;
 }
@@ -315,27 +317,27 @@ rclpy_create_from_py(PyObject * pymessage, destroy_ros_message_signature ** dest
 {
   PyObject * pymetaclass = PyObject_GetAttrString(pymessage, "__class__");
   if (!pymetaclass) {
-    return NULL;
+    return nullptr;
   }
 
-  create_ros_message_signature * create_ros_message = get_capsule_pointer(
-    pymetaclass, "_CREATE_ROS_MESSAGE");
+  auto create_ros_message = reinterpret_cast<create_ros_message_signature *>(get_capsule_pointer(
+      pymetaclass, "_CREATE_ROS_MESSAGE"));
   if (!create_ros_message) {
     Py_DECREF(pymetaclass);
-    return NULL;
+    return nullptr;
   }
 
-  *destroy_ros_message = get_capsule_pointer(
-    pymetaclass, "_DESTROY_ROS_MESSAGE");
+  *destroy_ros_message = reinterpret_cast<destroy_ros_message_signature *>(get_capsule_pointer(
+      pymetaclass, "_DESTROY_ROS_MESSAGE"));
   Py_DECREF(pymetaclass);
   if (!(*destroy_ros_message)) {
-    return NULL;
+    return nullptr;
   }
 
   void * message = create_ros_message();
   if (!message) {
     PyErr_NoMemory();
-    return NULL;
+    return nullptr;
   }
   return message;
 }
@@ -345,26 +347,26 @@ rclpy_convert_from_py(PyObject * pymessage, destroy_ros_message_signature ** des
 {
   void * message = rclpy_create_from_py(pymessage, destroy_ros_message);
   if (!message) {
-    return NULL;
+    return nullptr;
   }
 
   PyObject * pymetaclass = PyObject_GetAttrString(pymessage, "__class__");
   if (!pymetaclass) {
     (**destroy_ros_message)(message);
-    return NULL;
+    return nullptr;
   }
 
-  convert_from_py_signature * convert = get_capsule_pointer(
-    pymetaclass, "_CONVERT_FROM_PY");
+  auto convert = reinterpret_cast<convert_from_py_signature *>(get_capsule_pointer(
+      pymetaclass, "_CONVERT_FROM_PY"));
   Py_DECREF(pymetaclass);
   if (!convert) {
     (**destroy_ros_message)(message);
-    return NULL;
+    return nullptr;
   }
 
   if (!convert(pymessage, message)) {
     (**destroy_ros_message)(message);
-    return NULL;
+    return nullptr;
   }
   return message;
 }
@@ -374,13 +376,13 @@ rclpy_convert_to_py(void * message, PyObject * pyclass)
 {
   PyObject * pymetaclass = PyObject_GetAttrString(pyclass, "__class__");
   if (!pymetaclass) {
-    return NULL;
+    return nullptr;
   }
-  convert_to_py_signature * convert = get_capsule_pointer(
-    pymetaclass, "_CONVERT_TO_PY");
+  auto * convert = reinterpret_cast<convert_to_py_signature *>(get_capsule_pointer(
+      pymetaclass, "_CONVERT_TO_PY"));
   Py_DECREF(pymetaclass);
   if (!convert) {
-    return NULL;
+    return nullptr;
   }
   return convert(message);
 }
@@ -388,13 +390,14 @@ rclpy_convert_to_py(void * message, PyObject * pyclass)
 PyObject *
 _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpoint_info)
 {
-  PyObject * py_node_name = NULL;
-  PyObject * py_node_namespace = NULL;
-  PyObject * py_topic_type = NULL;
-  PyObject * py_endpoint_type = NULL;
-  PyObject * py_endpoint_gid = NULL;
-  PyObject * py_qos_profile = NULL;
-  PyObject * py_endpoint_info_dict = NULL;
+  PyObject * py_node_name = nullptr;
+  PyObject * py_node_namespace = nullptr;
+  PyObject * py_topic_type = nullptr;
+  PyObject * py_endpoint_type = nullptr;
+  PyObject * py_endpoint_gid = nullptr;
+  PyObject * py_qos_profile = nullptr;
+  PyObject * py_endpoint_info_dict = nullptr;
+  int set_result = 0;
 
   py_node_name = PyUnicode_FromString(topic_endpoint_info->node_name);
   if (!py_node_name) {
@@ -437,7 +440,6 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
   }
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
-  int set_result = 0;
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "node_name", py_node_name);
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "node_namespace", py_node_namespace);
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "topic_type", py_topic_type);
@@ -457,19 +459,19 @@ fail:
   Py_XDECREF(py_endpoint_gid);
   Py_XDECREF(py_qos_profile);
   Py_XDECREF(py_endpoint_info_dict);
-  return NULL;
+  return nullptr;
 }
 
 PyObject *
 rclpy_convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array)
 {
   if (!info_array) {
-    return NULL;
+    return nullptr;
   }
 
   PyObject * py_info_array = PyList_New(info_array->size);
   if (!py_info_array) {
-    return NULL;
+    return nullptr;
   }
 
   for (size_t i = 0; i < info_array->size; ++i) {
@@ -478,7 +480,7 @@ rclpy_convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array
       &topic_endpoint_info);
     if (!py_endpoint_info_dict) {
       Py_DECREF(py_info_array);
-      return NULL;
+      return nullptr;
     }
     // add this dict to the list
     PyList_SET_ITEM(py_info_array, i, py_endpoint_info_dict);

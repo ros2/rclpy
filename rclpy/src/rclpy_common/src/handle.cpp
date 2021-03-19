@@ -14,13 +14,13 @@
 
 #include <pybind11/pybind11.h>
 
+#include <cstddef>
+
 #include "rcutils/allocator.h"
 #include "rcutils/strdup.h"
 #include "rcutils/types/rcutils_ret.h"
 
 #include "rclpy_common/handle.h"
-
-#include <cstddef>
 
 extern "C"
 {
@@ -41,10 +41,11 @@ _rclpy_create_handle(void * ptr, rclpy_handle_destructor_t destructor)
   assert(destructor);
 
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  rclpy_handle_t * handle = allocator.zero_allocate(1, sizeof(rclpy_handle_t), allocator.state);
+  auto handle = static_cast<rclpy_handle_t *>(
+    allocator.zero_allocate(1, sizeof(rclpy_handle_t), allocator.state));
   if (!handle) {
     PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for handle");
-    return NULL;
+    return nullptr;
   }
 
   handle->ptr = ptr;
@@ -63,10 +64,10 @@ _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * depend
 
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
 
-  rclpy_handle_t ** new_dependencies = allocator.reallocate(
-    dependent->dependencies,
-    (dependent->num_of_dependencies + 1u) * sizeof(rclpy_handle_t *),
-    allocator.state);
+  auto new_dependencies = static_cast<rclpy_handle_t **>(allocator.reallocate(
+      dependent->dependencies,
+      (dependent->num_of_dependencies + 1u) * sizeof(rclpy_handle_t *),
+      allocator.state));
   if (!new_dependencies) {
     PyErr_Format(
       PyExc_RuntimeError,
@@ -93,8 +94,8 @@ _rclpy_handle_dec_ref(rclpy_handle_t * handle)
     return;
   }
   assert(
-    (0u != handle->num_of_dependencies && NULL != handle->dependencies) ||
-    (0u == handle->num_of_dependencies && NULL == handle->dependencies));
+    (0u != handle->num_of_dependencies && nullptr != handle->dependencies) ||
+    (0u == handle->num_of_dependencies && nullptr == handle->dependencies));
 
   if (!--handle->ref_count) {
     if (handle->destructor) {
@@ -112,7 +113,8 @@ _rclpy_handle_dec_ref(rclpy_handle_t * handle)
 void
 _rclpy_handle_capsule_destructor(PyObject * capsule)
 {
-  rclpy_handle_t * handle = PyCapsule_GetPointer(capsule, PyCapsule_GetName(capsule));
+  auto handle = static_cast<rclpy_handle_t *>(
+    PyCapsule_GetPointer(capsule, PyCapsule_GetName(capsule)));
   if (!handle) {
     return;
   }
@@ -130,9 +132,9 @@ _rclpy_create_handle_capsule(rclpy_handle_t * ptr, const char * name)
 PyObject *
 rclpy_create_handle_capsule(void * ptr, const char * name, rclpy_handle_destructor_t destructor)
 {
-  rclpy_handle_t * handle = _rclpy_create_handle(ptr, destructor);
+  auto handle = static_cast<rclpy_handle_t *>(_rclpy_create_handle(ptr, destructor));
   if (!handle) {
-    return NULL;
+    return nullptr;
   }
   return PyCapsule_New(handle, name, _rclpy_handle_capsule_destructor);
 }
@@ -144,7 +146,7 @@ _rclpy_handle_get_pointer(rclpy_handle_t * handle)
     PyErr_Format(
       PyExc_RuntimeError,
       "Failed to get pointer from handle");
-    return NULL;
+    return nullptr;
   }
   return handle->ptr;
 }
@@ -152,10 +154,10 @@ _rclpy_handle_get_pointer(rclpy_handle_t * handle)
 void *
 rclpy_handle_get_pointer_from_capsule(PyObject * capsule, const char * name)
 {
-  rclpy_handle_t * handle = PyCapsule_GetPointer(capsule, name);
+  auto handle = static_cast<rclpy_handle_t *>(PyCapsule_GetPointer(capsule, name));
   if (!handle) {
     // Exception already set
-    return NULL;
+    return nullptr;
   }
   return _rclpy_handle_get_pointer(handle);
 }
