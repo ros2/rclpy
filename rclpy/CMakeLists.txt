@@ -192,19 +192,6 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
 configure_build_install_location(_rclpy_pybind11)
 clean_windows_flags(_rclpy_pybind11)
 
-# Signal handling library
-pybind11_add_module(_rclpy_signal_handler SHARED
-  src/rclpy/_rclpy_signal_handler.c
-)
-target_link_libraries(_rclpy_signal_handler PRIVATE
-  rclpy_common
-  rcl::rcl
-  rcutils::rcutils
-)
-configure_build_install_location(_rclpy_signal_handler)
-clean_windows_flags(_rclpy_signal_handler)
-remove_py_debug_definition_on_win32(_rclpy_signal_handler)
-
 if(NOT WIN32)
   ament_environment_hooks(
     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
