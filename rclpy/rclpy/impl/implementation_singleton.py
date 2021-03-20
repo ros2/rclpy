@@ -30,4 +30,3 @@ from rpyutils import import_c_library
 package = 'rclpy'
 
 rclpy_implementation = import_c_library('._rclpy_pybind11', package)
-rclpy_signal_handler_implementation = import_c_library('._rclpy_signal_handler', package)

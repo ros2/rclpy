@@ -12,29 +12,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import signal
+import threading
+import warnings
+import weakref
+
 from rclpy.guard_condition import GuardCondition
-from rclpy.handle import InvalidHandle
-from rclpy.impl.implementation_singleton import rclpy_signal_handler_implementation as _signals
 
 
 class SignalHandlerGuardCondition(GuardCondition):
 
+    __instances = weakref.WeakSet()
+    __old_handler = None
+    __registered = False
+    __lock = threading.Lock()
+
+    @classmethod
+    def __register_guard_condition(cls, instance):
+        with cls.__lock:
+            if not cls.__registered:
+                cls.__old_handler = signal.signal(signal.SIGINT, cls.__sigint_handler)
+            cls.__registered = True
+
+            cls.__instances.add(instance)
+
+    @classmethod
+    def __maybe_uninstall_signal_handler(cls):
+        with cls.__lock:
+            if cls.__registered and not len(cls.__instances):
+                current_handler = signal.signal(signal.SIGINT, cls.__old_handler)
+                if current_handler != cls.__sigint_handler:
+                    # Another signal handler was registered and chained to ours - put it back
+                    hopefully_old = signal.signal(signal.SIGINT, current_handler)
+                    if hopefully_old != cls.__old_handler:
+                        # Someone registered yet another signal handler at the same time
+                        warnings.warn(
+                            f'Signal handler {hopefully_old} was mistakenly unregistered due to a'
+                            + f' race condition when unregistering {cls.__sigint_handler}')
+                else:
+                    cls.__old_handler = None
+                    cls.__registered = False
+
+    @classmethod
+    def __sigint_handler(cls, signum, frame):
+        with cls.__lock:
+            for gc in cls.__instances:
+                gc.trigger()
+            if cls.__old_handler:
+                cls.__old_handler(signum, frame)
+        cls.__maybe_uninstall_signal_handler()
+
     def __init__(self, context=None):
         super().__init__(callback=None, callback_group=None, context=context)
-        with self.handle as capsule:
-            _signals.rclpy_register_sigint_guard_condition(capsule)
 
-    def __del__(self):
-        try:
-            self.destroy()
-        except InvalidHandle:
-            # already destroyed
-            pass
-        except ValueError:
-            # Guard condition was not registered
-            pass
-
-    def destroy(self):
-        with self.handle as capsule:
-            _signals.rclpy_unregister_sigint_guard_condition(capsule)
-        super().destroy()
+        self.__register_guard_condition(self)
