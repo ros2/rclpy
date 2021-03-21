@@ -1781,7 +1781,7 @@ class Node:
         """
         Return the number of publishers on a given topic.
 
-        `topic_name` may be a relative, private, or fully qualifed topic name.
+        `topic_name` may be a relative, private, or fully qualified topic name.
         A relative or private topic is expanded using this node's namespace and name.
         The queried topic name is not remapped.
 
@@ -1794,7 +1794,7 @@ class Node:
         """
         Return the number of subscribers on a given topic.
 
-        `topic_name` may be a relative, private, or fully qualifed topic name.
+        `topic_name` may be a relative, private, or fully qualified topic name.
         A relative or private topic is expanded using this node's namespace and name.
         The queried topic name is not remapped.
 
