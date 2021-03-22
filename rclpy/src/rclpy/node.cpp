@@ -126,8 +126,7 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
 
   py::list pynode_names_and_namespaces(node_names.size);
 
-  size_t idx;
-  for (idx = 0; idx < node_names.size; ++idx) {
+  for (size_t idx = 0; idx < node_names.size; ++idx) {
     if (get_enclaves) {
       pynode_names_and_namespaces[idx] = py::make_tuple(
         py::str(node_names.data[idx]),
@@ -140,8 +139,7 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
     }
   }
 
-  rcutils_ret_t rcutils_ret;
-  rcutils_ret = rcutils_string_array_fini(&node_names);
+  rcutils_ret_t rcutils_ret = rcutils_string_array_fini(&node_names);
   if (RCUTILS_RET_OK != rcutils_ret) {
     throw RCLError("Failed to destroy node names");
   }
