@@ -12,21 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include "rclpy_common/exceptions.hpp"
 
-#include <rcl/allocator.h>
-#include <rcl/arguments.h>
 #include <rcl/error_handling.h>
 #include <rcutils/error_handling.h>
 #include <rmw/error_handling.h>
 
-#include <memory>
 #include <stdexcept>
 #include <string>
-
-#include "rclpy_common/exceptions.hpp"
-
-namespace py = pybind11;
 
 namespace rclpy
 {
