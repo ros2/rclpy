@@ -23,6 +23,7 @@
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
+#include "qos_events.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
 #include "service.hpp"
@@ -56,6 +57,17 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value(
     "SYSTEM_TIME_NO_CHANGE", RCL_SYSTEM_TIME_NO_CHANGE,
     "ROS time is inactive and the clock will keep reporting system time");
+
+  py::enum_<rcl_subscription_event_type_t>(m, "QoSSubscriptionEventType")
+  .value("RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED", RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
+  .value("RCL_SUBSCRIPTION_LIVELINESS_CHANGED", RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
+  .value("RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS", RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
+  .value("RCL_SUBSCRIPTION_MESSAGE_LOST", RCL_SUBSCRIPTION_MESSAGE_LOST);
+
+  py::enum_<rcl_publisher_event_type_t>(m, "QoSPublisherEventType")
+  .value("RCL_PUBLISHER_OFFERED_DEADLINE_MISSED", RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
+  .value("RCL_PUBLISHER_LIVELINESS_LOST", RCL_PUBLISHER_LIVELINESS_LOST)
+  .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS);
 
   py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
   py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
@@ -307,4 +319,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_get_node_names_and_namespaces_with_enclaves",
     &rclpy::get_node_names_and_namespaces_with_enclaves,
     "Get node names, namespaces, and enclaves list from graph API.");
+
+  m.def(
+    "rclpy_create_event", &rclpy::create_event,
+    "Create an event for QoS event handling.");
+  m.def(
+    "rclpy_take_event", &rclpy::take_event,
+    "Get pending data from a ready QoS event.");
 }

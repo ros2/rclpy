@@ -175,6 +175,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/names.cpp
   src/rclpy/node.cpp
   src/rclpy/publisher.cpp
+  src/rclpy/qos_events.cpp
   src/rclpy/serialization.cpp
   src/rclpy/service.cpp
   src/rclpy/service_info.cpp
