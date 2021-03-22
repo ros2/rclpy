@@ -86,7 +86,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .def_readonly("compatibility", &rclpy::QoSCheckCompatibleResult::compatibility)
   .def_readonly("reason", &rclpy::QoSCheckCompatibleResult::reason);
 
-
   py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
   py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
   auto rclerror = py::register_exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);

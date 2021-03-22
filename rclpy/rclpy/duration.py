@@ -84,7 +84,7 @@ class Duration:
 
     @classmethod
     def Infinite(cls):
-        return cls(nanoseconds=_rclpy.rclpy_RMW_DURATION_INFINITE)
+        return cls(nanoseconds=_rclpy.RMW_DURATION_INFINITE)
 
     def get_c_duration(self):
         return self._duration_handle
