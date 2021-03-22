@@ -15,16 +15,10 @@
 #ifndef RCLPY_COMMON__EXCEPTIONS_HPP_
 #define RCLPY_COMMON__EXCEPTIONS_HPP_
 
-#include <pybind11/pybind11.h>
-
-#include <rcl/arguments.h>
-
 #include <stdexcept>
 #include <string>
 
 #include "rclpy_common/visibility_control.h"
-
-namespace py = pybind11;
 
 namespace rclpy
 {
@@ -36,10 +30,6 @@ std::string append_rcl_error(std::string prepend);
 
 RCLPY_COMMON_PUBLIC
 std::string append_rmw_error(std::string prepend);
-
-RCLPY_COMMON_PUBLIC
-void
-throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args);
 
 class RCUtilsError : public std::runtime_error
 {
@@ -77,11 +67,7 @@ class RCLInvalidROSArgsError : public RCLError
 
 class UnknownROSArgsError : public std::runtime_error
 {
-private:
   using std::runtime_error::runtime_error;
-
-  RCLPY_COMMON_PUBLIC
-  friend void throw_if_unparsed_ros_args(py::list, const rcl_arguments_t &);
 };
 
 class NodeNameNonExistentError : public RCLError

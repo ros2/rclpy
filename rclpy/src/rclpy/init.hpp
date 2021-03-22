@@ -17,6 +17,8 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/arguments.h>
+
 #include <string>
 #include <vector>
 
@@ -39,6 +41,10 @@ init(py::list pyargs, py::capsule pycontext, size_t domain_id);
  */
 void
 shutdown(py::capsule pycontext);
+
+/// Throw UnparsedROSArgsError with a message saying which args are unparsed.
+void
+throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args);
 }  // namespace rclpy
 
 #endif  // RCLPY__INIT_HPP_

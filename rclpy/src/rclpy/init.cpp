@@ -114,4 +114,40 @@ shutdown(py::capsule pycontext)
     throw RCLError("failed to shutdown");
   }
 }
+
+void
+throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
+{
+  int unparsed_ros_args_count = rcl_arguments_get_count_unparsed_ros(&rcl_args);
+
+  if (unparsed_ros_args_count < 0) {
+    throw std::runtime_error("failed to count unparsed arguments");
+  }
+  if (0 == unparsed_ros_args_count) {
+    return;
+  }
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+
+  int * unparsed_indices_c = nullptr;
+  rcl_ret_t ret = rcl_arguments_get_unparsed_ros(&rcl_args, allocator, &unparsed_indices_c);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to get unparsed arguments");
+  }
+
+  auto deallocator = [&](int ptr[]) {allocator.deallocate(ptr, allocator.state);};
+  auto unparsed_indices = std::unique_ptr<int[], decltype(deallocator)>(
+    unparsed_indices_c, deallocator);
+
+  py::list unparsed_args;
+  for (int i = 0; i < unparsed_ros_args_count; ++i) {
+    int index = unparsed_indices_c[i];
+    if (index < 0 || static_cast<size_t>(index) >= pyargs.size()) {
+      throw std::runtime_error("got invalid unparsed ROS arg index");
+    }
+    unparsed_args.append(pyargs[index]);
+  }
+
+  throw UnknownROSArgsError(static_cast<std::string>(py::repr(unparsed_args)));
+}
 }  // namespace rclpy
