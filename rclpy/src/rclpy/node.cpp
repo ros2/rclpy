@@ -16,15 +16,16 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl/graph.h>
 #include <rcl/rcl.h>
 
 #include <string>
 
+#include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
 #include "node.hpp"
+#include "utils.hpp"
 
 
 namespace rclpy
@@ -111,8 +112,6 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
   rcutils_string_array_t node_namespaces = rcutils_get_zero_initialized_string_array();
   rcutils_string_array_t enclaves = rcutils_get_zero_initialized_string_array();
 
-  rcutils_array_list_t pynode_names_and_namespaces = rcutils_get_zero_initialized_array_list();
-
   rcl_ret_t ret = RCL_RET_OK;
   if (get_enclaves) {
     ret = rcl_get_node_names_with_enclaves(
@@ -122,50 +121,51 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
       node, allocator, &node_names, &node_namespaces);
   }
   if (RCL_RET_OK != ret) {
-    // TODO: Check if there are other error codes being thrown by the above calls.
     throw RCLError("Failed to get node names");
   }
 
-  rcutils_ret_t fini_names_ret;
-  rcutils_ret_t fini_namespaces_ret;
-  rcutils_ret_t fini_enclaves_ret;
+  py::list pynode_names_and_namespaces(node_names.size);
 
   size_t idx;
   for (idx = 0; idx < node_names.size; ++idx) {
-    rcutils_string_array_t next_item = rcutils_get_zero_initialized_string_array();
-    next_item[0] = node_names.data[idx]
-    next_item[1] = node_namespaces.data[idx]
-    if (get_enclaves)
-      next_item[2] = enclaves.data[idx]
-
-    pynode_names_and_namespaces[idx] = next_item;
+    if (get_enclaves) {
+      pynode_names_and_namespaces[idx] = py::make_tuple(
+        py::str(node_names.data[idx]),
+        py::str(node_namespaces.data[idx]),
+        py::str(enclaves.data[idx]));
+    } else {
+      pynode_names_and_namespaces[idx] = py::make_tuple(
+        py::str(node_names.data[idx]),
+        py::str(node_namespaces.data[idx]));
+    }
   }
 
-  fini_names_ret = rcutils_string_array_fini(&node_names);
-  fini_namespaces_ret = rcutils_string_array_fini(&node_namespaces);
-  fini_enclaves_ret = rcutils_string_array_fini(&enclaves);
-  if (RCUTILS_RET_OK != fini_names_ret) {
+  rcutils_ret_t rcutils_ret;
+  rcutils_ret = rcutils_string_array_fini(&node_names);
+  if (RCUTILS_RET_OK != rcutils_ret) {
     throw RCLError("Failed to destroy node names");
   }
-  if (RCUTILS_RET_OK != fini_namespaces_ret) {
+  rcutils_ret = rcutils_string_array_fini(&node_namespaces);
+  if (RCUTILS_RET_OK != rcutils_ret) {
     throw RCLError("Failed to destroy node_namespaces");
   }
-  if (RCUTILS_RET_OK != fini_enclaves_ret) {
+  rcutils_ret = rcutils_string_array_fini(&enclaves);
+  if (RCUTILS_RET_OK != rcutils_ret) {
     throw RCLError("Failed to destroy enclaves string array");
   }
 
-  return convert_to_py_names_and_types(pynode_names_and_namespaces);
+  return pynode_names_and_namespaces;
 }
 
 py::list
 get_node_names_and_namespaces(py::capsule pynode)
 {
-  return rclpy_get_node_names_impl(pynode, false);
+  return get_node_names_impl(pynode, false);
 }
 
 py::list
 get_node_names_and_namespaces_with_enclaves(py::capsule pynode)
 {
-  return rclpy_get_node_names_impl(pynode, true);
+  return get_node_names_impl(pynode, true);
 }
 }  // namespace rclpy
