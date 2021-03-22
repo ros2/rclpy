@@ -83,32 +83,6 @@ create_zero_initialized_event()
   return event;
 }
 
-rcl_publisher_event_type_t
-rcl_publisher_event_type_from(py::object pyevent_type)
-{
-  py::module qos_events = py::module::import(PYMODULE_NAME);
-  py::object pyevent_type_enum = qos_events.attr("QoSPublisherEventType");
-  if (!py::isinstance(pyevent_type, pyevent_type_enum)) {
-    throw py::type_error("event type is not a QoSPublisherEventType instance");
-  }
-  return static_cast<rcl_publisher_event_type_t>(
-    // enum does not specify underlying data type, need intermediate cast
-    static_cast<int>(pyevent_type.attr("value").cast<py::int_>()));
-}
-
-rcl_subscription_event_type_t
-rcl_subscription_event_type_from(py::object pyevent_type)
-{
-  py::module qos_events = py::module::import(PYMODULE_NAME);
-  py::object pyevent_type_enum = qos_events.attr("QoSSubscriptionEventType");
-  if (!py::isinstance(pyevent_type, pyevent_type_enum)) {
-    throw py::type_error("event type is not a QoSSubscriptionEventType instance");
-  }
-  return static_cast<rcl_subscription_event_type_t>(
-    // enum does not specify underlying data type, need intermediate cast
-    static_cast<int>(pyevent_type.attr("value").cast<py::int_>()));
-}
-
 py::object
 _requested_deadline_missed_to_py_object(const qos_event_callback_data_t * data)
 {
@@ -189,7 +163,7 @@ qos_event_data_filler_function *
 qos_event_data_filler_function_for(py::capsule pyparent, py::object pyevent_type)
 {
   if (strcmp(pyparent.name(), "rclpy_subscription_t") == 0) {
-    switch (rcl_subscription_event_type_from(pyevent_type)) {
+    switch (pyevent_type.cast<rcl_subscription_event_type_t>()) {
       case RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED:
         return &_requested_deadline_missed_to_py_object;
       case RCL_SUBSCRIPTION_LIVELINESS_CHANGED:
@@ -204,7 +178,7 @@ qos_event_data_filler_function_for(py::capsule pyparent, py::object pyevent_type
     }
   }
   if (strcmp(pyparent.name(), "rclpy_publisher_t") == 0) {
-    switch (rcl_publisher_event_type_from(pyevent_type)) {
+    switch (pyevent_type.cast<rcl_publisher_event_type_t>()) {
       case RCL_PUBLISHER_OFFERED_DEADLINE_MISSED:
         return &_offered_deadline_missed_to_py_object;
       case RCL_PUBLISHER_LIVELINESS_LOST:
@@ -222,41 +196,33 @@ qos_event_data_filler_function_for(py::capsule pyparent, py::object pyevent_type
 py::capsule
 event_wrap_in_capsule(unique_cstruct_ptr<rcl_event_t> event, py::capsule pyparent)
 {
-  rclpy_handle_t * event_handle = _rclpy_create_handle(
-    event.get(), reinterpret_cast<rclpy_handle_destructor_t>(event.get_deleter()));
-  if (!event_handle) {
+  rclpy_handle_destructor_t destructor =
+    reinterpret_cast<rclpy_handle_destructor_t>(event.get_deleter());
+  PyObject * pyevent_c =
+    rclpy_create_handle_capsule(event.get(), "rcl_event_t", destructor);
+  if (!pyevent_c) {
     throw py::error_already_set();
   }
-  event.release();  // event_handle now owns rcl_event_t
+  auto pyevent = py::reinterpret_steal<py::capsule>(pyevent_c);
+  event.release();  // pyevent now owns rcl_event_t
 
-  auto cleanup = rcpputils::make_scope_exit(
-    [&]() {_rclpy_handle_dec_ref(event_handle);});
-
+  rclpy_handle_t * event_handle = static_cast<rclpy_handle_t *>(pyevent);
   rclpy_handle_t * parent_handle = static_cast<rclpy_handle_t *>(pyparent);
   _rclpy_handle_add_dependency(event_handle, parent_handle);
   if (PyErr_Occurred()) {
     throw py::error_already_set();
   }
-  PyObject * event_capsule = _rclpy_create_handle_capsule(event_handle, "rcl_event_t");
-  if (!event_capsule) {
-    throw py::error_already_set();
-  }
-  cleanup.cancel();
-
-  return py::reinterpret_steal<py::capsule>(event_capsule);
+  return pyevent;
 }
 
 py::object
-publisher_event_create(py::object pyevent_type, py::capsule pypublisher)
+publisher_event_create(rcl_publisher_event_type_t event_type, py::capsule pypublisher)
 {
   auto wrapper = static_cast<rclpy_publisher_t *>(
     rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
   if (!wrapper) {
     throw py::error_already_set();
   }
-
-  rcl_publisher_event_type_t event_type =
-    rcl_publisher_event_type_from(pyevent_type);
 
   unique_cstruct_ptr<rcl_event_t> event = create_zero_initialized_event();
 
@@ -277,16 +243,13 @@ publisher_event_create(py::object pyevent_type, py::capsule pypublisher)
 }
 
 py::object
-subscription_event_create(py::object pyevent_type, py::capsule pysubscription)
+subscription_event_create(rcl_subscription_event_type_t event_type, py::capsule pysubscription)
 {
   auto wrapper = static_cast<rclpy_subscription_t *>(
     rclpy_handle_get_pointer_from_capsule(pysubscription.ptr(), "rclpy_subscription_t"));
   if (!wrapper) {
     throw py::error_already_set();
   }
-
-  rcl_subscription_event_type_t event_type =
-    rcl_subscription_event_type_from(pyevent_type);
 
   unique_cstruct_ptr<rcl_event_t> event = create_zero_initialized_event();
 
@@ -312,10 +275,12 @@ py::object
 create_event(py::object pyevent_type, py::capsule pyparent)
 {
   if (strcmp(pyparent.name(), "rclpy_subscription_t") == 0) {
-    return subscription_event_create(pyevent_type, pyparent);
+    auto event_type = pyevent_type.cast<rcl_subscription_event_type_t>();
+    return subscription_event_create(event_type, pyparent);
   }
   if (strcmp(pyparent.name(), "rclpy_publisher_t") == 0) {
-    return publisher_event_create(pyevent_type, pyparent);
+    auto event_type = pyevent_type.cast<rcl_publisher_event_type_t>();
+    return publisher_event_create(event_type, pyparent);
   }
   throw py::type_error("event parent is neither a publisher nor a subscription");
 }
