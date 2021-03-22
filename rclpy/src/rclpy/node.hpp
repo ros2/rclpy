@@ -21,6 +21,28 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/// Get the fully qualified name of the node.
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if name is not set
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \return String containing the fully qualified name of the node
+ */
+const char *
+node_get_fully_qualified_name(py::capsule pynode);
+
+/// Get the name of the logger associated with a node.
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if logger name is not set
+ *
+ * \param[in] pynode Capsule pointing to the node to get the logger name of
+ * \return logger_name
+ */
+const char *
+get_node_logger_name(py::capsule pynode);
+
 /// Get the name of a node.
 /**
  * Raises ValueError if pynode is not a node capsule

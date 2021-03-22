@@ -289,9 +289,22 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Deserialize a ROS message.");
 
   m.def(
+    "rclpy_node_get_fully_qualified_name", &rclpy::node_get_fully_qualified_name,
+    "Get the fully qualified name of node.");
+  m.def(
+    "rclpy_get_node_logger_name", &rclpy::get_node_logger_name,
+    "Get the logger name associated with a node.");
+  m.def(
     "rclpy_get_node_name", &rclpy::get_node_name,
     "Get the name of a node.");
   m.def(
     "rclpy_get_node_namespace", &rclpy::get_node_namespace,
     "Get the namespace of a node.");
+  m.def(
+    "rclpy_get_node_names_and_namespaces", &rclpy::get_node_names_and_namespaces,
+    "Get node names and namespaces list from graph API.");
+  m.def(
+    "rclpy_get_node_names_and_namespaces_with_enclaves",
+    &rclpy::get_node_names_and_namespaces_with_enclaves,
+    "Get node names, namespaces, and enclaves list from graph API.");
 }
