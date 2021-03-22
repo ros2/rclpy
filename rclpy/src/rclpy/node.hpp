@@ -30,7 +30,7 @@ namespace rclpy
  * \return String containing the fully qualified name of the node
  */
 const char *
-node_get_fully_qualified_name(py::capsule pynode);
+get_node_fully_qualified_name(py::capsule pynode);
 
 /// Get the name of the logger associated with a node.
 /**

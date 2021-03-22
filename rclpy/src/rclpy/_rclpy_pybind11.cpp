@@ -289,7 +289,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Deserialize a ROS message.");
 
   m.def(
-    "rclpy_node_get_fully_qualified_name", &rclpy::node_get_fully_qualified_name,
+    "rclpy_node_get_fully_qualified_name", &rclpy::get_node_fully_qualified_name,
     "Get the fully qualified name of node.");
   m.def(
     "rclpy_get_node_logger_name", &rclpy::get_node_logger_name,

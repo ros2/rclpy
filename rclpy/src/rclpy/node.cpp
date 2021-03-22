@@ -30,7 +30,7 @@
 namespace rclpy
 {
 const char *
-node_get_fully_qualified_name(py::capsule pynode)
+get_node_fully_qualified_name(py::capsule pynode)
 {
   auto node = static_cast<rcl_node_t *>(
     rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
