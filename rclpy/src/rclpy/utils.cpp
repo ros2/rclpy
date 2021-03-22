@@ -18,7 +18,7 @@
 
 #include "rcl/error_handling.h"
 
-#include "rclpy_common/common.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {

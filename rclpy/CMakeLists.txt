@@ -123,7 +123,6 @@ endfunction()
 
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
-  src/rclpy_common/src/common.cpp
   src/rclpy_common/src/exceptions.cpp
   src/rclpy_common/src/handle.c
 )
@@ -182,6 +181,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/subscription.cpp
   src/rclpy/time_point.cpp
   src/rclpy/timer.cpp
+  src/rclpy/utils.cpp
   src/rclpy/wait_set.cpp
 )
 target_include_directories(_rclpy_pybind11 PRIVATE
