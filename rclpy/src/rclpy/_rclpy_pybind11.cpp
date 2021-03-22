@@ -27,7 +27,6 @@
 #include "node.hpp"
 #include "publisher.hpp"
 #include "qos_events.hpp"
-#include "node.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
 #include "service.hpp"
