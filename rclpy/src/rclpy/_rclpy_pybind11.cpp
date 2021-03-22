@@ -79,7 +79,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   auto rclerror = py::register_exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);
   py::register_exception<rclpy::RCLInvalidROSArgsError>(
     m, "RCLInvalidROSArgsError", rclerror.ptr());
-  py::register_exception<rclpy::UnknownROSArgsError>(m, "UnknownROSArgsError", rclerror.ptr());
+  py::register_exception<rclpy::UnknownROSArgsError>(m, "UnknownROSArgsError", PyExc_RuntimeError);
   py::register_exception<rclpy::NodeNameNonExistentError>(
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
