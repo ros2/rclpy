@@ -27,7 +27,7 @@ def test_init_with_unknown_ros_args():
     from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
     context = rclpy.context.Context()
-    unknown_ros_args_error_pattern = r'Found unknown ROS arguments:.*\[\'unknown\'\]'
+    unknown_ros_args_error_pattern = r'\[\'unknown\'\]'
     with pytest.raises(_rclpy.UnknownROSArgsError, match=unknown_ros_args_error_pattern):
         rclpy.init(context=context, args=['--ros-args', 'unknown'])
 

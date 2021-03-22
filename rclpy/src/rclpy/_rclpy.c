@@ -381,147 +381,6 @@ int pyobj_to_long(PyObject * obj, void * i)
   return 0;  // Conversion failed
 }
 
-/// Initialize rcl with default options, ignoring parameters
-/**
- * Raises RuntimeError if rcl could not be initialized
- */
-static PyObject *
-rclpy_init(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  // Expect two arguments, one is a list of strings and the other is a context.
-  PyObject * pyargs;
-  PyObject * pyseqlist;
-  PyObject * pycontext;
-  PY_LONG_LONG domain_id = (PY_LONG_LONG) RCL_DEFAULT_DOMAIN_ID;
-
-  if (!PyArg_ParseTuple(args, "OO|O&", &pyargs, &pycontext, pyobj_to_long, (void *)&domain_id)) {
-    // Exception raised
-    return NULL;
-  }
-
-  if (domain_id != (PY_LONG_LONG)RCL_DEFAULT_DOMAIN_ID && domain_id < 0) {
-    PyErr_Format(
-      PyExc_RuntimeError,
-      "Domain id (%ll) should not be lower than zero.", domain_id);
-    return NULL;
-  }
-
-  pyseqlist = PySequence_List(pyargs);
-  if (!pyseqlist) {
-    // Exception raised
-    return NULL;
-  }
-  Py_ssize_t pysize_num_args = PyList_Size(pyseqlist);
-  if (pysize_num_args > INT_MAX) {
-    PyErr_Format(PyExc_OverflowError, "Too many arguments");
-    Py_DECREF(pyseqlist);
-    return NULL;
-  }
-  int num_args = (int)pysize_num_args;
-
-  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
-  if (!context) {
-    Py_DECREF(pyseqlist);
-    return NULL;
-  }
-
-  rcl_allocator_t allocator = rcl_get_default_allocator();
-  const char ** arg_values = NULL;
-  bool have_args = true;
-  if (num_args > 0) {
-    arg_values = allocator.allocate(sizeof(char *) * num_args, allocator.state);
-    if (!arg_values) {
-      PyErr_Format(PyExc_MemoryError, "Failed to allocate space for arguments");
-      Py_DECREF(pyseqlist);
-      return NULL;
-    }
-
-    for (int i = 0; i < num_args; ++i) {
-      // Returns borrowed reference, do not decref
-      PyObject * pyarg = PyList_GetItem(pyseqlist, i);
-      if (!pyarg) {
-        have_args = false;
-        break;
-      }
-      // Borrows a pointer, do not free arg_values[i]
-      arg_values[i] = PyUnicode_AsUTF8(pyarg);
-      if (!arg_values[i]) {
-        have_args = false;
-        break;
-      }
-    }
-  }
-
-  if (have_args) {
-    rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
-    rcl_ret_t ret = rcl_init_options_init(&init_options, allocator);
-    if (RCL_RET_OK == ret) {
-      // Set domain id
-      ret = rcl_init_options_set_domain_id(&init_options, (size_t)domain_id);
-      if (RCL_RET_OK != ret) {
-        PyErr_Format(
-          PyExc_RuntimeError,
-          "Failed to set domain id to init_options: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-      ret = rcl_init(num_args, arg_values, &init_options, context);
-      if (RCL_RET_OK == ret) {
-        int unparsed_ros_args_count =
-          rcl_arguments_get_count_unparsed_ros(&context->global_arguments);
-        if (unparsed_ros_args_count > 0) {
-          int * unparsed_ros_args_indices = NULL;
-          ret = rcl_arguments_get_unparsed_ros(
-            &context->global_arguments, allocator, &unparsed_ros_args_indices);
-          if (RCL_RET_OK == ret) {
-            _rclpy_raise_unknown_ros_args(
-              module_state,
-              pyargs, unparsed_ros_args_indices, unparsed_ros_args_count);
-            allocator.deallocate(unparsed_ros_args_indices, allocator.state);
-          } else {
-            PyErr_Format(
-              PyExc_RuntimeError,
-              "Failed to get unparsed ROS arguments: %s",
-              rcl_get_error_string().str);
-            rcl_reset_error();
-          }
-        }
-      } else {
-        PyErr_Format(PyExc_RuntimeError, "Failed to init: %s", rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-    } else {
-      PyErr_Format(
-        PyExc_RuntimeError, "Failed to initialize init_options: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-    }
-  }
-  if (NULL != arg_values) {
-/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
- * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
- */
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable: 4090)
-#endif
-    allocator.deallocate(arg_values, allocator.state);
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-  }
-  Py_DECREF(pyseqlist);
-
-  if (PyErr_Occurred()) {
-    return NULL;
-  }
-  Py_RETURN_NONE;
-}
-
 /// Initialize rcl logging
 /**
  * Raises RuntimeError if rcl logging could not be initialized
@@ -992,42 +851,6 @@ rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * P
     "s", rmw_implementation_identifier);
 
   return pyrmw_implementation_identifier;
-}
-
-/// Request shutdown of the client library
-/**
- * Raises RuntimeError if the library could not be shutdown
- *
- * \return None
- */
-static PyObject *
-rclpy_shutdown(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pycontext;
-
-  if (!PyArg_ParseTuple(args, "O", &pycontext)) {
-    return NULL;
-  }
-
-  rcl_context_t * context = rclpy_handle_get_pointer_from_capsule(pycontext, "rcl_context_t");
-  if (!context) {
-    return NULL;
-  }
-
-  rcl_ret_t ret = rcl_shutdown(context);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to shutdown: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
 }
 
 /// Get the list of nodes discovered by the provided node
@@ -1829,10 +1652,6 @@ rclpy_get_node_parameters(PyObject * module, PyObject * args)
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
-    "rclpy_init", rclpy_init, METH_VARARGS,
-    "Initialize RCL."
-  },
-  {
     "rclpy_logging_configure", rclpy_logging_configure, METH_VARARGS,
     "Initialize RCL logging."
   },
@@ -1871,11 +1690,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
     "Get subscriptions info for a topic."
-  },
-
-  {
-    "rclpy_shutdown", rclpy_shutdown, METH_VARARGS,
-    "rclpy_shutdown."
   },
 
   {
