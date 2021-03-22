@@ -46,6 +46,22 @@ subscription_create(
   py::capsule pynode, py::object pymsg_type, std::string topic,
   py::capsule pyqos_profile);
 
+/// Take a message and its metadata from a subscription
+/**
+ * Raises ValueError if pysubscription is not subscription capsule
+ * Raises MemoryError if there was error allocating memory
+ * Raises RCLError if there was an error within rcl
+ *
+ * \param[in] pysubscription Capsule pointing to the subscription.
+ * \param[in] pymsg_type Message type to be taken (i.e. a class).
+ * \param[in] raw If True, return the message without de-serializing it.
+ * \return Tuple of (message, metadata) or None if there was no message to take.
+ *   Message is a \p pymsg_type instance if \p raw is True, otherwise a byte string.
+ *   Metadata is a plain dictionary.
+ */
+py::object
+subscription_take_message(py::capsule pysubscription, py::object pymsg_type, bool raw);
+
 /// Get the name of the logger associated with the node of the subscription.
 /**
  * Raises ValueError if pysubscription is not a subscription capsule

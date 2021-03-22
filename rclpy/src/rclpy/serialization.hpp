@@ -17,10 +17,23 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/types.h>
+#include <rcutils/allocator.h>
+
 namespace py = pybind11;
 
 namespace rclpy
 {
+/// Helper struct to manage an rcl_serialized_message_t lifetime.
+struct SerializedMessage
+{
+  explicit SerializedMessage(rcutils_allocator_t allocator);
+
+  ~SerializedMessage();
+
+  rcl_serialized_message_t rcl_msg;
+};
+
 /// Serialize a ROS message
 /**
  * Raises RCUtilsError on failure to initialize a serialized message

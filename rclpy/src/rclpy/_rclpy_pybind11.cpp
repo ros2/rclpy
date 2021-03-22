@@ -193,6 +193,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_subscription_topic_name", &rclpy::subscription_get_topic_name,
     "Get the topic name of a subscription");
+  m.def(
+    "rclpy_take", &rclpy::subscription_take_message,
+    "Take a message and its metadata from a subscription");
 
   m.def(
     "rclpy_create_time_point", &rclpy::create_time_point,

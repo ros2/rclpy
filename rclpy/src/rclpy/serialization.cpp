@@ -33,32 +33,27 @@
 
 namespace rclpy
 {
-struct SerializedMessage
+SerializedMessage::SerializedMessage(rcutils_allocator_t allocator)
 {
-  explicit SerializedMessage(rcutils_allocator_t allocator)
-  {
-    rcl_msg = rmw_get_zero_initialized_serialized_message();
-    rcutils_ret_t rcutils_ret = rmw_serialized_message_init(&rcl_msg, 0u, &allocator);
-    if (RCUTILS_RET_OK != rcutils_ret) {
-      throw RCUtilsError("failed to initialize serialized message");
-    }
+  rcl_msg = rmw_get_zero_initialized_serialized_message();
+  rcutils_ret_t rcutils_ret = rmw_serialized_message_init(&rcl_msg, 0u, &allocator);
+  if (RCUTILS_RET_OK != rcutils_ret) {
+    throw RCUtilsError("failed to initialize serialized message");
   }
+}
 
-  ~SerializedMessage()
-  {
-    rcutils_ret_t ret = rmw_serialized_message_fini(&rcl_msg);
-    if (RCUTILS_RET_OK != ret) {
-      RCUTILS_SAFE_FWRITE_TO_STDERR(
-        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "failed to fini rcl_serialized_msg_t in destructor:");
-      RCUTILS_SAFE_FWRITE_TO_STDERR(rcutils_get_error_string().str);
-      RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
-      rcutils_reset_error();
-    }
+SerializedMessage::~SerializedMessage()
+{
+  rcutils_ret_t ret = rmw_serialized_message_fini(&rcl_msg);
+  if (RCUTILS_RET_OK != ret) {
+    RCUTILS_SAFE_FWRITE_TO_STDERR(
+      "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+      "failed to fini rcl_serialized_msg_t in destructor:");
+    RCUTILS_SAFE_FWRITE_TO_STDERR(rcutils_get_error_string().str);
+    RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+    rcutils_reset_error();
   }
-
-  rcl_serialized_message_t rcl_msg;
-};
+}
 
 py::bytes
 serialize(py::object pymsg, py::object pymsg_type)
