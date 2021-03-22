@@ -23,14 +23,13 @@
 #include <string>
 
 #include "rclpy_common/common.h"
-#include "rclpy_common/common.hpp"
-
 #include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
 #include "serialization.hpp"
 #include "subscription.hpp"
+#include "utils.hpp"
 
 using pybind11::literals::operator""_a;
 
