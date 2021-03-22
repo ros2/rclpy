@@ -59,8 +59,6 @@ typedef struct
   PyObject * UnsupportedEventTypeError;
 } rclpy_module_state_t;
 
-#include "./_rclpy_qos_event.c"
-
 
 /// Deallocate a list of allocated strings.
 void
@@ -2022,19 +2020,10 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_get_subscriptions_info_by_topic", rclpy_get_subscriptions_info_by_topic, METH_VARARGS,
     "Get subscriptions info for a topic."
   },
-  {
-    "rclpy_create_event", rclpy_create_event, METH_VARARGS,
-    "Create an Event."
-  },
 
   {
     "rclpy_take", rclpy_take, METH_VARARGS,
     "rclpy_take."
-  },
-
-  {
-    "rclpy_take_event", rclpy_take_event, METH_VARARGS,
-    "Get the pending data for a ready QoS Event."
   },
 
   {

@@ -28,30 +28,8 @@ from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
 
-class QoSPublisherEventType(IntEnum):
-    """
-    Enum for types of QoS events that a Publisher can receive.
-
-    This enum matches the one defined in rcl/event.h
-    """
-
-    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED = 0
-    RCL_PUBLISHER_LIVELINESS_LOST = 1
-    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS = 2
-
-
-class QoSSubscriptionEventType(IntEnum):
-    """
-    Enum for types of QoS events that a Subscription can receive.
-
-    This enum matches the one defined in rcl/event.h
-    """
-
-    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED = 0
-    RCL_SUBSCRIPTION_LIVELINESS_CHANGED = 1
-    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = 2
-    RCL_SUBSCRIPTION_MESSAGE_LOST = 3
-
+QoSPublisherEventType = _rclpy.QoSPublisherEventType
+QoSSubscriptionEventType = _rclpy.QoSSubscriptionEventType
 
 """
 Payload type for Subscription Deadline callback.
