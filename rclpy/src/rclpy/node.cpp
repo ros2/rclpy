@@ -97,41 +97,22 @@ get_node_namespace(py::capsule pynode)
   return node_namespace;
 }
 
-/// Get the list of nodes discovered by the provided node
-/**
- *  Raises ValueError if pynode is not a node capsule
- *  Raises RuntimeError  if there is an rcl error
- *
- * \param[in] module the Python module this function is part of
- * \param[in] args arguments tuple, composed by only one argument:
- *  - node: Capsule pointing to the node
- * \param[in] get_enclaves specifies if the output includes the enclaves names or not
- * \return Python list of tuples, containing:
- *  node name, node namespace, and
- *  enclave if `get_enclaves` is true.
- */
-static PyObject *
-rclpy_get_node_names_impl(PyObject * module, PyObject * args, bool get_enclaves)
+py::list
+get_node_names_impl(py::capsule pynode, bool get_enclaves)
 {
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pynode;
-
-  if (!PyArg_ParseTuple(args, "O", &pynode)) {
-    return NULL;
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
   }
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
   rcutils_string_array_t node_names = rcutils_get_zero_initialized_string_array();
   rcutils_string_array_t node_namespaces = rcutils_get_zero_initialized_string_array();
   rcutils_string_array_t enclaves = rcutils_get_zero_initialized_string_array();
+
+  rcutils_array_list_t pynode_names_and_namespaces = rcutils_get_zero_initialized_array_list();
+
   rcl_ret_t ret = RCL_RET_OK;
   if (get_enclaves) {
     ret = rcl_get_node_names_with_enclaves(
@@ -140,118 +121,51 @@ rclpy_get_node_names_impl(PyObject * module, PyObject * args, bool get_enclaves)
     ret = rcl_get_node_names(
       node, allocator, &node_names, &node_namespaces);
   }
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to get node names: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
+  if (RCL_RET_OK != ret) {
+    // TODO: Check if there are other error codes being thrown by the above calls.
+    throw RCLError("Failed to get node names");
   }
 
   rcutils_ret_t fini_names_ret;
   rcutils_ret_t fini_namespaces_ret;
   rcutils_ret_t fini_enclaves_ret;
-  PyObject * pynode_names_and_namespaces = PyList_New(node_names.size);
-  if (!pynode_names_and_namespaces) {
-    goto cleanup;
-  }
 
   size_t idx;
   for (idx = 0; idx < node_names.size; ++idx) {
-    PyObject * pytuple = PyTuple_New(get_enclaves ? 3 : 2);
-    if (!pytuple) {
-      goto cleanup;
-    }
-    PyObject * pynode_name = PyUnicode_FromString(node_names.data[idx]);
-    if (!pynode_name) {
-      Py_DECREF(pytuple);
-      goto cleanup;
-    }
-    // Steals the reference
-    PyTuple_SET_ITEM(pytuple, 0, pynode_name);
-    PyObject * pynode_namespace = PyUnicode_FromString(node_namespaces.data[idx]);
-    if (!pynode_namespace) {
-      Py_DECREF(pytuple);
-      goto cleanup;
-    }
-    // Steals the reference
-    PyTuple_SET_ITEM(pytuple, 1, pynode_namespace);
-    if (get_enclaves) {
-      PyObject * pynode_enclaves = PyUnicode_FromString(enclaves.data[idx]);
-      if (!pynode_enclaves) {
-        Py_DECREF(pytuple);
-        goto cleanup;
-      }
-      // Steals the reference
-      PyTuple_SET_ITEM(pytuple, 2, pynode_enclaves);
-    }
-    // Steals the reference
-    PyList_SET_ITEM(pynode_names_and_namespaces, idx, pytuple);
+    rcutils_string_array_t next_item = rcutils_get_zero_initialized_string_array();
+    next_item[0] = node_names.data[idx]
+    next_item[1] = node_namespaces.data[idx]
+    if (get_enclaves)
+      next_item[2] = enclaves.data[idx]
+
+    pynode_names_and_namespaces[idx] = next_item;
   }
 
-cleanup:
   fini_names_ret = rcutils_string_array_fini(&node_names);
   fini_namespaces_ret = rcutils_string_array_fini(&node_namespaces);
   fini_enclaves_ret = rcutils_string_array_fini(&enclaves);
-  if (PyErr_Occurred()) {
-    Py_XDECREF(pynode_names_and_namespaces);
-    return NULL;
+  if (RCUTILS_RET_OK != fini_names_ret) {
+    throw RCLError("Failed to destroy node names");
   }
-  if (fini_names_ret != RCUTILS_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to destroy node_names: %s", rcl_get_error_string().str);
-    Py_XDECREF(pynode_names_and_namespaces);
-    rcl_reset_error();
-    return NULL;
+  if (RCUTILS_RET_OK != fini_namespaces_ret) {
+    throw RCLError("Failed to destroy node_namespaces");
   }
-  if (fini_namespaces_ret != RCUTILS_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to destroy node_namespaces: %s", rcl_get_error_string().str);
-    Py_XDECREF(pynode_names_and_namespaces);
-    rcl_reset_error();
-    return NULL;
-  }
-  if (fini_enclaves_ret != RCUTILS_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError,
-      "Failed to destroy enclaves string array: %s", rcl_get_error_string().str);
-    Py_XDECREF(pynode_names_and_namespaces);
-    rcl_reset_error();
-    return NULL;
+  if (RCUTILS_RET_OK != fini_enclaves_ret) {
+    throw RCLError("Failed to destroy enclaves string array");
   }
 
-  return pynode_names_and_namespaces;
+  return convert_to_py_names_and_types(pynode_names_and_namespaces);
 }
 
-/// Get the list of nodes discovered by the provided node
-/**
- *  Raises ValueError if pynode is not a node capsule
- *  Raises RuntimeError  if there is an rcl error
- *
- * \param[in] pynode Capsule pointing to the node
- * \return Python list of tuples where each tuple contains the two strings:
- *   the node name and node namespace
- */
-static PyObject *
-rclpy_get_node_names_and_namespaces(PyObject * module, PyObject * args)
+py::list
+get_node_names_and_namespaces(py::capsule pynode)
 {
-  return rclpy_get_node_names_impl(module, args, false);
+  return rclpy_get_node_names_impl(pynode, false);
 }
 
-/// Get the list of nodes discovered by the provided node, with their respective enclaves.
-/**
- *  Raises ValueError if pynode is not a node capsule
- *  Raises RuntimeError  if there is an rcl error
- *
- * \param[in] pynode Capsule pointing to the node
- * \return Python list of tuples where each tuple contains three strings:
- *   node name, node namespace, and enclave.
- */
-static PyObject *
-rclpy_get_node_names_and_namespaces_with_enclaves(
-  PyObject * module, PyObject * args)
+py::list
+get_node_names_and_namespaces_with_enclaves(py::capsule pynode)
 {
-  return rclpy_get_node_names_impl(module, args, true);
+  return rclpy_get_node_names_impl(pynode, true);
 }
 }  // namespace rclpy
