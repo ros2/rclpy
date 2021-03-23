@@ -45,17 +45,17 @@ get_node_namespace(py::capsule pynode);
 
 /// Get a list of parameters for the current node
 /**
- * On failure, an exception is raised and NULL is returned if:
- *
- * Raises ValueError if the argument is not a node handle.
- * Raises RCLError if the parameters file fails to parse
+ * Raises ValueError if the argument is not a node handle
+ * Raises RCLError if any rcl function call fails
+ * Raises AttributeError if pyparameter_cls doesn't have a 'Type' attribute
+ * Raises RuntimeError if assumptions about rcl structures are violated
  *
  * \param[in] pyparameter_cls The rclpy.parameter.Parameter class object.
  * \param[in] node_capsule Capsule pointing to the node handle
  * \return A dict mapping parameter names to rclpy.parameter.Parameter (may be empty).
  */
 py::dict
-get_node_parameters(py::object parameter_cls, py::capsule pynode);
+get_node_parameters(py::object pyparameter_cls, py::capsule pynode);
 }  // namespace rclpy
 
 #endif  // RCLPY__NODE_HPP_
