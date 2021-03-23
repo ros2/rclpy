@@ -65,8 +65,9 @@ class RCLInvalidROSArgsError : public RCLError
 {
 };
 
-class UnknownROSArgsError : public RCLError
+class UnknownROSArgsError : public std::runtime_error
 {
+  using std::runtime_error::runtime_error;
 };
 
 class NodeNameNonExistentError : public RCLError

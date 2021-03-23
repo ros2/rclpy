@@ -68,7 +68,7 @@ class Context:
             rclpy_implementation.rclpy_init(
                 args if args is not None else sys.argv,
                 capsule,
-                domain_id)
+                domain_id if domain_id is not None else rclpy_implementation.RCL_DEFAULT_DOMAIN_ID)
             if initialize_logging and not self._logging_initialized:
                 with g_logging_configure_lock:
                     g_logging_ref_count += 1

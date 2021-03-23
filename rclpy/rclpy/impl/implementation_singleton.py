@@ -49,6 +49,9 @@ def _combine_split_modules():
         elif isinstance(thing, type):
             # It's a custom type
             setattr(rclpy_implementation, attr, thing)
+        elif '_' != attr[0] and attr.upper() == attr:
+            # It's a module constant
+            setattr(rclpy_implementation, attr, thing)
 
 
 _combine_split_modules()

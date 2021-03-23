@@ -14,12 +14,15 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/domain_id.h>
+
 #include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
 #include "duration.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
+#include "init.hpp"
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
@@ -43,6 +46,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("ROS_TIME", RCL_ROS_TIME)
   .value("SYSTEM_TIME", RCL_SYSTEM_TIME)
   .value("STEADY_TIME", RCL_STEADY_TIME);
+
+  m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
 
   py::enum_<rcl_clock_change_t>(m, "ClockChange")
   .value(
@@ -74,11 +79,18 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   auto rclerror = py::register_exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);
   py::register_exception<rclpy::RCLInvalidROSArgsError>(
     m, "RCLInvalidROSArgsError", rclerror.ptr());
-  py::register_exception<rclpy::UnknownROSArgsError>(m, "UnknownROSArgsError", rclerror.ptr());
+  py::register_exception<rclpy::UnknownROSArgsError>(m, "UnknownROSArgsError", PyExc_RuntimeError);
   py::register_exception<rclpy::NodeNameNonExistentError>(
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
+
+  m.def(
+    "rclpy_init", &rclpy::init,
+    "Initialize RCL.");
+  m.def(
+    "rclpy_shutdown", &rclpy::shutdown,
+    "rclpy_shutdown.");
 
   m.def(
     "rclpy_create_client", &rclpy::client_create,
@@ -193,6 +205,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_subscription_topic_name", &rclpy::subscription_get_topic_name,
     "Get the topic name of a subscription");
+  m.def(
+    "rclpy_take", &rclpy::subscription_take_message,
+    "Take a message and its metadata from a subscription");
 
   m.def(
     "rclpy_create_time_point", &rclpy::create_time_point,
