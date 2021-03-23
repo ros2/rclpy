@@ -126,30 +126,25 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
     throw RCLError("Failed to get node names");
   }
 
-  rcutils_ret_t fini_names_ret;
-  rcutils_ret_t fini_namespaces_ret;
-  rcutils_ret_t fini_enclaves_ret;
-
   py::list pynode_names_and_namespaces(node_names.size);
-  for (size_t idx = 0; idx < node_names.size; ++idx) {
-    if (get_enclaves) {
-      pynode_names_and_namespaces[idx] = py::make_tuple(
-        py::str(node_names.data[idx]),
-        py::str(node_namespaces.data[idx]),
-        py::str(enclaves.data[idx]));
-    } else {
-      pynode_names_and_namespaces[idx] = py::make_tuple(
-        py::str(node_names.data[idx]),
-        py::str(node_namespaces.data[idx]));
-    }
-  }
 
   RCPPUTILS_SCOPE_EXIT(
     {
-      fini_names_ret = rcutils_string_array_fini(&node_names);
-      fini_namespaces_ret = rcutils_string_array_fini(&node_namespaces);
-      fini_enclaves_ret = rcutils_string_array_fini(&enclaves);
-      if (RCUTILS_RET_OK != fini_names_ret) {
+      for (size_t idx = 0; idx < node_names.size; ++idx) {
+        if (get_enclaves) {
+          pynode_names_and_namespaces[idx] = py::make_tuple(
+            py::str(node_names.data[idx]),
+            py::str(node_namespaces.data[idx]),
+            py::str(enclaves.data[idx]));
+        } else {
+          pynode_names_and_namespaces[idx] = py::make_tuple(
+            py::str(node_names.data[idx]),
+            py::str(node_namespaces.data[idx]));
+        }
+      }
+
+      rcutils_ret_t fini_ret = rcutils_string_array_fini(&node_names);
+      if (RCUTILS_RET_OK != fini_ret) {
         RCUTILS_SAFE_FWRITE_TO_STDERR(
           "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
           "failed to fini node names during error handling: ");
@@ -157,7 +152,8 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
         RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
         rcl_reset_error();
       }
-      if (RCUTILS_RET_OK != fini_namespaces_ret) {
+      fini_ret = rcutils_string_array_fini(&node_namespaces);
+      if (RCUTILS_RET_OK != fini_ret) {
         RCUTILS_SAFE_FWRITE_TO_STDERR(
           "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
           "failed to fini node namespaces during error handling: ");
@@ -165,7 +161,8 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
         RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
         rcl_reset_error();
       }
-      if (RCUTILS_RET_OK != fini_enclaves_ret) {
+      fini_ret = rcutils_string_array_fini(&enclaves);
+      if (RCUTILS_RET_OK != fini_ret) {
         RCUTILS_SAFE_FWRITE_TO_STDERR(
           "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
           "failed to fini enclaves string array during error handling: ");
