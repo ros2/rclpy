@@ -72,157 +72,81 @@ get_node_namespace(py::capsule pynode)
 
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
 /**
- * On failure a Python exception is raised and NULL is returned if:
- *
- * Raises ValueError if the variant points to no data.
- *
- * \param[in] name The name of the parameter as a Python unicode string.
- * \param[in] variant The variant object to create a Parameter from.
- * \param[in] parameter_cls The PythonObject for the Parameter class.
- * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
- *
- * Returns a pointer to an rclpy.parameter.Parameter with the name, type, and value from
- * the variant or NULL when raising a Python exception.
+ * \param[in] pyname name of the parameter
+ * \param[in] variant a variant to create a Parameter from
+ * \param[in] pyparameter_cls the Parameter class
+ * \param[in] pyparameter_type_cls the Parameter.Type class
+ * \return an instance of pyparameter_cls
  */
-static PyObject * _parameter_from_rcl_variant(
-  PyObject * name, rcl_variant_t * variant, PyObject * parameter_cls,
-  PyObject * parameter_type_cls)
+py::object
+_parameter_from_rcl_variant(
+  py::str pyname, rcl_variant_t * variant, py::object pyparameter_cls,
+  py::object pyparameter_type_cls)
 {
-  // Default to NOT_SET and a value of Py_None to suppress warnings.
-  // A Python error will raise if type and value don't agree.
   int type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_NOT_SET;
-  PyObject * value = Py_None;
-  PyObject * member_value;
+  py::object value = py::none();
   if (variant->bool_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL;
-    value = *(variant->bool_value) ? Py_True : Py_False;
-    Py_INCREF(value);
+    value = py::bool_(*(variant->bool_value));
   } else if (variant->integer_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER;
-    value = PyLong_FromLongLong(*(variant->integer_value));
-    if (!value) {
-      return NULL;
-    }
+    value = py::int_(*(variant->integer_value));
   } else if (variant->double_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE;
-    value = PyFloat_FromDouble(*(variant->double_value));
-    if (!value) {
-      return NULL;
-    }
+    value = py::float_(*(variant->double_value));
   } else if (variant->string_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING;
-    value = PyUnicode_FromString(variant->string_value);
-    if (!value) {
-      return NULL;
-    }
+    value = py::str(variant->string_value);
   } else if (variant->byte_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BYTE_ARRAY;
-    value = PyList_New(variant->byte_array_value->size);
-    if (!value) {
-      return NULL;
-    }
-    for (size_t i = 0; i < variant->byte_array_value->size; ++i) {
-      member_value = PyBytes_FromFormat("%u", variant->byte_array_value->values[i]);
-      if (!member_value) {
-        Py_DECREF(value);
-        return NULL;
-      }
-      PyList_SET_ITEM(value, i, member_value);
-    }
+    value = py::bytes(
+      reinterpret_cast<char *>(variant->byte_array_value->values),
+      variant->byte_array_value->size);
   } else if (variant->bool_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL_ARRAY;
-    value = PyList_New(variant->bool_array_value->size);
-    if (!value) {
-      return NULL;
-    }
+    py::list list_value = py::list(variant->bool_array_value->size);
     for (size_t i = 0; i < variant->bool_array_value->size; ++i) {
-      member_value = variant->bool_array_value->values[i] ? Py_True : Py_False;
-      Py_INCREF(member_value);
-      PyList_SET_ITEM(value, i, member_value);
+      list_value[i] = py::bool_(variant->bool_array_value->values[i]);
     }
+    value = list_value;
   } else if (variant->integer_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER_ARRAY;
-    value = PyList_New(variant->integer_array_value->size);
-    if (!value) {
-      return NULL;
-    }
+    py::list list_value = py::list(variant->integer_array_value->size);
     for (size_t i = 0; i < variant->integer_array_value->size; ++i) {
-      member_value = PyLong_FromLongLong(variant->integer_array_value->values[i]);
-      if (!member_value) {
-        Py_DECREF(value);
-        return NULL;
-      }
-      PyList_SET_ITEM(value, i, member_value);
+      list_value[i] = py::int_(variant->integer_array_value->values[i]);
     }
+    value = list_value;
   } else if (variant->double_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE_ARRAY;
-    value = PyList_New(variant->double_array_value->size);
-    if (!value) {
-      return NULL;
-    }
+    py::list list_value = py::list(variant->double_array_value->size);
     for (size_t i = 0; i < variant->double_array_value->size; ++i) {
-      member_value = PyFloat_FromDouble(variant->double_array_value->values[i]);
-      if (!member_value) {
-        Py_DECREF(value);
-        return NULL;
-      }
-      PyList_SET_ITEM(value, i, member_value);
+      list_value[i] = py::float_(variant->double_array_value->values[i]);
     }
+    value = list_value;
   } else if (variant->string_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING_ARRAY;
-    value = PyList_New(variant->string_array_value->size);
-    if (!value) {
-      return NULL;
-    }
+    py::list list_value = py::list(variant->string_array_value->size);
     for (size_t i = 0; i < variant->string_array_value->size; ++i) {
-      member_value = PyUnicode_FromString(variant->string_array_value->data[i]);
-      if (!member_value) {
-        Py_DECREF(value);
-        return NULL;
-      }
-      PyList_SET_ITEM(value, i, member_value);
+      list_value[i] = py::str(variant->string_array_value->data[i]);
     }
-  } else {
-    // INCREF Py_None if no other value was set.
-    Py_INCREF(value);
+    value = list_value;
   }
 
-  PyObject * args = Py_BuildValue("(i)", type_enum_value);
-  if (!args) {
-    Py_DECREF(value);
-    return NULL;
-  }
-  PyObject * type = PyObject_CallObject(parameter_type_cls, args);
-  Py_DECREF(args);
-  args = Py_BuildValue("OOO", name, type, value);
-  Py_DECREF(value);
-  Py_DECREF(type);
-  if (!args) {
-    return NULL;
-  }
-
-  PyObject * param = PyObject_CallObject(parameter_cls, args);
-  Py_DECREF(args);
-  return param;
+  py::object type = pyparameter_type_cls(py::int_(type_enum_value));
+  return pyparameter_cls(pyname, type, value);
 }
 
-/// Populate a Python dict with a dict of node parameters by node name
+/// Populate a dict with parameters by node name
 /**
- * On failure a Python exception is raised and false is returned
- *
- * \param[in] name The name of the parameter
- * \param[in] variant The variant object to create a Parameter from
- * \param[in] parameter_cls The PythonObject for the Parameter class.
- * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
- * \param[out] node_params_dict The PythonObject to populate with node names and parameters.
- *
- * Returns true when parameters are set successfully
- *         false when there was an error during parsing.
+ * \param[in] params the parameters for multiple nodes
+ * \param[in] pyparameter_cls the Parameter class
+ * \param[in] pyparameter_type_cls the Parameter.Type class
+ * \param[out] pynode_params a dictionary to populate with node names and parameters
  */
 void
 _populate_node_parameters_from_rcl_params(
-  const rcl_params_t * params, py::object parameter_cls,
-  py::object parameter_type_cls, py::dict pynode_params)
+  const rcl_params_t * params, py::object pyparameter_cls,
+  py::object pyparameter_type_cls, py::dict pynode_params)
 {
   for (size_t i = 0; i < params->num_nodes; ++i) {
     std::string node_name{params->node_names[i]};
@@ -236,7 +160,7 @@ _populate_node_parameters_from_rcl_params(
     }
     auto pynode_name = py::str(node_name);
 
-    // Get a dictionary for the parameters belonging to this specific node name
+    // make a dictionary for the parameters belonging to this specific node name
     if (!pynode_params.contains(pynode_name)) {
       pynode_params[pynode_name] = py::dict();
     }
@@ -246,32 +170,23 @@ _populate_node_parameters_from_rcl_params(
     for (size_t ii = 0; ii < node_params.num_params; ++ii) {
       auto pyparam_name = py::str(node_params.parameter_names[ii]);
 
-      auto pyparam = py::reinterpret_steal<py::object>(
-        _parameter_from_rcl_variant(
-          pyparam_name.ptr(), &node_params.parameter_values[ii], parameter_cls.ptr(),
-          parameter_type_cls.ptr()));
-      parameter_dict[pyparam_name] = pyparam;
+      parameter_dict[pyparam_name] = _parameter_from_rcl_variant(
+        pyparam_name, &node_params.parameter_values[ii], pyparameter_cls, pyparameter_type_cls);
     }
   }
 }
 
 /// Populate a Python dict with node parameters parsed from CLI arguments
 /**
- * On failure a Python exception is raised and false is returned if:
- *
- * Raises RuntimeError if param_files cannot be extracted from arguments.
- * Raises RuntimeError if yaml files do not parse succesfully.
- *
- * \param[in] args The arguments to parse for parameters
- * \param[in] allocator Allocator to use for allocating and deallocating within the function.
- * \param[in] parameter_cls The PythonObject for the Parameter class.
- * \param[in] parameter_type_cls The PythonObject for the Parameter.Type class.
+ * \param[in] args CLI arguments to parse for parameters
+ * \param[in] pyparameter_cls the Parameter class
+ * \param[in] pyparameter_type_cls the Parameter.Type class
  * \param[out] params_by_node_name A Python dict object to place parsed parameters into.
  */
 void
 _parse_param_overrides(
-  const rcl_arguments_t * args, py::object parameter_cls,
-  py::object parameter_type_cls, py::dict params_by_node_name)
+  const rcl_arguments_t * args, py::object pyparameter_cls,
+  py::object pyparameter_type_cls, py::dict pyparams_by_node_name)
 {
   rcl_params_t * params = nullptr;
   if (RCL_RET_OK != rcl_arguments_get_param_overrides(args, &params)) {
@@ -280,7 +195,7 @@ _parse_param_overrides(
   if (params) {
     RCPPUTILS_SCOPE_EXIT({rcl_yaml_node_struct_fini(params);});
     _populate_node_parameters_from_rcl_params(
-      params, parameter_cls, parameter_type_cls, params_by_node_name);
+      params, pyparameter_cls, pyparameter_type_cls, pyparams_by_node_name);
   }
 }
 
@@ -291,12 +206,12 @@ _parse_param_overrides(
  * Raises ValueError if the argument is not a node handle.
  * Raises RCLError if the parameters file fails to parse
  *
- * \param[in] parameter_cls The rclpy.parameter.Parameter class object.
+ * \param[in] pyparameter_cls The rclpy.parameter.Parameter class object.
  * \param[in] node_capsule Capsule pointing to the node handle
  * \return A dict mapping parameter names to rclpy.parameter.Parameter (may be empty).
  */
 py::dict
-get_node_parameters(py::object parameter_cls, py::capsule pynode)
+get_node_parameters(py::object pyparameter_cls, py::capsule pynode)
 {
   auto node = static_cast<rcl_node_t *>(
     rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
@@ -305,18 +220,18 @@ get_node_parameters(py::object parameter_cls, py::capsule pynode)
   }
 
   py::dict params_by_node_name;
-  py::object parameter_type_cls = parameter_cls.attr("Type");
+  py::object parameter_type_cls = pyparameter_cls.attr("Type");
 
   const rcl_node_options_t * node_options = rcl_node_get_options(node);
 
   if (node_options->use_global_arguments) {
     _parse_param_overrides(
-      &(node->context->global_arguments), parameter_cls,
+      &(node->context->global_arguments), pyparameter_cls,
       parameter_type_cls, params_by_node_name);
   }
 
   _parse_param_overrides(
-    &(node_options->arguments), parameter_cls,
+    &(node_options->arguments), pyparameter_cls,
     parameter_type_cls, params_by_node_name);
 
   const char * node_fqn = rcl_node_get_fully_qualified_name(node);
