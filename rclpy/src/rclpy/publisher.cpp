@@ -132,7 +132,7 @@ publisher_get_logger_name(py::capsule pypublisher)
     throw py::error_already_set();
   }
 
-  const char * node_logger_name = rcl_node_get_logger_name(&pub->node);
+  const char * node_logger_name = rcl_node_get_logger_name(pub->node);
   if (!node_logger_name) {
     throw RCLError("Node logger name not set");
   }

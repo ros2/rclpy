@@ -135,6 +135,36 @@ graph_get_topic_names_and_types(py::capsule pynode, bool no_demangle);
 py::list
 graph_get_service_names_and_types(py::capsule pynode);
 
+/// Return a list of publishers on a given topic.
+/**
+ * The returned publisher information includes node name, node namespace, topic type, gid,
+ * and qos profile
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \param[in] topic_name the topic name to get the publishers for.
+ * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
+ *     otherwise it should be a valid ROS topic name.
+ * \return list of publishers
+ */
+py::list
+graph_get_publishers_info_by_topic(
+  py::capsule pynode, const char * topic_name, bool no_mangle);
+
+/// Return a list of subscriptions on a given topic.
+/**
+ * The returned subscription information includes node name, node namespace, topic type, gid,
+ * and qos profile
+ *
+ * \param[in] pynode Capsule pointing to the node to get the namespace from.
+ * \param[in] topic_name the topic name to get the subscriptions for.
+ * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
+ *     otherwise it should be a valid ROS topic name.
+ * \return list of subscriptions.
+ */
+py::list
+graph_get_subscriptions_info_by_topic(
+  py::capsule pynode, const char * topic_name, bool no_mangle);
+
 }  // namespace rclpy
 
 #endif  // RCLPY__GRAPH_HPP_

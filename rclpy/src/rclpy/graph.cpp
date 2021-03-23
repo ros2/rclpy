@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 
+#include "rclpy_common/common.h"
 #include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
@@ -32,75 +33,6 @@
 
 namespace rclpy
 {
-
-typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
-  const rcl_node_t * node,
-  rcutils_allocator_t * allocator,
-  const char * topic_name,
-  bool no_mangle,
-  rcl_topic_endpoint_info_array_t * info_array);
-
-static PyObject *
-_get_info_by_topic(
-  PyObject * module,
-  PyObject * args,
-  const char * type,
-  rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pynode;
-  const char * topic_name;
-  int no_mangle;
-
-  if (!PyArg_ParseTuple(args, "Osp", &pynode, &topic_name, &no_mangle)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-  rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  rcl_topic_endpoint_info_array_t info_array = rcl_get_zero_initialized_topic_endpoint_info_array();
-  rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
-  rcl_ret_t fini_ret;
-  if (RCL_RET_OK != ret) {
-    if (RCL_RET_BAD_ALLOC == ret) {
-      PyErr_Format(
-        PyExc_MemoryError, "Failed to get information by topic for %s: %s",
-        type, rcl_get_error_string().str);
-    } else if (RCL_RET_UNSUPPORTED == ret) {
-      PyErr_Format(
-        PyExc_NotImplementedError, "Failed to get information by topic for %s: "
-        "function not supported by RMW_IMPLEMENTATION", type);
-    } else {
-      PyErr_Format(
-        module_state->RCLError, "Failed to get information by topic for %s: %s",
-        type, rcl_get_error_string().str);
-    }
-    rcl_reset_error();
-    fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
-    if (fini_ret != RCL_RET_OK) {
-      PyErr_Format(
-        module_state->RCLError, "rcl_topic_endpoint_info_array_fini failed: %s",
-        rcl_get_error_string().str);
-      rcl_reset_error();
-    }
-    return NULL;
-  }
-  PyObject * py_info_array = rclpy_convert_to_py_topic_endpoint_info_list(&info_array);
-  fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
-  if (RCL_RET_OK != fini_ret) {
-    PyErr_Format(module_state->RCLError, "rcl_topic_endpoint_info_array_fini failed.");
-    rcl_reset_error();
-    return NULL;
-  }
-  return py_info_array;
-}
 
 py::list
 graph_get_publisher_names_and_types_by_node(
@@ -318,38 +250,98 @@ graph_get_service_names_and_types(py::capsule pynode)
   return convert_to_py_names_and_types(&service_names_and_types);
 }
 
-/// Return a list of publishers on a given topic.
-/**
- * The returned publisher information includes node name, node namespace, topic type, gid,
- * and qos profile
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from.
- * \param[in] topic_name the topic name to get the publishers for.
- * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
- *     otherwise it should be a valid ROS topic name.
- * \return list of publishers
- */
-static PyObject *
-graph_get_publishers_info_by_topic(PyObject * module, PyObject * args)
+typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
+  const rcl_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * topic_name,
+  bool no_mangle,
+  rcl_topic_endpoint_info_array_t * info_array);
+
+py::list
+_get_info_by_topic(
+  py::capsule pynode,
+  const char * topic_name,
+  bool no_mangle,
+  const char * type,
+  rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
 {
-  return _get_info_by_topic(module, args, "publishers", rcl_get_publishers_info_by_topic);
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcl_topic_endpoint_info_array_t info_array = rcl_get_zero_initialized_topic_endpoint_info_array();
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcl_ret_t fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
+      if (RCL_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "rcl_topic_endpoint_info_array_fini failed: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+
+      fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
+      if (RCL_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "rcl_topic_endpoint_info_array_fini failed: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_UNSUPPORTED == ret) {
+      RCUTILS_SAFE_FWRITE_TO_STDERR(
+        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+        "Failed to get information by topic for ");
+      RCUTILS_SAFE_FWRITE_TO_STDERR(type);
+      RCUTILS_SAFE_FWRITE_TO_STDERR(
+        ": function not supported by RMW_IMPLEMENTATION");
+      RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+      rcl_reset_error();
+    } else {
+      RCUTILS_SAFE_FWRITE_TO_STDERR(
+        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+        "Failed to get information by topic for ");
+      RCUTILS_SAFE_FWRITE_TO_STDERR(type);
+      RCUTILS_SAFE_FWRITE_TO_STDERR(": ");
+      RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+      RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+      rcl_reset_error();
+    }
+  }
+
+  py::list py_info_array = py::reinterpret_steal<py::list>(
+    rclpy_convert_to_py_topic_endpoint_info_list(&info_array));
+
+  return py_info_array;
 }
 
-/// Return a list of subscriptions on a given topic.
-/**
- * The returned subscription information includes node name, node namespace, topic type, gid,
- * and qos profile
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from.
- * \param[in] topic_name the topic name to get the subscriptions for.
- * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
- *     otherwise it should be a valid ROS topic name.
- * \return list of subscriptions.
- */
-static PyObject *
-graph_get_subscriptions_info_by_topic(PyObject * module, PyObject * args)
+py::list
+graph_get_publishers_info_by_topic(
+  py::capsule pynode, const char * topic_name, bool no_mangle)
 {
-  return _get_info_by_topic(module, args, "subscriptions", rcl_get_subscriptions_info_by_topic);
+  return _get_info_by_topic(
+    pynode, topic_name, no_mangle, "publishers",
+    rcl_get_publishers_info_by_topic);
+}
+
+py::list
+graph_get_subscriptions_info_by_topic(
+  py::capsule pynode, const char * topic_name, bool no_mangle)
+{
+  return _get_info_by_topic(
+    pynode, topic_name, no_mangle, "subscriptions",
+    rcl_get_subscriptions_info_by_topic);
 }
 
 }  // namespace rclpy
