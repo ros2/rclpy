@@ -24,6 +24,7 @@
 #include <rcutils/format_string.h>
 
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #include "rclpy_common/handle.h"
@@ -220,70 +221,37 @@ static PyObject * _parameter_from_rcl_variant(
  */
 void
 _populate_node_parameters_from_rcl_params(
-  const rcl_params_t * params, rcl_allocator_t allocator, py::object parameter_cls,
+  const rcl_params_t * params, py::object parameter_cls,
   py::object parameter_type_cls, py::dict pynode_params)
 {
   for (size_t i = 0; i < params->num_nodes; ++i) {
-    PyObject * py_node_name;
-    if (params->node_names[i][0] != '/') {
-      py_node_name = PyUnicode_FromString(
-        rcutils_format_string(allocator, "/%s", params->node_names[i]));
-    } else {
-      py_node_name = PyUnicode_FromString(params->node_names[i]);
+    std::string node_name{params->node_names[i]};
+    if (node_name.empty()) {
+      throw std::runtime_error("expected node name to have at least one character");
     }
-    if (!py_node_name) {
-      throw py::error_already_set();
+
+    // Make sure all node names start with '/'
+    if ('/' != node_name.front()) {
+      node_name.insert(node_name.begin(), '/');
     }
-    PyObject * parameter_dict;
-    if (!PyDict_Contains(pynode_params.ptr(), py_node_name)) {
-      parameter_dict = PyDict_New();
-      if (!parameter_dict) {
-        Py_DECREF(py_node_name);
-        throw py::error_already_set();
-      }
-      if (-1 == PyDict_SetItem(pynode_params.ptr(), py_node_name, parameter_dict)) {
-        Py_DECREF(parameter_dict);
-        Py_DECREF(py_node_name);
-        throw py::error_already_set();
-      }
-    } else {
-      parameter_dict = PyDict_GetItem(pynode_params.ptr(), py_node_name);
-      if (!parameter_dict) {
-        Py_DECREF(py_node_name);
-        throw std::runtime_error("Error reading node_paramters from internal dict");
-      }
-      /* This was a borrowed reference. INCREF'd so we can unconditionally DECREF below. */
-      Py_INCREF(parameter_dict);
+    auto pynode_name = py::str(node_name);
+
+    // Get a dictionary for the parameters belonging to this specific node name
+    if (!pynode_params.contains(pynode_name)) {
+      pynode_params[pynode_name] = py::dict();
     }
+    auto parameter_dict = pynode_params[pynode_name].cast<py::dict>();
+
     rcl_node_params_t node_params = params->params[i];
     for (size_t ii = 0; ii < node_params.num_params; ++ii) {
-      PyObject * py_param_name = PyUnicode_FromString(node_params.parameter_names[ii]);
-      if (!py_param_name) {
-        Py_DECREF(py_node_name);
-        Py_DECREF(parameter_dict);
-        throw py::error_already_set();
-      }
-      PyObject * py_param = _parameter_from_rcl_variant(
-        py_param_name, &node_params.parameter_values[ii], parameter_cls.ptr(),
-        parameter_type_cls.ptr());
-      if (!py_param) {
-        Py_DECREF(py_node_name);
-        Py_DECREF(parameter_dict);
-        Py_DECREF(py_param_name);
-        throw py::error_already_set();
-      }
-      if (-1 == PyDict_SetItem(parameter_dict, py_param_name, py_param)) {
-        Py_DECREF(py_node_name);
-        Py_DECREF(py_param_name);
-        Py_DECREF(parameter_dict);
-        Py_DECREF(py_param);
-        throw py::error_already_set();
-      }
-      Py_DECREF(py_param_name);
-      Py_DECREF(py_param);
+      auto pyparam_name = py::str(node_params.parameter_names[ii]);
+
+      auto pyparam = py::reinterpret_steal<py::object>(
+        _parameter_from_rcl_variant(
+          pyparam_name.ptr(), &node_params.parameter_values[ii], parameter_cls.ptr(),
+          parameter_type_cls.ptr()));
+      parameter_dict[pyparam_name] = pyparam;
     }
-    Py_DECREF(py_node_name);
-    Py_DECREF(parameter_dict);
   }
 }
 
@@ -302,7 +270,7 @@ _populate_node_parameters_from_rcl_params(
  */
 void
 _parse_param_overrides(
-  const rcl_arguments_t * args, rcl_allocator_t allocator, py::object parameter_cls,
+  const rcl_arguments_t * args, py::object parameter_cls,
   py::object parameter_type_cls, py::dict params_by_node_name)
 {
   rcl_params_t * params = nullptr;
@@ -312,7 +280,7 @@ _parse_param_overrides(
   if (params) {
     RCPPUTILS_SCOPE_EXIT({rcl_yaml_node_struct_fini(params);});
     _populate_node_parameters_from_rcl_params(
-      params, allocator, parameter_cls, parameter_type_cls, params_by_node_name);
+      params, parameter_cls, parameter_type_cls, params_by_node_name);
   }
 }
 
@@ -340,16 +308,15 @@ get_node_parameters(py::object parameter_cls, py::capsule pynode)
   py::object parameter_type_cls = parameter_cls.attr("Type");
 
   const rcl_node_options_t * node_options = rcl_node_get_options(node);
-  const rcl_allocator_t allocator = node_options->allocator;
 
   if (node_options->use_global_arguments) {
     _parse_param_overrides(
-      &(node->context->global_arguments), allocator, parameter_cls,
+      &(node->context->global_arguments), parameter_cls,
       parameter_type_cls, params_by_node_name);
   }
 
   _parse_param_overrides(
-    &(node_options->arguments), allocator, parameter_cls,
+    &(node_options->arguments), parameter_cls,
     parameter_type_cls, params_by_node_name);
 
   const char * node_fqn = rcl_node_get_fully_qualified_name(node);
