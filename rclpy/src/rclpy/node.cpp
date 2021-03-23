@@ -126,23 +126,8 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
     throw RCLError("Failed to get node names");
   }
 
-  py::list pynode_names_and_namespaces(node_names.size);
-
   RCPPUTILS_SCOPE_EXIT(
     {
-      for (size_t idx = 0; idx < node_names.size; ++idx) {
-        if (get_enclaves) {
-          pynode_names_and_namespaces[idx] = py::make_tuple(
-            py::str(node_names.data[idx]),
-            py::str(node_namespaces.data[idx]),
-            py::str(enclaves.data[idx]));
-        } else {
-          pynode_names_and_namespaces[idx] = py::make_tuple(
-            py::str(node_names.data[idx]),
-            py::str(node_namespaces.data[idx]));
-        }
-      }
-
       rcutils_ret_t fini_ret = rcutils_string_array_fini(&node_names);
       if (RCUTILS_RET_OK != fini_ret) {
         RCUTILS_SAFE_FWRITE_TO_STDERR(
@@ -171,6 +156,20 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
         rcl_reset_error();
       }
     });
+
+  py::list pynode_names_and_namespaces(node_names.size);
+  for (size_t idx = 0; idx < node_names.size; ++idx) {
+    if (get_enclaves) {
+      pynode_names_and_namespaces[idx] = py::make_tuple(
+        py::str(node_names.data[idx]),
+        py::str(node_namespaces.data[idx]),
+        py::str(enclaves.data[idx]));
+    } else {
+      pynode_names_and_namespaces[idx] = py::make_tuple(
+        py::str(node_names.data[idx]),
+        py::str(node_namespaces.data[idx]));
+    }
+  }
 
   return pynode_names_and_namespaces;
 }
