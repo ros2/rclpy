@@ -43,30 +43,29 @@ get_node_name(py::capsule pynode);
 const char *
 get_node_namespace(py::capsule pynode);
 
-/// Count publishers for a topic.
+/// Returns the count of all the publishers known for that topic in the entire ROS graph.
 /*
  * Raises ValueError if pynode is not a node capsule
- * Raises RCLError if rcl_count_publishers doesn't work
+ * Raises RCLError if an error occurs in rcl
  *
- * \param[in] pynode Capsule pointing to the node to get number of subscribers
- * for a topic
+ * \param[in] pynode pynode Capsule pointing to a node
  * \param[in] topic_name Name of the topic to count the number of publishers
- * \return count of publishers
+ * \return the count of all the publishers known for that topic in the entire ROS graph.
  */
-unsigned int
+size_t
 get_count_publishers(py::capsule pynode, const char * topic_name);
 
-/// Count subscribers for a topic.
+/// Returns the count of all the subscribers known for that topic in the entire ROS graph
 /*
- * Raises ValueError if pynode is not a node capsule
- * Raises RCLError if rcl_count_subscribers doesn't work
  *
- * \param[in] pynode Capsule pointing to the node to get number of subscribers
- * for a topic
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if an error occurs in rcl
+ *
+ * \param[in] pynode pynode Capsule pointing to a node
  * \param[in] topic_name Name of the topic to count the number of subscribers
- * \return count of subscribers
+ * \return the count of all the subscribers known for that topic in the entire ROS graph
  */
-unsigned int
+size_t
 get_count_subscribers(py::capsule pynode, const char * topic_name);
 
 }  // namespace rclpy

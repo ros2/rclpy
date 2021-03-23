@@ -64,7 +64,7 @@ get_node_namespace(py::capsule pynode)
   return node_namespace;
 }
 
-unsigned int
+size_t
 get_count_publishers(py::capsule pynode, const char * topic_name)
 {
   auto node = static_cast<rcl_node_t *>(
@@ -75,16 +75,14 @@ get_count_publishers(py::capsule pynode, const char * topic_name)
 
   size_t count = 0;
   rcl_ret_t ret = rcl_count_publishers(node, topic_name, &count);
-  if (ret != RCL_RET_OK) {
-    throw RCLError(
-            std::string("Error in rcl_count_publishers: ") +
-            rcl_get_error_string().str);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_count_publishers");
   }
 
   return count;
 }
 
-unsigned int
+size_t
 get_count_subscribers(py::capsule pynode, const char * topic_name)
 {
   auto node = static_cast<rcl_node_t *>(
@@ -95,10 +93,8 @@ get_count_subscribers(py::capsule pynode, const char * topic_name)
 
   size_t count = 0;
   rcl_ret_t ret = rcl_count_subscribers(node, topic_name, &count);
-  if (ret != RCL_RET_OK) {
-    throw RCLError(
-            std::string("Error in rcl_count_subscribers: ") +
-            rcl_get_error_string().str);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_count_subscribers");
   }
 
   return count;
