@@ -17,6 +17,7 @@
 
 #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
+#include <rcl/graph.h>
 
 #include <string>
 
@@ -62,4 +63,43 @@ get_node_namespace(py::capsule pynode)
 
   return node_namespace;
 }
+
+unsigned int
+get_count_publishers(py::capsule pynode, const char * topic_name)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  size_t count = 0;
+  rcl_ret_t ret = rcl_count_publishers(node, topic_name, &count);
+  if (ret != RCL_RET_OK) {
+    throw RCLError(std::string("Error in rcl_count_publishers: ") +
+      rcl_get_error_string().str);
+  }
+
+  return count;
+}
+
+unsigned int
+get_count_subscribers(py::capsule pynode, const char * topic_name)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  size_t count = 0;
+  rcl_ret_t ret = rcl_count_subscribers(node, topic_name, &count);
+  if (ret != RCL_RET_OK) {
+    throw RCLError(std::string("Error in rcl_count_subscribers: ") +
+      rcl_get_error_string().str);
+  }
+
+  return count;
+}
+
 }  // namespace rclpy

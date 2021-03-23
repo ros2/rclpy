@@ -323,6 +323,14 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Get the namespace of a node.");
 
   m.def(
+    "rclpy_count_publishers", &rclpy::get_count_publishers,
+    "Count publishers for a topic.");
+
+  m.def(
+    "rclpy_count_subscribers", &rclpy::get_count_subscribers,
+    "Count subscribers for a topic.");
+
+  m.def(
     "rclpy_create_event", &rclpy::create_event,
     "Create an event for QoS event handling.");
   m.def(

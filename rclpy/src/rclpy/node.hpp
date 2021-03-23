@@ -42,6 +42,33 @@ get_node_name(py::capsule pynode);
  */
 const char *
 get_node_namespace(py::capsule pynode);
+
+/// Count publishers for a topic.
+/*
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if rcl_count_publishers doesn't work
+ *
+ * \param[in] pynode Capsule pointing to the node to get number of subscribers
+ * for a topic
+ * \param[in] topic_name Name of the topic to count the number of publishers
+ * \return count of publishers
+ */
+unsigned int
+get_count_publishers(py::capsule pynode, const char * topic_name);
+
+/// Count subscribers for a topic.
+/*
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if rcl_count_subscribers doesn't work
+ *
+ * \param[in] pynode Capsule pointing to the node to get number of subscribers
+ * for a topic
+ * \param[in] topic_name Name of the topic to count the number of subscribers
+ * \return count of subscribers
+ */
+unsigned int
+get_count_subscribers(py::capsule pynode, const char * topic_name);
+
 }  // namespace rclpy
 
 #endif  // RCLPY__NODE_HPP_

@@ -674,67 +674,6 @@ rclpy_get_publisher_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(node_logger_name);
 }
 
-typedef rcl_ret_t (* count_func)(const rcl_node_t * node, const char * topic_name, size_t * count);
-
-static PyObject *
-_count_subscribers_publishers(
-  PyObject * module, PyObject * args, const char * type, count_func count_function)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pynode;
-  const char * topic_name;
-
-  if (!PyArg_ParseTuple(args, "Os", &pynode, &topic_name)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-
-  size_t count = 0;
-  rcl_ret_t ret = count_function(node, topic_name, &count);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to count %s: %s", type, rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  return PyLong_FromSize_t(count);
-}
-
-/// Count publishers for a topic.
-/**
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from
- * \param[in] topic_name string fully qualified topic name
- * \return count of publishers
- */
-static PyObject *
-rclpy_count_publishers(PyObject * module, PyObject * args)
-{
-  return _count_subscribers_publishers(module, args, "publishers", rcl_count_publishers);
-}
-
-/// Count subscribers for a topic.
-/**
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from
- * \param[in] topic_name string fully qualified topic name
- * \return count of subscribers
- */
-static PyObject *
-rclpy_count_subscribers(PyObject * module, PyObject * args)
-{
-  return _count_subscribers_publishers(module, args, "subscribers", rcl_count_subscribers);
-}
-
 typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
   const rcl_node_t * node,
   rcutils_allocator_t * allocator,
@@ -1674,14 +1613,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_publisher_logger_name", rclpy_get_publisher_logger_name, METH_VARARGS,
     "Get the logger name associated with the node of a publisher."
-  },
-  {
-    "rclpy_count_publishers", rclpy_count_publishers, METH_VARARGS,
-    "Count publishers for a topic."
-  },
-  {
-    "rclpy_count_subscribers", rclpy_count_subscribers, METH_VARARGS,
-    "Count subscribers for a topic."
   },
   {
     "rclpy_get_publishers_info_by_topic", rclpy_get_publishers_info_by_topic, METH_VARARGS,
