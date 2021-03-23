@@ -645,35 +645,6 @@ rclpy_get_node_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
   return PyUnicode_FromString(node_logger_name);
 }
 
-/// Get the name of the logger associated with the node of the publisher.
-/**
- * Raises ValueError if pypublisher is not a publisher capsule
- *
- * \param[in] pypublisher Capsule pointing to the publisher to get the logger name of
- * \return logger_name, or
- * \return None on failure
- */
-static PyObject *
-rclpy_get_publisher_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
-{
-  PyObject * pypublisher;
-  if (!PyArg_ParseTuple(args, "O", &pypublisher)) {
-    return NULL;
-  }
-
-  rclpy_publisher_t * pub = rclpy_handle_get_pointer_from_capsule(pypublisher, "rclpy_publisher_t");
-  if (NULL == pub) {
-    return NULL;
-  }
-
-  const char * node_logger_name = rcl_node_get_logger_name(pub->node);
-  if (NULL == node_logger_name) {
-    Py_RETURN_NONE;
-  }
-
-  return PyUnicode_FromString(node_logger_name);
-}
-
 typedef rcl_ret_t (* count_func)(const rcl_node_t * node, const char * topic_name, size_t * count);
 
 static PyObject *
@@ -1567,10 +1538,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_node_logger_name", rclpy_get_node_logger_name, METH_VARARGS,
     "Get the logger name associated with a node."
-  },
-  {
-    "rclpy_get_publisher_logger_name", rclpy_get_publisher_logger_name, METH_VARARGS,
-    "Get the logger name associated with the node of a publisher."
   },
   {
     "rclpy_count_publishers", rclpy_count_publishers, METH_VARARGS,
