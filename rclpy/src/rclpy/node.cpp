@@ -167,11 +167,11 @@ _populate_node_parameters_from_rcl_params(
     py::dict parameter_dict = pynode_params[pynode_name];
 
     rcl_node_params_t node_params = params->params[i];
-    for (size_t ii = 0; ii < node_params.num_params; ++ii) {
-      auto pyparam_name = py::str(node_params.parameter_names[ii]);
+    for (size_t j = 0; j < node_params.num_params; ++j) {
+      auto pyparam_name = py::str(node_params.parameter_names[j]);
 
       parameter_dict[pyparam_name] = _parameter_from_rcl_variant(
-        pyparam_name, &node_params.parameter_values[ii], pyparameter_cls, pyparameter_type_cls);
+        pyparam_name, &node_params.parameter_values[j], pyparameter_cls, pyparameter_type_cls);
     }
   }
 }
