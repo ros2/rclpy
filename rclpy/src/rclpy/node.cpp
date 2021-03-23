@@ -190,7 +190,7 @@ _parse_param_overrides(
 {
   rcl_params_t * params = nullptr;
   if (RCL_RET_OK != rcl_arguments_get_param_overrides(args, &params)) {
-    throw RCLError("failed to get parameter overrrides");
+    throw RCLError("failed to get parameter overrides");
   }
   if (params) {
     RCPPUTILS_SCOPE_EXIT({rcl_yaml_node_struct_fini(params);});
