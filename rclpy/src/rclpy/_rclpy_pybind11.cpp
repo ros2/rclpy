@@ -296,6 +296,14 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     &rclpy::graph_get_subscriber_names_and_types_by_node,
     "Get topic names and types for which a remote node has subscribers.");
   m.def(
+    "rclpy_get_publishers_info_by_topic",
+    &rclpy::graph_get_publishers_info_by_topic,
+    "Get publishers info for a topic.");
+  m.def(
+    "rclpy_get_subscriptions_info_by_topic",
+    &rclpy::graph_get_subscriptions_info_by_topic,
+    "Get subscriptions info for a topic.");
+  m.def(
     "rclpy_get_service_names_and_types",
     &rclpy::graph_get_service_names_and_types,
     "Get all service names and types in the ROS graph.");
