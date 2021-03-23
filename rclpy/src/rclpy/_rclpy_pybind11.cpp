@@ -126,7 +126,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_create_publisher", &rclpy::publisher_create,
     "Create a Publisher");
   m.def(
-    "rclpy_get_publisher_logger_name", rclpy::publisher_get_logger_name,
+    "rclpy_get_publisher_logger_name", &rclpy::publisher_get_logger_name,
     "Get the logger name associated with the node of a publisher.");
   m.def(
     "rclpy_publisher_get_subscription_count", &rclpy::publisher_get_subscription_count,

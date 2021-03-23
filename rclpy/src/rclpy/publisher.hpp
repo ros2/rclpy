@@ -44,6 +44,17 @@ publisher_create(
   py::capsule pynode, py::object pymsg_type, std::string topic,
   py::capsule pyqos_profile);
 
+/// Get the name of the logger associated with the node of the publisher.
+/**
+ * Raises ValueError if pypublisher is not a publisher capsule
+ * Raises RCLError if logger name not set
+ *
+ * \param[in] pypublisher Capsule pointing to the publisher to get the logger name of
+ * \return logger_name
+ */
+const char *
+publisher_get_logger_name(py::capsule pypublisher);
+
 /// Count subscribers from a publisher.
 /**
  * Raise ValueError if capsule is not a publisher

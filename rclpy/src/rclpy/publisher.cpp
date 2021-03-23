@@ -123,33 +123,21 @@ publisher_create(
   return pypub;
 }
 
-/// Get the name of the logger associated with the node of the publisher.
-/**
- * Raises ValueError if pypublisher is not a publisher capsule
- *
- * \param[in] pypublisher Capsule pointing to the publisher to get the logger name of
- * \return logger_name, or
- * \return None on failure
- */
-static PyObject *
-rclpy_get_publisher_logger_name(PyObject * Py_UNUSED(self), PyObject * args)
+const char *
+publisher_get_logger_name(py::capsule pypublisher)
 {
-  PyObject * pypublisher;
-  if (!PyArg_ParseTuple(args, "O", &pypublisher)) {
-    return NULL;
+  auto pub = static_cast<rclpy_publisher_t *>(
+    rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
+  if (!pub) {
+    throw py::error_already_set();
   }
 
-  rclpy_publisher_t * pub = rclpy_handle_get_pointer_from_capsule(pypublisher, "rclpy_publisher_t");
-  if (NULL == pub) {
-    return NULL;
+  const char * node_logger_name = rcl_node_get_logger_name(&pub->node);
+  if (!node_logger_name) {
+    throw RCLError("Node logger name not set");
   }
 
-  const char * node_logger_name = rcl_node_get_logger_name(pub->node);
-  if (NULL == node_logger_name) {
-    Py_RETURN_NONE;
-  }
-
-  return PyUnicode_FromString(node_logger_name);
+  return node_logger_name;
 }
 
 size_t
