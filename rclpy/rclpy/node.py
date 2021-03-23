@@ -520,6 +520,39 @@ class Node:
         """Return True if parameter is declared; False otherwise."""
         return name in self._parameters
 
+    def get_parameter_types(self, names: List[str]) -> List[Parameter.Type]:
+        """
+        Get a list of parameter types.
+
+        :param names: Fully-qualified names of the parameters to get, including their namespaces.
+        :return: The values for the given parameter types.
+            A default Parameter.Type.NOT_SET will be returned for undeclared parameters
+            if undeclared parameters are allowed.
+        :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
+            and at least one parameter hadn't been declared beforehand.
+        """
+        if not all(isinstance(name, str) for name in names):
+            raise TypeError('All names must be instances of type str')
+        return [self.get_parameter_type(name) for name in names]
+
+    def get_parameter_type(self, name: str) -> Parameter.Type:
+        """
+        Get a parameter type by name.
+
+        :param name: Fully-qualified name of the parameter, including its namespace.
+        :return: The type for the given parameter name.
+            A default Parameter.Type.NOT_SET will be returned for an undeclared parameter
+            if undeclared parameters are allowed.
+        :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
+            and the parameter hadn't been declared beforehand.
+        """
+        if self.has_parameter(name):
+            return self._parameters[name].type_.value
+        elif self._allow_undeclared_parameters:
+            return Parameter.Type.NOT_SET
+        else:
+            raise ParameterNotDeclaredException(name)
+
     def get_parameters(self, names: List[str]) -> List[Parameter]:
         """
         Get a list of parameters.
