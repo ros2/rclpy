@@ -164,7 +164,7 @@ _populate_node_parameters_from_rcl_params(
     if (!pynode_params.contains(pynode_name)) {
       pynode_params[pynode_name] = py::dict();
     }
-    auto parameter_dict = pynode_params[pynode_name].cast<py::dict>();
+    py::dict parameter_dict = pynode_params[pynode_name];
 
     rcl_node_params_t node_params = params->params[i];
     for (size_t ii = 0; ii < node_params.num_params; ++ii) {
