@@ -514,6 +514,7 @@ create_node(
   }
 
   if (RCL_RET_BAD_ALLOC == ret) {
+    rcl_reset_error();
     throw std::bad_alloc();
   }
   if (RCL_RET_NODE_INVALID_NAME == ret) {
