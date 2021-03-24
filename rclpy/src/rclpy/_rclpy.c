@@ -616,67 +616,6 @@ rclpy_create_node(PyObject * self, PyObject * args)
   return rclpy_detail_execute_with_logging_mutex(rclpy_create_node_impl, self, args);
 }
 
-typedef rcl_ret_t (* count_func)(const rcl_node_t * node, const char * topic_name, size_t * count);
-
-static PyObject *
-_count_subscribers_publishers(
-  PyObject * module, PyObject * args, const char * type, count_func count_function)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pynode;
-  const char * topic_name;
-
-  if (!PyArg_ParseTuple(args, "Os", &pynode, &topic_name)) {
-    return NULL;
-  }
-
-  rcl_node_t * node = rclpy_handle_get_pointer_from_capsule(pynode, "rcl_node_t");
-  if (!node) {
-    return NULL;
-  }
-
-  size_t count = 0;
-  rcl_ret_t ret = count_function(node, topic_name, &count);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      module_state->RCLError, "Failed to count %s: %s", type, rcl_get_error_string().str);
-    rcl_reset_error();
-    return NULL;
-  }
-
-  return PyLong_FromSize_t(count);
-}
-
-/// Count publishers for a topic.
-/**
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from
- * \param[in] topic_name string fully qualified topic name
- * \return count of publishers
- */
-static PyObject *
-rclpy_count_publishers(PyObject * module, PyObject * args)
-{
-  return _count_subscribers_publishers(module, args, "publishers", rcl_count_publishers);
-}
-
-/// Count subscribers for a topic.
-/**
- *
- * \param[in] pynode Capsule pointing to the node to get the namespace from
- * \param[in] topic_name string fully qualified topic name
- * \return count of subscribers
- */
-static PyObject *
-rclpy_count_subscribers(PyObject * module, PyObject * args)
-{
-  return _count_subscribers_publishers(module, args, "subscribers", rcl_count_subscribers);
-}
-
 /// Return the identifier of the current rmw_implementation
 /**
  * \return string containing the identifier of the current rmw_implementation
@@ -919,14 +858,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_create_node", rclpy_create_node, METH_VARARGS,
     "Create a Node."
-  },
-  {
-    "rclpy_count_publishers", rclpy_count_publishers, METH_VARARGS,
-    "Count publishers for a topic."
-  },
-  {
-    "rclpy_count_subscribers", rclpy_count_subscribers, METH_VARARGS,
-    "Count subscribers for a topic."
   },
 
   {

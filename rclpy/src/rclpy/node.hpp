@@ -65,6 +65,31 @@ get_node_name(py::capsule pynode);
 const char *
 get_node_namespace(py::capsule pynode);
 
+/// Returns the count of all the publishers known for that topic in the entire ROS graph.
+/*
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if an error occurs in rcl
+ *
+ * \param[in] pynode pynode Capsule pointing to a node
+ * \param[in] topic_name Name of the topic to count the number of publishers
+ * \return the count of all the publishers known for that topic in the entire ROS graph.
+ */
+size_t
+get_count_publishers(py::capsule pynode, const char * topic_name);
+
+/// Returns the count of all the subscribers known for that topic in the entire ROS graph
+/*
+ *
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if an error occurs in rcl
+ *
+ * \param[in] pynode pynode Capsule pointing to a node
+ * \param[in] topic_name Name of the topic to count the number of subscribers
+ * \return the count of all the subscribers known for that topic in the entire ROS graph
+ */
+size_t
+get_count_subscribers(py::capsule pynode, const char * topic_name);
+
 /// Get the list of nodes discovered by the provided node
 /**
  * Raises ValueError if pynode is not a node capsule

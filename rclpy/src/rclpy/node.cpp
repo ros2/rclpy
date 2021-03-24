@@ -105,6 +105,42 @@ get_node_namespace(py::capsule pynode)
   return node_namespace;
 }
 
+size_t
+get_count_publishers(py::capsule pynode, const char * topic_name)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  size_t count = 0;
+  rcl_ret_t ret = rcl_count_publishers(node, topic_name, &count);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_count_publishers");
+  }
+
+  return count;
+}
+
+size_t
+get_count_subscribers(py::capsule pynode, const char * topic_name)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  size_t count = 0;
+  rcl_ret_t ret = rcl_count_subscribers(node, topic_name, &count);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_count_subscribers");
+  }
+
+  return count;
+}
+
 py::list
 get_node_names_impl(py::capsule pynode, bool get_enclaves)
 {
