@@ -26,12 +26,6 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-enum class QoSCompatibility
-{
-  OK = RMW_QOS_COMPATIBILITY_OK,
-  WARNING = RMW_QOS_COMPATIBILITY_WARNING,
-  ERROR = RMW_QOS_COMPATIBILITY_ERROR,
-};
 
 /// Result type for checking QoS compatibility
 /**
@@ -40,7 +34,7 @@ enum class QoSCompatibility
 struct QoSCheckCompatibleResult
 {
   /// Compatibility result.
-  QoSCompatibility compatibility;
+  rmw_qos_compatibility_type_t compatibility;
 
   /// Reason for a (possible) incompatibility.
   /**

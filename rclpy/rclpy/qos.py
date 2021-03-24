@@ -473,13 +473,21 @@ class QoSPresetProfiles(Enum):
         return cls[name.upper()].value
 
 
-class QoSCompatibility(IntEnum):
-    OK = 0
-    WARNING = 1
-    ERROR = 2
+QoSCompatibility = _rclpy.QoSCompatibility
 
 
 def qos_check_compatible(publisher_qos: QoSProfile, subscription_qos: QoSProfile):
+    """
+    Check if two QoS profiles are compatible.
+
+    Two QoS profiles are compatible if a publisher and subscription
+    using the QoS policies can communicate with each other.
+
+    If any policies have value "system default" or "unknown" then it is possible that
+    compatibility cannot be determined.
+    In this case, the value QoSCompatility.WARNING is set as part of
+    the returned structure.
+    """
     result = _rclpy.rclpy_qos_check_compatible(
         publisher_qos.get_c_qos_profile(),
         subscription_qos.get_c_qos_profile()

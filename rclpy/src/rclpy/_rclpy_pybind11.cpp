@@ -75,6 +75,24 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("RCL_PUBLISHER_LIVELINESS_LOST", RCL_PUBLISHER_LIVELINESS_LOST)
   .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS);
 
+  py::enum_<rmw_qos_compatibility_type_t>(m, "QoSCompatibility")
+  .value("OK", RMW_QOS_COMPATIBILITY_OK)
+  .value("WARNING", RMW_QOS_COMPATIBILITY_WARNING)
+  .value("ERROR", RMW_QOS_COMPATIBILITY_ERROR);
+
+  py::class_<rclpy::QoSCheckCompatibleResult>(
+    m, "QoSCheckCompatibleResult",
+    "Result type for checking QoS compatibility with result")
+  .def(py::init<>())
+  .def_property_readonly(
+    "compatibility", [](const rclpy::QoSCheckCompatibleResult & result) {
+      return static_cast<int>(result.compatibility);
+    })
+  .def_property_readonly(
+    "reason", [](const rclpy::QoSCheckCompatibleResult & result) {
+      return result.reason;
+    });
+
   py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
   py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
   auto rclerror = py::register_exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);
@@ -85,22 +103,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
-
-  py::class_<rclpy::QoSCheckCompatibleResult>(m, "QoSCheckCompatibleResult")
-  .def(py::init<>())
-  .def_property_readonly(
-    "compatibility", [](const rclpy::QoSCheckCompatibleResult & result) {
-      return static_cast<int>(result.compatibility);
-    })
-  .def_property_readonly(
-    "reason", [](const rclpy::QoSCheckCompatibleResult & result) {
-      return result.reason;
-    })
-  .def(
-    "__repr__", [](const rclpy::QoSCheckCompatibleResult & result) {
-      (void) result;
-      return "Result type for checking QoS compatibility with result";
-    });
 
   m.def(
     "rclpy_init", &rclpy::init,

@@ -47,40 +47,23 @@ qos_check_compatible(
   }
   auto subscription_qos_profile_ = static_cast<rmw_qos_profile_t *>(subscription_qos_profile);
 
-  rmw_qos_compatibility_type_t compatible;
+  QoSCheckCompatibleResult result;
   const size_t reason_size = 2048u;
   char reason_c_str[reason_size] = "";
   rmw_ret_t ret = rmw_qos_profile_check_compatible(
     *publisher_qos_profile_,
     *subscription_qos_profile_,
-    &compatible,
+    &result.compatibility,
     reason_c_str,
     reason_size);
 
   if (RMW_RET_OK != ret) {
     auto error_str = rmw_get_error_string().str;
     rmw_reset_error();
-    throw RCLError(error_str);
+    throw RMWError(error_str);
   }
 
-  QoSCheckCompatibleResult result;
   result.reason = std::string(reason_c_str);
-
-  switch (compatible) {
-    case RMW_QOS_COMPATIBILITY_OK:
-      result.compatibility = QoSCompatibility::OK;
-      break;
-    case RMW_QOS_COMPATIBILITY_WARNING:
-      result.compatibility = QoSCompatibility::WARNING;
-      break;
-    case RMW_QOS_COMPATIBILITY_ERROR:
-      result.compatibility = QoSCompatibility::ERROR;
-      break;
-    default:
-      auto error_str = "Unexpected compatibility value returned by rmw '" +
-        std::to_string(compatible) + "'";
-      throw RCLError(error_str);
-  }
   return result;
 }
 

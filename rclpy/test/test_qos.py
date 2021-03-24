@@ -131,22 +131,29 @@ class TestQosProfile(unittest.TestCase):
 class TestCheckQosCompatibility(unittest.TestCase):
 
     def test_compatible(self):
-        qos = QoSProfile(
-            depth=1,
-            durability=QoSDurabilityPolicy.VOLATILE,
-            lifespan=Duration(seconds=1),
-            deadline=Duration(seconds=1),
-            liveliness=QoSLivelinessPolicy.AUTOMATIC,
-            liveliness_lease_duration=Duration(seconds=1),
-        )
-        compatibility, reason = qos_check_compatible(
-            qos, qos
-        )
+        for durability in [QoSDurabilityPolicy.VOLATILE, QoSReliabilityPolicy.RELIABLE]:
+            qos = QoSProfile(
+                depth=1,
+                durability=durability,
+                lifespan=Duration(seconds=1),
+                deadline=Duration(seconds=1),
+                liveliness=QoSLivelinessPolicy.AUTOMATIC,
+                liveliness_lease_duration=Duration(seconds=1),
+            )
+            compatibility, reason = qos_check_compatible(
+                qos, qos
+            )
 
-        assert compatibility == QoSCompatibility.OK
-        assert reason == ''
+            assert compatibility == QoSCompatibility.OK
+            assert reason == ''
 
     def test_incompatible(self):
+        """
+        This test is assuming a DDS implementation.
+
+        It's possible that a "best effort" publisher and "reliable"
+        subscription is a valid match in a non-DDS implementation.
+        """
         pub_qos = QoSProfile(
             depth=1,
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
@@ -164,6 +171,12 @@ class TestCheckQosCompatibility(unittest.TestCase):
         assert reason != ''
 
     def test_warn_of_possible_incompatibility(self):
+        """
+        This test is assuming a DDS implementation.
+
+        It's possible that a "best effort" publisher and "reliable"
+        subscription is a valid match in a non-DDS implementation.
+        """
         pub_qos = QoSPresetProfiles.SYSTEM_DEFAULT.value
         sub_qos = QoSProfile(
             depth=1,
