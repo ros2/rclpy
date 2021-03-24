@@ -28,7 +28,7 @@
 
 #include "rclpy_common/exceptions.hpp"
 
-#include "time_point.hpp"
+#include "clock.hpp"
 
 using pybind11::literals::operator""_a;
 
@@ -85,7 +85,7 @@ create_clock(rcl_clock_type_t clock_type)
   return pyclock;
 }
 
-py::capsule
+rcl_time_point_t
 clock_get_now(py::capsule pyclock)
 {
   auto clock = static_cast<rcl_clock_t *>(
@@ -94,13 +94,14 @@ clock_get_now(py::capsule pyclock)
     throw py::error_already_set();
   }
 
-  int64_t nanoseconds;
-  rcl_ret_t ret = rcl_clock_get_now(clock, &nanoseconds);
+  rcl_time_point_t time_point;
+  time_point.clock_type = clock->type;
+  rcl_ret_t ret = rcl_clock_get_now(clock, &time_point.nanoseconds);
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to get current clock value");
   }
 
-  return create_time_point(nanoseconds, clock->type);
+  return time_point;
 }
 
 bool
@@ -146,7 +147,7 @@ clock_set_ros_time_override_is_enabled(py::capsule pyclock, bool enabled)
 }
 
 void
-clock_set_ros_time_override(py::capsule pyclock, py::capsule pytime_point)
+clock_set_ros_time_override(py::capsule pyclock, rcl_time_point_t time_point)
 {
   auto clock = static_cast<rcl_clock_t *>(
     rclpy_handle_get_pointer_from_capsule(pyclock.ptr(), "rcl_clock_t"));
@@ -154,9 +155,7 @@ clock_set_ros_time_override(py::capsule pyclock, py::capsule pytime_point)
     throw py::error_already_set();
   }
 
-  int64_t nanoseconds = time_point_get_nanoseconds(pytime_point);
-
-  rcl_ret_t ret = rcl_set_ros_time_override(clock, nanoseconds);
+  rcl_ret_t ret = rcl_set_ros_time_override(clock, time_point.nanoseconds);
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to set ROS time override");
   }
