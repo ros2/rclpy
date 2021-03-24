@@ -830,6 +830,9 @@ class Node:
 
         Calling this function will add a callback in self._parameter_callbacks list.
 
+        It is considered bad practice to reject changes for "unknown" parameters as this prevents
+        other parts of the node (that may be aware of these parameters) from handling them.
+
         :param callback: The function that is called whenever parameters are set for the node.
         """
         self._parameters_callbacks.insert(0, callback)
