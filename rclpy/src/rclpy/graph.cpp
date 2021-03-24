@@ -265,6 +265,8 @@ _get_info_by_topic(
   const char * type,
   rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
 {
+  (void) type;
+
   auto node = static_cast<rcl_node_t *>(
     rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
   if (!node) {
@@ -285,45 +287,20 @@ _get_info_by_topic(
         RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
         rcl_reset_error();
       }
-
-      fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
-      if (RCL_RET_OK != fini_ret) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR(
-          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-          "rcl_topic_endpoint_info_array_fini failed: ");
-        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
-        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
-        rcl_reset_error();
-      }
     });
 
   rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_UNSUPPORTED == ret) {
-      RCUTILS_SAFE_FWRITE_TO_STDERR(
-        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "Failed to get information by topic for ");
-      RCUTILS_SAFE_FWRITE_TO_STDERR(type);
-      RCUTILS_SAFE_FWRITE_TO_STDERR(
-        ": function not supported by RMW_IMPLEMENTATION");
-      RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
-      rcl_reset_error();
-    } else {
-      RCUTILS_SAFE_FWRITE_TO_STDERR(
-        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "Failed to get information by topic for ");
-      RCUTILS_SAFE_FWRITE_TO_STDERR(type);
-      RCUTILS_SAFE_FWRITE_TO_STDERR(": ");
-      RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
-      RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
-      rcl_reset_error();
+      throw RCLError(
+              "Failed to get information by topic. "
+              "Function not supported by RMW_IMPLEMENTATION");
     }
+    throw RCLError("Failed to get information by topic.");
   }
 
-  py::list py_info_array = py::reinterpret_steal<py::list>(
+  return py::reinterpret_steal<py::list>(
     rclpy_convert_to_py_topic_endpoint_info_list(&info_array));
-
-  return py_info_array;
 }
 
 py::list

@@ -138,7 +138,7 @@ graph_get_service_names_and_types(py::capsule pynode);
 /// Return a list of publishers on a given topic.
 /**
  * The returned publisher information includes node name, node namespace, topic type, gid,
- * and qos profile
+ * and qos profile.
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the publishers for.
@@ -153,7 +153,7 @@ graph_get_publishers_info_by_topic(
 /// Return a list of subscriptions on a given topic.
 /**
  * The returned subscription information includes node name, node namespace, topic type, gid,
- * and qos profile
+ * and qos profile.
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the subscriptions for.

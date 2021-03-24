@@ -49,8 +49,8 @@ publisher_create(
  * Raises ValueError if pypublisher is not a publisher capsule
  * Raises RCLError if logger name not set
  *
- * \param[in] pypublisher Capsule pointing to the publisher to get the logger name of
- * \return logger_name
+ * \param[in] pypublisher Capsule pointing to the publisher
+ * \return logger_name of pypublisher
  */
 const char *
 publisher_get_logger_name(py::capsule pypublisher);
