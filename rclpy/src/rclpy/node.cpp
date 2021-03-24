@@ -16,6 +16,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl/graph.h>
 #include <rcl/rcl.h>
 #include <rcl/types.h>
 #include <rcl_interfaces/msg/parameter_type.h>
@@ -27,15 +28,49 @@
 #include <string>
 #include <utility>
 
+#include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
 #include "node.hpp"
+#include "utils.hpp"
 
 
 namespace rclpy
 {
+const char *
+get_node_fully_qualified_name(py::capsule pynode)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(node);
+  if (!fully_qualified_node_name) {
+    throw RCLError("Fully qualified name not set");
+  }
+
+  return fully_qualified_node_name;
+}
+
+const char *
+get_node_logger_name(py::capsule pynode)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  const char * node_logger_name = rcl_node_get_logger_name(node);
+  if (!node_logger_name) {
+    throw RCLError("Logger name not set");
+  }
+
+  return node_logger_name;
+}
+
 const char *
 get_node_name(py::capsule pynode)
 {
@@ -68,6 +103,92 @@ get_node_namespace(py::capsule pynode)
   }
 
   return node_namespace;
+}
+
+py::list
+get_node_names_impl(py::capsule pynode, bool get_enclaves)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcutils_string_array_t node_names = rcutils_get_zero_initialized_string_array();
+  rcutils_string_array_t node_namespaces = rcutils_get_zero_initialized_string_array();
+  rcutils_string_array_t enclaves = rcutils_get_zero_initialized_string_array();
+
+  rcl_ret_t ret = RCL_RET_OK;
+  if (get_enclaves) {
+    ret = rcl_get_node_names_with_enclaves(
+      node, allocator, &node_names, &node_namespaces, &enclaves);
+  } else {
+    ret = rcl_get_node_names(
+      node, allocator, &node_names, &node_namespaces);
+  }
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to get node names");
+  }
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcutils_ret_t fini_ret = rcutils_string_array_fini(&node_names);
+      if (RCUTILS_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "failed to fini node names during error handling: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+      fini_ret = rcutils_string_array_fini(&node_namespaces);
+      if (RCUTILS_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "failed to fini node namespaces during error handling: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+      fini_ret = rcutils_string_array_fini(&enclaves);
+      if (RCUTILS_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "failed to fini enclaves string array during error handling: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  py::list pynode_names_and_namespaces(node_names.size);
+  for (size_t idx = 0; idx < node_names.size; ++idx) {
+    if (get_enclaves) {
+      pynode_names_and_namespaces[idx] = py::make_tuple(
+        py::str(node_names.data[idx]),
+        py::str(node_namespaces.data[idx]),
+        py::str(enclaves.data[idx]));
+    } else {
+      pynode_names_and_namespaces[idx] = py::make_tuple(
+        py::str(node_names.data[idx]),
+        py::str(node_namespaces.data[idx]));
+    }
+  }
+
+  return pynode_names_and_namespaces;
+}
+
+py::list
+get_node_names_and_namespaces(py::capsule pynode)
+{
+  return get_node_names_impl(pynode, false);
+}
+
+py::list
+get_node_names_and_namespaces_with_enclaves(py::capsule pynode)
+{
+  return get_node_names_impl(pynode, true);
 }
 
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
@@ -246,4 +367,5 @@ get_node_parameters(py::object pyparameter_cls, py::capsule pynode)
 
   return node_params;
 }
+
 }  // namespace rclpy

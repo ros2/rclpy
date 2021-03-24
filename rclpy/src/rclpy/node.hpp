@@ -21,6 +21,28 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/// Get the fully qualified name of the node.
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if name is not set
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \return String containing the fully qualified name of the node
+ */
+const char *
+get_node_fully_qualified_name(py::capsule pynode);
+
+/// Get the name of the logger associated with a node.
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if logger name is not set
+ *
+ * \param[in] pynode Capsule pointing to the node to get the logger name of
+ * \return logger_name
+ */
+const char *
+get_node_logger_name(py::capsule pynode);
+
 /// Get the name of a node.
 /**
  * Raises ValueError if pynode is not a node capsule
@@ -43,6 +65,46 @@ get_node_name(py::capsule pynode);
 const char *
 get_node_namespace(py::capsule pynode);
 
+/// Get the list of nodes discovered by the provided node
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if the names are unavailable.
+ *
+ * \param[in] module the Python module this function is part of
+ * \param[in] pynode Capsule pointing to the node
+ * \param[in] get_enclaves specifies if the output includes the enclaves names
+ *            or not
+ * \return Python list of tuples, containing:
+ *  node name, node namespace, and
+ *  enclave if `get_enclaves` is true.
+ */
+py::list
+get_node_names_impl(py::capsule pynode, bool get_enclaves);
+
+/// Get the list of nodes discovered by the provided node
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if the names are unavailable.
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \return Python list of tuples where each tuple contains the two strings:
+ *   the node name and node namespace
+ */
+py::list
+get_node_names_and_namespaces(py::capsule pynode);
+
+/// Get the list of nodes discovered by the provided node, with their respective enclaves.
+/**
+ * Raises ValueError if pynode is not a node capsule
+ * Raises RCLError if the names are unavailable.
+ *
+ * \param[in] pynode Capsule pointing to the node
+ * \return Python list of tuples where each tuple contains three strings:
+ *   node name, node namespace, and enclave.
+ */
+py::list
+get_node_names_and_namespaces_with_enclaves(py::capsule pynode);
+
 /// Get a list of parameters for the current node
 /**
  * Raises ValueError if the argument is not a node handle
@@ -56,6 +118,7 @@ get_node_namespace(py::capsule pynode);
  */
 py::dict
 get_node_parameters(py::object pyparameter_cls, py::capsule pynode);
+
 }  // namespace rclpy
 
 #endif  // RCLPY__NODE_HPP_
