@@ -29,8 +29,17 @@
 
 #include "logging.hpp"
 
-extern "C"
+namespace rclpy
 {
+LoggingGuard::LoggingGuard()
+: guard_(logging_mutex_)
+{
+}
+
+// Initialize logging mutex
+std::recursive_mutex LoggingGuard::logging_mutex_;
+
+static
 void
 rclpy_thread_safe_logging_output_handler(
   const rcutils_log_location_t * location,
@@ -51,17 +60,6 @@ rclpy_thread_safe_logging_output_handler(
     RCUTILS_SAFE_FWRITE_TO_STDERR("rclpy failed to get the global logging mutex\n");
   }
 }
-}  // extern "C"
-
-namespace rclpy
-{
-LoggingGuard::LoggingGuard()
-: guard_(logging_mutex_)
-{
-}
-
-// Initialize logging mutex
-std::recursive_mutex LoggingGuard::logging_mutex_;
 
 void
 logging_configure(py::object pycontext)
