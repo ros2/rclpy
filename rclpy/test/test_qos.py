@@ -131,21 +131,21 @@ class TestQosProfile(unittest.TestCase):
 class TestCheckQosCompatibility(unittest.TestCase):
 
     def test_compatible(self):
-        for durability in [QoSDurabilityPolicy.VOLATILE, QoSReliabilityPolicy.RELIABLE]:
-            qos = QoSProfile(
-                depth=1,
-                durability=durability,
-                lifespan=Duration(seconds=1),
-                deadline=Duration(seconds=1),
-                liveliness=QoSLivelinessPolicy.AUTOMATIC,
-                liveliness_lease_duration=Duration(seconds=1),
-            )
-            compatibility, reason = qos_check_compatible(
-                qos, qos
-            )
+        qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            lifespan=Duration(seconds=1),
+            deadline=Duration(seconds=1),
+            liveliness=QoSLivelinessPolicy.AUTOMATIC,
+            liveliness_lease_duration=Duration(seconds=1),
+        )
+        compatibility, reason = qos_check_compatible(
+            qos, qos
+        )
 
-            assert compatibility == QoSCompatibility.OK
-            assert reason == ''
+        assert compatibility == QoSCompatibility.OK
+        assert reason == ''
 
     def test_incompatible(self):
         """
