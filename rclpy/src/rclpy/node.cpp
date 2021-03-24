@@ -409,6 +409,7 @@ get_node_parameters(py::object pyparameter_cls, py::capsule pynode)
 }
 
 /// Handle destructor for node
+static
 void
 _rclpy_destroy_node(void * p)
 {
