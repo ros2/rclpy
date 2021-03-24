@@ -292,13 +292,10 @@ _get_info_by_topic(
     if (RCL_RET_UNSUPPORTED == ret) {
       throw NotImplementedError(
               std::string("Failed to get information by topic for ") +
-              std::string(type) +
-              std::string(": function not supported by RMW_IMPLEMENTATION"));
+              type + ": function not supported by RMW_IMPLEMENTATION");
     }
     throw RCLError(
-            std::string("Failed to get information by topic for ") +
-            std::string(type) +
-            std::string(": ") + std::string(rcl_get_error_string().str));
+            std::string("Failed to get information by topic for ") + type);
   }
 
   return py::reinterpret_steal<py::list>(
