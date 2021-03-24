@@ -14,7 +14,6 @@
 
 import weakref
 
-from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTypes
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
@@ -71,21 +70,31 @@ class ParameterService:
             try:
                 descriptor = node.describe_parameter(name)
             except ParameterNotDeclaredException:
-                descriptor = ParameterDescriptor()
+                response.descriptors = node.describe_parameters([])
+                return response
             response.descriptors.append(descriptor)
         return response
 
     def _get_parameters_callback(self, request, response):
         node = self._get_node()
         for name in request.names:
-            p = node.get_parameter_or(name)
-            response.values.append(p.get_parameter_value())
+            try:
+                param = node.get_parameter(name)
+            except ParameterNotDeclaredException:
+                response.values = node.get_parameters([])
+                return response
+            response.values.append(param.get_parameter_value())
         return response
 
     def _get_parameter_types_callback(self, request, response):
         node = self._get_node()
         for name in request.names:
-            response.types.append(node.get_parameter_or(name).type_.value)
+            try:
+                value = node.get_parameter_type(name)
+            except ParameterNotDeclaredException:
+                response.types = node.get_parameter_types([])
+                return response
+            response.types.append(value)
         return response
 
     def _list_parameters_callback(self, request, response):

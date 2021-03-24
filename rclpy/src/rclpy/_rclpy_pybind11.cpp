@@ -341,4 +341,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_take_event", &rclpy::take_event,
     "Get pending data from a ready QoS event.");
+
+  m.def(
+    "rclpy_get_node_parameters", &rclpy::get_node_parameters,
+    "Get the initial parameters for a node from the command line.");
 }
