@@ -140,6 +140,9 @@ graph_get_service_names_and_types(py::capsule pynode);
  * The returned publisher information includes node name, node namespace, topic type, gid,
  * and qos profile.
  *
+ * Raises NotImplementedError if the call is not supported by RMW
+ * Raises RCLError if there is an rcl error
+ *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the publishers for.
  * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
@@ -154,6 +157,9 @@ graph_get_publishers_info_by_topic(
 /**
  * The returned subscription information includes node name, node namespace, topic type, gid,
  * and qos profile.
+ *
+ * Raises NotImplementedError if the call is not supported by RMW
+ * Raises RCLError if there is an rcl error
  *
  * \param[in] pynode Capsule pointing to the node to get the namespace from.
  * \param[in] topic_name the topic name to get the subscriptions for.

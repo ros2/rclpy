@@ -265,8 +265,6 @@ _get_info_by_topic(
   const char * type,
   rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
 {
-  (void) type;
-
   auto node = static_cast<rcl_node_t *>(
     rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
   if (!node) {
@@ -292,11 +290,15 @@ _get_info_by_topic(
   rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_UNSUPPORTED == ret) {
-      throw RCLError(
-              "Failed to get information by topic. "
-              "Function not supported by RMW_IMPLEMENTATION");
+      throw NotImplementedError(
+              std::string("Failed to get information by topic for ") +
+              std::string(type) +
+              std::string(": function not supported by RMW_IMPLEMENTATION"));
     }
-    throw RCLError("Failed to get information by topic.");
+    throw RCLError(
+            std::string("Failed to get information by topic for ") +
+            std::string(type) +
+            std::string(": ") + std::string(rcl_get_error_string().str));
   }
 
   return py::reinterpret_steal<py::list>(
