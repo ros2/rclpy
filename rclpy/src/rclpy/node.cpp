@@ -24,13 +24,17 @@
 #include <rcpputils/scope_exit.hpp>
 #include <rcutils/format_string.h>
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
+#include "init.hpp"
+#include "logging.hpp"
 #include "node.hpp"
 #include "utils.hpp"
 
@@ -404,4 +408,139 @@ get_node_parameters(py::object pyparameter_cls, py::capsule pynode)
   return node_params;
 }
 
+/// Handle destructor for node
+void
+_rclpy_destroy_node(void * p)
+{
+  rclpy::LoggingGuard scoped_logging_guard;
+  auto node = static_cast<rcl_node_t *>(p);
+  if (!node) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_node got a NULL pointer");
+    return;
+  }
+
+  rcl_ret_t ret = rcl_node_fini(node);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini node: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(node);
+}
+
+py::capsule
+create_node(
+  const char * node_name,
+  const char * namespace_,
+  py::capsule pycontext,
+  py::object pycli_args,
+  bool use_global_arguments,
+  bool enable_rosout)
+{
+  rcl_ret_t ret;
+
+  auto context = static_cast<rcl_context_t *>(
+    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
+  if (!context) {
+    throw py::error_already_set();
+  }
+
+  rcl_arguments_t arguments = rcl_get_zero_initialized_arguments();
+
+  // turn the arguments into an array of C-style strings
+  std::vector<const char *> arg_values;
+  const char ** const_arg_values = NULL;
+  py::list pyargs;
+  if (!pycli_args.is_none()) {
+    pyargs = pycli_args;
+    arg_values.resize(pyargs.size());
+    for (size_t i = 0; i < pyargs.size(); ++i) {
+      // CPython owns const char * memory - no need to free it
+      arg_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
+      if (!arg_values[i]) {
+        throw py::error_already_set();
+      }
+    }
+    const_arg_values = &(arg_values[0]);
+  }
+
+  // call rcl_parse_arguments() so rcl_arguments_t structure is always valid.
+  // Otherwise the remapping functions will error if the user passes no arguments to a node and sets
+  // use_global_arguments to False.
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  ret = rcl_parse_arguments(arg_values.size(), const_arg_values, allocator, &arguments);
+
+  if (RCL_RET_INVALID_ROS_ARGS == ret) {
+    throw RCLInvalidROSArgsError("Failed to parse ROS arguments");
+  }
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to parse arguments");
+  }
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      if (RCL_RET_OK != rcl_arguments_fini(&arguments)) {
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level, "Failed to fini arguments: %s",
+          rcl_get_error_string().str);
+        rcl_reset_error();
+      }
+    });
+
+  throw_if_unparsed_ros_args(pyargs, arguments);
+
+  auto deleter = [](rcl_node_t * ptr) {_rclpy_destroy_node(ptr);};
+  auto node = std::unique_ptr<rcl_node_t, decltype(deleter)>(
+    static_cast<rcl_node_t *>(PyMem_Malloc(sizeof(rcl_node_t))),
+    deleter);
+  if (!node) {
+    throw std::bad_alloc();
+  }
+  *node = rcl_get_zero_initialized_node();
+  rcl_node_options_t options = rcl_node_get_default_options();
+  options.use_global_arguments = use_global_arguments;
+  options.arguments = arguments;
+  options.enable_rosout = enable_rosout;
+
+  {
+    rclpy::LoggingGuard scoped_logging_guard;
+    ret = rcl_node_init(node.get(), node_name, namespace_, context, &options);
+  }
+
+  if (RCL_RET_BAD_ALLOC == ret) {
+    throw std::bad_alloc();
+  }
+  if (RCL_RET_NODE_INVALID_NAME == ret) {
+    throw py::value_error(append_rcl_error("invalid node name"));
+  }
+  if (RCL_RET_NODE_INVALID_NAMESPACE == ret) {
+    throw py::value_error(append_rcl_error("invalid node namespace"));
+  }
+  if (RCL_RET_OK != ret) {
+    throw RCLError("error creating node");
+  }
+
+  PyObject * pynode_c = rclpy_create_handle_capsule(node.get(), "rcl_node_t", _rclpy_destroy_node);
+  if (!pynode_c) {
+    throw py::error_already_set();
+  }
+  auto pynode = py::reinterpret_steal<py::capsule>(pynode_c);
+  // pynode now owns the rcl_node_t
+  node.release();
+
+  auto node_handle = static_cast<rclpy_handle_t *>(pynode);
+  auto context_handle = static_cast<rclpy_handle_t *>(pycontext);
+  _rclpy_handle_add_dependency(node_handle, context_handle);
+  if (PyErr_Occurred()) {
+    throw py::error_already_set();
+  }
+
+  return pynode;
+}
 }  // namespace rclpy

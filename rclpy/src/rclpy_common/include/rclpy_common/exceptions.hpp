@@ -63,6 +63,7 @@ public:
 
 class RCLInvalidROSArgsError : public RCLError
 {
+  using RCLError::RCLError;
 };
 
 class UnknownROSArgsError : public std::runtime_error
