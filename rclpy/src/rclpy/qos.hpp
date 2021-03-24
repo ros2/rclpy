@@ -29,7 +29,7 @@ namespace rclpy
 
 /// Result type for checking QoS compatibility
 /**
- * \see rclcpp::qos_check_compatible()
+ * \see rclpy::qos_check_compatible()
  */
 struct QoSCheckCompatibleResult
 {
@@ -38,7 +38,7 @@ struct QoSCheckCompatibleResult
 
   /// Reason for a (possible) incompatibility.
   /**
-   * Set if compatiblity is QoSCompatibility::Warning or QoSCompatiblity::Error.
+   * Set if compatiblity is RMW_QOS_COMPATIBILITY_WARNING or RMW_QOS_COMPATIBILITY_ERROR.
    * Not set if the QoS profiles are compatible.
    */
   std::string reason;
@@ -51,18 +51,18 @@ struct QoSCheckCompatibleResult
  *
  * If any policies have value "system default" or "unknown" then it is possible that
  * compatiblity cannot be determined.
- * In this case, the value QoSCompatility::Warning is set as part of
+ * In this case, the value RMW_QOS_COMPATIBILITY_WARNING is set as part of
  * the returned structure.
  *
  * \param[in] publisher_qos_profile: The QoS profile for a publisher.
  * \param[in] subscription_qos_profile: The QoS profile for a subscription.
- * \return Struct with compatiblity set to QoSCompatibility::Ok if the QoS profiles are
+ * \return Struct with compatiblity set to RMW_QOS_COMPATIBILITY_OK if the QoS profiles are
  *   compatible, or
- * \return Struct with compatibility set to QoSCompatibility::Warning if there is a chance
+ * \return Struct with compatibility set to RMW_QOS_COMPATIBILITY_WARNING if there is a chance
  *   the QoS profiles are not compatible, or
- * \return Struct with compatibility set to QoSCompatibility::Error if the QoS profiles are
+ * \return Struct with compatibility set to RMW_QOS_COMPATIBILITY_ERROR if the QoS profiles are
  *   not compatible.
- * \throws RCLError if an unexpected error occurs.
+ * \throws RMWError if an unexpected error occurs.
  */
 QoSCheckCompatibleResult
 qos_check_compatible(
