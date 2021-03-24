@@ -106,7 +106,7 @@ get_count_subscribers(py::capsule pynode, const char * topic_name)
 
   return count;
 }
-  
+
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
 /**
  * \param[in] pyname name of the parameter
