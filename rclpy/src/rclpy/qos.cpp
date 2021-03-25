@@ -52,7 +52,6 @@ qos_check_compatible(
     sizeof(QoSCheckCompatibleResult::reason));
 
   if (RMW_RET_OK != ret) {
-    rmw_reset_error();
     throw RMWError("failed to check if qos profiles are compatible");
   }
 
