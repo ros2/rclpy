@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.7.0 (2021-03-25)
+------------------
 * Add API for checking QoS profile compatibility (`#708 <https://github.com/ros2/rclpy/issues/708>`_)
 * Replace rmw_connext_cpp with rmw_connextdds (`#698 <https://github.com/ros2/rclpy/issues/698>`_)
 * Convert last of pub/sub getters to pybind11 (`#733 <https://github.com/ros2/rclpy/issues/733>`_)
