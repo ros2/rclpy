@@ -26,6 +26,7 @@
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
+#include "qos.hpp"
 #include "qos_events.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
@@ -73,6 +74,18 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("RCL_PUBLISHER_OFFERED_DEADLINE_MISSED", RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
   .value("RCL_PUBLISHER_LIVELINESS_LOST", RCL_PUBLISHER_LIVELINESS_LOST)
   .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS);
+
+  py::enum_<rmw_qos_compatibility_type_t>(m, "QoSCompatibility")
+  .value("OK", RMW_QOS_COMPATIBILITY_OK)
+  .value("WARNING", RMW_QOS_COMPATIBILITY_WARNING)
+  .value("ERROR", RMW_QOS_COMPATIBILITY_ERROR);
+
+  py::class_<rclpy::QoSCheckCompatibleResult>(
+    m, "QoSCheckCompatibleResult",
+    "Result type for checking QoS compatibility with result")
+  .def(py::init<>())
+  .def_readonly("compatibility", &rclpy::QoSCheckCompatibleResult::compatibility)
+  .def_readonly("reason", &rclpy::QoSCheckCompatibleResult::reason);
 
   py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
   py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
@@ -162,6 +175,10 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_service_info_get_received_timestamp", &rclpy::service_info_get_received_timestamp,
     "Retrieve received timestamp from service_info");
+
+  m.def(
+    "rclpy_qos_check_compatible", &rclpy::qos_check_compatible,
+    "Check if two QoS profiles are compatible.");
 
   m.def(
     "rclpy_create_guard_condition", &rclpy::guard_condition_create,
