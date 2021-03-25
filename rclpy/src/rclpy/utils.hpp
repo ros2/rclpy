@@ -88,7 +88,7 @@ assert_liveliness(py::object pyentity);
  * \return Parsed list of strings
  */
 py::list
-remove_ros_args(py::list pyargs);
+remove_ros_args(py::object pyargs);
 
 }  // namespace rclpy
 
