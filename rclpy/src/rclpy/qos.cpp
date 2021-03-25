@@ -58,7 +58,7 @@ qos_check_compatible(
     reason_size);
 
   if (RMW_RET_OK != ret) {
-    auto error_str = rmw_get_error_string().str;
+    std::string error_str(rmw_get_error_string().str);
     rmw_reset_error();
     throw RMWError(error_str);
   }
