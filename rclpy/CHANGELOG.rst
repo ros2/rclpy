@@ -2,6 +2,25 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add API for checking QoS profile compatibility (`#708 <https://github.com/ros2/rclpy/issues/708>`_)
+* Replace rmw_connext_cpp with rmw_connextdds (`#698 <https://github.com/ros2/rclpy/issues/698>`_)
+* Convert last of pub/sub getters to pybind11 (`#733 <https://github.com/ros2/rclpy/issues/733>`_)
+* Pybind 11: count_subscribers and count_publishers (`#732 <https://github.com/ros2/rclpy/issues/732>`_)
+* Convert more node accessors to pybind11 (`#730 <https://github.com/ros2/rclpy/issues/730>`_)
+* Pybind11-ify rclpy_get_node_parameters (`#718 <https://github.com/ros2/rclpy/issues/718>`_)
+* Modify parameter service behavior when allow_undeclared_parameters is false and the requested parameter doesn't exist (`#661 <https://github.com/ros2/rclpy/issues/661>`_)
+* Include pybind11 first to fix windows debug warning (`#731 <https://github.com/ros2/rclpy/issues/731>`_)
+* Convert init/shutdown to pybind11 (`#715 <https://github.com/ros2/rclpy/issues/715>`_)
+* Convert take API to pybind11 (`#721 <https://github.com/ros2/rclpy/issues/721>`_)
+* Migrate qos event APIs to pybind11 (`#723 <https://github.com/ros2/rclpy/issues/723>`_)
+* Remove pybind11 from rclpy common (`#727 <https://github.com/ros2/rclpy/issues/727>`_)
+* Look up pybind11 package once (`#726 <https://github.com/ros2/rclpy/issues/726>`_)
+* typo fix. (`#729 <https://github.com/ros2/rclpy/issues/729>`_)
+* [pybind11] Node Accessors (`#719 <https://github.com/ros2/rclpy/issues/719>`_)
+* Contributors: Alejandro Hernández Cordero, Andrea Sorbini, Audrow Nash, Greg Balke, Michel Hidalgo, Shane Loretz, Tomoya Fujita
+
 1.6.0 (2021-03-18)
 ------------------
 * Convert serialize/deserialize to pybind11 (`#712 <https://github.com/ros2/rclpy/issues/712>`_)
