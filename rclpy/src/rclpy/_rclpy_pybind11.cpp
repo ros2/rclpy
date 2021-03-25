@@ -378,4 +378,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_assert_liveliness", &rclpy::assert_liveliness,
     "Assert the liveliness of an entity.");
+  m.def(
+    "rclpy_remove_ros_args", &rclpy::remove_ros_args,
+    "Remove ROS-specific arguments from argument vector.");
 }
