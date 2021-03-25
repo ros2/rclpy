@@ -44,13 +44,12 @@ qos_check_compatible(
   auto subscription_qos_profile_ = static_cast<rmw_qos_profile_t *>(subscription_qos_profile);
 
   QoSCheckCompatibleResult result;
-  const size_t reason_size = 2048u;
   rmw_ret_t ret = rmw_qos_profile_check_compatible(
     *publisher_qos_profile_,
     *subscription_qos_profile_,
     &result.compatibility,
     result.reason,
-    reason_size);
+    sizeof(QoSCheckCompatibleResult::reason));
 
   if (RMW_RET_OK != ret) {
     rmw_reset_error();
