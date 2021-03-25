@@ -16,9 +16,14 @@
 
 #include <pybind11/pybind11.h>
 
-#include <memory>
+#include <rcl/error_handling.h>
 
-#include "rcl/error_handling.h"
+#include <memory>
+#include <string>
+
+#include "rclpy_common/common.h"
+#include "rclpy_common/handle.h"
+#include "rclpy_common/exceptions.hpp"
 
 #include "utils.hpp"
 
@@ -87,6 +92,45 @@ convert_to_py(void * message, py::object pyclass)
     throw py::error_already_set();
   }
   return py::reinterpret_steal<py::object>(convert(message));
+}
+
+/// Return the identifier of the current rmw_implementation
+/**
+ * \return string containing the identifier of the current rmw_implementation
+ */
+const char *
+get_rmw_implementation_identifier()
+{
+  return rmw_get_implementation_identifier();
+}
+
+/// Manually assert that an entity is alive.
+/**
+  * When using RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC, the application must call this function
+  * at least as often as the qos policy liveliness_lease_duration.
+  * The passed entity can be a Publisher.
+  *
+  * Raises RCLError on failure to assert liveliness
+  * Raises TypeError if passed object is not a valid Publisher
+  *
+  * \param[in] pyentity A capsule containing an rcl_publisher_t
+  * \return None
+  */
+void
+assert_liveliness(py::object pyentity)
+{
+  if (PyCapsule_IsValid(pyentity.ptr(), "rclpy_publisher_t")) {
+    auto publisher = static_cast<rclpy_publisher_t *>(
+      rclpy_handle_get_pointer_from_capsule(
+        pyentity.ptr(), "rclpy_publisher_t"));
+    if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
+      throw RCLError(
+              std::string("Failed to assert liveliness on the Publisher: ") +
+              rcl_get_error_string().str);
+    }
+  } else {
+    throw UnsupportedObjectTypeError("Passed capsule is not a valid Publisher.");
+  }
 }
 
 }  // namespace rclpy

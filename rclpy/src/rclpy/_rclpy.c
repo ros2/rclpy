@@ -616,21 +616,6 @@ rclpy_create_node(PyObject * self, PyObject * args)
   return rclpy_detail_execute_with_logging_mutex(rclpy_create_node_impl, self, args);
 }
 
-/// Return the identifier of the current rmw_implementation
-/**
- * \return string containing the identifier of the current rmw_implementation
- */
-static PyObject *
-rclpy_get_rmw_implementation_identifier(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args))
-{
-  const char * rmw_implementation_identifier = rmw_get_implementation_identifier();
-
-  PyObject * pyrmw_implementation_identifier = Py_BuildValue(
-    "s", rmw_implementation_identifier);
-
-  return pyrmw_implementation_identifier;
-}
-
 /// Fill a given rmw_time_t with python Duration info, if possible.
 /**
   * \param[in] pyobject Python Object that should be a Duration, error checking is done
@@ -796,51 +781,6 @@ rclpy_get_rmw_qos_profile(PyObject * Py_UNUSED(self), PyObject * args)
   return pyqos_profile;
 }
 
-/// Manually assert that an entity is alive.
-/**
-  * When using RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC, the application must call this function
-  * at least as often as the qos policy liveliness_lease_duration.
-  * The passed entity can be a Publisher.
-  *
-  * Raises RuntimeError on failure to assert liveliness
-  * Raises TypeError if passed object is not a valid Publisher
-  *
-  * \param[in] pyentity A capsule containing an rcl_publisher_t
-  * \return None
-  */
-static PyObject *
-rclpy_assert_liveliness(PyObject * module, PyObject * args)
-{
-  rclpy_module_state_t * module_state = (rclpy_module_state_t *)PyModule_GetState(module);
-  if (!module_state) {
-    // exception already raised
-    return NULL;
-  }
-  PyObject * pyentity;
-
-  if (!PyArg_ParseTuple(args, "O", &pyentity)) {
-    return NULL;
-  }
-
-  if (PyCapsule_IsValid(pyentity, "rclpy_publisher_t")) {
-    rclpy_publisher_t * publisher = rclpy_handle_get_pointer_from_capsule(
-      pyentity, "rclpy_publisher_t");
-    if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
-      PyErr_Format(
-        module_state->RCLError,
-        "Failed to assert liveliness on the Publisher: %s", rcl_get_error_string().str);
-      rcl_reset_error();
-      return NULL;
-    }
-  } else {
-    PyErr_Format(
-      PyExc_TypeError, "Passed capsule is not a valid Publisher.");
-    return NULL;
-  }
-
-  Py_RETURN_NONE;
-}
-
 /// Define the public methods of this module
 static PyMethodDef rclpy_methods[] = {
   {
@@ -861,11 +801,6 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
-    "rclpy_get_rmw_implementation_identifier", rclpy_get_rmw_implementation_identifier,
-    METH_NOARGS, "Retrieve the identifier for the active RMW implementation."
-  },
-
-  {
     "rclpy_convert_from_py_qos_policy", rclpy_convert_from_py_qos_policy, METH_VARARGS,
     "Convert a QoSPolicy Python object into a rmw_qos_profile_t."
   },
@@ -876,10 +811,6 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_get_rmw_qos_profile", rclpy_get_rmw_qos_profile, METH_VARARGS,
     "Get QOS profile."
-  },
-  {
-    "rclpy_assert_liveliness", rclpy_assert_liveliness, METH_VARARGS,
-    "Assert the liveliness of an entity."
   },
 
   {NULL, NULL, 0, NULL}  /* sentinel */

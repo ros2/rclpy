@@ -34,6 +34,7 @@
 #include "subscription.hpp"
 #include "time_point.hpp"
 #include "timer.hpp"
+#include "utils.hpp"
 #include "wait_set.hpp"
 
 namespace py = pybind11;
@@ -84,6 +85,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
+  py::register_exception<rclpy::UnsupportedObjectTypeError>(
+    m, "UnsupportedObjectTypeError", PyExc_TypeError);
   py::register_exception<rclpy::NotImplementedError>(
     m, "NotImplementedError", PyExc_NotImplementedError);
 
@@ -366,4 +369,13 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_node_parameters", &rclpy::get_node_parameters,
     "Get the initial parameters for a node from the command line.");
+
+  m.def(
+    "rclpy_get_rmw_implementation_identifier",
+    &rclpy::get_rmw_implementation_identifier,
+    "Retrieve the identifier for the active RMW implementation.");
+
+  m.def(
+    "rclpy_assert_liveliness", &rclpy::assert_liveliness,
+    "Assert the liveliness of an entity.");
 }

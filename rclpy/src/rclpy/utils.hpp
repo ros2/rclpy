@@ -58,6 +58,28 @@ create_from_py(py::object pyclass);
 py::object
 convert_to_py(void * message, py::object pyclass);
 
+/// Return the identifier of the current rmw_implementation
+/**
+ * \return string containing the identifier of the current rmw_implementation
+ */
+const char *
+get_rmw_implementation_identifier();
+
+/// Manually assert that an entity is alive.
+/**
+  * When using RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC, the application must call this function
+  * at least as often as the qos policy liveliness_lease_duration.
+  * The passed entity can be a Publisher.
+  *
+  * Raises RCLError on failure to assert liveliness
+  * Raises TypeError if passed object is not a valid Publisher
+  *
+  * \param[in] pyentity A capsule containing an rcl_publisher_t
+  * \return None
+  */
+void
+assert_liveliness(py::object pyentity);
+
 }  // namespace rclpy
 
 #endif  // RCLPY__UTILS_HPP_

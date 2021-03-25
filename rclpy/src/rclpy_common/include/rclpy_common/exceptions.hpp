@@ -80,6 +80,11 @@ class UnsupportedEventTypeError : public RCLError
   using RCLError::RCLError;
 };
 
+class UnsupportedObjectTypeError : public RCLError
+{
+  using RCLError::RCLError;
+};
+
 class NotImplementedError : public RCLError
 {
   using RCLError::RCLError;
