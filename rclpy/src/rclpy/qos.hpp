@@ -41,7 +41,7 @@ struct QoSCheckCompatibleResult
    * Set if compatiblity is RMW_QOS_COMPATIBILITY_WARNING or RMW_QOS_COMPATIBILITY_ERROR.
    * Not set if the QoS profiles are compatible.
    */
-  std::string reason;
+  char reason[2048];
 };
 
 /// Check if two QoS profiles are compatible.

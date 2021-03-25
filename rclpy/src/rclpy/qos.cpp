@@ -49,21 +49,18 @@ qos_check_compatible(
 
   QoSCheckCompatibleResult result;
   const size_t reason_size = 2048u;
-  char reason_c_str[reason_size] = "";
   rmw_ret_t ret = rmw_qos_profile_check_compatible(
     *publisher_qos_profile_,
     *subscription_qos_profile_,
     &result.compatibility,
-    reason_c_str,
+    result.reason,
     reason_size);
 
   if (RMW_RET_OK != ret) {
-    std::string error_str(rmw_get_error_string().str);
     rmw_reset_error();
-    throw RMWError(error_str);
+    throw RMWError("failed to check if qos profiles are compatible");
   }
 
-  result.reason = std::string(reason_c_str);
   return result;
 }
 
