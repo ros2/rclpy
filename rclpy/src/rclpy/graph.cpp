@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 
+#include "rclpy_common/common.h"
 #include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
@@ -247,6 +248,76 @@ graph_get_service_names_and_types(py::capsule pynode)
     });
 
   return convert_to_py_names_and_types(&service_names_and_types);
+}
+
+typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
+  const rcl_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * topic_name,
+  bool no_mangle,
+  rcl_topic_endpoint_info_array_t * info_array);
+
+py::list
+_get_info_by_topic(
+  py::capsule pynode,
+  const char * topic_name,
+  bool no_mangle,
+  const char * type,
+  rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcl_topic_endpoint_info_array_t info_array = rcl_get_zero_initialized_topic_endpoint_info_array();
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcl_ret_t fini_ret = rcl_topic_endpoint_info_array_fini(&info_array, &allocator);
+      if (RCL_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "rcl_topic_endpoint_info_array_fini failed: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_UNSUPPORTED == ret) {
+      throw NotImplementedError(
+              std::string("Failed to get information by topic for ") +
+              type + ": function not supported by RMW_IMPLEMENTATION");
+    }
+    throw RCLError(
+            std::string("Failed to get information by topic for ") + type);
+  }
+
+  return py::reinterpret_steal<py::list>(
+    rclpy_convert_to_py_topic_endpoint_info_list(&info_array));
+}
+
+py::list
+graph_get_publishers_info_by_topic(
+  py::capsule pynode, const char * topic_name, bool no_mangle)
+{
+  return _get_info_by_topic(
+    pynode, topic_name, no_mangle, "publishers",
+    rcl_get_publishers_info_by_topic);
+}
+
+py::list
+graph_get_subscriptions_info_by_topic(
+  py::capsule pynode, const char * topic_name, bool no_mangle)
+{
+  return _get_info_by_topic(
+    pynode, topic_name, no_mangle, "subscriptions",
+    rcl_get_subscriptions_info_by_topic);
 }
 
 }  // namespace rclpy

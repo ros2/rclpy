@@ -84,6 +84,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
+  py::register_exception<rclpy::NotImplementedError>(
+    m, "NotImplementedError", PyExc_NotImplementedError);
 
   m.def(
     "rclpy_init", &rclpy::init,
@@ -125,6 +127,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_create_publisher", &rclpy::publisher_create,
     "Create a Publisher");
+  m.def(
+    "rclpy_get_publisher_logger_name", &rclpy::publisher_get_logger_name,
+    "Get the logger name associated with the node of a publisher.");
   m.def(
     "rclpy_publisher_get_subscription_count", &rclpy::publisher_get_subscription_count,
     "Count subscribers from a publisher");
@@ -295,6 +300,14 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_get_subscriber_names_and_types_by_node",
     &rclpy::graph_get_subscriber_names_and_types_by_node,
     "Get topic names and types for which a remote node has subscribers.");
+  m.def(
+    "rclpy_get_publishers_info_by_topic",
+    &rclpy::graph_get_publishers_info_by_topic,
+    "Get publishers info for a topic.");
+  m.def(
+    "rclpy_get_subscriptions_info_by_topic",
+    &rclpy::graph_get_subscriptions_info_by_topic,
+    "Get subscriptions info for a topic.");
   m.def(
     "rclpy_get_service_names_and_types",
     &rclpy::graph_get_service_names_and_types,

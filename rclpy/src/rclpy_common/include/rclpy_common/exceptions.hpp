@@ -79,6 +79,12 @@ class UnsupportedEventTypeError : public RCLError
 {
   using RCLError::RCLError;
 };
+
+class NotImplementedError : public RCLError
+{
+  using RCLError::RCLError;
+};
+
 }  // namespace rclpy
 
 #endif  // RCLPY_COMMON__EXCEPTIONS_HPP_

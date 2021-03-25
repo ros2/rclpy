@@ -123,6 +123,23 @@ publisher_create(
   return pypub;
 }
 
+const char *
+publisher_get_logger_name(py::capsule pypublisher)
+{
+  auto pub = static_cast<rclpy_publisher_t *>(
+    rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
+  if (!pub) {
+    throw py::error_already_set();
+  }
+
+  const char * node_logger_name = rcl_node_get_logger_name(pub->node);
+  if (!node_logger_name) {
+    throw RCLError("Node logger name not set");
+  }
+
+  return node_logger_name;
+}
+
 size_t
 publisher_get_subscription_count(py::capsule pypublisher)
 {
