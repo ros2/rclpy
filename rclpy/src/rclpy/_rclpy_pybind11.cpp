@@ -84,14 +84,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "QoSCheckCompatibleResult",
     "Result type for checking QoS compatibility with result")
   .def(py::init<>())
-  .def_property_readonly(
-    "compatibility", [](const rclpy::QoSCheckCompatibleResult & result) {
-      return static_cast<int>(result.compatibility);
-    })
-  .def_property_readonly(
-    "reason", [](const rclpy::QoSCheckCompatibleResult & result) {
-      return result.reason;
-    });
+  .def_readonly("compatibility", &rclpy::QoSCheckCompatibleResult::compatibility)
+  .def_readonly("reason", &rclpy::QoSCheckCompatibleResult::reason);
 
   py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
   py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
