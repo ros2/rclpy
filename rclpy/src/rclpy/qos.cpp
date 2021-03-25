@@ -75,6 +75,9 @@ void
 _convert_py_duration_to_rmw_time(py::capsule pyduration, rmw_time_t * out_time)
 {
   assert(out_time != nullptr);
+  if (0 != strcmp("rcl_duration_t", pyduration.name())) {
+    throw py::value_error("capsule is not an rcl_duration_t");
+  }
   auto duration = static_cast<rcl_duration_t *>(pyduration);
   out_time->sec = RCL_NS_TO_S(duration->nanoseconds);
   out_time->nsec = duration->nanoseconds % (1000LL * 1000LL * 1000LL);
@@ -131,6 +134,9 @@ convert_from_py_qos_policy(
 py::dict
 convert_to_py_qos_policy(py::capsule pyqos_profile)
 {
+  if (0 != strcmp("rmw_qos_profile_t", pyqos_profile.name())) {
+    throw py::value_error("capsule is not an rmw_qos_profile_t");
+  }
   auto qos_profile = static_cast<rmw_qos_profile_t *>(pyqos_profile);
   PyObject * pydict = rclpy_common_convert_to_qos_dict(qos_profile);
   if (!pydict) {

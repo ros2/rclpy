@@ -70,6 +70,9 @@ qos_check_compatible(
 
 /// Convert rclpy.qos.QoSProfile arguments to a C rmw_qos_profile_t capsule.
 /**
+ * Raises ValueError if a any capsule is not of the expected type.
+ * Raises MemoryError if rmw_qos_profile_t allocation fails.
+ *
  * \param[in] qos_history an rclpy.qos.QoSHistoryPolicy value.
  * \param[in] qos_depth depth of the message queue.
  * \param[in] qos_reliability an rclpy.qos.QoSReliabilityPolicy value.
@@ -100,6 +103,8 @@ convert_from_py_qos_policy(
 /// Convert a C rmw_qos_profile_t capsule to a dictionary.
 /**
  * This function is exposed to facilitate testing profile type conversion.
+ *
+ * Raises ValueError if a \p pyqos_profile is not an rmw_qos_profile_t capsule.
  *
  * \param[in] pyqos_profile Capsule pointing to rmw_qos_profile_t
  * \return a dictionary suitable for rclpy.qos.QoSProfile instantiation.
