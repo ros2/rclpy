@@ -15,10 +15,7 @@
 // Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
 
-#include <rcl/rcl.h>
-
-#include <cstring>
-#include <memory>
+#include <rcl/time.h>
 
 #include "time_point.hpp"
 
