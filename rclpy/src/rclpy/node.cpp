@@ -24,6 +24,7 @@
 #include <rcpputils/scope_exit.hpp>
 #include <rcutils/format_string.h>
 
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -474,7 +475,11 @@ create_node(
   // Otherwise the remapping functions will error if the user passes no arguments to a node and sets
   // use_global_arguments to False.
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  ret = rcl_parse_arguments(arg_values.size(), const_arg_values, allocator, &arguments);
+  if (arg_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw py::value_error("too many cli arguments given to node");
+  }
+  int num_args = static_cast<int>(arg_values.size());
+  ret = rcl_parse_arguments(num_args, const_arg_values, allocator, &arguments);
 
   if (RCL_RET_INVALID_ROS_ARGS == ret) {
     throw RCLInvalidROSArgsError("Failed to parse ROS arguments");
