@@ -189,14 +189,10 @@ def test_destroy_client_asap():
             with client.handle:
                 pass
 
-            with client.handle:
-                node.destroy_client(client)
-                # handle valid because it's still being used
-                with client.handle:
-                    pass
+            node.destroy_client(client)
 
             with pytest.raises(InvalidHandle):
-                # handle invalid because it was destroyed when no one was using it
+                # handle invalid because it was destroyed
                 with client.handle:
                     pass
         finally:

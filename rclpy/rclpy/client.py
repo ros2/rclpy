@@ -33,7 +33,7 @@ class Client:
     def __init__(
         self,
         context: Context,
-        client_handle,
+        client_impl: _rclpy.Client,
         srv_type: SrvType,
         srv_name: str,
         qos_profile: QoSProfile,
@@ -46,7 +46,7 @@ class Client:
            should call :meth:`.Node.create_client`.
 
         :param context: The context associated with the service client.
-        :param client_handle: :class:`Handle` wrapping the underlying ``rcl_client_t`` object.
+        :param client_impl: :class:`_rclpy.Client` wrapping the underlying ``rcl_client_t`` object.
         :param srv_type: The service type.
         :param srv_name: The name of the service.
         :param qos_profile: The quality of service profile to apply the service client.
@@ -54,7 +54,7 @@ class Client:
             nodes default callback group is used.
         """
         self.context = context
-        self.__handle = client_handle
+        self.__client = client_impl
         self.srv_type = srv_type
         self.srv_name = srv_name
         self.qos_profile = qos_profile
@@ -122,8 +122,8 @@ class Client:
         if not isinstance(request, self.srv_type.Request):
             raise TypeError()
 
-        with self.handle as capsule:
-            sequence_number = _rclpy.rclpy_send_request(capsule, request)
+        with self.handle:
+            sequence_number = self.__client.send_request(request)
         if sequence_number in self._pending_requests:
             raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)
 
@@ -140,8 +140,8 @@ class Client:
 
         :return: ``True`` if a server is ready, ``False`` otherwise.
         """
-        with self.handle as capsule:
-            return _rclpy.rclpy_service_server_is_available(capsule)
+        with self.handle:
+            return self.__client.service_server_is_available()
 
     def wait_for_service(self, timeout_sec: float = None) -> bool:
         """
@@ -165,7 +165,7 @@ class Client:
 
     @property
     def handle(self):
-        return self.__handle
+        return self.__client
 
     def destroy(self):
-        self.handle.destroy()
+        self.__client.destroy_when_not_in_use()

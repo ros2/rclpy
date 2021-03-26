@@ -15,11 +15,11 @@
 from threading import Lock
 
 from rclpy.impl.implementation_singleton import rclpy_handle_implementation as _rclpy_handle
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.implementation_singleton import rclpy_pycapsule_implementation as _rclpy_capsule
 
 
-class InvalidHandle(Exception):
-    pass
+InvalidHandle = _rclpy.InvalidHandle
 
 
 class Handle:

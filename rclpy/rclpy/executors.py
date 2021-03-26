@@ -340,8 +340,8 @@ class Executor:
             await await_or_execute(sub.callback, msg)
 
     def _take_client(self, client):
-        with client.handle as capsule:
-            return _rclpy.rclpy_take_response(capsule, client.srv_type.Response)
+        with client.handle:
+            return client.handle.take_response(client.srv_type.Response)
 
     async def _execute_client(self, client, seq_and_response):
         header, response = seq_and_response
@@ -519,10 +519,11 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_subscriptions -= 1
 
-                client_capsules = []
+                client_handles = []
                 for cli in clients:
                     try:
-                        client_capsules.append(context_stack.enter_context(cli.handle))
+                        context_stack.enter_context(cli.handle)
+                        client_handles.append(cli.handle)
                     except InvalidHandle:
                         entity_count.num_clients -= 1
 
@@ -561,8 +562,8 @@ class Executor:
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)
                 for sub_capsule in sub_capsules:
                     _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
-                for cli_capsule in client_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('client', wait_set, cli_capsule)
+                for cli_handle in client_handles:
+                    _rclpy.rclpy_wait_set_add_client(wait_set, cli_handle)
                 for srv_capsule in service_capsules:
                     _rclpy.rclpy_wait_set_add_entity('service', wait_set, srv_capsule)
                 for tmr_capsule in timer_capsules:

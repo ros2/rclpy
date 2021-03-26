@@ -112,6 +112,14 @@ RCLPY_COMMON_PUBLIC
 void
 _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * dependency);
 
+/// Increments the reference count of a handle.
+/**
+ * If a reference count is manually incremented, then it must later be manually decremented.
+ */
+RCLPY_COMMON_PUBLIC
+void
+_rclpy_handle_inc_ref(rclpy_handle_t * handle);
+
 /// Decrements the reference count of a handle.
 /**
  * The reference count of `handle` is decremented.

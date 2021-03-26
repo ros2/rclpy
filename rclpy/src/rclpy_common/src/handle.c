@@ -76,6 +76,16 @@ _rclpy_handle_add_dependency(rclpy_handle_t * dependent, rclpy_handle_t * depend
   dependency->ref_count++;
 }
 
+/// Increments the reference count of a handle.
+void
+_rclpy_handle_inc_ref(rclpy_handle_t * handle)
+{
+  if (!handle) {
+    return;
+  }
+  ++handle->ref_count;
+}
+
 /// Decrements the reference count of a handle.
 /**
  * The reference count of `handle` is decremented.

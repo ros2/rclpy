@@ -1383,7 +1383,7 @@ class Node:
         failed = False
         try:
             with self.handle as node_capsule:
-                client_capsule = _rclpy.rclpy_create_client(
+                client_impl = _rclpy.Client(
                     node_capsule,
                     srv_type,
                     srv_name,
@@ -1393,11 +1393,9 @@ class Node:
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
 
-        client_handle = Handle(client_capsule)
-
         client = Client(
             self.context,
-            client_handle, srv_type, srv_name, qos_profile,
+            client_impl, srv_type, srv_name, qos_profile,
             callback_group)
         self.__clients.append(client)
         callback_group.add_entity(client)
