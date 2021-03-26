@@ -68,6 +68,60 @@ qos_check_compatible(
   const py::capsule & subscription_qos_profile
 );
 
+/// Convert rclpy.qos.QoSProfile arguments to a C rmw_qos_profile_t capsule.
+/**
+ * Raises ValueError if a any capsule is not of the expected type.
+ * Raises MemoryError if rmw_qos_profile_t allocation fails.
+ *
+ * \param[in] qos_history an rclpy.qos.QoSHistoryPolicy value.
+ * \param[in] qos_depth depth of the message queue.
+ * \param[in] qos_reliability an rclpy.qos.QoSReliabilityPolicy value.
+ * \param[in] qos_durability an rclpy.qos.QoSDurabilityPolicy value.
+ * \param[in] pyqos_lifespan lifespan QoS policy parameter
+ *   as an rcl_duration_t capsule.
+ * \param[in] pyqos_deadline deadline QoS policy parameter
+ *   as an rcl_duration_t capsule.
+ * \param[in] qos_liveliness an rclpy.qos.QoSLivelinessPolicy value.
+ * \param[in] pyqos_liveliness_lease_duration livelines QoS policy
+ *   lease duration as an rcl_duration_t capsule.
+ * \param[in] avoid_ros_namespace_conventions Whether to use ROS
+ *   namespace conventions or not.
+ * \return Capsule pointing to a rmw_qos_profile_t C struct.
+ */
+py::capsule
+convert_from_py_qos_policy(
+  int qos_history,
+  int qos_depth,
+  int qos_reliability,
+  int qos_durability,
+  py::capsule pyqos_lifespan,
+  py::capsule pyqos_deadline,
+  int qos_liveliness,
+  py::capsule pyqos_liveliness_lease_duration,
+  bool avoid_ros_namespace_conventions);
+
+/// Convert a C rmw_qos_profile_t capsule to a dictionary.
+/**
+ * This function is exposed to facilitate testing profile type conversion.
+ *
+ * Raises ValueError if a \p pyqos_profile is not an rmw_qos_profile_t capsule.
+ *
+ * \param[in] pyqos_profile Capsule pointing to rmw_qos_profile_t
+ * \return a dictionary suitable for rclpy.qos.QoSProfile instantiation.
+ */
+py::dict
+convert_to_py_qos_policy(py::capsule pyqos_profile);
+
+/// Fetch a predefined rclpy.qos.QoSProfile keyword arguments.
+/**
+ * Raises InvalidArgument if the given \p rmw_profile is unknown.
+ *
+ * \param[in] qos_profile_name Name of the profile to fetch.
+ * \return a dictionary suitable for rclpy.qos.QoSProfile instantiation.
+ */
+py::dict
+get_rmw_qos_profile(const char * qos_profile_name);
+
 }  // namespace rclpy
 
 #endif  // RCLPY__QOS_HPP_

@@ -383,4 +383,14 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_node_parameters", &rclpy::get_node_parameters,
     "Get the initial parameters for a node from the command line.");
+
+  m.def(
+    "rclpy_convert_from_py_qos_policy", &rclpy::convert_from_py_qos_policy,
+    "Convert rclpy.qos.QoSProfile arguments into a rmw_qos_profile_t.");
+  m.def(
+    "rclpy_convert_to_py_qos_policy", &rclpy::convert_to_py_qos_policy,
+    "Convert a rmw_qos_profile_t into rclpy.qos.QoSProfile keyword arguments.");
+  m.def(
+    "rclpy_get_rmw_qos_profile", &rclpy::get_rmw_qos_profile,
+    "Fetch a predefined rclpy.qos.QoSProfile keyword arguments.");
 }
