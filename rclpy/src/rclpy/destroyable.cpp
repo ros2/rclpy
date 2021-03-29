@@ -21,14 +21,13 @@
 
 namespace rclpy
 {
-Destroyable &
+void
 Destroyable::enter()
 {
   if (please_destroy_) {
     throw InvalidHandle("cannot use Destroyable because destruction was requested");
   }
   ++use_count;
-  return *this;
 }
 
 void

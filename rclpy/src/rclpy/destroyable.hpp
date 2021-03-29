@@ -26,7 +26,7 @@ class Destroyable
 {
 public:
   /// Context manager __enter__ - block destruction
-  Destroyable &
+  void
   enter();
 
   /// Context manager __exit__ - unblock destruction
