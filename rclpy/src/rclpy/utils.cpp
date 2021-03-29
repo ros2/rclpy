@@ -133,15 +133,17 @@ remove_ros_args(py::object pycli_args)
   py::list pyargs;
   if (!pycli_args.is_none()) {
     pyargs = pycli_args;
-    arg_values.resize(pyargs.size());
-    for (size_t i = 0; i < pyargs.size(); ++i) {
-      // CPython owns const char * memory - no need to free it
-      arg_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
-      if (!arg_values[i]) {
-        throw py::error_already_set();
+    if (!pyargs.empty()) {
+      arg_values.resize(pyargs.size());
+      for (size_t i = 0; i < pyargs.size(); ++i) {
+        // CPython owns const char * memory - no need to free it
+        arg_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
+        if (!arg_values[i]) {
+          throw py::error_already_set();
+        }
       }
+      const_arg_values = &(arg_values[0]);
     }
-    const_arg_values = &(arg_values[0]);
   }
 
   if (arg_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
