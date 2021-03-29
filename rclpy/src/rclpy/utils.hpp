@@ -82,13 +82,16 @@ assert_liveliness(py::object pyentity);
 
 /// Remove ROS specific args from a list of args.
 /**
- * Raises ?
+ * Raises RCLInvalidROSArgsError if args contains invalid ROS arguments
+ * Raises RCLError on failure of parsing arguments or object cleanup
+ * Raises ValueError if number of arguments exceeds limit
+ * Raises UnparsedROSArgsError if ROS arguments are not fully parsed
  *
- * \param[in] pyargs A list of strings
+ * \param[in] pycli_args A list of strings
  * \return Parsed list of strings
  */
 py::list
-remove_ros_args(py::object pyargs);
+remove_ros_args(py::object pycli_args);
 
 }  // namespace rclpy
 
