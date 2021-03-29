@@ -35,7 +35,7 @@ public:
   /**
    * This function will create a client for the given service name.
    * This client will use the typesupport defined in the service module
-   * provided as pysrv_type to send messages over the wire.
+   * provided as pysrv_type to send messages.
    *
    * Raises ValueError if the capsules are not the correct types
    * Raises RuntimeError if the client could not be created
