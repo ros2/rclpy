@@ -12,20 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__TIME_POINT_HPP_
-#define RCLPY__TIME_POINT_HPP_
+#ifndef RCLPY__LOGGING_HPP_
+#define RCLPY__LOGGING_HPP_
 
 #include <pybind11/pybind11.h>
+
+#include <mutex>
 
 namespace py = pybind11;
 
 namespace rclpy
 {
-/// Define a pybind11 wrapper for an rcl_time_point_t
+/// Acquire the global logging mutex when constructed, and release it when destructed
+class LoggingGuard
+{
+public:
+  LoggingGuard();
+
+private:
+  static std::recursive_mutex logging_mutex_;
+  std::lock_guard<std::recursive_mutex> guard_;
+};
+
+/// Initialize rcl logging
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * Raises RuntimeError if rcl logging could not be initialized
+ * \param[in] pycontext a context instance to use to retrieve global CLI arguments
  */
-void define_time_point(py::object module);
+void
+logging_configure(py::object pycontext);
+
+/// Finalize rcl logging
+void
+logging_fini(void);
 }  // namespace rclpy
 
-#endif  // RCLPY__TIME_POINT_HPP_
+#endif  // RCLPY__LOGGING_HPP_

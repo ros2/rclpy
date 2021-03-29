@@ -123,11 +123,8 @@ class Clock:
     def now(self):
         from rclpy.time import Time
         with self.handle as clock_capsule:
-            time_handle = _rclpy.rclpy_clock_get_now(clock_capsule)
-        # TODO(dhood): Return a python object from the C extension
-        return Time(
-            nanoseconds=_rclpy.rclpy_time_point_get_nanoseconds(time_handle),
-            clock_type=self.clock_type)
+            rcl_time = _rclpy.rclpy_clock_get_now(clock_capsule)
+        return Time(nanoseconds=rcl_time.nanoseconds, clock_type=self.clock_type)
 
     def create_jump_callback(self, threshold, *, pre_callback=None, post_callback=None):
         """

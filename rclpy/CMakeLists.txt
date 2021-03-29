@@ -149,9 +149,6 @@ install(TARGETS rclpy_common
 # Main extension with bulk of the code
 pybind11_add_module(_rclpy SHARED
   src/rclpy/_rclpy.c
-  src/rclpy/detail/execute_with_logging_mutex.cpp
-  src/rclpy/detail/logging_mutex.cpp
-  src/rclpy/detail/thread_safe_logging_output_handler.cpp
 )
 target_link_libraries(_rclpy PRIVATE
   rclpy_common
@@ -173,6 +170,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
   src/rclpy/init.cpp
+  src/rclpy/logging.cpp
   src/rclpy/names.cpp
   src/rclpy/node.cpp
   src/rclpy/publisher.cpp

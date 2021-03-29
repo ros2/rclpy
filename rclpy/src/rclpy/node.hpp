@@ -144,6 +144,30 @@ get_node_names_and_namespaces_with_enclaves(py::capsule pynode);
 py::dict
 get_node_parameters(py::object pyparameter_cls, py::capsule pynode);
 
+/// Create a node
+/**
+ * Raises ValueError if the node name or namespace is invalid
+ * Raises RCLError if the node could not be initialized for an unexpected reason
+ * Raises RCLInvalidROSArgsError if the given CLI arguments could not be parsed
+ * Raises UnknownROSArgsError if there are unknown CLI arguments given
+ * Raises MemoryError if memory could not be allocated for the node
+ *
+ * \param[in] node_name name of the node to be created
+ * \param[in] namespace namespace for the node
+ * \param[in] pycontext Capsule for an rcl_context_t
+ * \param[in] pycli_args a sequence of command line arguments for just this node, or None
+ * \param[in] use_global_arguments if true then the node will also use cli arguments on pycontext
+ * \param[in] enable rosout if true then enable rosout logging
+ * \return Capsule of the pointer to the created rcl_node_t * structure
+ */
+py::capsule
+create_node(
+  const char * node_name,
+  const char * namespace_,
+  py::capsule pycontext,
+  py::object pycli_args,
+  bool use_global_arguments,
+  bool enable_rosout);
 }  // namespace rclpy
 
 #endif  // RCLPY__NODE_HPP_
