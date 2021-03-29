@@ -78,7 +78,7 @@ get_rmw_implementation_identifier();
  * \return None
  */
 void
-assert_liveliness(py::object pyentity);
+assert_liveliness(py::capsule pyentity);
 
 /// Remove ROS specific args from a list of args.
 /**
