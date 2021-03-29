@@ -43,7 +43,7 @@ create_clock(rcl_clock_type_t clock_type);
  * \param[in] pyclock Capsule pointing to the clock
  * \return capsule to a time point with the current time
  */
-py::capsule
+rcl_time_point_t
 clock_get_now(py::capsule pyclock);
 
 /// Returns if a clock using ROS time has the ROS time override enabled.
@@ -70,15 +70,14 @@ clock_set_ros_time_override_is_enabled(py::capsule pyclock, bool enabled);
 
 /// Set the ROS time override for a clock using ROS time.
 /**
- * Raises ValueError if pyclock is not a clock capsule, or
- * pytime_point is not a time point capsule
+ * Raises ValueError if pyclock is not a clock capsule
  * Raises RRCLError if the clock's ROS time override cannot be set
  *
  * \param[in] pyclock Capsule pointing to the clock to set
- * \param[in] pytime_point Capsule pointing to the time point
+ * \param[in] time_point a time point instance
  */
 void
-clock_set_ros_time_override(py::capsule py_clock, py::capsule pytime_point);
+clock_set_ros_time_override(py::capsule py_clock, rcl_time_point_t time_point);
 
 /// Add a time jump callback to a clock.
 /**

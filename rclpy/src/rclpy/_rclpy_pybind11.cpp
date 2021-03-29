@@ -232,12 +232,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_take", &rclpy::subscription_take_message,
     "Take a message and its metadata from a subscription");
 
-  m.def(
-    "rclpy_create_time_point", &rclpy::create_time_point,
-    "Create a time point.");
-  m.def(
-    "rclpy_time_point_get_nanoseconds", &rclpy::time_point_get_nanoseconds,
-    "Get the nanoseconds value of a time point.");
+  rclpy::define_time_point(m);
 
   m.def(
     "rclpy_create_clock", &rclpy::create_clock,

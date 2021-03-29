@@ -21,27 +21,11 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-/// Create a time point
+/// Define a pybind11 wrapper for an rcl_time_point_t
 /**
- * Raises TypeError if argument of invalid type
- * Raises OverflowError if nanoseconds argument cannot be converted to uint64_t
- *
- * \param[in] nanoseconds the nanoseconds to store in the time point
- * \param[in] clock_type enum of type ClockType
- * \return Capsule of the pointer to the created rcl_time_point_t
+ * \param[in] module a pybind11 module to add the definition to
  */
-py::capsule
-create_time_point(int64_t nanoseconds, rcl_clock_type_t clock_type);
-
-/// Returns the nanoseconds value of the time point
-/**
- * Raises ValueError if pytime_point is not a time point capsule
- *
- * \param[in] pytime_point Capsule pointing to the time point
- * \return nanoseconds on the time time point
- */
-int64_t
-time_point_get_nanoseconds(py::capsule pytime_point);
+void define_time_point(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__TIME_POINT_HPP_

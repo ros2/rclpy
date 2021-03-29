@@ -36,12 +36,11 @@ class Time:
             # pybind11 would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C time point.')
-        self._time_handle = _rclpy.rclpy_create_time_point(total_nanoseconds, clock_type)
-        self._clock_type = clock_type
+        self._time_handle = _rclpy.rcl_time_point_t(total_nanoseconds, clock_type)
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_time_point_get_nanoseconds(self._time_handle)
+        return self._time_handle.nanoseconds
 
     def seconds_nanoseconds(self):
         """
@@ -55,7 +54,7 @@ class Time:
 
     @property
     def clock_type(self):
-        return self._clock_type
+        return self._time_handle.clock_type
 
     def __repr__(self):
         return 'Time(nanoseconds={0}, clock_type={1})'.format(
