@@ -146,20 +146,6 @@ install(TARGETS rclpy_common
   RUNTIME DESTINATION bin
 )
 
-# Main extension with bulk of the code
-pybind11_add_module(_rclpy SHARED
-  src/rclpy/_rclpy.c
-)
-target_link_libraries(_rclpy PRIVATE
-  rclpy_common
-  rcl::rcl
-  rcl_yaml_param_parser::rcl_yaml_param_parser
-  rcutils::rcutils
-)
-configure_build_install_location(_rclpy)
-clean_windows_flags(_rclpy)
-remove_py_debug_definition_on_win32(_rclpy)
-
 # Split from main extension and converted to pybind11
 pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/_rclpy_pybind11.cpp
