@@ -91,8 +91,9 @@ init(py::list pyargs, py::capsule pycontext, size_t domain_id)
   if (arg_c_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
     throw std::range_error("Too many cli arguments");
   }
-  int arg_count = static_cast<int>(arg_c_values.size());
-  ret = rcl_init(arg_count, &(arg_c_values[0]), &init_options.rcl_options, context);
+  int argc = static_cast<int>(arg_c_values.size());
+  const char ** argv = argc > 0 ? &(arg_c_values[0]) : nullptr;
+  ret = rcl_init(argc, argv, &init_options.rcl_options, context);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to initialize rcl");
   }
