@@ -112,7 +112,8 @@ assert_liveliness(py::capsule pyentity)
         pyentity.ptr(), "rclpy_publisher_t"));
     if (nullptr == publisher) {
       throw py::error_already_set();
-    } else if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
+    }
+    if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
       throw RCLError("Failed to assert liveliness on the Publisher");
     }
   } else {
@@ -161,7 +162,12 @@ remove_ros_args(py::object pycli_args)
     {
       ret = rcl_arguments_fini(&parsed_args);
       if (RCL_RET_OK != ret) {
-        throw RCLError("Failed to fini parsed args");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "rcl_arguments_fini failed: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
       }
     });
 
