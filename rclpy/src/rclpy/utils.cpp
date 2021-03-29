@@ -150,6 +150,13 @@ remove_ros_args(py::object pycli_args)
   int num_args = static_cast<int>(arg_values.size());
   ret = rcl_parse_arguments(num_args, const_arg_values, allocator, &parsed_args);
 
+  if (RCL_RET_INVALID_ROS_ARGS == ret) {
+    throw RCLInvalidROSArgsError("Failed to parse ROS arguments");
+  }
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to parse arguments");
+  }
+
   RCPPUTILS_SCOPE_EXIT(
     {
       ret = rcl_arguments_fini(&parsed_args);
@@ -157,13 +164,6 @@ remove_ros_args(py::object pycli_args)
         throw RCLError("Failed to fini parsed args");
       }
     });
-
-  if (RCL_RET_INVALID_ROS_ARGS == ret) {
-    throw RCLInvalidROSArgsError("Failed to parse ROS arguments");
-  }
-  if (RCL_RET_OK != ret) {
-    throw RCLError("Failed to parse arguments");
-  }
 
   throw_if_unparsed_ros_args(pyargs, parsed_args);
 
