@@ -1904,7 +1904,7 @@ class TestCreateNode(unittest.TestCase):
                 cli_args=['--ros-args', '-r', 'not-a-remap'],
                 context=context)
 
-        unknown_ros_args_error_pattern = r'Found unknown ROS arguments:.*\[\'--my-custom-flag\'\]'
+        unknown_ros_args_error_pattern = r'\[\'--my-custom-flag\'\]'
         with self.assertRaisesRegex(_rclpy.UnknownROSArgsError, unknown_ros_args_error_pattern):
             rclpy.create_node(
                 'my_node',

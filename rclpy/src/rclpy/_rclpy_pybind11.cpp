@@ -23,6 +23,7 @@
 #include "graph.hpp"
 #include "guard_condition.hpp"
 #include "init.hpp"
+#include "logging.hpp"
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
@@ -346,6 +347,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Deserialize a ROS message.");
 
   m.def(
+    "rclpy_create_node", &rclpy::create_node,
+    "Create a Node.");
+  m.def(
     "rclpy_node_get_fully_qualified_name", &rclpy::get_node_fully_qualified_name,
     "Get the fully qualified name of node.");
   m.def(
@@ -393,4 +397,11 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_get_rmw_qos_profile", &rclpy::get_rmw_qos_profile,
     "Fetch a predefined rclpy.qos.QoSProfile keyword arguments.");
+
+  m.def(
+    "rclpy_logging_fini", rclpy::logging_fini,
+    "Finalize RCL logging.");
+  m.def(
+    "rclpy_logging_configure", rclpy::logging_configure,
+    "Initialize RCL logging.");
 }
