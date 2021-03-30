@@ -1117,7 +1117,7 @@ rclpy_action_expire_goals(py::capsule pyaction_server, int64_t max_num_goals)
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t");
 
   auto expired_goals =
-    std::unique_ptr<rcl_action_goal_info_t>(new rcl_action_goal_info_t[max_num_goals]);
+    std::unique_ptr<rcl_action_goal_info_t[]>(new rcl_action_goal_info_t[max_num_goals]);
   size_t num_expired;
   rcl_ret_t ret = rcl_action_expire_goals(
     action_server, expired_goals.get(), max_num_goals, &num_expired);
