@@ -17,7 +17,10 @@
 
 #include <pybind11/pybind11.h>
 
+#include <memory>
 #include <string>
+
+#include "client.hpp"
 
 namespace py = pybind11;
 
@@ -72,6 +75,17 @@ wait_set_clear_entities(py::capsule pywait_set);
  */
 size_t
 wait_set_add_entity(const std::string & entity_type, py::capsule pywait_set, py::capsule pyentity);
+
+/// Add a client to the wait set structure
+/**
+ * Raises RCLError if any lower level error occurs
+ *
+ * \param[in] pywait_set Capsule pointing to the wait set structure
+ * \param[in] client a client to add to the wait set
+ * \return Index in waitset entity was added at
+ */
+size_t
+wait_set_add_client(const py::capsule pywait_set, const Client & client);
 
 /// Check if an entity in the wait set is ready by its index
 /**

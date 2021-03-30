@@ -86,6 +86,11 @@ class NotImplementedError : public RCLError
   using RCLError::RCLError;
 };
 
+class InvalidHandle : public std::runtime_error
+{
+  using std::runtime_error::runtime_error;
+};
+
 }  // namespace rclpy
 
 #endif  // RCLPY_COMMON__EXCEPTIONS_HPP_

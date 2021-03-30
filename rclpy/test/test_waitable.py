@@ -42,7 +42,7 @@ class ClientWaitable(Waitable):
         super().__init__(ReentrantCallbackGroup())
 
         with node.handle as node_capsule:
-            self.client = _rclpy.rclpy_create_client(
+            self.client = _rclpy.Client(
                 node_capsule, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile())
         self.client_index = None
         self.client_is_ready = False
@@ -60,7 +60,7 @@ class ClientWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.client_is_ready:
             self.client_is_ready = False
-            return _rclpy.rclpy_take_response(self.client, EmptySrv.Response)
+            return self.client.take_response(EmptySrv.Response)
         return None
 
     async def execute(self, taken_data):
@@ -76,7 +76,7 @@ class ClientWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.client_index = _rclpy.rclpy_wait_set_add_entity('client', wait_set, self.client)
+        self.client_index = _rclpy.rclpy_wait_set_add_client(wait_set, self.client)
 
 
 class ServerWaitable(Waitable):
@@ -317,11 +317,11 @@ class TestWaitable(unittest.TestCase):
 
         server = self.node.create_service(EmptySrv, 'test_client', lambda req, resp: resp)
 
-        while not _rclpy.rclpy_service_server_is_available(self.waitable.client):
+        while not self.waitable.client.service_server_is_available():
             time.sleep(0.1)
 
         thr = self.start_spin_thread(self.waitable)
-        _rclpy.rclpy_send_request(self.waitable.client, EmptySrv.Request())
+        self.waitable.client.send_request(EmptySrv.Request())
         thr.join()
 
         assert self.waitable.future.done()

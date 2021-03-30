@@ -19,6 +19,7 @@
 #include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
+#include "destroyable.hpp"
 #include "duration.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
@@ -43,6 +44,8 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.doc() = "ROS 2 Python client library.";
+
+  rclpy::define_destroyable(m);
 
   py::enum_<rcl_clock_type_t>(m, "ClockType")
   .value("UNINITIALIZED", RCL_CLOCK_UNINITIALIZED)
@@ -101,6 +104,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "UnsupportedEventTypeError", rclerror.ptr());
   py::register_exception<rclpy::NotImplementedError>(
     m, "NotImplementedError", PyExc_NotImplementedError);
+  py::register_exception<rclpy::InvalidHandle>(
+    m, "InvalidHandle", PyExc_RuntimeError);
 
   m.def(
     "rclpy_init", &rclpy::init,
@@ -109,18 +114,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_shutdown", &rclpy::shutdown,
     "rclpy_shutdown.");
 
-  m.def(
-    "rclpy_create_client", &rclpy::client_create,
-    "Create a Client");
-  m.def(
-    "rclpy_send_request", &rclpy::client_send_request,
-    "Send a request");
-  m.def(
-    "rclpy_service_server_is_available", &rclpy::client_service_server_is_available,
-    "Return true if the service server is available");
-  m.def(
-    "rclpy_take_response", &rclpy::client_take_response,
-    "rclpy_take_response");
+  rclpy::define_client(m);
 
   m.def(
     "rclpy_context_get_domain_id", &rclpy::context_get_domain_id,
@@ -269,6 +263,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_wait_set_add_entity", &rclpy::wait_set_add_entity,
     "rclpy_wait_set_add_entity.");
+  m.def(
+    "rclpy_wait_set_add_client", &rclpy::wait_set_add_client,
+    "Add a client to the wait set.");
   m.def(
     "rclpy_wait_set_is_ready", &rclpy::wait_set_is_ready,
     "rclpy_wait_set_is_ready.");
