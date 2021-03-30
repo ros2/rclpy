@@ -42,6 +42,9 @@ public:
   void
   destroy();
 
+  virtual
+  ~Destroyable() = default;
+
 private:
   size_t use_count = 0u;
   bool please_destroy_ = false;
