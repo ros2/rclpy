@@ -149,6 +149,7 @@ install(TARGETS rclpy_common
 # Split from main extension and converted to pybind11
 pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/_rclpy_pybind11.cpp
+  src/rclpy/_rclpy_pycapsule.cpp
   src/rclpy/client.cpp
   src/rclpy/clock.cpp
   src/rclpy/context.cpp
@@ -218,13 +219,6 @@ target_link_libraries(_rclpy_signal_handler PRIVATE
 configure_build_install_location(_rclpy_signal_handler)
 clean_windows_flags(_rclpy_signal_handler)
 remove_py_debug_definition_on_win32(_rclpy_signal_handler)
-
-# Pycapsule library
-pybind11_add_module(_rclpy_pycapsule SHARED
-  src/rclpy/_rclpy_pycapsule.cpp
-)
-configure_build_install_location(_rclpy_pycapsule)
-clean_windows_flags(_rclpy_pycapsule)
 
 # Handle library, used to keep dependencies between C objects.
 pybind11_add_module(_rclpy_handle SHARED

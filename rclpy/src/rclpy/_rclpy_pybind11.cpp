@@ -28,6 +28,7 @@
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
+#include "pycapsule_api.hpp"
 #include "qos.hpp"
 #include "qos_events.hpp"
 #include "rclpy_common/exceptions.hpp"
@@ -410,4 +411,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_logging_configure", rclpy::logging_configure,
     "Initialize RCL logging.");
+
+  rclpy::define_pycapsule_api(m);
 }
