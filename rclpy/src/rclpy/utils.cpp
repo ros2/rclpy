@@ -188,7 +188,7 @@ remove_ros_args(py::object pycli_args)
     throw RCLError("Failed rcl_remove_ros_arguments");
   }
 
-  /* it was determined that the following warning is likely a front-end parsing issue in MSVC.
+/* it was determined that the following warning is likely a front-end parsing issue in MSVC.
  * See: https://github.com/ros2/rclpy/pull/180#issuecomment-375452757
  */
 #if defined(_MSC_VER)
@@ -198,11 +198,10 @@ remove_ros_args(py::object pycli_args)
   RCPPUTILS_SCOPE_EXIT(
     {
       allocator.deallocate(nonros_argv, allocator.state);
-   });
+    });
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
-    });
 
   py::list result_args(nonros_argc);
   for (int i = 0; i < nonros_argc; ++i) {
