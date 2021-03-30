@@ -16,6 +16,7 @@
 
 #include <rcl/domain_id.h>
 
+#include "action_api.hpp"
 #include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
@@ -417,4 +418,5 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_pycapsule_api(m);
   rclpy::define_handle_api(m);
   rclpy::define_logging_api(m);
+  rclpy::define_action_api(m);
 }

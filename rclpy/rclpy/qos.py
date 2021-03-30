@@ -19,7 +19,6 @@ from typing import Union
 import warnings
 
 from rclpy.duration import Duration
-from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -445,7 +444,7 @@ qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
 # ros2/rcl : rcl/rcl_action/include/rcl_action/default_qos.h
 #
 #: For actions, using reliable reliability, transient-local durability.
-qos_profile_action_status_default = QoSProfile(**_rclpy_action.rclpy_action_get_rmw_qos_profile(
+qos_profile_action_status_default = QoSProfile(**_rclpy.rclpy_action_get_rmw_qos_profile(
     'rcl_action_qos_profile_status_default'))
 
 

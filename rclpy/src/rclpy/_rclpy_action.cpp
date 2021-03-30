@@ -1227,9 +1227,11 @@ rclpy_action_get_names_and_types(py::capsule pynode)
 }
 
 
-PYBIND11_MODULE(_rclpy_action, m) {
-  m.doc() = "ROS 2 Python Action library.";
-
+namespace rclpy
+{
+void
+define_action_api(py::module m)
+{
   m.def(
     "rclpy_action_destroy_entity", &rclpy_action_destroy_entity,
     "Destroy a rclpy_action entity.");
@@ -1341,3 +1343,4 @@ PYBIND11_MODULE(_rclpy_action, m) {
     "rclpy_action_get_names_and_types", &rclpy_action_get_names_and_types,
     "Get action names and types.");
 }
+}  // namespace rclpy
