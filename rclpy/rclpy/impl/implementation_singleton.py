@@ -31,5 +31,4 @@ package = 'rclpy'
 
 rclpy_implementation = import_c_library('._rclpy_pybind11', package)
 rclpy_action_implementation = import_c_library('._rclpy_action', package)
-rclpy_logging_implementation = import_c_library('._rclpy_logging', package)
 rclpy_signal_handler_implementation = import_c_library('._rclpy_signal_handler', package)

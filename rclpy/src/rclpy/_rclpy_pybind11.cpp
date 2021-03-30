@@ -26,6 +26,7 @@
 #include "handle_api.hpp"
 #include "init.hpp"
 #include "logging.hpp"
+#include "logging_api.hpp"
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
@@ -415,4 +416,5 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
 
   rclpy::define_pycapsule_api(m);
   rclpy::define_handle_api(m);
+  rclpy::define_logging_api(m);
 }

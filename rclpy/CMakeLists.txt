@@ -149,6 +149,7 @@ install(TARGETS rclpy_common
 # Split from main extension and converted to pybind11
 pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/_rclpy_handle.cpp
+  src/rclpy/_rclpy_logging.cpp
   src/rclpy/_rclpy_pybind11.cpp
   src/rclpy/_rclpy_pycapsule.cpp
   src/rclpy/client.cpp
@@ -179,7 +180,10 @@ target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/
 )
 target_link_libraries(_rclpy_pybind11 PRIVATE
-  rcpputils::rcpputils rclpy_common
+  rcl_logging_interface::rcl_logging_interface
+  rclpy_common
+  rcpputils::rcpputils
+  rcutils::rcutils
 )
 configure_build_install_location(_rclpy_pybind11)
 clean_windows_flags(_rclpy_pybind11)
@@ -196,17 +200,6 @@ target_link_libraries(_rclpy_action PRIVATE
 )
 configure_build_install_location(_rclpy_action)
 clean_windows_flags(_rclpy_action)
-
-# Logging support provided by rcutils
-pybind11_add_module(_rclpy_logging SHARED
-  src/rclpy/_rclpy_logging.cpp
-)
-target_link_libraries(_rclpy_logging PRIVATE
-  rcl_logging_interface::rcl_logging_interface
-  rcutils::rcutils
-)
-configure_build_install_location(_rclpy_logging)
-clean_windows_flags(_rclpy_logging)
 
 # Signal handling library
 pybind11_add_module(_rclpy_signal_handler SHARED
