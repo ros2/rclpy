@@ -23,6 +23,7 @@
 #include "duration.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
+#include "handle_api.hpp"
 #include "init.hpp"
 #include "logging.hpp"
 #include "names.hpp"
@@ -413,4 +414,5 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Initialize RCL logging.");
 
   rclpy::define_pycapsule_api(m);
+  rclpy::define_handle_api(m);
 }
