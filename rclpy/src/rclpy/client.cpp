@@ -37,7 +37,7 @@ Client::destroy()
 }
 
 Client::Client(
-  py::capsule pynode, py::object pysrv_type, const char * service_name, py::capsule pyqos_profile)
+  py::capsule pynode, py::object pysrv_type, const char * service_name, py::object pyqos_profile)
 : node_handle_(std::make_shared<Handle>(pynode))
 {
   auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
@@ -51,11 +51,7 @@ Client::Client(
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
   if (!pyqos_profile.is_none()) {
-    if (0 != strcmp("rmw_qos_profile_t", pyqos_profile.name())) {
-      throw py::value_error("capsule is not an rmw_qos_profile_t");
-    }
-    auto qos_profile = static_cast<rmw_qos_profile_t *>(pyqos_profile);
-    client_ops.qos = *qos_profile;
+    client_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
   // Create a client

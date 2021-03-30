@@ -36,13 +36,13 @@ namespace rclpy
  * \param[in] pynode Capsule pointing to the node to add the publisher to
  * \param[in] pymsg_type Message type associated with the publisher
  * \param[in] topic The name of the topic to attach the publisher to
- * \param[in] pyqos_profile QoSProfile object with the profile of this publisher
+ * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher
  * \return Capsule of the pointer to the created rcl_publisher_t * structure, or
  */
 py::capsule
 publisher_create(
   py::capsule pynode, py::object pymsg_type, std::string topic,
-  py::capsule pyqos_profile);
+  py::object pyqos_profile);
 
 /// Get the name of the logger associated with the node of the publisher.
 /**

@@ -38,13 +38,13 @@ namespace rclpy
  * \param[in] pynode Capsule pointing to the node to add the service to
  * \param[in] pysrv_type Service module associated with the service
  * \param[in] service_name Python object for the service name
- * \param[in] pyqos_profile QoSProfile Python object for this service
+ * \param[in] pyqos_profile rmw_qos_profile_t object for this service
  * \return capsule containing the rcl_service_t
  */
 py::capsule
 service_create(
   py::capsule pynode, py::object pysrv_type, std::string service_name,
-  py::capsule pyqos_profile);
+  py::object pyqos_profile);
 
 /// Publish a response message
 /**

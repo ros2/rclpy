@@ -38,13 +38,13 @@ namespace rclpy
  * \param[in] pynode Capsule pointing to the node to add the subscriber to
  * \param[in] pymsg_type Message module associated with the subscriber
  * \param[in] topic The topic name
- * \param[in] pyqos_profile QoSProfile Python object for this subscription
+ * \param[in] pyqos_profile rmw_qos_profile_t object for this subscription
  * \return capsule containing the rclpy_subscription_t
  */
 py::capsule
 subscription_create(
   py::capsule pynode, py::object pymsg_type, std::string topic,
-  py::capsule pyqos_profile);
+  py::object pyqos_profile);
 
 /// Take a message and its metadata from a subscription
 /**
