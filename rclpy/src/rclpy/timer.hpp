@@ -33,6 +33,18 @@ class Timer : public Destroyable
 {
 public:
   /// Create a timer
+  /**
+   * This class will create a timer
+   *
+   * Raises RCLError on initialization failure
+   * Raises TypeError if argument of invalid type
+   * Raises ValueError if argument cannot be converted
+   *
+   * \param[in] clock pycapsule containing an rcl_clock_t
+   * \param[in] pycontext Capsule for an rcl_timer_t
+   * \param[in] period_nsec the period of the timer in nanoseconds
+   * \return a timer capsule
+   */
   Timer(py::capsule pyclock, py::capsule pycontext, int64_t period_nsec);
 
   ~Timer() = default;
