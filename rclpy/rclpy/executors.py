@@ -347,7 +347,7 @@ class Executor:
         header, response = seq_and_response
         if header is not None:
             try:
-                sequence = _rclpy.rclpy_service_info_get_sequence_number(header)
+                sequence = header.request_id.sequence_number
                 future = client._pending_requests[sequence]
             except KeyError:
                 # The request was cancelled

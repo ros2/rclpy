@@ -17,6 +17,7 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rmw/types.h>
 #include <string>
 
 namespace py = pybind11;
@@ -53,10 +54,10 @@ service_create(
  *
  * \param[in] pyservice Capsule pointing to the service
  * \param[in] pyresponse reply message to send
- * \param[in] pyheader Capsule pointing to the rmw_request_id_t header of the request we respond to
+ * \param[in] header Pointer to the rmw_request_id_t header of the request we respond to
  */
 void
-service_send_response(py::capsule pyservice, py::object pyresponse, py::capsule pyheader);
+service_send_response(py::capsule pyservice, py::object pyresponse, rmw_request_id_t * header);
 
 /// Take a request from a given service
 /**
@@ -68,7 +69,7 @@ service_send_response(py::capsule pyservice, py::object pyresponse, py::capsule 
  * \return None if there was nothing to take, or
  * \return List with 2 elements:
  *            first element: a Python request message with all fields populated with received request
- *            second element: a Capsule pointing to the header (rmw_request_id) of the processed request
+ *            second element: The rmw_request_id header of the processed request
  */
 py::object
 service_take_request(py::capsule pyservice, py::object pyrequest_type);

@@ -538,7 +538,6 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
 
 #define SEND_SERVICE_RESPONSE(Type) \
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t"); \
-  auto header = get_pointer<rmw_request_id_t *>(pyheader, "rmw_request_id_t"); \
   destroy_ros_message_signature * destroy_ros_message = NULL; \
   void * raw_ros_response = rclpy_convert_from_py(pyresponse.ptr(), &destroy_ros_message); \
   if (!raw_ros_response) { \
@@ -560,12 +559,9 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   } \
   auto taken_msg_ptr = \
     std::unique_ptr<void, destroy_ros_message_signature *>(taken_msg, destroy_ros_message); \
-  auto header_deleter = [](rmw_request_id_t * ptr) {PyMem_Free(static_cast<void *>(ptr));}; \
-  /* header only destroyed on error in this function */ \
-  auto header = std::unique_ptr<rmw_request_id_t, decltype(header_deleter)>( \
-    static_cast<rmw_request_id_t *>(PyMem_Malloc(sizeof(rmw_request_id_t))), header_deleter); \
+  rmw_request_id_t header; \
   rcl_ret_t ret = \
-    rcl_action_take_ ## Type ## _request(action_server, header.get(), taken_msg_ptr.get()); \
+    rcl_action_take_ ## Type ## _request(action_server, &header, taken_msg_ptr.get()); \
   /* Create the tuple to return */ \
   py::tuple pytuple(2); \
   if (ret == RCL_RET_ACTION_CLIENT_TAKE_FAILED || ret == RCL_RET_ACTION_SERVER_TAKE_FAILED) { \
@@ -575,8 +571,7 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   } else if (ret != RCL_RET_OK) { \
     throw rclpy::RCLError("Failed to take " #Type); \
   } \
-  /* TODO(sloretz) This looks suspicious, what is currently deleting header? */ \
-  pytuple[0] = py::capsule(header.release(), "rmw_request_id_t"); \
+  pytuple[0] = header; \
   pytuple[1] = py::reinterpret_steal<py::object>( \
     rclpy_convert_to_py(taken_msg_ptr.get(), pymsg_type.ptr())); \
   return pytuple;
@@ -591,11 +586,9 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   } \
   auto taken_msg_ptr = \
     std::unique_ptr<void, destroy_ros_message_signature *>(taken_msg, destroy_ros_message); \
-  auto header_deleter = [](rmw_request_id_t * ptr) {PyMem_Free(static_cast<void *>(ptr));}; \
-  auto header = std::unique_ptr<rmw_request_id_t, decltype(header_deleter)>( \
-    static_cast<rmw_request_id_t *>(PyMem_Malloc(sizeof(rmw_request_id_t))), header_deleter); \
-  rcl_ret_t ret = rcl_action_take_ ## Type ## _response(action_client, header.get(), taken_msg); \
-  int64_t sequence = header->sequence_number; \
+  rmw_request_id_t header; \
+  rcl_ret_t ret = rcl_action_take_ ## Type ## _response(action_client, &header, taken_msg); \
+  int64_t sequence = header.sequence_number; \
   /* Create the tuple to return */ \
   py::tuple pytuple(2); \
   if (ret == RCL_RET_ACTION_CLIENT_TAKE_FAILED || ret == RCL_RET_ACTION_SERVER_TAKE_FAILED) { \
@@ -634,8 +627,8 @@ rclpy_action_send_goal_request(py::capsule pyaction_client, py::object pyrequest
  *
  * \param[in] pyaction_server The action server to use when taking the request.
  * \param[in] pygoal_request_type An instance of the type of request message to take.
- * \return 2-tuple (header, received request message) where the header is a Capsule of
- *   type "rmw_request_id_t", or
+ * \return 2-tuple (header, received request message) where the header is an
+ *   "rclpy.rmw_request_id_t" type, or
  * \return 2-tuple (None, None) if there as no message to take, or
  * \return NULL if there is a failure.
  */
@@ -651,14 +644,14 @@ rclpy_action_take_goal_request(py::capsule pyaction_server, py::object pymsg_typ
  * Raises RuntimeError on failure.
  *
  * \param[in] pyaction_server The action server to use when sending the response.
- * \param[in] pyheader Capsule pointer to the message header of type "rmw_request_id_t".
+ * \param[in] header Pointer to the message header.
  * \param[in] pygoal_response The response message to send.
  * \return None
  * \return NULL if there is a failure.
  */
 void
 rclpy_action_send_goal_response(
-  py::capsule pyaction_server, py::capsule pyheader, py::object pyresponse)
+  py::capsule pyaction_server, rmw_request_id_t * header, py::object pyresponse)
 {
   SEND_SERVICE_RESPONSE(goal)
 }
@@ -703,8 +696,8 @@ rclpy_action_send_result_request(py::capsule pyaction_client, py::object pyreque
  *
  * \param[in] pyaction_server The action server to use when taking the request.
  * \param[in] pyresult_request_type An instance of the type of request message to take.
- * \return 2-tuple (header, received request message) where the header is a Capsule of
- *   type "rmw_request_id_t", or
+ * \return 2-tuple (header, received request message) where the header is an
+ *   "rclpy.rmw_request_id_t" type, or
  * \return 2-tuple (None, None) if there as no message to take, or
  * \return NULL if there is a failure.
  */
@@ -720,14 +713,14 @@ rclpy_action_take_result_request(py::capsule pyaction_server, py::object pymsg_t
  * Raises RuntimeError on failure.
  *
  * \param[in] pyaction_server The action server to use when sending the response.
- * \param[in] pyheader Capsule pointer to the message header of type "rmw_request_id_t".
+ * \param[in] pyheader Pointer to the message header.
  * \param[in] pyresult_response The response message to send.
  * \return None
  * \return NULL if there is a failure.
  */
 void
 rclpy_action_send_result_response(
-  py::capsule pyaction_server, py::capsule pyheader, py::object pyresponse)
+  py::capsule pyaction_server, rmw_request_id_t * header, py::object pyresponse)
 {
   SEND_SERVICE_RESPONSE(result)
 }
@@ -772,8 +765,8 @@ rclpy_action_send_cancel_request(py::capsule pyaction_client, py::object pyreque
  *
  * \param[in] pyaction_server The action server to use when taking the request.
  * \param[in] pycancel_request_type An instance of the type of request message to take.
- * \return 2-tuple (header, received request message) where the header is a Capsule of
- *   type "rmw_request_id_t", or
+ * \return 2-tuple (header, received request message) where the header is an
+ *   "rmw_request_id_t" type, or
  * \return 2-tuple (None, None) if there as no message to take, or
  * \return NULL if there is a failure.
  */
@@ -789,14 +782,14 @@ rclpy_action_take_cancel_request(py::capsule pyaction_server, py::object pymsg_t
  * Raises RuntimeError on failure.
  *
  * \param[in] pyaction_server The action server to use when sending the response.
- * \param[in] pyheader Capsule pointer to the message header of type "rmw_request_id_t".
+ * \param[in] pyheader Pointer to the message header.
  * \param[in] pycancel_response The response message to send.
  * \return sequence_number PyLong object representing the index of the sent response, or
  * \return NULL if there is a failure.
  */
 void
 rclpy_action_send_cancel_response(
-  py::capsule pyaction_server, py::capsule pyheader, py::object pyresponse)
+  py::capsule pyaction_server, rmw_request_id_t * header, py::object pyresponse)
 {
   SEND_SERVICE_RESPONSE(cancel)
 }

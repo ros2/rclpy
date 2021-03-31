@@ -21,35 +21,11 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-/// Retrieves the sequence number from a rmw_service_info_t capsule
+/// Define a pybind11 wrapper for an rmw_service_info_t and rmw_request_id_t
 /**
- * Raises ValueError if pyservice_info is not a service info capsule
- *
- * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
- * \return the sequence number as a long
+ * \param[in] module a pybind11 module to add the definition to
  */
-int64_t
-service_info_get_sequence_number(py::capsule pyservice_info);
-
-/// Retrieves the source timestamp number from a rmw_service_info_t capsule
-/**
- * Raises ValueError if pyservice_info is not a service info capsule
- *
- * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
- * \return the source timestamps as a long
- */
-int64_t
-service_info_get_source_timestamp(py::capsule pyservice_info);
-
-/// Retrieves the received timestsamp number from a rmw_service_info_t capsule
-/**
- * Raises ValueError if pyservice_info is not a service info capsule
- *
- * \param[in] pyservice_info Capsule pointing to the rmw_service_info_t
- * \return the receive timestamp as a long
- */
-int64_t
-service_info_get_received_timestamp(py::capsule pyservice_info);
+void define_service_info(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__SERVICE_INFO_HPP_

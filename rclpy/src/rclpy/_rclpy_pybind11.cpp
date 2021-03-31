@@ -161,15 +161,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_take_request", &rclpy::service_take_request,
     "rclpy_take_request");
 
-  m.def(
-    "rclpy_service_info_get_sequence_number", &rclpy::service_info_get_sequence_number,
-    "Retrieve sequence number from service_info");
-  m.def(
-    "rclpy_service_info_get_source_timestamp", &rclpy::service_info_get_source_timestamp,
-    "Retrieve source timestamp from service_info");
-  m.def(
-    "rclpy_service_info_get_received_timestamp", &rclpy::service_info_get_received_timestamp,
-    "Retrieve received timestamp from service_info");
+  rclpy::define_service_info(m);
 
   m.def(
     "rclpy_qos_check_compatible", &rclpy::qos_check_compatible,
