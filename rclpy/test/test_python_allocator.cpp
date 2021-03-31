@@ -39,7 +39,7 @@ TEST(test_allocator, equality) {
   py::scoped_interpreter guard{};  // Start a Python interpreter
 
   rclpy::PythonAllocator<int> int_alloc;
-  rclpy::PythonAllocator<int> float_alloc;
+  rclpy::PythonAllocator<float> float_alloc;
 
   EXPECT_TRUE(int_alloc == float_alloc);
   EXPECT_FALSE(int_alloc != float_alloc);
