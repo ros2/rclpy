@@ -167,7 +167,7 @@ void
 define_client(py::object module)
 {
   py::class_<Client, Destroyable>(module, "Client")
-  .def(py::init<py::capsule, py::object, const char *, py::capsule>())
+  .def(py::init<py::capsule, py::object, const char *, py::object>())
   .def_property_readonly(
     "pointer", [](const Client & client) {
       return reinterpret_cast<size_t>(client.rcl_ptr());
