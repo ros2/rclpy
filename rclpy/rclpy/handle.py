@@ -14,9 +14,7 @@
 
 from threading import Lock
 
-from rclpy.impl.implementation_singleton import rclpy_handle_implementation as _rclpy_handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.impl.implementation_singleton import rclpy_pycapsule_implementation as _rclpy_capsule
 
 
 InvalidHandle = _rclpy.InvalidHandle
@@ -46,8 +44,8 @@ class Handle:
         self.__valid = True
         self.__lock = Lock()
         # Called to give an opportunity to raise an exception if the object is not a pycapsule.
-        self.__capsule_pointer = _rclpy_handle.rclpy_handle_get_pointer(pycapsule)
-        self.__handle_name = _rclpy_capsule.rclpy_pycapsule_name(pycapsule)
+        self.__capsule_pointer = _rclpy.rclpy_handle_get_pointer(pycapsule)
+        self.__handle_name = _rclpy.rclpy_pycapsule_name(pycapsule)
 
     def __bool__(self):
         """Return True if the handle is valid."""
@@ -135,4 +133,4 @@ class Handle:
         self.__valid = False
 
         # Calls pycapsule destructor
-        _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+        _rclpy.rclpy_pycapsule_destroy(self.__capsule)

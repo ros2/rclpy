@@ -16,6 +16,7 @@
 
 #include <rcl/domain_id.h>
 
+#include "action_api.hpp"
 #include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
@@ -23,11 +24,14 @@
 #include "duration.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
+#include "handle_api.hpp"
 #include "init.hpp"
 #include "logging.hpp"
+#include "logging_api.hpp"
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
+#include "pycapsule_api.hpp"
 #include "qos.hpp"
 #include "qos_events.hpp"
 #include "rclpy_common/exceptions.hpp"
@@ -405,4 +409,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_logging_configure", rclpy::logging_configure,
     "Initialize RCL logging.");
+
+  rclpy::define_pycapsule_api(m);
+  rclpy::define_handle_api(m);
+  rclpy::define_logging_api(m);
+  rclpy::define_action_api(m);
 }
