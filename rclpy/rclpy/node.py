@@ -1428,7 +1428,7 @@ class Node:
         failed = False
         try:
             with self.handle as node_capsule:
-                service_capsule = _rclpy.rclpy_create_service(
+                service_impl = _rclpy.Service(
                     node_capsule,
                     srv_type,
                     srv_name,
@@ -1438,10 +1438,8 @@ class Node:
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
 
-        service_handle = Handle(service_capsule)
-
         service = Service(
-            service_handle,
+            service_impl,
             srv_type, srv_name, callback, callback_group, qos_profile)
         self.__services.append(service)
         callback_group.add_entity(service)

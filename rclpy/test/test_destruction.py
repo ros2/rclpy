@@ -214,14 +214,10 @@ def test_destroy_service_asap():
             with service.handle:
                 pass
 
-            with service.handle:
-                node.destroy_service(service)
-                # handle valid because it's still being used
-                with service.handle:
-                    pass
+            node.destroy_service(service)
 
             with pytest.raises(InvalidHandle):
-                # handle invalid because it was destroyed when no one was using it
+                # handle invalid because it was destroyed
                 with service.handle:
                     pass
         finally:

@@ -357,8 +357,8 @@ class Executor:
                 future.set_result(response)
 
     def _take_service(self, srv):
-        with srv.handle as capsule:
-            request_and_header = _rclpy.rclpy_take_request(capsule, srv.srv_type.Request)
+        with srv.handle:
+            request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
         return request_and_header
 
     async def _execute_service(self, srv, request_and_header):
@@ -527,10 +527,11 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_clients -= 1
 
-                service_capsules = []
+                service_handles = []
                 for srv in services:
                     try:
-                        service_capsules.append(context_stack.enter_context(srv.handle))
+                        context_stack.enter_context(srv.handle)
+                        service_handles.append(srv.handle)
                     except InvalidHandle:
                         entity_count.num_services -= 1
 
@@ -564,8 +565,8 @@ class Executor:
                     _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
                 for cli_handle in client_handles:
                     _rclpy.rclpy_wait_set_add_client(wait_set, cli_handle)
-                for srv_capsule in service_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('service', wait_set, srv_capsule)
+                for srv_capsule in service_handles:
+                    _rclpy.rclpy_wait_set_add_service(wait_set, srv_capsule)
                 for tmr_capsule in timer_capsules:
                     _rclpy.rclpy_wait_set_add_entity('timer', wait_set, tmr_capsule)
                 for gc_capsule in guard_capsules:

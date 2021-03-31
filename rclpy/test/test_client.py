@@ -100,8 +100,8 @@ class TestClient(unittest.TestCase):
             cli.call_async(GetParameters.Request())
             cycle_count = 0
             while cycle_count < 5:
-                with srv.handle as capsule:
-                    result = _rclpy.rclpy_take_request(capsule, srv.srv_type.Request)
+                with srv.handle:
+                    result = srv.handle.service_take_request(srv.srv_type.Request)
                 if result is not None:
                     request, header = result
                     source_timestamp = _rclpy.rclpy_service_info_get_source_timestamp(header)

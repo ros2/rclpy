@@ -85,7 +85,7 @@ class ServerWaitable(Waitable):
         super().__init__(ReentrantCallbackGroup())
 
         with node.handle as node_capsule:
-            self.server = _rclpy.rclpy_create_service(
+            self.server = _rclpy.Service(
                 node_capsule, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile())
         self.server_index = None
         self.server_is_ready = False
@@ -103,7 +103,7 @@ class ServerWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.server_is_ready:
             self.server_is_ready = False
-            return _rclpy.rclpy_take_request(self.server, EmptySrv.Request)
+            return self.server.service_take_request(EmptySrv.Request)
         return None
 
     async def execute(self, taken_data):
@@ -119,7 +119,7 @@ class ServerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.server_index = _rclpy.rclpy_wait_set_add_entity('service', wait_set, self.server)
+        self.server_index = _rclpy.rclpy_wait_set_add_service(wait_set, self.server)
 
 
 class TimerWaitable(Waitable):
