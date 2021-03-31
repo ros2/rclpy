@@ -239,6 +239,11 @@ if(BUILD_TESTING)
   target_link_libraries(test_c_handle
     rclpy_common)
 
+  ament_add_gtest(test_python_allocator
+    test/test_python_allocator.cpp)
+  target_include_directories(test_python_allocator PRIVATE src/rclpy)
+  target_link_libraries(test_python_allocator pybind11::embed)
+
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
     set(_rclpy_pytest_tests

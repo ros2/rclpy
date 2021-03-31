@@ -23,6 +23,7 @@
 #include "rclpy_common/common.h"
 
 #include "client.hpp"
+#include "python_allocator.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "utils.hpp"
 
@@ -58,9 +59,10 @@ Client::Client(
     client_ops.qos = *qos_profile;
   }
 
+
   // Create a client
   rcl_client_ = std::shared_ptr<rcl_client_t>(
-    new rcl_client_t,
+    PythonAllocator<rcl_client_t>().allocate(1),
     [this](rcl_client_t * client)
     {
       auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
@@ -74,7 +76,7 @@ Client::Client(
           rcl_get_error_string().str);
         rcl_reset_error();
       }
-      delete client;
+      PythonAllocator<rcl_client_t>().deallocate(client, 1);
     });
 
   *rcl_client_ = rcl_get_zero_initialized_client();
