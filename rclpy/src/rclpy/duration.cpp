@@ -15,39 +15,22 @@
 #include <pybind11/pybind11.h>
 #include <rcl/time.h>
 
-#include <memory>
-
 #include "duration.hpp"
 
 namespace rclpy
 {
-void
-_rclpy_destroy_duration(PyObject * pycapsule)
-{
-  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rcl_duration_t"));
-}
-
-py::capsule
+rcl_duration_t
 create_duration(int64_t nanoseconds)
 {
-  auto duration = static_cast<rcl_duration_t *>(PyMem_Malloc(sizeof(rcl_duration_t)));
-  if (!duration) {
-    throw std::bad_alloc();
-  }
-
-  duration->nanoseconds = nanoseconds;
-
-  return py::capsule(duration, "rcl_duration_t", _rclpy_destroy_duration);
+  rcl_duration_t duration;
+  duration.nanoseconds = nanoseconds;
+  return duration;
 }
-
-int64_t
-duration_get_nanoseconds(py::capsule pyduration)
+void
+define_duration(py::object module)
 {
-  if (0 != strcmp("rcl_duration_t", pyduration.name())) {
-    throw py::value_error("capsule is not an rcl_duration_t");
-  }
-  auto duration = static_cast<rcl_duration_t *>(pyduration);
-
-  return duration->nanoseconds;
+  py::class_<rcl_duration_t>(module, "rcl_duration_t")
+  .def(py::init<>(&create_duration))
+  .def_readonly("nanoseconds", &rcl_duration_t::nanoseconds);
 }
 }  // namespace rclpy
