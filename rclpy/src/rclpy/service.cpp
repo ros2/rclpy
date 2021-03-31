@@ -57,7 +57,7 @@ _rclpy_destroy_service(void * p)
 py::capsule
 service_create(
   py::capsule pynode, py::object pysrv_type, std::string service_name,
-  py::capsule pyqos_profile)
+  py::object pyqos_profile)
 {
   auto node = static_cast<rcl_node_t *>(
     rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
@@ -74,11 +74,7 @@ service_create(
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
   if (!pyqos_profile.is_none()) {
-    if (0 != strcmp("rmw_qos_profile_t", pyqos_profile.name())) {
-      throw py::value_error("capsule is not an rmw_qos_profile_t");
-    }
-    auto qos_profile = static_cast<rmw_qos_profile_t *>(pyqos_profile);
-    service_ops.qos = *qos_profile;
+    service_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
   // Use smart pointer to make sure memory is free'd on error

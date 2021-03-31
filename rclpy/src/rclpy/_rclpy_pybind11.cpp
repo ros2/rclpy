@@ -393,15 +393,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_remove_ros_args", &rclpy::remove_ros_args,
     "Remove ROS-specific arguments from argument vector.");
 
-  m.def(
-    "rclpy_convert_from_py_qos_policy", &rclpy::convert_from_py_qos_policy,
-    "Convert rclpy.qos.QoSProfile arguments into a rmw_qos_profile_t.");
-  m.def(
-    "rclpy_convert_to_py_qos_policy", &rclpy::convert_to_py_qos_policy,
-    "Convert a rmw_qos_profile_t into rclpy.qos.QoSProfile keyword arguments.");
-  m.def(
-    "rclpy_get_rmw_qos_profile", &rclpy::get_rmw_qos_profile,
-    "Fetch a predefined rclpy.qos.QoSProfile keyword arguments.");
+  rclpy::define_rmw_qos_profile(m);
 
   m.def(
     "rclpy_logging_fini", rclpy::logging_fini,

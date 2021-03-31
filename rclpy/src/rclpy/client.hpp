@@ -43,9 +43,9 @@ public:
    * \param[in] pynode Capsule pointing to the node to add the client to
    * \param[in] pysrv_type Service module associated with the client
    * \param[in] service_name Python object containing the service name
-   * \param[in] pyqos_profile QoSProfile Python object for this client
+   * \param[in] pyqos rmw_qos_profile_t object for this client
    */
-  Client(py::capsule pynode, py::object pysrv_type, const char * service_name, py::capsule pyqos);
+  Client(py::capsule pynode, py::object pysrv_type, const char * service_name, py::object pyqos);
 
   ~Client() = default;
 
