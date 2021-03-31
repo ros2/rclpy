@@ -187,7 +187,7 @@ define_timer(py::object module)
     "change_timer_period", &Timer::change_timer_period,
     "Set the period of a timer.")
   .def(
-    "resettime_until_next_call_timer", &Timer::time_until_next_call,
+    "time_until_next_call", &Timer::time_until_next_call,
     "Get the remaining time before timer is ready.")
   .def(
     "time_since_last_call", &Timer::time_since_last_call,

@@ -47,7 +47,7 @@ class Timer:
 
     @property
     def timer_period_ns(self):
-        val = self.__timer.get__timer_period()
+        val = self.__timer.get_timer_period()
         self.__timer_period_ns = val
         return val
 
