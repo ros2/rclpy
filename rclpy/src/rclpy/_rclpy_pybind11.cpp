@@ -126,12 +126,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_ok", &rclpy::context_is_valid,
     "Return true if the context is valid");
 
-  m.def(
-    "rclpy_create_duration", &rclpy::create_duration,
-    "Create a duration");
-  m.def(
-    "rclpy_duration_get_nanoseconds", &rclpy::duration_get_nanoseconds,
-    "Get the nanoseconds value of a duration");
+  rclpy::define_duration(m);
 
   m.def(
     "rclpy_create_publisher", &rclpy::publisher_create,

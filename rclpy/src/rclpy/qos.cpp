@@ -72,15 +72,10 @@ namespace
 
 // Fill a given rmw_time_t from an rclpy.duration.Duration instance.
 void
-_convert_py_duration_to_rmw_time(py::capsule pyduration, rmw_time_t * out_time)
+_convert_py_duration_to_rmw_time(rcl_duration_t duration, rmw_time_t * out_time)
 {
-  assert(out_time != nullptr);
-  if (0 != strcmp("rcl_duration_t", pyduration.name())) {
-    throw py::value_error("capsule is not an rcl_duration_t");
-  }
-  auto duration = static_cast<rcl_duration_t *>(pyduration);
-  out_time->sec = RCL_NS_TO_S(duration->nanoseconds);
-  out_time->nsec = duration->nanoseconds % (1000LL * 1000LL * 1000LL);
+  out_time->sec = RCL_NS_TO_S(duration.nanoseconds);
+  out_time->nsec = duration.nanoseconds % (1000LL * 1000LL * 1000LL);
 }
 
 }  // namespace
@@ -91,10 +86,10 @@ convert_from_py_qos_policy(
   int qos_depth,
   int qos_reliability,
   int qos_durability,
-  py::capsule pyqos_lifespan,
-  py::capsule pyqos_deadline,
+  rcl_duration_t pyqos_lifespan,
+  rcl_duration_t pyqos_deadline,
   int qos_liveliness,
-  py::capsule pyqos_liveliness_lease_duration,
+  rcl_duration_t pyqos_liveliness_lease_duration,
   bool avoid_ros_namespace_conventions)
 {
   auto qos_profile =

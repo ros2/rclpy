@@ -94,10 +94,10 @@ convert_from_py_qos_policy(
   int qos_depth,
   int qos_reliability,
   int qos_durability,
-  py::capsule pyqos_lifespan,
-  py::capsule pyqos_deadline,
+  rcl_duration_t pyqos_lifespan,
+  rcl_duration_t pyqos_deadline,
   int qos_liveliness,
-  py::capsule pyqos_liveliness_lease_duration,
+  rcl_duration_t pyqos_liveliness_lease_duration,
   bool avoid_ros_namespace_conventions);
 
 /// Convert a C rmw_qos_profile_t capsule to a dictionary.

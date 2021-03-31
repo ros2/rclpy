@@ -25,11 +25,11 @@ class Duration:
             # pybind11 would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C duration.')
-        self._duration_handle = _rclpy.rclpy_create_duration(total_nanoseconds)
+        self._duration_handle = _rclpy.rcl_duration_t(total_nanoseconds)
 
     @property
     def nanoseconds(self):
-        return _rclpy.rclpy_duration_get_nanoseconds(self._duration_handle)
+        return self._duration_handle.nanoseconds
 
     def __repr__(self):
         return 'Duration(nanoseconds={0})'.format(self.nanoseconds)
