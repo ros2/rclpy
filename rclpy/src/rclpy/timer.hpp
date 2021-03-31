@@ -17,127 +17,129 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/timer.h>
+
+#include <memory>
+
+#include "destroyable.hpp"
+#include "handle.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
 {
-/// Reset the timer
+
+class Timer : public Destroyable
+{
+public:
+  /// Create a timer
+  Timer(py::capsule pyclock, py::capsule pycontext, int64_t period_nsec);
+
+  ~Timer() = default;
+
+  /// Reset the timer
+  /**
+   * Raise ValueError if capsule is not a timer
+   * Raises RCLError if the timer cannot be reset
+   */
+  void reset_timer();
+
+  /// Checks if timer reached its timeout
+  /**
+   *  Raises ValueError if pytimer is not a timer capsule
+   *  Raises RCLError if there is an rcl error
+   *
+   * \return True if the timer is ready
+   */
+  bool is_timer_ready();
+
+  /// Set the last call time and start counting again
+  /**
+   * Raises ValueError if pytimer is not a timer capsule
+   * Raises RCLError if there is an rcl error
+   *
+   */
+  void call_timer();
+
+  /// Update the timer period
+  /**
+   * The change in period will take effect after the next timer call
+   *
+   * Raises ValueError if pytimer is not a timer capsule
+   * Raises RCLError if the timer period could not be changed
+   *
+   * \param[in] period_nsec the new period in nanoseconds
+   */
+  void change_timer_period(int64_t period_nsec);
+
+  /// Get the time before the timer will be ready
+  /**
+   * the returned time can be negative, this means that the timer is ready and hasn't been called yet
+   *
+   * Raises ValueError if pytimer is not a timer capsule
+   * Raises RCLError there is an rcl error
+   *
+   * \return the time until next call in nanoseconds
+   */
+  int64_t time_until_next_call();
+
+  /// Get the time since the timer has been called
+  /**
+   * Raises ValueError if pytimer is not a timer capsule
+   * Raises RCLError if there is an rcl error
+   *
+   * \return the time since last call in nanoseconds
+   */
+  int64_t time_since_last_call();
+
+  /// Returns the period of the timer in nanoseconds
+  /**
+   * Raises ValueError if pytimer is not a timer capsule
+   * Raises RCLError if the timer period cannot be retrieved
+   *
+   * \return the time since the last call in nanoseconds
+   */
+  int64_t get_timer_period();
+
+  /// Cancel the timer
+  /**
+   * Raises ValueError if pytimer is not a timer capsule
+   * Raises RCLError if the timmer cannot be canceled
+   *
+   */
+  void cancel_timer();
+
+  /// Checks if timer is cancelled
+  /**
+   * Raises ValueError if pytimer is not a timer capsule
+   * Raises RCLError if there is an rcl error
+   *
+   * \return True if the timer is canceled
+   */
+  bool is_timer_canceled();
+
+  /// Get rcl_client_t pointer
+  rcl_timer_t *
+  rcl_ptr() const
+  {
+    return rcl_timer_.get();
+  }
+
+  /// Force an early destruction of this object
+  void destroy() override;
+
+private:
+  // TODO(ahcorde) replace with std::shared_ptr<rcl_node_t> when rclpy::Node exists
+  std::shared_ptr<Handle> clock_handle_;
+  std::shared_ptr<rcl_timer_t> rcl_timer_;
+};
+
+/// Define a pybind11 wrapper for an rcl_timer_t
 /**
- * Raise ValueError if capsule is not a timer
- * Raises RCLError if the timer cannot be reset
- *
- * \param[in] pytimer Capsule pointing to the timer
+ * \param[in] module a pybind11 module to add the definition to
  */
 void
-reset_timer(py::capsule pytimer);
-
-/// Checks if timer reached its timeout
-/**
- *  Raises ValueError if pytimer is not a timer capsule
- *  Raises RCLError if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return True if the timer is ready
- */
-bool
-is_timer_ready(py::capsule pytimer);
-
-/// Set the last call time and start counting again
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RCLError if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- */
-void
-call_timer(py::capsule pytimer);
-
-/// Update the timer period
-/**
- * The change in period will take effect after the next timer call
- *
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RCLError if the timer period could not be changed
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \param[in] period_nsec the new period in nanoseconds
- */
-void
-change_timer_period(py::capsule pytimer, int64_t period_nsec);
-
-/// Get the time before the timer will be ready
-/**
- * the returned time can be negative, this means that the timer is ready and hasn't been called yet
- *
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RCLError there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return the time until next call in nanoseconds
- */
-int64_t
-time_until_next_call(py::capsule pytimer);
-
-/// Get the time since the timer has been called
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RCLError if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return the time since last call in nanoseconds
- */
-int64_t
-time_since_last_call(py::capsule pytimer);
-
-/// Returns the period of the timer in nanoseconds
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RCLError if the timer period cannot be retrieved
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return the time since the last call in nanoseconds
- */
-int64_t
-get_timer_period(py::capsule pytimer);
-
-/// Cancel the timer
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RCLError if the timmer cannot be canceled
- *
- * \param[in] pytimer Capsule pointing to the timer
- */
-void
-cancel_timer(py::capsule pytimer);
-
-/// Checks if timer is cancelled
-/**
- * Raises ValueError if pytimer is not a timer capsule
- * Raises RCLError if there is an rcl error
- *
- * \param[in] pytimer Capsule pointing to the timer
- * \return True if the timer is canceled
- */
-bool
-is_timer_canceled(py::capsule pytimer);
-
-/// Create a timer
-/**
- * When successful a Capsule pointing to the pointer of the created rcl_timer_t * structure
- * is returned
- *
- * On failure, an exception is raised and NULL is returned if:
- *
- * Raises RCLError on initialization failure
- * Raises TypeError if argument of invalid type
- * Raises ValueError if argument cannot be converted
- *
- * \param[in] clock pycapsule containing an rcl_clock_t
- * \param[in] period_nsec the period of the timer in nanoseconds
- * \return a timer capsule
- */
-py::capsule
-create_timer(py::capsule pyclock, py::capsule pycontext, int64_t period_nsec);
+define_timer(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__TIMER_HPP_

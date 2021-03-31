@@ -243,14 +243,10 @@ def test_destroy_timer_asap():
             with timer.handle:
                 pass
 
-            with timer.handle:
-                node.destroy_timer(timer)
-                # handle valid because it's still being used
-                with timer.handle:
-                    pass
+            node.destroy_timer(timer)
 
             with pytest.raises(InvalidHandle):
-                # handle invalid because it was destroyed when no one was using it
+                # handle invalid because it was destroyed
                 with timer.handle:
                     pass
         finally:

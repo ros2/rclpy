@@ -322,8 +322,8 @@ class Executor:
         raise NotImplementedError()
 
     def _take_timer(self, tmr):
-        with tmr.handle as capsule:
-            _rclpy.rclpy_call_timer(capsule)
+        with tmr.handle:
+            tmr.handle.call_timer()
 
     async def _execute_timer(self, tmr, _):
         await await_or_execute(tmr.callback)
@@ -534,10 +534,11 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_services -= 1
 
-                timer_capsules = []
+                timer_handles = []
                 for tmr in timers:
                     try:
-                        timer_capsules.append(context_stack.enter_context(tmr.handle))
+                        context_stack.enter_context(tmr.handle)
+                        timer_handles.append(tmr.handle)
                     except InvalidHandle:
                         entity_count.num_timers -= 1
 
@@ -566,8 +567,8 @@ class Executor:
                     _rclpy.rclpy_wait_set_add_client(wait_set, cli_handle)
                 for srv_capsule in service_capsules:
                     _rclpy.rclpy_wait_set_add_entity('service', wait_set, srv_capsule)
-                for tmr_capsule in timer_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('timer', wait_set, tmr_capsule)
+                for tmr_handle in timer_handles:
+                    _rclpy.rclpy_wait_set_add_timer(wait_set, tmr_handle)
                 for gc_capsule in guard_capsules:
                     _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, gc_capsule)
                 for waitable in waitables:
@@ -606,14 +607,13 @@ class Executor:
             for node in nodes_to_use:
                 for tmr in node.timers:
                     if tmr.handle.pointer in timers_ready:
-                        with tmr.handle as capsule:
-                            # Check timer is ready to workaround rcl issue with cancelled timers
-                            if _rclpy.rclpy_is_timer_ready(capsule):
-                                if tmr.callback_group.can_execute(tmr):
-                                    handler = self._make_handler(
-                                        tmr, node, self._take_timer, self._execute_timer)
-                                    yielded_work = True
-                                    yield handler, tmr, node
+                        # Check timer is ready to workaround rcl issue with cancelled timers
+                        if tmr.handle.is_timer_ready():
+                            if tmr.callback_group.can_execute(tmr):
+                                handler = self._make_handler(
+                                    tmr, node, self._take_timer, self._execute_timer)
+                                yielded_work = True
+                                yield handler, tmr, node
 
                 for sub in node.subscriptions:
                     if sub.handle.pointer in subs_ready:

@@ -183,36 +183,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_trigger_guard_condition", &rclpy::guard_condition_trigger,
     "Trigger a general purpose guard condition");
 
-  m.def(
-    "rclpy_reset_timer", &rclpy::reset_timer,
-    "Reset a timer.");
-  m.def(
-    "rclpy_call_timer", &rclpy::call_timer,
-    "Call a timer and starts counting again.");
-  m.def(
-    "rclpy_change_timer_period", &rclpy::change_timer_period,
-    "Set the period of a timer.");
-  m.def(
-    "rclpy_is_timer_ready", &rclpy::is_timer_ready,
-    "Check if a timer as reached timeout.");
-  m.def(
-    "rclpy_cancel_timer", &rclpy::cancel_timer,
-    "Cancel a timer.");
-  m.def(
-    "rclpy_is_timer_canceled", &rclpy::is_timer_canceled,
-    "Check if a timer is canceled.");
-  m.def(
-    "rclpy_time_until_next_call", &rclpy::time_until_next_call,
-    "Get the remaining time before timer is ready.");
-  m.def(
-    "rclpy_time_since_last_call", &rclpy::time_since_last_call,
-    "Get the elapsed time since last timer call.");
-  m.def(
-    "rclpy_get_timer_period", &rclpy::get_timer_period,
-    "Get the period of a timer.");
-  m.def(
-    "rclpy_create_timer", &rclpy::create_timer,
-    "Create a Timer.");
+  rclpy::define_timer(m);
 
   m.def(
     "rclpy_create_subscription", &rclpy::subscription_create,
@@ -266,6 +237,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_wait_set_add_client", &rclpy::wait_set_add_client,
     "Add a client to the wait set.");
+  m.def(
+    "rclpy_wait_set_add_timer", &rclpy::wait_set_add_timer,
+    "Add a timer to the wait set.");
   m.def(
     "rclpy_wait_set_is_ready", &rclpy::wait_set_is_ready,
     "rclpy_wait_set_is_ready.");
