@@ -72,7 +72,7 @@ namespace
 
 // Fill a given rmw_time_t from an rclpy.duration.Duration instance.
 void
-_convert_py_duration_to_rmw_time(const rcl_duration_t duration, rmw_time_t * out_time)
+_convert_py_duration_to_rmw_time(const rcl_duration_t & duration, rmw_time_t * out_time)
 {
   out_time->sec = RCL_NS_TO_S(duration.nanoseconds);
   out_time->nsec = duration.nanoseconds % (1000LL * 1000LL * 1000LL);
@@ -86,10 +86,10 @@ convert_from_py_qos_policy(
   int qos_depth,
   int qos_reliability,
   int qos_durability,
-  const rcl_duration_t pyqos_lifespan,
-  const rcl_duration_t pyqos_deadline,
+  const rcl_duration_t & pyqos_lifespan,
+  const rcl_duration_t & pyqos_deadline,
   int qos_liveliness,
-  const rcl_duration_t pyqos_liveliness_lease_duration,
+  const rcl_duration_t & pyqos_liveliness_lease_duration,
   bool avoid_ros_namespace_conventions)
 {
   auto qos_profile =
