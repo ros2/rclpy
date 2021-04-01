@@ -21,25 +21,11 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-/// Create a duration
+/// Define a pybind11 wrapper for an rcl_duration_t
 /**
- * Raises TypeError if argument is of an invalid type
- *
- * \param[in] nanoseconds The nanoseconds value of the duration in a 64-bit signed integer
- * \return Capsule of the pointer to the created rcl_duration_t * structure
+ * \param[in] module a pybind11 module to add the definition to
  */
-py::capsule
-create_duration(int64_t nanoseconds);
-
-/// Returns the nanoseconds value of the duration
-/**
- * Raises ValueError if pyduration is not a duration capsule
- *
- * \param[in] pyduration Capsule pointing to the duration
- * \return integer nanoseconds
- */
-int64_t
-duration_get_nanoseconds(py::capsule pyduration);
+void define_duration(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__DURATION_HPP_

@@ -54,11 +54,7 @@ Service::Service(
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
   if (!pyqos_profile.is_none()) {
-    if (0 != strcmp("rmw_qos_profile_t", pyqos_profile.name())) {
-      throw py::value_error("capsule is not an rmw_qos_profile_t");
-    }
-    auto qos_profile = static_cast<rmw_qos_profile_t *>(pyqos_profile);
-    service_ops.qos = *qos_profile;
+    service_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
   // Create a client

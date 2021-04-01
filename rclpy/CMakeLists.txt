@@ -148,7 +148,11 @@ install(TARGETS rclpy_common
 
 # Split from main extension and converted to pybind11
 pybind11_add_module(_rclpy_pybind11 SHARED
+  src/rclpy/_rclpy_action.cpp
+  src/rclpy/_rclpy_handle.cpp
+  src/rclpy/_rclpy_logging.cpp
   src/rclpy/_rclpy_pybind11.cpp
+  src/rclpy/_rclpy_pycapsule.cpp
   src/rclpy/client.cpp
   src/rclpy/clock.cpp
   src/rclpy/context.cpp
@@ -177,34 +181,15 @@ target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/
 )
 target_link_libraries(_rclpy_pybind11 PRIVATE
-  rcpputils::rcpputils rclpy_common
+  rcl::rcl
+  rcl_action::rcl_action
+  rcl_logging_interface::rcl_logging_interface
+  rclpy_common
+  rcpputils::rcpputils
+  rcutils::rcutils
 )
 configure_build_install_location(_rclpy_pybind11)
 clean_windows_flags(_rclpy_pybind11)
-
-# Extension with code for Action servers and clients
-pybind11_add_module(_rclpy_action SHARED
-  src/rclpy/_rclpy_action.cpp
-)
-target_link_libraries(_rclpy_action PRIVATE
-  rclpy_common
-  rcl::rcl
-  rcl_action::rcl_action
-  rcutils::rcutils
-)
-configure_build_install_location(_rclpy_action)
-clean_windows_flags(_rclpy_action)
-
-# Logging support provided by rcutils
-pybind11_add_module(_rclpy_logging SHARED
-  src/rclpy/_rclpy_logging.cpp
-)
-target_link_libraries(_rclpy_logging PRIVATE
-  rcl_logging_interface::rcl_logging_interface
-  rcutils::rcutils
-)
-configure_build_install_location(_rclpy_logging)
-clean_windows_flags(_rclpy_logging)
 
 # Signal handling library
 pybind11_add_module(_rclpy_signal_handler SHARED
@@ -218,23 +203,6 @@ target_link_libraries(_rclpy_signal_handler PRIVATE
 configure_build_install_location(_rclpy_signal_handler)
 clean_windows_flags(_rclpy_signal_handler)
 remove_py_debug_definition_on_win32(_rclpy_signal_handler)
-
-# Pycapsule library
-pybind11_add_module(_rclpy_pycapsule SHARED
-  src/rclpy/_rclpy_pycapsule.cpp
-)
-configure_build_install_location(_rclpy_pycapsule)
-clean_windows_flags(_rclpy_pycapsule)
-
-# Handle library, used to keep dependencies between C objects.
-pybind11_add_module(_rclpy_handle SHARED
-  src/rclpy/_rclpy_handle.cpp
-)
-target_link_libraries(_rclpy_handle PRIVATE
-  rclpy_common
-)
-configure_build_install_location(_rclpy_handle)
-clean_windows_flags(_rclpy_handle)
 
 if(NOT WIN32)
   ament_environment_hooks(

@@ -14,6 +14,8 @@
 
 #include <pybind11/pybind11.h>
 
+#include "pycapsule_api.hpp"
+
 namespace py = pybind11;
 
 /// Get the name of a pycapsule.
@@ -74,9 +76,13 @@ rclpy_pycapsule_destroy(py::capsule capsule)
   }
 }
 
-PYBIND11_MODULE(_rclpy_pycapsule, m) {
-  m.doc() = "rclpy module for working with PyCapsule objects.";
+namespace rclpy
+{
+void
+define_pycapsule_api(py::module m)
+{
   m.def("rclpy_pycapsule_name", &rclpy_pycapsule_name);
   m.def("rclpy_pycapsule_pointer", &rclpy_pycapsule_pointer);
   m.def("rclpy_pycapsule_destroy", &rclpy_pycapsule_destroy);
 }
+}  // namespace rclpy

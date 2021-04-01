@@ -16,6 +16,7 @@
 
 #include <rcl/domain_id.h>
 
+#include "action_api.hpp"
 #include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
@@ -23,11 +24,14 @@
 #include "duration.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
+#include "handle_api.hpp"
 #include "init.hpp"
 #include "logging.hpp"
+#include "logging_api.hpp"
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
+#include "pycapsule_api.hpp"
 #include "qos.hpp"
 #include "qos_events.hpp"
 #include "rclpy_common/exceptions.hpp"
@@ -126,12 +130,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_ok", &rclpy::context_is_valid,
     "Return true if the context is valid");
 
-  m.def(
-    "rclpy_create_duration", &rclpy::create_duration,
-    "Create a duration");
-  m.def(
-    "rclpy_duration_get_nanoseconds", &rclpy::duration_get_nanoseconds,
-    "Get the nanoseconds value of a duration");
+  rclpy::define_duration(m);
 
   m.def(
     "rclpy_create_publisher", &rclpy::publisher_create,
@@ -389,15 +388,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_remove_ros_args", &rclpy::remove_ros_args,
     "Remove ROS-specific arguments from argument vector.");
 
-  m.def(
-    "rclpy_convert_from_py_qos_policy", &rclpy::convert_from_py_qos_policy,
-    "Convert rclpy.qos.QoSProfile arguments into a rmw_qos_profile_t.");
-  m.def(
-    "rclpy_convert_to_py_qos_policy", &rclpy::convert_to_py_qos_policy,
-    "Convert a rmw_qos_profile_t into rclpy.qos.QoSProfile keyword arguments.");
-  m.def(
-    "rclpy_get_rmw_qos_profile", &rclpy::get_rmw_qos_profile,
-    "Fetch a predefined rclpy.qos.QoSProfile keyword arguments.");
+  rclpy::define_rmw_qos_profile(m);
 
   m.def(
     "rclpy_logging_fini", rclpy::logging_fini,
@@ -405,4 +396,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_logging_configure", rclpy::logging_configure,
     "Initialize RCL logging.");
+
+  rclpy::define_pycapsule_api(m);
+  rclpy::define_handle_api(m);
+  rclpy::define_logging_api(m);
+  rclpy::define_action_api(m);
 }

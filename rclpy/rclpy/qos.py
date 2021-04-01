@@ -19,7 +19,6 @@ from typing import Union
 import warnings
 
 from rclpy.duration import Duration
-from rclpy.impl.implementation_singleton import rclpy_action_implementation as _rclpy_action
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -59,7 +58,8 @@ class QoSProfile:
     """Define Quality of Service policies."""
 
     # default QoS profile not exposed to the user to encourage them to think about QoS settings
-    __qos_profile_default_dict = _rclpy.rclpy_get_rmw_qos_profile('qos_profile_default')
+    __qos_profile_default_dict = \
+        _rclpy.rmw_qos_profile_t.predefined('qos_profile_default').to_dict()
 
     __slots__ = [
         '_history',
@@ -242,7 +242,7 @@ class QoSProfile:
         self._avoid_ros_namespace_conventions = value
 
     def get_c_qos_profile(self):
-        return _rclpy.rclpy_convert_from_py_qos_policy(
+        return _rclpy.rmw_qos_profile_t(
             self.history,
             self.depth,
             self.reliability,
@@ -420,32 +420,32 @@ QoSLivelinessPolicy = LivelinessPolicy
 # 2. ros2/rmw : rmw/include/rmw/qos_profiles.h
 
 #: Used for initialization. Should not be used as the actual QoS profile.
-qos_profile_unknown = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_unknown'))
+qos_profile_unknown = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_unknown').to_dict())
 #: Uses the default QoS settings defined in the DDS vendor tool
-qos_profile_system_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_system_default'))
+qos_profile_system_default = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_system_default').to_dict())
 #: For sensor data, using best effort reliability and small
 #: queue depth
-qos_profile_sensor_data = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_sensor_data'))
+qos_profile_sensor_data = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_sensor_data').to_dict())
 #: For services, using reliable reliability and volatile durability
-qos_profile_services_default = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_services_default'))
+qos_profile_services_default = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_services_default').to_dict())
 #: For parameter communication. Similar to service QoS profile but with larger
 #: queue depth so that requests do not get lost.
-qos_profile_parameters = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_parameters'))
+qos_profile_parameters = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_parameters').to_dict())
 #: For parameter change events. Currently same as the QoS profile for
 #: parameters.
-qos_profile_parameter_events = QoSProfile(**_rclpy.rclpy_get_rmw_qos_profile(
-    'qos_profile_parameter_events'))
+qos_profile_parameter_events = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_parameter_events').to_dict())
 
 # Separate rcl_action profile defined at
 # ros2/rcl : rcl/rcl_action/include/rcl_action/default_qos.h
 #
 #: For actions, using reliable reliability, transient-local durability.
-qos_profile_action_status_default = QoSProfile(**_rclpy_action.rclpy_action_get_rmw_qos_profile(
+qos_profile_action_status_default = QoSProfile(**_rclpy.rclpy_action_get_rmw_qos_profile(
     'rcl_action_qos_profile_status_default'))
 
 

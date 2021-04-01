@@ -25,6 +25,8 @@ namespace py = pybind11;
 
 #include <string>
 
+#include "logging_api.hpp"
+
 /// Initialize the logging system.
 /**
  * \return None
@@ -170,7 +172,11 @@ rclpy_logging_get_logging_directory()
   return s_log_dir;
 }
 
-PYBIND11_MODULE(_rclpy_logging, m) {
+namespace rclpy
+{
+void
+define_logging_api(py::module m)
+{
   m.doc() = "RCLPY module for logging.";
 
   py::enum_<RCUTILS_LOG_SEVERITY>(m, "RCUTILS_LOG_SEVERITY")
@@ -190,3 +196,4 @@ PYBIND11_MODULE(_rclpy_logging, m) {
   m.def("rclpy_logging_severity_level_from_string", &rclpy_logging_severity_level_from_string);
   m.def("rclpy_logging_get_logging_directory", &rclpy_logging_get_logging_directory);
 }
+}  // namespace rclpy

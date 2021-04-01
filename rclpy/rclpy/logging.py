@@ -16,7 +16,7 @@
 from enum import IntEnum
 from pathlib import Path
 
-from rclpy.impl.implementation_singleton import rclpy_logging_implementation as _rclpy_logging
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 import rclpy.impl.rcutils_logger
 
 
@@ -27,12 +27,12 @@ class LoggingSeverity(IntEnum):
     This enum must match the one defined in rcutils/logging.h
     """
 
-    UNSET = _rclpy_logging.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_UNSET
-    DEBUG = _rclpy_logging.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_DEBUG
-    INFO = _rclpy_logging.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_INFO
-    WARN = _rclpy_logging.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_WARN
-    ERROR = _rclpy_logging.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_ERROR
-    FATAL = _rclpy_logging.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_FATAL
+    UNSET = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_UNSET
+    DEBUG = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_DEBUG
+    INFO = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_INFO
+    WARN = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_WARN
+    ERROR = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_ERROR
+    FATAL = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_FATAL
 
 
 _root_logger = rclpy.impl.rcutils_logger.RcutilsLogger()
@@ -45,11 +45,11 @@ def get_logger(name):
 
 
 def initialize():
-    return _rclpy_logging.rclpy_logging_initialize()
+    return _rclpy.rclpy_logging_initialize()
 
 
 def shutdown():
-    return _rclpy_logging.rclpy_logging_shutdown()
+    return _rclpy.rclpy_logging_shutdown()
 
 
 def clear_config():
@@ -60,17 +60,17 @@ def clear_config():
 
 def set_logger_level(name, level):
     level = LoggingSeverity(level)
-    return _rclpy_logging.rclpy_logging_set_logger_level(name, level)
+    return _rclpy.rclpy_logging_set_logger_level(name, level)
 
 
 def get_logger_effective_level(name):
-    logger_level = _rclpy_logging.rclpy_logging_get_logger_effective_level(name)
+    logger_level = _rclpy.rclpy_logging_get_logger_effective_level(name)
     return LoggingSeverity(logger_level)
 
 
 def get_logging_severity_from_string(log_severity):
     return LoggingSeverity(
-        _rclpy_logging.rclpy_logging_severity_level_from_string(log_severity))
+        _rclpy.rclpy_logging_severity_level_from_string(log_severity))
 
 
 def get_logging_directory() -> Path:
@@ -80,4 +80,4 @@ def get_logging_directory() -> Path:
     For more details, see .. c:function::
     rcl_logging_ret_t rcl_logging_get_logging_directory(rcutils_allocator_t, char **)
     """
-    return Path(_rclpy_logging.rclpy_logging_get_logging_directory())
+    return Path(_rclpy.rclpy_logging_get_logging_directory())

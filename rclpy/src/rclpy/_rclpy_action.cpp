@@ -306,13 +306,6 @@ rclpy_action_wait_set_is_ready(py::capsule pyentity, py::capsule pywait_set)
   throw std::runtime_error(error_text);
 }
 
-void
-copy_qos_profile(rmw_qos_profile_t & profile, py::capsule pyprofile)
-{
-  auto qos_profile = get_pointer<rmw_qos_profile_t *>(pyprofile, "rmw_qos_profile_t");
-  profile = *qos_profile;
-}
-
 /// Create an action client.
 /**
  * This function will create an action client for the given action name.
@@ -329,16 +322,11 @@ copy_qos_profile(rmw_qos_profile_t & profile, py::capsule pyprofile)
  * \param[in] pynode Capsule pointing to the node to add the action client to.
  * \param[in] pyaction_type Action module associated with the action client.
  * \param[in] pyaction_name Python object containing the action name.
- * \param[in] pygoal_service_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the goal service.
- * \param[in] pyresult_service_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the result service.
- * \param[in] pycancel_service_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the cancel service.
- * \param[in] pyfeedback_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the feedback subscriber.
- * \param[in] pystatus_qos Capsule pointing to a rmw_qos_profile_t object for the
- *   status subscriber.
+ * \param[in] goal_service_qos rmw_qos_profile_t object for the goal service.
+ * \param[in] result_service_qos rmw_qos_profile_t object for the result service.
+ * \param[in] cancel_service_qos rmw_qos_profile_t object for the cancel service.
+ * \param[in] feedback_qos rmw_qos_profile_t object for the feedback subscriber.
+ * \param[in] status_qos rmw_qos_profile_t object for the status subscriber.
  * \return Capsule named 'rcl_action_client_t', or
  * \return NULL on failure.
  */
@@ -347,11 +335,11 @@ rclpy_action_create_client(
   py::capsule pynode,
   py::object pyaction_type,
   const char * action_name,
-  py::capsule pygoal_service_qos,
-  py::capsule pyresult_service_qos,
-  py::capsule pycancel_service_qos,
-  py::capsule pyfeedback_topic_qos,
-  py::capsule pystatus_topic_qos)
+  const rmw_qos_profile_t & goal_service_qos,
+  const rmw_qos_profile_t & result_service_qos,
+  const rmw_qos_profile_t & cancel_service_qos,
+  const rmw_qos_profile_t & feedback_topic_qos,
+  const rmw_qos_profile_t & status_topic_qos)
 {
   rcl_node_t * node = static_cast<rcl_node_t *>(
     rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
@@ -368,11 +356,11 @@ rclpy_action_create_client(
 
   rcl_action_client_options_t action_client_ops = rcl_action_client_get_default_options();
 
-  copy_qos_profile(action_client_ops.goal_service_qos, pygoal_service_qos);
-  copy_qos_profile(action_client_ops.result_service_qos, pyresult_service_qos);
-  copy_qos_profile(action_client_ops.cancel_service_qos, pycancel_service_qos);
-  copy_qos_profile(action_client_ops.feedback_topic_qos, pyfeedback_topic_qos);
-  copy_qos_profile(action_client_ops.status_topic_qos, pystatus_topic_qos);
+  action_client_ops.goal_service_qos = goal_service_qos;
+  action_client_ops.result_service_qos = result_service_qos;
+  action_client_ops.cancel_service_qos = cancel_service_qos;
+  action_client_ops.feedback_topic_qos = feedback_topic_qos;
+  action_client_ops.status_topic_qos = status_topic_qos;
 
   auto deleter = [](rcl_action_client_t * ptr) {PyMem_Free(ptr);};
   auto action_client = std::unique_ptr<rcl_action_client_t, decltype(deleter)>(
@@ -423,16 +411,11 @@ rclpy_action_create_client(
  * \param[in] pynode Capsule pointing to the node to add the action server to.
  * \param[in] pyaction_type Action module associated with the action server.
  * \param[in] pyaction_name Python object containing the action name.
- * \param[in] pygoal_service_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the goal service.
- * \param[in] pyresult_service_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the result service.
- * \param[in] pycancel_service_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the cancel service.
- * \param[in] pyfeedback_qos Capsule pointing to a rmw_qos_profile_t object
- *   for the feedback subscriber.
- * \param[in] pystatus_qos Capsule pointing to a rmw_qos_profile_t object for the
- *   status subscriber.
+ * \param[in] goal_service_qos rmw_qos_profile_t object for the goal service.
+ * \param[in] result_service_qos rmw_qos_profile_t object for the result service.
+ * \param[in] cancel_service_qos rmw_qos_profile_t object for the cancel service.
+ * \param[in] feedback_qos rmw_qos_profile_t object for the feedback subscriber.
+ * \param[in] status_qos rmw_qos_profile_t object for the status subscriber.
  * \return Capsule named 'rcl_action_server_t', or
  * \return NULL on failure.
  */
@@ -442,11 +425,11 @@ rclpy_action_create_server(
   py::capsule pyclock,
   py::object pyaction_type,
   const char * action_name,
-  py::capsule pygoal_service_qos,
-  py::capsule pyresult_service_qos,
-  py::capsule pycancel_service_qos,
-  py::capsule pyfeedback_topic_qos,
-  py::capsule pystatus_topic_qos,
+  const rmw_qos_profile_t & goal_service_qos,
+  const rmw_qos_profile_t & result_service_qos,
+  const rmw_qos_profile_t & cancel_service_qos,
+  const rmw_qos_profile_t & feedback_topic_qos,
+  const rmw_qos_profile_t & status_topic_qos,
   double result_timeout)
 {
   rcl_node_t * node = static_cast<rcl_node_t *>(
@@ -469,11 +452,11 @@ rclpy_action_create_server(
 
   rcl_action_server_options_t action_server_ops = rcl_action_server_get_default_options();
 
-  copy_qos_profile(action_server_ops.goal_service_qos, pygoal_service_qos);
-  copy_qos_profile(action_server_ops.result_service_qos, pyresult_service_qos);
-  copy_qos_profile(action_server_ops.cancel_service_qos, pycancel_service_qos);
-  copy_qos_profile(action_server_ops.feedback_topic_qos, pyfeedback_topic_qos);
-  copy_qos_profile(action_server_ops.status_topic_qos, pystatus_topic_qos);
+  action_server_ops.goal_service_qos = goal_service_qos;
+  action_server_ops.result_service_qos = result_service_qos;
+  action_server_ops.cancel_service_qos = cancel_service_qos;
+  action_server_ops.feedback_topic_qos = feedback_topic_qos;
+  action_server_ops.status_topic_qos = status_topic_qos;
   action_server_ops.result_timeout.nanoseconds = (rcl_duration_value_t)RCL_S_TO_NS(result_timeout);
 
   auto deleter = [](rcl_action_server_t * ptr) {PyMem_Free(ptr);};
@@ -1227,9 +1210,11 @@ rclpy_action_get_names_and_types(py::capsule pynode)
 }
 
 
-PYBIND11_MODULE(_rclpy_action, m) {
-  m.doc() = "ROS 2 Python Action library.";
-
+namespace rclpy
+{
+void
+define_action_api(py::module m)
+{
   m.def(
     "rclpy_action_destroy_entity", &rclpy_action_destroy_entity,
     "Destroy a rclpy_action entity.");
@@ -1341,3 +1326,4 @@ PYBIND11_MODULE(_rclpy_action, m) {
     "rclpy_action_get_names_and_types", &rclpy_action_get_names_and_types,
     "Get action names and types.");
 }
+}  // namespace rclpy
