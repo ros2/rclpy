@@ -159,7 +159,7 @@ Service::service_take_request(py::object pyrequest_type)
   // result_list now owns the message
   taken_request.release();
 
-  return std::move(result_list);
+  return result_list;
 }
 void
 define_service(py::object module)
