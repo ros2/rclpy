@@ -69,8 +69,7 @@ class ServerGoalHandle:
         :param goal_info: GoalInfo message.
         :param goal_request: The user defined goal request message from an ActionClient.
         """
-        self._handle = _rclpy.rclpy_action_accept_new_goal(
-            action_server._handle, goal_info)
+        self._handle = _rclpy.ActionGoalHandle(action_server._handle, goal_info)
         self._action_server = action_server
         self._goal_info = goal_info
         self._goal_request = goal_request
@@ -98,7 +97,7 @@ class ServerGoalHandle:
         with self._lock:
             if self._handle is None:
                 return False
-            return _rclpy.rclpy_action_goal_handle_is_active(self._handle)
+            return self._handle.is_active()
 
     @property
     def is_cancel_requested(self):
@@ -109,7 +108,7 @@ class ServerGoalHandle:
         with self._lock:
             if self._handle is None:
                 return GoalStatus.STATUS_UNKNOWN
-            return _rclpy.rclpy_action_goal_handle_get_status(self._handle)
+            return self._handle.get_status()
 
     def _update_state(self, event):
         with self._lock:
@@ -118,13 +117,13 @@ class ServerGoalHandle:
                 return
 
             # Update state
-            _rclpy.rclpy_action_update_goal_state(self._handle, event.value)
+            self._handle.update_goal_state(event.value)
 
             # Publish state change
             _rclpy.rclpy_action_publish_status(self._action_server._handle)
 
             # If it's a terminal state, then also notify the action server
-            if not _rclpy.rclpy_action_goal_handle_is_active(self._handle):
+            if not self._handle.is_active():
                 self._action_server.notify_goal_done()
 
     def execute(self, execute_callback=None):
@@ -167,7 +166,7 @@ class ServerGoalHandle:
         with self._lock:
             if self._handle is None:
                 return
-            _rclpy.rclpy_action_destroy_server_goal_handle(self._handle)
+            self._handle.destroy()
             self._handle = None
 
         self._action_server.remove_future(self._result_future)
