@@ -55,7 +55,7 @@ public:
    * Raises MemoryError if the event can't be allocated
    * Raises RCLError if event initialization failed in rcl
    *
-   * \param[in] pysubscription Capsule containing the publisher
+   * \param[in] pypublisher Capsule containing the publisher
    * \param[in] event_type Type of event to create
    */
   QoSEvent(py::capsule pypublisher, rcl_publisher_event_type_t event_type);
