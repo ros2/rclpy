@@ -257,8 +257,9 @@ class TestQoSEvent(unittest.TestCase):
         try:
             incompatible_qos_event_handle = self._create_event_handle(
                 publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
-            incompatible_qos_event_index = _rclpy.rclpy_wait_set_add_event(
-                    wait_set, incompatible_qos_event_handle)
+            with incompatible_qos_event_handle:
+                incompatible_qos_event_index = _rclpy.rclpy_wait_set_add_event(
+                        wait_set, incompatible_qos_event_handle)
             self.assertIsNotNone(incompatible_qos_event_index)
         except UnsupportedEventTypeError:
             self.assertTrue(self.is_fastrtps)
