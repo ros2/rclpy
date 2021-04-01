@@ -52,7 +52,7 @@ public:
    */
   Service(
     py::capsule pynode, py::object pysrv_type, std::string service_name,
-    py::capsule pyqos_profile);
+    py::object pyqos_profile);
 
   ~Service() = default;
 

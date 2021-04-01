@@ -40,7 +40,7 @@ Service::destroy()
 
 Service::Service(
   py::capsule pynode, py::object pysrv_type, std::string service_name,
-  py::capsule pyqos_profile)
+  py::object pyqos_profile)
 : node_handle_(std::make_shared<Handle>(pynode))
 {
   auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
@@ -165,7 +165,7 @@ void
 define_service(py::object module)
 {
   py::class_<Service, Destroyable>(module, "Service")
-  .def(py::init<py::capsule, py::object, std::string, py::capsule>())
+  .def(py::init<py::capsule, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());
