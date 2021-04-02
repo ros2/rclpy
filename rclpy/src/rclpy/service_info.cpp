@@ -21,33 +21,17 @@
 
 namespace rclpy
 {
-int64_t
-service_info_get_sequence_number(py::capsule pyservice_info)
-{
-  if (0 != strcmp("rmw_service_info_t", pyservice_info.name())) {
-    throw py::value_error("capsule is not an rmw_service_info_t");
-  }
-  auto service_info = static_cast<rmw_service_info_t *>(pyservice_info);
-  return service_info->request_id.sequence_number;
-}
 
-int64_t
-service_info_get_source_timestamp(py::capsule pyservice_info)
+void
+define_service_info(py::object module)
 {
-  if (0 != strcmp("rmw_service_info_t", pyservice_info.name())) {
-    throw py::value_error("capsule is not an rmw_service_info_t");
-  }
-  auto service_info = static_cast<rmw_service_info_t *>(pyservice_info);
-  return service_info->source_timestamp;
-}
+  py::class_<rmw_service_info_t>(module, "rmw_service_info_t")
+  .def_readonly("source_timestamp", &rmw_service_info_t::source_timestamp)
+  .def_readonly("received_timestamp", &rmw_service_info_t::received_timestamp)
+  .def_readonly("request_id", &rmw_service_info_t::request_id);
 
-int64_t
-service_info_get_received_timestamp(py::capsule pyservice_info)
-{
-  if (0 != strcmp("rmw_service_info_t", pyservice_info.name())) {
-    throw py::value_error("capsule is not an rmw_service_info_t");
-  }
-  auto service_info = static_cast<rmw_service_info_t *>(pyservice_info);
-  return service_info->received_timestamp;
+  py::class_<rmw_request_id_t>(module, "rmw_request_id_t")
+  .def_readonly("sequence_number", &rmw_request_id_t::sequence_number);
+  // "writer_guid" is not included because it's not used by rclpy
 }
 }  // namespace rclpy

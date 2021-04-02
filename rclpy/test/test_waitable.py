@@ -130,7 +130,7 @@ class TimerWaitable(Waitable):
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         period_nanoseconds = 10000
         with self._clock.handle as clock_capsule, node.context.handle as context_capsule:
-            self.timer = _rclpy.rclpy_create_timer(
+            self.timer = _rclpy.Timer(
                 clock_capsule, context_capsule, period_nanoseconds)
         self.timer_index = None
         self.timer_is_ready = False
@@ -148,7 +148,7 @@ class TimerWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.timer_is_ready:
             self.timer_is_ready = False
-            _rclpy.rclpy_call_timer(self.timer)
+            self.timer.call_timer()
             return 'timer'
         return None
 
@@ -165,7 +165,7 @@ class TimerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.timer_index = _rclpy.rclpy_wait_set_add_entity('timer', wait_set, self.timer)
+        self.timer_index = _rclpy.rclpy_wait_set_add_timer(wait_set, self.timer)
 
 
 class SubscriptionWaitable(Waitable):

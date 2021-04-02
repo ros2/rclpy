@@ -18,7 +18,6 @@ import unittest
 from rcl_interfaces.srv import GetParameters
 import rclpy
 import rclpy.executors
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 # TODO(sloretz) Reduce fudge once wait_for_service uses node graph events
 TIME_FUDGE = 0.3
@@ -104,8 +103,7 @@ class TestClient(unittest.TestCase):
                     result = srv.handle.service_take_request(srv.srv_type.Request)
                 if result is not None:
                     request, header = result
-                    source_timestamp = _rclpy.rclpy_service_info_get_source_timestamp(header)
-                    self.assertNotEqual(0, source_timestamp)
+                    self.assertNotEqual(0, header.source_timestamp)
                     return
                 else:
                     time.sleep(0.1)

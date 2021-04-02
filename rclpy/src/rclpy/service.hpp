@@ -17,6 +17,7 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rmw/types.h>
 #include <rcl/timer.h>
 
 #include <memory>
@@ -65,7 +66,7 @@ public:
    * \param[in] pyheader Capsule pointing to the rmw_request_id_t header of the request we respond to
    */
   void
-  service_send_response(py::object pyresponse, py::capsule pyheader);
+  service_send_response(py::object pyresponse, rmw_request_id_t * header);
 
   /// Take a request from a given service
   /**

@@ -23,6 +23,7 @@
 #include "rclpy_common/common.h"
 
 #include "client.hpp"
+#include "python_allocator.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "utils.hpp"
 
@@ -54,9 +55,10 @@ Client::Client(
     client_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
+
   // Create a client
   rcl_client_ = std::shared_ptr<rcl_client_t>(
-    new rcl_client_t,
+    PythonAllocator<rcl_client_t>().allocate(1),
     [this](rcl_client_t * client)
     {
       auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
@@ -70,7 +72,7 @@ Client::Client(
           rcl_get_error_string().str);
         rcl_reset_error();
       }
-      delete client;
+      PythonAllocator<rcl_client_t>().deallocate(client, 1);
     });
 
   *rcl_client_ = rcl_get_zero_initialized_client();
@@ -122,28 +124,16 @@ Client::service_server_is_available()
   return is_ready;
 }
 
-static void
-_rclpy_destroy_service_info(PyObject * pycapsule)
-{
-  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rmw_service_info_t"));
-}
-
 py::tuple
 Client::take_response(py::object pyresponse_type)
 {
   auto taken_response = create_from_py(pyresponse_type);
 
-  auto deleter = [](rmw_service_info_t * ptr) {PyMem_Free(ptr);};
-  auto header = std::unique_ptr<rmw_service_info_t, decltype(deleter)>(
-    static_cast<rmw_service_info_t *>(PyMem_Malloc(sizeof(rmw_service_info_t))),
-    deleter);
-  if (!header) {
-    throw std::bad_alloc();
-  }
+  rmw_service_info_t header;
 
   py::tuple result_tuple(2);
   rcl_ret_t ret = rcl_take_response_with_info(
-    rcl_client_.get(), header.get(), taken_response.get());
+    rcl_client_.get(), &header, taken_response.get());
   if (ret == RCL_RET_CLIENT_TAKE_FAILED) {
     result_tuple[0] = py::none();
     result_tuple[1] = py::none();
@@ -153,8 +143,7 @@ Client::take_response(py::object pyresponse_type)
     throw RCLError("encountered error when taking client response");
   }
 
-  result_tuple[0] = py::capsule(
-    header.release(), "rmw_service_info_t", _rclpy_destroy_service_info);
+  result_tuple[0] = header;
 
   result_tuple[1] = convert_to_py(taken_response.get(), pyresponse_type);
   // result_tuple now owns the message
