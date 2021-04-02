@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <iostream>
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/exceptions.hpp"
@@ -48,10 +49,13 @@ get_pointer(py::capsule & capsule, const char * name)
 ActionGoalHandle::ActionGoalHandle(
   py::capsule pyaction_server, py::object pygoal_info_msg)
 {
-  auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t");
+  auto action_server = get_pointer<rcl_action_server_t *>(
+    pyaction_server, "rcl_action_server_t");
+
   destroy_ros_message_signature * destroy_ros_message = NULL;
   auto goal_info_msg = static_cast<rcl_action_goal_info_t *>(
     rclpy_convert_from_py(pygoal_info_msg.ptr(), &destroy_ros_message));
+
   if (!goal_info_msg) {
     throw py::error_already_set();
   }
@@ -59,10 +63,26 @@ ActionGoalHandle::ActionGoalHandle(
   auto goal_info_msg_ptr = std::unique_ptr<rcl_action_goal_info_t, decltype(destroy_ros_message)>(
     goal_info_msg, destroy_ros_message);
 
-  rcl_action_goal_handle_.reset(rcl_action_accept_new_goal(action_server, goal_info_msg));
-  if (nullptr == rcl_action_goal_handle_.get()) {
+  auto handle = rcl_action_accept_new_goal(action_server, goal_info_msg);
+  if (!handle) {
     throw rclpy::RCLError("Failed to accept new goal");
   }
+
+  rcl_action_goal_handle_ = std::shared_ptr<rcl_action_goal_handle_t>(
+    handle,
+    [](rcl_action_goal_handle_t * goal_handle)
+    {
+      rcl_ret_t ret = rcl_action_goal_handle_fini(goal_handle);
+      if (RCL_RET_OK != ret) {
+        // Warning should use line number of the current stack frame
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level, "Error destroying action goal handle: %s",
+          rcl_get_error_string().str);
+        rcl_reset_error();
+      }
+      goal_handle = NULL;
+    });
 }
 
 void
