@@ -30,7 +30,7 @@ TEST(test_allocator, vector) {
   EXPECT_EQ(42u, container.capacity());
   ASSERT_EQ(42u, container.size());
 
-  for (size_t i = 0; i < 42u; ++i) {
+  for (int i = 0; i < 42; ++i) {
     container[i] = i;
   }
 }
