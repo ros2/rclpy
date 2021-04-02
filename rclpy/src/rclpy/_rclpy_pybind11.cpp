@@ -198,28 +198,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Take a message and its metadata from a subscription");
 
   rclpy::define_time_point(m);
-
-  m.def(
-    "rclpy_create_clock", &rclpy::create_clock,
-    "Create a clock.");
-  m.def(
-    "rclpy_clock_get_now", &rclpy::clock_get_now,
-    "Get the current value of a clock.");
-  m.def(
-    "rclpy_clock_get_ros_time_override_is_enabled", &rclpy::clock_get_ros_time_override_is_enabled,
-    "Get if a clock using ROS time has the ROS time override enabled.");
-  m.def(
-    "rclpy_clock_set_ros_time_override_is_enabled", &rclpy::clock_set_ros_time_override_is_enabled,
-    "Set if a clock using ROS time has the ROS time override enabled.");
-  m.def(
-    "rclpy_clock_set_ros_time_override", &rclpy::clock_set_ros_time_override,
-    "Set the current time of a clock using ROS time.");
-  m.def(
-    "rclpy_add_clock_callback", &rclpy::add_jump_callback,
-    "Add a time jump callback to a clock.");
-  m.def(
-    "rclpy_remove_clock_callback", &rclpy::remove_jump_callback,
-    "Remove a time jump callback from a clock.");
+  rclpy::define_clock(m);
 
   m.def(
     "rclpy_get_zero_initialized_wait_set", &rclpy::get_zero_initialized_wait_set,

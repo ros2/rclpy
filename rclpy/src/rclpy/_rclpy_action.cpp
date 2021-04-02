@@ -26,6 +26,8 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
+#include "clock.hpp"
+
 namespace py = pybind11;
 
 
@@ -422,7 +424,7 @@ rclpy_action_create_client(
 py::capsule
 rclpy_action_create_server(
   py::capsule pynode,
-  py::capsule pyclock,
+  const rclpy::Clock & rclpy_clock,
   py::object pyaction_type,
   const char * action_name,
   const rmw_qos_profile_t & goal_service_qos,
@@ -438,11 +440,7 @@ rclpy_action_create_server(
     throw py::error_already_set();
   }
 
-  rcl_clock_t * clock = static_cast<rcl_clock_t *>(
-    rclpy_handle_get_pointer_from_capsule(pyclock.ptr(), "rcl_clock_t"));
-  if (!clock) {
-    throw py::error_already_set();
-  }
+  rcl_clock_t * clock = rclpy_clock.rcl_ptr();
 
   rosidl_action_type_support_t * ts = static_cast<rosidl_action_type_support_t *>(
     rclpy_common_get_type_support(pyaction_type.ptr()));
