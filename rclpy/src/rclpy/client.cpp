@@ -124,28 +124,16 @@ Client::service_server_is_available()
   return is_ready;
 }
 
-static void
-_rclpy_destroy_service_info(PyObject * pycapsule)
-{
-  PyMem_Free(PyCapsule_GetPointer(pycapsule, "rmw_service_info_t"));
-}
-
 py::tuple
 Client::take_response(py::object pyresponse_type)
 {
   auto taken_response = create_from_py(pyresponse_type);
 
-  auto deleter = [](rmw_service_info_t * ptr) {PyMem_Free(ptr);};
-  auto header = std::unique_ptr<rmw_service_info_t, decltype(deleter)>(
-    static_cast<rmw_service_info_t *>(PyMem_Malloc(sizeof(rmw_service_info_t))),
-    deleter);
-  if (!header) {
-    throw std::bad_alloc();
-  }
+  rmw_service_info_t header;
 
   py::tuple result_tuple(2);
   rcl_ret_t ret = rcl_take_response_with_info(
-    rcl_client_.get(), header.get(), taken_response.get());
+    rcl_client_.get(), &header, taken_response.get());
   if (ret == RCL_RET_CLIENT_TAKE_FAILED) {
     result_tuple[0] = py::none();
     result_tuple[1] = py::none();
@@ -155,8 +143,7 @@ Client::take_response(py::object pyresponse_type)
     throw RCLError("encountered error when taking client response");
   }
 
-  result_tuple[0] = py::capsule(
-    header.release(), "rmw_service_info_t", _rclpy_destroy_service_info);
+  result_tuple[0] = header;
 
   result_tuple[1] = convert_to_py(taken_response.get(), pyresponse_type);
   // result_tuple now owns the message

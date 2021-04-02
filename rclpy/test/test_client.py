@@ -104,8 +104,7 @@ class TestClient(unittest.TestCase):
                     result = _rclpy.rclpy_take_request(capsule, srv.srv_type.Request)
                 if result is not None:
                     request, header = result
-                    source_timestamp = _rclpy.rclpy_service_info_get_source_timestamp(header)
-                    self.assertNotEqual(0, source_timestamp)
+                    self.assertNotEqual(0, header.source_timestamp)
                     return
                 else:
                     time.sleep(0.1)

@@ -123,7 +123,7 @@ service_create(
 }
 
 void
-service_send_response(py::capsule pyservice, py::object pyresponse, py::capsule pyheader)
+service_send_response(py::capsule pyservice, py::object pyresponse, rmw_request_id_t * header)
 {
   auto srv = static_cast<rclpy_service_t *>(
     rclpy_handle_get_pointer_from_capsule(pyservice.ptr(), "rclpy_service_t"));
@@ -139,16 +139,6 @@ service_send_response(py::capsule pyservice, py::object pyresponse, py::capsule 
   auto message_deleter = [destroy_ros_message](void * ptr) {destroy_ros_message(ptr);};
   auto ros_response = std::unique_ptr<void, decltype(message_deleter)>(
     raw_ros_response, message_deleter);
-
-  rmw_request_id_t * header;
-  if (0 == strcmp("rmw_request_id_t", pyheader.name())) {
-    header = static_cast<rmw_request_id_t *>(pyheader);
-  } else if (0 == strcmp("rmw_service_info_t", pyheader.name())) {
-    auto info_header = static_cast<rmw_service_info_t *>(pyheader);
-    header = &(info_header->request_id);
-  } else {
-    throw py::value_error("capsule is not an rmw_request_id_t or rmw_service_info_t");
-  }
 
   rcl_ret_t ret = rcl_send_response(&(srv->service), header, ros_response.get());
   if (ret != RCL_RET_OK) {
@@ -174,16 +164,10 @@ service_take_request(py::capsule pyservice, py::object pyrequest_type)
   auto taken_request = std::unique_ptr<void, decltype(message_deleter)>(
     taken_request_ptr, message_deleter);
 
-  auto deleter = [](rmw_service_info_t * ptr) {PyMem_Free(ptr);};
-  auto header = std::unique_ptr<rmw_service_info_t, decltype(deleter)>(
-    static_cast<rmw_service_info_t *>(PyMem_Malloc(sizeof(rmw_service_info_t))),
-    deleter);
-  if (!header) {
-    throw std::bad_alloc();
-  }
+  rmw_service_info_t header;
 
   rcl_ret_t ret = rcl_take_request_with_info(
-    &(srv->service), header.get(), taken_request.get());
+    &(srv->service), &header, taken_request.get());
   if (ret == RCL_RET_SERVICE_TAKE_FAILED) {
     return py::none();
   } else if (ret != RCL_RET_OK) {
@@ -191,7 +175,7 @@ service_take_request(py::capsule pyservice, py::object pyrequest_type)
   }
 
   py::list result_list(2);
-  result_list[1] = py::capsule(header.release(), "rmw_service_info_t");
+  result_list[1] = header;
 
   PyObject * pytaken_request_c = rclpy_convert_to_py(taken_request.get(), pyrequest_type.ptr());
   if (!pytaken_request_c) {
