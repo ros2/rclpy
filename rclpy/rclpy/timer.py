@@ -47,33 +47,41 @@ class Timer:
 
     @property
     def timer_period_ns(self):
-        val = self.__timer.get_timer_period()
+        with self.__timer:
+            val = self.__timer.get_timer_period()
         self.__timer_period_ns = val
         return val
 
     @timer_period_ns.setter
     def timer_period_ns(self, value):
         val = int(value)
-        self.__timer.change_timer_period(val)
+        with self.__timer:
+            self.__timer.change_timer_period(val)
         self.__timer_period_ns = val
 
     def is_ready(self):
-        return self.__timer.is_timer_ready()
+        with self.__timer:
+            return self.__timer.is_timer_ready()
 
     def is_canceled(self):
-        return self.__timer.is_timer_canceled()
+        with self.__timer:
+            return self.__timer.is_timer_canceled()
 
     def cancel(self):
-        self.__timer.cancel_timer()
+        with self.__timer:
+            self.__timer.cancel_timer()
 
     def reset(self):
-        self.__timer.reset_timer()
+        with self.__timer:
+            self.__timer.reset_timer()
 
     def time_since_last_call(self):
-        return self.__timer.time_since_last_call()
+        with self.__timer:
+            return self.__timer.time_since_last_call()
 
     def time_until_next_call(self):
-        return self.__timer.time_until_next_call()
+        with self.__timer:
+            return self.__timer.time_until_next_call()
 
 
 class Rate:

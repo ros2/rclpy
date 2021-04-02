@@ -51,14 +51,12 @@ public:
 
   /// Reset the timer
   /**
-   * Raise ValueError if capsule is not a timer
    * Raises RCLError if the timer cannot be reset
    */
   void reset_timer();
 
   /// Checks if timer reached its timeout
   /**
-   *  Raises ValueError if pytimer is not a timer capsule
    *  Raises RCLError if there is an rcl error
    *
    * \return True if the timer is ready
@@ -67,7 +65,6 @@ public:
 
   /// Set the last call time and start counting again
   /**
-   * Raises ValueError if pytimer is not a timer capsule
    * Raises RCLError if there is an rcl error
    *
    */
@@ -77,7 +74,6 @@ public:
   /**
    * The change in period will take effect after the next timer call
    *
-   * Raises ValueError if pytimer is not a timer capsule
    * Raises RCLError if the timer period could not be changed
    *
    * \param[in] period_nsec the new period in nanoseconds
@@ -88,7 +84,6 @@ public:
   /**
    * the returned time can be negative, this means that the timer is ready and hasn't been called yet
    *
-   * Raises ValueError if pytimer is not a timer capsule
    * Raises RCLError there is an rcl error
    *
    * \return the time until next call in nanoseconds
@@ -97,7 +92,6 @@ public:
 
   /// Get the time since the timer has been called
   /**
-   * Raises ValueError if pytimer is not a timer capsule
    * Raises RCLError if there is an rcl error
    *
    * \return the time since last call in nanoseconds
@@ -106,7 +100,6 @@ public:
 
   /// Returns the period of the timer in nanoseconds
   /**
-   * Raises ValueError if pytimer is not a timer capsule
    * Raises RCLError if the timer period cannot be retrieved
    *
    * \return the time since the last call in nanoseconds
@@ -115,7 +108,6 @@ public:
 
   /// Cancel the timer
   /**
-   * Raises ValueError if pytimer is not a timer capsule
    * Raises RCLError if the timmer cannot be canceled
    *
    */
@@ -123,7 +115,6 @@ public:
 
   /// Checks if timer is cancelled
   /**
-   * Raises ValueError if pytimer is not a timer capsule
    * Raises RCLError if there is an rcl error
    *
    * \return True if the timer is canceled

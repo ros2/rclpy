@@ -55,7 +55,7 @@ Timer::Timer(
   // Create a client
   rcl_timer_ = std::shared_ptr<rcl_timer_t>(
     new rcl_timer_t,
-    [this](rcl_timer_t * timer)
+    [](rcl_timer_t * timer)
     {
       rcl_ret_t ret = rcl_timer_fini(timer);
       if (RCL_RET_OK != ret) {
