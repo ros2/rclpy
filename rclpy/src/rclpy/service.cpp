@@ -146,14 +146,11 @@ Service::service_take_request(py::object pyrequest_type)
     throw RCLError("service failed to take request");
   }
 
-  py::list result_list(2);
-  result_list[1] = py::capsule(header.release(), "rmw_service_info_t");
-
-  result_list[0] = convert_to_py(taken_request.get(), pyrequest_type);
-  // result_list now owns the message
+  result_tuple[1] = py::capsule(header.release(), "rmw_service_info_t");
+  result_tuple[0] = convert_to_py(taken_request.get(), pyrequest_type);
   taken_request.release();
 
-  return result_list;
+  return result_tuple;
 }
 void
 define_service(py::object module)
