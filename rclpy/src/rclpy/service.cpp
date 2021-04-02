@@ -69,7 +69,7 @@ Service::Service(
         // Warning should use line number of the current stack frame
         int stack_level = 1;
         PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini client: %s",
+          PyExc_RuntimeWarning, stack_level, "Failed to fini service: %s",
           rcl_get_error_string().str);
         rcl_reset_error();
       }
@@ -125,12 +125,6 @@ Service::service_send_response(py::object pyresponse, py::capsule pyheader)
 py::tuple
 Service::service_take_request(py::object pyrequest_type)
 {
-  destroy_ros_message_signature * destroy_ros_message = nullptr;
-  void * taken_request_ptr = rclpy_create_from_py(pyrequest_type.ptr(), &destroy_ros_message);
-  if (!taken_request_ptr) {
-    throw py::error_already_set();
-  }
-
   auto taken_request = create_from_py(pyrequest_type);
 
   auto deleter = [](rmw_service_info_t * ptr) {PyMem_Free(ptr);};

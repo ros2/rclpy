@@ -69,11 +69,10 @@ public:
 
   /// Take a request from a given service
   /**
-   * Raises ValueError if pyservice is not a service capsule
    * Raises RCLError if the take failed
    *
    * \param[in] pyrequest_type Instance of the message type to take
-   * \return None if there was nothing to take, or
+   * \return [None, None] if there was nothing to take, or
    * \return List with 2 elements:
    *            first element: a Python request message with all fields populated with received request
    *            second element: a Capsule pointing to the header (rmw_request_id) of the processed request
