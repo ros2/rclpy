@@ -142,13 +142,6 @@ wait_set_add_entity(const std::string & entity_type, py::capsule pywait_set, py:
       throw py::error_already_set();
     }
     ret = rcl_wait_set_add_guard_condition(wait_set, guard_condition, &index);
-  } else if ("event" == entity_type) {
-    auto event = static_cast<rcl_event_t *>(
-      rclpy_handle_get_pointer_from_capsule(pyentity.ptr(), "rcl_event_t"));
-    if (!event) {
-      throw py::error_already_set();
-    }
-    ret = rcl_wait_set_add_event(wait_set, event, &index);
   } else {
     std::string error_text{"'"};
     error_text += entity_type;
@@ -208,6 +201,22 @@ wait_set_add_client(const py::capsule pywait_set, const Client & client)
   rcl_ret_t ret = rcl_wait_set_add_client(wait_set, client.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to add client to wait set");
+  }
+  return index;
+}
+
+size_t
+wait_set_add_event(const py::capsule pywait_set, const QoSEvent & event)
+{
+  if (0 != std::strcmp("rcl_wait_set_t", pywait_set.name())) {
+    throw py::value_error("capsule is not an rcl_wait_set_t");
+  }
+  auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
+
+  size_t index;
+  rcl_ret_t ret = rcl_wait_set_add_event(wait_set, event.rcl_ptr(), &index);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to add event to wait set");
   }
   return index;
 }

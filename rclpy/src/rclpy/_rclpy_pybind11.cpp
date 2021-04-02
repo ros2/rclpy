@@ -33,7 +33,7 @@
 #include "publisher.hpp"
 #include "pycapsule_api.hpp"
 #include "qos.hpp"
-#include "qos_events.hpp"
+#include "qos_event.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
 #include "service.hpp"
@@ -72,17 +72,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value(
     "SYSTEM_TIME_NO_CHANGE", RCL_SYSTEM_TIME_NO_CHANGE,
     "ROS time is inactive and the clock will keep reporting system time");
-
-  py::enum_<rcl_subscription_event_type_t>(m, "QoSSubscriptionEventType")
-  .value("RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED", RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
-  .value("RCL_SUBSCRIPTION_LIVELINESS_CHANGED", RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
-  .value("RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS", RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
-  .value("RCL_SUBSCRIPTION_MESSAGE_LOST", RCL_SUBSCRIPTION_MESSAGE_LOST);
-
-  py::enum_<rcl_publisher_event_type_t>(m, "QoSPublisherEventType")
-  .value("RCL_PUBLISHER_OFFERED_DEADLINE_MISSED", RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
-  .value("RCL_PUBLISHER_LIVELINESS_LOST", RCL_PUBLISHER_LIVELINESS_LOST)
-  .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS);
 
   py::enum_<rmw_qos_compatibility_type_t>(m, "QoSCompatibility")
   .value("OK", RMW_QOS_COMPATIBILITY_OK)
@@ -206,6 +195,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_wait_set_add_timer", &rclpy::wait_set_add_timer,
     "Add a timer to the wait set.");
   m.def(
+    "rclpy_wait_set_add_event", &rclpy::wait_set_add_event,
+    "Add an event to the wait set.");
+  m.def(
     "rclpy_wait_set_is_ready", &rclpy::wait_set_is_ready,
     "rclpy_wait_set_is_ready.");
   m.def(
@@ -309,12 +301,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_count_subscribers", &rclpy::get_count_subscribers,
     "Count subscribers for a topic.");
 
-  m.def(
-    "rclpy_create_event", &rclpy::create_event,
-    "Create an event for QoS event handling.");
-  m.def(
-    "rclpy_take_event", &rclpy::take_event,
-    "Get pending data from a ready QoS event.");
+  rclpy::define_qos_event(m);
 
   m.def(
     "rclpy_get_node_parameters", &rclpy::get_node_parameters,

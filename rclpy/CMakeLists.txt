@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 
 project(rclpy)
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 # Default to C11
 if(NOT CMAKE_C_STANDARD)
@@ -167,7 +167,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/node.cpp
   src/rclpy/publisher.cpp
   src/rclpy/qos.cpp
-  src/rclpy/qos_events.cpp
+  src/rclpy/qos_event.cpp
   src/rclpy/serialization.cpp
   src/rclpy/service.cpp
   src/rclpy/service_info.cpp

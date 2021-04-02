@@ -21,6 +21,7 @@
 #include <string>
 
 #include "client.hpp"
+#include "qos_event.hpp"
 #include "service.hpp"
 #include "timer.hpp"
 
@@ -110,6 +111,17 @@ wait_set_add_client(const py::capsule pywait_set, const Client & client);
  */
 size_t
 wait_set_add_timer(const py::capsule pywait_set, const Timer & timer);
+
+/// Add an event to the wait set structure
+/**
+ * Raises RCLError if any lower level error occurs
+ *
+ * \param[in] pywait_set Capsule pointing to the wait set structure
+ * \param[in] event a QoSEvent to add to the wait set
+ * \return Index in waitset entity was added at
+ */
+size_t
+wait_set_add_event(const py::capsule pywait_set, const QoSEvent & event);
 
 /// Check if an entity in the wait set is ready by its index
 /**
