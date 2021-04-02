@@ -21,6 +21,7 @@
 #include <string>
 
 #include "client.hpp"
+#include "timer.hpp"
 
 namespace py = pybind11;
 
@@ -86,6 +87,17 @@ wait_set_add_entity(const std::string & entity_type, py::capsule pywait_set, py:
  */
 size_t
 wait_set_add_client(const py::capsule pywait_set, const Client & client);
+
+/// Add a timer to the wait set structure
+/**
+ * Raises RCLError if any lower level error occurs
+ *
+ * \param[in] pywait_set Capsule pointing to the wait set structure
+ * \param[in] timer a timer to add to the wait set
+ * \return Index in waitset entity was added at
+ */
+size_t
+wait_set_add_timer(const py::capsule pywait_set, const Timer & timer);
 
 /// Check if an entity in the wait set is ready by its index
 /**
