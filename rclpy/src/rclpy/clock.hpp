@@ -106,7 +106,7 @@ public:
   remove_clock_callback(py::object pyjump_handle);
 
   /// Get rcl_client_t pointer
-  std::shared_ptr<rcl_clock_t> shared_ptr()
+  std::shared_ptr<rcl_clock_t> get_shared_ptr()
   {
     return rcl_clock_;
   }

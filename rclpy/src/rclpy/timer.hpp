@@ -46,7 +46,7 @@ public:
    * \param[in] period_nsec the period of the timer in nanoseconds
    * \return a timer capsule
    */
-  Timer(const Clock & clock, py::capsule pycontext, int64_t period_nsec);
+  Timer(Clock & clock, py::capsule pycontext, int64_t period_nsec);
 
   ~Timer() = default;
 
