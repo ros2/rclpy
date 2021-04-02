@@ -151,15 +151,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_publish_raw", &rclpy::publisher_publish_raw,
     "Publish a serialized message");
 
-  m.def(
-    "rclpy_create_service", &rclpy::service_create,
-    "Create a service");
-  m.def(
-    "rclpy_send_response", &rclpy::service_send_response,
-    "Send a response");
-  m.def(
-    "rclpy_take_request", &rclpy::service_take_request,
-    "rclpy_take_request");
+  rclpy::define_service(m);
 
   rclpy::define_service_info(m);
 
@@ -228,6 +220,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_wait_set_add_client", &rclpy::wait_set_add_client,
     "Add a client to the wait set.");
+  m.def(
+    "rclpy_wait_set_add_service", &rclpy::wait_set_add_service,
+    "Add a service to the wait set.");
   m.def(
     "rclpy_wait_set_add_timer", &rclpy::wait_set_add_timer,
     "Add a timer to the wait set.");
