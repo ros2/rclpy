@@ -42,7 +42,7 @@ class Service:
            should call :meth:`.Node.create_service`.
 
         :param context: The context associated with the service server.
-        :param service_impl: :class:`_rclpy.Client` wrapping the underlying ``rcl_service_t``
+        :param service_impl: :class:`_rclpy.Service` wrapping the underlying ``rcl_service_t``
             object.
         :param srv_type: The service type.
         :param srv_name: The name of the service.
