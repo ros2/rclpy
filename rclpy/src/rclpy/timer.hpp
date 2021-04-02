@@ -21,6 +21,7 @@
 
 #include <memory>
 
+#include "clock.hpp"
 #include "destroyable.hpp"
 #include "handle.hpp"
 
@@ -45,7 +46,7 @@ public:
    * \param[in] period_nsec the period of the timer in nanoseconds
    * \return a timer capsule
    */
-  Timer(py::capsule pyclock, py::capsule pycontext, int64_t period_nsec);
+  Timer(Clock & clock, py::capsule pycontext, int64_t period_nsec);
 
   ~Timer() = default;
 
@@ -133,7 +134,7 @@ public:
 
 private:
   // TODO(ahcorde) replace with std::shared_ptr<rcl_clock_t> when rclpy::Clock exists
-  std::shared_ptr<Handle> clock_handle_;
+  std::shared_ptr<rcl_clock_t> clock_handle_;
   std::shared_ptr<rcl_timer_t> rcl_timer_;
 };
 

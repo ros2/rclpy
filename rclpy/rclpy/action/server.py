@@ -249,10 +249,10 @@ class ActionServer(Waitable):
         check_for_type_support(action_type)
         self._node = node
         self._action_type = action_type
-        with node.handle as node_capsule, node.get_clock().handle as clock_capsule:
+        with node.handle as node_capsule, node.get_clock().handle:
             self._handle = _rclpy.rclpy_action_create_server(
                 node_capsule,
-                clock_capsule,
+                node.get_clock().handle,
                 action_type,
                 action_name,
                 goal_service_qos_profile.get_c_qos_profile(),

@@ -19,97 +19,113 @@
 
 #include <rcl/time.h>
 
+#include <memory>
+#include <string>
+
+#include "destroyable.hpp"
+#include "handle.hpp"
+#include "rclpy_common/exceptions.hpp"
+#include "utils.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
 {
-/// Create a clock
-/**
- * Raises RCLError on initialization failure
- * Raises TypeError if argument of invalid type
- *
- * This function creates a Clock object of the specified type
- * \param[in] clock_type enum of type ClockType
- * \return  Capsule to an rcl_clock_t object
- */
-py::capsule
-create_clock(rcl_clock_type_t clock_type);
+class Clock : public Destroyable
+{
+public:
+  /// Create a clock
+  /**
+   * Raises RCLError on initialization failure
+   *
+   * \param[in] clock_type enum of type ClockType
+   * This constructor creates a Clock object
+   */
+  explicit Clock(rcl_clock_type_t clock_type);
 
-/// Returns the current value of the clock
-/**
- * Raises ValueError if pyclock is not a clock capsule
- * Raises RCLError if the clock's value cannot be retrieved
- *
- * \param[in] pyclock Capsule pointing to the clock
- * \return capsule to a time point with the current time
- */
-rcl_time_point_t
-clock_get_now(py::capsule pyclock);
+  /// Returns the current value of the clock
+  /**
+   * Raises RCLError if the clock's value cannot be retrieved
+   *
+   * \return capsule to a time point with the current time
+   */
+  rcl_time_point_t
+  get_now();
 
-/// Returns if a clock using ROS time has the ROS time override enabled.
-/**
- * Raises ValueError if pyclock is not a clock capsule
- * Raises RCLError if the clock's ROS time override state cannot be retrieved
- *
- * \param[in] pyclock Capsule pointing to the clock
- * \return true if ROS time is enabled
- */
-bool
-clock_get_ros_time_override_is_enabled(py::capsule pyclock);
+  /// Returns if a clock using ROS time has the ROS time override enabled.
+  /**
+   * Raises RCLError if the clock's ROS time override state cannot be retrieved
+   *
+   * \return true if ROS time is enabled
+   */
+  bool
+  get_ros_time_override_is_enabled();
 
-/// Set if a clock using ROS time has the ROS time override enabled.
-/**
- * Raises ValueError if pyclock is not a clock capsule
- * Raises RCLError if the clock's ROS time override cannot be set
- *
- * \param[in] pyclock Capsule pointing to the clock to set
- * \param[in] enabled Override state to set
- */
-void
-clock_set_ros_time_override_is_enabled(py::capsule pyclock, bool enabled);
+  /// Set if a clock using ROS time has the ROS time override enabled.
+  /**
+   * Raises RCLError if the clock's ROS time override cannot be set
+   *
+   * \param[in] enabled Override state to set
+   */
+  void
+  set_ros_time_override_is_enabled(bool enabled);
 
-/// Set the ROS time override for a clock using ROS time.
-/**
- * Raises ValueError if pyclock is not a clock capsule
- * Raises RRCLError if the clock's ROS time override cannot be set
- *
- * \param[in] pyclock Capsule pointing to the clock to set
- * \param[in] time_point a time point instance
- */
-void
-clock_set_ros_time_override(py::capsule py_clock, rcl_time_point_t time_point);
+  /// Set the ROS time override for a clock using ROS time.
+  /**
+   * Raises RRCLError if the clock's ROS time override cannot be set
+   *
+   * \param[in] time_point a time point instance
+   */
+  void
+  set_ros_time_override(rcl_time_point_t time_point);
 
-/// Add a time jump callback to a clock.
-/**
- * Raises ValueError if pyclock is not a clock capsule, or
- * any argument is invalid
- * Raises RCLError if the callback cannot be added
- *
- * \param[in] pyclock Capsule pointing to the clock to set
- * \param[in] pyjump_handle Instance of rclpy.clock.JumpHandle
- * \param[in] on_clock_change True if callback should be called when ROS time is toggled
- * \param[in] min_forward minimum nanoseconds to trigger forward jump callback
- * \param[in] min_backward minimum negative nanoseconds to trigger backward jump callback
- */
-void
-add_jump_callback(
-  py::capsule pyclock,
-  py::object pyjump_handle,
-  bool on_clock_change,
-  int64_t min_forward,
-  int64_t min_backward);
+  /// Add a time jump callback to a clock.
+  /**
+   * any argument is invalid
+   * Raises RCLError if the callback cannot be added
+   *
+   * \param[in] pyjump_handle Instance of rclpy.clock.JumpHandle
+   * \param[in] on_clock_change True if callback should be called when ROS time is toggled
+   * \param[in] min_forward minimum nanoseconds to trigger forward jump callback
+   * \param[in] min_backward minimum negative nanoseconds to trigger backward jump callback
+   */
+  void
+  add_clock_callback(
+    py::object pyjump_handle,
+    bool on_clock_change,
+    int64_t min_forward,
+    int64_t min_backward);
 
-/// Remove a time jump callback from a clock.
-/**
- * Raises ValueError if pyclock is not a clock capsule, or
- * any argument is invalid
- * Raises RCLError if the callback cannot be added
- *
- * \param[in] pyclock Capsule pointing to the clock to set
- * \param[in] pyjump_handle Instance of rclpy.clock.JumpHandle
- */
-void
-remove_jump_callback(py::capsule pyclock, py::object pyjump_handle);
+  /// Remove a time jump callback from a clock.
+  /**
+   * Raises RCLError if the callback cannot be added
+   *
+   * \param[in] pyjump_handle Instance of rclpy.clock.JumpHandle
+   */
+  void
+  remove_clock_callback(py::object pyjump_handle);
+
+  /// Get rcl_client_t pointer
+  std::shared_ptr<rcl_clock_t> get_shared_ptr()
+  {
+    return rcl_clock_;
+  }
+
+  /// Get rcl_client_t pointer
+  rcl_clock_t * rcl_ptr() const
+  {
+    return rcl_clock_.get();
+  }
+
+  /// Force an early destruction of this object
+  void destroy() override;
+
+private:
+  std::shared_ptr<rcl_clock_t> rcl_clock_;
+};
+
+/// Define a pybind11 wrapper for an rclpy::Service
+void define_clock(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__CLOCK_HPP_
