@@ -156,7 +156,7 @@ class ServerGoalHandle:
         with self._lock:
             if self._goal is None:
                 return
-            self._goal.destroy()
+            self._goal.destroy_when_not_in_use()
             self._goal = None
 
         self._action_server.remove_future(self._result_future)

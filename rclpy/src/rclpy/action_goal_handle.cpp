@@ -81,7 +81,6 @@ ActionGoalHandle::ActionGoalHandle(
           rcl_get_error_string().str);
         rcl_reset_error();
       }
-      goal_handle = NULL;
     });
 }
 
@@ -130,9 +129,6 @@ define_action_goal_handle(py::module module)
     "Update a goal state.")
   .def(
     "is_active", &ActionGoalHandle::is_active,
-    "Check if a goal is active.")
-  .def(
-    "destroy", &ActionGoalHandle::destroy,
-    "Destroy a goal handle.");
+    "Check if a goal is active.");
 }
 }  // namespace rclpy
