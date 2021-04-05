@@ -87,7 +87,8 @@ class Context:
         with self._callbacks_lock:
             for weak_method in self._callbacks:
                 callback = weak_method()
-                callback()
+                if callback is not None:
+                    callback()
             self._callbacks = []
 
     def shutdown(self):
