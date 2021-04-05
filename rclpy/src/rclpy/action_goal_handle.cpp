@@ -68,20 +68,7 @@ ActionGoalHandle::ActionGoalHandle(
     throw rclpy::RCLError("Failed to accept new goal");
   }
 
-  rcl_action_goal_handle_ = std::shared_ptr<rcl_action_goal_handle_t>(
-    handle,
-    [](rcl_action_goal_handle_t * goal_handle)
-    {
-      rcl_ret_t ret = rcl_action_goal_handle_fini(goal_handle);
-      if (RCL_RET_OK != ret) {
-        // Warning should use line number of the current stack frame
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Error destroying action goal handle: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-    });
+  rcl_action_goal_handle_ = std::make_shared<rcl_action_goal_handle_t>(*handle);
 }
 
 void
