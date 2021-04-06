@@ -2,6 +2,29 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Change index.ros.org -> docs.ros.org. (`#755 <https://github.com/ros2/rclpy/issues/755>`_)
+* Use py::class\_ for rcl_event_t (`#750 <https://github.com/ros2/rclpy/issues/750>`_)
+* Convert Clock to use a C++ Class (`#749 <https://github.com/ros2/rclpy/issues/749>`_)
+* Convert Service to use C++ Class (`#747 <https://github.com/ros2/rclpy/issues/747>`_)
+* Fix windows warning by using consistent types (`#753 <https://github.com/ros2/rclpy/issues/753>`_)
+* Use py::class\_ for rmw_service_info_t and rmw_request_id_t (`#748 <https://github.com/ros2/rclpy/issues/748>`_)
+* Convert Timer to use a C++ Class (`#745 <https://github.com/ros2/rclpy/issues/745>`_)
+* Add PythonAllocator (`#746 <https://github.com/ros2/rclpy/issues/746>`_)
+* Use py::class\_ for rmw_qos_profile_t (`#741 <https://github.com/ros2/rclpy/issues/741>`_)
+* Combine pybind11 modules into one (`#743 <https://github.com/ros2/rclpy/issues/743>`_)
+* Use py::class\_ for rcl_duration_t (`#744 <https://github.com/ros2/rclpy/issues/744>`_)
+* Fix bug in unique_ptr type argument (`#742 <https://github.com/ros2/rclpy/issues/742>`_)
+* Convert Client to use C++ Class (`#739 <https://github.com/ros2/rclpy/issues/739>`_)
+* Converting last of _rclpy.c to pybind11 (`#738 <https://github.com/ros2/rclpy/issues/738>`_)
+* Make sure only non-empty std::vector of arguments are indexed (`#740 <https://github.com/ros2/rclpy/issues/740>`_)
+* Use py::class\_ for rcl_time_point_t (`#737 <https://github.com/ros2/rclpy/issues/737>`_)
+* Convert logging mutex functions to pybind11 (`#735 <https://github.com/ros2/rclpy/issues/735>`_)
+* Document misuse of of parameter callbacks (`#734 <https://github.com/ros2/rclpy/issues/734>`_)
+* Convert QoS APIs to pybind11 (`#736 <https://github.com/ros2/rclpy/issues/736>`_)
+* Contributors: Addisu Z. Taddese, Alejandro Hernández Cordero, Chris Lalancette, Greg Balke, Jacob Perron, Michel Hidalgo, Shane Loretz
+
 1.7.0 (2021-03-25)
 ------------------
 * Add API for checking QoS profile compatibility (`#708 <https://github.com/ros2/rclpy/issues/708>`_)
