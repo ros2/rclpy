@@ -168,7 +168,7 @@ bool Timer::is_timer_canceled()
 void
 define_timer(py::object module)
 {
-  py::class_<Timer, Destroyable>(module, "Timer")
+  py::class_<Timer, Destroyable, std::shared_ptr<Timer>>(module, "Timer")
   .def(py::init<Clock &, py::capsule, int64_t>())
   .def_property_readonly(
     "pointer", [](const Timer & timer) {

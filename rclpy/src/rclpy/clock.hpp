@@ -31,7 +31,7 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-class Clock : public Destroyable
+class Clock : public Destroyable, public std::enable_shared_from_this<Clock>
 {
 public:
   /// Create a clock
