@@ -168,7 +168,7 @@ QoSEvent::take_event()
 void
 define_qos_event(py::module module)
 {
-  py::class_<QoSEvent, Destroyable>(module, "QoSEvent")
+  py::class_<QoSEvent, Destroyable, std::shared_ptr<QoSEvent>>(module, "QoSEvent")
   .def(py::init<py::capsule, rcl_subscription_event_type_t>())
   .def(py::init<py::capsule, rcl_publisher_event_type_t>())
   .def_property_readonly(
