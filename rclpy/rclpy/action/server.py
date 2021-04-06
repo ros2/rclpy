@@ -161,9 +161,6 @@ class ServerGoalHandle:
 
         self._action_server.remove_future(self._result_future)
 
-    def __del__(self):
-        self.destroy()
-
 
 def default_handle_accepted_callback(goal_handle):
     """Execute the goal."""
