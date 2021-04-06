@@ -59,13 +59,16 @@ Subscription::Subscription(
     [this](rcl_subscription_t * subscription)
     {
       if (!node_handle_) {
-        if (subscription) {
-          delete subscription;
-        }
+        delete subscription;
         return;
       }
 
       auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
+
+      if (!node) {
+        delete subscription;
+        return;
+      }
 
       rcl_ret_t ret = rcl_subscription_fini(subscription, node);
       if (RCL_RET_OK != ret) {

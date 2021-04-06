@@ -37,7 +37,7 @@ public:
   /**
    * This function will create a publisher and attach it to the provided topic name
    * This publisher will use the typesupport defined in the message module
-   * provided as pymsg_type to send messages over the wire.
+   * provided as pymsg_type to send messages.
    *
    * Raises ValueError if the topic name is invalid
    * Raises ValueError if the capsules are not the correct types
@@ -107,7 +107,7 @@ public:
 
   /// Get rcl_client_t pointer
   std::shared_ptr<rcl_publisher_t>
-  get_shared_ptr()
+  get_rcl_shared_ptr()
   {
     return rcl_publisher_;
   }

@@ -53,17 +53,17 @@ Publisher::Publisher(
     [this](rcl_publisher_t * publisher)
     {
       if (!node_handle_) {
-        if (publisher) {
-          delete publisher;
-        }
-        return;
-      }
-
-      if (!publisher) {
+        delete publisher;
         return;
       }
 
       auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
+
+      if (!node) {
+        delete publisher;
+        return;
+      }
+
       rcl_ret_t ret = rcl_publisher_fini(publisher, node);
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame

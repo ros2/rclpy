@@ -57,22 +57,22 @@ create_zero_initialized_event()
 void
 QoSEvent::destroy()
 {
+  grandparent_pub_handle_.reset();
+  grandparent_sub_handle_.reset();
   rcl_event_.reset();
-  parent_sub_handle_.reset();
-  parent_pub_handle_.reset();
 }
 
 QoSEvent::QoSEvent(
   rclpy::Subscription & subscription, rcl_subscription_event_type_t event_type)
 : event_type_(event_type)
 {
-  parent_sub_handle_ = subscription.get_shared_ptr();
+  grandparent_sub_handle_ = std::make_shared<rclpy::Subscription>(subscription);
 
   // Create a subscription event
   rcl_event_ = create_zero_initialized_event();
 
   rcl_ret_t ret = rcl_subscription_event_init(
-    rcl_event_.get(), parent_sub_handle_.get(), event_type);
+    rcl_event_.get(), grandparent_sub_handle_->rcl_ptr(), event_type);
   if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
     throw std::bad_alloc();
@@ -89,13 +89,13 @@ QoSEvent::QoSEvent(
   rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type)
 : event_type_(event_type)
 {
-  parent_pub_handle_ = publisher.get_shared_ptr();
+  grandparent_pub_handle_ = std::make_shared<rclpy::Publisher>(publisher);
 
   // Create a publisher event
   rcl_event_ = create_zero_initialized_event();
 
   rcl_ret_t ret = rcl_publisher_event_init(
-    rcl_event_.get(), parent_pub_handle_.get(), event_type);
+    rcl_event_.get(), grandparent_pub_handle_->rcl_ptr(), event_type);
   if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
     throw std::bad_alloc();

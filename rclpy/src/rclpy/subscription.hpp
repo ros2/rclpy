@@ -37,7 +37,7 @@ public:
   /**
    * This function will create a subscription for the given topic name.
    * This subscription will use the typesupport defined in the message module
-   * provided as pymsg_type to send messages over the wire.
+   * provided as pymsg_type to send messages.
    *
    * Raises RCLError if the subscription could not be created
    *
@@ -53,7 +53,7 @@ public:
 
   /// Take a message and its metadata from a subscription
   /**
-   * Raises MemoryError if there was error allocating memory
+   * Raises MemoryError if there was an error allocating memory
    * Raises RCLError if there was an error within rcl
    *
    * \param[in] pymsg_type Message type to be taken (i.e. a class).
@@ -94,7 +94,7 @@ public:
 
   /// Get rcl_client_t pointer
   std::shared_ptr<rcl_subscription_t>
-  get_shared_ptr()
+  get_rcl_shared_ptr()
   {
     return rcl_subscription_;
   }
