@@ -66,7 +66,7 @@ QoSEvent::QoSEvent(
   rclpy::Subscription & subscription, rcl_subscription_event_type_t event_type)
 : event_type_(event_type)
 {
-  grandparent_sub_handle_ = std::make_shared<rclpy::Subscription>(subscription);
+  grandparent_sub_handle_ = subscription.shared_from_this();
 
   // Create a subscription event
   rcl_event_ = create_zero_initialized_event();
@@ -89,7 +89,7 @@ QoSEvent::QoSEvent(
   rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type)
 : event_type_(event_type)
 {
-  grandparent_pub_handle_ = std::make_shared<rclpy::Publisher>(publisher);
+  grandparent_pub_handle_ = publisher.shared_from_this();
 
   // Create a publisher event
   rcl_event_ = create_zero_initialized_event();
@@ -169,7 +169,7 @@ QoSEvent::take_event()
 void
 define_qos_event(py::module module)
 {
-  py::class_<QoSEvent, Destroyable>(module, "QoSEvent")
+  py::class_<QoSEvent, Destroyable, std::shared_ptr<QoSEvent>>(module, "QoSEvent")
   .def(py::init<rclpy::Subscription &, rcl_subscription_event_type_t>())
   .def(py::init<rclpy::Publisher &, rcl_publisher_event_type_t>())
   .def_property_readonly(

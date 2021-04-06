@@ -31,7 +31,7 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-class QoSEvent : public Destroyable
+class QoSEvent : public Destroyable, public std::enable_shared_from_this<QoSEvent>
 {
 public:
   /// Create a subscription event

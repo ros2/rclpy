@@ -30,7 +30,7 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-class Publisher : public Destroyable
+class Publisher : public Destroyable, public std::enable_shared_from_this<Publisher>
 {
 public:
   /// Create a publisher

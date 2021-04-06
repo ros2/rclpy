@@ -167,7 +167,7 @@ Publisher::publish_raw(std::string msg)
 void
 define_publisher(py::object module)
 {
-  py::class_<Publisher, Destroyable>(module, "Publisher")
+  py::class_<Publisher, Destroyable, std::shared_ptr<Publisher>>(module, "Publisher")
   .def(py::init<py::capsule, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Publisher & publisher) {
