@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.8.0 (2021-04-06)
+------------------
 * Change index.ros.org -> docs.ros.org. (`#755 <https://github.com/ros2/rclpy/issues/755>`_)
 * Use py::class\_ for rcl_event_t (`#750 <https://github.com/ros2/rclpy/issues/750>`_)
 * Convert Clock to use a C++ Class (`#749 <https://github.com/ros2/rclpy/issues/749>`_)
