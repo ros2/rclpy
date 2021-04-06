@@ -139,7 +139,7 @@ Service::service_take_request(py::object pyrequest_type)
 void
 define_service(py::object module)
 {
-  py::class_<Service, Destroyable>(module, "Service")
+  py::class_<Service, Destroyable, std::shared_ptr<Service>>(module, "Service")
   .def(py::init<py::capsule, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Service & service) {

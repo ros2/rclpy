@@ -30,7 +30,7 @@ namespace py = pybind11;
 namespace rclpy
 {
 
-class Timer : public Destroyable
+class Timer : public Destroyable, public std::enable_shared_from_this<Timer>
 {
 public:
   /// Create a timer
