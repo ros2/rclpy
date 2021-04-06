@@ -21,6 +21,8 @@
 
 #include <memory>
 
+#include "publisher.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
@@ -78,7 +80,7 @@ get_rmw_implementation_identifier();
  * \return None
  */
 void
-assert_liveliness(py::capsule pyentity);
+assert_liveliness(rclpy::Publisher publisher);
 
 /// Remove ROS specific args from a list of args.
 /**

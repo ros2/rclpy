@@ -24,6 +24,8 @@
 
 #include "destroyable.hpp"
 #include "handle.hpp"
+#include "publisher.hpp"
+#include "subscription.hpp"
 
 namespace py = pybind11;
 
@@ -41,10 +43,10 @@ public:
    * Raises MemoryError if the event can't be allocated
    * Raises RCLError if event initialization failed in rcl
    *
-   * \param[in] pysubscription Capsule containing the subscription
+   * \param[in] subscriber Subscriber containing the subscription
    * \param[in] event_type Type of event to create
    */
-  QoSEvent(py::capsule pysubscription, rcl_subscription_event_type_t event_type);
+  QoSEvent(rclpy::Subscription & subscriber, rcl_subscription_event_type_t event_type);
 
   /// Create a publisher event
   /**
@@ -55,10 +57,10 @@ public:
    * Raises MemoryError if the event can't be allocated
    * Raises RCLError if event initialization failed in rcl
    *
-   * \param[in] pypublisher Capsule containing the publisher
+   * \param[in] publisher Publisher class
    * \param[in] event_type Type of event to create
    */
-  QoSEvent(py::capsule pypublisher, rcl_publisher_event_type_t event_type);
+  QoSEvent(rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type);
 
   ~QoSEvent() = default;
 
@@ -88,7 +90,8 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Handle> parent_handle_;
+  std::shared_ptr<rcl_publisher_t> parent_pub_handle_;
+  std::shared_ptr<rcl_subscription_t> parent_sub_handle_;
   std::shared_ptr<rcl_event_t> rcl_event_;
   std::variant<rcl_subscription_event_type_t, rcl_publisher_event_type_t> event_type_;
 };

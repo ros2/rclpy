@@ -104,20 +104,10 @@ get_rmw_implementation_identifier()
 }
 
 void
-assert_liveliness(py::capsule pyentity)
+assert_liveliness(rclpy::Publisher publisher)
 {
-  if (0 == strcmp("rclpy_publisher_t", pyentity.name())) {
-    auto publisher = static_cast<rclpy_publisher_t *>(
-      rclpy_handle_get_pointer_from_capsule(
-        pyentity.ptr(), "rclpy_publisher_t"));
-    if (nullptr == publisher) {
-      throw py::error_already_set();
-    }
-    if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
-      throw RCLError("Failed to assert liveliness on the Publisher");
-    }
-  } else {
-    throw py::type_error("Passed capsule is not a valid Publisher.");
+  if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher.get_shared_ptr().get())) {
+    throw RCLError("Failed to assert liveliness on the Publisher");
   }
 }
 

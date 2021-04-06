@@ -1257,21 +1257,20 @@ class Node:
         check_is_valid_msg_type(msg_type)
         try:
             with self.handle as node_capsule:
-                publisher_capsule = _rclpy.rclpy_create_publisher(
+                publisher_object = _rclpy.Publisher(
                     node_capsule, msg_type, topic, qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True
         if failed:
             self._validate_topic_or_service_name(topic)
 
-        publisher_handle = Handle(publisher_capsule)
         try:
             publisher = Publisher(
-                publisher_handle, msg_type, topic, qos_profile,
+                publisher_object, msg_type, topic, qos_profile,
                 event_callbacks=event_callbacks or PublisherEventCallbacks(),
                 callback_group=callback_group)
         except Exception:
-            publisher_handle.destroy()
+            publisher_object.destroy_when_not_in_use()
             raise
         self.__publishers.append(publisher)
         self._wake_executor()
@@ -1335,21 +1334,20 @@ class Node:
         check_is_valid_msg_type(msg_type)
         try:
             with self.handle as capsule:
-                subscription_capsule = _rclpy.rclpy_create_subscription(
+                subscription_object = _rclpy.Subscription(
                     capsule, msg_type, topic, qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True
         if failed:
             self._validate_topic_or_service_name(topic)
 
-        subscription_handle = Handle(subscription_capsule)
         try:
             subscription = Subscription(
-                subscription_handle, msg_type,
+                subscription_object, msg_type,
                 topic, callback, callback_group, qos_profile, raw,
                 event_callbacks=event_callbacks or SubscriptionEventCallbacks())
         except Exception:
-            subscription_handle.destroy()
+            subscription_object.destroy_when_not_in_use()
             raise
         self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)

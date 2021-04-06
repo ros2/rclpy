@@ -128,14 +128,7 @@ wait_set_add_entity(const std::string & entity_type, py::capsule pywait_set, py:
   rcl_ret_t ret = RCL_RET_ERROR;
   size_t index;
 
-  if ("subscription" == entity_type) {
-    auto sub = static_cast<rclpy_subscription_t *>(
-      rclpy_handle_get_pointer_from_capsule(pyentity.ptr(), "rclpy_subscription_t"));
-    if (!sub) {
-      throw py::error_already_set();
-    }
-    ret = rcl_wait_set_add_subscription(wait_set, &(sub->subscription), &index);
-  } else if ("guard_condition" == entity_type) {
+  if ("guard_condition" == entity_type) {
     auto guard_condition = static_cast<rcl_guard_condition_t *>(
       rclpy_handle_get_pointer_from_capsule(pyentity.ptr(), "rcl_guard_condition_t"));
     if (!guard_condition) {
@@ -169,6 +162,22 @@ wait_set_add_service(const py::capsule pywait_set, const Service & service)
   rcl_ret_t ret = rcl_wait_set_add_service(wait_set, service.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to add service to wait set");
+  }
+  return index;
+}
+
+size_t
+wait_set_add_subscription(const py::capsule pywait_set, const Subscription & subscription)
+{
+  if (0 != std::strcmp("rcl_wait_set_t", pywait_set.name())) {
+    throw py::value_error("capsule is not an rcl_wait_set_t");
+  }
+  auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
+
+  size_t index;
+  rcl_ret_t ret = rcl_wait_set_add_subscription(wait_set, subscription.rcl_ptr(), &index);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to add subscription to wait set");
   }
   return index;
 }
