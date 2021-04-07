@@ -63,11 +63,12 @@ public:
   /**
    * Raises AttributeError if there is an issue parsing the pygoal_response_type.
    * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pygoal_response_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
-   * \return NULL if there is a failure.
+   * \return (None, None) if there is a failure.
    */
   py::tuple
   take_goal_response(py::object pymsg_type);
@@ -76,10 +77,10 @@ public:
   /**
    * Raises AttributeError if there is an issue parsing the pyresult_request.
    * Raises RuntimeError if the underlying rcl library returns an error when sending the request.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pyresult_request The request message to send.
-   * \return sequence_number PyLong object representing the index of the sent request, or
-   * \return NULL if there is a failure.
+   * \return sequence_number PyLong object representing the index of the sent request
    */
   int64_t
   send_result_request(py::object pyrequest);
@@ -88,11 +89,12 @@ public:
   /**
    * Raises AttributeError if there is an issue parsing the pycancel_response_type.
    * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pycancel_response_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
-   * \return NULL if there is a failure.
+   * \return (None, None) if there is a failure.
    */
   py::tuple
   take_cancel_response(py::object pymsg_type);
@@ -101,10 +103,10 @@ public:
   /**
    * Raises AttributeError if there is an issue parsing the pycancel_request.
    * Raises RuntimeError if the underlying rcl library returns an error when sending the request.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pycancel_request The request message to send.
-   * \return sequence_number PyLong object representing the index of the sent request, or
-   * \return NULL if there is a failure.
+   * \return sequence_number PyLong object representing the index of the sent request
    */
   int64_t
   send_cancel_request(py::object pyrequest);
@@ -114,11 +116,12 @@ public:
    * Raises AttributeError if there is an issue parsing the pyfeedback_type.
    * Raises RuntimeError on failure while taking a feedback message. Note, this does not include
    * the case where there are no messages available.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pyfeedback_type Instance of the feedback message type to take.
    * \return Python message with all fields populated with received message, or
    * \return None if there is nothing to take, or
-   * \return NULL if there is a failure.
+   * \return None if there is a failure.
    */
   py::object
   take_feedback(py::object pymsg_type);
@@ -128,11 +131,12 @@ public:
    * Raises AttributeError if there is an issue parsing the pystatus_type.
    * Raises RuntimeError on failure while taking a status message. Note, this does not include
    * the case where there are no messages available.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pystatus_type Instance of the status message type to take.
    * \return Python message with all fields populated with received message, or
    * \return None if there is nothing to take, or
-   * \return NULL if there is a failure.
+   * \return None if there is a failure.
    */
   py::object
   take_status(py::object pymsg_type);
@@ -141,10 +145,10 @@ public:
   /**
    * Raises AttributeError if there is an issue parsing the pygoal_request.
    * Raises RuntimeError on failure.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pygoal_request The request message to send.
-   * \return sequence_number PyLong object representing the index of the sent request, or
-   * \return NULL if there is a failure.
+   * \return sequence_number PyLong object representing the index of the sent request
    */
   int64_t
   send_goal_request(py::object pyrequest);
@@ -153,11 +157,12 @@ public:
   /**
    * Raises AttributeError if there is an issue parsing the pyresult_response_type.
    * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pyresult_response_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
-   * \return NULL if there is a failure.
+   * \return (None, None) if there is a failure.
    */
   py::tuple
   take_result_response(py::object pymsg_type);
@@ -181,7 +186,7 @@ public:
    * \return True if an action server is available, False otherwise.
    */
   bool
-  is_available();
+  is_action_server_available();
 
   /// Check if an action entity has any ready wait set entities.
   /**
@@ -190,7 +195,6 @@ public:
    *
    * \param[in] pywait_set Capsule pointing to the wait set structure.
    * \return A tuple of Bool representing the ready sub-entities.
-   *     For a rcl_action_client_t:
    *       (is_feedback_ready,
    *        is_status_ready,
    *        is_goal_response_ready,
@@ -198,7 +202,7 @@ public:
    *        is_result_response_ready)
    */
   py::tuple
-  wait_set_is_ready(py::capsule pywait_set);
+  is_ready(py::capsule pywait_set);
 
   /// Add an action entitiy to a wait set.
   /**
@@ -206,20 +210,13 @@ public:
    * \param[in] pywait_set Capsule pointer to an rcl_wait_set_t.
    */
   void
-  wait_set_add(py::capsule pywait_set);
+  add_to_waitset(py::capsule pywait_set);
 
   /// Get rcl_client_t pointer
   rcl_action_client_t *
   rcl_ptr() const
   {
     return rcl_action_client_.get();
-  }
-
-  /// Get rcl_client_t pointer
-  std::shared_ptr<rcl_action_client_t>
-  get_rcl_shared_ptr()
-  {
-    return rcl_action_client_;
   }
 
   /// Force an early destruction of this object

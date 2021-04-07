@@ -25,6 +25,7 @@
 #include "rclpy_common/handle.h"
 
 #include "action_client.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
@@ -97,7 +98,8 @@ ActionClient::ActionClient(
     error_text += rcl_get_error_string().str;
     rcl_reset_error();
     throw py::value_error(error_text);
-  } else if (RCL_RET_OK != ret) {
+  }
+  if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to create action client: "};
     error_text += rcl_get_error_string().str;
     rcl_reset_error();
@@ -106,31 +108,19 @@ ActionClient::ActionClient(
 }
 
 #define TAKE_SERVICE_RESPONSE(Type) \
-  destroy_ros_message_signature * destroy_ros_message = NULL; \
   /* taken_msg is always destroyed in this function */ \
-  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message); \
-  if (!taken_msg) { \
-    throw py::error_already_set(); \
-  } \
-  auto taken_msg_ptr = \
-    std::unique_ptr<void, destroy_ros_message_signature *>(taken_msg, destroy_ros_message); \
+  auto taken_msg = create_from_py(pymsg_type); \
   rmw_request_id_t header; \
   rcl_ret_t ret = rcl_action_take_ ## Type ## _response( \
-    rcl_action_client_.get(), &header, taken_msg); \
+    rcl_action_client_.get(), &header, taken_msg.get()); \
   int64_t sequence = header.sequence_number; \
   /* Create the tuple to return */ \
-  py::tuple pytuple(2); \
   if (RCL_RET_ACTION_CLIENT_TAKE_FAILED == ret || RCL_RET_ACTION_SERVER_TAKE_FAILED == ret) { \
-    pytuple[0] = py::none(); \
-    pytuple[1] = py::none(); \
-    return pytuple; \
+    return py::make_tuple(py::none(), py::none()); \
   } else if (RCL_RET_OK != ret) { \
     throw rclpy::RCLError("Failed to take " #Type); \
   } \
-  pytuple[0] = py::int_(sequence); \
-  pytuple[1] = py::reinterpret_steal<py::object>( \
-    rclpy_convert_to_py(taken_msg_ptr.release(), pymsg_type.ptr())); \
-  return pytuple; \
+  return py::make_tuple(py::int_(sequence), convert_to_py(taken_msg.get(), pymsg_type)); \
 
 py::tuple
 ActionClient::take_goal_response(py::object pymsg_type)
@@ -166,14 +156,8 @@ ActionClient::take_cancel_response(py::object pymsg_type)
 }
 
 #define TAKE_MESSAGE(Type) \
-  destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message); \
-  if (!taken_msg) { \
-    throw py::error_already_set(); \
-  } \
-  auto taken_msg_ptr = std::unique_ptr<void, decltype(destroy_ros_message)>( \
-    taken_msg, destroy_ros_message); \
-  rcl_ret_t ret = rcl_action_take_ ## Type(rcl_action_client_.get(), taken_msg); \
+  auto taken_msg = create_from_py(pymsg_type); \
+  rcl_ret_t ret = rcl_action_take_ ## Type(rcl_action_client_.get(), taken_msg.get()); \
   if (RCL_RET_OK != ret) { \
     if (RCL_RET_ACTION_CLIENT_TAKE_FAILED == ret) { \
       /* if take failed, just do nothing */ \
@@ -181,7 +165,7 @@ ActionClient::take_cancel_response(py::object pymsg_type)
     } \
     throw rclpy::RCLError("Failed to take " #Type " with an action client"); \
   } \
-  return py::reinterpret_steal<py::object>(rclpy_convert_to_py(taken_msg, pymsg_type.ptr()));
+  return convert_to_py(taken_msg.get(), pymsg_type);
 
 py::object
 ActionClient::take_feedback(py::object pymsg_type)
@@ -235,17 +219,13 @@ ActionClient::get_num_entities()
     throw rclpy::RCLError(error_text);
   }
 
-  py::tuple result_tuple(5);
-  result_tuple[0] = py::int_(num_subscriptions);
-  result_tuple[1] = py::int_(num_guard_conditions);
-  result_tuple[2] = py::int_(num_timers);
-  result_tuple[3] = py::int_(num_clients);
-  result_tuple[4] = py::int_(num_services);
-  return result_tuple;
+  return py::make_tuple(
+    py::int_(num_subscriptions), py::int_(num_guard_conditions), py::int_(num_timers),
+    py::int_(num_clients), py::int_(num_services));
 }
 
 bool
-ActionClient::is_available()
+ActionClient::is_action_server_available()
 {
   auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
 
@@ -259,12 +239,12 @@ ActionClient::is_available()
 }
 
 void
-ActionClient::wait_set_add(py::capsule pywait_set)
+ActionClient::add_to_waitset(py::capsule pywait_set)
 {
   auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
 
-  rcl_ret_t ret;
-  ret = rcl_action_wait_set_add_action_client(wait_set, rcl_action_client_.get(), NULL, NULL);
+  rcl_ret_t ret = rcl_action_wait_set_add_action_client(
+    wait_set, rcl_action_client_.get(), NULL, NULL);
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to add 'rcl_action_client_t' to wait set"};
     throw rclpy::RCLError(error_text);
@@ -272,7 +252,7 @@ ActionClient::wait_set_add(py::capsule pywait_set)
 }
 
 py::tuple
-ActionClient::wait_set_is_ready(py::capsule pywait_set)
+ActionClient::is_ready(py::capsule pywait_set)
 {
   auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
 
@@ -340,13 +320,13 @@ define_action_client(py::object module)
     "get_num_entities", &ActionClient::get_num_entities,
     "Get the number of wait set entities that make up an action entity.")
   .def(
-    "is_available", &ActionClient::is_available,
+    "is_action_server_available", &ActionClient::is_action_server_available,
     "Check if an action server is available for the given action client.")
   .def(
-    "wait_set_add", &ActionClient::wait_set_add,
+    "add_to_waitset", &ActionClient::add_to_waitset,
     "Check if an action server is available for the given action client.")
   .def(
-    "wait_set_is_ready", &ActionClient::wait_set_is_ready,
+    "is_ready", &ActionClient::is_ready,
     "Check if an action entity has any ready wait set entities.")
   .def(
     "take_status", &ActionClient::take_status,

@@ -220,7 +220,7 @@ class ActionClient(Waitable):
     # Start Waitable API
     def is_ready(self, wait_set):
         """Return True if one or more entities are ready in the wait set."""
-        ready_entities = self._client_handle.wait_set_is_ready(wait_set)
+        ready_entities = self._client_handle.is_ready(wait_set)
         self._is_feedback_ready = ready_entities[0]
         self._is_status_ready = ready_entities[1]
         self._is_goal_response_ready = ready_entities[2]
@@ -350,7 +350,7 @@ class ActionClient(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self._client_handle.wait_set_add(wait_set)
+        self._client_handle.add_to_waitset(wait_set)
     # End Waitable API
 
     def send_goal(self, goal, **kwargs):
@@ -551,7 +551,7 @@ class ActionClient(Waitable):
         :return: True if an action server is ready, False otherwise.
         """
         with self._node.handle:
-            return self._client_handle.is_available()
+            return self._client_handle.is_action_server_available()
 
     def wait_for_server(self, timeout_sec=None):
         """
