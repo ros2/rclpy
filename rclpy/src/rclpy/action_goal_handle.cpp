@@ -116,7 +116,9 @@ ActionGoalHandle::update_goal_state(rcl_action_goal_event_t event)
 void
 define_action_goal_handle(py::module module)
 {
-  py::class_<ActionGoalHandle, Destroyable>(module, "ActionGoalHandle")
+  py::class_<ActionGoalHandle, Destroyable, std::shared_ptr<ActionGoalHandle>>(
+    module,
+    "ActionGoalHandle")
   .def(py::init<py::capsule, py::object>())
   .def_property_readonly(
     "pointer", [](const ActionGoalHandle & handle) {
