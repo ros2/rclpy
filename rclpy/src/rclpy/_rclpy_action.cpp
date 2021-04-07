@@ -27,6 +27,7 @@
 #include "rclpy_common/handle.h"
 
 #include "clock.hpp"
+#include "action_client.hpp"
 
 namespace py = pybind11;
 
@@ -65,11 +66,7 @@ rclpy_action_destroy_entity(py::capsule pyentity, py::capsule pynode)
   }
 
   rcl_ret_t ret;
-  if (0 == std::strcmp("rcl_action_client_t", pyentity.name())) {
-    auto action_client = get_pointer<rcl_action_client_t *>(pyentity, "rcl_action_client_t");
-    ret = rcl_action_client_fini(action_client, node);
-    PyMem_Free(action_client);
-  } else if (0 == std::strcmp("rcl_action_server_t", pyentity.name())) {
+  if (0 == std::strcmp("rcl_action_server_t", pyentity.name())) {
     auto action_server = get_pointer<rcl_action_server_t *>(pyentity, "rcl_action_server_t");
     ret = rcl_action_server_fini(action_server, node);
     PyMem_Free(action_server);
@@ -142,10 +139,7 @@ rclpy_action_wait_set_add(py::capsule pyentity, py::capsule pywait_set)
   auto wait_set = get_pointer<rcl_wait_set_t *>(pywait_set, "rcl_wait_set_t");
 
   rcl_ret_t ret;
-  if (0 == strcmp(pyentity.name(), "rcl_action_client_t")) {
-    auto action_client = get_pointer<rcl_action_client_t *>(pyentity, "rcl_action_client_t");
-    ret = rcl_action_wait_set_add_action_client(wait_set, action_client, NULL, NULL);
-  } else if (0 == strcmp(pyentity.name(), "rcl_action_server_t")) {
+  if (0 == strcmp(pyentity.name(), "rcl_action_server_t")) {
     auto action_server = get_pointer<rcl_action_server_t *>(pyentity, "rcl_action_server_t");
     ret = rcl_action_wait_set_add_action_server(wait_set, action_server, NULL);
   } else {
@@ -183,17 +177,7 @@ rclpy_action_wait_set_get_num_entities(py::capsule pyentity)
   size_t num_services = 0u;
 
   rcl_ret_t ret;
-  if (0 == strcmp(pyentity.name(), "rcl_action_client_t")) {
-    auto action_client = get_pointer<rcl_action_client_t *>(pyentity, "rcl_action_client_t");
-
-    ret = rcl_action_client_wait_set_get_num_entities(
-      action_client,
-      &num_subscriptions,
-      &num_guard_conditions,
-      &num_timers,
-      &num_clients,
-      &num_services);
-  } else if (0 == strcmp(pyentity.name(), "rcl_action_server_t")) {
+  if (0 == strcmp(pyentity.name(), "rcl_action_server_t")) {
     auto action_server = get_pointer<rcl_action_server_t *>(pyentity, "rcl_action_server_t");
 
     ret = rcl_action_server_wait_set_get_num_entities(
@@ -518,22 +502,6 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
   return is_available;
 }
 
-#define SEND_SERVICE_REQUEST(Type) \
-  auto action_client = get_pointer<rcl_action_client_t *>(pyaction_client, "rcl_action_client_t"); \
-  destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * raw_ros_request = rclpy_convert_from_py(pyrequest.ptr(), &destroy_ros_message); \
-  if (!raw_ros_request) { \
-    throw py::error_already_set(); \
-  } \
-  int64_t sequence_number; \
-  rcl_ret_t ret = rcl_action_send_ ## Type ## _request( \
-    action_client, raw_ros_request, &sequence_number); \
-  destroy_ros_message(raw_ros_request); \
-  if (ret != RCL_RET_OK) { \
-    throw rclpy::RCLError("Failed to send " #Type " request"); \
-  } \
-  return sequence_number;
-
 #define SEND_SERVICE_RESPONSE(Type) \
   auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t"); \
   destroy_ros_message_signature * destroy_ros_message = NULL; \
@@ -574,50 +542,6 @@ rclpy_action_server_is_available(py::capsule pynode, py::capsule pyaction_client
     rclpy_convert_to_py(taken_msg_ptr.get(), pymsg_type.ptr())); \
   return pytuple;
 
-#define TAKE_SERVICE_RESPONSE(Type) \
-  auto action_client = get_pointer<rcl_action_client_t *>(pyaction_client, "rcl_action_client_t"); \
-  destroy_ros_message_signature * destroy_ros_message = NULL; \
-  /* taken_msg is always destroyed in this function */ \
-  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message); \
-  if (!taken_msg) { \
-    throw py::error_already_set(); \
-  } \
-  auto taken_msg_ptr = \
-    std::unique_ptr<void, destroy_ros_message_signature *>(taken_msg, destroy_ros_message); \
-  rmw_request_id_t header; \
-  rcl_ret_t ret = rcl_action_take_ ## Type ## _response(action_client, &header, taken_msg); \
-  int64_t sequence = header.sequence_number; \
-  /* Create the tuple to return */ \
-  py::tuple pytuple(2); \
-  if (ret == RCL_RET_ACTION_CLIENT_TAKE_FAILED || ret == RCL_RET_ACTION_SERVER_TAKE_FAILED) { \
-    pytuple[0] = py::none(); \
-    pytuple[1] = py::none(); \
-    return pytuple; \
-  } else if (ret != RCL_RET_OK) { \
-    throw rclpy::RCLError("Failed to take " #Type); \
-  } \
-  pytuple[0] = py::int_(sequence); \
-  pytuple[1] = py::reinterpret_steal<py::object>( \
-    rclpy_convert_to_py(taken_msg_ptr.release(), pymsg_type.ptr())); \
-  return pytuple; \
-
-
-/// Send an action goal request.
-/**
- * Raises AttributeError if there is an issue parsing the pygoal_request.
- * Raises RuntimeError on failure.
- *
- * \param[in] pyaction_client The action client to use when sending the request.
- * \param[in] pygoal_request The request message to send.
- * \return sequence_number PyLong object representing the index of the sent request, or
- * \return NULL if there is a failure.
- */
-int64_t
-rclpy_action_send_goal_request(py::capsule pyaction_client, py::object pyrequest)
-{
-  SEND_SERVICE_REQUEST(goal)
-}
-
 /// Take an action goal request.
 /**
  * Raises AttributeError if there is an issue parsing the pygoal_request_type.
@@ -652,39 +576,6 @@ rclpy_action_send_goal_response(
   py::capsule pyaction_server, rmw_request_id_t * header, py::object pyresponse)
 {
   SEND_SERVICE_RESPONSE(goal)
-}
-
-/// Take an action goal response.
-/**
- * Raises AttributeError if there is an issue parsing the pygoal_response_type.
- * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
- *
- * \param[in] pyaction_client The action client to use when sending the request.
- * \param[in] pygoal_response_type An instance of the response message type to take.
- * \return 2-tuple (sequence number, received response), or
- * \return 2-tuple (None, None) if there is no response, or
- * \return NULL if there is a failure.
- */
-py::tuple
-rclpy_action_take_goal_response(py::capsule pyaction_client, py::object pymsg_type)
-{
-  TAKE_SERVICE_RESPONSE(goal)
-}
-
-/// Send an action result request.
-/**
- * Raises AttributeError if there is an issue parsing the pyresult_request.
- * Raises RuntimeError if the underlying rcl library returns an error when sending the request.
- *
- * \param[in] pyaction_client The action client to use when sending the request.
- * \param[in] pyresult_request The request message to send.
- * \return sequence_number PyLong object representing the index of the sent request, or
- * \return NULL if there is a failure.
- */
-int64_t
-rclpy_action_send_result_request(py::capsule pyaction_client, py::object pyrequest)
-{
-  SEND_SERVICE_REQUEST(result);
 }
 
 /// Take an action result request.
@@ -723,39 +614,6 @@ rclpy_action_send_result_response(
   SEND_SERVICE_RESPONSE(result)
 }
 
-/// Take an action result response.
-/**
- * Raises AttributeError if there is an issue parsing the pyresult_response_type.
- * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
- *
- * \param[in] pyaction_client The action client to use when sending the request.
- * \param[in] pyresult_response_type An instance of the response message type to take.
- * \return 2-tuple (sequence number, received response), or
- * \return 2-tuple (None, None) if there is no response, or
- * \return NULL if there is a failure.
- */
-py::tuple
-rclpy_action_take_result_response(py::capsule pyaction_client, py::object pymsg_type)
-{
-  TAKE_SERVICE_RESPONSE(result);
-}
-
-/// Send an action cancel request.
-/**
- * Raises AttributeError if there is an issue parsing the pycancel_request.
- * Raises RuntimeError if the underlying rcl library returns an error when sending the request.
- *
- * \param[in] pyaction_client The action client to use when sending the request.
- * \param[in] pycancel_request The request message to send.
- * \return sequence_number PyLong object representing the index of the sent request, or
- * \return NULL if there is a failure.
- */
-int64_t
-rclpy_action_send_cancel_request(py::capsule pyaction_client, py::object pyrequest)
-{
-  SEND_SERVICE_REQUEST(cancel)
-}
-
 /// Take an action cancel request.
 /**
  * Raises AttributeError if there is an issue parsing the pycancel_request_type.
@@ -792,41 +650,6 @@ rclpy_action_send_cancel_response(
   SEND_SERVICE_RESPONSE(cancel)
 }
 
-/// Take an action cancel response.
-/**
- * Raises AttributeError if there is an issue parsing the pycancel_response_type.
- * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
- *
- * \param[in] pyaction_client The action client to use when sending the request.
- * \param[in] pycancel_response_type An instance of the response message type to take.
- * \return 2-tuple (sequence number, received response), or
- * \return 2-tuple (None, None) if there is no response, or
- * \return NULL if there is a failure.
- */
-py::tuple
-rclpy_action_take_cancel_response(py::capsule pyaction_client, py::object pymsg_type)
-{
-  TAKE_SERVICE_RESPONSE(cancel)
-}
-
-#define TAKE_MESSAGE(Type) \
-  auto action_client = get_pointer<rcl_action_client_t *>(pyaction_client, "rcl_action_client_t"); \
-  destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * taken_msg = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message); \
-  if (!taken_msg) { \
-    throw py::error_already_set(); \
-  } \
-  auto taken_msg_ptr = std::unique_ptr<void, decltype(destroy_ros_message)>( \
-    taken_msg, destroy_ros_message); \
-  rcl_ret_t ret = rcl_action_take_ ## Type(action_client, taken_msg); \
-  if (ret != RCL_RET_OK) { \
-    if (ret == RCL_RET_ACTION_CLIENT_TAKE_FAILED) { \
-      /* if take failed, just do nothing */ \
-      return py::none(); \
-    } \
-    throw rclpy::RCLError("Failed to take " #Type " with an action client"); \
-  } \
-  return py::reinterpret_steal<py::object>(rclpy_convert_to_py(taken_msg, pymsg_type.ptr()));
 
 /// Publish a feedback message from a given action server.
 /**
@@ -854,24 +677,6 @@ rclpy_action_publish_feedback(py::capsule pyaction_server, py::object pymsg)
   }
 }
 
-/// Take a feedback message from a given action client.
-/**
- * Raises AttributeError if there is an issue parsing the pyfeedback_type.
- * Raises RuntimeError on failure while taking a feedback message. Note, this does not include
- * the case where there are no messages available.
- *
- * \param[in] pyaction_client Capsule pointing to the action client to process the message.
- * \param[in] pyfeedback_type Instance of the feedback message type to take.
- * \return Python message with all fields populated with received message, or
- * \return None if there is nothing to take, or
- * \return NULL if there is a failure.
- */
-py::object
-rclpy_action_take_feedback(py::capsule pyaction_client, py::object pymsg_type)
-{
-  TAKE_MESSAGE(feedback)
-}
-
 /// Publish a status message from a given action server.
 /**
  * Raises RuntimeError on failure while publishing a status message.
@@ -895,24 +700,6 @@ rclpy_action_publish_status(py::capsule pyaction_server)
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed publish goal status array");
   }
-}
-
-/// Take a status message from a given action client.
-/**
- * Raises AttributeError if there is an issue parsing the pystatus_type.
- * Raises RuntimeError on failure while taking a status message. Note, this does not include
- * the case where there are no messages available.
- *
- * \param[in] pyaction_client Capsule pointing to the action client to process the message.
- * \param[in] pystatus_type Instance of the status message type to take.
- * \return Python message with all fields populated with received message, or
- * \return None if there is nothing to take, or
- * \return NULL if there is a failure.
- */
-py::object
-rclpy_action_take_status(py::capsule pyaction_client, py::object pymsg_type)
-{
-  TAKE_MESSAGE(status)
 }
 
 py::capsule
@@ -1225,17 +1012,11 @@ define_action_api(py::module m)
     "rclpy_action_wait_set_is_ready", &rclpy_action_wait_set_is_ready,
     "Check if an action entity has any sub-entities ready in a wait set.");
   m.def(
-    "rclpy_action_create_client", &rclpy_action_create_client,
-    "Create an action client.");
-  m.def(
     "rclpy_action_create_server", &rclpy_action_create_server,
     "Create an action server.");
   m.def(
     "rclpy_action_server_is_available", &rclpy_action_server_is_available,
     "Check if an action server is available for a given client.");
-  m.def(
-    "rclpy_action_send_goal_request", &rclpy_action_send_goal_request,
-    "Send a goal request.");
   m.def(
     "rclpy_action_take_goal_request", &rclpy_action_take_goal_request,
     "Take a goal request.");
@@ -1243,23 +1024,11 @@ define_action_api(py::module m)
     "rclpy_action_send_goal_response", &rclpy_action_send_goal_response,
     "Send a goal response.");
   m.def(
-    "rclpy_action_take_goal_response", &rclpy_action_take_goal_response,
-    "Take a goal response.");
-  m.def(
-    "rclpy_action_send_result_request", &rclpy_action_send_result_request,
-    "Send a result request.");
-  m.def(
     "rclpy_action_take_result_request", &rclpy_action_take_result_request,
     "Take a result request.");
   m.def(
     "rclpy_action_send_result_response", &rclpy_action_send_result_response,
     "Send a result response.");
-  m.def(
-    "rclpy_action_take_result_response", &rclpy_action_take_result_response,
-    "Take a result response.");
-  m.def(
-    "rclpy_action_send_cancel_request", &rclpy_action_send_cancel_request,
-    "Send a cancel request.");
   m.def(
     "rclpy_action_take_cancel_request", &rclpy_action_take_cancel_request,
     "Take a cancel request.");
@@ -1267,20 +1036,11 @@ define_action_api(py::module m)
     "rclpy_action_send_cancel_response", &rclpy_action_send_cancel_response,
     "Send a cancel response.");
   m.def(
-    "rclpy_action_take_cancel_response", &rclpy_action_take_cancel_response,
-    "Take a cancel response.");
-  m.def(
     "rclpy_action_publish_feedback", &rclpy_action_publish_feedback,
     "Publish a feedback message.");
   m.def(
-    "rclpy_action_take_feedback", &rclpy_action_take_feedback,
-    "Take a feedback message.");
-  m.def(
     "rclpy_action_publish_status", &rclpy_action_publish_status,
     "Publish a status message.");
-  m.def(
-    "rclpy_action_take_status", &rclpy_action_take_status,
-    "Take a status message.");
   m.def(
     "rclpy_action_accept_new_goal", &rclpy_action_accept_new_goal,
     "Accept a new goal using an action server.");
@@ -1316,5 +1076,7 @@ define_action_api(py::module m)
   m.def(
     "rclpy_action_get_names_and_types", &rclpy_action_get_names_and_types,
     "Get action names and types.");
+
+  rclpy::define_action_client(m);
 }
 }  // namespace rclpy
