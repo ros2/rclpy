@@ -33,7 +33,7 @@ namespace py = pybind11;
 namespace rclpy
 {
 
-class Service : public Destroyable
+class Service : public Destroyable, public std::enable_shared_from_this<Service>
 {
 public:
   /// Create a service server

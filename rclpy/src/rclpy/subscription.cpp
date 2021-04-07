@@ -177,7 +177,7 @@ Subscription::get_topic_name()
 void
 define_subscription(py::object module)
 {
-  py::class_<Subscription, Destroyable>(module, "Subscription")
+  py::class_<Subscription, Destroyable, std::shared_ptr<Subscription>>(module, "Subscription")
   .def(py::init<py::capsule, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Subscription & subscription) {

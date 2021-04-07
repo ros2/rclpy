@@ -62,7 +62,7 @@ Destroyable::destroy_when_not_in_use()
 void
 define_destroyable(py::object module)
 {
-  py::class_<Destroyable>(module, "Destroyable")
+  py::class_<Destroyable, std::shared_ptr<Destroyable>>(module, "Destroyable")
   .def("__enter__", &Destroyable::enter)
   .def("__exit__", &Destroyable::exit)
   .def(
