@@ -104,9 +104,9 @@ get_rmw_implementation_identifier()
 }
 
 void
-assert_liveliness(rclpy::Publisher publisher)
+assert_liveliness(rclpy::Publisher * publisher)
 {
-  if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher.get_rcl_shared_ptr().get())) {
+  if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher->get_rcl_shared_ptr().get())) {
     throw RCLError("Failed to assert liveliness on the Publisher");
   }
 }

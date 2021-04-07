@@ -80,7 +80,7 @@ get_rmw_implementation_identifier();
  * \return None
  */
 void
-assert_liveliness(rclpy::Publisher publisher);
+assert_liveliness(rclpy::Publisher * publisher);
 
 /// Remove ROS specific args from a list of args.
 /**

@@ -47,7 +47,6 @@ public:
    * \param[in] pymsg_type Message type associated with the publisher
    * \param[in] topic The name of the topic to attach the publisher to
    * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher
-   * \return Capsule of the pointer to the created rcl_publisher_t * structure, or
    */
   Publisher(
     py::capsule pynode, py::object pymsg_type, std::string topic,
@@ -57,7 +56,7 @@ public:
   /**
    * Raises RCLError if logger name not set
    *
-   * \return logger_name of pypublisher
+   * \return the logger name
    */
   const char *
   get_logger_name();
@@ -66,7 +65,7 @@ public:
   /**
    * Raises RCLError if the subscriber count cannot be determined
    *
-   * \return count of subscribers
+   * \return number of subscribers
    */
   size_t
   get_subscription_count();

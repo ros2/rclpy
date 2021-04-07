@@ -141,17 +141,17 @@ Subscription::take_message(py::object pymsg_type, bool raw)
       "received_timestamp"_a = message_info.received_timestamp));
 }
 
-py::object
+const char *
 Subscription::get_logger_name()
 {
   auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
 
   const char * node_logger_name = rcl_node_get_logger_name(node);
-  if (nullptr == node_logger_name) {
-    return py::none();
+  if (!node_logger_name) {
+    throw RCLError("Node logger name not set");
   }
 
-  return py::str(node_logger_name);
+  return node_logger_name;
 }
 
 std::string

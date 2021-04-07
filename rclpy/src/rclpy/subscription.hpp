@@ -45,7 +45,6 @@ public:
    * \param[in] pymsg_type Message module associated with the subscriber
    * \param[in] topic The topic name
    * \param[in] pyqos_profile rmw_qos_profile_t object for this subscription
-   * \return capsule containing the rclpy_subscription_t
    */
   Subscription(
     py::capsule pynode, py::object pymsg_type, std::string topic,
@@ -71,7 +70,7 @@ public:
    * \return logger_name, or
    * \return None on failure
    */
-  py::object
+  const char *
   get_logger_name();
 
   /// Return the resolved topic name of a subscription.
@@ -90,13 +89,6 @@ public:
   rcl_ptr() const
   {
     return rcl_subscription_.get();
-  }
-
-  /// Get rcl_client_t pointer
-  std::shared_ptr<rcl_subscription_t>
-  get_rcl_shared_ptr()
-  {
-    return rcl_subscription_;
   }
 
   /// Force an early destruction of this object
