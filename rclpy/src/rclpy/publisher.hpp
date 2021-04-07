@@ -30,15 +30,16 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/**
+ * This class will create a publisher and attach it to the provided topic name
+ * This publisher will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages.
+ */
 class Publisher : public Destroyable, public std::enable_shared_from_this<Publisher>
 {
 public:
   /// Create a publisher
-  /**
-   * This function will create a publisher and attach it to the provided topic name
-   * This publisher will use the typesupport defined in the message module
-   * provided as pymsg_type to send messages.
-   *
+  /*
    * Raises ValueError if the topic name is invalid
    * Raises ValueError if the capsules are not the correct types
    * Raises RCLError if the publisher cannot be created
@@ -102,13 +103,6 @@ public:
   rcl_ptr() const
   {
     return rcl_publisher_.get();
-  }
-
-  /// Get rcl_client_t pointer
-  std::shared_ptr<rcl_publisher_t>
-  get_rcl_shared_ptr()
-  {
-    return rcl_publisher_;
   }
 
   /// Force an early destruction of this object

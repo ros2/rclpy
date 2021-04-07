@@ -43,7 +43,7 @@ class Publisher:
         A publisher is used as a primary means of communication in a ROS system by publishing
         messages on a ROS topic.
 
-        :param publisher_impl: Publisher wrapping to the underlying ``rcl_publisher_t`` object.
+        :param publisher_impl: Publisher wrapping the underlying ``rcl_publisher_t`` object.
         :param msg_type: The type of ROS messages the publisher will publish.
         :param topic: The name of the topic the publisher will publish to.
         :param qos_profile: The quality of service profile to apply to the publisher.

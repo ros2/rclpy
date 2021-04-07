@@ -31,13 +31,14 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/*
+ * This class will create an event handle for the given subscription.
+ */
 class QoSEvent : public Destroyable, public std::enable_shared_from_this<QoSEvent>
 {
 public:
   /// Create a subscription event
   /**
-   * This function will create an event handle for the given subscription.
-   *
    * Raises UnsupportedEventTypeError if the event type is not supported
    * Raises TypeError if arguments are not of the correct types i.e. a subscription capsule
    * Raises MemoryError if the event can't be allocated

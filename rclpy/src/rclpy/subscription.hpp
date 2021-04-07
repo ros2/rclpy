@@ -30,15 +30,17 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/// Create a subscription
+/**
+ * This class will create a subscription for the given topic name.
+ * This subscription will use the typesupport defined in the message module
+ * provided as pymsg_type to send messages.
+ */
 class Subscription : public Destroyable, public std::enable_shared_from_this<Subscription>
 {
 public:
   /// Create a subscription
-  /**
-   * This function will create a subscription for the given topic name.
-   * This subscription will use the typesupport defined in the message module
-   * provided as pymsg_type to send messages.
-   *
+  /*
    * Raises RCLError if the subscription could not be created
    *
    * \param[in] pynode Capsule pointing to the node to add the subscriber to
