@@ -29,9 +29,5 @@ For example, you might use it like this:
 from rpyutils import import_c_library
 package = 'rclpy'
 
-rclpy_implementation = import_c_library('._rclpy', package)
-rclpy_action_implementation = import_c_library('._rclpy_action', package)
-rclpy_logging_implementation = import_c_library('._rclpy_logging', package)
+rclpy_implementation = import_c_library('._rclpy_pybind11', package)
 rclpy_signal_handler_implementation = import_c_library('._rclpy_signal_handler', package)
-rclpy_handle_implementation = import_c_library('._rclpy_handle', package)
-rclpy_pycapsule_implementation = import_c_library('._rclpy_pycapsule', package)

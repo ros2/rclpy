@@ -60,17 +60,6 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
 
 
-class _WaitSet:
-    """Make sure the wait set gets destroyed when a generator exits."""
-
-    def __enter__(self):
-        self.wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        return self.wait_set
-
-    def __exit__(self, t, v, tb):
-        _rclpy.rclpy_destroy_wait_set(self.wait_set)
-
-
 class _WorkTracker:
     """Track the amount of work that is in progress."""
 
@@ -333,8 +322,8 @@ class Executor:
         raise NotImplementedError()
 
     def _take_timer(self, tmr):
-        with tmr.handle as capsule:
-            _rclpy.rclpy_call_timer(capsule)
+        with tmr.handle:
+            tmr.handle.call_timer()
 
     async def _execute_timer(self, tmr, _):
         await await_or_execute(tmr.callback)
@@ -351,14 +340,14 @@ class Executor:
             await await_or_execute(sub.callback, msg)
 
     def _take_client(self, client):
-        with client.handle as capsule:
-            return _rclpy.rclpy_take_response(capsule, client.srv_type.Response)
+        with client.handle:
+            return client.handle.take_response(client.srv_type.Response)
 
     async def _execute_client(self, client, seq_and_response):
         header, response = seq_and_response
         if header is not None:
             try:
-                sequence = _rclpy.rclpy_service_info_get_sequence_number(header)
+                sequence = header.request_id.sequence_number
                 future = client._pending_requests[sequence]
             except KeyError:
                 # The request was cancelled
@@ -368,8 +357,8 @@ class Executor:
                 future.set_result(response)
 
     def _take_service(self, srv):
-        with srv.handle as capsule:
-            request_and_header = _rclpy.rclpy_take_request(capsule, srv.srv_type.Request)
+        with srv.handle:
+            request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
         return request_and_header
 
     async def _execute_service(self, srv, request_and_header):
@@ -517,11 +506,9 @@ class Executor:
             entity_count = NumberOfEntities(
                 len(subscriptions), len(guards), len(timers), len(clients), len(services))
 
-            for waitable in waitables:
-                entity_count += waitable.get_num_entities()
-
             # Construct a wait set
-            with _WaitSet() as wait_set, ExitStack() as context_stack:
+            wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
+            with ExitStack() as context_stack:
                 sub_capsules = []
                 for sub in subscriptions:
                     try:
@@ -529,24 +516,27 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_subscriptions -= 1
 
-                client_capsules = []
+                client_handles = []
                 for cli in clients:
                     try:
-                        client_capsules.append(context_stack.enter_context(cli.handle))
+                        context_stack.enter_context(cli.handle)
+                        client_handles.append(cli.handle)
                     except InvalidHandle:
                         entity_count.num_clients -= 1
 
-                service_capsules = []
+                service_handles = []
                 for srv in services:
                     try:
-                        service_capsules.append(context_stack.enter_context(srv.handle))
+                        context_stack.enter_context(srv.handle)
+                        service_handles.append(srv.handle)
                     except InvalidHandle:
                         entity_count.num_services -= 1
 
-                timer_capsules = []
+                timer_handles = []
                 for tmr in timers:
                     try:
-                        timer_capsules.append(context_stack.enter_context(tmr.handle))
+                        context_stack.enter_context(tmr.handle)
+                        timer_handles.append(tmr.handle)
                     except InvalidHandle:
                         entity_count.num_timers -= 1
 
@@ -556,6 +546,13 @@ class Executor:
                         guard_capsules.append(context_stack.enter_context(gc.handle))
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
+
+                for waitable in waitables:
+                    try:
+                        context_stack.enter_context(waitable)
+                        entity_count += waitable.get_num_entities()
+                    except InvalidHandle:
+                        pass
 
                 context_capsule = context_stack.enter_context(self._context.handle)
                 _rclpy.rclpy_wait_set_init(
@@ -571,12 +568,12 @@ class Executor:
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)
                 for sub_capsule in sub_capsules:
                     _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
-                for cli_capsule in client_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('client', wait_set, cli_capsule)
-                for srv_capsule in service_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('service', wait_set, srv_capsule)
-                for tmr_capsule in timer_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('timer', wait_set, tmr_capsule)
+                for cli_handle in client_handles:
+                    _rclpy.rclpy_wait_set_add_client(wait_set, cli_handle)
+                for srv_capsule in service_handles:
+                    _rclpy.rclpy_wait_set_add_service(wait_set, srv_capsule)
+                for tmr_handle in timer_handles:
+                    _rclpy.rclpy_wait_set_add_timer(wait_set, tmr_handle)
                 for gc_capsule in guard_capsules:
                     _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, gc_capsule)
                 for waitable in waitables:
@@ -615,14 +612,13 @@ class Executor:
             for node in nodes_to_use:
                 for tmr in node.timers:
                     if tmr.handle.pointer in timers_ready:
-                        with tmr.handle as capsule:
-                            # Check timer is ready to workaround rcl issue with cancelled timers
-                            if _rclpy.rclpy_is_timer_ready(capsule):
-                                if tmr.callback_group.can_execute(tmr):
-                                    handler = self._make_handler(
-                                        tmr, node, self._take_timer, self._execute_timer)
-                                    yielded_work = True
-                                    yield handler, tmr, node
+                        # Check timer is ready to workaround rcl issue with cancelled timers
+                        if tmr.handle.is_timer_ready():
+                            if tmr.callback_group.can_execute(tmr):
+                                handler = self._make_handler(
+                                    tmr, node, self._take_timer, self._execute_timer)
+                                yielded_work = True
+                                yield handler, tmr, node
 
                 for sub in node.subscriptions:
                     if sub.handle.pointer in subs_ready:

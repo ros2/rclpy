@@ -15,9 +15,10 @@
 import unittest
 
 from rclpy.duration import Duration
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import InvalidQoSProfileException
+from rclpy.qos import qos_check_compatible
 from rclpy.qos import qos_profile_system_default
+from rclpy.qos import QoSCompatibility
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSLivelinessPolicy
@@ -29,8 +30,8 @@ from rclpy.qos import QoSReliabilityPolicy
 class TestQosProfile(unittest.TestCase):
 
     def convert_and_assert_equality(self, qos_profile):
-        c_profile = qos_profile.get_c_qos_profile()
-        converted_profile = QoSProfile(**_rclpy.rclpy_convert_to_py_qos_policy(c_profile))
+        c_qos_profile = qos_profile.get_c_qos_profile()
+        converted_profile = QoSProfile(**c_qos_profile.to_dict())
         self.assertEqual(qos_profile, converted_profile)
 
     def test_depth_only_constructor(self):
@@ -124,3 +125,65 @@ class TestQosProfile(unittest.TestCase):
         assert (
             QoSPresetProfiles.SYSTEM_DEFAULT.value ==
             QoSPresetProfiles.get_from_short_key('system_default'))
+
+
+class TestCheckQosCompatibility(unittest.TestCase):
+
+    def test_compatible(self):
+        qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            lifespan=Duration(seconds=1),
+            deadline=Duration(seconds=1),
+            liveliness=QoSLivelinessPolicy.AUTOMATIC,
+            liveliness_lease_duration=Duration(seconds=1),
+        )
+        compatibility, reason = qos_check_compatible(
+            qos, qos
+        )
+
+        assert compatibility == QoSCompatibility.OK
+        assert reason == ''
+
+    def test_incompatible(self):
+        """
+        This test is assuming a DDS implementation.
+
+        It's possible that a "best effort" publisher and "reliable"
+        subscription is a valid match in a non-DDS implementation.
+        """
+        pub_qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+        )
+        sub_qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+        )
+
+        compatibility, reason = qos_check_compatible(
+            pub_qos, sub_qos
+        )
+
+        assert compatibility == QoSCompatibility.ERROR
+        assert reason != ''
+
+    def test_warn_of_possible_incompatibility(self):
+        """
+        This test is assuming a DDS implementation.
+
+        It's possible that a "best effort" publisher and "reliable"
+        subscription is a valid match in a non-DDS implementation.
+        """
+        pub_qos = QoSPresetProfiles.SYSTEM_DEFAULT.value
+        sub_qos = QoSProfile(
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+        )
+        compatibility, reason = qos_check_compatible(
+            pub_qos, sub_qos
+        )
+
+        assert compatibility == QoSCompatibility.WARNING
+        assert reason != ''

@@ -12,36 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
-
-from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .duration import Duration
 
 
-class ClockType(IntEnum):
-    """
-    Enum for clock type.
-
-    This enum matches the one defined in rcl/time.h
-    """
-
-    ROS_TIME = 1
-    SYSTEM_TIME = 2
-    STEADY_TIME = 3
-
-
-class ClockChange(IntEnum):
-
-    # ROS time is active and will continue to be active
-    ROS_TIME_NO_CHANGE = 1
-    # ROS time is being activated
-    ROS_TIME_ACTIVATED = 2
-    # ROS TIME is being deactivated, the clock will report system time after the jump
-    ROS_TIME_DEACTIVATED = 3
-    # ROS time is inactive and the clock will keep reporting system time
-    SYSTEM_TIME_NO_CHANGE = 4
+ClockType = _rclpy.ClockType
+ClockChange = _rclpy.ClockChange
 
 
 class JumpThreshold:
@@ -106,15 +83,15 @@ class JumpHandle:
         if threshold.min_backward is not None:
             min_backward = threshold.min_backward.nanoseconds
 
-        with self._clock.handle as clock_capsule:
-            _rclpy.rclpy_add_clock_callback(
-                clock_capsule, self, threshold.on_clock_change, min_forward, min_backward)
+        with self._clock.handle:
+            self._clock.handle.add_clock_callback(
+                 self, threshold.on_clock_change, min_forward, min_backward)
 
     def unregister(self):
         """Remove a jump callback from the clock."""
         if self._clock is not None:
-            with self._clock.handle as clock_capsule:
-                _rclpy.rclpy_remove_clock_callback(clock_capsule, self)
+            with self._clock.handle:
+                self._clock.handle.remove_clock_callback(self)
             self._clock = None
 
 
@@ -127,7 +104,7 @@ class Clock:
             self = super().__new__(ROSClock)
         else:
             self = super().__new__(cls)
-        self.__handle = Handle(_rclpy.rclpy_create_clock(clock_type))
+        self.__clock = _rclpy.Clock(clock_type)
         self._clock_type = clock_type
         return self
 
@@ -137,19 +114,16 @@ class Clock:
 
     @property
     def handle(self):
-        return self.__handle
+        return self.__clock
 
     def __repr__(self):
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
     def now(self):
         from rclpy.time import Time
-        with self.handle as clock_capsule:
-            time_handle = _rclpy.rclpy_clock_get_now(clock_capsule)
-        # TODO(dhood): Return a python object from the C extension
-        return Time(
-            nanoseconds=_rclpy.rclpy_time_point_get_nanoseconds(time_handle),
-            clock_type=self.clock_type)
+        with self.handle:
+            rcl_time = self.__clock.get_now()
+        return Time(nanoseconds=rcl_time.nanoseconds, clock_type=self.clock_type)
 
     def create_jump_callback(self, threshold, *, pre_callback=None, post_callback=None):
         """
@@ -169,17 +143,7 @@ class Clock:
 
             def callback_shim(jump_dict):
                 nonlocal original_callback
-                clock_change = None
-                if 'RCL_ROS_TIME_NO_CHANGE' == jump_dict['clock_change']:
-                    clock_change = ClockChange.ROS_TIME_NO_CHANGE
-                elif 'RCL_ROS_TIME_ACTIVATED' == jump_dict['clock_change']:
-                    clock_change = ClockChange.ROS_TIME_ACTIVATED
-                elif 'RCL_ROS_TIME_DEACTIVATED' == jump_dict['clock_change']:
-                    clock_change = ClockChange.ROS_TIME_DEACTIVATED
-                elif 'RCL_SYSTEM_TIME_NO_CHANGE' == jump_dict['clock_change']:
-                    clock_change = ClockChange.SYSTEM_TIME_NO_CHANGE
-                else:
-                    raise ValueError('Unknown clock jump type ' + repr(clock_change))
+                clock_change = jump_dict['clock_change']
                 duration = Duration(nanoseconds=jump_dict['delta'])
                 original_callback(TimeJump(clock_change, duration))
 
@@ -197,18 +161,18 @@ class ROSClock(Clock):
 
     @property
     def ros_time_is_active(self):
-        with self.handle as clock_capsule:
-            return _rclpy.rclpy_clock_get_ros_time_override_is_enabled(clock_capsule)
+        with self.handle:
+            return self.handle.get_ros_time_override_is_enabled()
 
     def _set_ros_time_is_active(self, enabled):
         # This is not public because it is only to be called by a TimeSource managing the Clock
-        with self.handle as clock_capsule:
-            _rclpy.rclpy_clock_set_ros_time_override_is_enabled(clock_capsule, enabled)
+        with self.handle:
+            self.handle.set_ros_time_override_is_enabled(enabled)
 
     def set_ros_time_override(self, time):
         from rclpy.time import Time
         if not isinstance(time, Time):
             raise TypeError(
                 'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
-        with self.handle as clock_capsule:
-            _rclpy.rclpy_clock_set_ros_time_override(clock_capsule, time._time_handle)
+        with self.handle:
+            self.handle.set_ros_time_override(time._time_handle)

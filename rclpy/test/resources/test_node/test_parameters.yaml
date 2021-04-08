@@ -5,4 +5,4 @@
     initial_foobar: False
 /my_ns/my_node:
   ros__parameters:
-    initial_fizz: 23
+    initial_fizz: param_file_override

@@ -95,6 +95,21 @@ class InvalidParameterException(ParameterException):
         Exception.__init__(self, 'Invalid parameter name', parameter, *args)
 
 
+class InvalidParameterTypeException(ParameterException):
+    """Raised when a parameter is rejected for having an invalid type."""
+
+    def __init__(self, desired_parameter, expected_type, *args):
+        from rclpy.parameter import Parameter
+        Exception.__init__(
+            self,
+            f"Trying to set parameter '{desired_parameter._name}' to '{desired_parameter._value}'"
+            f" of type '{Parameter.Type.from_parameter_value(desired_parameter._value).name}'"
+            f", expecting type '{expected_type}'",
+            *args)
+        self._actual_type = desired_parameter.type_
+        self._param_name = desired_parameter.name
+
+
 class InvalidParameterValueException(ParameterException):
     """Raised when a parameter is rejected by a user callback or when applying a descriptor."""
 
@@ -110,6 +125,16 @@ class ParameterImmutableException(ParameterException):
 
     def __init__(self, parameter, *args):
         Exception.__init__(self, 'Attempted to modify read-only parameter', parameter, *args)
+
+
+class NoParameterOverrideProvidedException(ParameterException):
+    """Raised when no override is provided for a statically typed parameter with no default."""
+
+    def __init__(self, parameter_name, *args):
+        Exception.__init__(
+            self,
+            f"No parameter override provided for '{parameter_name}' when one was expected",
+            *args)
 
 
 class ROSInterruptException(Exception):

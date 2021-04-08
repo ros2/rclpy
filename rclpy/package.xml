@@ -2,10 +2,9 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>rclpy</name>
-  <version>1.4.0</version>
+  <version>1.8.0</version>
   <description>Package containing the Python client.</description>
 
-  <maintainer email="clairewang@openrobotics.org">Claire Wang</maintainer>
   <maintainer email="ivanpauno@ekumenlabs.com">Ivan Paunovic</maintainer>
   <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
 
@@ -17,6 +16,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>python_cmake_module</buildtool_depend>
 
+  <build_depend>pybind11_vendor</build_depend>
+  <build_depend>rcpputils</build_depend>
   <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
 

@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 
 project(rclpy)
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 # Default to C11
 if(NOT CMAKE_C_STANDARD)
@@ -20,32 +20,85 @@ find_package(rcl REQUIRED)
 find_package(rcl_logging_interface REQUIRED)
 find_package(rcl_action REQUIRED)
 find_package(rcl_yaml_param_parser REQUIRED)
+find_package(rcpputils REQUIRED)
 find_package(rcutils REQUIRED)
 find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
+# Find python before pybind11
 find_package(python_cmake_module REQUIRED)
-find_package(PythonExtra MODULE REQUIRED)
+find_package(PythonExtra REQUIRED)
 
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
-
 if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # Set the python debug interpreter.
+  # pybind11 will setup the build for debug now.
   set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
+
+find_package(pybind11_vendor REQUIRED)
+find_package(pybind11 REQUIRED)
+
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # pybind11 logic for setting up a debug build when both a debug and release
+  # python interpreter are present in the system seems to be pretty much broken.
+  # This works around the issue.
+  set(PYTHON_LIBRARIES "${PYTHON_DEBUG_LIBRARIES}")
+endif()
+
+function(clean_windows_flags target)
+  # Hack to avoid pybind11 issue.
+  #
+  # TODO(ivanpauno):
+  # This can be deleted when we update `pybind11_vendor` to a version including
+  # https://github.com/pybind/pybind11/pull/2590.
+  #
+  # They are enabling /LTCG on Windows to reduce binary size,
+  # but that doesn't play well with MSVC incremental linking (default for Debug/RelWithDebInfo).
+  #
+  # See:
+  # - https://docs.microsoft.com/en-us/cpp/build/reference/incremental-link-incrementally?view=vs-2019
+  # - https://docs.microsoft.com/en-us/cpp/build/reference/ltcg-link-time-code-generation?view=vs-2019
+
+  if(MSVC AND "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+    get_target_property(target_link_libraries ${target} LINK_LIBRARIES)
+    list(REMOVE_ITEM target_link_libraries "$<$<NOT:$<CONFIG:Debug>>:-LTCG>")
+    set_target_properties(${target} PROPERTIES LINK_LIBRARIES "${target_link_libraries}")
+
+    get_target_property(target_compile_options ${target} COMPILE_OPTIONS)
+    list(REMOVE_ITEM target_compile_options "$<$<NOT:$<CONFIG:Debug>>:/GL>")
+    set_target_properties(${target} PROPERTIES COMPILE_OPTIONS "${target_compile_options}")
+  endif()
+endfunction()
+
+# pybind11_add_module sets a compile definition Py_DEBUG, but the CPython
+# pyconfig.h header on windows also sets Py_DEBUG when _DEBUG is set.
+# This leadds to a C4005 compiler warning for a duplicate definition of
+# Py_DEBUG.
+# The pybind11.h header has logic to work around that, but not all of these
+# CPython extensions are using pybind11.
+# This function strips the Py_DEBUG compile definition.
+# It should only be used if pybind11_add_module is used but the module does not
+# include pybind11.h.
+function(remove_py_debug_definition_on_win32 target)
+  if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  get_target_property(compile_definitions "${target}" COMPILE_DEFINITIONS)
+  set(compile_definitions_to_keep "")
+  foreach(definition ${compile_definitions})
+    if("Py_DEBUG" STREQUAL definition)
+      # Skip!
+      continue()
+    endif()
+    list(APPEND compile_definitions_to_keep "${definition}")
+  endforeach()
+  set_target_properties("${target}" PROPERTIES COMPILE_DEFINITIONS "${compile_definitions_to_keep}")
+  endif()
+endfunction()
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
 
 ament_python_install_package(${PROJECT_NAME})
-
-function(set_properties _targetname _build_type)
-  set_target_properties(${_targetname} PROPERTIES
-    PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
-    RUNTIME_OUTPUT_DIRECTORY${_build_type} "${CMAKE_CURRENT_BINARY_DIR}/test_${PROJECT_NAME}"
-    OUTPUT_NAME "_${_targetname}${PythonExtra_EXTENSION_SUFFIX}"
-    SUFFIX "${PythonExtra_EXTENSION_EXTENSION}")
-endfunction()
 
 # Only build the library if a C typesupport exists
 get_rmw_typesupport(typesupport_impls "rmw_implementation" LANGUAGE "c")
@@ -54,23 +107,15 @@ if(typesupport_impls STREQUAL "")
   return()
 endif()
 
-function(configure_python_c_extension_library _library_name)
-  set_properties(${_library_name} "")
-  if(WIN32)
-    set_properties(${_library_name} "_DEBUG")
-    set_properties(${_library_name} "_MINSIZEREL")
-    set_properties(${_library_name} "_RELEASE")
-    set_properties(${_library_name} "_RELWITHDEBINFO")
-  endif()
+# Set the build location and install location for a CPython extension
+function(configure_build_install_location _library_name)
+  # Install into test_rclpy folder in build space for unit tests to import
+  set_target_properties(${_library_name} PROPERTIES
+    # Use generator expression to avoid prepending a build type specific directory on Windows
+    LIBRARY_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>
+    RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_CURRENT_BINARY_DIR}/test_rclpy>)
 
-  target_link_libraries(${_library_name}
-    ${PythonExtra_LIBRARIES}
-  )
-
-  ament_target_dependencies(${_library_name}
-    "PythonExtra"
-  )
-
+  # Install library for actual use
   install(TARGETS ${_library_name}
     DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
   )
@@ -78,19 +123,17 @@ endfunction()
 
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
+  src/rclpy_common/src/exceptions.cpp
   src/rclpy_common/src/handle.c
 )
-target_link_libraries(rclpy_common
-  ${PythonExtra_LIBRARIES}
+target_link_libraries(rclpy_common PUBLIC
+  pybind11::pybind11
+  ${PYTHON_LIBRARIES}
+  rcl::rcl
+  rmw::rmw
 )
-target_include_directories(rclpy_common
-  PUBLIC
+target_include_directories(rclpy_common PUBLIC
   src/rclpy_common/include
-)
-ament_target_dependencies(rclpy_common
-  "rcl"
-  "rmw"
-  "PythonExtra"
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
@@ -103,82 +146,63 @@ install(TARGETS rclpy_common
   RUNTIME DESTINATION bin
 )
 
-add_library(rclpy SHARED
-  src/rclpy/_rclpy.c
-  src/rclpy/detail/execute_with_logging_mutex.cpp
-  src/rclpy/detail/logging_mutex.cpp
-  src/rclpy/detail/thread_safe_logging_output_handler.cpp
+# Split from main extension and converted to pybind11
+pybind11_add_module(_rclpy_pybind11 SHARED
+  src/rclpy/_rclpy_action.cpp
+  src/rclpy/_rclpy_handle.cpp
+  src/rclpy/_rclpy_logging.cpp
+  src/rclpy/_rclpy_pybind11.cpp
+  src/rclpy/_rclpy_pycapsule.cpp
+  src/rclpy/client.cpp
+  src/rclpy/clock.cpp
+  src/rclpy/context.cpp
+  src/rclpy/destroyable.cpp
+  src/rclpy/duration.cpp
+  src/rclpy/graph.cpp
+  src/rclpy/guard_condition.cpp
+  src/rclpy/handle.cpp
+  src/rclpy/init.cpp
+  src/rclpy/logging.cpp
+  src/rclpy/names.cpp
+  src/rclpy/node.cpp
+  src/rclpy/publisher.cpp
+  src/rclpy/qos.cpp
+  src/rclpy/qos_event.cpp
+  src/rclpy/serialization.cpp
+  src/rclpy/service.cpp
+  src/rclpy/service_info.cpp
+  src/rclpy/subscription.cpp
+  src/rclpy/time_point.cpp
+  src/rclpy/timer.cpp
+  src/rclpy/utils.cpp
+  src/rclpy/wait_set.cpp
 )
-target_link_libraries(rclpy
+target_include_directories(_rclpy_pybind11 PRIVATE
+  src/rclpy/
+)
+target_link_libraries(_rclpy_pybind11 PRIVATE
+  rcl::rcl
+  rcl_action::rcl_action
+  rcl_logging_interface::rcl_logging_interface
   rclpy_common
+  rcpputils::rcpputils
+  rcutils::rcutils
 )
-
-configure_python_c_extension_library(rclpy)
-ament_target_dependencies(rclpy
-  "rcl"
-  "rcl_yaml_param_parser"
-  "rcutils"
-)
-
-add_library(
-  rclpy_action
-  SHARED src/rclpy/_rclpy_action.c
-)
-target_link_libraries(rclpy_action
-  rclpy_common
-)
-
-configure_python_c_extension_library(rclpy_action)
-ament_target_dependencies(rclpy_action
-  "rcl"
-  "rcl_action"
-  "rcutils"
-)
-
-# Logging support provided by rcutils
-add_library(
-  rclpy_logging
-  SHARED src/rclpy/_rclpy_logging.c
-)
-configure_python_c_extension_library(rclpy_logging)
-ament_target_dependencies(rclpy_logging
-  "rcutils"
-  "rcl_logging_interface"
-)
+configure_build_install_location(_rclpy_pybind11)
+clean_windows_flags(_rclpy_pybind11)
 
 # Signal handling library
-add_library(
-  rclpy_signal_handler
-  SHARED src/rclpy/_rclpy_signal_handler.c
+pybind11_add_module(_rclpy_signal_handler SHARED
+  src/rclpy/_rclpy_signal_handler.c
 )
-target_link_libraries(rclpy_signal_handler
+target_link_libraries(_rclpy_signal_handler PRIVATE
   rclpy_common
+  rcl::rcl
+  rcutils::rcutils
 )
-configure_python_c_extension_library(rclpy_signal_handler)
-ament_target_dependencies(rclpy_signal_handler
-  "rcl"
-  "rcutils"
-)
-
-# Pycapsule handling library
-add_library(
-  rclpy_pycapsule
-  SHARED src/rclpy/_rclpy_pycapsule.c
-)
-configure_python_c_extension_library(rclpy_pycapsule)
-
-# Handle library, used to keep dependencies between C objects.
-add_library(
-  rclpy_handle
-  SHARED src/rclpy/_rclpy_handle.c
-)
-target_link_libraries(rclpy_handle
-  rclpy_common
-)
-configure_python_c_extension_library(rclpy_handle)
-ament_target_dependencies(rclpy_handle
-  "rcutils"
-)
+configure_build_install_location(_rclpy_signal_handler)
+clean_windows_flags(_rclpy_signal_handler)
+remove_py_debug_definition_on_win32(_rclpy_signal_handler)
 
 if(NOT WIN32)
   ament_environment_hooks(
@@ -190,7 +214,12 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # Give cppcheck hints about macro definitions coming from outside this package
   get_target_property(ament_cmake_cppcheck_ADDITIONAL_INCLUDE_DIRS rcutils::rcutils INTERFACE_INCLUDE_DIRECTORIES)
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE "ament_cmake_cppcheck")
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_cppcheck REQUIRED)
+  ament_cppcheck()
+  set_tests_properties(cppcheck PROPERTIES TIMEOUT 420)
 
   find_package(ament_cmake_pytest REQUIRED)
   find_package(rosidl_generator_py REQUIRED)
@@ -209,6 +238,11 @@ if(BUILD_TESTING)
     src/test/rclpy_common/test_handle.cpp)
   target_link_libraries(test_c_handle
     rclpy_common)
+
+  ament_add_gtest(test_python_allocator
+    test/test_python_allocator.cpp)
+  target_include_directories(test_python_allocator PRIVATE src/rclpy)
+  target_link_libraries(test_python_allocator pybind11::embed)
 
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
@@ -245,6 +279,7 @@ if(BUILD_TESTING)
       test/test_timer.py
       test/test_topic_or_service_is_hidden.py
       test/test_topic_endpoint_info.py
+      test/test_type_support.py
       test/test_utilities.py
       test/test_validate_full_topic_name.py
       test/test_validate_namespace.py

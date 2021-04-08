@@ -15,7 +15,6 @@
 from enum import IntEnum
 from typing import Callable
 from typing import List
-from typing import NamedTuple
 from typing import Optional
 
 import rclpy
@@ -28,99 +27,27 @@ from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
 
-class QoSPublisherEventType(IntEnum):
-    """
-    Enum for types of QoS events that a Publisher can receive.
-
-    This enum matches the one defined in rcl/event.h
-    """
-
-    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED = 0
-    RCL_PUBLISHER_LIVELINESS_LOST = 1
-    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS = 2
+QoSPublisherEventType = _rclpy.rcl_publisher_event_type_t
+QoSSubscriptionEventType = _rclpy.rcl_subscription_event_type_t
 
 
-class QoSSubscriptionEventType(IntEnum):
-    """
-    Enum for types of QoS events that a Subscription can receive.
+# Payload type for Subscription Deadline callback.
+QoSRequestedDeadlineMissedInfo = _rclpy.rmw_requested_deadline_missed_status_t
 
-    This enum matches the one defined in rcl/event.h
-    """
+# Payload type for Subscription Liveliness callback.
+QoSLivelinessChangedInfo = _rclpy.rmw_liveliness_changed_status_t
 
-    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED = 0
-    RCL_SUBSCRIPTION_LIVELINESS_CHANGED = 1
-    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = 2
-    RCL_SUBSCRIPTION_MESSAGE_LOST = 3
+# Payload type for Subscription Message Lost callback.
+QoSMessageLostInfo = _rclpy.rmw_message_lost_status_t
 
+# Payload type for Subscription Incompatible QoS callback.
+QoSRequestedIncompatibleQoSInfo = _rclpy.rmw_requested_qos_incompatible_event_status_t
 
-"""
-Payload type for Subscription Deadline callback.
+# Payload type for Publisher Deadline callback.
+QoSOfferedDeadlineMissedInfo = _rclpy.rmw_offered_deadline_missed_status_t
 
-Mirrors rmw_requested_deadline_missed_status_t from rmw/types.h
-"""
-QoSRequestedDeadlineMissedInfo = NamedTuple(
-    'QoSRequestedDeadlineMissedInfo', [
-        ('total_count', 'int'),
-        ('total_count_change', 'int'),
-    ])
-
-"""
-Payload type for Subscription Liveliness callback.
-
-Mirrors rmw_liveliness_changed_status_t from rmw/types.h
-"""
-QoSLivelinessChangedInfo = NamedTuple(
-    'QoSLivelinessChangedInfo', [
-        ('alive_count', 'int'),
-        ('not_alive_count', 'int'),
-        ('alive_count_change', 'int'),
-        ('not_alive_count_change', 'int'),
-    ])
-
-"""
-Payload type for Subscription Message Lost callback.
-
-Mirrors rmw_message_lost_status_t from rmw/types.h
-"""
-QoSMessageLostInfo = NamedTuple(
-    'QoSMessageLostInfo', [
-        ('total_count', 'int'),
-        ('total_count_change', 'int'),
-    ])
-
-"""
-Payload type for Subscription Incompatible QoS callback.
-
-Mirrors rmw_requested_incompatible_qos_status_t from rmw/types.h
-"""
-QoSRequestedIncompatibleQoSInfo = NamedTuple(
-    'QoSRequestedIncompatibleQoSInfo', [
-        ('total_count', 'int'),
-        ('total_count_change', 'int'),
-        ('last_policy_kind', 'int'),
-    ])
-
-"""
-Payload type for Publisher Deadline callback.
-
-Mirrors rmw_offered_deadline_missed_status_t from rmw/types.h
-"""
-QoSOfferedDeadlineMissedInfo = NamedTuple(
-    'QoSOfferedDeadlineMissedInfo', [
-        ('total_count', 'int'),
-        ('total_count_change', 'int'),
-    ])
-
-"""
-Payload type for Publisher Liveliness callback.
-
-Mirrors rmw_liveliness_lost_status_t from rmw/types.h
-"""
-QoSLivelinessLostInfo = NamedTuple(
-    'QoSLivelinessLostInfo', [
-        ('total_count', 'int'),
-        ('total_count_change', 'int'),
-    ])
+# Payload type for Publisher Liveliness callback.
+QoSLivelinessLostInfo = _rclpy.rmw_liveliness_lost_status_t
 
 """
 Payload type for Publisher Incompatible QoS callback.
@@ -150,10 +77,8 @@ class QoSEventHandler(Waitable):
         self.event_type = event_type
         self.callback = callback
 
-        self._parent_handle = parent_handle
         with parent_handle as parent_capsule:
-            event_capsule = _rclpy.rclpy_create_event(event_type, parent_capsule)
-        self._event_handle = Handle(event_capsule)
+            self.__event = _rclpy.QoSEvent(parent_capsule, event_type)
         self._ready_to_take_data = False
         self._event_index = None
 
@@ -170,8 +95,8 @@ class QoSEventHandler(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self._ready_to_take_data:
             self._ready_to_take_data = False
-            with self._parent_handle as parent_capsule, self._event_handle as event_capsule:
-                return _rclpy.rclpy_take_event(event_capsule, parent_capsule, self.event_type)
+            with self.__event:
+                return self.__event.take_event()
         return None
 
     async def execute(self, taken_data):
@@ -186,11 +111,19 @@ class QoSEventHandler(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entites to wait set."""
-        with self._event_handle as event_capsule:
-            self._event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, event_capsule)
+        with self.__event:
+            self._event_index = _rclpy.rclpy_wait_set_add_event(wait_set, self.__event)
+
+    def __enter__(self):
+        """Mark event as in-use to prevent destruction while waiting on it."""
+        self.__event.__enter__()
+
+    def __exit__(self, t, v, tb):
+        """Mark event as not-in-use to allow destruction after waiting on it."""
+        self.__event.__exit__(t, v, tb)
 
     def destroy(self):
-        self._event_handle.destroy()
+        self.__event.destroy_when_not_in_use()
 
 
 class SubscriptionEventCallbacks:

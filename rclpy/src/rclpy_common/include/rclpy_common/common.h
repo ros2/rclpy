@@ -14,6 +14,11 @@
 #ifndef RCLPY_COMMON__COMMON_H_
 #define RCLPY_COMMON__COMMON_H_
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <Python.h>
 
 #include <rcl/graph.h>  // rcl_names_and_types_t
@@ -140,5 +145,9 @@ rclpy_convert_to_py(void * message, PyObject * pyclass);
 RCLPY_COMMON_PUBLIC
 PyObject *
 rclpy_convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  // RCLPY_COMMON__COMMON_H_

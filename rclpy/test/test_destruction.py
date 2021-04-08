@@ -222,14 +222,10 @@ def test_destroy_client_asap():
             with client.handle:
                 pass
 
-            with client.handle:
-                node.destroy_client(client)
-                # handle valid because it's still being used
-                with client.handle:
-                    pass
+            node.destroy_client(client)
 
             with pytest.raises(InvalidHandle):
-                # handle invalid because it was destroyed when no one was using it
+                # handle invalid because it was destroyed
                 with client.handle:
                     pass
         finally:
@@ -251,14 +247,10 @@ def test_destroy_service_asap():
             with service.handle:
                 pass
 
-            with service.handle:
-                node.destroy_service(service)
-                # handle valid because it's still being used
-                with service.handle:
-                    pass
+            node.destroy_service(service)
 
             with pytest.raises(InvalidHandle):
-                # handle invalid because it was destroyed when no one was using it
+                # handle invalid because it was destroyed
                 with service.handle:
                     pass
         finally:
@@ -280,14 +272,10 @@ def test_destroy_timer_asap():
             with timer.handle:
                 pass
 
-            with timer.handle:
-                node.destroy_timer(timer)
-                # handle valid because it's still being used
-                with timer.handle:
-                    pass
+            node.destroy_timer(timer)
 
             with pytest.raises(InvalidHandle):
-                # handle invalid because it was destroyed when no one was using it
+                # handle invalid because it was destroyed
                 with timer.handle:
                     pass
         finally:
