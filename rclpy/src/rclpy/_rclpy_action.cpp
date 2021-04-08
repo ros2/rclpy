@@ -27,6 +27,7 @@
 #include "rclpy_common/handle.h"
 
 #include "clock.hpp"
+#include "action_goal_handle.hpp"
 
 namespace py = pybind11;
 
@@ -87,22 +88,6 @@ rclpy_action_destroy_entity(py::capsule pyentity, py::capsule pynode)
 
   if (PyCapsule_SetName(pyentity.ptr(), "_destroyed_by_rclpy_action_destroy_entity_")) {
     throw py::error_already_set();
-  }
-}
-
-void
-rclpy_action_destroy_server_goal_handle(py::capsule pygoal_handle)
-{
-  if (strcmp("rcl_action_goal_handle_t", pygoal_handle.name())) {
-    throw py::value_error("Capsule must be an rcl_action_goal_handle_t");
-  }
-
-  auto goal_handle =
-    get_pointer<rcl_action_goal_handle_t *>(pygoal_handle, "rcl_action_goal_handle_t");
-
-  rcl_ret_t ret = rcl_action_goal_handle_fini(goal_handle);
-  if (RCL_RET_OK != ret) {
-    throw rclpy::RCLError("Error destroying action goal handle");
   }
 }
 
@@ -915,27 +900,10 @@ rclpy_action_take_status(py::capsule pyaction_client, py::object pymsg_type)
   TAKE_MESSAGE(status)
 }
 
-py::capsule
+rclpy::ActionGoalHandle
 rclpy_action_accept_new_goal(py::capsule pyaction_server, py::object pygoal_info_msg)
 {
-  auto action_server = get_pointer<rcl_action_server_t *>(pyaction_server, "rcl_action_server_t");
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  auto goal_info_msg = static_cast<rcl_action_goal_info_t *>(
-    rclpy_convert_from_py(pygoal_info_msg.ptr(), &destroy_ros_message));
-  if (!goal_info_msg) {
-    throw py::error_already_set();
-  }
-
-  auto goal_info_msg_ptr = std::unique_ptr<rcl_action_goal_info_t, decltype(destroy_ros_message)>(
-    goal_info_msg, destroy_ros_message);
-
-  rcl_action_goal_handle_t * goal_handle = rcl_action_accept_new_goal(
-    action_server, goal_info_msg);
-  if (!goal_handle) {
-    throw rclpy::RCLError("Failed to accept new goal");
-  }
-  // TODO(sloretz) capsule destructor instead of rclpy_action_destroy_server_goal_handle()
-  return py::capsule(goal_handle, "rcl_action_goal_handle_t");
+  return rclpy::ActionGoalHandle(pyaction_server, pygoal_info_msg);
 }
 
 void
@@ -946,60 +914,6 @@ rclpy_action_notify_goal_done(py::capsule pyaction_server)
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed to notfiy action server of goal done");
   }
-}
-
-/// Convert from a Python GoalEvent code to an rcl goal event code.
-/**
- *  Raises std::runtime_error if conversion fails
- *
- *  \param[in] pyevent The Python GoalEvent code.
- *  \return The rcl equivalent of the Python GoalEvent code
- */
-static rcl_action_goal_event_t
-convert_from_py_goal_event(const int64_t event)
-{
-  py::module server_module = py::module::import("rclpy.action.server");
-  py::object goal_event_class = server_module.attr("GoalEvent");
-  py::int_ pyevent(event);
-
-  if (goal_event_class.attr("EXECUTE").attr("value").cast<py::int_>().is(pyevent)) {
-    return GOAL_EVENT_EXECUTE;
-  }
-  if (goal_event_class.attr("CANCEL_GOAL").attr("value").cast<py::int_>().is(pyevent)) {
-    return GOAL_EVENT_CANCEL_GOAL;
-  }
-  if (goal_event_class.attr("SUCCEED").attr("value").cast<py::int_>().is(pyevent)) {
-    return GOAL_EVENT_SUCCEED;
-  }
-  if (goal_event_class.attr("ABORT").attr("value").cast<py::int_>().is(pyevent)) {
-    return GOAL_EVENT_ABORT;
-  }
-  if (goal_event_class.attr("CANCELED").attr("value").cast<py::int_>().is(pyevent)) {
-    return GOAL_EVENT_CANCELED;
-  }
-  throw std::runtime_error("Error converting goal event type: unknown goal event");
-}
-
-void
-rclpy_action_update_goal_state(py::capsule pygoal_handle, int64_t pyevent)
-{
-  auto goal_handle = get_pointer<rcl_action_goal_handle_t *>(
-    pygoal_handle, "rcl_action_goal_handle_t");
-
-  rcl_action_goal_event_t event = convert_from_py_goal_event(pyevent);
-
-  rcl_ret_t ret = rcl_action_update_goal_state(goal_handle, event);
-  if (RCL_RET_OK != ret) {
-    throw rclpy::RCLError("Failed to update goal state");
-  }
-}
-
-bool
-rclpy_action_goal_handle_is_active(py::capsule pygoal_handle)
-{
-  auto goal_handle = get_pointer<rcl_action_goal_handle_t *>(
-    pygoal_handle, "rcl_action_goal_handle_t");
-  return rcl_action_goal_handle_is_active(goal_handle);
 }
 
 bool
@@ -1017,21 +931,6 @@ rclpy_action_server_goal_exists(py::capsule pyaction_server, py::object pygoal_i
     goal_info, destroy_ros_message);
 
   return rcl_action_server_goal_exists(action_server, goal_info);
-}
-
-rcl_action_goal_state_t
-rclpy_action_goal_handle_get_status(py::capsule pygoal_handle)
-{
-  auto goal_handle = get_pointer<rcl_action_goal_handle_t *>(
-    pygoal_handle, "rcl_action_goal_handle_t");
-
-  rcl_action_goal_state_t status;
-  rcl_ret_t ret = rcl_action_goal_handle_get_status(goal_handle, &status);
-  if (RCL_RET_OK != ret) {
-    throw rclpy::RCLError("Failed to get goal status");
-  }
-
-  return status;
 }
 
 py::object
@@ -1210,9 +1109,6 @@ define_action_api(py::module m)
     "rclpy_action_destroy_entity", &rclpy_action_destroy_entity,
     "Destroy a rclpy_action entity.");
   m.def(
-    "rclpy_action_destroy_server_goal_handle", &rclpy_action_destroy_server_goal_handle,
-    "Destroy a ServerGoalHandle.");
-  m.def(
     "rclpy_action_get_rmw_qos_profile", &rclpy_action_get_rmw_qos_profile,
     "Get an action RMW QoS profile.");
   m.def(
@@ -1287,18 +1183,12 @@ define_action_api(py::module m)
   m.def(
     "rclpy_action_notify_goal_done", &rclpy_action_notify_goal_done,
     "Notify and action server that a goal has reached a terminal state.");
-  m.def(
-    "rclpy_action_update_goal_state", &rclpy_action_update_goal_state,
-    "Update a goal state.");
-  m.def(
-    "rclpy_action_goal_handle_is_active", &rclpy_action_goal_handle_is_active,
-    "Check if a goal is active.");
+
+  define_action_goal_handle(m);
+
   m.def(
     "rclpy_action_server_goal_exists", &rclpy_action_server_goal_exists,
     "Check if a goal being tracked by an action server.");
-  m.def(
-    "rclpy_action_goal_handle_get_status", &rclpy_action_goal_handle_get_status,
-    "Get the status of a goal.");
   m.def(
     "rclpy_action_process_cancel_request", &rclpy_action_process_cancel_request,
     "Process a cancel request to determine what goals should be canceled.");
