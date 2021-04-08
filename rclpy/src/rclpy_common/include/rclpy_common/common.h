@@ -35,21 +35,6 @@ typedef PyObject * convert_to_py_signature (void *);
 typedef struct
 {
   // Important: a pointer to a structure is also a pointer to its first member.
-  // The subscription must be first in the struct to compare sub.handle.pointer to an address
-  // in a wait set.
-  rcl_subscription_t subscription;
-  rcl_node_t * node;
-} rclpy_subscription_t;
-
-typedef struct
-{
-  rcl_publisher_t publisher;
-  rcl_node_t * node;
-} rclpy_publisher_t;
-
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
   // The client must be first in the struct to compare cli.handle.pointer to an address
   // in a wait set.
   rcl_client_t client;
