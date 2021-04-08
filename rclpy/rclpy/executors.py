@@ -329,8 +329,8 @@ class Executor:
         await await_or_execute(tmr.callback)
 
     def _take_subscription(self, sub):
-        with sub.handle as capsule:
-            msg_info = _rclpy.rclpy_take(capsule, sub.msg_type, sub.raw)
+        with sub.handle:
+            msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
             if msg_info is not None:
                 return msg_info[0]
         return None
@@ -509,10 +509,11 @@ class Executor:
             # Construct a wait set
             wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
             with ExitStack() as context_stack:
-                sub_capsules = []
+                sub_handles = []
                 for sub in subscriptions:
                     try:
-                        sub_capsules.append(context_stack.enter_context(sub.handle))
+                        context_stack.enter_context(sub.handle)
+                        sub_handles.append(sub.handle)
                     except InvalidHandle:
                         entity_count.num_subscriptions -= 1
 
@@ -566,8 +567,8 @@ class Executor:
                     context_capsule)
 
                 _rclpy.rclpy_wait_set_clear_entities(wait_set)
-                for sub_capsule in sub_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('subscription', wait_set, sub_capsule)
+                for sub_handle in sub_handles:
+                    _rclpy.rclpy_wait_set_add_subscription(wait_set, sub_handle)
                 for cli_handle in client_handles:
                     _rclpy.rclpy_wait_set_add_client(wait_set, cli_handle)
                 for srv_capsule in service_handles:

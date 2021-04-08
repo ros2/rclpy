@@ -43,7 +43,7 @@ Timer::destroy()
 Timer::Timer(
   Clock & rclcy_clock, py::capsule pycontext, int64_t period_nsec)
 {
-  clock_handle_ = rclcy_clock.get_shared_ptr();
+  clock_handle_ = rclcy_clock.shared_from_this();
 
   auto context = static_cast<rcl_context_t *>(
     rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
@@ -72,7 +72,7 @@ Timer::Timer(
   rcl_allocator_t allocator = rcl_get_default_allocator();
 
   rcl_ret_t ret = rcl_timer_init(
-    rcl_timer_.get(), clock_handle_.get(), context,
+    rcl_timer_.get(), clock_handle_->rcl_ptr(), context,
     period_nsec, NULL, allocator);
 
   if (RCL_RET_OK != ret) {
@@ -168,7 +168,7 @@ bool Timer::is_timer_canceled()
 void
 define_timer(py::object module)
 {
-  py::class_<Timer, Destroyable>(module, "Timer")
+  py::class_<Timer, Destroyable, std::shared_ptr<Timer>>(module, "Timer")
   .def(py::init<Clock &, py::capsule, int64_t>())
   .def_property_readonly(
     "pointer", [](const Timer & timer) {

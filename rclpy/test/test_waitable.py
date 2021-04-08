@@ -174,7 +174,7 @@ class SubscriptionWaitable(Waitable):
         super().__init__(ReentrantCallbackGroup())
 
         with node.handle as node_capsule:
-            self.subscription = _rclpy.rclpy_create_subscription(
+            self.subscription = _rclpy.Subscription(
                 node_capsule, EmptyMsg, 'test_topic', QoSProfile(depth=10).get_c_qos_profile())
         self.subscription_index = None
         self.subscription_is_ready = False
@@ -192,7 +192,7 @@ class SubscriptionWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.subscription_is_ready:
             self.subscription_is_ready = False
-            msg_info = _rclpy.rclpy_take(self.subscription, EmptyMsg, False)
+            msg_info = self.subscription.take_message(EmptyMsg, False)
             if msg_info is not None:
                 return msg_info[0]
         return None
@@ -210,8 +210,8 @@ class SubscriptionWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.subscription_index = _rclpy.rclpy_wait_set_add_entity(
-            'subscription', wait_set, self.subscription)
+        self.subscription_index = _rclpy.rclpy_wait_set_add_subscription(
+            wait_set, self.subscription)
 
 
 class GuardConditionWaitable(Waitable):
