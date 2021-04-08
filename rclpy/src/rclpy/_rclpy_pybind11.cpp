@@ -15,6 +15,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/domain_id.h>
+#include <rcl_action/rcl_action.h>
 
 #include "action_api.hpp"
 #include "client.hpp"
@@ -56,6 +57,13 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("ROS_TIME", RCL_ROS_TIME)
   .value("SYSTEM_TIME", RCL_SYSTEM_TIME)
   .value("STEADY_TIME", RCL_STEADY_TIME);
+
+  py::enum_<rcl_action_goal_event_t>(m, "GoalType")
+  .value("EXECUTE", GOAL_EVENT_EXECUTE)
+  .value("CANCEL_GOAL", GOAL_EVENT_CANCEL_GOAL)
+  .value("SUCCEED", GOAL_EVENT_SUCCEED)
+  .value("ABORT", GOAL_EVENT_ABORT)
+  .value("CANCELED", GOAL_EVENT_CANCELED);
 
   m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
 
