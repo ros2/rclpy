@@ -196,8 +196,8 @@ class TestQoSEvent(unittest.TestCase):
         rclpy.logging._root_logger = original_logger
 
     def _create_event_handle(self, parent_entity, event_type):
-        with parent_entity.handle as parent_capsule:
-            event = _rclpy.QoSEvent(parent_capsule, event_type)
+        with parent_entity.handle:
+            event = _rclpy.QoSEvent(parent_entity.handle, event_type)
         self.assertIsNotNone(event)
         return event
 

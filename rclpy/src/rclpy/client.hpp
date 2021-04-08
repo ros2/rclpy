@@ -28,7 +28,7 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-class Client : public Destroyable
+class Client : public Destroyable, public std::enable_shared_from_this<Client>
 {
 public:
   /// Create a client
