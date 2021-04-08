@@ -46,16 +46,6 @@ class CancelResponse(Enum):
     ACCEPT = 2
 
 
-class GoalEvent(Enum):
-    """Goal events that cause state transitions."""
-
-    EXECUTE = 1
-    CANCEL_GOAL = 2
-    SUCCEED = 3
-    ABORT = 4
-    CANCELED = 5
-
-
 class ServerGoalHandle:
     """Goal handle for working with Action Servers."""
 
@@ -72,8 +62,7 @@ class ServerGoalHandle:
         :param goal_info: GoalInfo message.
         :param goal_request: The user defined goal request message from an ActionClient.
         """
-        self._handle = _rclpy.rclpy_action_accept_new_goal(
-            action_server._handle, goal_info)
+        self._goal = _rclpy.ActionGoalHandle(action_server._handle, goal_info)
         self._action_server = action_server
         self._goal_info = goal_info
         self._goal_request = goal_request
@@ -99,9 +88,9 @@ class ServerGoalHandle:
     @property
     def is_active(self):
         with self._lock:
-            if self._handle is None:
+            if self._goal is None:
                 return False
-            return _rclpy.rclpy_action_goal_handle_is_active(self._handle)
+            return self._goal.is_active()
 
     @property
     def is_cancel_requested(self):
@@ -110,24 +99,24 @@ class ServerGoalHandle:
     @property
     def status(self):
         with self._lock:
-            if self._handle is None:
+            if self._goal is None:
                 return GoalStatus.STATUS_UNKNOWN
-            return _rclpy.rclpy_action_goal_handle_get_status(self._handle)
+            return self._goal.get_status()
 
     def _update_state(self, event):
         with self._lock:
             # Ignore updates for already destructed goal handles
-            if self._handle is None:
+            if self._goal is None:
                 return
 
             # Update state
-            _rclpy.rclpy_action_update_goal_state(self._handle, event.value)
+            self._goal.update_goal_state(event)
 
             # Publish state change
             _rclpy.rclpy_action_publish_status(self._action_server._handle)
 
             # If it's a terminal state, then also notify the action server
-            if not _rclpy.rclpy_action_goal_handle_is_active(self._handle):
+            if not self._goal.is_active():
                 self._action_server.notify_goal_done()
 
     def execute(self, execute_callback=None):
@@ -135,7 +124,7 @@ class ServerGoalHandle:
         # In this case we want to avoid the illegal state transition to EXECUTING
         # but still call the users execute callback to let them handle canceling the goal.
         if not self.is_cancel_requested:
-            self._update_state(GoalEvent.EXECUTE)
+            self._update_state(_rclpy.GoalEvent.EXECUTE)
         self._action_server.notify_execute(self, execute_callback)
 
     def publish_feedback(self, feedback):
@@ -144,7 +133,7 @@ class ServerGoalHandle:
 
         with self._lock:
             # Ignore for already destructed goal handles
-            if self._handle is None:
+            if self._goal is None:
                 return
 
             # Populate the feedback message with metadata about this goal
@@ -158,20 +147,20 @@ class ServerGoalHandle:
                 self._action_server._handle, feedback_message)
 
     def succeed(self):
-        self._update_state(GoalEvent.SUCCEED)
+        self._update_state(_rclpy.GoalEvent.SUCCEED)
 
     def abort(self):
-        self._update_state(GoalEvent.ABORT)
+        self._update_state(_rclpy.GoalEvent.ABORT)
 
     def canceled(self):
-        self._update_state(GoalEvent.CANCELED)
+        self._update_state(_rclpy.GoalEvent.CANCELED)
 
     def destroy(self):
         with self._lock:
-            if self._handle is None:
+            if self._goal is None:
                 return
-            _rclpy.rclpy_action_destroy_server_goal_handle(self._handle)
-            self._handle = None
+            self._goal.destroy_when_not_in_use()
+            self._goal = None
 
         self._action_server.remove_future(self._result_future)
 
@@ -381,7 +370,7 @@ class ActionServer(Waitable):
                 try:
                     # If the goal's just succeeded after user cancel callback
                     # that will generate an exception from invalid transition.
-                    goal_handle._update_state(GoalEvent.CANCEL_GOAL)
+                    goal_handle._update_state(_rclpy.GoalEvent.CANCEL_GOAL)
                 except RCLError as ex:
                     self._node.get_logger().debug(
                         'Failed to cancel goal in cancel callback: {0}'.format(ex))
