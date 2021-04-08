@@ -31,7 +31,7 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-class Clock : public Destroyable
+class Clock : public Destroyable, public std::enable_shared_from_this<Clock>
 {
 public:
   /// Create a clock
@@ -104,12 +104,6 @@ public:
    */
   void
   remove_clock_callback(py::object pyjump_handle);
-
-  /// Get rcl_client_t pointer
-  std::shared_ptr<rcl_clock_t> get_shared_ptr()
-  {
-    return rcl_clock_;
-  }
 
   /// Get rcl_client_t pointer
   rcl_clock_t * rcl_ptr() const

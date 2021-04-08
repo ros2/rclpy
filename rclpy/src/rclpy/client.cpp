@@ -155,7 +155,7 @@ Client::take_response(py::object pyresponse_type)
 void
 define_client(py::object module)
 {
-  py::class_<Client, Destroyable>(module, "Client")
+  py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
   .def(py::init<py::capsule, py::object, const char *, py::object>())
   .def_property_readonly(
     "pointer", [](const Client & client) {

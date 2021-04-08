@@ -16,7 +16,6 @@ from typing import Callable
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import QoSEventHandler
@@ -31,7 +30,7 @@ class Subscription:
 
     def __init__(
          self,
-         subscription_handle: Handle,
+         subscription_impl: _rclpy.Subscription,
          msg_type: MsgType,
          topic: str,
          callback: Callable,
@@ -46,8 +45,8 @@ class Subscription:
         .. warning:: Users should not create a subscription with this constructor, instead they
            should call :meth:`.Node.create_subscription`.
 
-        :param subscription_handle: :class:`Handle` wrapping the underlying ``rcl_subscription_t``
-            object.
+        :param subscription_impl: :class:`Subscription` wrapping the underlying
+            ``rcl_subscription_t`` object.
         :param msg_type: The type of ROS messages the subscription will subscribe to.
         :param topic: The name of the topic the subscription will subscribe to.
         :param callback: A user-defined callback function that is called when a message is
@@ -58,7 +57,7 @@ class Subscription:
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
         """
-        self.__handle = subscription_handle
+        self.__subscription = subscription_impl
         self.msg_type = msg_type
         self.topic = topic
         self.callback = callback
@@ -69,18 +68,18 @@ class Subscription:
         self.raw = raw
 
         self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
-            callback_group, subscription_handle, topic)
+            callback_group, subscription_impl, topic)
 
     @property
     def handle(self):
-        return self.__handle
+        return self.__subscription
 
     def destroy(self):
         for handler in self.event_handlers:
             handler.destroy()
-        self.handle.destroy()
+        self.handle.destroy_when_not_in_use()
 
     @property
     def topic_name(self):
-        with self.handle as h:
-            return _rclpy.rclpy_get_subscription_topic_name(h)
+        with self.handle:
+            return self.__subscription.get_topic_name()
