@@ -520,9 +520,6 @@ class Executor:
             entity_count = NumberOfEntities(
                 len(subscriptions), len(guards), len(timers), len(clients), len(services))
 
-            for waitable in waitables:
-                entity_count += waitable.get_num_entities()
-
             # Construct a wait set
             with _WaitSet() as wait_set, ExitStack() as context_stack:
                 sub_capsules = []
@@ -559,6 +556,13 @@ class Executor:
                         guard_capsules.append(context_stack.enter_context(gc.handle))
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
+
+                for waitable in waitables:
+                    try:
+                        context_stack.enter_context(waitable)
+                        entity_count += waitable.get_num_entities()
+                    except InvalidHandle:
+                        pass
 
                 context_capsule = context_stack.enter_context(self._context.handle)
                 _rclpy.rclpy_wait_set_init(
