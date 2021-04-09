@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import pathlib
+import platform
 import time
 import unittest
 from unittest.mock import Mock
 import warnings
-import platform
 
 import pytest
 
