@@ -81,6 +81,31 @@ create_from_py(py::object pymessage)
     void, destroy_ros_message_function *>(message, destroy_ros_message);
 }
 
+std::unique_ptr<void, destroy_ros_message_function *>
+convert_from_py(py::object pymessage)
+{
+  typedef bool convert_from_py_signature (PyObject *, void *);
+
+  std::unique_ptr<void, destroy_ros_message_function *> message =
+    create_from_py(pymessage);
+
+  py::object pymetaclass = pymessage.attr("__class__");
+
+  auto capsule_ptr = static_cast<void *>(
+    pymetaclass.attr("_CONVERT_FROM_PY").cast<py::capsule>());
+  auto convert =
+    reinterpret_cast<convert_from_py_signature *>(capsule_ptr);
+  if (!convert) {
+    throw py::error_already_set();
+  }
+
+  if (!convert(pymessage.ptr(), message.get())) {
+    py::error_already_set();
+  }
+
+  return message;
+}
+
 py::object
 convert_to_py(void * message, py::object pyclass)
 {

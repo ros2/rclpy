@@ -137,15 +137,10 @@ ActionServer::take_result_request(py::object pymsg_type)
 }
 
 #define SEND_SERVICE_RESPONSE(Type) \
-  destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * raw_ros_response = rclpy_convert_from_py(pyresponse.ptr(), &destroy_ros_message); \
-  if (!raw_ros_response) { \
-    throw py::error_already_set(); \
-  } \
+  auto ros_response = convert_from_py(pyresponse); \
   rcl_ret_t ret = rcl_action_send_ ## Type ## _response( \
-    rcl_action_server_.get(), header, raw_ros_response); \
-  destroy_ros_message(raw_ros_response); \
-  if (ret != RCL_RET_OK) { \
+    rcl_action_server_.get(), header, ros_response.get()); \
+  if (RCL_RET_OK != ret) { \
     throw rclpy::RCLError("Failed to send " #Type " response"); \
   }
 
@@ -179,7 +174,7 @@ ActionServer::send_cancel_response(
 void
 ActionServer::publish_feedback(py::object pymsg)
 {
-  auto ros_message = create_from_py(pymsg);
+  auto ros_message = convert_from_py(pymsg);
   rcl_ret_t ret = rcl_action_publish_feedback(rcl_action_server_.get(), ros_message.get());
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed to publish feedback with an action server");
@@ -215,17 +210,12 @@ ActionServer::notify_goal_done()
 bool
 ActionServer::goal_exists(py::object pygoal_info)
 {
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  rcl_action_goal_info_t * goal_info = static_cast<rcl_action_goal_info_t *>(
-    rclpy_convert_from_py(pygoal_info.ptr(), &destroy_ros_message));
-  if (!goal_info) {
+  auto goal_info = convert_from_py(pygoal_info);
+  rcl_action_goal_info_t * goal_info_type = static_cast<rcl_action_goal_info_t *>(goal_info.get());
+  if (!goal_info_type) {
     throw py::error_already_set();
   }
-
-  auto goal_info_ptr = std::unique_ptr<rcl_action_goal_info_t, decltype(destroy_ros_message)>(
-    goal_info, destroy_ros_message);
-
-  return rcl_action_server_goal_exists(rcl_action_server_.get(), goal_info);
+  return rcl_action_server_goal_exists(rcl_action_server_.get(), goal_info_type);
 }
 
 py::tuple
@@ -302,19 +292,16 @@ py::object
 ActionServer::process_cancel_request(
   py::object pycancel_request, py::object pycancel_response_type)
 {
-  destroy_ros_message_signature * destroy_cancel_request = NULL;
-  rcl_action_cancel_request_t * cancel_request = static_cast<rcl_action_cancel_request_t *>(
-    rclpy_convert_from_py(pycancel_request.ptr(), &destroy_cancel_request));
-  if (!cancel_request) {
+  auto cancel_request = convert_from_py(pycancel_request);
+  rcl_action_cancel_request_t * cancel_request_type = static_cast<rcl_action_cancel_request_t *>(
+    cancel_request.get());
+  if (!cancel_request_type) {
     throw py::error_already_set();
   }
-  auto cancel_request_ptr =
-    std::unique_ptr<rcl_action_cancel_request_t, decltype(destroy_cancel_request)>(
-    cancel_request, destroy_cancel_request);
 
   rcl_action_cancel_response_t cancel_response = rcl_action_get_zero_initialized_cancel_response();
   rcl_ret_t ret = rcl_action_process_cancel_request(
-    rcl_action_server_.get(), cancel_request, &cancel_response);
+    rcl_action_server_.get(), cancel_request_type, &cancel_response);
 
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to process cancel request: "};
@@ -330,14 +317,7 @@ ActionServer::process_cancel_request(
     throw std::runtime_error(error_text);
   }
 
-  PyObject * pycancel_response =
-    rclpy_convert_to_py(&cancel_response.msg, pycancel_response_type.ptr());
-  if (!pycancel_response) {
-    rcl_ret_t ignore = rcl_action_cancel_response_fini(&cancel_response);
-    (void) ignore;
-    throw py::error_already_set();
-  }
-  py::object return_value = py::reinterpret_steal<py::object>(pycancel_response);
+  py::object return_value = convert_to_py(&cancel_response.msg, pycancel_response_type);
 
   ret = rcl_action_cancel_response_fini(&cancel_response);
 
@@ -368,8 +348,8 @@ ActionServer::expire_goals(int64_t max_num_goals)
   py::tuple result_tuple(num_expired);
 
   for (size_t i = 0; i < num_expired; ++i) {
-    result_tuple[i] = py::reinterpret_steal<py::object>(
-      rclpy_convert_to_py(&(expired_goals.get()[i]), pygoal_info_type.ptr()));
+    result_tuple[i] =
+      convert_to_py(&(expired_goals.get()[i]), pygoal_info_type);
   }
 
   return result_tuple;
