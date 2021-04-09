@@ -181,7 +181,7 @@ void Clock::remove_clock_callback(py::object pyjump_handle)
 
 void define_clock(py::object module)
 {
-  py::class_<Clock, Destroyable>(module, "Clock")
+  py::class_<Clock, Destroyable, std::shared_ptr<Clock>>(module, "Clock")
   .def(py::init<rcl_clock_type_t>())
   .def_property_readonly(
     "pointer", [](const Clock & clock) {

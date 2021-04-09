@@ -30,7 +30,7 @@ namespace py = pybind11;
 namespace rclpy
 {
 
-class Timer : public Destroyable
+class Timer : public Destroyable, public std::enable_shared_from_this<Timer>
 {
 public:
   /// Create a timer
@@ -133,8 +133,7 @@ public:
   void destroy() override;
 
 private:
-  // TODO(ahcorde) replace with std::shared_ptr<rcl_clock_t> when rclpy::Clock exists
-  std::shared_ptr<rcl_clock_t> clock_handle_;
+  std::shared_ptr<Clock> clock_handle_;
   std::shared_ptr<rcl_timer_t> rcl_timer_;
 };
 

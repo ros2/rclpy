@@ -15,6 +15,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/domain_id.h>
+#include <rcl_action/rcl_action.h>
 
 #include "action_api.hpp"
 #include "client.hpp"
@@ -56,6 +57,13 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("ROS_TIME", RCL_ROS_TIME)
   .value("SYSTEM_TIME", RCL_SYSTEM_TIME)
   .value("STEADY_TIME", RCL_STEADY_TIME);
+
+  py::enum_<rcl_action_goal_event_t>(m, "GoalEvent")
+  .value("EXECUTE", GOAL_EVENT_EXECUTE)
+  .value("CANCEL_GOAL", GOAL_EVENT_CANCEL_GOAL)
+  .value("SUCCEED", GOAL_EVENT_SUCCEED)
+  .value("ABORT", GOAL_EVENT_ABORT)
+  .value("CANCELED", GOAL_EVENT_CANCELED);
 
   m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
 
@@ -121,24 +129,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
 
   rclpy::define_duration(m);
 
-  m.def(
-    "rclpy_create_publisher", &rclpy::publisher_create,
-    "Create a Publisher");
-  m.def(
-    "rclpy_get_publisher_logger_name", &rclpy::publisher_get_logger_name,
-    "Get the logger name associated with the node of a publisher.");
-  m.def(
-    "rclpy_publisher_get_subscription_count", &rclpy::publisher_get_subscription_count,
-    "Count subscribers from a publisher");
-  m.def(
-    "rclpy_publisher_get_topic_name", &rclpy::publisher_get_topic_name,
-    "Get the resolved name(topic) of publisher");
-  m.def(
-    "rclpy_publish", &rclpy::publisher_publish_message,
-    "Publish a message");
-  m.def(
-    "rclpy_publish_raw", &rclpy::publisher_publish_raw,
-    "Publish a serialized message");
+  rclpy::define_publisher(m);
 
   rclpy::define_service(m);
 
@@ -157,19 +148,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
 
   rclpy::define_timer(m);
 
-  m.def(
-    "rclpy_create_subscription", &rclpy::subscription_create,
-    "Create a Subscription");
-  m.def(
-    "rclpy_get_subscription_logger_name", &rclpy::subscription_get_logger_name,
-    "Get the logger name associated with the node of a subscription");
-  m.def(
-    "rclpy_get_subscription_topic_name", &rclpy::subscription_get_topic_name,
-    "Get the topic name of a subscription");
-  m.def(
-    "rclpy_take", &rclpy::subscription_take_message,
-    "Take a message and its metadata from a subscription");
-
+  rclpy::define_subscription(m);
   rclpy::define_time_point(m);
   rclpy::define_clock(m);
 
@@ -191,6 +170,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_wait_set_add_service", &rclpy::wait_set_add_service,
     "Add a service to the wait set.");
+  m.def(
+    "rclpy_wait_set_add_subscription", &rclpy::wait_set_add_subscription,
+    "Add a subscription to the wait set.");
   m.def(
     "rclpy_wait_set_add_timer", &rclpy::wait_set_add_timer,
     "Add a timer to the wait set.");
