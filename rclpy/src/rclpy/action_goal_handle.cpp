@@ -29,28 +29,9 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-template<typename T>
-T
-get_pointer(py::capsule & capsule, const char * name)
-{
-  if (strcmp(name, capsule.name())) {
-    std::string error_text{"Expected capusle with name '"};
-    error_text += name;
-    error_text += "' but got '";
-    error_text += capsule.name();
-    error_text += "'";
-    throw py::value_error(error_text);
-  }
-  // TODO(sloretz) use get_pointer() in pybind11 2.6+
-  return static_cast<T>(capsule);
-}
-
 ActionGoalHandle::ActionGoalHandle(
-  py::capsule pyaction_server, py::object pygoal_info_msg)
+  rclpy::ActionServer & action_server, py::object pygoal_info_msg)
 {
-  auto action_server = get_pointer<rcl_action_server_t *>(
-    pyaction_server, "rcl_action_server_t");
-
   destroy_ros_message_signature * destroy_ros_message = NULL;
   auto goal_info_msg = static_cast<rcl_action_goal_info_t *>(
     rclpy_convert_from_py(pygoal_info_msg.ptr(), &destroy_ros_message));
@@ -62,7 +43,8 @@ ActionGoalHandle::ActionGoalHandle(
   auto goal_info_msg_ptr = std::unique_ptr<rcl_action_goal_info_t, decltype(destroy_ros_message)>(
     goal_info_msg, destroy_ros_message);
 
-  auto rcl_handle = rcl_action_accept_new_goal(action_server, goal_info_msg);
+  auto rcl_handle = rcl_action_accept_new_goal(
+    action_server.rcl_ptr(), goal_info_msg);
   if (!rcl_handle) {
     throw rclpy::RCLError("Failed to accept new goal");
   }
@@ -117,9 +99,8 @@ void
 define_action_goal_handle(py::module module)
 {
   py::class_<ActionGoalHandle, Destroyable, std::shared_ptr<ActionGoalHandle>>(
-    module,
-    "ActionGoalHandle")
-  .def(py::init<py::capsule, py::object>())
+    module, "ActionGoalHandle")
+  .def(py::init<rclpy::ActionServer &, py::object>())
   .def_property_readonly(
     "pointer", [](const ActionGoalHandle & handle) {
       return reinterpret_cast<size_t>(handle.rcl_ptr());
