@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import platform
 import time
 import unittest
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
 import rclpy.executors
+from rclpy.utilities import get_rmw_implementation_identifier
 
 # TODO(sloretz) Reduce fudge once wait_for_service uses node graph events
 TIME_FUDGE = 0.3
@@ -89,6 +91,9 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
+    @unittest.skipIf(
+        get_rmw_implementation_identifier() == 'rmw_connextdds' and platform.system() == 'Windows',
+        reason='Source timestamp not implemented for Connext on Windows')
     def test_service_timestamps(self):
         cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(
