@@ -43,6 +43,9 @@ class CancelResponse(Enum):
     ACCEPT = 2
 
 
+GoalEvent = _rclpy.GoalEvent
+
+
 class ServerGoalHandle:
     """Goal handle for working with Action Servers."""
 
