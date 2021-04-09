@@ -900,12 +900,6 @@ rclpy_action_take_status(py::capsule pyaction_client, py::object pymsg_type)
   TAKE_MESSAGE(status)
 }
 
-rclpy::ActionGoalHandle
-rclpy_action_accept_new_goal(py::capsule pyaction_server, py::object pygoal_info_msg)
-{
-  return rclpy::ActionGoalHandle(pyaction_server, pygoal_info_msg);
-}
-
 void
 rclpy_action_notify_goal_done(py::capsule pyaction_server)
 {
@@ -1177,9 +1171,6 @@ define_action_api(py::module m)
   m.def(
     "rclpy_action_take_status", &rclpy_action_take_status,
     "Take a status message.");
-  m.def(
-    "rclpy_action_accept_new_goal", &rclpy_action_accept_new_goal,
-    "Accept a new goal using an action server.");
   m.def(
     "rclpy_action_notify_goal_done", &rclpy_action_notify_goal_done,
     "Notify and action server that a goal has reached a terminal state.");
