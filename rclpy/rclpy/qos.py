@@ -485,7 +485,7 @@ def qos_check_compatible(publisher_qos: QoSProfile, subscription_qos: QoSProfile
 
     If any policies have value "system default" or "unknown" then it is possible that
     compatibility cannot be determined.
-    In this case, the value QoSCompatility.WARNING is set as part of
+    In this case, the value QoSCompatibility.WARNING is set as part of
     the returned structure.
     """
     result = _rclpy.rclpy_qos_check_compatible(
