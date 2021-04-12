@@ -129,15 +129,10 @@ ActionClient::take_goal_response(py::object pymsg_type)
 }
 
 #define SEND_SERVICE_REQUEST(Type) \
-  destroy_ros_message_signature * destroy_ros_message = NULL; \
-  void * raw_ros_request = rclpy_convert_from_py(pyrequest.ptr(), &destroy_ros_message); \
-  if (!raw_ros_request) { \
-    throw py::error_already_set(); \
-  } \
+  auto ros_request = convert_from_py(pyrequest); \
   int64_t sequence_number; \
   rcl_ret_t ret = rcl_action_send_ ## Type ## _request( \
-    rcl_action_client_.get(), raw_ros_request, &sequence_number); \
-  destroy_ros_message(raw_ros_request); \
+    rcl_action_client_.get(), ros_request.get(), &sequence_number); \
   if (RCL_RET_OK != ret) { \
     throw rclpy::RCLError("Failed to send " #Type " request"); \
   } \
