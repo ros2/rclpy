@@ -49,6 +49,16 @@ convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_type
 std::unique_ptr<void, destroy_ros_message_function *>
 create_from_py(py::object pyclass);
 
+/// Convert a ROS message from a Python type to a C type.
+/**
+ * Raises AttributeError if the Python message type is missing a required attribute.
+ *
+ * \param[in] pyclass ROS message Python type to extract data from.
+ * \return unique pointer with the C version of the input ROS message.
+ */
+std::unique_ptr<void, destroy_ros_message_function *>
+convert_from_py(py::object pyclass);
+
 /// Convert a ROS message from a C type to a Python type.
 /**
  * Raises AttributeError if \p pyclass is missing a required attribute.
