@@ -65,6 +65,6 @@ class TestMessages(unittest.TestCase):
     def test_serialized_publish(self):
         msg = Strings()
         msg.string_value = 'ñu'
-        pub = self.node.create_publisher(BasicTypes, 'chatter', 1)
+        pub = self.node.create_publisher(Strings, 'chatter', 1)
         pub.publish(serialize_message(msg))
         self.node.destroy_publisher(pub)

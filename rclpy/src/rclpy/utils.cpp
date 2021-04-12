@@ -100,7 +100,7 @@ convert_from_py(py::object pymessage)
   }
 
   if (!convert(pymessage.ptr(), message.get())) {
-    py::error_already_set();
+    throw py::error_already_set();
   }
 
   return message;
