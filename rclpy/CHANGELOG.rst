@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.8.1 (2021-04-12)
+------------------
 * typo fix. (`#768 <https://github.com/ros2/rclpy/issues/768>`_)
 * Restore exceptions for Connext and message timestamps on Windows (`#765 <https://github.com/ros2/rclpy/issues/765>`_)
 * Use correct type when creating test publisher (`#764 <https://github.com/ros2/rclpy/issues/764>`_)
