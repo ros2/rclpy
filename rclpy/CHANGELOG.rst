@@ -2,6 +2,16 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* typo fix. (`#768 <https://github.com/ros2/rclpy/issues/768>`_)
+* Restore exceptions for Connext and message timestamps on Windows (`#765 <https://github.com/ros2/rclpy/issues/765>`_)
+* Use correct type when creating test publisher (`#764 <https://github.com/ros2/rclpy/issues/764>`_)
+* Add a test for destroy_node while spinning (`#663 <https://github.com/ros2/rclpy/issues/663>`_)
+* Add __enter_\_ and __exit_\_ to Waitable (`#761 <https://github.com/ros2/rclpy/issues/761>`_)
+* Check if shutdown callback weak method is valid before calling it (`#754 <https://github.com/ros2/rclpy/issues/754>`_)
+* Contributors: Andrea Sorbini, Ivan Santiago Paunovic, Scott K Logan, Shane Loretz, Tomoya Fujita
+
 1.8.0 (2021-04-06)
 ------------------
 * Change index.ros.org -> docs.ros.org. (`#755 <https://github.com/ros2/rclpy/issues/755>`_)
