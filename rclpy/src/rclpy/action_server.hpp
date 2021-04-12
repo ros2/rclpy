@@ -29,21 +29,22 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/*
+  * This class will create an action server for the given action name.
+  * This client will use the typesupport defined in the action module
+  * provided as pyaction_type to send messages.
+  */
 class ActionServer : public Destroyable, public std::enable_shared_from_this<ActionServer>
 {
 public:
-  /// Create an action client.
+  /// Create an action server.
   /**
-   * This function will create an action client for the given action name.
-   * This client will use the typesupport defined in the action module
-   * provided as pyaction_type to send messages over the wire.
-   *
    * Raises AttributeError if action type is invalid
    * Raises ValueError if action name is invalid
    * Raises RuntimeError if the action server could not be created.
    *
-   * \remark Call rclpy_action_destroy_entity() to destroy an action server.
    * \param[in] pynode Capsule pointing to the node to add the action server to.
+   * \param[in] rclpy_clock Clock use to create the action server.
    * \param[in] pyaction_type Action module associated with the action server.
    * \param[in] pyaction_name Python object containing the action name.
    * \param[in] goal_service_qos rmw_qos_profile_t object for the goal service.
@@ -51,8 +52,6 @@ public:
    * \param[in] cancel_service_qos rmw_qos_profile_t object for the cancel service.
    * \param[in] feedback_qos rmw_qos_profile_t object for the feedback subscriber.
    * \param[in] status_qos rmw_qos_profile_t object for the status subscriber.
-   * \return Capsule named 'rcl_action_server_t', or
-   * \return NULL on failure.
    */
   ActionServer(
     py::capsule pynode,
@@ -68,27 +67,25 @@ public:
 
   /// Take an action goal request.
   /**
-   * Raises AttributeError if there is an issue parsing the pygoal_request_type.
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
-   * \param[in] pygoal_request_type An instance of the type of request message to take.
+   * \param[in] pymsg_type An instance of the type of request message to take.
    * \return 2-tuple (header, received request message) where the header is an
    *   "rclpy.rmw_request_id_t" type, or
    * \return 2-tuple (None, None) if there as no message to take, or
-   * \return (None, None) if there is a failure.
+   * \return (None, None) if there is a failure in the rcl API call.
    */
   py::tuple
   take_goal_request(py::object pymsg_type);
 
   /// Send an action goal response.
   /**
-   * Raises AttributeError if there is an issue parsing the pygoal_response.
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
    * \param[in] header Pointer to the message header.
-   * \param[in] pygoal_response The response message to send.
-   * \return None
-   * \return NULL if there is a failure.
+   * \param[in] pyresponse The response message to send.
    */
   void
   send_goal_response(
@@ -96,13 +93,11 @@ public:
 
   /// Send an action result response.
   /**
-   * Raises AttributeError if there is an issue parsing the pyresult_response.
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
    * \param[in] pyheader Pointer to the message header.
-   * \param[in] pyresult_response The response message to send.
-   * \return None
-   * \return NULL if there is a failure.
+   * \param[in] pyresponse The response message to send.
    */
   void
   send_result_response(
@@ -110,10 +105,10 @@ public:
 
   /// Take an action cancel request.
   /**
-   * Raises AttributeError if there is an issue parsing the pycancel_request_type.
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
-   * \param[in] pycancel_request_type An instance of the type of request message to take.
+   * \param[in] pymsg_type An instance of the type of request message to take.
    * \return 2-tuple (header, received request message) where the header is an
    *   "rmw_request_id_t" type, or
    * \return 2-tuple (None, None) if there as no message to take, or
@@ -124,10 +119,10 @@ public:
 
   /// Take an action result request.
   /**
-   * Raises AttributeError if there is an issue parsing the pyresult_request_type.
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
-   * \param[in] pyresult_request_type An instance of the type of request message to take.
+   * \param[in] pymsg_type An instance of the type of request message to take.
    * \return 2-tuple (header, received request message) where the header is an
    *   "rclpy.rmw_request_id_t" type, or
    * \return 2-tuple (None, None) if there as no message to take, or
@@ -138,13 +133,11 @@ public:
 
   /// Send an action cancel response.
   /**
-   * Raises AttributeError if there is an issue parsing the pycancel_response.
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
    * \param[in] pyheader Pointer to the message header.
-   * \param[in] pycancel_response The response message to send.
-   * \return sequence_number PyLong object representing the index of the sent response, or
-   * \return NULL if there is a failure.
+   * \param[in] pyresponse The response message to send.
    */
   void
   send_cancel_response(
@@ -152,39 +145,61 @@ public:
 
   /// Publish a feedback message from a given action server.
   /**
-   * Raises AttributeError if there is an issue parsing the pyfeedback_msg.
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure while publishing a feedback message.
    *
-   * \param[in] pyfeedback_msg The feedback message to publish.
-   * \return None
+   * \param[in] pymsg The feedback message to publish.
    */
   void
   publish_feedback(py::object pymsg);
 
   /// Publish a status message from a given action server.
   /**
+   * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure while publishing a status message.
-   *
-   * \return None
    */
   void
   publish_status();
 
+  /// Notifies action server that a goal handle reached a terminal state.
+  /**
+   * Raises RCLError if an error occurs in rcl
+   */
   void
   notify_goal_done();
 
+  /// Check if a goal is already being tracked by an action server.
+  /*
+   * Raises AttributeError if there is an issue parsing the pygoal_info.
+   *
+   * \param[in] pygoal_info the identifiers of goals that expired, or set to `NULL` if unused
+   * \return True if the goal exists, false otherwise.
+   */
   bool
   goal_exists(py::object pygoal_info);
 
+  /// Process a cancel request using an action server.
+  /**
+   * This is a non-blocking call.
+   *
+   * Raises AttributeError if there is an issue parsing the pygoal_info.
+   * Raises RuntimeError on failure while publishing a status message.
+   * Raises RCLError if an error occurs in rcl
+   *
+   * \return the cancel response message
+   */
   py::object
   process_cancel_request(
     py::object pycancel_request, py::object pycancel_response_type);
 
+  /// Expires goals associated with an action server.
   py::tuple
   expire_goals(int64_t max_num_goals);
 
   /// Get the number of wait set entities that make up an action entity.
   /**
+   * Raises RCLError if an error occurs in rcl
+   *
    * \return Tuple containing the number of wait set entities:
    *   (num_subscriptions,
    *    num_guard_conditions,
@@ -199,6 +214,7 @@ public:
   /**
    * This must be called after waiting on the wait set.
    * Raises RuntimeError on failure.
+   * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pywait_set Capsule pointing to the wait set structure.
    * \return A tuple of Bool representing the ready sub-entities.
@@ -213,8 +229,8 @@ public:
   /// Add an action entitiy to a wait set.
   /**
    * Raises RuntimeError on failure.
-   * \param[in] pyentity Capsule pointer to an action entity
-   *   (rcl_action_client_t or rcl_action_server_t).
+   * Raises RCLError if an error occurs in rcl
+   *
    * \param[in] pywait_set Capsule pointer to an rcl_wait_set_t.
    */
   void
