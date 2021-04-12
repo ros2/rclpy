@@ -120,7 +120,7 @@ ActionClient::ActionClient(
   } else if (RCL_RET_OK != ret) { \
     throw rclpy::RCLError("Failed to take " #Type); \
   } \
-  return py::make_tuple(py::int_(sequence), convert_to_py(taken_msg.get(), pymsg_type)); \
+  return py::make_tuple(sequence, convert_to_py(taken_msg.get(), pymsg_type)); \
 
 py::tuple
 ActionClient::take_goal_response(py::object pymsg_type)
@@ -215,8 +215,8 @@ ActionClient::get_num_entities()
   }
 
   return py::make_tuple(
-    py::int_(num_subscriptions), py::int_(num_guard_conditions), py::int_(num_timers),
-    py::int_(num_clients), py::int_(num_services));
+    num_subscriptions, num_guard_conditions, num_timers,
+    num_clients, num_services);
 }
 
 bool
