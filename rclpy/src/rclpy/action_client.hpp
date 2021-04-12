@@ -28,15 +28,16 @@ namespace py = pybind11;
 
 namespace rclpy
 {
+/**
+ * This class will create an action client for the given action name.
+ * This client will use the typesupport defined in the action module
+ * provided as pyaction_type to send messages.
+ */
 class ActionClient : public Destroyable, public std::enable_shared_from_this<ActionClient>
 {
 public:
   /// Create an action client.
-  /**
-   * This function will create an action client for the given action name.
-   * This client will use the typesupport defined in the action module
-   * provided as pyaction_type to send messages over the wire.
-   *
+  /*
    * Raises ValueError if action name is invalid
    * Raises RuntimeError if the action client could not be created.
    *
@@ -68,7 +69,7 @@ public:
    * \param[in] pygoal_response_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
-   * \return (None, None) if there is a failure.
+   * \return (None, None) if there is a failure in the rcl API call.
    */
   py::tuple
   take_goal_response(py::object pymsg_type);
@@ -80,7 +81,7 @@ public:
    * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pyresult_request The request message to send.
-   * \return sequence_number PyLong object representing the index of the sent request
+   * \return sequence_number the index of the sent request
    */
   int64_t
   send_result_request(py::object pyrequest);
@@ -94,7 +95,7 @@ public:
    * \param[in] pycancel_response_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
-   * \return (None, None) if there is a failure.
+   * \return (None, None) if there is a failure in the rcl API call.
    */
   py::tuple
   take_cancel_response(py::object pymsg_type);
@@ -106,7 +107,7 @@ public:
    * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pycancel_request The request message to send.
-   * \return sequence_number PyLong object representing the index of the sent request
+   * \return sequence_number the index of the sent request
    */
   int64_t
   send_cancel_request(py::object pyrequest);
@@ -121,7 +122,7 @@ public:
    * \param[in] pyfeedback_type Instance of the feedback message type to take.
    * \return Python message with all fields populated with received message, or
    * \return None if there is nothing to take, or
-   * \return None if there is a failure.
+   * \return None if there is a failure in the rcl API call.
    */
   py::object
   take_feedback(py::object pymsg_type);
@@ -136,7 +137,7 @@ public:
    * \param[in] pystatus_type Instance of the status message type to take.
    * \return Python message with all fields populated with received message, or
    * \return None if there is nothing to take, or
-   * \return None if there is a failure.
+   * \return None if there is a failure in the rcl API call.
    */
   py::object
   take_status(py::object pymsg_type);
@@ -162,7 +163,7 @@ public:
    * \param[in] pyresult_response_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
-   * \return (None, None) if there is a failure.
+   * \return (None, None) if there is a failure in the rcl API call.
    */
   py::tuple
   take_result_response(py::object pymsg_type);
@@ -194,7 +195,7 @@ public:
    * Raises RuntimeError on failure.
    *
    * \param[in] pywait_set Capsule pointing to the wait set structure.
-   * \return A tuple of Bool representing the ready sub-entities.
+   * \return A tuple of booleans representing the sub-entities ready:
    *       (is_feedback_ready,
    *        is_status_ready,
    *        is_goal_response_ready,
