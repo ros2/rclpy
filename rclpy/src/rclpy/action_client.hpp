@@ -38,7 +38,7 @@ class ActionClient : public Destroyable, public std::enable_shared_from_this<Act
 public:
   /// Create an action client.
   /*
-   * Raises ValueError if action name is invalid
+   * Raises ValueError if action name is invalid.
    * Raises RuntimeError if the action client could not be created.
    *
    * \param[in] pynode Capsule pointing to the node to add the action client to.

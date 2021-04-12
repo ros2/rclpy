@@ -319,12 +319,12 @@ define_action_client(py::object module)
     "Check if an action server is available for the given action client.")
   .def(
     "add_to_waitset", &ActionClient::add_to_waitset,
-    "Check if an action server is available for the given action client.")
+    "Add an action entity to a wait set.")
   .def(
     "is_ready", &ActionClient::is_ready,
     "Check if an action entity has any ready wait set entities.")
   .def(
     "take_status", &ActionClient::take_status,
-    "Add an action entitiy to a wait set.");
+    "Take an action status response.");
 }
 }  // namespace rclpy
