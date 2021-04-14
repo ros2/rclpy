@@ -16,6 +16,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcpputils/scope_exit.hpp>
 
 #include <memory>
 #include <string>
@@ -212,9 +213,6 @@ ActionServer::goal_exists(py::object pygoal_info)
 {
   auto goal_info = convert_from_py(pygoal_info);
   rcl_action_goal_info_t * goal_info_type = static_cast<rcl_action_goal_info_t *>(goal_info.get());
-  if (!goal_info_type) {
-    throw py::error_already_set();
-  }
   return rcl_action_server_goal_exists(rcl_action_server_.get(), goal_info_type);
 }
 
@@ -283,8 +281,7 @@ ActionServer::add_to_waitset(py::capsule pywait_set)
   auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
   rcl_ret_t ret = rcl_action_wait_set_add_action_server(wait_set, rcl_action_server_.get(), NULL);
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to add 'rcl_action_server_t' to wait set"};
-    throw rclpy::RCLError(error_text);
+    throw rclpy::RCLError("Failed to add 'rcl_action_server_t' to wait set");
   }
 }
 
@@ -293,15 +290,12 @@ ActionServer::process_cancel_request(
   py::object pycancel_request, py::object pycancel_response_type)
 {
   auto cancel_request = convert_from_py(pycancel_request);
-  rcl_action_cancel_request_t * cancel_request_type = static_cast<rcl_action_cancel_request_t *>(
+  rcl_action_cancel_request_t * cancel_request_tmp = static_cast<rcl_action_cancel_request_t *>(
     cancel_request.get());
-  if (!cancel_request_type) {
-    throw py::error_already_set();
-  }
 
   rcl_action_cancel_response_t cancel_response = rcl_action_get_zero_initialized_cancel_response();
   rcl_ret_t ret = rcl_action_process_cancel_request(
-    rcl_action_server_.get(), cancel_request_type, &cancel_response);
+    rcl_action_server_.get(), cancel_request_tmp, &cancel_response);
 
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to process cancel request: "};
@@ -318,12 +312,14 @@ ActionServer::process_cancel_request(
   }
 
   py::object return_value = convert_to_py(&cancel_response.msg, pycancel_response_type);
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      ret = rcl_action_cancel_response_fini(&cancel_response);
 
-  ret = rcl_action_cancel_response_fini(&cancel_response);
-
-  if (RCL_RET_OK != ret) {
-    throw rclpy::RCLError("Failed to finalize cancel response");
-  }
+      if (RCL_RET_OK != ret) {
+        throw rclpy::RCLError("Failed to finalize cancel response");
+      }
+    });
   return return_value;
 }
 

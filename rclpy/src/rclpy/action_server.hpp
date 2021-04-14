@@ -73,8 +73,7 @@ public:
    * \param[in] pymsg_type An instance of the type of request message to take.
    * \return 2-tuple (header, received request message) where the header is an
    *   "rclpy.rmw_request_id_t" type, or
-   * \return 2-tuple (None, None) if there as no message to take, or
-   * \return (None, None) if there is a failure in the rcl API call.
+   * \return 2-tuple (None, None) if there as no message to take
    */
   py::tuple
   take_goal_request(py::object pymsg_type);
@@ -111,8 +110,7 @@ public:
    * \param[in] pymsg_type An instance of the type of request message to take.
    * \return 2-tuple (header, received request message) where the header is an
    *   "rmw_request_id_t" type, or
-   * \return 2-tuple (None, None) if there as no message to take, or
-   * \return (None, None) if there is a failure.
+   * \return 2-tuple (None, None) if there as no message to take
    */
   py::tuple
   take_cancel_request(py::object pymsg_type);
@@ -125,8 +123,7 @@ public:
    * \param[in] pymsg_type An instance of the type of request message to take.
    * \return 2-tuple (header, received request message) where the header is an
    *   "rclpy.rmw_request_id_t" type, or
-   * \return 2-tuple (None, None) if there as no message to take, or
-   * \return (None, None) if there is a failure.
+   * \return 2-tuple (None, None) if there as no message to take
    */
   py::tuple
   take_result_request(py::object pymsg_type);
@@ -182,7 +179,6 @@ public:
   /**
    * This is a non-blocking call.
    *
-   * Raises AttributeError if there is an issue parsing the pygoal_info.
    * Raises RuntimeError on failure while publishing a status message.
    * Raises RCLError if an error occurs in rcl
    *
@@ -217,7 +213,7 @@ public:
    * Raises RCLError if an error occurs in rcl
    *
    * \param[in] pywait_set Capsule pointing to the wait set structure.
-   * \return A tuple of Bool representing the ready sub-entities.
+   * \return A tuple of booleans representing ready sub-entities.
    *       (is_goal_request_ready,
    *        is_cancel_request_ready,
    *        is_result_request_ready,
