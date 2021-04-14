@@ -234,12 +234,12 @@ ActionClient::is_action_server_available()
 }
 
 void
-ActionClient::add_to_waitset(py::capsule pywait_set)
+ActionClient::add_to_waitset(WaitSet & _wait_set)
 {
-  auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
+  auto wait_set = _wait_set.shared_from_this();
 
   rcl_ret_t ret = rcl_action_wait_set_add_action_client(
-    wait_set, rcl_action_client_.get(), NULL, NULL);
+    wait_set->rcl_ptr(), rcl_action_client_.get(), NULL, NULL);
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to add 'rcl_action_client_t' to wait set"};
     throw rclpy::RCLError(error_text);
@@ -247,9 +247,9 @@ ActionClient::add_to_waitset(py::capsule pywait_set)
 }
 
 py::tuple
-ActionClient::is_ready(py::capsule pywait_set)
+ActionClient::is_ready(WaitSet & _wait_set)
 {
-  auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
+  auto wait_set = _wait_set.shared_from_this();
 
   bool is_feedback_ready = false;
   bool is_status_ready = false;
@@ -257,7 +257,7 @@ ActionClient::is_ready(py::capsule pywait_set)
   bool is_cancel_response_ready = false;
   bool is_result_response_ready = false;
   rcl_ret_t ret = rcl_action_client_wait_set_get_entities_ready(
-    wait_set,
+    wait_set->rcl_ptr(),
     rcl_action_client_.get(),
     &is_feedback_ready,
     &is_status_ready,

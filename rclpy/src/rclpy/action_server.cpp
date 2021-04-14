@@ -248,15 +248,15 @@ ActionServer::get_num_entities()
 }
 
 py::tuple
-ActionServer::is_ready(py::capsule pywait_set)
+ActionServer::is_ready(WaitSet & _wait_set)
 {
-  auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
+  auto wait_set = _wait_set.shared_from_this();
   bool is_goal_request_ready = false;
   bool is_cancel_request_ready = false;
   bool is_result_request_ready = false;
   bool is_goal_expired = false;
   rcl_ret_t ret = rcl_action_server_wait_set_get_entities_ready(
-    wait_set,
+    wait_set->rcl_ptr(),
     rcl_action_server_.get(),
     &is_goal_request_ready,
     &is_cancel_request_ready,
@@ -276,10 +276,11 @@ ActionServer::is_ready(py::capsule pywait_set)
 }
 
 void
-ActionServer::add_to_waitset(py::capsule pywait_set)
+ActionServer::add_to_waitset(WaitSet & _wait_set)
 {
-  auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
-  rcl_ret_t ret = rcl_action_wait_set_add_action_server(wait_set, rcl_action_server_.get(), NULL);
+  auto wait_set = _wait_set.shared_from_this();
+  rcl_ret_t ret = rcl_action_wait_set_add_action_server(
+    wait_set->rcl_ptr(), rcl_action_server_.get(), NULL);
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed to add 'rcl_action_server_t' to wait set");
   }

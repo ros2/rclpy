@@ -24,6 +24,7 @@
 #include "clock.hpp"
 #include "destroyable.hpp"
 #include "handle.hpp"
+#include "wait_set.hpp"
 
 namespace py = pybind11;
 
@@ -220,7 +221,7 @@ public:
    *        is_goal_expired)
    */
   py::tuple
-  is_ready(py::capsule pywait_set);
+  is_ready(WaitSet & wait_set);
 
   /// Add an action entitiy to a wait set.
   /**
@@ -230,7 +231,7 @@ public:
    * \param[in] pywait_set Capsule pointer to an rcl_wait_set_t.
    */
   void
-  add_to_waitset(py::capsule pywait_set);
+  add_to_waitset(WaitSet & wait_set);
 
   /// Get rcl_client_t pointer
   rcl_action_server_t *
