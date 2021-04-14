@@ -21,6 +21,7 @@
 
 #include <memory>
 
+#include "action_server.hpp"
 #include "destroyable.hpp"
 #include "handle.hpp"
 
@@ -28,7 +29,10 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-class ActionGoalHandle : public Destroyable
+
+class ActionServer;
+
+class ActionGoalHandle : public Destroyable, public std::enable_shared_from_this<ActionGoalHandle>
 {
 public:
   /// Create an action goal handle
@@ -42,7 +46,7 @@ public:
    * \param[in] pyaction_server handle to the action server that is accepting the goal
    * \param[in] pygoal_info_msg a message containing info about the goal being accepted
    */
-  ActionGoalHandle(py::capsule pyaction_server, py::object pygoal_info_msg);
+  ActionGoalHandle(rclpy::ActionServer & action_server, py::object pygoal_info_msg);
 
   ~ActionGoalHandle() = default;
 
