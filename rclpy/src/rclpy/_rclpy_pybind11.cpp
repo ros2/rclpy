@@ -151,43 +151,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_subscription(m);
   rclpy::define_time_point(m);
   rclpy::define_clock(m);
-
-  m.def(
-    "rclpy_get_zero_initialized_wait_set", &rclpy::get_zero_initialized_wait_set,
-    "rclpy_get_zero_initialized_wait_set.");
-  m.def(
-    "rclpy_wait_set_init", &rclpy::wait_set_init,
-    "rclpy_wait_set_init.");
-  m.def(
-    "rclpy_wait_set_clear_entities", &rclpy::wait_set_clear_entities,
-    "rclpy_wait_set_clear_entities.");
-  m.def(
-    "rclpy_wait_set_add_entity", &rclpy::wait_set_add_entity,
-    "rclpy_wait_set_add_entity.");
-  m.def(
-    "rclpy_wait_set_add_client", &rclpy::wait_set_add_client,
-    "Add a client to the wait set.");
-  m.def(
-    "rclpy_wait_set_add_service", &rclpy::wait_set_add_service,
-    "Add a service to the wait set.");
-  m.def(
-    "rclpy_wait_set_add_subscription", &rclpy::wait_set_add_subscription,
-    "Add a subscription to the wait set.");
-  m.def(
-    "rclpy_wait_set_add_timer", &rclpy::wait_set_add_timer,
-    "Add a timer to the wait set.");
-  m.def(
-    "rclpy_wait_set_add_event", &rclpy::wait_set_add_event,
-    "Add an event to the wait set.");
-  m.def(
-    "rclpy_wait_set_is_ready", &rclpy::wait_set_is_ready,
-    "rclpy_wait_set_is_ready.");
-  m.def(
-    "rclpy_get_ready_entities", &rclpy::get_ready_entities,
-    "List non null entities in wait set.");
-  m.def(
-    "rclpy_wait", &rclpy::wait,
-    "rclpy_wait.");
+  rclpy::define_waitset(m);
 
   m.def(
     "rclpy_expand_topic_name", &rclpy::expand_topic_name,
