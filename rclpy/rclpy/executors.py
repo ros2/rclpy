@@ -541,10 +541,11 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_timers -= 1
 
-                guard_capsules = []
+                guard_handles = []
                 for gc in guards:
                     try:
-                        guard_capsules.append(context_stack.enter_context(gc.handle))
+                        context_stack.enter_context(gc.handle)
+                        guard_handles.append(gc.handle)
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
 
@@ -575,8 +576,8 @@ class Executor:
                     _rclpy.rclpy_wait_set_add_service(wait_set, srv_capsule)
                 for tmr_handle in timer_handles:
                     _rclpy.rclpy_wait_set_add_timer(wait_set, tmr_handle)
-                for gc_capsule in guard_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, gc_capsule)
+                for gc_handle in guard_handles:
+                    _rclpy.rclpy_wait_set_add_guard_condition(wait_set, gc_handle)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 

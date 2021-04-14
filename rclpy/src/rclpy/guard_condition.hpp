@@ -17,31 +17,50 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/guard_condition.h>
+
+#include <memory>
+
+#include "destroyable.hpp"
+#include "rclpy_common/exceptions.hpp"
+#include "utils.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
 {
 /// Create a general purpose guard condition
-/**
- * A successful call will return a Capsule with the pointer of the created
- * rcl_guard_condition_t * structure
- *
- * Raises RuntimeError if initializing the guard condition fails
- *
- * \return a guard condition capsule
- */
-py::capsule
-guard_condition_create(py::capsule pycontext);
+class GuardCondition : public Destroyable, public std::enable_shared_from_this<GuardCondition>
+{
+public:
+  /**
+   * Raises RuntimeError if initializing the guard condition fails
+   */
+  explicit GuardCondition(py::capsule pycontext);
 
-/// Trigger a general purpose guard condition
-/**
- * Raises ValueError if pygc is not a guard condition capsule
- * Raises RCLError if the guard condition could not be triggered
- *
- * \param[in] pygc Capsule pointing to guard condtition
- */
-void
-guard_condition_trigger(py::capsule pygc);
+  /// Trigger a general purpose guard condition
+  /**
+   * Raises ValueError if pygc is not a guard condition capsule
+   * Raises RCLError if the guard condition could not be triggered
+   */
+  void
+  trigger_guard_condition();
+
+  /// Get rcl_client_t pointer
+  rcl_guard_condition_t * rcl_ptr() const
+  {
+    return rcl_guard_condition_.get();
+  }
+
+  /// Force an early destruction of this object
+  void destroy() override;
+
+private:
+  std::shared_ptr<rcl_guard_condition_t> rcl_guard_condition_;
+};
+
+/// Define a pybind11 wrapper for an rclpy::Service
+void define_guard_condition(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__GUARD_CONDITION_HPP_

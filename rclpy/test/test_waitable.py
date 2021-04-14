@@ -220,7 +220,7 @@ class GuardConditionWaitable(Waitable):
         super().__init__(ReentrantCallbackGroup())
 
         with node.context.handle as context_capsule:
-            self.guard_condition = _rclpy.rclpy_create_guard_condition(context_capsule)
+            self.guard_condition = _rclpy.GuardCondition(context_capsule)
         self.guard_condition_index = None
         self.guard_is_ready = False
 
@@ -253,8 +253,8 @@ class GuardConditionWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.guard_condition_index = _rclpy.rclpy_wait_set_add_entity(
-            'guard_condition', wait_set, self.guard_condition)
+        self.guard_condition_index = _rclpy.rclpy_wait_set_add_guard_condition(
+            wait_set, self.guard_condition)
 
 
 class MutuallyExclusiveWaitable(Waitable):
@@ -369,7 +369,7 @@ class TestWaitable(unittest.TestCase):
         self.node.add_waitable(self.waitable)
 
         thr = self.start_spin_thread(self.waitable)
-        _rclpy.rclpy_trigger_guard_condition(self.waitable.guard_condition)
+        self.waitable.guard_condition.trigger_guard_condition()
         thr.join()
 
         assert self.waitable.future.done()

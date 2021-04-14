@@ -183,6 +183,22 @@ wait_set_add_subscription(const py::capsule pywait_set, const Subscription & sub
 }
 
 size_t
+wait_set_add_guard_condition(const py::capsule pywait_set, const GuardCondition & gc)
+{
+  if (0 != std::strcmp("rcl_wait_set_t", pywait_set.name())) {
+    throw py::value_error("capsule is not an rcl_wait_set_t");
+  }
+  auto wait_set = static_cast<rcl_wait_set_t *>(pywait_set);
+
+  size_t index;
+  rcl_ret_t ret = rcl_wait_set_add_guard_condition(wait_set, gc.rcl_ptr(), &index);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to add guard condition to wait set");
+  }
+  return index;
+}
+
+size_t
 wait_set_add_timer(const py::capsule pywait_set, const Timer & timer)
 {
   if (0 != std::strcmp("rcl_wait_set_t", pywait_set.name())) {

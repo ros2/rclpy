@@ -21,6 +21,7 @@
 #include <string>
 
 #include "client.hpp"
+#include "guard_condition.hpp"
 #include "qos_event.hpp"
 #include "service.hpp"
 #include "subscription.hpp"
@@ -112,6 +113,17 @@ wait_set_add_subscription(const py::capsule pywait_set, const Subscription & sub
  */
 size_t
 wait_set_add_client(const py::capsule pywait_set, const Client & client);
+
+/// Add a timer to the wait set structure
+/**
+ * Raises RCLError if any lower level error occurs
+ *
+ * \param[in] pywait_set Capsule pointing to the wait set structure
+ * \param[in] gc a guard condition to add to the wait set
+ * \return Index in waitset entity was added at
+ */
+size_t
+wait_set_add_guard_condition(const py::capsule pywait_set, const GuardCondition & gc);
 
 /// Add a timer to the wait set structure
 /**
