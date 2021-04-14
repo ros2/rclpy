@@ -87,7 +87,7 @@ class QoSEventHandler(Waitable):
         """Return True if entities are ready in the wait set."""
         if self._event_index is None:
             return False
-        if _rclpy.rclpy_wait_set_is_ready('event', wait_set, self._event_index):
+        if wait_set.is_ready('event', self._event_index):
             self._ready_to_take_data = True
         return self._ready_to_take_data
 
@@ -112,7 +112,7 @@ class QoSEventHandler(Waitable):
     def add_to_wait_set(self, wait_set):
         """Add entites to wait set."""
         with self.__event:
-            self._event_index = _rclpy.rclpy_wait_set_add_event(wait_set, self.__event)
+            self._event_index = wait_set.add_event(self.__event)
 
     def __enter__(self):
         """Mark event as in-use to prevent destruction while waiting on it."""

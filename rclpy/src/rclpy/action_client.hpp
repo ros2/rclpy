@@ -23,6 +23,7 @@
 
 #include "destroyable.hpp"
 #include "handle.hpp"
+#include "wait_set.hpp"
 
 namespace py = pybind11;
 
@@ -194,7 +195,7 @@ public:
    * This must be called after waiting on the wait set.
    * Raises RuntimeError on failure.
    *
-   * \param[in] pywait_set Capsule pointing to the wait set structure.
+   * \param[in] wait_set Capsule pointing to the wait set structure.
    * \return A tuple of booleans representing the sub-entities ready:
    *       (is_feedback_ready,
    *        is_status_ready,
@@ -203,15 +204,15 @@ public:
    *        is_result_response_ready)
    */
   py::tuple
-  is_ready(py::capsule pywait_set);
+  is_ready(WaitSet & wait_set);
 
   /// Add an action entitiy to a wait set.
   /**
    * Raises RuntimeError on failure.
-   * \param[in] pywait_set Capsule pointer to an rcl_wait_set_t.
+   * \param[in] wait_set Capsule pointer to an rcl_wait_set_t.
    */
   void
-  add_to_waitset(py::capsule pywait_set);
+  add_to_waitset(WaitSet & wait_set);
 
   /// Get rcl_client_t pointer
   rcl_action_client_t *

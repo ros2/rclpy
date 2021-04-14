@@ -52,7 +52,7 @@ class ClientWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('client', wait_set, self.client_index):
+        if wait_set.is_ready('client', self.client_index):
             self.client_is_ready = True
         return self.client_is_ready
 
@@ -76,7 +76,7 @@ class ClientWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.client_index = _rclpy.rclpy_wait_set_add_client(wait_set, self.client)
+        self.client_index = wait_set.add_client(self.client)
 
 
 class ServerWaitable(Waitable):
@@ -95,7 +95,7 @@ class ServerWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('service', wait_set, self.server_index):
+        if wait_set.is_ready('service', self.server_index):
             self.server_is_ready = True
         return self.server_is_ready
 
@@ -119,7 +119,7 @@ class ServerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.server_index = _rclpy.rclpy_wait_set_add_service(wait_set, self.server)
+        self.server_index = wait_set.add_service(self.server)
 
 
 class TimerWaitable(Waitable):
@@ -140,7 +140,7 @@ class TimerWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('timer', wait_set, self.timer_index):
+        if wait_set.is_ready('timer', self.timer_index):
             self.timer_is_ready = True
         return self.timer_is_ready
 
@@ -165,7 +165,7 @@ class TimerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.timer_index = _rclpy.rclpy_wait_set_add_timer(wait_set, self.timer)
+        self.timer_index = wait_set.add_timer(self.timer)
 
 
 class SubscriptionWaitable(Waitable):
@@ -184,7 +184,7 @@ class SubscriptionWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('subscription', wait_set, self.subscription_index):
+        if wait_set.is_ready('subscription', self.subscription_index):
             self.subscription_is_ready = True
         return self.subscription_is_ready
 
@@ -210,8 +210,8 @@ class SubscriptionWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.subscription_index = _rclpy.rclpy_wait_set_add_subscription(
-            wait_set, self.subscription)
+        self.subscription_index = wait_set.add_subscription(
+            self.subscription)
 
 
 class GuardConditionWaitable(Waitable):
@@ -229,7 +229,7 @@ class GuardConditionWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('guard_condition', wait_set, self.guard_condition_index):
+        if wait_set.is_ready('guard_condition', self.guard_condition_index):
             self.guard_is_ready = True
         return self.guard_is_ready
 
@@ -253,8 +253,8 @@ class GuardConditionWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.guard_condition_index = _rclpy.rclpy_wait_set_add_entity(
-            'guard_condition', wait_set, self.guard_condition)
+        self.guard_condition_index = wait_set.add_entity(
+            'guard_condition', self.guard_condition)
 
 
 class MutuallyExclusiveWaitable(Waitable):
