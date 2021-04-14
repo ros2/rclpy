@@ -507,7 +507,7 @@ class Executor:
                 len(subscriptions), len(guards), len(timers), len(clients), len(services))
 
             # Construct a wait set
-            wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
+            wait_set = None
             with ExitStack() as context_stack:
                 sub_handles = []
                 for sub in subscriptions:
@@ -556,8 +556,7 @@ class Executor:
                         pass
 
                 context_capsule = context_stack.enter_context(self._context.handle)
-                _rclpy.rclpy_wait_set_init(
-                    wait_set,
+                wait_set = _rclpy.WaitSet(
                     entity_count.num_subscriptions,
                     entity_count.num_guard_conditions,
                     entity_count.num_timers,
@@ -566,33 +565,33 @@ class Executor:
                     entity_count.num_events,
                     context_capsule)
 
-                _rclpy.rclpy_wait_set_clear_entities(wait_set)
+                wait_set.clear_entities()
                 for sub_handle in sub_handles:
-                    _rclpy.rclpy_wait_set_add_subscription(wait_set, sub_handle)
+                    wait_set.add_subscription(sub_handle)
                 for cli_handle in client_handles:
-                    _rclpy.rclpy_wait_set_add_client(wait_set, cli_handle)
+                    wait_set.add_client(cli_handle)
                 for srv_capsule in service_handles:
-                    _rclpy.rclpy_wait_set_add_service(wait_set, srv_capsule)
+                    wait_set.add_service(srv_capsule)
                 for tmr_handle in timer_handles:
-                    _rclpy.rclpy_wait_set_add_timer(wait_set, tmr_handle)
+                    wait_set.add_timer(tmr_handle)
                 for gc_capsule in guard_capsules:
-                    _rclpy.rclpy_wait_set_add_entity('guard_condition', wait_set, gc_capsule)
+                    wait_set.add_entity('guard_condition', gc_capsule)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 
                 # Wait for something to become ready
-                _rclpy.rclpy_wait(wait_set, timeout_nsec)
+                wait_set.wait(timeout_nsec)
                 if self._is_shutdown:
                     raise ShutdownException()
                 if not self._context.ok():
                     raise ExternalShutdownException()
 
                 # get ready entities
-                subs_ready = _rclpy.rclpy_get_ready_entities('subscription', wait_set)
-                guards_ready = _rclpy.rclpy_get_ready_entities('guard_condition', wait_set)
-                timers_ready = _rclpy.rclpy_get_ready_entities('timer', wait_set)
-                clients_ready = _rclpy.rclpy_get_ready_entities('client', wait_set)
-                services_ready = _rclpy.rclpy_get_ready_entities('service', wait_set)
+                subs_ready = wait_set.get_ready_entities('subscription')
+                guards_ready = wait_set.get_ready_entities('guard_condition')
+                timers_ready = wait_set.get_ready_entities('timer')
+                clients_ready = wait_set.get_ready_entities('client')
+                services_ready = wait_set.get_ready_entities('service')
 
                 # Mark all guards as triggered before yielding since they're auto-taken
                 for gc in guards:
