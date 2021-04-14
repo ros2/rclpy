@@ -42,7 +42,7 @@ public:
    * Raises RCLError if the wait set could not be initialized
    *
    * \param[in] node_name string name of the node to be created
-   * \param[in] number_of_subscriptions int
+   * \param[in] number_of_subscriptions a positive number or zero
    * \param[in] number_of_guard_conditions int
    * \param[in] number_of_timers int
    * \param[in] number_of_clients int
@@ -63,7 +63,7 @@ public:
    * Raises RCLError if any rcl error occurs
    */
   void
-  wait_set_clear_entities();
+  clear_entities();
 
   /// Add an entity to the wait set structure
   /**
@@ -75,7 +75,7 @@ public:
    * \return Index in waitset entity was added at
    */
   size_t
-  wait_set_add_entity(const std::string & entity_type, py::capsule pyentity);
+  add_entity(const std::string & entity_type, py::capsule pyentity);
 
   /// Add a service to the wait set structure
   /**
@@ -85,7 +85,7 @@ public:
    * \return Index in waitset entity was added at
    */
   size_t
-  wait_set_add_service(const Service & service);
+  add_service(const Service & service);
 
   /// Add a subcription to the wait set structure
   /**
@@ -95,7 +95,7 @@ public:
    * \return Index in waitset entity was added at
    */
   size_t
-  wait_set_add_subscription(const Subscription & subscription);
+  add_subscription(const Subscription & subscription);
 
   /// Add a client to the wait set structure
   /**
@@ -105,7 +105,7 @@ public:
    * \return Index in waitset entity was added at
    */
   size_t
-  wait_set_add_client(const Client & client);
+  add_client(const Client & client);
 
   /// Add a timer to the wait set structure
   /**
@@ -115,7 +115,7 @@ public:
    * \return Index in waitset entity was added at
    */
   size_t
-  wait_set_add_timer(const Timer & timer);
+  add_timer(const Timer & timer);
 
   /// Add an event to the wait set structure
   /**
@@ -125,7 +125,7 @@ public:
    * \return Index in waitset entity was added at
    */
   size_t
-  wait_set_add_event(const QoSEvent & event);
+  add_event(const QoSEvent & event);
 
   /// Check if an entity in the wait set is ready by its index
   /**
@@ -138,9 +138,9 @@ public:
    * \return True if the entity at the index in the wait set is not NULL
    */
   bool
-  wait_set_is_ready(const std::string & entity_type, size_t index);
+  is_ready(const std::string & entity_type, size_t index);
 
-  /// Get list of non-null entities in wait set
+  /// Get list of entities ready by entity type
   /**
    * Raises RuntimeError if the entity type is not known
    *

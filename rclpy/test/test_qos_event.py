@@ -243,13 +243,13 @@ class TestQoSEvent(unittest.TestCase):
         deadline_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
         with deadline_event_handle:
-            deadline_event_index = wait_set.wait_set_add_event(deadline_event_handle)
+            deadline_event_index = wait_set.add_event(deadline_event_handle)
         self.assertIsNotNone(deadline_event_index)
 
         liveliness_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
         with liveliness_event_handle:
-            liveliness_event_index = wait_set.wait_set_add_event(
+            liveliness_event_index = wait_set.add_event(
                     liveliness_event_handle)
         self.assertIsNotNone(liveliness_event_index)
 
@@ -257,7 +257,7 @@ class TestQoSEvent(unittest.TestCase):
             incompatible_qos_event_handle = self._create_event_handle(
                 publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
             with incompatible_qos_event_handle:
-                incompatible_qos_event_index = wait_set.wait_set_add_event(
+                incompatible_qos_event_index = wait_set.add_event(
                         incompatible_qos_event_handle)
             self.assertIsNotNone(incompatible_qos_event_index)
         except UnsupportedEventTypeError:
@@ -266,10 +266,10 @@ class TestQoSEvent(unittest.TestCase):
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
         wait_set.wait(0)
-        self.assertFalse(wait_set.wait_set_is_ready('event', deadline_event_index))
-        self.assertFalse(wait_set.wait_set_is_ready('event', liveliness_event_index))
+        self.assertFalse(wait_set.is_ready('event', deadline_event_index))
+        self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
         if not self.is_fastrtps:
-            self.assertFalse(wait_set.wait_set_is_ready(
+            self.assertFalse(wait_set.is_ready(
                 'event', incompatible_qos_event_index))
 
         # Calling take data even though not ready should provide me an empty initialized message
@@ -315,20 +315,20 @@ class TestQoSEvent(unittest.TestCase):
         deadline_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
         with deadline_event_handle:
-            deadline_event_index = wait_set.wait_set_add_event(deadline_event_handle)
+            deadline_event_index = wait_set.add_event(deadline_event_handle)
         self.assertIsNotNone(deadline_event_index)
 
         liveliness_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
         with liveliness_event_handle:
-            liveliness_event_index = wait_set.wait_set_add_event(liveliness_event_handle)
+            liveliness_event_index = wait_set.add_event(liveliness_event_handle)
         self.assertIsNotNone(liveliness_event_index)
 
         try:
             incompatible_qos_event_handle = self._create_event_handle(
                 subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
             with incompatible_qos_event_handle:
-                incompatible_qos_event_index = wait_set.wait_set_add_event(
+                incompatible_qos_event_index = wait_set.add_event(
                         incompatible_qos_event_handle)
             self.assertIsNotNone(incompatible_qos_event_index)
         except UnsupportedEventTypeError:
@@ -337,10 +337,10 @@ class TestQoSEvent(unittest.TestCase):
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
         wait_set.wait(0)
-        self.assertFalse(wait_set.wait_set_is_ready('event', deadline_event_index))
-        self.assertFalse(wait_set.wait_set_is_ready('event', liveliness_event_index))
+        self.assertFalse(wait_set.is_ready('event', deadline_event_index))
+        self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
         if not self.is_fastrtps:
-            self.assertFalse(wait_set.wait_set_is_ready(
+            self.assertFalse(wait_set.is_ready(
                 'event', incompatible_qos_event_index))
 
         # Calling take data even though not ready should provide me an empty initialized message

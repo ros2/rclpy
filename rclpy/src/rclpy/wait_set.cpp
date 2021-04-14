@@ -108,7 +108,7 @@ WaitSet::destroy()
 }
 
 void
-WaitSet::wait_set_clear_entities()
+WaitSet::clear_entities()
 {
   rcl_ret_t ret = rcl_wait_set_clear(rcl_wait_set_.get());
   if (ret != RCL_RET_OK) {
@@ -117,7 +117,7 @@ WaitSet::wait_set_clear_entities()
 }
 
 size_t
-WaitSet::wait_set_add_entity(const std::string & entity_type, py::capsule pyentity)
+WaitSet::add_entity(const std::string & entity_type, py::capsule pyentity)
 {
   rcl_ret_t ret = RCL_RET_ERROR;
   size_t index;
@@ -145,7 +145,7 @@ WaitSet::wait_set_add_entity(const std::string & entity_type, py::capsule pyenti
 }
 
 size_t
-WaitSet::wait_set_add_service(const Service & service)
+WaitSet::add_service(const Service & service)
 {
   size_t index;
   rcl_ret_t ret = rcl_wait_set_add_service(rcl_wait_set_.get(), service.rcl_ptr(), &index);
@@ -156,7 +156,7 @@ WaitSet::wait_set_add_service(const Service & service)
 }
 
 size_t
-WaitSet::wait_set_add_subscription(const Subscription & subscription)
+WaitSet::add_subscription(const Subscription & subscription)
 {
   size_t index;
   rcl_ret_t ret = rcl_wait_set_add_subscription(
@@ -168,7 +168,7 @@ WaitSet::wait_set_add_subscription(const Subscription & subscription)
 }
 
 size_t
-WaitSet::wait_set_add_timer(const Timer & timer)
+WaitSet::add_timer(const Timer & timer)
 {
   size_t index;
   rcl_ret_t ret = rcl_wait_set_add_timer(rcl_wait_set_.get(), timer.rcl_ptr(), &index);
@@ -179,7 +179,7 @@ WaitSet::wait_set_add_timer(const Timer & timer)
 }
 
 size_t
-WaitSet::wait_set_add_client(const Client & client)
+WaitSet::add_client(const Client & client)
 {
   size_t index;
   rcl_ret_t ret = rcl_wait_set_add_client(rcl_wait_set_.get(), client.rcl_ptr(), &index);
@@ -190,7 +190,7 @@ WaitSet::wait_set_add_client(const Client & client)
 }
 
 size_t
-WaitSet::wait_set_add_event(const QoSEvent & event)
+WaitSet::add_event(const QoSEvent & event)
 {
   size_t index;
   rcl_ret_t ret = rcl_wait_set_add_event(rcl_wait_set_.get(), event.rcl_ptr(), &index);
@@ -201,28 +201,28 @@ WaitSet::wait_set_add_event(const QoSEvent & event)
 }
 
 bool
-WaitSet::wait_set_is_ready(const std::string & entity_type, size_t index)
+WaitSet::is_ready(const std::string & entity_type, size_t index)
 {
   const void ** entities = NULL;
   size_t num_entities = 0;
   if ("subscription" == entity_type) {
-    entities = reinterpret_cast<const void **>(rcl_wait_set_.get()->subscriptions);
-    num_entities = rcl_wait_set_.get()->size_of_subscriptions;
+    entities = reinterpret_cast<const void **>(rcl_wait_set_->subscriptions);
+    num_entities = rcl_wait_set_->size_of_subscriptions;
   } else if ("client" == entity_type) {
-    entities = reinterpret_cast<const void **>(rcl_wait_set_.get()->clients);
-    num_entities = rcl_wait_set_.get()->size_of_clients;
+    entities = reinterpret_cast<const void **>(rcl_wait_set_->clients);
+    num_entities = rcl_wait_set_->size_of_clients;
   } else if ("service" == entity_type) {
-    entities = reinterpret_cast<const void **>(rcl_wait_set_.get()->services);
-    num_entities = rcl_wait_set_.get()->size_of_services;
+    entities = reinterpret_cast<const void **>(rcl_wait_set_->services);
+    num_entities = rcl_wait_set_->size_of_services;
   } else if ("timer" == entity_type) {
-    entities = reinterpret_cast<const void **>(rcl_wait_set_.get()->timers);
-    num_entities = rcl_wait_set_.get()->size_of_timers;
+    entities = reinterpret_cast<const void **>(rcl_wait_set_->timers);
+    num_entities = rcl_wait_set_->size_of_timers;
   } else if ("guard_condition" == entity_type) {
-    entities = reinterpret_cast<const void **>(rcl_wait_set_.get()->guard_conditions);
-    num_entities = rcl_wait_set_.get()->size_of_guard_conditions;
+    entities = reinterpret_cast<const void **>(rcl_wait_set_->guard_conditions);
+    num_entities = rcl_wait_set_->size_of_guard_conditions;
   } else if ("event" == entity_type) {
-    entities = reinterpret_cast<const void **>(rcl_wait_set_.get()->events);
-    num_entities = rcl_wait_set_.get()->size_of_events;
+    entities = reinterpret_cast<const void **>(rcl_wait_set_->events);
+    num_entities = rcl_wait_set_->size_of_events;
   } else {
     std::string error_text{"'"};
     error_text += entity_type;
@@ -261,19 +261,19 @@ WaitSet::get_ready_entities(const std::string & entity_type)
 {
   if ("subscription" == entity_type) {
     return _get_ready_entities(
-      rcl_wait_set_.get()->subscriptions, rcl_wait_set_.get()->size_of_subscriptions);
+      rcl_wait_set_->subscriptions, rcl_wait_set_->size_of_subscriptions);
   } else if ("client" == entity_type) {
     return _get_ready_entities(
-      rcl_wait_set_.get()->clients, rcl_wait_set_.get()->size_of_clients);
+      rcl_wait_set_->clients, rcl_wait_set_->size_of_clients);
   } else if ("service" == entity_type) {
     return _get_ready_entities(
-      rcl_wait_set_.get()->services, rcl_wait_set_.get()->size_of_services);
+      rcl_wait_set_->services, rcl_wait_set_->size_of_services);
   } else if ("timer" == entity_type) {
     return _get_ready_entities(
-      rcl_wait_set_.get()->timers, rcl_wait_set_.get()->size_of_timers);
+      rcl_wait_set_->timers, rcl_wait_set_->size_of_timers);
   } else if ("guard_condition" == entity_type) {
     return _get_ready_entities(
-      rcl_wait_set_.get()->guard_conditions, rcl_wait_set_.get()->size_of_guard_conditions);
+      rcl_wait_set_->guard_conditions, rcl_wait_set_->size_of_guard_conditions);
   }
 
   std::string error_text{"'"};
@@ -297,6 +297,7 @@ WaitSet::wait(int64_t timeout)
     throw RCLError("failed to wait on wait set");
   }
 }
+
 void define_waitset(py::object module)
 {
   py::class_<WaitSet, Destroyable, std::shared_ptr<WaitSet>>(module, "WaitSet")
@@ -308,35 +309,32 @@ void define_waitset(py::object module)
     },
     "Get the address of the entity as an integer")
   .def(
-    "wait_set_clear_entities", &WaitSet::wait_set_clear_entities,
+    "clear_entities", &WaitSet::clear_entities,
     "Clear all the pointers in the wait set")
   .def(
-    "wait_set_add_entity", &WaitSet::wait_set_add_entity,
+    "add_entity", &WaitSet::add_entity,
     "Add an entity to the wait set structure")
   .def(
-    "wait_set_add_service", &WaitSet::wait_set_add_service,
+    "add_service", &WaitSet::add_service,
     "Add a service to the wait set structure")
   .def(
-    "wait_set_add_subscription", &WaitSet::wait_set_add_subscription,
+    "add_subscription", &WaitSet::add_subscription,
     "Add a subcription to the wait set structure")
   .def(
-    "wait_set_add_client", &WaitSet::wait_set_add_client,
+    "add_client", &WaitSet::add_client,
     "Add a client to the wait set structure")
   .def(
-    "wait_set_add_timer", &WaitSet::wait_set_add_timer,
+    "add_timer", &WaitSet::add_timer,
     "Add a timer to the wait set structure")
   .def(
-    "wait_set_clear_entities", &WaitSet::wait_set_clear_entities,
-    "Add a client to the wait set structure")
-  .def(
-    "wait_set_add_event", &WaitSet::wait_set_add_event,
+    "add_event", &WaitSet::add_event,
     "Add an event to the wait set structure")
   .def(
-    "wait_set_is_ready", &WaitSet::wait_set_is_ready,
+    "is_ready", &WaitSet::is_ready,
     "Check if an entity in the wait set is ready by its index")
   .def(
     "get_ready_entities", &WaitSet::get_ready_entities,
-    "Get list of non-null entities in wait set")
+    "Get list of entities ready by entity type")
   .def(
     "wait", &WaitSet::wait,
     "Wait until timeout is reached or event happened");

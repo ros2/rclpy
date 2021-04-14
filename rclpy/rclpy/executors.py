@@ -565,17 +565,17 @@ class Executor:
                     entity_count.num_events,
                     context_capsule)
 
-                wait_set.wait_set_clear_entities()
+                wait_set.clear_entities()
                 for sub_handle in sub_handles:
-                    wait_set.wait_set_add_subscription(sub_handle)
+                    wait_set.add_subscription(sub_handle)
                 for cli_handle in client_handles:
-                    wait_set.wait_set_add_client(cli_handle)
+                    wait_set.add_client(cli_handle)
                 for srv_capsule in service_handles:
-                    wait_set.wait_set_add_service(srv_capsule)
+                    wait_set.add_service(srv_capsule)
                 for tmr_handle in timer_handles:
-                    wait_set.wait_set_add_timer(tmr_handle)
+                    wait_set.add_timer(tmr_handle)
                 for gc_capsule in guard_capsules:
-                    wait_set.wait_set_add_entity('guard_condition', gc_capsule)
+                    wait_set.add_entity('guard_condition', gc_capsule)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 
