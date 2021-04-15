@@ -153,7 +153,9 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/_rclpy_logging.cpp
   src/rclpy/_rclpy_pybind11.cpp
   src/rclpy/_rclpy_pycapsule.cpp
+  src/rclpy/action_client.cpp
   src/rclpy/action_goal_handle.cpp
+  src/rclpy/action_server.cpp
   src/rclpy/client.cpp
   src/rclpy/clock.cpp
   src/rclpy/context.cpp
