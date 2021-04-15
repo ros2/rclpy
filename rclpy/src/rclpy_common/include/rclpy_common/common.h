@@ -32,24 +32,6 @@ typedef void destroy_ros_message_signature (void *);
 typedef bool convert_from_py_signature (PyObject *, void *);
 typedef PyObject * convert_to_py_signature (void *);
 
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The client must be first in the struct to compare cli.handle.pointer to an address
-  // in a wait set.
-  rcl_client_t client;
-  rcl_node_t * node;
-} rclpy_client_t;
-
-typedef struct
-{
-  // Important: a pointer to a structure is also a pointer to its first member.
-  // The service must be first in the struct to compare srv.handle.pointer to an address
-  // in a wait set.
-  rcl_service_t service;
-  rcl_node_t * node;
-} rclpy_service_t;
-
 /// Finalize names and types struct with error setting.
 /**
  * \param[in] names_and_types The struct to finalize.
