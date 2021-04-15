@@ -179,6 +179,17 @@ WaitSet::add_timer(const Timer & timer)
 }
 
 size_t
+WaitSet::add_guard_condition(const GuardCondition & gc)
+{
+  size_t index;
+  rcl_ret_t ret = rcl_wait_set_add_guard_condition(rcl_wait_set_.get(), gc.rcl_ptr(), &index);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to add guard condition to wait set");
+  }
+  return index;
+}
+
+size_t
 WaitSet::add_client(const Client & client)
 {
   size_t index;
@@ -323,6 +334,9 @@ void define_waitset(py::object module)
   .def(
     "add_client", &WaitSet::add_client,
     "Add a client to the wait set structure")
+  .def(
+    "add_guard_condition", &WaitSet::add_guard_condition,
+    "Add a guard condition to the wait set structure")
   .def(
     "add_timer", &WaitSet::add_timer,
     "Add a timer to the wait set structure")
