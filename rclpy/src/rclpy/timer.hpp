@@ -22,6 +22,7 @@
 #include <memory>
 
 #include "clock.hpp"
+#include "context.hpp"
 #include "destroyable.hpp"
 #include "handle.hpp"
 
@@ -46,7 +47,7 @@ public:
    * \param[in] period_nsec the period of the timer in nanoseconds
    * \return a timer capsule
    */
-  Timer(Clock & clock, py::capsule pycontext, int64_t period_nsec);
+  Timer(Clock & clock, Context & context, int64_t period_nsec);
 
   ~Timer() = default;
 
@@ -135,6 +136,7 @@ public:
 private:
   std::shared_ptr<Clock> clock_handle_;
   std::shared_ptr<rcl_timer_t> rcl_timer_;
+  std::shared_ptr<Context> rcl_context_;
 };
 
 /// Define a pybind11 wrapper for an rcl_timer_t

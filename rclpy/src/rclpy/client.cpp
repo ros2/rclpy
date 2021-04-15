@@ -38,11 +38,9 @@ Client::destroy()
 }
 
 Client::Client(
-  py::capsule pynode, py::object pysrv_type, const char * service_name, py::object pyqos_profile)
-: node_handle_(std::make_shared<Handle>(pynode))
+  Node & node, py::object pysrv_type, const char * service_name, py::object pyqos_profile)
+: node_handle_(node.shared_from_this())
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
     rclpy_common_get_type_support(pysrv_type.ptr()));
   if (!srv_type) {
@@ -61,9 +59,7 @@ Client::Client(
     PythonAllocator<rcl_client_t>().allocate(1),
     [this](rcl_client_t * client)
     {
-      auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
-
-      rcl_ret_t ret = rcl_client_fini(client, node);
+      rcl_ret_t ret = rcl_client_fini(client, node_handle_->rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -78,7 +74,7 @@ Client::Client(
   *rcl_client_ = rcl_get_zero_initialized_client();
 
   rcl_ret_t ret = rcl_client_init(
-    rcl_client_.get(), node, srv_type, service_name, &client_ops);
+    rcl_client_.get(), node_handle_->rcl_ptr(), srv_type, service_name, &client_ops);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_SERVICE_NAME_INVALID == ret) {
       std::string error_text{"failed to create client due to invalid service name '"};
@@ -114,9 +110,9 @@ Client::send_request(py::object pyrequest)
 bool
 Client::service_server_is_available()
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
   bool is_ready;
-  rcl_ret_t ret = rcl_service_server_is_available(node, rcl_client_.get(), &is_ready);
+  rcl_ret_t ret = rcl_service_server_is_available(
+    node_handle_->rcl_ptr(), rcl_client_.get(), &is_ready);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to check service availability");
   }
@@ -156,7 +152,7 @@ void
 define_client(py::object module)
 {
   py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
-  .def(py::init<py::capsule, py::object, const char *, py::object>())
+  .def(py::init<Node &, py::object, const char *, py::object>())
   .def_property_readonly(
     "pointer", [](const Client & client) {
       return reinterpret_cast<size_t>(client.rcl_ptr());

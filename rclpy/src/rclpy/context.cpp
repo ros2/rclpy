@@ -20,7 +20,7 @@
 #include <rcl/rcl.h>
 #include <rcl/types.h>
 
-#include <stdexcept>
+#include <memory>
 
 #include "rclpy_common/handle.h"
 
@@ -30,17 +30,55 @@
 
 namespace rclpy
 {
-size_t
-context_get_domain_id(py::capsule pycontext)
+Context::Context()
 {
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
+  // Create a client
+  rcl_context_ = std::shared_ptr<rcl_context_t>(
+    new rcl_context_t,
+    [](rcl_context_t * context)
+    {
+      if (NULL != context->impl) {
+        rcl_ret_t ret;
+        if (rcl_context_is_valid(context)) {
+          // shutdown first, if still valid
+          ret = rcl_shutdown(context);
+          if (RCL_RET_OK != ret) {
+            fprintf(
+              stderr,
+              "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+              "failed to shutdown rcl_context_t (%d) during PyCapsule destructor: %s\n",
+              ret,
+              rcl_get_error_string().str);
+            rcl_reset_error();
+          }
+        }
+        ret = rcl_context_fini(context);
+        if (RCL_RET_OK != ret) {
+          fprintf(
+            stderr,
+            "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+            "failed to fini rcl_context_t (%d) during PyCapsule destructor: %s\n",
+            ret,
+            rcl_get_error_string().str);
+          rcl_reset_error();
+        }
+      }
+      delete context;
+    });
+  *rcl_context_ = rcl_get_zero_initialized_context();
+}
 
+void
+Context::destroy()
+{
+  rcl_context_.reset();
+}
+
+size_t
+Context::get_domain_id()
+{
   size_t domain_id;
-  rcl_ret_t ret = rcl_context_get_domain_id(context, &domain_id);
+  rcl_ret_t ret = rcl_context_get_domain_id(rcl_context_.get(), &domain_id);
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to get domain id");
   }
@@ -48,75 +86,39 @@ context_get_domain_id(py::capsule pycontext)
   return domain_id;
 }
 
-void
-_rclpy_context_handle_destructor(void * p)
-{
-  auto context = static_cast<rcl_context_t *>(p);
-  if (!context) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_context_handle_destructor failed to get pointer");
-    return;
-  }
-  if (NULL != context->impl) {
-    rcl_ret_t ret;
-    if (rcl_context_is_valid(context)) {
-      // shutdown first, if still valid
-      ret = rcl_shutdown(context);
-      if (RCL_RET_OK != ret) {
-        fprintf(
-          stderr,
-          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-          "failed to shutdown rcl_context_t (%d) during PyCapsule destructor: %s\n",
-          ret,
-          rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-    }
-    ret = rcl_context_fini(context);
-    if (RCL_RET_OK != ret) {
-      fprintf(
-        stderr,
-        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "failed to fini rcl_context_t (%d) during PyCapsule destructor: %s\n",
-        ret,
-        rcl_get_error_string().str);
-      rcl_reset_error();
-    }
-  }
-  PyMem_FREE(context);
-}
-
-py::capsule
-create_context()
-{
-  auto context = static_cast<rcl_context_t *>(PyMem_Malloc(sizeof(rcl_context_t)));
-  if (!context) {
-    throw std::bad_alloc();
-  }
-  *context = rcl_get_zero_initialized_context();
-  PyObject * capsule = rclpy_create_handle_capsule(
-    context, "rcl_context_t", _rclpy_context_handle_destructor);
-  if (!capsule) {
-    throw py::error_already_set();
-  }
-  return py::reinterpret_steal<py::capsule>(capsule);
-}
-
-/// Status of the the client library
-/**
- * \return True if rcl is running properly, False otherwise
- */
 bool
-context_is_valid(py::capsule pycontext)
+Context::ok()
 {
-  auto context = static_cast<rcl_context_t *>(rclpy_handle_get_pointer_from_capsule(
-      pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
-  return rcl_context_is_valid(context);
+  return rcl_context_is_valid(rcl_context_.get());
 }
+
+void
+Context::shutdown()
+{
+  rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to shutdown");
+  }
+}
+
+void define_context(py::object module)
+{
+  py::class_<Context, Destroyable, std::shared_ptr<Context>>(module, "Context")
+  .def(py::init<>())
+  .def_property_readonly(
+    "pointer", [](const Context & context) {
+      return reinterpret_cast<size_t>(context.rcl_ptr());
+    },
+    "Get the address of the entity as an integer")
+  .def(
+    "get_domain_id", &Context::get_domain_id,
+    "Retrieves domain id from init_options of context.")
+  .def(
+    "ok", &Context::ok,
+    "Status of the the client library")
+  .def(
+    "shutdown", &Context::shutdown,
+    "Shutdown context");
+}
+
 }  // namespace rclpy

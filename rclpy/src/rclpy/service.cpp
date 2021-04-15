@@ -39,12 +39,10 @@ Service::destroy()
 }
 
 Service::Service(
-  py::capsule pynode, py::object pysrv_type, std::string service_name,
+  Node & node, py::object pysrv_type, std::string service_name,
   py::object pyqos_profile)
-: node_handle_(std::make_shared<Handle>(pynode))
+: node_handle_(node.shared_from_this())
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
     rclpy_common_get_type_support(pysrv_type.ptr()));
   if (!srv_type) {
@@ -62,9 +60,7 @@ Service::Service(
     new rcl_service_t,
     [this](rcl_service_t * service)
     {
-      auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
-
-      rcl_ret_t ret = rcl_service_fini(service, node);
+      rcl_ret_t ret = rcl_service_fini(service, node_handle_->rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -79,7 +75,7 @@ Service::Service(
   *rcl_service_ = rcl_get_zero_initialized_service();
 
   rcl_ret_t ret = rcl_service_init(
-    rcl_service_.get(), node, srv_type,
+    rcl_service_.get(), node_handle_->rcl_ptr(), srv_type,
     service_name.c_str(), &service_ops);
   if (RCL_RET_OK != ret) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {
@@ -140,7 +136,7 @@ void
 define_service(py::object module)
 {
   py::class_<Service, Destroyable, std::shared_ptr<Service>>(module, "Service")
-  .def(py::init<py::capsule, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());

@@ -62,14 +62,8 @@ struct InitOptions
 };
 
 void
-init(py::list pyargs, py::capsule pycontext, size_t domain_id)
+init(py::list pyargs, Context & context, size_t domain_id)
 {
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
   // turn the arguments into an array of C-style strings
   std::vector<const char *> arg_c_values(pyargs.size());
   for (size_t i = 0; i < pyargs.size(); ++i) {
@@ -93,27 +87,12 @@ init(py::list pyargs, py::capsule pycontext, size_t domain_id)
   }
   int argc = static_cast<int>(arg_c_values.size());
   const char ** argv = argc > 0 ? &(arg_c_values[0]) : nullptr;
-  ret = rcl_init(argc, argv, &init_options.rcl_options, context);
+  ret = rcl_init(argc, argv, &init_options.rcl_options, context.rcl_ptr());
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to initialize rcl");
   }
 
-  throw_if_unparsed_ros_args(pyargs, context->global_arguments);
-}
-
-void
-shutdown(py::capsule pycontext)
-{
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
-  rcl_ret_t ret = rcl_shutdown(context);
-  if (RCL_RET_OK != ret) {
-    throw RCLError("failed to shutdown");
-  }
+  throw_if_unparsed_ros_args(pyargs, context.rcl_ptr()->global_arguments);
 }
 
 void

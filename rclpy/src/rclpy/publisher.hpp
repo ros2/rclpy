@@ -24,7 +24,7 @@
 #include <string>
 
 #include "destroyable.hpp"
-#include "handle.hpp"
+#include "node.hpp"
 
 namespace py = pybind11;
 
@@ -44,13 +44,13 @@ public:
    * Raises ValueError if the capsules are not the correct types
    * Raises RCLError if the publisher cannot be created
    *
-   * \param[in] pynode Capsule pointing to the node to add the publisher to
+   * \param[in] node node to add the publisher to
    * \param[in] pymsg_type Message type associated with the publisher
    * \param[in] topic The name of the topic to attach the publisher to
    * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher
    */
   Publisher(
-    py::capsule pynode, py::object pymsg_type, std::string topic,
+    Node & node, py::object pymsg_type, std::string topic,
     py::object pyqos_profile);
 
   /// Get the name of the logger associated with the node of the publisher.
@@ -110,7 +110,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Handle> node_handle_;
+  std::shared_ptr<Node> node_handle_;
   std::shared_ptr<rcl_publisher_t> rcl_publisher_;
 };
 /// Define a pybind11 wrapper for an rclpy::Service

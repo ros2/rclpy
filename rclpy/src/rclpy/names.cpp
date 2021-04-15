@@ -209,23 +209,17 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
 }
 
 std::string
-remap_topic_name(py::capsule pynode, const char * topic_name)
+remap_topic_name(Node & node, const char * topic_name)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   // Get the node options
-  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  const rcl_node_options_t * node_options = rcl_node_get_options(node.rcl_ptr());
   if (nullptr == node_options) {
     throw RCLError("failed to get node options");
   }
 
   const rcl_arguments_t * global_args = nullptr;
   if (node_options->use_global_arguments) {
-    global_args = &(node->context->global_arguments);
+    global_args = &(node.rcl_ptr()->context->global_arguments);
   }
 
   char * output_cstr = nullptr;
@@ -233,8 +227,8 @@ remap_topic_name(py::capsule pynode, const char * topic_name)
     &(node_options->arguments),
     global_args,
     topic_name,
-    rcl_node_get_name(node),
-    rcl_node_get_namespace(node),
+    rcl_node_get_name(node.rcl_ptr()),
+    rcl_node_get_namespace(node.rcl_ptr()),
     node_options->allocator,
     &output_cstr);
   if (RCL_RET_OK != ret) {
@@ -256,22 +250,16 @@ remap_topic_name(py::capsule pynode, const char * topic_name)
 }
 
 std::string
-resolve_name(py::capsule pynode, const char * topic_name, bool only_expand, bool is_service)
+resolve_name(Node & node, const char * topic_name, bool only_expand, bool is_service)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
-  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  const rcl_node_options_t * node_options = rcl_node_get_options(node.rcl_ptr());
   if (nullptr == node_options) {
     throw RCLError("failed to get node options");
   }
 
   char * output_cstr = nullptr;
   rcl_ret_t ret = rcl_node_resolve_name(
-    node,
+    node.rcl_ptr(),
     topic_name,
     node_options->allocator,
     is_service,

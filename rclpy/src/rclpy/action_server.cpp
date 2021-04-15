@@ -38,7 +38,7 @@ ActionServer::destroy()
 }
 
 ActionServer::ActionServer(
-  py::capsule pynode,
+  Node & node,
   const rclpy::Clock & rclpy_clock,
   py::object pyaction_type,
   const char * action_name,
@@ -48,10 +48,8 @@ ActionServer::ActionServer(
   const rmw_qos_profile_t & feedback_topic_qos,
   const rmw_qos_profile_t & status_topic_qos,
   double result_timeout)
-: node_handle_(std::make_shared<Handle>(pynode))
+: node_handle_(node.shared_from_this())
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
   rcl_clock_t * clock = rclpy_clock.rcl_ptr();
 
   rosidl_action_type_support_t * ts = static_cast<rosidl_action_type_support_t *>(
@@ -73,9 +71,7 @@ ActionServer::ActionServer(
     new rcl_action_server_t,
     [this](rcl_action_server_t * action_server)
     {
-      auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
-
-      rcl_ret_t ret = rcl_action_server_fini(action_server, node);
+      rcl_ret_t ret = rcl_action_server_fini(action_server, node_handle_->rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -91,7 +87,7 @@ ActionServer::ActionServer(
 
   rcl_ret_t ret = rcl_action_server_init(
     rcl_action_server_.get(),
-    node,
+    node_handle_->rcl_ptr(),
     clock,
     ts,
     action_name,
@@ -355,7 +351,7 @@ define_action_server(py::object module)
 {
   py::class_<ActionServer, Destroyable, std::shared_ptr<ActionServer>>(module, "ActionServer")
   .def(
-    py::init<py::capsule, const rclpy::Clock &, py::object, const char *,
+    py::init<Node &, const rclpy::Clock &, py::object, const char *,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &, double>())
   .def_property_readonly(

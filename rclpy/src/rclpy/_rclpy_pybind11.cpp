@@ -111,21 +111,10 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   m.def(
     "rclpy_init", &rclpy::init,
     "Initialize RCL.");
-  m.def(
-    "rclpy_shutdown", &rclpy::shutdown,
-    "rclpy_shutdown.");
 
   rclpy::define_client(m);
 
-  m.def(
-    "rclpy_context_get_domain_id", &rclpy::context_get_domain_id,
-    "Retrieves domain ID from init_options of context");
-  m.def(
-    "rclpy_create_context", &rclpy::create_context,
-    "Create a capsule with an rcl_context_t instance");
-  m.def(
-    "rclpy_ok", &rclpy::context_is_valid,
-    "Return true if the context is valid");
+  rclpy::define_context(m);
 
   rclpy::define_duration(m);
 
@@ -209,42 +198,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_deserialize", &rclpy::deserialize,
     "Deserialize a ROS message.");
 
-  m.def(
-    "rclpy_create_node", &rclpy::create_node,
-    "Create a Node.");
-  m.def(
-    "rclpy_node_get_fully_qualified_name", &rclpy::get_node_fully_qualified_name,
-    "Get the fully qualified name of node.");
-  m.def(
-    "rclpy_get_node_logger_name", &rclpy::get_node_logger_name,
-    "Get the logger name associated with a node.");
-  m.def(
-    "rclpy_get_node_name", &rclpy::get_node_name,
-    "Get the name of a node.");
-  m.def(
-    "rclpy_get_node_namespace", &rclpy::get_node_namespace,
-    "Get the namespace of a node.");
-  m.def(
-    "rclpy_get_node_names_and_namespaces", &rclpy::get_node_names_and_namespaces,
-    "Get node names and namespaces list from graph API.");
-  m.def(
-    "rclpy_get_node_names_and_namespaces_with_enclaves",
-    &rclpy::get_node_names_and_namespaces_with_enclaves,
-    "Get node names, namespaces, and enclaves list from graph API.");
-
-  m.def(
-    "rclpy_count_publishers", &rclpy::get_count_publishers,
-    "Count publishers for a topic.");
-
-  m.def(
-    "rclpy_count_subscribers", &rclpy::get_count_subscribers,
-    "Count subscribers for a topic.");
-
+  rclpy::define_node(m);
   rclpy::define_qos_event(m);
-
-  m.def(
-    "rclpy_get_node_parameters", &rclpy::get_node_parameters,
-    "Get the initial parameters for a node from the command line.");
 
   m.def(
     "rclpy_get_rmw_implementation_identifier",

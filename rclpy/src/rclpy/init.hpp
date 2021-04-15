@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include "context.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
@@ -33,14 +35,7 @@ namespace rclpy
  * Raises RuntimeError if an internal error happens
  */
 void
-init(py::list pyargs, py::capsule pycontext, size_t domain_id);
-
-/// Request shutdown of the client library
-/**
- * Raises RCLError if the library could not be shutdown
- */
-void
-shutdown(py::capsule pycontext);
+init(py::list pyargs, Context & context, size_t domain_id);
 
 /// Throw UnparsedROSArgsError with a message saying which args are unparsed.
 void

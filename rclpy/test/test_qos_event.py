@@ -237,8 +237,8 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
-        with self.context.handle as context_handle:
-            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, context_handle)
+        with self.context.handle:
+            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
         deadline_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
@@ -309,8 +309,8 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         subscription = self.node.create_subscription(EmptyMsg, self.topic_name, Mock(), 10)
-        with self.context.handle as context_handle:
-            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, context_handle)
+        with self.context.handle:
+            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
         deadline_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)

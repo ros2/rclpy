@@ -60,8 +60,9 @@ WaitSet::WaitSet(
   size_t number_of_clients,
   size_t number_of_services,
   size_t number_of_events,
-  py::capsule pycontext)
+  Context & context)
 {
+  rcl_context_ = context.shared_from_this();
   // Create a client
   rcl_wait_set_ = std::shared_ptr<rcl_wait_set_t>(
     new rcl_wait_set_t,
@@ -80,12 +81,6 @@ WaitSet::WaitSet(
     });
   *rcl_wait_set_ = rcl_get_zero_initialized_wait_set();
 
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
   rcl_ret_t ret = rcl_wait_set_init(
     rcl_wait_set_.get(),
     number_of_subscriptions,
@@ -94,7 +89,7 @@ WaitSet::WaitSet(
     number_of_clients,
     number_of_services,
     number_of_events,
-    context,
+    context.rcl_ptr(),
     rcl_get_default_allocator());
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to initialize wait set");
@@ -105,6 +100,7 @@ void
 WaitSet::destroy()
 {
   rcl_wait_set_.reset();
+  rcl_context_.reset();
 }
 
 void
@@ -114,34 +110,6 @@ WaitSet::clear_entities()
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to clear wait set");
   }
-}
-
-size_t
-WaitSet::add_entity(const std::string & entity_type, py::capsule pyentity)
-{
-  rcl_ret_t ret = RCL_RET_ERROR;
-  size_t index;
-
-  if ("guard_condition" == entity_type) {
-    auto guard_condition = static_cast<rcl_guard_condition_t *>(
-      rclpy_handle_get_pointer_from_capsule(pyentity.ptr(), "rcl_guard_condition_t"));
-    if (!guard_condition) {
-      throw py::error_already_set();
-    }
-    ret = rcl_wait_set_add_guard_condition(rcl_wait_set_.get(), guard_condition, &index);
-  } else {
-    std::string error_text{"'"};
-    error_text += entity_type;
-    error_text += "' is not a known entity";
-    throw std::runtime_error(error_text);
-  }
-  if (ret != RCL_RET_OK) {
-    std::string error_text{"failed to add'"};
-    error_text += entity_type;
-    error_text += "' to waitset";
-    throw RCLError(error_text);
-  }
-  return index;
 }
 
 size_t
@@ -312,7 +280,7 @@ WaitSet::wait(int64_t timeout)
 void define_waitset(py::object module)
 {
   py::class_<WaitSet, Destroyable, std::shared_ptr<WaitSet>>(module, "WaitSet")
-  .def(py::init<size_t, size_t, size_t, size_t, size_t, size_t, py::capsule>())
+  .def(py::init<size_t, size_t, size_t, size_t, size_t, size_t, Context &>())
   .def(py::init<>())
   .def_property_readonly(
     "pointer", [](const WaitSet & waitset) {
@@ -322,9 +290,6 @@ void define_waitset(py::object module)
   .def(
     "clear_entities", &WaitSet::clear_entities,
     "Clear all the pointers in the wait set")
-  .def(
-    "add_entity", &WaitSet::add_entity,
-    "Add an entity to the wait set structure")
   .def(
     "add_service", &WaitSet::add_service,
     "Add a service to the wait set structure")

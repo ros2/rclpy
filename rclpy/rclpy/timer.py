@@ -25,9 +25,9 @@ class Timer:
     def __init__(self, callback, callback_group, timer_period_ns, clock, *, context=None):
         self._context = get_default_context() if context is None else context
         self._clock = clock
-        with self._clock.handle, self._context.handle as context_capsule:
+        with self._clock.handle, self._context.handle:
             self.__timer = _rclpy.Timer(
-                self._clock.handle, context_capsule, timer_period_ns)
+                self._clock.handle, self._context.handle, timer_period_ns)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group

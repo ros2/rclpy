@@ -30,6 +30,7 @@
 #include "action_goal_handle.hpp"
 #include "action_server.hpp"
 #include "clock.hpp"
+#include "node.hpp"
 
 namespace py = pybind11;
 
@@ -75,18 +76,12 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
 
 py::object
 rclpy_action_get_client_names_and_types_by_node(
-  py::capsule pynode, const char * remote_node_name, const char * remote_node_namespace)
+  rclpy::Node & node, const char * remote_node_name, const char * remote_node_namespace)
 {
-  rcl_node_t * node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_client_names_and_types_by_node(
-    node,
+    node.rcl_ptr(),
     &allocator,
     remote_node_name,
     remote_node_namespace,
@@ -105,18 +100,12 @@ rclpy_action_get_client_names_and_types_by_node(
 
 py::object
 rclpy_action_get_server_names_and_types_by_node(
-  py::capsule pynode, const char * remote_node_name, const char * remote_node_namespace)
+  rclpy::Node & node, const char * remote_node_name, const char * remote_node_namespace)
 {
-  rcl_node_t * node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_server_names_and_types_by_node(
-    node,
+    node.rcl_ptr(),
     &allocator,
     remote_node_name,
     remote_node_namespace,
@@ -134,17 +123,11 @@ rclpy_action_get_server_names_and_types_by_node(
 }
 
 py::object
-rclpy_action_get_names_and_types(py::capsule pynode)
+rclpy_action_get_names_and_types(rclpy::Node & node)
 {
-  rcl_node_t * node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_action_get_names_and_types(node, &allocator, &names_and_types);
+  rcl_ret_t ret = rcl_action_get_names_and_types(node.rcl_ptr(), &allocator, &names_and_types);
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed to get action names and type");
   }

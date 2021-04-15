@@ -22,6 +22,7 @@
 
 #include <memory>
 
+#include "context.hpp"
 #include "destroyable.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
@@ -38,7 +39,7 @@ public:
   /**
    * Raises RuntimeError if initializing the guard condition fails
    */
-  explicit GuardCondition(py::capsule pycontext);
+  explicit GuardCondition(Context & context);
 
   /// Trigger a general purpose guard condition
   /**
@@ -80,6 +81,7 @@ private:
     (void)p;
     // Empty destructor, the class should take care of the lifecycle.
   }
+  std::shared_ptr<Context> rcl_context_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::Service

@@ -34,9 +34,9 @@ def get_action_client_names_and_types_by_node(
       The first element of each tuple is the action name and the second element is a list of
       action types.
     """
-    with node.handle as node_capsule:
+    with node.handle:
         return _rclpy.rclpy_action_get_client_names_and_types_by_node(
-            node_capsule, remote_node_name, remote_node_namespace)
+            node.handle, remote_node_name, remote_node_namespace)
 
 
 def get_action_server_names_and_types_by_node(
@@ -54,9 +54,9 @@ def get_action_server_names_and_types_by_node(
       The first element of each tuple is the action name and the second element is a list of
       action types.
     """
-    with node.handle as node_capsule:
+    with node.handle:
         return _rclpy.rclpy_action_get_server_names_and_types_by_node(
-            node_capsule, remote_node_name, remote_node_namespace)
+            node.handle, remote_node_name, remote_node_namespace)
 
 
 def get_action_names_and_types(node: Node) -> List[Tuple[str, List[str]]]:
@@ -68,5 +68,5 @@ def get_action_names_and_types(node: Node) -> List[Tuple[str, List[str]]]:
       The first element of each tuple is the action name and the second element is a list of
       action types.
     """
-    with node.handle as node_capsule:
-        return _rclpy.rclpy_action_get_names_and_types(node_capsule)
+    with node.handle:
+        return _rclpy.rclpy_action_get_names_and_types(node.handle)

@@ -43,15 +43,9 @@
 namespace rclpy
 {
 const char *
-get_node_fully_qualified_name(py::capsule pynode)
+Node::get_node_fully_qualified_name()
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
-  const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(node);
+  const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(rcl_node_.get());
   if (!fully_qualified_node_name) {
     throw RCLError("Fully qualified name not set");
   }
@@ -60,15 +54,9 @@ get_node_fully_qualified_name(py::capsule pynode)
 }
 
 const char *
-get_node_logger_name(py::capsule pynode)
+Node::get_node_logger_name()
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
-  const char * node_logger_name = rcl_node_get_logger_name(node);
+  const char * node_logger_name = rcl_node_get_logger_name(rcl_node_.get());
   if (!node_logger_name) {
     throw RCLError("Logger name not set");
   }
@@ -77,15 +65,9 @@ get_node_logger_name(py::capsule pynode)
 }
 
 const char *
-get_node_name(py::capsule pynode)
+Node::get_node_name()
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
-  const char * node_name = rcl_node_get_name(node);
+  const char * node_name = rcl_node_get_name(rcl_node_.get());
   if (!node_name) {
     throw RCLError("Node name not set");
   }
@@ -94,15 +76,9 @@ get_node_name(py::capsule pynode)
 }
 
 const char *
-get_node_namespace(py::capsule pynode)
+Node::get_node_namespace()
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
-  const char * node_namespace = rcl_node_get_namespace(node);
+  const char * node_namespace = rcl_node_get_namespace(rcl_node_.get());
   if (!node_namespace) {
     throw RCLError("Node namespace not set");
   }
@@ -111,16 +87,10 @@ get_node_namespace(py::capsule pynode)
 }
 
 size_t
-get_count_publishers(py::capsule pynode, const char * topic_name)
+Node::get_count_publishers(const char * topic_name)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   size_t count = 0;
-  rcl_ret_t ret = rcl_count_publishers(node, topic_name, &count);
+  rcl_ret_t ret = rcl_count_publishers(rcl_node_.get(), topic_name, &count);
   if (RCL_RET_OK != ret) {
     throw RCLError("Error in rcl_count_publishers");
   }
@@ -129,16 +99,10 @@ get_count_publishers(py::capsule pynode, const char * topic_name)
 }
 
 size_t
-get_count_subscribers(py::capsule pynode, const char * topic_name)
+Node::get_count_subscribers(const char * topic_name)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   size_t count = 0;
-  rcl_ret_t ret = rcl_count_subscribers(node, topic_name, &count);
+  rcl_ret_t ret = rcl_count_subscribers(rcl_node_.get(), topic_name, &count);
   if (RCL_RET_OK != ret) {
     throw RCLError("Error in rcl_count_subscribers");
   }
@@ -147,14 +111,8 @@ get_count_subscribers(py::capsule pynode, const char * topic_name)
 }
 
 py::list
-get_node_names_impl(py::capsule pynode, bool get_enclaves)
+Node::get_node_names_impl(bool get_enclaves)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcutils_string_array_t node_names = rcutils_get_zero_initialized_string_array();
   rcutils_string_array_t node_namespaces = rcutils_get_zero_initialized_string_array();
@@ -163,10 +121,10 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
   rcl_ret_t ret = RCL_RET_OK;
   if (get_enclaves) {
     ret = rcl_get_node_names_with_enclaves(
-      node, allocator, &node_names, &node_namespaces, &enclaves);
+      rcl_node_.get(), allocator, &node_names, &node_namespaces, &enclaves);
   } else {
     ret = rcl_get_node_names(
-      node, allocator, &node_names, &node_namespaces);
+      rcl_node_.get(), allocator, &node_names, &node_namespaces);
   }
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to get node names");
@@ -221,15 +179,15 @@ get_node_names_impl(py::capsule pynode, bool get_enclaves)
 }
 
 py::list
-get_node_names_and_namespaces(py::capsule pynode)
+Node::get_node_names_and_namespaces()
 {
-  return get_node_names_impl(pynode, false);
+  return get_node_names_impl(false);
 }
 
 py::list
-get_node_names_and_namespaces_with_enclaves(py::capsule pynode)
+Node::get_node_names_and_namespaces_with_enclaves()
 {
-  return get_node_names_impl(pynode, true);
+  return get_node_names_impl(true);
 }
 
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
@@ -362,22 +320,16 @@ _parse_param_overrides(
 }
 
 py::dict
-get_node_parameters(py::object pyparameter_cls, py::capsule pynode)
+Node::get_node_parameters(py::object pyparameter_cls)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   py::dict params_by_node_name;
   py::object parameter_type_cls = pyparameter_cls.attr("Type");
 
-  const rcl_node_options_t * node_options = rcl_node_get_options(node);
+  const rcl_node_options_t * node_options = rcl_node_get_options(rcl_node_.get());
 
   if (node_options->use_global_arguments) {
     _parse_param_overrides(
-      &(node->context->global_arguments), pyparameter_cls,
+      &(rcl_node_.get()->context->global_arguments), pyparameter_cls,
       parameter_type_cls, params_by_node_name);
   }
 
@@ -385,7 +337,7 @@ get_node_parameters(py::object pyparameter_cls, py::capsule pynode)
     &(node_options->arguments), pyparameter_cls,
     parameter_type_cls, params_by_node_name);
 
-  const char * node_fqn = rcl_node_get_fully_qualified_name(node);
+  const char * node_fqn = rcl_node_get_fully_qualified_name(rcl_node_.get());
   if (!node_fqn) {
     throw RCLError("failed to get node fully qualified name");
   }
@@ -409,49 +361,22 @@ get_node_parameters(py::object pyparameter_cls, py::capsule pynode)
   return node_params;
 }
 
-/// Handle destructor for node
-static
-void
-_rclpy_destroy_node(void * p)
+void Node::destroy()
 {
-  rclpy::LoggingGuard scoped_logging_guard;
-  auto node = static_cast<rcl_node_t *>(p);
-  if (!node) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_node got a NULL pointer");
-    return;
-  }
-
-  rcl_ret_t ret = rcl_node_fini(node);
-  if (RCL_RET_OK != ret) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "Failed to fini node: %s",
-      rcl_get_error_string().str);
-  }
-  PyMem_Free(node);
+  rcl_node_.reset();
+  rcl_context_.reset();
 }
 
-py::capsule
-create_node(
+Node::Node(
   const char * node_name,
   const char * namespace_,
-  py::capsule pycontext,
+  Context & _context,
   py::object pycli_args,
   bool use_global_arguments,
   bool enable_rosout)
+: rcl_context_(_context.shared_from_this())
 {
   rcl_ret_t ret;
-
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
   rcl_arguments_t arguments = rcl_get_zero_initialized_arguments();
 
   // turn the arguments into an array of C-style strings
@@ -503,14 +428,23 @@ create_node(
 
   throw_if_unparsed_ros_args(pyargs, arguments);
 
-  auto deleter = [](rcl_node_t * ptr) {_rclpy_destroy_node(ptr);};
-  auto node = std::unique_ptr<rcl_node_t, decltype(deleter)>(
-    static_cast<rcl_node_t *>(PyMem_Malloc(sizeof(rcl_node_t))),
-    deleter);
-  if (!node) {
-    throw std::bad_alloc();
-  }
-  *node = rcl_get_zero_initialized_node();
+  rcl_node_ = std::shared_ptr<rcl_node_t>(
+    new rcl_node_t,
+    [this](rcl_node_t * node)
+    {
+      rcl_ret_t ret = rcl_node_fini(node);
+      if (RCL_RET_OK != ret) {
+        // Warning should use line number of the current stack frame
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level, "Failed to fini node: %s",
+          rcl_get_error_string().str);
+        rcl_reset_error();
+      }
+      delete node;
+    });
+
+  *rcl_node_ = rcl_get_zero_initialized_node();
   rcl_node_options_t options = rcl_node_get_default_options();
   options.use_global_arguments = use_global_arguments;
   options.arguments = arguments;
@@ -518,7 +452,7 @@ create_node(
 
   {
     rclpy::LoggingGuard scoped_logging_guard;
-    ret = rcl_node_init(node.get(), node_name, namespace_, context, &options);
+    ret = rcl_node_init(rcl_node_.get(), node_name, namespace_, rcl_context_->rcl_ptr(), &options);
   }
 
   if (RCL_RET_BAD_ALLOC == ret) {
@@ -534,22 +468,48 @@ create_node(
   if (RCL_RET_OK != ret) {
     throw RCLError("error creating node");
   }
+}
 
-  PyObject * pynode_c = rclpy_create_handle_capsule(node.get(), "rcl_node_t", _rclpy_destroy_node);
-  if (!pynode_c) {
-    throw py::error_already_set();
-  }
-  auto pynode = py::reinterpret_steal<py::capsule>(pynode_c);
-  // pynode now owns the rcl_node_t
-  node.release();
-
-  auto node_handle = static_cast<rclpy_handle_t *>(pynode);
-  auto context_handle = static_cast<rclpy_handle_t *>(pycontext);
-  _rclpy_handle_add_dependency(node_handle, context_handle);
-  if (PyErr_Occurred()) {
-    throw py::error_already_set();
-  }
-
-  return pynode;
+void
+define_node(py::object module)
+{
+  py::class_<Node, Destroyable, std::shared_ptr<Node>>(module, "Node")
+  .def(py::init<const char *, const char *, Context &, py::object, bool, bool>())
+  .def_property_readonly(
+    "pointer", [](const Node & node) {
+      return reinterpret_cast<size_t>(node.rcl_ptr());
+    },
+    "Get the address of the entity as an integer")
+  .def(
+    "get_node_fully_qualified_name", &Node::get_node_fully_qualified_name,
+    "Get the fully qualified name of the node.")
+  .def(
+    "get_node_logger_name", &Node::get_node_logger_name,
+    "Get the name of the logger associated with a node.")
+  .def(
+    "get_node_name", &Node::get_node_name,
+    "Get the name of a node.")
+  .def(
+    "get_node_namespace", &Node::get_node_namespace,
+    "Get the namespace of a node.")
+  .def(
+    "get_count_publishers", &Node::get_count_publishers,
+    "Returns the count of all the publishers known for that topic in the entire ROS graph.")
+  .def(
+    "get_count_subscribers", &Node::get_count_subscribers,
+    "Returns the count of all the subscribers known for that topic in the entire ROS graph.")
+  .def(
+    "get_node_names_impl", &Node::get_node_names_impl,
+    "Get the list of nodes discovered by the provided node")
+  .def(
+    "get_node_names_and_namespaces", &Node::get_node_names_and_namespaces,
+    "Get the list of nodes discovered by the provided node")
+  .def(
+    "get_node_names_and_namespaces_with_enclaves",
+    &Node::get_node_names_and_namespaces_with_enclaves,
+    "Get the list of nodes discovered by the provided node, with their respective enclaves.")
+  .def(
+    "get_node_parameters", &Node::get_node_parameters,
+    "Get a list of parameters for the current node");
 }
 }  // namespace rclpy

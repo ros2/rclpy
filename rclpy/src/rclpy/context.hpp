@@ -17,36 +17,67 @@
 
 #include <pybind11/pybind11.h>
 
+#include <memory>
+
+#include "destroyable.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
 {
-/// Retrieves domain id from init_options of context
-/**
- * \param[in] pycontext Capsule containing rcl_context_t
- * \return domain id
- */
-size_t
-context_get_domain_id(py::capsule pycontext);
+class Context : public Destroyable, public std::enable_shared_from_this<Context>
+{
+public:
+  /// Create a capsule with an rcl_context_t instance.
+  /**
+   * The returned context is zero-initialized for use with rclpy_init().
+   *
+   * Raises MemoryError if allocating memory fails.
+   * Raises RuntimeError if creating the context fails.
+   *
+   * \return capsule with the rcl_context_t instance
+   */
+  Context();
 
-/// Create a capsule with an rcl_context_t instance.
-/**
- * The returned context is zero-initialized for use with rclpy_init().
- *
- * Raises MemoryError if allocating memory fails.
- * Raises RuntimeError if creating the context fails.
- *
- * \return capsule with the rcl_context_t instance
- */
-py::capsule
-create_context();
+  /// Retrieves domain id from init_options of context
+  /**
+   * \param[in] pycontext Capsule containing rcl_context_t
+   * \return domain id
+   */
+  size_t
+  get_domain_id();
 
-/// Status of the the client library
-/**
- * \return True if rcl is running properly, False otherwise
- */
-bool
-context_is_valid(py::capsule context);
+  /// Status of the the client library
+  /**
+   * \return True if rcl is running properly, False otherwise
+   */
+  bool
+  ok();
+
+  void
+  shutdown();
+
+  /// Get rcl_client_t pointer
+  std::shared_ptr<rcl_context_t> get_shared_ptr() const
+  {
+    return rcl_context_;
+  }
+
+  /// Get rcl_client_t pointer
+  rcl_context_t * rcl_ptr() const
+  {
+    return rcl_context_.get();
+  }
+
+  /// Force an early destruction of this object
+  void destroy() override;
+
+private:
+  std::shared_ptr<rcl_context_t> rcl_context_;
+};
+
+/// Define a pybind11 wrapper for an rclpy::Service
+void define_context(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__CONTEXT_HPP_
