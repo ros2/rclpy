@@ -43,6 +43,9 @@ class CancelResponse(Enum):
     ACCEPT = 2
 
 
+GoalEvent = _rclpy.GoalEvent
+
+
 class ServerGoalHandle:
     """Goal handle for working with Action Servers."""
 
@@ -59,7 +62,7 @@ class ServerGoalHandle:
         :param goal_info: GoalInfo message.
         :param goal_request: The user defined goal request message from an ActionClient.
         """
-        self._goal = _rclpy.ActionGoalHandle(action_server._handle, goal_info)
+        self._goal_handle = _rclpy.ActionGoalHandle(action_server._handle, goal_info)
         self._action_server = action_server
         self._goal_info = goal_info
         self._goal_request = goal_request
@@ -85,9 +88,9 @@ class ServerGoalHandle:
     @property
     def is_active(self):
         with self._lock:
-            if self._goal is None:
+            if self._goal_handle is None:
                 return False
-            return self._goal.is_active()
+            return self._goal_handle.is_active()
 
     @property
     def is_cancel_requested(self):
@@ -96,24 +99,24 @@ class ServerGoalHandle:
     @property
     def status(self):
         with self._lock:
-            if self._goal is None:
+            if self._goal_handle is None:
                 return GoalStatus.STATUS_UNKNOWN
-            return self._goal.get_status()
+            return self._goal_handle.get_status()
 
     def _update_state(self, event):
         with self._lock:
             # Ignore updates for already destructed goal handles
-            if self._goal is None:
+            if self._goal_handle is None:
                 return
 
             # Update state
-            self._goal.update_goal_state(event)
+            self._goal_handle.update_goal_state(event)
 
             # Publish state change
             self._action_server._handle.publish_status()
 
             # If it's a terminal state, then also notify the action server
-            if not self._goal.is_active():
+            if not self._goal_handle.is_active():
                 self._action_server.notify_goal_done()
 
     def execute(self, execute_callback=None):
@@ -130,7 +133,7 @@ class ServerGoalHandle:
 
         with self._lock:
             # Ignore for already destructed goal handles
-            if self._goal is None:
+            if self._goal_handle is None:
                 return
 
             # Populate the feedback message with metadata about this goal
@@ -153,10 +156,10 @@ class ServerGoalHandle:
 
     def destroy(self):
         with self._lock:
-            if self._goal is None:
+            if self._goal_handle is None:
                 return
-            self._goal.destroy_when_not_in_use()
-            self._goal = None
+            self._goal_handle.destroy_when_not_in_use()
+            self._goal_handle = None
 
         self._action_server.remove_future(self._result_future)
 
