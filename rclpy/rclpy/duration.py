@@ -35,7 +35,7 @@ class Duration:
         return 'Duration(nanoseconds={0})'.format(self.nanoseconds)
 
     def __str__(self):
-        if self == Duration.Infinite():
+        if self == Infinite:
             return 'Infinite'
         return f'{self.nanoseconds} nanoseconds'
 
@@ -82,9 +82,9 @@ class Duration:
             raise TypeError('Must pass a builtin_interfaces.msg.Duration object')
         return cls(seconds=msg.sec, nanoseconds=msg.nanosec)
 
-    @classmethod
-    def Infinite(cls):
-        return cls(nanoseconds=_rclpy.RMW_DURATION_INFINITE)
-
     def get_c_duration(self):
         return self._duration_handle
+
+
+# Constant representing an infinite amount of time.
+Infinite = Duration(nanoseconds=_rclpy.RMW_DURATION_INFINITE)
