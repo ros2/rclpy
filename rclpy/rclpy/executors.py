@@ -541,10 +541,11 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_timers -= 1
 
-                guard_capsules = []
+                guard_handles = []
                 for gc in guards:
                     try:
-                        guard_capsules.append(context_stack.enter_context(gc.handle))
+                        context_stack.enter_context(gc.handle)
+                        guard_handles.append(gc.handle)
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
 
@@ -574,8 +575,8 @@ class Executor:
                     wait_set.add_service(srv_capsule)
                 for tmr_handle in timer_handles:
                     wait_set.add_timer(tmr_handle)
-                for gc_capsule in guard_capsules:
-                    wait_set.add_entity('guard_condition', gc_capsule)
+                for gc_handle in guard_handles:
+                    wait_set.add_guard_condition(gc_handle)
                 for waitable in waitables:
                     waitable.add_to_wait_set(wait_set)
 

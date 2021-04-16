@@ -22,6 +22,7 @@
 
 #include "client.hpp"
 #include "destroyable.hpp"
+#include "guard_condition.hpp"
 #include "qos_event.hpp"
 #include "service.hpp"
 #include "subscription.hpp"
@@ -106,6 +107,16 @@ public:
    */
   size_t
   add_client(const Client & client);
+
+  /// Add a guard condition to the wait set structure
+  /**
+   * Raises RCLError if any lower level error occurs
+   *
+   * \param[in] timer a guard condition to add to the wait set
+   * \return Index in waitset entity was added at
+   */
+  size_t
+  add_guard_condition(const GuardCondition & gc);
 
   /// Add a timer to the wait set structure
   /**

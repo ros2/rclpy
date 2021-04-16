@@ -139,15 +139,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_qos_check_compatible", &rclpy::qos_check_compatible,
     "Check if two QoS profiles are compatible.");
 
-  m.def(
-    "rclpy_create_guard_condition", &rclpy::guard_condition_create,
-    "Create a general purpose guard condition");
-  m.def(
-    "rclpy_trigger_guard_condition", &rclpy::guard_condition_trigger,
-    "Trigger a general purpose guard condition");
-
+  rclpy::define_guard_condition(m);
   rclpy::define_timer(m);
-
   rclpy::define_subscription(m);
   rclpy::define_time_point(m);
   rclpy::define_clock(m);
