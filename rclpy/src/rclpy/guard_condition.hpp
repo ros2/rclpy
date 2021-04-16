@@ -54,14 +54,6 @@ public:
     return rcl_guard_condition_.get();
   }
 
-  /// Handle destructor for guard condition
-  static void
-  _rclpy_destroy_guard_condition(void * p)
-  {
-    (void)p;
-    // Empty destructor, the class should take care of the lifecycle.
-  }
-
   // TODO(ahcorde): Remove the pycapsule method when #728 is in
   /// Return a pycapsule object to be able to handle the signal in C.
   py::capsule
@@ -80,6 +72,14 @@ public:
 
 private:
   std::shared_ptr<rcl_guard_condition_t> rcl_guard_condition_;
+
+  /// Handle destructor for guard condition
+  static void
+  _rclpy_destroy_guard_condition(void * p)
+  {
+    (void)p;
+    // Empty destructor, the class should take care of the lifecycle.
+  }
 };
 
 /// Define a pybind11 wrapper for an rclpy::Service
