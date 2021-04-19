@@ -43,23 +43,21 @@ Context::Context()
           // shutdown first, if still valid
           ret = rcl_shutdown(context);
           if (RCL_RET_OK != ret) {
-            fprintf(
-              stderr,
+            RCUTILS_SAFE_FWRITE_TO_STDERR(
               "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-              "failed to shutdown rcl_context_t (%d) during PyCapsule destructor: %s\n",
-              ret,
-              rcl_get_error_string().str);
+              "failed to shutdown rcl_context_t");
+            RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+            RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
             rcl_reset_error();
           }
         }
         ret = rcl_context_fini(context);
         if (RCL_RET_OK != ret) {
-          fprintf(
-            stderr,
+          RCUTILS_SAFE_FWRITE_TO_STDERR(
             "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-            "failed to fini rcl_context_t (%d) during PyCapsule destructor: %s\n",
-            ret,
-            rcl_get_error_string().str);
+            "failed to fini rcl_context_t");
+          RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+          RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
           rcl_reset_error();
         }
       }

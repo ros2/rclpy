@@ -22,7 +22,6 @@
 #include <memory>
 
 #include "destroyable.hpp"
-#include "handle.hpp"
 #include "node.hpp"
 #include "wait_set.hpp"
 
@@ -227,7 +226,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Node> node_handle_;
+  std::shared_ptr<Node> node_;
   std::shared_ptr<rcl_action_client_t> rcl_action_client_;
 };
 /// Define a pybind11 wrapper for an rcl_time_point_t

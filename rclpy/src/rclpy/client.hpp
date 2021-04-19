@@ -22,7 +22,6 @@
 #include <memory>
 
 #include "destroyable.hpp"
-#include "handle.hpp"
 #include "node.hpp"
 
 namespace py = pybind11;
@@ -92,7 +91,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Node> node_handle_;
+  std::shared_ptr<Node> node_;
   std::shared_ptr<rcl_client_t> rcl_client_;
 };
 

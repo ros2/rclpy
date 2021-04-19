@@ -38,7 +38,6 @@ def test_destroy_node_twice():
     try:
         node = rclpy.create_node('test_node2', context=context)
         node.destroy_node()
-        # with pytest.raises(InvalidHandle):
         node.destroy_node()
     finally:
         rclpy.shutdown(context=context)

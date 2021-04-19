@@ -94,7 +94,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Node> node_handle_;
+  std::shared_ptr<Node> node_;
   std::shared_ptr<rcl_service_t> rcl_service_;
 };
 

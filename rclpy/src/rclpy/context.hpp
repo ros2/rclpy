@@ -28,14 +28,10 @@ namespace rclpy
 class Context : public Destroyable, public std::enable_shared_from_this<Context>
 {
 public:
-  /// Create a capsule with an rcl_context_t instance.
+  /// Create a Context instance.
   /**
-   * The returned context is zero-initialized for use with rclpy_init().
-   *
    * Raises MemoryError if allocating memory fails.
    * Raises RuntimeError if creating the context fails.
-   *
-   * \return capsule with the rcl_context_t instance
    */
   Context();
 
@@ -57,13 +53,7 @@ public:
   void
   shutdown();
 
-  /// Get rcl_client_t pointer
-  std::shared_ptr<rcl_context_t> get_shared_ptr() const
-  {
-    return rcl_context_;
-  }
-
-  /// Get rcl_client_t pointer
+  /// Get rcl_context_t pointer
   rcl_context_t * rcl_ptr() const
   {
     return rcl_context_.get();

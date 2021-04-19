@@ -43,7 +43,7 @@
 namespace rclpy
 {
 const char *
-Node::get_node_fully_qualified_name()
+Node::fully_qualified_name()
 {
   const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(rcl_node_.get());
   if (!fully_qualified_node_name) {
@@ -54,7 +54,7 @@ Node::get_node_fully_qualified_name()
 }
 
 const char *
-Node::get_node_logger_name()
+Node::logger_name()
 {
   const char * node_logger_name = rcl_node_get_logger_name(rcl_node_.get());
   if (!node_logger_name) {
@@ -76,7 +76,7 @@ Node::get_node_name()
 }
 
 const char *
-Node::get_node_namespace()
+Node::get_namespace()
 {
   const char * node_namespace = rcl_node_get_namespace(rcl_node_.get());
   if (!node_namespace) {
@@ -111,7 +111,7 @@ Node::get_count_subscribers(const char * topic_name)
 }
 
 py::list
-Node::get_node_names_impl(bool get_enclaves)
+Node::get_names_impl(bool get_enclaves)
 {
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcutils_string_array_t node_names = rcutils_get_zero_initialized_string_array();
@@ -179,15 +179,15 @@ Node::get_node_names_impl(bool get_enclaves)
 }
 
 py::list
-Node::get_node_names_and_namespaces()
+Node::get_names_and_namespaces()
 {
-  return get_node_names_impl(false);
+  return get_names_impl(false);
 }
 
 py::list
-Node::get_node_names_and_namespaces_with_enclaves()
+Node::get_names_and_namespaces_with_enclaves()
 {
-  return get_node_names_impl(true);
+  return get_names_impl(true);
 }
 
 /// Create an rclpy.parameter.Parameter from an rcl_variant_t
@@ -320,7 +320,7 @@ _parse_param_overrides(
 }
 
 py::dict
-Node::get_node_parameters(py::object pyparameter_cls)
+Node::get_parameters(py::object pyparameter_cls)
 {
   py::dict params_by_node_name;
   py::object parameter_type_cls = pyparameter_cls.attr("Type");
@@ -481,16 +481,16 @@ define_node(py::object module)
     },
     "Get the address of the entity as an integer")
   .def(
-    "get_node_fully_qualified_name", &Node::get_node_fully_qualified_name,
+    "fully_qualified_name", &Node::fully_qualified_name,
     "Get the fully qualified name of the node.")
   .def(
-    "get_node_logger_name", &Node::get_node_logger_name,
+    "logger_name", &Node::logger_name,
     "Get the name of the logger associated with a node.")
   .def(
     "get_node_name", &Node::get_node_name,
     "Get the name of a node.")
   .def(
-    "get_node_namespace", &Node::get_node_namespace,
+    "get_namespace", &Node::get_namespace,
     "Get the namespace of a node.")
   .def(
     "get_count_publishers", &Node::get_count_publishers,
@@ -499,17 +499,17 @@ define_node(py::object module)
     "get_count_subscribers", &Node::get_count_subscribers,
     "Returns the count of all the subscribers known for that topic in the entire ROS graph.")
   .def(
-    "get_node_names_impl", &Node::get_node_names_impl,
+    "get_names_impl", &Node::get_names_impl,
     "Get the list of nodes discovered by the provided node")
   .def(
-    "get_node_names_and_namespaces", &Node::get_node_names_and_namespaces,
+    "get_names_and_namespaces", &Node::get_names_and_namespaces,
     "Get the list of nodes discovered by the provided node")
   .def(
-    "get_node_names_and_namespaces_with_enclaves",
-    &Node::get_node_names_and_namespaces_with_enclaves,
+    "get_names_and_namespaces_with_enclaves",
+    &Node::get_names_and_namespaces_with_enclaves,
     "Get the list of nodes discovered by the provided node, with their respective enclaves.")
   .def(
-    "get_node_parameters", &Node::get_node_parameters,
+    "get_parameters", &Node::get_parameters,
     "Get a list of parameters for the current node");
 }
 }  // namespace rclpy

@@ -39,9 +39,9 @@ public:
    *
    * \param[in] node_name name of the node to be created
    * \param[in] namespace namespace for the node
-   * \param[in] pycontext Capsule for an rcl_context_t
+   * \param[in] context Context
    * \param[in] pycli_args a sequence of command line arguments for just this node, or None
-   * \param[in] use_global_arguments if true then the node will also use cli arguments on pycontext
+   * \param[in] use_global_arguments if true then the node will also use cli arguments on context
    * \param[in] enable rosout if true then enable rosout logging
    * \return Capsule of the pointer to the created rcl_node_t * structure
    */
@@ -60,7 +60,7 @@ public:
    * \return String containing the fully qualified name of the node
    */
   const char *
-  get_node_fully_qualified_name();
+  fully_qualified_name();
 
   /// Get the name of the logger associated with a node.
   /**
@@ -69,7 +69,7 @@ public:
    * \return logger_name
    */
   const char *
-  get_node_logger_name();
+  logger_name();
 
   /// Get the name of a node.
   /**
@@ -87,7 +87,7 @@ public:
    * \return namespace
    */
   const char *
-  get_node_namespace();
+  get_namespace();
 
   /// Returns the count of all the publishers known for that topic in the entire ROS graph.
   /*
@@ -114,24 +114,11 @@ public:
   /**
    * Raises RCLError if the names are unavailable.
    *
-   * \param[in] get_enclaves specifies if the output includes the enclaves names
-   *            or not
-   * \return Python list of tuples, containing:
-   *  node name, node namespace, and
-   *  enclave if `get_enclaves` is true.
-   */
-  py::list
-  get_node_names_impl(bool get_enclaves);
-
-  /// Get the list of nodes discovered by the provided node
-  /**
-   * Raises RCLError if the names are unavailable.
-   *
    * \return Python list of tuples where each tuple contains the two strings:
    *   the node name and node namespace
    */
   py::list
-  get_node_names_and_namespaces();
+  get_names_and_namespaces();
 
   /// Get the list of nodes discovered by the provided node, with their respective enclaves.
   /**
@@ -141,7 +128,7 @@ public:
    *   node name, node namespace, and enclave.
    */
   py::list
-  get_node_names_and_namespaces_with_enclaves();
+  get_names_and_namespaces_with_enclaves();
 
   /// Get a list of parameters for the current node
   /**
@@ -153,7 +140,7 @@ public:
    * \return A dict mapping parameter names to rclpy.parameter.Parameter (may be empty).
    */
   py::dict
-  get_node_parameters(py::object pyparameter_cls);
+  get_parameters(py::object pyparameter_cls);
 
   /// Get rcl_client_t pointer
   rcl_node_t *
@@ -167,6 +154,19 @@ public:
   destroy() override;
 
 private:
+  /// Get the list of nodes discovered by the provided node
+  /**
+   * Raises RCLError if the names are unavailable.
+   *
+   * \param[in] get_enclaves specifies if the output includes the enclaves names
+   *            or not
+   * \return Python list of tuples, containing:
+   *  node name, node namespace, and
+   *  enclave if `get_enclaves` is true.
+   */
+  py::list
+  get_names_impl(bool get_enclaves);
+
   std::shared_ptr<rcl_node_t> rcl_node_;
   std::shared_ptr<Context> rcl_context_;
 };

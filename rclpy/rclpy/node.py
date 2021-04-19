@@ -191,7 +191,7 @@ class Node:
                 # Should not get to this point
                 raise RuntimeError('rclpy_create_node failed for unknown reason')
         with self.handle:
-            self._logger = get_logger(self.__node.get_node_logger_name())
+            self._logger = get_logger(self.__node.logger_name())
 
         self.__executor_weakref = None
 
@@ -199,7 +199,7 @@ class Node:
             ParameterEvent, '/parameter_events', qos_profile_parameter_events)
 
         with self.handle:
-            self._parameter_overrides = self.__node.get_node_parameters(Parameter)
+            self._parameter_overrides = self.__node.get_parameters(Parameter)
         # Combine parameters from params files with those from the node constructor and
         # use the set_parameters_atomically API so a parameter event is published.
         if parameter_overrides is not None:
@@ -324,7 +324,7 @@ class Node:
     def get_namespace(self) -> str:
         """Get the namespace of the node."""
         with self.handle:
-            return self.handle.get_node_namespace()
+            return self.handle.get_namespace()
 
     def get_clock(self) -> Clock:
         """Get the clock used by the node."""
@@ -1775,7 +1775,7 @@ class Node:
         :return: List of node names.
         """
         with self.handle:
-            names_ns = self.handle.get_node_names_and_namespaces()
+            names_ns = self.handle.get_names_and_namespaces()
         return [n[0] for n in names_ns]
 
     def get_node_names_and_namespaces(self) -> List[Tuple[str, str]]:
@@ -1785,7 +1785,7 @@ class Node:
         :return: List of tuples containing two strings: the node name and node namespace.
         """
         with self.handle:
-            return self.handle.get_node_names_and_namespaces()
+            return self.handle.get_names_and_namespaces()
 
     def get_node_names_and_namespaces_with_enclaves(self) -> List[Tuple[str, str, str]]:
         """
@@ -1795,7 +1795,7 @@ class Node:
             and enclave.
         """
         with self.handle:
-            return self.handle.get_node_names_and_namespaces_with_enclaves()
+            return self.handle.get_names_and_namespaces_with_enclaves()
 
     def get_fully_qualified_name(self) -> str:
         """
@@ -1804,7 +1804,7 @@ class Node:
         :return: Fully qualified node name.
         """
         with self.handle:
-            return self.handle.get_node_fully_qualified_name()
+            return self.handle.fully_qualified_name()
 
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())

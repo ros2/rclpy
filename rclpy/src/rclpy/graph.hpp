@@ -34,7 +34,7 @@ namespace rclpy
  * Raises NodeNameNonExistentError if remote node was not found
  * Raises RCLError if there is an rcl error
  *
- * \param[in] node node to get publisher topic names and types.
+ * \param[in] node Node to get publisher topic names and types.
  * \param[in] no_demangle Whether to demangle topic names following ROS
  *   conventions or not.
  * \param[in] node_name Name of the remote node to query.
@@ -74,7 +74,7 @@ graph_get_subscriber_names_and_types_by_node(
  * Raises NodeNameNonExistentError if the remote node was not found
  * Raises RCLError if there is an rcl error
  *
- * \param[in] node node to get service topic names and types
+ * \param[in] node Node to get service topic names and types
  * \param[in] node_name Name of the remote node to query.
  * \param[in] node_namespace Namespace of the remote node to query.
  * \return List of tuples, where the first element of each tuple is the service
@@ -122,7 +122,7 @@ graph_get_topic_names_and_types(Node & node, bool no_demangle);
 /**
  * Raises RCLError if there is an rcl error
  *
- * \param[in] node node to get service topic names and types
+ * \param[in] node Node to get all topic service names and types
  * \return List of tuples, where the first element of each tuple is the service
  *   name (string) and the second element is a list of service types (list of
  *   strings).
@@ -139,7 +139,7 @@ graph_get_service_names_and_types(Node & node);
  * Raises NotImplementedError if the call is not supported by RMW
  * Raises RCLError if there is an rcl error
  *
- * \param[in] node node to get publisher topic info
+ * \param[in] node Node to get topic publisher info
  * \param[in] topic_name the topic name to get the publishers for.
  * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
  *     otherwise it should be a valid ROS topic name.
@@ -157,7 +157,7 @@ graph_get_publishers_info_by_topic(
  * Raises NotImplementedError if the call is not supported by RMW
  * Raises RCLError if there is an rcl error
  *
- * \param[in] node node to get subscriber topic info
+ * \param[in] node node to get topic subscriber info
  * \param[in] topic_name the topic name to get the subscriptions for.
  * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name,
  *     otherwise it should be a valid ROS topic name.

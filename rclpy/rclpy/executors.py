@@ -556,6 +556,8 @@ class Executor:
                     except InvalidHandle:
                         pass
 
+                context_stack.enter_context(self._context.handle)
+
                 wait_set = _rclpy.WaitSet(
                     entity_count.num_subscriptions,
                     entity_count.num_guard_conditions,

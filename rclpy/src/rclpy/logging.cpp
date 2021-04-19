@@ -62,14 +62,13 @@ rclpy_thread_safe_logging_output_handler(
 }
 
 void
-logging_configure(Context & _context)
+logging_configure(Context & context)
 {
-  auto context = _context.shared_from_this();
   rcl_allocator_t allocator = rcl_get_default_allocator();
 
   rclpy::LoggingGuard scoped_logging_guard;
   rcl_ret_t ret = rcl_logging_configure_with_output_handler(
-    &context->rcl_ptr()->global_arguments,
+    &context.rcl_ptr()->global_arguments,
     &allocator,
     rclpy_thread_safe_logging_output_handler);
   if (RCL_RET_OK != ret) {

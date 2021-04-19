@@ -110,7 +110,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Node> node_handle_;
+  std::shared_ptr<Node> node_;
   std::shared_ptr<rcl_publisher_t> rcl_publisher_;
 };
 /// Define a pybind11 wrapper for an rclpy::Service
