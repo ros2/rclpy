@@ -55,23 +55,6 @@ cleanup_rclpy_qos_profile(rclpy_qos_profile_t * profile)
   Py_XDECREF(profile->avoid_ros_namespace_conventions);
 }
 
-bool
-rclpy_names_and_types_fini(rcl_names_and_types_t * names_and_types)
-{
-  if (!names_and_types) {
-    return true;
-  }
-  rcl_ret_t ret = rcl_names_and_types_fini(names_and_types);
-  if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      PyExc_RuntimeError,
-      "Failed to destroy rcl_names_and_types_t: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    return false;
-  }
-  return true;
-}
-
 void *
 rclpy_common_get_type_support(PyObject * pymsg_type)
 {
@@ -89,55 +72,6 @@ rclpy_common_get_type_support(PyObject * pymsg_type)
   void * ts = PyCapsule_GetPointer(pyts, NULL);
   Py_DECREF(pyts);
   return ts;
-}
-
-PyObject *
-rclpy_convert_to_py_names_and_types(rcl_names_and_types_t * names_and_types)
-{
-  if (!names_and_types) {
-    return NULL;
-  }
-
-  PyObject * pynames_and_types = PyList_New(names_and_types->names.size);
-  if (!pynames_and_types) {
-    return NULL;
-  }
-
-  size_t i;
-  for (i = 0; i < names_and_types->names.size; ++i) {
-    PyObject * pytuple = PyTuple_New(2);
-    if (!pytuple) {
-      Py_DECREF(pynames_and_types);
-      return NULL;
-    }
-    PyObject * pyname = PyUnicode_FromString(names_and_types->names.data[i]);
-    if (!pyname) {
-      Py_DECREF(pynames_and_types);
-      Py_DECREF(pytuple);
-      return NULL;
-    }
-    PyTuple_SET_ITEM(pytuple, 0, pyname);
-    PyObject * pytypes_list = PyList_New(names_and_types->types[i].size);
-    if (!pytypes_list) {
-      Py_DECREF(pynames_and_types);
-      Py_DECREF(pytuple);
-      return NULL;
-    }
-    size_t j;
-    for (j = 0; j < names_and_types->types[i].size; ++j) {
-      PyObject * pytype = PyUnicode_FromString(names_and_types->types[i].data[j]);
-      if (!pytype) {
-        Py_DECREF(pynames_and_types);
-        Py_DECREF(pytuple);
-        Py_DECREF(pytypes_list);
-        return NULL;
-      }
-      PyList_SET_ITEM(pytypes_list, j, pytype);
-    }
-    PyTuple_SET_ITEM(pytuple, 1, pytypes_list);
-    PyList_SET_ITEM(pynames_and_types, i, pytuple);
-  }
-  return pynames_and_types;
 }
 
 static

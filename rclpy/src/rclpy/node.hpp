@@ -17,6 +17,8 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/graph.h>  // rcl_names_and_types_t
+
 #include <memory>
 
 #include "context.hpp"
@@ -43,7 +45,6 @@ public:
    * \param[in] pycli_args a sequence of command line arguments for just this node, or None
    * \param[in] use_global_arguments if true then the node will also use cli arguments on context
    * \param[in] enable rosout if true then enable rosout logging
-   * \return Capsule of the pointer to the created rcl_node_t * structure
    */
   Node(
     const char * node_name,
@@ -60,7 +61,7 @@ public:
    * \return String containing the fully qualified name of the node
    */
   const char *
-  fully_qualified_name();
+  get_fully_qualified_name();
 
   /// Get the name of the logger associated with a node.
   /**
@@ -118,7 +119,7 @@ public:
    *   the node name and node namespace
    */
   py::list
-  get_names_and_namespaces();
+  get_node_names_and_namespaces();
 
   /// Get the list of nodes discovered by the provided node, with their respective enclaves.
   /**
@@ -128,7 +129,7 @@ public:
    *   node name, node namespace, and enclave.
    */
   py::list
-  get_names_and_namespaces_with_enclaves();
+  get_node_names_and_namespaces_with_enclaves();
 
   /// Get a list of parameters for the current node
   /**
@@ -141,6 +142,33 @@ public:
    */
   py::dict
   get_parameters(py::object pyparameter_cls);
+
+  /// Get action client names and types by node.
+  /*
+   * \param[in] remote_node_name the node name of the actions to return
+   * \param[in] remote_node_namespace the node namespace of the actions to return
+   * \return list of action client names and their types
+   */
+  py::list
+  get_action_client_names_and_types_by_node(
+    const char * remote_node_name, const char * remote_node_namespace);
+
+  /// Get action server names and types by node.
+  /*
+   * \param[in] remote_node_name the node name of the actions to return
+   * \param[in] remote_node_namespace the node namespace of the actions to return
+   * \return list of action server names and their types
+   */
+  py::list
+  get_action_server_names_and_types_by_node(
+    const char * remote_node_name, const char * remote_node_namespace);
+
+  /// Get action names and types.
+  /*
+   * \return list of action names and types
+   */
+  py::list
+  get_action_names_and_types();
 
   /// Get rcl_client_t pointer
   rcl_node_t *

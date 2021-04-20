@@ -15,7 +15,6 @@
 from typing import List
 from typing import Tuple
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 
 
@@ -35,8 +34,8 @@ def get_action_client_names_and_types_by_node(
       action types.
     """
     with node.handle:
-        return _rclpy.rclpy_action_get_client_names_and_types_by_node(
-            node.handle, remote_node_name, remote_node_namespace)
+        return node.handle.get_action_client_names_and_types_by_node(
+            remote_node_name, remote_node_namespace)
 
 
 def get_action_server_names_and_types_by_node(
@@ -55,8 +54,8 @@ def get_action_server_names_and_types_by_node(
       action types.
     """
     with node.handle:
-        return _rclpy.rclpy_action_get_server_names_and_types_by_node(
-            node.handle, remote_node_name, remote_node_namespace)
+        return node.handle.get_action_server_names_and_types_by_node(
+            remote_node_name, remote_node_namespace)
 
 
 def get_action_names_and_types(node: Node) -> List[Tuple[str, List[str]]]:
@@ -69,4 +68,4 @@ def get_action_names_and_types(node: Node) -> List[Tuple[str, List[str]]]:
       action types.
     """
     with node.handle:
-        return _rclpy.rclpy_action_get_names_and_types(node.handle)
+        return node.handle.get_action_names_and_types()

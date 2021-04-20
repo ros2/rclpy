@@ -311,9 +311,6 @@ class Node:
         raise AttributeError('handle cannot be modified after node creation')
 
     def __del__(self):
-        self.destroy()
-
-    def destroy(self):
         self.destroy_node()
 
     def get_name(self) -> str:
@@ -1775,7 +1772,7 @@ class Node:
         :return: List of node names.
         """
         with self.handle:
-            names_ns = self.handle.get_names_and_namespaces()
+            names_ns = self.handle.get_node_names_and_namespaces()
         return [n[0] for n in names_ns]
 
     def get_node_names_and_namespaces(self) -> List[Tuple[str, str]]:
@@ -1785,7 +1782,7 @@ class Node:
         :return: List of tuples containing two strings: the node name and node namespace.
         """
         with self.handle:
-            return self.handle.get_names_and_namespaces()
+            return self.handle.get_node_names_and_namespaces()
 
     def get_node_names_and_namespaces_with_enclaves(self) -> List[Tuple[str, str, str]]:
         """
@@ -1795,7 +1792,7 @@ class Node:
             and enclave.
         """
         with self.handle:
-            return self.handle.get_names_and_namespaces_with_enclaves()
+            return self.handle.get_node_names_and_namespaces_with_enclaves()
 
     def get_fully_qualified_name(self) -> str:
         """
@@ -1804,7 +1801,7 @@ class Node:
         :return: Fully qualified node name.
         """
         with self.handle:
-            return self.handle.fully_qualified_name()
+            return self.handle.get_fully_qualified_name()
 
     def _count_publishers_or_subscribers(self, topic_name, func):
         fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())

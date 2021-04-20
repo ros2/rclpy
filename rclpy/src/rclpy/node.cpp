@@ -15,6 +15,7 @@
 // Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
 
+#include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
 #include <rcl/rcl.h>
@@ -43,7 +44,7 @@
 namespace rclpy
 {
 const char *
-Node::fully_qualified_name()
+Node::get_fully_qualified_name()
 {
   const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(rcl_node_.get());
   if (!fully_qualified_node_name) {
@@ -134,29 +135,32 @@ Node::get_names_impl(bool get_enclaves)
     {
       rcutils_ret_t fini_ret = rcutils_string_array_fini(&node_names);
       if (RCUTILS_RET_OK != fini_ret) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR(
-          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-          "failed to fini node names during error handling: ");
-        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
-        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        // Warning should use line number of the current stack frame
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level,
+          "[rclpy| %s : %s ]: failed to fini node names during error handling: %s",
+          RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
         rcl_reset_error();
       }
       fini_ret = rcutils_string_array_fini(&node_namespaces);
       if (RCUTILS_RET_OK != fini_ret) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR(
-          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-          "failed to fini node namespaces during error handling: ");
-        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
-        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        // Warning should use line number of the current stack frame
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level,
+          "[rclpy| %s : %s ]: failed to fini node namespaces during error handling: %s",
+          RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
         rcl_reset_error();
       }
       fini_ret = rcutils_string_array_fini(&enclaves);
       if (RCUTILS_RET_OK != fini_ret) {
-        RCUTILS_SAFE_FWRITE_TO_STDERR(
-          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-          "failed to fini enclaves string array during error handling: ");
-        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
-        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        // Warning should use line number of the current stack frame
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level,
+          "[rclpy| %s : %s ]: failed to fini enclaves string array during error handling: %s",
+          RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
         rcl_reset_error();
       }
     });
@@ -179,13 +183,13 @@ Node::get_names_impl(bool get_enclaves)
 }
 
 py::list
-Node::get_names_and_namespaces()
+Node::get_node_names_and_namespaces()
 {
   return get_names_impl(false);
 }
 
 py::list
-Node::get_names_and_namespaces_with_enclaves()
+Node::get_node_names_and_namespaces_with_enclaves()
 {
   return get_names_impl(true);
 }
@@ -470,6 +474,57 @@ Node::Node(
   }
 }
 
+py::list
+Node::get_action_client_names_and_types_by_node(
+  const char * remote_node_name, const char * remote_node_namespace)
+{
+  rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_client_names_and_types_by_node(
+    rcl_node_.get(),
+    &allocator,
+    remote_node_name,
+    remote_node_namespace,
+    &names_and_types);
+  if (RCL_RET_OK != ret) {
+    throw rclpy::RCLError("Failed to get action client names and type");
+  }
+
+  return convert_to_py_names_and_types(&names_and_types);
+}
+
+py::list
+Node::get_action_server_names_and_types_by_node(
+  const char * remote_node_name, const char * remote_node_namespace)
+{
+  rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_server_names_and_types_by_node(
+    rcl_node_.get(),
+    &allocator,
+    remote_node_name,
+    remote_node_namespace,
+    &names_and_types);
+  if (RCL_RET_OK != ret) {
+    throw rclpy::RCLError("Failed to get action server names and type");
+  }
+
+  return convert_to_py_names_and_types(&names_and_types);
+}
+
+py::list
+Node::get_action_names_and_types()
+{
+  rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_names_and_types(rcl_node_.get(), &allocator, &names_and_types);
+  if (RCL_RET_OK != ret) {
+    throw rclpy::RCLError("Failed to get action names and type");
+  }
+
+  return convert_to_py_names_and_types(&names_and_types);
+}
+
 void
 define_node(py::object module)
 {
@@ -481,7 +536,7 @@ define_node(py::object module)
     },
     "Get the address of the entity as an integer")
   .def(
-    "fully_qualified_name", &Node::fully_qualified_name,
+    "get_fully_qualified_name", &Node::get_fully_qualified_name,
     "Get the fully qualified name of the node.")
   .def(
     "logger_name", &Node::logger_name,
@@ -499,15 +554,23 @@ define_node(py::object module)
     "get_count_subscribers", &Node::get_count_subscribers,
     "Returns the count of all the subscribers known for that topic in the entire ROS graph.")
   .def(
-    "get_names_impl", &Node::get_names_impl,
+    "get_node_names_and_namespaces", &Node::get_node_names_and_namespaces,
     "Get the list of nodes discovered by the provided node")
   .def(
-    "get_names_and_namespaces", &Node::get_names_and_namespaces,
-    "Get the list of nodes discovered by the provided node")
-  .def(
-    "get_names_and_namespaces_with_enclaves",
-    &Node::get_names_and_namespaces_with_enclaves,
+    "get_node_names_and_namespaces_with_enclaves",
+    &Node::get_node_names_and_namespaces_with_enclaves,
     "Get the list of nodes discovered by the provided node, with their respective enclaves.")
+  .def(
+    "get_action_client_names_and_types_by_node",
+    &Node::get_action_client_names_and_types_by_node,
+    "Get action client names and types by node.")
+  .def(
+    "get_action_server_names_and_types_by_node",
+    &Node::get_action_server_names_and_types_by_node,
+    "Get action server names and types by node.")
+  .def(
+    "get_action_names_and_types", &Node::get_action_names_and_types,
+    "Get action names and types.")
   .def(
     "get_parameters", &Node::get_parameters,
     "Get a list of parameters for the current node");

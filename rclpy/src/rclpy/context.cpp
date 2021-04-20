@@ -43,21 +43,23 @@ Context::Context()
           // shutdown first, if still valid
           ret = rcl_shutdown(context);
           if (RCL_RET_OK != ret) {
-            RCUTILS_SAFE_FWRITE_TO_STDERR(
-              "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-              "failed to shutdown rcl_context_t");
-            RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
-            RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+            // Warning should use line number of the current stack frame
+            int stack_level = 1;
+            PyErr_WarnFormat(
+              PyExc_RuntimeWarning, stack_level,
+              "[rclpy| %s : %s ]: failed to shutdown rcl_context_t: %s",
+              RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
             rcl_reset_error();
           }
         }
         ret = rcl_context_fini(context);
         if (RCL_RET_OK != ret) {
-          RCUTILS_SAFE_FWRITE_TO_STDERR(
-            "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-            "failed to fini rcl_context_t");
-          RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
-          RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+          // Warning should use line number of the current stack frame
+          int stack_level = 1;
+          PyErr_WarnFormat(
+            PyExc_RuntimeWarning, stack_level,
+            "[rclpy| %s : %s ]: failed to fini rcl_context_t: %s",
+            RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
           rcl_reset_error();
         }
       }
