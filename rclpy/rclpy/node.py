@@ -310,9 +310,6 @@ class Node:
     def handle(self, value):
         raise AttributeError('handle cannot be modified after node creation')
 
-    def __del__(self):
-        self.destroy_node()
-
     def get_name(self) -> str:
         """Get the name of the node."""
         with self.handle:
