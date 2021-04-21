@@ -100,10 +100,10 @@ public:
 
   struct RclPtrs
   {
+    std::shared_ptr<rclpy::Node::RclPtrs> node_ptrs;
     // Store node_ptrs in here so rcl_event_t can keep node ptrs alive too
     std::unique_ptr<rcl_subscription_t,
       std::function<void(rcl_subscription_t *)>> rcl_subscription_;
-    std::shared_ptr<rclpy::Node::RclPtrs> node_ptrs;
   };
 
   /// Return RCL pointers so another class can keep the rcl part alive

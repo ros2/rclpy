@@ -95,8 +95,8 @@ public:
 
   struct RclPtrs
   {
-    std::unique_ptr<rcl_service_t, std::function<void(rcl_service_t *)>> rcl_service_;
     std::shared_ptr<rclpy::Node::RclPtrs> node_ptrs;
+    std::unique_ptr<rcl_service_t, std::function<void(rcl_service_t *)>> rcl_service_;
   };
 
   /// Return RCL pointers so another class can keep the rcl part alive

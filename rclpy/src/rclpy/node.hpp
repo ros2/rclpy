@@ -183,8 +183,8 @@ public:
 
   struct RclPtrs
   {
-    std::unique_ptr<rcl_node_t, std::function<void(rcl_node_t *)>> rcl_node_;
     std::shared_ptr<rclpy::Context::RclPtrs> context_ptrs;
+    std::unique_ptr<rcl_node_t, std::function<void(rcl_node_t *)>> rcl_node_;
   };
 
   /// Return RCL pointers so another class can keep the rcl part alive
