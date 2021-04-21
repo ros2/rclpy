@@ -53,6 +53,10 @@ Destroyable::destroy()
 void
 Destroyable::destroy_when_not_in_use()
 {
+  if (please_destroy_) {
+    // already asked to destroy
+    return;
+  }
   please_destroy_ = true;
   if (0u == use_count) {
     destroy();
