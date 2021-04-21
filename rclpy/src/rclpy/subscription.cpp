@@ -37,8 +37,10 @@ namespace rclpy
 Subscription::Subscription(
   Node & node, py::object pymsg_type, std::string topic,
   py::object pyqos_profile)
-: node_(node.shared_from_this())
+: rcl_ptrs_(new rclpy::Subscription::RclPtrs)
 {
+  rcl_ptrs_->node_ptrs = node.get_rcl_ptrs();
+
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
     rclpy_common_get_type_support(pymsg_type.ptr()));
   if (!msg_type) {
@@ -51,11 +53,12 @@ Subscription::Subscription(
     subscription_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
-  rcl_subscription_ = std::shared_ptr<rcl_subscription_t>(
+  rcl_ptrs_->rcl_subscription_ = std::unique_ptr<rcl_subscription_t,
+      std::function<void(rcl_subscription_t *)>>(
     new rcl_subscription_t,
     [this](rcl_subscription_t * subscription)
     {
-      rcl_ret_t ret = rcl_subscription_fini(subscription, node_->rcl_ptr());
+      rcl_ret_t ret = rcl_subscription_fini(subscription, rcl_ptrs_->node_ptrs->rcl_node_.get());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -67,10 +70,10 @@ Subscription::Subscription(
       delete subscription;
     });
 
-  *rcl_subscription_ = rcl_get_zero_initialized_subscription();
+  *rcl_ptrs_->rcl_subscription_ = rcl_get_zero_initialized_subscription();
 
   rcl_ret_t ret = rcl_subscription_init(
-    rcl_subscription_.get(), node_->rcl_ptr(), msg_type,
+    rcl_ptrs_->rcl_subscription_.get(), rcl_ptrs_->node_ptrs->rcl_node_.get(), msg_type,
     topic.c_str(), &subscription_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_TOPIC_NAME_INVALID) {
@@ -85,8 +88,8 @@ Subscription::Subscription(
 
 void Subscription::destroy()
 {
-  rcl_subscription_.reset();
-  node_.reset();
+  rcl_ptrs_->rcl_subscription_.reset();
+  rcl_ptrs_.reset();
 }
 
 py::object
@@ -97,7 +100,7 @@ Subscription::take_message(py::object pymsg_type, bool raw)
   if (raw) {
     SerializedMessage taken{rcutils_get_default_allocator()};
     rcl_ret_t ret = rcl_take_serialized_message(
-      rcl_subscription_.get(), &taken.rcl_msg, &message_info, NULL);
+      rcl_ptrs_->rcl_subscription_.get(), &taken.rcl_msg, &message_info, NULL);
     if (RCL_RET_OK != ret) {
       if (RCL_RET_BAD_ALLOC == ret) {
         rcl_reset_error();
@@ -115,7 +118,7 @@ Subscription::take_message(py::object pymsg_type, bool raw)
     auto taken_msg = create_from_py(pymsg_type);
 
     rcl_ret_t ret = rcl_take(
-      rcl_subscription_.get(), taken_msg.get(), &message_info, NULL);
+      rcl_ptrs_->rcl_subscription_.get(), taken_msg.get(), &message_info, NULL);
     if (RCL_RET_OK != ret) {
       if (RCL_RET_BAD_ALLOC == ret) {
         rcl_reset_error();
@@ -139,7 +142,7 @@ Subscription::take_message(py::object pymsg_type, bool raw)
 const char *
 Subscription::get_logger_name()
 {
-  const char * node_logger_name = rcl_node_get_logger_name(node_->rcl_ptr());
+  const char * node_logger_name = rcl_node_get_logger_name(rcl_ptrs_->node_ptrs->rcl_node_.get());
   if (!node_logger_name) {
     throw RCLError("Node logger name not set");
   }
@@ -150,7 +153,8 @@ Subscription::get_logger_name()
 std::string
 Subscription::get_topic_name()
 {
-  const char * subscription_name = rcl_subscription_get_topic_name(rcl_subscription_.get());
+  const char * subscription_name = rcl_subscription_get_topic_name(
+    rcl_ptrs_->rcl_subscription_.get());
   if (nullptr == subscription_name) {
     throw RCLError("failed to get subscription topic name");
   }

@@ -86,16 +86,28 @@ public:
   rcl_service_t *
   rcl_ptr() const
   {
-    return rcl_service_.get();
+    return rcl_ptrs_->rcl_service_.get();
   }
 
   /// Force an early destruction of this object
   void
   destroy() override;
 
+  struct RclPtrs
+  {
+    std::unique_ptr<rcl_service_t, std::function<void(rcl_service_t *)>> rcl_service_;
+    std::shared_ptr<rclpy::Node::RclPtrs> node_ptrs;
+  };
+
+  /// Return RCL pointers so another class can keep the rcl part alive
+  std::shared_ptr<rclpy::Service::RclPtrs>
+  get_rcl_ptrs() const
+  {
+    return rcl_ptrs_;
+  }
+
 private:
-  std::shared_ptr<Node> node_;
-  std::shared_ptr<rcl_service_t> rcl_service_;
+  std::shared_ptr<rclpy::Service::RclPtrs> rcl_ptrs_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::Service

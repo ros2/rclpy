@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+#include <iostream>
 
 #include "rclpy_common/common.h"
 
@@ -31,8 +32,10 @@ namespace rclpy
 Publisher::Publisher(
   Node & node, py::object pymsg_type, std::string topic,
   py::object pyqos_profile)
-: node_(node.shared_from_this())
+: rcl_ptrs_(new rclpy::Publisher::RclPtrs)
 {
+  rcl_ptrs_->node_ptrs = node.get_rcl_ptrs();
+
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
     rclpy_common_get_type_support(pymsg_type.ptr()));
   if (!msg_type) {
@@ -45,11 +48,12 @@ Publisher::Publisher(
     publisher_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
-  rcl_publisher_ = std::shared_ptr<rcl_publisher_t>(
+  rcl_ptrs_->rcl_publisher_ = std::unique_ptr<rcl_publisher_t,
+      std::function<void(rcl_publisher_t *)>>(
     new rcl_publisher_t,
     [this](rcl_publisher_t * publisher)
     {
-      rcl_ret_t ret = rcl_publisher_fini(publisher, node_->rcl_ptr());
+      rcl_ret_t ret = rcl_publisher_fini(publisher, rcl_ptrs_->node_ptrs->rcl_node_.get());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -61,10 +65,10 @@ Publisher::Publisher(
       delete publisher;
     });
 
-  *rcl_publisher_ = rcl_get_zero_initialized_publisher();
+  *rcl_ptrs_->rcl_publisher_ = rcl_get_zero_initialized_publisher();
 
   rcl_ret_t ret = rcl_publisher_init(
-    rcl_publisher_.get(), node_->rcl_ptr(), msg_type,
+    rcl_ptrs_->rcl_publisher_.get(), rcl_ptrs_->node_ptrs->rcl_node_.get(), msg_type,
     topic.c_str(), &publisher_ops);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_TOPIC_NAME_INVALID == ret) {
@@ -79,14 +83,14 @@ Publisher::Publisher(
 
 void Publisher::destroy()
 {
-  rcl_publisher_.reset();
-  node_.reset();
+  rcl_ptrs_->rcl_publisher_.reset();
+  rcl_ptrs_.reset();
 }
 
 const char *
 Publisher::get_logger_name()
 {
-  const char * node_logger_name = rcl_node_get_logger_name(node_->rcl_ptr());
+  const char * node_logger_name = rcl_node_get_logger_name(rcl_ptrs_->node_ptrs->rcl_node_.get());
   if (!node_logger_name) {
     throw RCLError("Node logger name not set");
   }
@@ -98,7 +102,7 @@ size_t
 Publisher::get_subscription_count()
 {
   size_t count = 0;
-  rcl_ret_t ret = rcl_publisher_get_subscription_count(rcl_publisher_.get(), &count);
+  rcl_ret_t ret = rcl_publisher_get_subscription_count(rcl_ptrs_->rcl_publisher_.get(), &count);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to get subscription count");
   }
@@ -109,7 +113,7 @@ Publisher::get_subscription_count()
 std::string
 Publisher::get_topic_name()
 {
-  const char * topic_name = rcl_publisher_get_topic_name(rcl_publisher_.get());
+  const char * topic_name = rcl_publisher_get_topic_name(rcl_ptrs_->rcl_publisher_.get());
   if (!topic_name) {
     throw RCLError("failed to get topic name");
   }
@@ -126,7 +130,7 @@ Publisher::publish(py::object pymsg)
     throw py::error_already_set();
   }
 
-  rcl_ret_t ret = rcl_publish(rcl_publisher_.get(), raw_ros_message, NULL);
+  rcl_ret_t ret = rcl_publish(rcl_ptrs_->rcl_publisher_.get(), raw_ros_message, NULL);
   destroy_ros_message(raw_ros_message);
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to publish");
@@ -141,7 +145,8 @@ Publisher::publish_raw(std::string msg)
   serialized_msg.buffer_length = msg.size();
   serialized_msg.buffer = reinterpret_cast<uint8_t *>(const_cast<char *>(msg.c_str()));
 
-  rcl_ret_t ret = rcl_publish_serialized_message(rcl_publisher_.get(), &serialized_msg, NULL);
+  rcl_ret_t ret = rcl_publish_serialized_message(
+    rcl_ptrs_->rcl_publisher_.get(), &serialized_msg, NULL);
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to publish");
   }

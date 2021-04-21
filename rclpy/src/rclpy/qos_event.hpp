@@ -83,18 +83,23 @@ public:
   rcl_event_t *
   rcl_ptr() const
   {
-    return rcl_event_.get();
+    return rcl_ptrs_->rcl_event_.get();
   }
 
   /// Force an early destruction of this object
   void
   destroy() override;
 
+  struct RclPtrs
+  {
+    std::shared_ptr<rclpy::Publisher::RclPtrs> grandparent_pub_handle_;
+    std::shared_ptr<rclpy::Subscription::RclPtrs> grandparent_sub_handle_;
+    std::unique_ptr<rcl_event_t, std::function<void(rcl_event_t *)>> rcl_event_;
+  };
+
 private:
-  std::shared_ptr<rclpy::Publisher> grandparent_pub_handle_;
-  std::shared_ptr<rclpy::Subscription> grandparent_sub_handle_;
-  std::shared_ptr<rcl_event_t> rcl_event_;
   std::variant<rcl_subscription_event_type_t, rcl_publisher_event_type_t> event_type_;
+  std::shared_ptr<rclpy::QoSEvent::RclPtrs> rcl_ptrs_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::QoSEvent

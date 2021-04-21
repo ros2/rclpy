@@ -32,8 +32,9 @@ namespace rclpy
 {
 Context::Context()
 {
+  rcl_ptrs_ = std::make_shared<rclpy::Context::RclPtrs>();
   // Create a client
-  rcl_context_ = std::shared_ptr<rcl_context_t>(
+  rcl_ptrs_->rcl_context_ = std::unique_ptr<rcl_context_t, std::function<void(rcl_context_t *)>>(
     new rcl_context_t,
     [](rcl_context_t * context)
     {
@@ -65,20 +66,20 @@ Context::Context()
       }
       delete context;
     });
-  *rcl_context_ = rcl_get_zero_initialized_context();
+  *rcl_ptrs_->rcl_context_ = rcl_get_zero_initialized_context();
 }
 
 void
 Context::destroy()
 {
-  rcl_context_.reset();
+  rcl_ptrs_.reset();
 }
 
 size_t
 Context::get_domain_id()
 {
   size_t domain_id;
-  rcl_ret_t ret = rcl_context_get_domain_id(rcl_context_.get(), &domain_id);
+  rcl_ret_t ret = rcl_context_get_domain_id(rcl_ptrs_->rcl_context_.get(), &domain_id);
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to get domain id");
   }
@@ -89,13 +90,13 @@ Context::get_domain_id()
 bool
 Context::ok()
 {
-  return rcl_context_is_valid(rcl_context_.get());
+  return rcl_context_is_valid(rcl_ptrs_->rcl_context_.get());
 }
 
 void
 Context::shutdown()
 {
-  rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
+  rcl_ret_t ret = rcl_shutdown(rcl_ptrs_->rcl_context_.get());
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to shutdown");
   }

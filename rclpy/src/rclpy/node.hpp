@@ -174,12 +174,25 @@ public:
   rcl_node_t *
   rcl_ptr() const
   {
-    return rcl_node_.get();
+    return rcl_ptrs_->rcl_node_.get();
   }
 
   /// Force an early destruction of this object
   void
   destroy() override;
+
+  struct RclPtrs
+  {
+    std::unique_ptr<rcl_node_t, std::function<void(rcl_node_t *)>> rcl_node_;
+    std::shared_ptr<rclpy::Context::RclPtrs> context_ptrs;
+  };
+
+  /// Return RCL pointers so another class can keep the rcl part alive
+  std::shared_ptr<rclpy::Node::RclPtrs>
+  get_rcl_ptrs() const
+  {
+    return rcl_ptrs_;
+  }
 
 private:
   /// Get the list of nodes discovered by the provided node
@@ -195,8 +208,7 @@ private:
   py::list
   get_names_impl(bool get_enclaves);
 
-  std::shared_ptr<rcl_node_t> rcl_node_;
-  std::shared_ptr<Context> rcl_context_;
+  std::shared_ptr<rclpy::Node::RclPtrs> rcl_ptrs_;
 };
 
 void

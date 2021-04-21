@@ -46,7 +46,8 @@ namespace rclpy
 const char *
 Node::get_fully_qualified_name()
 {
-  const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(rcl_node_.get());
+  const char * fully_qualified_node_name = rcl_node_get_fully_qualified_name(
+    rcl_ptrs_->rcl_node_.get());
   if (!fully_qualified_node_name) {
     throw RCLError("Fully qualified name not set");
   }
@@ -57,7 +58,7 @@ Node::get_fully_qualified_name()
 const char *
 Node::logger_name()
 {
-  const char * node_logger_name = rcl_node_get_logger_name(rcl_node_.get());
+  const char * node_logger_name = rcl_node_get_logger_name(rcl_ptrs_->rcl_node_.get());
   if (!node_logger_name) {
     throw RCLError("Logger name not set");
   }
@@ -68,7 +69,7 @@ Node::logger_name()
 const char *
 Node::get_node_name()
 {
-  const char * node_name = rcl_node_get_name(rcl_node_.get());
+  const char * node_name = rcl_node_get_name(rcl_ptrs_->rcl_node_.get());
   if (!node_name) {
     throw RCLError("Node name not set");
   }
@@ -79,7 +80,7 @@ Node::get_node_name()
 const char *
 Node::get_namespace()
 {
-  const char * node_namespace = rcl_node_get_namespace(rcl_node_.get());
+  const char * node_namespace = rcl_node_get_namespace(rcl_ptrs_->rcl_node_.get());
   if (!node_namespace) {
     throw RCLError("Node namespace not set");
   }
@@ -91,7 +92,7 @@ size_t
 Node::get_count_publishers(const char * topic_name)
 {
   size_t count = 0;
-  rcl_ret_t ret = rcl_count_publishers(rcl_node_.get(), topic_name, &count);
+  rcl_ret_t ret = rcl_count_publishers(rcl_ptrs_->rcl_node_.get(), topic_name, &count);
   if (RCL_RET_OK != ret) {
     throw RCLError("Error in rcl_count_publishers");
   }
@@ -103,7 +104,7 @@ size_t
 Node::get_count_subscribers(const char * topic_name)
 {
   size_t count = 0;
-  rcl_ret_t ret = rcl_count_subscribers(rcl_node_.get(), topic_name, &count);
+  rcl_ret_t ret = rcl_count_subscribers(rcl_ptrs_->rcl_node_.get(), topic_name, &count);
   if (RCL_RET_OK != ret) {
     throw RCLError("Error in rcl_count_subscribers");
   }
@@ -122,10 +123,10 @@ Node::get_names_impl(bool get_enclaves)
   rcl_ret_t ret = RCL_RET_OK;
   if (get_enclaves) {
     ret = rcl_get_node_names_with_enclaves(
-      rcl_node_.get(), allocator, &node_names, &node_namespaces, &enclaves);
+      rcl_ptrs_->rcl_node_.get(), allocator, &node_names, &node_namespaces, &enclaves);
   } else {
     ret = rcl_get_node_names(
-      rcl_node_.get(), allocator, &node_names, &node_namespaces);
+      rcl_ptrs_->rcl_node_.get(), allocator, &node_names, &node_namespaces);
   }
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to get node names");
@@ -329,11 +330,11 @@ Node::get_parameters(py::object pyparameter_cls)
   py::dict params_by_node_name;
   py::object parameter_type_cls = pyparameter_cls.attr("Type");
 
-  const rcl_node_options_t * node_options = rcl_node_get_options(rcl_node_.get());
+  const rcl_node_options_t * node_options = rcl_node_get_options(rcl_ptrs_->rcl_node_.get());
 
   if (node_options->use_global_arguments) {
     _parse_param_overrides(
-      &(rcl_node_.get()->context->global_arguments), pyparameter_cls,
+      &(rcl_ptrs_->rcl_node_.get()->context->global_arguments), pyparameter_cls,
       parameter_type_cls, params_by_node_name);
   }
 
@@ -341,7 +342,7 @@ Node::get_parameters(py::object pyparameter_cls)
     &(node_options->arguments), pyparameter_cls,
     parameter_type_cls, params_by_node_name);
 
-  const char * node_fqn = rcl_node_get_fully_qualified_name(rcl_node_.get());
+  const char * node_fqn = rcl_node_get_fully_qualified_name(rcl_ptrs_->rcl_node_.get());
   if (!node_fqn) {
     throw RCLError("failed to get node fully qualified name");
   }
@@ -367,18 +368,17 @@ Node::get_parameters(py::object pyparameter_cls)
 
 void Node::destroy()
 {
-  rcl_node_.reset();
-  rcl_context_.reset();
+  rcl_ptrs_.reset();
 }
 
 Node::Node(
   const char * node_name,
   const char * namespace_,
-  Context & _context,
+  Context & context,
   py::object pycli_args,
   bool use_global_arguments,
   bool enable_rosout)
-: rcl_context_(_context.shared_from_this())
+: rcl_ptrs_(new rclpy::Node::RclPtrs())
 {
   rcl_ret_t ret;
   rcl_arguments_t arguments = rcl_get_zero_initialized_arguments();
@@ -432,9 +432,10 @@ Node::Node(
 
   throw_if_unparsed_ros_args(pyargs, arguments);
 
-  rcl_node_ = std::shared_ptr<rcl_node_t>(
+  rcl_ptrs_->context_ptrs = context.get_rcl_ptrs();
+  rcl_ptrs_->rcl_node_ = std::unique_ptr<rcl_node_t, std::function<void(rcl_node_t *)>>(
     new rcl_node_t,
-    [this](rcl_node_t * node)
+    [](rcl_node_t * node)
     {
       rcl_ret_t ret = rcl_node_fini(node);
       if (RCL_RET_OK != ret) {
@@ -448,7 +449,7 @@ Node::Node(
       delete node;
     });
 
-  *rcl_node_ = rcl_get_zero_initialized_node();
+  *rcl_ptrs_->rcl_node_ = rcl_get_zero_initialized_node();
   rcl_node_options_t options = rcl_node_get_default_options();
   options.use_global_arguments = use_global_arguments;
   options.arguments = arguments;
@@ -456,7 +457,8 @@ Node::Node(
 
   {
     rclpy::LoggingGuard scoped_logging_guard;
-    ret = rcl_node_init(rcl_node_.get(), node_name, namespace_, rcl_context_->rcl_ptr(), &options);
+    ret = rcl_node_init(
+      rcl_ptrs_->rcl_node_.get(), node_name, namespace_, context.rcl_ptr(), &options);
   }
 
   if (RCL_RET_BAD_ALLOC == ret) {
@@ -481,7 +483,7 @@ Node::get_action_client_names_and_types_by_node(
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_client_names_and_types_by_node(
-    rcl_node_.get(),
+    rcl_ptrs_->rcl_node_.get(),
     &allocator,
     remote_node_name,
     remote_node_namespace,
@@ -500,7 +502,7 @@ Node::get_action_server_names_and_types_by_node(
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_server_names_and_types_by_node(
-    rcl_node_.get(),
+    rcl_ptrs_->rcl_node_.get(),
     &allocator,
     remote_node_name,
     remote_node_namespace,
@@ -517,7 +519,8 @@ Node::get_action_names_and_types()
 {
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_action_get_names_and_types(rcl_node_.get(), &allocator, &names_and_types);
+  rcl_ret_t ret = rcl_action_get_names_and_types(
+    rcl_ptrs_->rcl_node_.get(), &allocator, &names_and_types);
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed to get action names and type");
   }
