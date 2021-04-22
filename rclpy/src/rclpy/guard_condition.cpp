@@ -64,7 +64,7 @@ void
 GuardCondition::destroy()
 {
   rcl_guard_condition_.reset();
-  context_.destroy_when_not_in_use();
+  context_.destroy();
 }
 
 void

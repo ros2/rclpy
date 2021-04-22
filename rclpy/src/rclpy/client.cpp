@@ -34,7 +34,7 @@ void
 Client::destroy()
 {
   rcl_client_.reset();
-  node_.destroy_when_not_in_use();
+  node_.destroy();
 }
 
 Client::Client(
@@ -57,9 +57,10 @@ Client::Client(
   // Create a client
   rcl_client_ = std::shared_ptr<rcl_client_t>(
     PythonAllocator<rcl_client_t>().allocate(1),
-    [this](rcl_client_t * client)
+    [node](rcl_client_t * client)
     {
-      rcl_ret_t ret = rcl_client_fini(client, node_.rcl_ptr());
+      // Intentionally capture node by value so shared_ptr can be transferred to copies
+      rcl_ret_t ret = rcl_client_fini(client, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;

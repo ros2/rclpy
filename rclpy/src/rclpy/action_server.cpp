@@ -34,7 +34,7 @@ void
 ActionServer::destroy()
 {
   rcl_action_server_.reset();
-  node_.reset();
+  node_.destroy();
 }
 
 ActionServer::ActionServer(
@@ -48,7 +48,7 @@ ActionServer::ActionServer(
   const rmw_qos_profile_t & feedback_topic_qos,
   const rmw_qos_profile_t & status_topic_qos,
   double result_timeout)
-: node_(node.shared_from_this())
+: node_(node)
 {
   rcl_clock_t * clock = rclpy_clock.rcl_ptr();
 
@@ -69,9 +69,10 @@ ActionServer::ActionServer(
 
   rcl_action_server_ = std::shared_ptr<rcl_action_server_t>(
     new rcl_action_server_t,
-    [this](rcl_action_server_t * action_server)
+    [node](rcl_action_server_t * action_server)
     {
-      rcl_ret_t ret = rcl_action_server_fini(action_server, node_->rcl_ptr());
+      // Intentionally capture node by value so shared_ptr can be transferred to copies
+      rcl_ret_t ret = rcl_action_server_fini(action_server, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -87,7 +88,7 @@ ActionServer::ActionServer(
 
   rcl_ret_t ret = rcl_action_server_init(
     rcl_action_server_.get(),
-    node_->rcl_ptr(),
+    node_.rcl_ptr(),
     clock,
     ts,
     action_name,

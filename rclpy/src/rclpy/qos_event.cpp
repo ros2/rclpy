@@ -32,10 +32,10 @@
 namespace rclpy
 {
 static
-std::unique_ptr<rcl_event_t, std::function<void(rcl_event_t *)>>
+std::shared_ptr<rcl_event_t>
 create_zero_initialized_event()
 {
-  auto event = std::unique_ptr<rcl_event_t, std::function<void(rcl_event_t *)>>(
+  auto event = std::shared_ptr<rcl_event_t>(
     new rcl_event_t,
     [](rcl_event_t * event)
     {
@@ -59,12 +59,7 @@ void
 QoSEvent::destroy()
 {
   rcl_event_.reset();
-  if (Publisher * publisher = std::get_if<Publisher>(&grandparent_)) {
-    publisher->destroy_when_not_in_use();
-  }
-  if (Subscription * subscription = std::get_if<Subscription>(&grandparent_)) {
-    subscription->destroy_when_not_in_use();
-  }
+  std::visit([](auto & t) {t.destroy();}, grandparent_);
 }
 
 QoSEvent::QoSEvent(

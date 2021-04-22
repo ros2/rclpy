@@ -79,7 +79,7 @@ void
 WaitSet::destroy()
 {
   rcl_wait_set_.reset();
-  context_.destroy_when_not_in_use();
+  context_.destroy();
 }
 
 void

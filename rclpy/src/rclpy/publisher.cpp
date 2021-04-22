@@ -48,9 +48,10 @@ Publisher::Publisher(
 
   rcl_publisher_ = std::shared_ptr<rcl_publisher_t>(
     new rcl_publisher_t,
-    [this](rcl_publisher_t * publisher)
+    [node](rcl_publisher_t * publisher)
     {
-      rcl_ret_t ret = rcl_publisher_fini(publisher, node_.rcl_ptr());
+      // Intentionally capturing node by value so shared_ptr can be transfered to copies
+      rcl_ret_t ret = rcl_publisher_fini(publisher, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -81,7 +82,7 @@ Publisher::Publisher(
 void Publisher::destroy()
 {
   rcl_publisher_.reset();
-  node_.destroy_when_not_in_use();
+  node_.destroy();
 }
 
 const char *

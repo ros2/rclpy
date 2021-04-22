@@ -51,12 +51,12 @@ Subscription::Subscription(
     subscription_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
-  rcl_subscription_ = std::unique_ptr<rcl_subscription_t,
-      std::function<void(rcl_subscription_t *)>>(
+  rcl_subscription_ = std::shared_ptr<rcl_subscription_t>(
     new rcl_subscription_t,
-    [this](rcl_subscription_t * subscription)
+    [node](rcl_subscription_t * subscription)
     {
-      rcl_ret_t ret = rcl_subscription_fini(subscription, node_.rcl_ptr());
+      // Intentionally capture node by copy so shared_ptr can be transfered to copies
+      rcl_ret_t ret = rcl_subscription_fini(subscription, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -87,7 +87,7 @@ Subscription::Subscription(
 void Subscription::destroy()
 {
   rcl_subscription_.reset();
-  node_.destroy_when_not_in_use();
+  node_.destroy();
 }
 
 py::object

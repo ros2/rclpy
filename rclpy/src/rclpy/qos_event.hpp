@@ -91,9 +91,8 @@ public:
   destroy() override;
 
 private:
-
   std::variant<rcl_subscription_event_type_t, rcl_publisher_event_type_t> event_type_;
-  std::variant<Publisher, Subscription>  grandparent_;
+  std::variant<Publisher, Subscription> grandparent_;
   std::shared_ptr<rcl_event_t> rcl_event_;
 };
 

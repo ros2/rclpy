@@ -37,7 +37,7 @@ void
 Timer::destroy()
 {
   rcl_timer_.reset();
-  clock_.destroy_when_not_in_use();
+  clock_.destroy();
   context_.destroy_when_not_in_use();
 }
 

@@ -19,8 +19,17 @@
 #include "destroyable.hpp"
 #include "rclpy_common/exceptions.hpp"
 
+
 namespace rclpy
 {
+Destroyable::Destroyable(const Destroyable &)
+{
+  // When a destroyable is copied, it does not matter if someone asked
+  // to destroy the original. The copy has its own lifetime.
+  use_count = 0;
+  please_destroy_ = false;
+}
+
 void
 Destroyable::enter()
 {

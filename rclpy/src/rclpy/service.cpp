@@ -35,7 +35,7 @@ void
 Service::destroy()
 {
   rcl_service_.reset();
-  node_.destroy_when_not_in_use();
+  node_.destroy();
 }
 
 Service::Service(
@@ -56,11 +56,12 @@ Service::Service(
   }
 
   // Create a client
-  rcl_service_ = std::unique_ptr<rcl_service_t, std::function<void(rcl_service_t *)>>(
+  rcl_service_ = std::shared_ptr<rcl_service_t>(
     new rcl_service_t,
-    [this](rcl_service_t * service)
+    [node](rcl_service_t * service)
     {
-      rcl_ret_t ret = rcl_service_fini(service, node_.rcl_ptr());
+      // Intentionally capture node by copy so shared_ptr can be transfered to copies
+      rcl_ret_t ret = rcl_service_fini(service, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;

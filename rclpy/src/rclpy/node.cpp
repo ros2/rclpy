@@ -40,7 +40,6 @@
 #include "node.hpp"
 #include "utils.hpp"
 
-
 namespace rclpy
 {
 const char *
@@ -368,7 +367,7 @@ Node::get_parameters(py::object pyparameter_cls)
 void Node::destroy()
 {
   rcl_node_.reset();
-  context_.destroy_when_not_in_use();
+  context_.destroy();
 }
 
 Node::Node(
