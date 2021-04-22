@@ -171,8 +171,8 @@ public:
   void destroy() override;
 
 private:
+  Context context_;
   std::shared_ptr<rcl_wait_set_t> rcl_wait_set_;
-  std::shared_ptr<Context> rcl_context_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::Service

@@ -37,16 +37,14 @@ void
 Timer::destroy()
 {
   rcl_timer_.reset();
-  clock_handle_.reset();
-  rcl_context_.reset();
+  clock_.destroy_when_not_in_use();
+  context_.destroy_when_not_in_use();
 }
 
 Timer::Timer(
-  Clock & rclcy_clock, Context & context, int64_t period_nsec)
+  Clock & clock, Context & context, int64_t period_nsec)
+: context_(context), clock_(clock)
 {
-  clock_handle_ = rclcy_clock.shared_from_this();
-  rcl_context_ = context.shared_from_this();
-
   // Create a client
   rcl_timer_ = std::shared_ptr<rcl_timer_t>(
     new rcl_timer_t,
@@ -68,7 +66,7 @@ Timer::Timer(
   rcl_allocator_t allocator = rcl_get_default_allocator();
 
   rcl_ret_t ret = rcl_timer_init(
-    rcl_timer_.get(), clock_handle_->rcl_ptr(), context.rcl_ptr(),
+    rcl_timer_.get(), clock_.rcl_ptr(), context.rcl_ptr(),
     period_nsec, NULL, allocator);
 
   if (RCL_RET_OK != ret) {

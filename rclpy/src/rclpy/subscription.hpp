@@ -91,30 +91,16 @@ public:
   rcl_subscription_t *
   rcl_ptr() const
   {
-    return rcl_ptrs_->rcl_subscription_.get();
+    return rcl_subscription_.get();
   }
 
   /// Force an early destruction of this object
   void
   destroy() override;
 
-  struct RclPtrs
-  {
-    std::shared_ptr<rclpy::Node::RclPtrs> node_ptrs;
-    // Store node_ptrs in here so rcl_event_t can keep node ptrs alive too
-    std::unique_ptr<rcl_subscription_t,
-      std::function<void(rcl_subscription_t *)>> rcl_subscription_;
-  };
-
-  /// Return RCL pointers so another class can keep the rcl part alive
-  std::shared_ptr<rclpy::Subscription::RclPtrs>
-  get_rcl_ptrs() const
-  {
-    return rcl_ptrs_;
-  }
-
 private:
-  std::shared_ptr<rclpy::Subscription::RclPtrs> rcl_ptrs_;
+  Node node_;
+  std::shared_ptr<rcl_subscription_t> rcl_subscription_;
 };
 /// Define a pybind11 wrapper for an rclpy::Service
 void define_subscription(py::object module);

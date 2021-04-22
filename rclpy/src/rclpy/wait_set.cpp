@@ -32,27 +32,6 @@
 
 namespace rclpy
 {
-WaitSet::WaitSet()
-{
-  // Create a client
-  rcl_wait_set_ = std::shared_ptr<rcl_wait_set_t>(
-    new rcl_wait_set_t,
-    [](rcl_wait_set_t * waitset)
-    {
-      rcl_ret_t ret = rcl_wait_set_fini(waitset);
-      if (RCL_RET_OK != ret) {
-        // Warning should use line number of the current stack frame
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini wait set: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-      delete waitset;
-    });
-  *rcl_wait_set_ = rcl_get_zero_initialized_wait_set();
-}
-
 WaitSet::WaitSet(
   size_t number_of_subscriptions,
   size_t number_of_guard_conditions,
@@ -61,8 +40,8 @@ WaitSet::WaitSet(
   size_t number_of_services,
   size_t number_of_events,
   Context & context)
+: context_(context)
 {
-  rcl_context_ = context.shared_from_this();
   // Create a client
   rcl_wait_set_ = std::shared_ptr<rcl_wait_set_t>(
     new rcl_wait_set_t,
@@ -100,7 +79,7 @@ void
 WaitSet::destroy()
 {
   rcl_wait_set_.reset();
-  rcl_context_.reset();
+  context_.destroy_when_not_in_use();
 }
 
 void
@@ -281,7 +260,6 @@ void define_waitset(py::object module)
 {
   py::class_<WaitSet, Destroyable, std::shared_ptr<WaitSet>>(module, "WaitSet")
   .def(py::init<size_t, size_t, size_t, size_t, size_t, size_t, Context &>())
-  .def(py::init<>())
   .def_property_readonly(
     "pointer", [](const WaitSet & waitset) {
       return reinterpret_cast<size_t>(waitset.rcl_ptr());
