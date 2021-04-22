@@ -136,7 +136,7 @@ public:
 private:
   std::shared_ptr<Clock> clock_handle_;
   std::shared_ptr<rcl_timer_t> rcl_timer_;
-  std::shared_ptr<Context> rcl_context_;
+  std::shared_ptr<rcl_context_t> rcl_context_;
 };
 
 /// Define a pybind11 wrapper for an rcl_timer_t

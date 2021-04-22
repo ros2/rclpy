@@ -371,14 +371,22 @@ void Node::destroy()
   rcl_context_.reset();
 }
 
+// Copy constructor
+Node::Node(const Node & other)
+: rcl_context_(other.rcl_context_)
+{
+  rcl_node_ = other.rcl_node_;
+  // Gives copy shared ownership of the rcl pointers
+}
+
 Node::Node(
   const char * node_name,
   const char * namespace_,
-  Context & _context,
+  Context & context,
   py::object pycli_args,
   bool use_global_arguments,
   bool enable_rosout)
-: rcl_context_(_context.shared_from_this())
+: rcl_context_(context.rcl_context_)
 {
   rcl_ret_t ret;
   rcl_arguments_t arguments = rcl_get_zero_initialized_arguments();
@@ -456,7 +464,7 @@ Node::Node(
 
   {
     rclpy::LoggingGuard scoped_logging_guard;
-    ret = rcl_node_init(rcl_node_.get(), node_name, namespace_, rcl_context_->rcl_ptr(), &options);
+    ret = rcl_node_init(rcl_node_.get(), node_name, namespace_, rcl_context_.get(), &options);
   }
 
   if (RCL_RET_BAD_ALLOC == ret) {
@@ -530,6 +538,7 @@ define_node(py::object module)
 {
   py::class_<Node, Destroyable, std::shared_ptr<Node>>(module, "Node")
   .def(py::init<const char *, const char *, Context &, py::object, bool, bool>())
+  .def(py::init<const Node &>())
   .def_property_readonly(
     "pointer", [](const Node & node) {
       return reinterpret_cast<size_t>(node.rcl_ptr());

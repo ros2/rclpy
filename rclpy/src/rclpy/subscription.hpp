@@ -52,6 +52,8 @@ public:
     Node & node, py::object pymsg_type, std::string topic,
     py::object pyqos_profile);
 
+  Subscription(const Subscription & other);
+
   /// Take a message and its metadata from a subscription
   /**
    * Raises MemoryError if there was an error allocating memory
@@ -97,8 +99,7 @@ public:
   void
   destroy() override;
 
-private:
-  std::shared_ptr<Node> node_;
+  rclpy::Node node_;
   std::shared_ptr<rcl_subscription_t> rcl_subscription_;
 };
 /// Define a pybind11 wrapper for an rclpy::Service

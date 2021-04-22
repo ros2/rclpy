@@ -35,13 +35,13 @@ void
 Service::destroy()
 {
   rcl_service_.reset();
-  node_.reset();
+  node_.destroy();
 }
 
 Service::Service(
   Node & node, py::object pysrv_type, std::string service_name,
   py::object pyqos_profile)
-: node_(node.shared_from_this())
+: node_(node)
 {
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
     rclpy_common_get_type_support(pysrv_type.ptr()));
@@ -60,7 +60,7 @@ Service::Service(
     new rcl_service_t,
     [this](rcl_service_t * service)
     {
-      rcl_ret_t ret = rcl_service_fini(service, node_->rcl_ptr());
+      rcl_ret_t ret = rcl_service_fini(service, node_.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -75,7 +75,7 @@ Service::Service(
   *rcl_service_ = rcl_get_zero_initialized_service();
 
   rcl_ret_t ret = rcl_service_init(
-    rcl_service_.get(), node_->rcl_ptr(), srv_type,
+    rcl_service_.get(), node_.rcl_ptr(), srv_type,
     service_name.c_str(), &service_ops);
   if (RCL_RET_OK != ret) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {

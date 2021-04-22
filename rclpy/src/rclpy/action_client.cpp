@@ -34,7 +34,7 @@ void
 ActionClient::destroy()
 {
   rcl_action_client_.reset();
-  node_.reset();
+  node_.destroy();
 }
 
 ActionClient::ActionClient(
@@ -46,7 +46,7 @@ ActionClient::ActionClient(
   const rmw_qos_profile_t & cancel_service_qos,
   const rmw_qos_profile_t & feedback_topic_qos,
   const rmw_qos_profile_t & status_topic_qos)
-: node_(node.shared_from_this())
+: node_(node)
 {
   rosidl_action_type_support_t * ts =
     static_cast<rosidl_action_type_support_t *>(rclpy_common_get_type_support(
@@ -67,7 +67,7 @@ ActionClient::ActionClient(
     new rcl_action_client_t,
     [this](rcl_action_client_t * action_client)
     {
-      rcl_ret_t ret = rcl_action_client_fini(action_client, node_->rcl_ptr());
+      rcl_ret_t ret = rcl_action_client_fini(action_client, node_.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -83,7 +83,7 @@ ActionClient::ActionClient(
 
   rcl_ret_t ret = rcl_action_client_init(
     rcl_action_client_.get(),
-    node_->rcl_ptr(),
+    node_.rcl_ptr(),
     ts,
     action_name,
     &action_client_ops);
@@ -220,7 +220,7 @@ ActionClient::is_action_server_available()
 {
   bool is_available = false;
   rcl_ret_t ret = rcl_action_server_is_available(
-    node_->rcl_ptr(), rcl_action_client_.get(), &is_available);
+    node_.rcl_ptr(), rcl_action_client_.get(), &is_available);
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed to check if action server is available");
   }

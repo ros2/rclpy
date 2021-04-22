@@ -53,6 +53,8 @@ public:
     Node & node, py::object pymsg_type, std::string topic,
     py::object pyqos_profile);
 
+  Publisher(const Publisher & other);
+
   /// Get the name of the logger associated with the node of the publisher.
   /**
    * Raises RCLError if logger name not set
@@ -109,8 +111,7 @@ public:
   void
   destroy() override;
 
-private:
-  std::shared_ptr<Node> node_;
+  rclpy::Node node_;
   std::shared_ptr<rcl_publisher_t> rcl_publisher_;
 };
 /// Define a pybind11 wrapper for an rclpy::Service

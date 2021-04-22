@@ -91,8 +91,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<rclpy::Publisher> grandparent_pub_handle_;
-  std::shared_ptr<rclpy::Subscription> grandparent_sub_handle_;
+  std::variant<rclpy::Publisher, rclpy::Subscription> grandparent_;
   std::shared_ptr<rcl_event_t> rcl_event_;
   std::variant<rcl_subscription_event_type_t, rcl_publisher_event_type_t> event_type_;
 };

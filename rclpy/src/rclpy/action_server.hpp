@@ -252,7 +252,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Node> node_;
+  rclpy::Node node_;
   std::shared_ptr<rcl_action_server_t> rcl_action_server_;
 };
 /// Define a pybind11 wrapper for an rcl_time_point_t

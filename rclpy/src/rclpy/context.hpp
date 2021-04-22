@@ -62,7 +62,6 @@ public:
   /// Force an early destruction of this object
   void destroy() override;
 
-private:
   std::shared_ptr<rcl_context_t> rcl_context_;
 };
 

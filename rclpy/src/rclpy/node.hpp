@@ -54,6 +54,8 @@ public:
     bool use_global_arguments,
     bool enable_rosout);
 
+  Node(const Node & other);
+
   /// Get the fully qualified name of the node.
   /**
    * Raises RCLError if name is not set
@@ -195,8 +197,8 @@ private:
   py::list
   get_names_impl(bool get_enclaves);
 
-  std::shared_ptr<rcl_node_t> rcl_node_;
-  std::shared_ptr<Context> rcl_context_;
+  public: std::shared_ptr<rcl_node_t> rcl_node_;
+  public: std::shared_ptr<rcl_context_t> rcl_context_;
 };
 
 void
