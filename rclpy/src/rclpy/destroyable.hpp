@@ -25,6 +25,12 @@ namespace rclpy
 class Destroyable
 {
 public:
+  /// Default constructor
+  Destroyable() = default;
+
+  /// Copy constructor
+  Destroyable(const Destroyable & other);
+
   /// Context manager __enter__ - block destruction
   void
   enter();

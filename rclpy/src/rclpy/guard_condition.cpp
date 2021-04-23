@@ -32,9 +32,8 @@
 namespace rclpy
 {
 GuardCondition::GuardCondition(Context & context)
+: context_(context)
 {
-  rcl_context_ = context.shared_from_this();
-
   rcl_guard_condition_ = std::shared_ptr<rcl_guard_condition_t>(
     new rcl_guard_condition_t,
     [](rcl_guard_condition_t * guard_condition)
@@ -65,7 +64,7 @@ void
 GuardCondition::destroy()
 {
   rcl_guard_condition_.reset();
-  rcl_context_.reset();
+  context_.destroy();
 }
 
 void

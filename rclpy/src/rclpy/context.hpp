@@ -57,26 +57,14 @@ public:
   /// Get rcl_context_t pointer
   rcl_context_t * rcl_ptr() const
   {
-    return rcl_ptrs_->rcl_context_.get();
+    return rcl_context_.get();
   }
 
   /// Force an early destruction of this object
   void destroy() override;
 
-  struct RclPtrs
-  {
-    std::unique_ptr<rcl_context_t, std::function<void(rcl_context_t *)>> rcl_context_;
-  };
-
-  /// Return RCL pointers so another class can keep the rcl part alive
-  std::shared_ptr<rclpy::Context::RclPtrs>
-  get_rcl_ptrs() const
-  {
-    return rcl_ptrs_;
-  }
-
 private:
-  std::shared_ptr<rclpy::Context::RclPtrs> rcl_ptrs_;
+  std::shared_ptr<rcl_context_t> rcl_context_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::Service

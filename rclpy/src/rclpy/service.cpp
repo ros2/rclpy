@@ -34,17 +34,15 @@ namespace rclpy
 void
 Service::destroy()
 {
-  rcl_ptrs_->rcl_service_.reset();
-  rcl_ptrs_.reset();
+  rcl_service_.reset();
+  node_.destroy();
 }
 
 Service::Service(
   Node & node, py::object pysrv_type, std::string service_name,
   py::object pyqos_profile)
-: rcl_ptrs_(new rclpy::Service::RclPtrs)
+: node_(node)
 {
-  rcl_ptrs_->node_ptrs = node.get_rcl_ptrs();
-
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
     rclpy_common_get_type_support(pysrv_type.ptr()));
   if (!srv_type) {
@@ -58,11 +56,12 @@ Service::Service(
   }
 
   // Create a client
-  rcl_ptrs_->rcl_service_ = std::unique_ptr<rcl_service_t, std::function<void(rcl_service_t *)>>(
+  rcl_service_ = std::shared_ptr<rcl_service_t>(
     new rcl_service_t,
-    [this](rcl_service_t * service)
+    [node](rcl_service_t * service)
     {
-      rcl_ret_t ret = rcl_service_fini(service, rcl_ptrs_->node_ptrs->rcl_node_.get());
+      // Intentionally capture node by copy so shared_ptr can be transfered to copies
+      rcl_ret_t ret = rcl_service_fini(service, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -74,10 +73,10 @@ Service::Service(
       delete service;
     });
 
-  *rcl_ptrs_->rcl_service_ = rcl_get_zero_initialized_service();
+  *rcl_service_ = rcl_get_zero_initialized_service();
 
   rcl_ret_t ret = rcl_service_init(
-    rcl_ptrs_->rcl_service_.get(), rcl_ptrs_->node_ptrs->rcl_node_.get(), srv_type,
+    rcl_service_.get(), node_.rcl_ptr(), srv_type,
     service_name.c_str(), &service_ops);
   if (RCL_RET_OK != ret) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {
@@ -104,7 +103,7 @@ Service::service_send_response(py::object pyresponse, rmw_request_id_t * header)
   auto ros_response = std::unique_ptr<void, decltype(message_deleter)>(
     raw_ros_response, message_deleter);
 
-  rcl_ret_t ret = rcl_send_response(rcl_ptrs_->rcl_service_.get(), header, ros_response.get());
+  rcl_ret_t ret = rcl_send_response(rcl_service_.get(), header, ros_response.get());
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to send response");
   }
@@ -118,8 +117,7 @@ Service::service_take_request(py::object pyrequest_type)
   rmw_service_info_t header;
 
   py::tuple result_tuple(2);
-  rcl_ret_t ret = rcl_take_request_with_info(
-    rcl_ptrs_->rcl_service_.get(), &header, taken_request.get());
+  rcl_ret_t ret = rcl_take_request_with_info(rcl_service_.get(), &header, taken_request.get());
   if (ret == RCL_RET_SERVICE_TAKE_FAILED) {
     result_tuple[0] = py::none();
     result_tuple[1] = py::none();

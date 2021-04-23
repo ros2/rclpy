@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
 import unittest
 from unittest.mock import Mock
 
@@ -50,6 +51,11 @@ class TestQoSEvent(unittest.TestCase):
         self.is_fastrtps = 'rmw_fastrtps' in get_rmw_implementation_identifier()
 
     def tearDown(self):
+        # These tests create a bunch of events by hand instead of using Node APIs,
+        # so they won't be cleaned up when calling `node.destroy_node()`, but they could still
+        # keep the node alive from one test to the next.
+        # Invoke the garbage collector to destroy them.
+        gc.collect()
         self.node.destroy_node()
         rclpy.shutdown(context=self.context)
 

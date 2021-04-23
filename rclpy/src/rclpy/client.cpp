@@ -34,12 +34,12 @@ void
 Client::destroy()
 {
   rcl_client_.reset();
-  node_.reset();
+  node_.destroy();
 }
 
 Client::Client(
   Node & node, py::object pysrv_type, const char * service_name, py::object pyqos_profile)
-: node_(node.shared_from_this())
+: node_(node)
 {
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
     rclpy_common_get_type_support(pysrv_type.ptr()));
@@ -57,9 +57,10 @@ Client::Client(
   // Create a client
   rcl_client_ = std::shared_ptr<rcl_client_t>(
     PythonAllocator<rcl_client_t>().allocate(1),
-    [this](rcl_client_t * client)
+    [node](rcl_client_t * client)
     {
-      rcl_ret_t ret = rcl_client_fini(client, node_->rcl_ptr());
+      // Intentionally capture node by value so shared_ptr can be transferred to copies
+      rcl_ret_t ret = rcl_client_fini(client, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -74,7 +75,7 @@ Client::Client(
   *rcl_client_ = rcl_get_zero_initialized_client();
 
   rcl_ret_t ret = rcl_client_init(
-    rcl_client_.get(), node_->rcl_ptr(), srv_type, service_name, &client_ops);
+    rcl_client_.get(), node_.rcl_ptr(), srv_type, service_name, &client_ops);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_SERVICE_NAME_INVALID == ret) {
       std::string error_text{"failed to create client due to invalid service name '"};
@@ -111,8 +112,7 @@ bool
 Client::service_server_is_available()
 {
   bool is_ready;
-  rcl_ret_t ret = rcl_service_server_is_available(
-    node_->rcl_ptr(), rcl_client_.get(), &is_ready);
+  rcl_ret_t ret = rcl_service_server_is_available(node_.rcl_ptr(), rcl_client_.get(), &is_ready);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to check service availability");
   }

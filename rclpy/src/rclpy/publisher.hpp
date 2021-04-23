@@ -102,29 +102,16 @@ public:
   rcl_publisher_t *
   rcl_ptr() const
   {
-    return rcl_ptrs_->rcl_publisher_.get();
+    return rcl_publisher_.get();
   }
 
   /// Force an early destruction of this object
   void
   destroy() override;
 
-  struct RclPtrs
-  {
-    std::shared_ptr<rclpy::Node::RclPtrs> node_ptrs;
-    // Store node_ptrs in here so rcl_event_t can keep node ptrs alive too
-    std::unique_ptr<rcl_publisher_t, std::function<void(rcl_publisher_t *)>> rcl_publisher_;
-  };
-
-  /// Return RCL pointers so another class can keep the rcl part alive
-  std::shared_ptr<rclpy::Publisher::RclPtrs>
-  get_rcl_ptrs() const
-  {
-    return rcl_ptrs_;
-  }
-
 private:
-  std::shared_ptr<rclpy::Publisher::RclPtrs> rcl_ptrs_;
+  Node node_;
+  std::shared_ptr<rcl_publisher_t> rcl_publisher_;
 };
 /// Define a pybind11 wrapper for an rclpy::Service
 void define_publisher(py::object module);

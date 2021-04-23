@@ -31,6 +31,7 @@ namespace rclpy
 {
 ActionGoalHandle::ActionGoalHandle(
   rclpy::ActionServer & action_server, py::object pygoal_info_msg)
+: action_server_(action_server)
 {
   destroy_ros_message_signature * destroy_ros_message = NULL;
   auto goal_info_msg = static_cast<rcl_action_goal_info_t *>(
@@ -72,6 +73,7 @@ void
 ActionGoalHandle::destroy()
 {
   rcl_action_goal_handle_.reset();
+  action_server_.destroy();
 }
 
 rcl_action_goal_state_t

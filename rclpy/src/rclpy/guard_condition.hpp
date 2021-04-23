@@ -72,6 +72,7 @@ public:
   void destroy() override;
 
 private:
+  Context context_;
   std::shared_ptr<rcl_guard_condition_t> rcl_guard_condition_;
 
   /// Handle destructor for guard condition
@@ -81,7 +82,6 @@ private:
     (void)p;
     // Empty destructor, the class should take care of the lifecycle.
   }
-  std::shared_ptr<Context> rcl_context_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::Service
