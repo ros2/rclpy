@@ -122,7 +122,7 @@ public:
    */
   bool is_timer_canceled();
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_timer_t pointer
   rcl_timer_t *
   rcl_ptr() const
   {

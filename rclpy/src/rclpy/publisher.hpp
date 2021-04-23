@@ -98,7 +98,7 @@ public:
   void
   publish_raw(std::string msg);
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_publisher_t pointer
   rcl_publisher_t *
   rcl_ptr() const
   {
