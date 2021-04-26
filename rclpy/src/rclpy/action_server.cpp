@@ -100,14 +100,9 @@ ActionServer::ActionServer(
     std::string error_text{"Failed to create action server due to invalid topic name '"};
     error_text += action_name;
     error_text += "' : ";
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw py::value_error(error_text);
+    throw py::value_error(append_rcl_error(error_text));
   } else if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to create action server: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-    throw py::value_error(error_text);
+    throw py::value_error(append_rcl_error("Failed to create action server"));
   }
 }
 
@@ -234,8 +229,7 @@ ActionServer::get_num_entities()
     &num_services);
 
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to get number of entities for 'rcl_action_server_t'"};
-    throw rclpy::RCLError(error_text);
+    throw rclpy::RCLError("Failed to get number of entities for 'rcl_action_server_t'");
   }
 
   py::tuple result_tuple(5);
@@ -297,15 +291,10 @@ ActionServer::process_cancel_request(
     rcl_action_server_.get(), cancel_request_tmp, &cancel_response);
 
   if (RCL_RET_OK != ret) {
-    std::string error_text{"Failed to process cancel request: "};
-    error_text += rcl_get_error_string().str;
-    rcl_reset_error();
-
+    std::string error_text = append_rcl_error("Failed to process cancel request");
     ret = rcl_action_cancel_response_fini(&cancel_response);
     if (RCL_RET_OK != ret) {
-      error_text += ".  Also failed to cleanup response: ";
-      error_text += rcl_get_error_string().str;
-      rcl_reset_error();
+      error_text = append_rcl_error(".  Also failed to cleanup response");
     }
     throw std::runtime_error(error_text);
   }
@@ -316,7 +305,11 @@ ActionServer::process_cancel_request(
       ret = rcl_action_cancel_response_fini(&cancel_response);
 
       if (RCL_RET_OK != ret) {
-        throw rclpy::RCLError("Failed to finalize cancel response");
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level, "Failed to finalize cancel response: %s",
+          rcl_get_error_string().str);
+        rcl_reset_error();
       }
     });
   return return_value;

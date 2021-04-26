@@ -233,18 +233,11 @@ public:
   void
   add_to_waitset(WaitSet & wait_set);
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_action_server_t pointer
   rcl_action_server_t *
   rcl_ptr() const
   {
     return rcl_action_server_.get();
-  }
-
-  /// Get rcl_client_t pointer
-  std::shared_ptr<rcl_action_server_t>
-  get_rcl_shared_ptr()
-  {
-    return rcl_action_server_;
   }
 
   /// Force an early destruction of this object
