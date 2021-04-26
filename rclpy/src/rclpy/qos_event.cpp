@@ -67,7 +67,7 @@ QoSEvent::QoSEvent(
 : event_type_(event_type), grandparent_(subscription)
 {
   // Create a subscription event
-  rcl_event_ = std::move(create_zero_initialized_event());
+  rcl_event_ = create_zero_initialized_event();
 
   rcl_ret_t ret = rcl_subscription_event_init(
     rcl_event_.get(),
@@ -89,7 +89,7 @@ QoSEvent::QoSEvent(
 : event_type_(event_type), grandparent_(publisher)
 {
   // Create a publisher event
-  rcl_event_ = std::move(create_zero_initialized_event());
+  rcl_event_ = create_zero_initialized_event();
 
   rcl_ret_t ret = rcl_publisher_event_init(
     rcl_event_.get(),
