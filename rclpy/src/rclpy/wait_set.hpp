@@ -172,7 +172,7 @@ public:
   void
   wait(int64_t timeout);
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_wait_set_t pointer
   rcl_wait_set_t * rcl_ptr() const
   {
     return rcl_wait_set_.get();
