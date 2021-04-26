@@ -86,7 +86,7 @@ public:
   std::string
   get_topic_name();
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_subscription_t pointer
   rcl_subscription_t *
   rcl_ptr() const
   {

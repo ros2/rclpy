@@ -214,7 +214,7 @@ public:
   void
   add_to_waitset(WaitSet & wait_set);
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_action_client_t pointer
   rcl_action_client_t *
   rcl_ptr() const
   {

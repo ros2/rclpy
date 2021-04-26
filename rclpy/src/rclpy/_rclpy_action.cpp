@@ -26,11 +26,6 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
-#include "action_client.hpp"
-#include "action_goal_handle.hpp"
-#include "action_server.hpp"
-#include "clock.hpp"
-
 namespace py = pybind11;
 
 
@@ -166,8 +161,6 @@ define_action_api(py::module m)
   m.def(
     "rclpy_action_get_rmw_qos_profile", &rclpy_action_get_rmw_qos_profile,
     "Get an action RMW QoS profile.");
-  define_action_goal_handle(m);
-  define_action_server(m);
 
   m.def(
     "rclpy_action_get_client_names_and_types_by_node",
@@ -180,7 +173,5 @@ define_action_api(py::module m)
   m.def(
     "rclpy_action_get_names_and_types", &rclpy_action_get_names_and_types,
     "Get action names and types.");
-
-  rclpy::define_action_client(m);
 }
 }  // namespace rclpy
