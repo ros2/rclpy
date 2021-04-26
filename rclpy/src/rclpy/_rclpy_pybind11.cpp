@@ -18,6 +18,9 @@
 #include <rcl_action/rcl_action.h>
 
 #include "action_api.hpp"
+#include "action_client.hpp"
+#include "action_goal_handle.hpp"
+#include "action_server.hpp"
 #include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
@@ -128,6 +131,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_qos_check_compatible", &rclpy::qos_check_compatible,
     "Check if two QoS profiles are compatible.");
 
+  rclpy::define_action_client(m);
+  rclpy::define_action_goal_handle(m);
+  rclpy::define_action_server(m);
   rclpy::define_guard_condition(m);
   rclpy::define_timer(m);
   rclpy::define_subscription(m);

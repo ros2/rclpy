@@ -105,7 +105,7 @@ public:
   void
   remove_clock_callback(py::object pyjump_handle);
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_clock_t pointer
   rcl_clock_t * rcl_ptr() const
   {
     return rcl_clock_.get();

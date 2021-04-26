@@ -49,7 +49,7 @@ public:
   void
   trigger_guard_condition();
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_guard_condition_t pointer
   rcl_guard_condition_t * rcl_ptr() const
   {
     return rcl_guard_condition_.get();

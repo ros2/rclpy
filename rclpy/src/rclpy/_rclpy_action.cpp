@@ -26,12 +26,6 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
-#include "action_client.hpp"
-#include "action_goal_handle.hpp"
-#include "action_server.hpp"
-#include "clock.hpp"
-#include "node.hpp"
-
 namespace py = pybind11;
 
 /// Fetch a predefined qos_profile from rcl_action and convert it to a Python QoSProfile object.
@@ -65,8 +59,5 @@ define_action_api(py::module m)
   m.def(
     "rclpy_action_get_rmw_qos_profile", &rclpy_action_get_rmw_qos_profile,
     "Get an action RMW QoS profile.");
-  define_action_goal_handle(m);
-  define_action_server(m);
-  rclpy::define_action_client(m);
 }
 }  // namespace rclpy
