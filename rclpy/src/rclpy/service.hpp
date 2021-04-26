@@ -81,7 +81,7 @@ public:
   py::tuple
   service_take_request(py::object pyrequest_type);
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_service_t pointer
   rcl_service_t *
   rcl_ptr() const
   {
