@@ -22,7 +22,6 @@
 
 #include <memory>
 #include <string>
-#include <iostream>
 
 #include "destroyable.hpp"
 #include "node.hpp"

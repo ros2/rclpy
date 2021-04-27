@@ -61,8 +61,7 @@ def test_double_init():
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
-        with pytest.raises(RuntimeError):
-            rclpy.init(context=context)
+        rclpy.init(context=context)
     finally:
         rclpy.shutdown(context=context)
 

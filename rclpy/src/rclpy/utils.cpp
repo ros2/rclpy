@@ -17,17 +17,18 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl_action/rcl_action.h>
 #include <rcpputils/scope_exit.hpp>
 
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 #include "rclpy_common/exceptions.hpp"
 
-#include "init.hpp"
 #include "utils.hpp"
 
 namespace rclpy
@@ -224,5 +225,55 @@ remove_ros_args(py::object pycli_args)
   }
 
   return result_args;
+}
+
+void
+throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
+{
+  int unparsed_ros_args_count = rcl_arguments_get_count_unparsed_ros(&rcl_args);
+
+  if (unparsed_ros_args_count < 0) {
+    throw std::runtime_error("failed to count unparsed arguments");
+  }
+  if (0 == unparsed_ros_args_count) {
+    return;
+  }
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+
+  int * unparsed_indices_c = nullptr;
+  rcl_ret_t ret = rcl_arguments_get_unparsed_ros(&rcl_args, allocator, &unparsed_indices_c);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to get unparsed arguments");
+  }
+
+  auto deallocator = [&](int ptr[]) {allocator.deallocate(ptr, allocator.state);};
+  auto unparsed_indices = std::unique_ptr<int[], decltype(deallocator)>(
+    unparsed_indices_c, deallocator);
+
+  py::list unparsed_args;
+  for (int i = 0; i < unparsed_ros_args_count; ++i) {
+    int index = unparsed_indices_c[i];
+    if (index < 0 || static_cast<size_t>(index) >= pyargs.size()) {
+      throw std::runtime_error("got invalid unparsed ROS arg index");
+    }
+    unparsed_args.append(pyargs[index]);
+  }
+
+  throw UnknownROSArgsError(static_cast<std::string>(py::repr(unparsed_args)));
+}
+
+py::dict
+rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
+{
+  PyObject * pyqos_profile = NULL;
+  if (0 == strcmp(rmw_profile, "rcl_action_qos_profile_status_default")) {
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rcl_action_qos_profile_status_default);
+  } else {
+    std::string error_text = "Requested unknown rmw_qos_profile: ";
+    error_text += rmw_profile;
+    throw std::runtime_error(error_text);
+  }
+  return py::reinterpret_steal<py::dict>(pyqos_profile);
 }
 }  // namespace rclpy

@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <string>
-#include <iostream>
 
 #include "rclpy_common/common.h"
 

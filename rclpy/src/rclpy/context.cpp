@@ -20,17 +20,20 @@
 #include <rcl/rcl.h>
 #include <rcl/types.h>
 
+#include <limits>
 #include <memory>
+#include <vector>
 
 #include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
 #include "context.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
-Context::Context()
+Context::Context(py::list pyargs, size_t domain_id)
 {
   rcl_context_ = std::shared_ptr<rcl_context_t>(
     new rcl_context_t,
@@ -65,6 +68,36 @@ Context::Context()
       delete context;
     });
   *rcl_context_ = rcl_get_zero_initialized_context();
+
+  // turn the arguments into an array of C-style strings
+  std::vector<const char *> arg_c_values(pyargs.size());
+  for (size_t i = 0; i < pyargs.size(); ++i) {
+    // CPython owns const char * memory - no need to free it
+    arg_c_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
+    if (!arg_c_values[i]) {
+      throw py::error_already_set();
+    }
+  }
+
+  InitOptions init_options(rcl_get_default_allocator());
+
+  // Set domain id
+  rcl_ret_t ret = rcl_init_options_set_domain_id(&init_options.rcl_options, domain_id);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to set domain id to init options");
+  }
+
+  if (arg_c_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::range_error("Too many cli arguments");
+  }
+  int argc = static_cast<int>(arg_c_values.size());
+  const char ** argv = argc > 0 ? &(arg_c_values[0]) : nullptr;
+  ret = rcl_init(argc, argv, &init_options.rcl_options, rcl_context_.get());
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to initialize rcl");
+  }
+
+  throw_if_unparsed_ros_args(pyargs, rcl_context_.get()->global_arguments);
 }
 
 void
@@ -103,7 +136,7 @@ Context::shutdown()
 void define_context(py::object module)
 {
   py::class_<Context, Destroyable, std::shared_ptr<Context>>(module, "Context")
-  .def(py::init<>())
+  .def(py::init<py::list, size_t>())
   .def_property_readonly(
     "pointer", [](const Context & context) {
       return reinterpret_cast<size_t>(context.rcl_ptr());

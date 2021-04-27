@@ -34,8 +34,6 @@ class Context:
     """
 
     def __init__(self):
-        from rclpy.impl.implementation_singleton import rclpy_implementation
-        self.__context = rclpy_implementation.Context()
         self._lock = threading.Lock()
         self._callbacks = []
         self._callbacks_lock = threading.Lock()
@@ -44,9 +42,6 @@ class Context:
     @property
     def handle(self):
         return self.__context
-
-    def __del__(self):
-        self.destroy()
 
     def destroy(self):
         self.__context.destroy_when_not_in_use()
@@ -65,14 +60,13 @@ class Context:
         from rclpy.impl.implementation_singleton import rclpy_implementation
 
         global g_logging_ref_count
-        with self.__context, self._lock:
+        with self._lock:
             if domain_id is not None and domain_id < 0:
                 raise RuntimeError(
                     'Domain id ({}) should not be lower than zero.'
                     .format(domain_id))
-            rclpy_implementation.rclpy_init(
+            self.__context = rclpy_implementation.Context(
                 args if args is not None else sys.argv,
-                self.__context,
                 domain_id if domain_id is not None else rclpy_implementation.RCL_DEFAULT_DOMAIN_ID)
             if initialize_logging and not self._logging_initialized:
                 with g_logging_configure_lock:
@@ -84,8 +78,11 @@ class Context:
     def ok(self):
         """Check if context hasn't been shut down."""
         # imported locally to avoid loading extensions on module import
-        with self.__context, self._lock:
-            return self.__context.ok()
+        try:
+            with self.__context, self._lock:
+                return self.__context.ok()
+        except AttributeError:
+            return False
 
     def _call_on_shutdown_callbacks(self):
         with self._callbacks_lock:

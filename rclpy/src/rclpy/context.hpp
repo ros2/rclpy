@@ -17,15 +17,45 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/error_handling.h>
+
 #include <functional>
 #include <memory>
 
 #include "destroyable.hpp"
+#include "rclpy_common/exceptions.hpp"
 
 namespace py = pybind11;
 
 namespace rclpy
 {
+struct InitOptions
+{
+  explicit InitOptions(rcl_allocator_t allocator)
+  {
+    rcl_options = rcl_get_zero_initialized_init_options();
+    rcl_ret_t ret = rcl_init_options_init(&rcl_options, allocator);
+    if (RCL_RET_OK != ret) {
+      throw RCLError("Failed to initialize init options");
+    }
+  }
+
+  ~InitOptions()
+  {
+    rcl_ret_t ret = rcl_init_options_fini(&rcl_options);
+    if (RCL_RET_OK != ret) {
+      int stack_level = 1;
+      PyErr_WarnFormat(
+        PyExc_RuntimeWarning, stack_level,
+        "[rclpy| %s : %s ]: failed to fini rcl_init_options_t in destructor: %s",
+        RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
+      rcl_reset_error();
+    }
+  }
+
+  rcl_init_options_t rcl_options;
+};
+
 class Context : public Destroyable, public std::enable_shared_from_this<Context>
 {
 public:
@@ -33,8 +63,11 @@ public:
   /**
    * Raises MemoryError if allocating memory fails.
    * Raises RuntimeError if creating the context fails.
+   *
+   * \param[in] pyargs List of command line arguments
+   * \param[in] domain_id domain id to be set in this context
    */
-  Context();
+  Context(py::list pyargs, size_t domain_id);
 
   /// Retrieves domain id from init_options of context
   /**

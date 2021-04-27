@@ -35,7 +35,6 @@
 #include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
-#include "init.hpp"
 #include "logging.hpp"
 #include "node.hpp"
 #include "utils.hpp"

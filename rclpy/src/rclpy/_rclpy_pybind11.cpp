@@ -17,7 +17,6 @@
 #include <rcl/domain_id.h>
 #include <rcl_action/rcl_action.h>
 
-#include "action_api.hpp"
 #include "action_client.hpp"
 #include "action_goal_handle.hpp"
 #include "action_server.hpp"
@@ -29,7 +28,6 @@
 #include "graph.hpp"
 #include "guard_condition.hpp"
 #include "handle_api.hpp"
-#include "init.hpp"
 #include "logging.hpp"
 #include "logging_api.hpp"
 #include "names.hpp"
@@ -111,10 +109,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   py::register_exception<rclpy::InvalidHandle>(
     m, "InvalidHandle", PyExc_RuntimeError);
 
-  m.def(
-    "rclpy_init", &rclpy::init,
-    "Initialize RCL.");
-
   rclpy::define_client(m);
 
   rclpy::define_context(m);
@@ -134,6 +128,9 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_action_client(m);
   rclpy::define_action_goal_handle(m);
   rclpy::define_action_server(m);
+  m.def(
+    "rclpy_action_get_rmw_qos_profile", &rclpy::rclpy_action_get_rmw_qos_profile,
+    "Get an action RMW QoS profile.");
   rclpy::define_guard_condition(m);
   rclpy::define_timer(m);
   rclpy::define_subscription(m);
@@ -232,5 +229,4 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_pycapsule_api(m);
   rclpy::define_handle_api(m);
   rclpy::define_logging_api(m);
-  rclpy::define_action_api(m);
 }
