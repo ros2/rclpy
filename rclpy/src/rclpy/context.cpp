@@ -20,27 +20,97 @@
 #include <rcl/rcl.h>
 #include <rcl/types.h>
 
-#include <stdexcept>
+#include <limits>
+#include <memory>
+#include <vector>
 
 #include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
 #include "context.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
-size_t
-context_get_domain_id(py::capsule pycontext)
+Context::Context(py::list pyargs, size_t domain_id)
 {
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
+  rcl_context_ = std::shared_ptr<rcl_context_t>(
+    new rcl_context_t,
+    [](rcl_context_t * context)
+    {
+      if (NULL != context->impl) {
+        rcl_ret_t ret;
+        if (rcl_context_is_valid(context)) {
+          // shutdown first, if still valid
+          ret = rcl_shutdown(context);
+          if (RCL_RET_OK != ret) {
+            // Warning should use line number of the current stack frame
+            int stack_level = 1;
+            PyErr_WarnFormat(
+              PyExc_RuntimeWarning, stack_level,
+              "[rclpy| %s : %s ]: failed to shutdown rcl_context_t: %s",
+              RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
+            rcl_reset_error();
+          }
+        }
+        ret = rcl_context_fini(context);
+        if (RCL_RET_OK != ret) {
+          // Warning should use line number of the current stack frame
+          int stack_level = 1;
+          PyErr_WarnFormat(
+            PyExc_RuntimeWarning, stack_level,
+            "[rclpy| %s : %s ]: failed to fini rcl_context_t: %s",
+            RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
+          rcl_reset_error();
+        }
+      }
+      delete context;
+    });
+  *rcl_context_ = rcl_get_zero_initialized_context();
+
+  // turn the arguments into an array of C-style strings
+  std::vector<const char *> arg_c_values(pyargs.size());
+  for (size_t i = 0; i < pyargs.size(); ++i) {
+    // CPython owns const char * memory - no need to free it
+    arg_c_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
+    if (!arg_c_values[i]) {
+      throw py::error_already_set();
+    }
   }
 
+  InitOptions init_options(rcl_get_default_allocator());
+
+  // Set domain id
+  rcl_ret_t ret = rcl_init_options_set_domain_id(&init_options.rcl_options, domain_id);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to set domain id to init options");
+  }
+
+  if (arg_c_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::range_error("Too many cli arguments");
+  }
+  int argc = static_cast<int>(arg_c_values.size());
+  const char ** argv = argc > 0 ? &(arg_c_values[0]) : nullptr;
+  ret = rcl_init(argc, argv, &init_options.rcl_options, rcl_context_.get());
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to initialize rcl");
+  }
+
+  throw_if_unparsed_ros_args(pyargs, rcl_context_.get()->global_arguments);
+}
+
+void
+Context::destroy()
+{
+  rcl_context_.reset();
+}
+
+size_t
+Context::get_domain_id()
+{
   size_t domain_id;
-  rcl_ret_t ret = rcl_context_get_domain_id(context, &domain_id);
+  rcl_ret_t ret = rcl_context_get_domain_id(rcl_context_.get(), &domain_id);
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to get domain id");
   }
@@ -48,75 +118,39 @@ context_get_domain_id(py::capsule pycontext)
   return domain_id;
 }
 
-void
-_rclpy_context_handle_destructor(void * p)
-{
-  auto context = static_cast<rcl_context_t *>(p);
-  if (!context) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_context_handle_destructor failed to get pointer");
-    return;
-  }
-  if (NULL != context->impl) {
-    rcl_ret_t ret;
-    if (rcl_context_is_valid(context)) {
-      // shutdown first, if still valid
-      ret = rcl_shutdown(context);
-      if (RCL_RET_OK != ret) {
-        fprintf(
-          stderr,
-          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-          "failed to shutdown rcl_context_t (%d) during PyCapsule destructor: %s\n",
-          ret,
-          rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-    }
-    ret = rcl_context_fini(context);
-    if (RCL_RET_OK != ret) {
-      fprintf(
-        stderr,
-        "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
-        "failed to fini rcl_context_t (%d) during PyCapsule destructor: %s\n",
-        ret,
-        rcl_get_error_string().str);
-      rcl_reset_error();
-    }
-  }
-  PyMem_FREE(context);
-}
-
-py::capsule
-create_context()
-{
-  auto context = static_cast<rcl_context_t *>(PyMem_Malloc(sizeof(rcl_context_t)));
-  if (!context) {
-    throw std::bad_alloc();
-  }
-  *context = rcl_get_zero_initialized_context();
-  PyObject * capsule = rclpy_create_handle_capsule(
-    context, "rcl_context_t", _rclpy_context_handle_destructor);
-  if (!capsule) {
-    throw py::error_already_set();
-  }
-  return py::reinterpret_steal<py::capsule>(capsule);
-}
-
-/// Status of the the client library
-/**
- * \return True if rcl is running properly, False otherwise
- */
 bool
-context_is_valid(py::capsule pycontext)
+Context::ok()
 {
-  auto context = static_cast<rcl_context_t *>(rclpy_handle_get_pointer_from_capsule(
-      pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
-  return rcl_context_is_valid(context);
+  return rcl_context_is_valid(rcl_context_.get());
 }
+
+void
+Context::shutdown()
+{
+  rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to shutdown");
+  }
+}
+
+void define_context(py::object module)
+{
+  py::class_<Context, Destroyable, std::shared_ptr<Context>>(module, "Context")
+  .def(py::init<py::list, size_t>())
+  .def_property_readonly(
+    "pointer", [](const Context & context) {
+      return reinterpret_cast<size_t>(context.rcl_ptr());
+    },
+    "Get the address of the entity as an integer")
+  .def(
+    "get_domain_id", &Context::get_domain_id,
+    "Retrieves domain id from init_options of context.")
+  .def(
+    "ok", &Context::ok,
+    "Status of the the client library")
+  .def(
+    "shutdown", &Context::shutdown,
+    "Shutdown context");
+}
+
 }  // namespace rclpy

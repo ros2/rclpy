@@ -148,7 +148,6 @@ install(TARGETS rclpy_common
 
 # Split from main extension and converted to pybind11
 pybind11_add_module(_rclpy_pybind11 SHARED
-  src/rclpy/_rclpy_action.cpp
   src/rclpy/_rclpy_handle.cpp
   src/rclpy/_rclpy_logging.cpp
   src/rclpy/_rclpy_pybind11.cpp
@@ -164,7 +163,6 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
   src/rclpy/handle.cpp
-  src/rclpy/init.cpp
   src/rclpy/logging.cpp
   src/rclpy/names.cpp
   src/rclpy/node.cpp

@@ -24,7 +24,7 @@
 #include <string>
 
 #include "destroyable.hpp"
-#include "handle.hpp"
+#include "node.hpp"
 
 namespace py = pybind11;
 
@@ -43,13 +43,13 @@ public:
   /*
    * Raises RCLError if the subscription could not be created
    *
-   * \param[in] pynode Capsule pointing to the node to add the subscriber to
+   * \param[in] node node to add the subscriber to
    * \param[in] pymsg_type Message module associated with the subscriber
    * \param[in] topic The topic name
    * \param[in] pyqos_profile rmw_qos_profile_t object for this subscription
    */
   Subscription(
-    py::capsule pynode, py::object pymsg_type, std::string topic,
+    Node & node, py::object pymsg_type, std::string topic,
     py::object pyqos_profile);
 
   /// Take a message and its metadata from a subscription
@@ -98,7 +98,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Handle> node_handle_;
+  Node node_;
   std::shared_ptr<rcl_subscription_t> rcl_subscription_;
 };
 /// Define a pybind11 wrapper for an rclpy::Service

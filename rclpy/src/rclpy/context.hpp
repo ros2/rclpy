@@ -17,36 +17,91 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/error_handling.h>
+
+#include <functional>
+#include <memory>
+
+#include "destroyable.hpp"
+#include "rclpy_common/exceptions.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
 {
-/// Retrieves domain id from init_options of context
-/**
- * \param[in] pycontext Capsule containing rcl_context_t
- * \return domain id
- */
-size_t
-context_get_domain_id(py::capsule pycontext);
+struct InitOptions
+{
+  explicit InitOptions(rcl_allocator_t allocator)
+  {
+    rcl_options = rcl_get_zero_initialized_init_options();
+    rcl_ret_t ret = rcl_init_options_init(&rcl_options, allocator);
+    if (RCL_RET_OK != ret) {
+      throw RCLError("Failed to initialize init options");
+    }
+  }
 
-/// Create a capsule with an rcl_context_t instance.
-/**
- * The returned context is zero-initialized for use with rclpy_init().
- *
- * Raises MemoryError if allocating memory fails.
- * Raises RuntimeError if creating the context fails.
- *
- * \return capsule with the rcl_context_t instance
- */
-py::capsule
-create_context();
+  ~InitOptions()
+  {
+    rcl_ret_t ret = rcl_init_options_fini(&rcl_options);
+    if (RCL_RET_OK != ret) {
+      int stack_level = 1;
+      PyErr_WarnFormat(
+        PyExc_RuntimeWarning, stack_level,
+        "[rclpy| %s : %s ]: failed to fini rcl_init_options_t in destructor: %s",
+        RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
+      rcl_reset_error();
+    }
+  }
 
-/// Status of the the client library
-/**
- * \return True if rcl is running properly, False otherwise
- */
-bool
-context_is_valid(py::capsule context);
+  rcl_init_options_t rcl_options;
+};
+
+class Context : public Destroyable, public std::enable_shared_from_this<Context>
+{
+public:
+  /// Create a Context instance.
+  /**
+   * Raises MemoryError if allocating memory fails.
+   * Raises RuntimeError if creating the context fails.
+   *
+   * \param[in] pyargs List of command line arguments
+   * \param[in] domain_id domain id to be set in this context
+   */
+  Context(py::list pyargs, size_t domain_id);
+
+  /// Retrieves domain id from init_options of context
+  /**
+   * \param[in] pycontext Capsule containing rcl_context_t
+   * \return domain id
+   */
+  size_t
+  get_domain_id();
+
+  /// Status of the the client library
+  /**
+   * \return True if rcl is running properly, False otherwise
+   */
+  bool
+  ok();
+
+  void
+  shutdown();
+
+  /// Get rcl_context_t pointer
+  rcl_context_t * rcl_ptr() const
+  {
+    return rcl_context_.get();
+  }
+
+  /// Force an early destruction of this object
+  void destroy() override;
+
+private:
+  std::shared_ptr<rcl_context_t> rcl_context_;
+};
+
+/// Define a pybind11 wrapper for an rclpy::Service
+void define_context(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__CONTEXT_HPP_

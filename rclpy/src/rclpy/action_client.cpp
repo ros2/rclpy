@@ -34,11 +34,11 @@ void
 ActionClient::destroy()
 {
   rcl_action_client_.reset();
-  node_handle_.reset();
+  node_.destroy();
 }
 
 ActionClient::ActionClient(
-  py::capsule pynode,
+  Node & node,
   py::object pyaction_type,
   const char * action_name,
   const rmw_qos_profile_t & goal_service_qos,
@@ -46,10 +46,8 @@ ActionClient::ActionClient(
   const rmw_qos_profile_t & cancel_service_qos,
   const rmw_qos_profile_t & feedback_topic_qos,
   const rmw_qos_profile_t & status_topic_qos)
-: node_handle_(std::make_shared<Handle>(pynode))
+: node_(node)
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
   rosidl_action_type_support_t * ts =
     static_cast<rosidl_action_type_support_t *>(rclpy_common_get_type_support(
       pyaction_type.ptr()));
@@ -67,11 +65,10 @@ ActionClient::ActionClient(
 
   rcl_action_client_ = std::shared_ptr<rcl_action_client_t>(
     new rcl_action_client_t,
-    [this](rcl_action_client_t * action_client)
+    [node](rcl_action_client_t * action_client)
     {
-      auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
-
-      rcl_ret_t ret = rcl_action_client_fini(action_client, node);
+      // Intentionally capture node by value so shared_ptr can be transferred to copies
+      rcl_ret_t ret = rcl_action_client_fini(action_client, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -87,7 +84,7 @@ ActionClient::ActionClient(
 
   rcl_ret_t ret = rcl_action_client_init(
     rcl_action_client_.get(),
-    node,
+    node_.rcl_ptr(),
     ts,
     action_name,
     &action_client_ops);
@@ -222,11 +219,9 @@ ActionClient::get_num_entities()
 bool
 ActionClient::is_action_server_available()
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
   bool is_available = false;
   rcl_ret_t ret = rcl_action_server_is_available(
-    node, rcl_action_client_.get(), &is_available);
+    node_.rcl_ptr(), rcl_action_client_.get(), &is_available);
   if (RCL_RET_OK != ret) {
     throw rclpy::RCLError("Failed to check if action server is available");
   }
@@ -278,7 +273,7 @@ define_action_client(py::object module)
 {
   py::class_<ActionClient, Destroyable, std::shared_ptr<ActionClient>>(module, "ActionClient")
   .def(
-    py::init<py::capsule, py::object, const char *, const rmw_qos_profile_t &,
+    py::init<Node &, py::object, const char *, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &>())
   .def_property_readonly(
