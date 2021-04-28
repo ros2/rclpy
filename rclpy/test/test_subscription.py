@@ -16,7 +16,6 @@ import pytest
 
 import rclpy
 from rclpy.node import Node
-
 from test_msgs.msg import Empty
 
 
@@ -49,13 +48,7 @@ def make_mock_subscription(namespace, topic_name, cli_args=None):
     ('/example/topic', 'ns', '/example/topic'),
 ])
 def test_get_subscription_topic_name(topic_name, namespace, expected):
-    node = Node('node_name', namespace=namespace, cli_args=None)
-    sub = node.create_subscription(
-        msg_type=Empty,
-        topic=topic_name,
-        callback=lambda _: None,
-        qos_profile=10,
-    )
+    sub = make_mock_subscription(namespace, topic_name)
     assert sub.topic_name == expected
 
 
@@ -68,11 +61,5 @@ def test_get_subscription_topic_name(topic_name, namespace, expected):
      '/ns/new_topic'),
 ])
 def test_get_subscription_topic_name_after_remapping(topic_name, namespace, cli_args, expected):
-    node = Node('node_name', namespace=namespace, cli_args=cli_args)
-    sub = node.create_subscription(
-        msg_type=Empty,
-        topic=topic_name,
-        callback=lambda _: None,
-        qos_profile=10,
-    )
+    sub = make_mock_subscription(namespace, topic_name, cli_args)
     assert sub.topic_name == expected

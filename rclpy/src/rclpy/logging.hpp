@@ -19,8 +19,6 @@
 
 #include <mutex>
 
-#include "context.hpp"
-
 namespace py = pybind11;
 
 namespace rclpy
@@ -42,7 +40,7 @@ private:
  * \param[in] pycontext a context instance to use to retrieve global CLI arguments
  */
 void
-logging_configure(Context & _context);
+logging_configure(py::object pycontext);
 
 /// Finalize rcl logging
 void

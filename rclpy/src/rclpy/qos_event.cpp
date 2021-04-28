@@ -21,7 +21,6 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 #include <variant>  // NOLINT
 
 #include "rclpy_common/common.h"
@@ -59,19 +58,20 @@ void
 QoSEvent::destroy()
 {
   rcl_event_.reset();
-  std::visit([](auto & t) {t.destroy();}, grandparent_);
+  parent_handle_.reset();
 }
 
 QoSEvent::QoSEvent(
-  rclpy::Subscription & subscription, rcl_subscription_event_type_t event_type)
-: event_type_(event_type), grandparent_(subscription)
+  py::capsule pysubscription, rcl_subscription_event_type_t event_type)
+: parent_handle_(std::make_shared<Handle>(pysubscription)), event_type_(event_type)
 {
+  auto wrapper = parent_handle_->cast<rclpy_subscription_t *>("rclpy_subscription_t");
+
   // Create a subscription event
   rcl_event_ = create_zero_initialized_event();
 
   rcl_ret_t ret = rcl_subscription_event_init(
-    rcl_event_.get(),
-    std::get<Subscription>(grandparent_).rcl_ptr(), event_type);
+    rcl_event_.get(), &(wrapper->subscription), event_type);
   if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
     throw std::bad_alloc();
@@ -85,15 +85,16 @@ QoSEvent::QoSEvent(
 }
 
 QoSEvent::QoSEvent(
-  rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type)
-: event_type_(event_type), grandparent_(publisher)
+  py::capsule pypublisher, rcl_publisher_event_type_t event_type)
+: parent_handle_(std::make_shared<Handle>(pypublisher)), event_type_(event_type)
 {
+  auto wrapper = parent_handle_->cast<rclpy_publisher_t *>("rclpy_publisher_t");
+
   // Create a publisher event
   rcl_event_ = create_zero_initialized_event();
 
   rcl_ret_t ret = rcl_publisher_event_init(
-    rcl_event_.get(),
-    std::get<Publisher>(grandparent_).rcl_ptr(), event_type);
+    rcl_event_.get(), &(wrapper->publisher), event_type);
   if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
     throw std::bad_alloc();
@@ -167,9 +168,9 @@ QoSEvent::take_event()
 void
 define_qos_event(py::module module)
 {
-  py::class_<QoSEvent, Destroyable, std::shared_ptr<QoSEvent>>(module, "QoSEvent")
-  .def(py::init<rclpy::Subscription &, rcl_subscription_event_type_t>())
-  .def(py::init<rclpy::Publisher &, rcl_publisher_event_type_t>())
+  py::class_<QoSEvent, Destroyable>(module, "QoSEvent")
+  .def(py::init<py::capsule, rcl_subscription_event_type_t>())
+  .def(py::init<py::capsule, rcl_publisher_event_type_t>())
   .def_property_readonly(
     "pointer", [](const QoSEvent & event) {
       return reinterpret_cast<size_t>(event.rcl_ptr());
