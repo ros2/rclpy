@@ -21,6 +21,7 @@
 #include <string>
 
 #include "client.hpp"
+#include "context.hpp"
 #include "destroyable.hpp"
 #include "guard_condition.hpp"
 #include "qos_event.hpp"
@@ -57,7 +58,7 @@ public:
     size_t number_of_clients,
     size_t number_of_services,
     size_t number_of_events,
-    py::capsule pycontext);
+    Context & context);
 
   /// Clear all the pointers in the wait set
   /**
@@ -65,18 +66,6 @@ public:
    */
   void
   clear_entities();
-
-  /// Add an entity to the wait set structure
-  /**
-   * Raises RuntimeError if the entity type is unknown
-   * Raises RCLError if any lower level error occurs
-   *
-   * \param[in] entity_type string defining the entity ["subscription, client, service"]
-   * \param[in] pyentity Capsule pointing to the entity to add
-   * \return Index in waitset entity was added at
-   */
-  size_t
-  add_entity(const std::string & entity_type, py::capsule pyentity);
 
   /// Add a service to the wait set structure
   /**
@@ -182,6 +171,7 @@ public:
   void destroy() override;
 
 private:
+  Context context_;
   std::shared_ptr<rcl_wait_set_t> rcl_wait_set_;
 };
 

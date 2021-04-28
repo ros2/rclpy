@@ -21,6 +21,7 @@
 
 #include <memory>
 
+#include "rclpy_common/common.h"
 #include "publisher.hpp"
 
 namespace py = pybind11;
@@ -105,6 +106,21 @@ assert_liveliness(rclpy::Publisher * publisher);
 py::list
 remove_ros_args(py::object pycli_args);
 
+/// Throw UnparsedROSArgsError with a message saying which args are unparsed.
+void
+throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args);
+
+/// Fetch a predefined qos_profile from rcl_action and convert it to a Python QoSProfile object.
+/**
+ * Raises RuntimeError if the QoS profile is unknown.
+ *
+ * This function takes a string defining a rmw_qos_profile_t and returns the
+ * corresponding Python QoSProfile object.
+ * \param[in] rmw_profile String with the name of the profile to load.
+ * \return QoSProfile object.
+ */
+py::dict
+rclpy_action_get_rmw_qos_profile(const char * rmw_profile);
 }  // namespace rclpy
 
 #endif  // RCLPY__UTILS_HPP_

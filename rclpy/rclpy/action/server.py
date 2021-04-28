@@ -240,9 +240,9 @@ class ActionServer(Waitable):
         check_for_type_support(action_type)
         self._node = node
         self._action_type = action_type
-        with node.handle as node_capsule, node.get_clock().handle:
+        with node.handle, node.get_clock().handle:
             self._handle = _rclpy.ActionServer(
-                node_capsule,
+                node.handle,
                 node.get_clock().handle,
                 action_type,
                 action_name,

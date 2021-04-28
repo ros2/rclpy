@@ -21,7 +21,6 @@
 #include <string>
 
 #include "rclpy_common/common.h"
-#include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
@@ -30,12 +29,10 @@
 namespace rclpy
 {
 Publisher::Publisher(
-  py::capsule pynode, py::object pymsg_type, std::string topic,
+  Node & node, py::object pymsg_type, std::string topic,
   py::object pyqos_profile)
-: node_handle_(std::make_shared<Handle>(pynode))
+: node_(node)
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
     rclpy_common_get_type_support(pymsg_type.ptr()));
   if (!msg_type) {
@@ -50,11 +47,10 @@ Publisher::Publisher(
 
   rcl_publisher_ = std::shared_ptr<rcl_publisher_t>(
     new rcl_publisher_t,
-    [this](rcl_publisher_t * publisher)
+    [node](rcl_publisher_t * publisher)
     {
-      auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
-
-      rcl_ret_t ret = rcl_publisher_fini(publisher, node);
+      // Intentionally capturing node by value so shared_ptr can be transfered to copies
+      rcl_ret_t ret = rcl_publisher_fini(publisher, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -69,7 +65,7 @@ Publisher::Publisher(
   *rcl_publisher_ = rcl_get_zero_initialized_publisher();
 
   rcl_ret_t ret = rcl_publisher_init(
-    rcl_publisher_.get(), node, msg_type,
+    rcl_publisher_.get(), node_.rcl_ptr(), msg_type,
     topic.c_str(), &publisher_ops);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_TOPIC_NAME_INVALID == ret) {
@@ -85,15 +81,13 @@ Publisher::Publisher(
 void Publisher::destroy()
 {
   rcl_publisher_.reset();
-  node_handle_.reset();
+  node_.destroy();
 }
 
 const char *
 Publisher::get_logger_name()
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
-  const char * node_logger_name = rcl_node_get_logger_name(node);
+  const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
   if (!node_logger_name) {
     throw RCLError("Node logger name not set");
   }
@@ -158,7 +152,7 @@ void
 define_publisher(py::object module)
 {
   py::class_<Publisher, Destroyable, std::shared_ptr<Publisher>>(module, "Publisher")
-  .def(py::init<py::capsule, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Publisher & publisher) {
       return reinterpret_cast<size_t>(publisher.rcl_ptr());

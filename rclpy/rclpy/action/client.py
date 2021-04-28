@@ -149,9 +149,9 @@ class ActionClient(Waitable):
         self._node = node
         self._action_type = action_type
         self._action_name = action_name
-        with node.handle as node_capsule:
+        with node.handle:
             self._client_handle = _rclpy.ActionClient(
-                node_capsule,
+                node.handle,
                 action_type,
                 action_name,
                 goal_service_qos_profile.get_c_qos_profile(),
