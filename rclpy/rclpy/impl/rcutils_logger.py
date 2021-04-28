@@ -274,12 +274,12 @@ class RcutilsLogger:
         :raises: ValueError on invalid parameters values.
         :rtype: bool
         """
-        from rclpy.logging import LoggingSeverity
-        severity = LoggingSeverity(severity)
-
         # Gather context info and check filters only if the severity is appropriate.
         if not self.is_enabled_for(severity):
             return False
+
+        from rclpy.logging import LoggingSeverity
+        severity = LoggingSeverity(severity)
 
         name = kwargs.pop('name', self.name)
 
