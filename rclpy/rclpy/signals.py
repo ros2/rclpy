@@ -21,9 +21,8 @@ class SignalHandlerGuardCondition(GuardCondition):
 
     def __init__(self, context=None):
         super().__init__(callback=None, callback_group=None, context=context)
-        with self.handle:
-            # TODO(ahcorde): Remove the pycapsule method when #728 is in
-            _signals.rclpy_register_sigint_guard_condition(self.handle.pycapsule())
+        with self.handle as capsule:
+            _signals.rclpy_register_sigint_guard_condition(capsule)
 
     def __del__(self):
         try:
@@ -36,7 +35,6 @@ class SignalHandlerGuardCondition(GuardCondition):
             pass
 
     def destroy(self):
-        with self.handle:
-            # TODO(ahcorde): Remove the pycapsule method when #728 is in
-            _signals.rclpy_unregister_sigint_guard_condition(self.handle.pycapsule())
+        with self.handle as capsule:
+            _signals.rclpy_unregister_sigint_guard_condition(capsule)
         super().destroy()

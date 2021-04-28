@@ -21,6 +21,7 @@
 #include <string>
 
 #include "rclpy_common/common.h"
+#include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
@@ -28,11 +29,40 @@
 
 namespace rclpy
 {
-Publisher::Publisher(
-  Node & node, py::object pymsg_type, std::string topic,
-  py::object pyqos_profile)
-: node_(node)
+static void
+_rclpy_destroy_publisher(void * p)
 {
+  auto pub = static_cast<rclpy_publisher_t *>(p);
+  if (!pub) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_publisher got NULL pointer");
+    return;
+  }
+
+  rcl_ret_t ret = rcl_publisher_fini(&(pub->publisher), pub->node);
+  if (RCL_RET_OK != ret) {
+    // Warning should use line number of the current stack frame
+    int stack_level = 1;
+    PyErr_WarnFormat(
+      PyExc_RuntimeWarning, stack_level, "Failed to fini publisher: %s",
+      rcl_get_error_string().str);
+  }
+  PyMem_Free(pub);
+}
+
+py::capsule
+publisher_create(
+  py::capsule pynode, py::object pymsg_type, std::string topic,
+  py::object pyqos_profile)
+{
+  auto node = static_cast<rcl_node_t *>(
+    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
+  if (!node) {
+    throw py::error_already_set();
+  }
+
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
     rclpy_common_get_type_support(pymsg_type.ptr()));
   if (!msg_type) {
@@ -45,30 +75,22 @@ Publisher::Publisher(
     publisher_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
-  rcl_publisher_ = std::shared_ptr<rcl_publisher_t>(
-    new rcl_publisher_t,
-    [node](rcl_publisher_t * publisher)
-    {
-      // Intentionally capturing node by value so shared_ptr can be transfered to copies
-      rcl_ret_t ret = rcl_publisher_fini(publisher, node.rcl_ptr());
-      if (RCL_RET_OK != ret) {
-        // Warning should use line number of the current stack frame
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini publisher: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
-      }
-      delete publisher;
-    });
-
-  *rcl_publisher_ = rcl_get_zero_initialized_publisher();
+  // Use smart pointer to make sure memory is free'd on error
+  auto deleter = [](rclpy_publisher_t * ptr) {_rclpy_destroy_publisher(ptr);};
+  auto pub = std::unique_ptr<rclpy_publisher_t, decltype(deleter)>(
+    static_cast<rclpy_publisher_t *>(PyMem_Malloc(sizeof(rclpy_publisher_t))),
+    deleter);
+  if (!pub) {
+    throw std::bad_alloc();
+  }
+  pub->publisher = rcl_get_zero_initialized_publisher();
+  pub->node = node;
 
   rcl_ret_t ret = rcl_publisher_init(
-    rcl_publisher_.get(), node_.rcl_ptr(), msg_type,
+    &(pub->publisher), node, msg_type,
     topic.c_str(), &publisher_ops);
-  if (RCL_RET_OK != ret) {
-    if (RCL_RET_TOPIC_NAME_INVALID == ret) {
+  if (ret != RCL_RET_OK) {
+    if (ret == RCL_RET_TOPIC_NAME_INVALID) {
       std::string error_text{"Failed to create publisher due to invalid topic name '"};
       error_text += topic;
       error_text += "'";
@@ -76,18 +98,37 @@ Publisher::Publisher(
     }
     throw RCLError("Failed to create publisher");
   }
-}
 
-void Publisher::destroy()
-{
-  rcl_publisher_.reset();
-  node_.destroy();
+  PyObject * pypub_c =
+    rclpy_create_handle_capsule(pub.get(), "rclpy_publisher_t", _rclpy_destroy_publisher);
+  if (!pypub_c) {
+    throw py::error_already_set();
+  }
+  auto pypub = py::reinterpret_steal<py::capsule>(pypub_c);
+  // pypub now owns the rclpy_publisher_t
+  pub.release();
+
+  auto pub_handle = static_cast<rclpy_handle_t *>(pypub);
+  auto node_handle = static_cast<rclpy_handle_t *>(pynode);
+  _rclpy_handle_add_dependency(pub_handle, node_handle);
+  if (PyErr_Occurred()) {
+    _rclpy_handle_dec_ref(pub_handle);
+    throw py::error_already_set();
+  }
+
+  return pypub;
 }
 
 const char *
-Publisher::get_logger_name()
+publisher_get_logger_name(py::capsule pypublisher)
 {
-  const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
+  auto pub = static_cast<rclpy_publisher_t *>(
+    rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
+  if (!pub) {
+    throw py::error_already_set();
+  }
+
+  const char * node_logger_name = rcl_node_get_logger_name(pub->node);
   if (!node_logger_name) {
     throw RCLError("Node logger name not set");
   }
@@ -96,11 +137,17 @@ Publisher::get_logger_name()
 }
 
 size_t
-Publisher::get_subscription_count()
+publisher_get_subscription_count(py::capsule pypublisher)
 {
+  auto pub = static_cast<rclpy_publisher_t *>(
+    rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
+  if (!pub) {
+    throw py::error_already_set();
+  }
+
   size_t count = 0;
-  rcl_ret_t ret = rcl_publisher_get_subscription_count(rcl_publisher_.get(), &count);
-  if (RCL_RET_OK != ret) {
+  rcl_ret_t ret = rcl_publisher_get_subscription_count(&pub->publisher, &count);
+  if (ret != RCL_RET_OK) {
     throw RCLError("failed to get subscription count");
   }
 
@@ -108,9 +155,15 @@ Publisher::get_subscription_count()
 }
 
 std::string
-Publisher::get_topic_name()
+publisher_get_topic_name(py::capsule pypublisher)
 {
-  const char * topic_name = rcl_publisher_get_topic_name(rcl_publisher_.get());
+  auto pub = static_cast<rclpy_publisher_t *>(
+    rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
+  if (!pub) {
+    throw py::error_already_set();
+  }
+
+  const char * topic_name = rcl_publisher_get_topic_name(&pub->publisher);
   if (!topic_name) {
     throw RCLError("failed to get topic name");
   }
@@ -119,59 +172,44 @@ Publisher::get_topic_name()
 }
 
 void
-Publisher::publish(py::object pymsg)
+publisher_publish_message(py::capsule pypublisher, py::object pymsg)
 {
+  auto pub = static_cast<rclpy_publisher_t *>(
+    rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
+  if (!pub) {
+    throw py::error_already_set();
+  }
+
   destroy_ros_message_signature * destroy_ros_message = NULL;
   void * raw_ros_message = rclpy_convert_from_py(pymsg.ptr(), &destroy_ros_message);
   if (!raw_ros_message) {
     throw py::error_already_set();
   }
 
-  rcl_ret_t ret = rcl_publish(rcl_publisher_.get(), raw_ros_message, NULL);
+  rcl_ret_t ret = rcl_publish(&(pub->publisher), raw_ros_message, NULL);
   destroy_ros_message(raw_ros_message);
-  if (RCL_RET_OK != ret) {
+  if (ret != RCL_RET_OK) {
     throw RCLError("Failed to publish");
   }
 }
 
 void
-Publisher::publish_raw(std::string msg)
+publisher_publish_raw(py::capsule pypublisher, std::string msg)
 {
+  auto pub = static_cast<rclpy_publisher_t *>(
+    rclpy_handle_get_pointer_from_capsule(pypublisher.ptr(), "rclpy_publisher_t"));
+  if (!pub) {
+    throw py::error_already_set();
+  }
+
   rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
   serialized_msg.buffer_capacity = msg.size();
   serialized_msg.buffer_length = msg.size();
   serialized_msg.buffer = reinterpret_cast<uint8_t *>(const_cast<char *>(msg.c_str()));
 
-  rcl_ret_t ret = rcl_publish_serialized_message(rcl_publisher_.get(), &serialized_msg, NULL);
-  if (RCL_RET_OK != ret) {
+  rcl_ret_t ret = rcl_publish_serialized_message(&(pub->publisher), &serialized_msg, NULL);
+  if (ret != RCL_RET_OK) {
     throw RCLError("Failed to publish");
   }
-}
-
-void
-define_publisher(py::object module)
-{
-  py::class_<Publisher, Destroyable, std::shared_ptr<Publisher>>(module, "Publisher")
-  .def(py::init<Node &, py::object, std::string, py::object>())
-  .def_property_readonly(
-    "pointer", [](const Publisher & publisher) {
-      return reinterpret_cast<size_t>(publisher.rcl_ptr());
-    },
-    "Get the address of the entity as an integer")
-  .def(
-    "get_logger_name", &Publisher::get_logger_name,
-    "Get the name of the logger associated with the node of the publisher")
-  .def(
-    "get_subscription_count", &Publisher::get_subscription_count,
-    "Count subscribers from a publisher.")
-  .def(
-    "get_topic_name", &Publisher::get_topic_name,
-    "Retrieve the topic name from a Publisher.")
-  .def(
-    "publish", &Publisher::publish,
-    "Publish a message")
-  .def(
-    "publish_raw", &Publisher::publish_raw,
-    "Publish a serialized message.");
 }
 }  // namespace rclpy
