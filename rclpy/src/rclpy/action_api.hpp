@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__DESTROYABLE_HPP_
-#define RCLPY__DESTROYABLE_HPP_
+#ifndef RCLPY__ACTION_API_HPP_
+#define RCLPY__ACTION_API_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -21,40 +21,11 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-/// This class blocks destruction when in use
-class Destroyable
-{
-public:
-  /// Context manager __enter__ - block destruction
-  void
-  enter();
-
-  /// Context manager __exit__ - unblock destruction
-  void
-  exit(py::object pytype, py::object pyvalue, py::object pytraceback);
-
-  /// Signal that the object should be destroyed as soon as it's not in use
-  void
-  destroy_when_not_in_use();
-
-  /// Override this to destroy an object
-  virtual
-  void
-  destroy();
-
-  virtual
-  ~Destroyable() = default;
-
-private:
-  size_t use_count = 0u;
-  bool please_destroy_ = false;
-};
-
-/// Define a pybind11 wrapper for an rclpy::Destroyable
+/// Define methods on a module for the action API
 /**
  * \param[in] module a pybind11 module to add the definition to
  */
-void define_destroyable(py::object module);
+void
+define_action_api(py::module module);
 }  // namespace rclpy
-
-#endif  // RCLPY__DESTROYABLE_HPP_
+#endif  // RCLPY__ACTION_API_HPP_

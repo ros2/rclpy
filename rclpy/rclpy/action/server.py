@@ -43,7 +43,14 @@ class CancelResponse(Enum):
     ACCEPT = 2
 
 
-GoalEvent = _rclpy.GoalEvent
+class GoalEvent(Enum):
+    """Goal events that cause state transitions."""
+
+    EXECUTE = 1
+    CANCEL_GOAL = 2
+    SUCCEED = 3
+    ABORT = 4
+    CANCELED = 5
 
 
 class ServerGoalHandle:
@@ -62,7 +69,8 @@ class ServerGoalHandle:
         :param goal_info: GoalInfo message.
         :param goal_request: The user defined goal request message from an ActionClient.
         """
-        self._goal_handle = _rclpy.ActionGoalHandle(action_server._handle, goal_info)
+        self._handle = _rclpy.rclpy_action_accept_new_goal(
+            action_server._handle, goal_info)
         self._action_server = action_server
         self._goal_info = goal_info
         self._goal_request = goal_request
@@ -88,9 +96,9 @@ class ServerGoalHandle:
     @property
     def is_active(self):
         with self._lock:
-            if self._goal_handle is None:
+            if self._handle is None:
                 return False
-            return self._goal_handle.is_active()
+            return _rclpy.rclpy_action_goal_handle_is_active(self._handle)
 
     @property
     def is_cancel_requested(self):
@@ -99,24 +107,24 @@ class ServerGoalHandle:
     @property
     def status(self):
         with self._lock:
-            if self._goal_handle is None:
+            if self._handle is None:
                 return GoalStatus.STATUS_UNKNOWN
-            return self._goal_handle.get_status()
+            return _rclpy.rclpy_action_goal_handle_get_status(self._handle)
 
     def _update_state(self, event):
         with self._lock:
             # Ignore updates for already destructed goal handles
-            if self._goal_handle is None:
+            if self._handle is None:
                 return
 
             # Update state
-            self._goal_handle.update_goal_state(event)
+            _rclpy.rclpy_action_update_goal_state(self._handle, event.value)
 
             # Publish state change
-            self._action_server._handle.publish_status()
+            _rclpy.rclpy_action_publish_status(self._action_server._handle)
 
             # If it's a terminal state, then also notify the action server
-            if not self._goal_handle.is_active():
+            if not _rclpy.rclpy_action_goal_handle_is_active(self._handle):
                 self._action_server.notify_goal_done()
 
     def execute(self, execute_callback=None):
@@ -124,7 +132,7 @@ class ServerGoalHandle:
         # In this case we want to avoid the illegal state transition to EXECUTING
         # but still call the users execute callback to let them handle canceling the goal.
         if not self.is_cancel_requested:
-            self._update_state(_rclpy.GoalEvent.EXECUTE)
+            self._update_state(GoalEvent.EXECUTE)
         self._action_server.notify_execute(self, execute_callback)
 
     def publish_feedback(self, feedback):
@@ -133,7 +141,7 @@ class ServerGoalHandle:
 
         with self._lock:
             # Ignore for already destructed goal handles
-            if self._goal_handle is None:
+            if self._handle is None:
                 return
 
             # Populate the feedback message with metadata about this goal
@@ -143,23 +151,24 @@ class ServerGoalHandle:
             feedback_message.feedback = feedback
 
             # Publish
-            self._action_server._handle.publish_feedback(feedback_message)
+            _rclpy.rclpy_action_publish_feedback(
+                self._action_server._handle, feedback_message)
 
     def succeed(self):
-        self._update_state(_rclpy.GoalEvent.SUCCEED)
+        self._update_state(GoalEvent.SUCCEED)
 
     def abort(self):
-        self._update_state(_rclpy.GoalEvent.ABORT)
+        self._update_state(GoalEvent.ABORT)
 
     def canceled(self):
-        self._update_state(_rclpy.GoalEvent.CANCELED)
+        self._update_state(GoalEvent.CANCELED)
 
     def destroy(self):
         with self._lock:
-            if self._goal_handle is None:
+            if self._handle is None:
                 return
-            self._goal_handle.destroy_when_not_in_use()
-            self._goal_handle = None
+            _rclpy.rclpy_action_destroy_server_goal_handle(self._handle)
+            self._handle = None
 
         self._action_server.remove_future(self._result_future)
 
@@ -240,9 +249,9 @@ class ActionServer(Waitable):
         check_for_type_support(action_type)
         self._node = node
         self._action_type = action_type
-        with node.handle, node.get_clock().handle:
-            self._handle = _rclpy.ActionServer(
-                node.handle,
+        with node.handle as node_capsule, node.get_clock().handle:
+            self._handle = _rclpy.rclpy_action_create_server(
+                node_capsule,
                 node.get_clock().handle,
                 action_type,
                 action_name,
@@ -270,7 +279,7 @@ class ActionServer(Waitable):
 
         # Check if goal ID is already being tracked by this action server
         with self._lock:
-            goal_id_exists = self._handle.goal_exists(goal_info)
+            goal_id_exists = _rclpy.rclpy_action_server_goal_exists(self._handle, goal_info)
 
         accepted = False
         if not goal_id_exists:
@@ -301,7 +310,11 @@ class ActionServer(Waitable):
         response_msg = self._action_type.Impl.SendGoalService.Response()
         response_msg.accepted = accepted
         response_msg.stamp = goal_info.stamp
-        self._handle.send_goal_response(request_header, response_msg)
+        _rclpy.rclpy_action_send_goal_response(
+            self._handle,
+            request_header,
+            response_msg,
+        )
 
         if not accepted:
             self._node.get_logger().debug('New goal rejected: {0}'.format(goal_uuid.uuid))
@@ -347,8 +360,8 @@ class ActionServer(Waitable):
 
         with self._lock:
             # Get list of goals that are requested to be canceled
-            cancel_response = self._handle.process_cancel_request(
-                cancel_request, self._action_type.Impl.CancelGoalService.Response)
+            cancel_response = _rclpy.rclpy_action_process_cancel_request(
+                self._handle, cancel_request, self._action_type.Impl.CancelGoalService.Response)
 
         for goal_info in cancel_response.goals_canceling:
             goal_uuid = bytes(goal_info.goal_id.uuid)
@@ -362,12 +375,16 @@ class ActionServer(Waitable):
 
             if CancelResponse.ACCEPT == response:
                 # Notify goal handle
-                goal_handle._update_state(_rclpy.GoalEvent.CANCEL_GOAL)
+                goal_handle._update_state(GoalEvent.CANCEL_GOAL)
             else:
                 # Remove from response
                 cancel_response.goals_canceling.remove(goal_info)
 
-        self._handle.send_cancel_response(request_header, cancel_response)
+        _rclpy.rclpy_action_send_cancel_response(
+            self._handle,
+            request_header,
+            cancel_response,
+        )
 
     async def _execute_get_result_request(self, request_header_and_message):
         request_header, result_request = request_header_and_message
@@ -382,7 +399,11 @@ class ActionServer(Waitable):
                 'Sending result response for unknown goal ID: {0}'.format(goal_uuid))
             result_response = self._action_type.Impl.GetResultService.Response()
             result_response.status = GoalStatus.STATUS_UNKNOWN
-            self._handle.send_result_response(request_header, result_response)
+            _rclpy.rclpy_action_send_result_response(
+                self._handle,
+                request_header,
+                result_response,
+            )
             return
 
         # There is an accepted goal matching the goal ID, register a callback to send the
@@ -396,7 +417,11 @@ class ActionServer(Waitable):
             del self._goal_handles[goal_uuid]
 
     def _send_result_response(self, request_header, future):
-        self._handle.send_result_response(request_header, future.result())
+        _rclpy.rclpy_action_send_result_response(
+            self._handle,
+            request_header,
+            future.result(),
+        )
 
     @property
     def action_type(self):
@@ -406,7 +431,7 @@ class ActionServer(Waitable):
     def is_ready(self, wait_set):
         """Return True if one or more entities are ready in the wait set."""
         with self._lock:
-            ready_entities = self._handle.is_ready(wait_set)
+            ready_entities = _rclpy.rclpy_action_wait_set_is_ready(self._handle, wait_set)
         self._is_goal_request_ready = ready_entities[0]
         self._is_cancel_request_ready = ready_entities[1]
         self._is_result_request_ready = ready_entities[2]
@@ -418,7 +443,8 @@ class ActionServer(Waitable):
         data = {}
         if self._is_goal_request_ready:
             with self._lock:
-                taken_data = self._handle.take_goal_request(
+                taken_data = _rclpy.rclpy_action_take_goal_request(
+                    self._handle,
                     self._action_type.Impl.SendGoalService.Request,
                 )
                 # If take fails, then we get (None, None)
@@ -427,7 +453,8 @@ class ActionServer(Waitable):
 
         if self._is_cancel_request_ready:
             with self._lock:
-                taken_data = self._handle.take_cancel_request(
+                taken_data = _rclpy.rclpy_action_take_cancel_request(
+                    self._handle,
                     self._action_type.Impl.CancelGoalService.Request,
                 )
                 # If take fails, then we get (None, None)
@@ -436,7 +463,8 @@ class ActionServer(Waitable):
 
         if self._is_result_request_ready:
             with self._lock:
-                taken_data = self._handle.take_result_request(
+                taken_data = _rclpy.rclpy_action_take_result_request(
+                    self._handle,
                     self._action_type.Impl.GetResultService.Request,
                 )
                 # If take fails, then we get (None, None)
@@ -445,7 +473,10 @@ class ActionServer(Waitable):
 
         if self._is_goal_expired:
             with self._lock:
-                data['expired'] = self._handle.expire_goals(len(self._goal_handles))
+                data['expired'] = _rclpy.rclpy_action_expire_goals(
+                    self._handle,
+                    len(self._goal_handles),
+                )
 
         return data
 
@@ -470,7 +501,7 @@ class ActionServer(Waitable):
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
-        num_entities = self._handle.get_num_entities()
+        num_entities = _rclpy.rclpy_action_wait_set_get_num_entities(self._handle)
         return NumberOfEntities(
             num_entities[0],
             num_entities[1],
@@ -481,7 +512,7 @@ class ActionServer(Waitable):
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
         with self._lock:
-            self._handle.add_to_waitset(wait_set)
+            _rclpy.rclpy_action_wait_set_add(self._handle, wait_set)
     # End Waitable API
 
     def notify_execute(self, goal_handle, execute_callback):
@@ -496,7 +527,7 @@ class ActionServer(Waitable):
 
     def notify_goal_done(self):
         with self._lock:
-            self._handle.notify_goal_done()
+            _rclpy.rclpy_action_notify_goal_done(self._handle)
 
     def register_handle_accepted_callback(self, handle_accepted_callback):
         """
@@ -584,7 +615,8 @@ class ActionServer(Waitable):
         for goal_handle in self._goal_handles.values():
             goal_handle.destroy()
 
-        self._handle.destroy_when_not_in_use()
+        with self._node.handle as node_capsule:
+            _rclpy.rclpy_action_destroy_entity(self._handle, node_capsule)
         self._node.remove_waitable(self)
         self._handle = None
 

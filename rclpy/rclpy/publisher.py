@@ -15,6 +15,7 @@
 from typing import TypeVar, Union
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
@@ -27,7 +28,7 @@ class Publisher:
 
     def __init__(
         self,
-        publisher_impl: _rclpy.Publisher,
+        publisher_handle: Handle,
         msg_type: MsgType,
         topic: str,
         qos_profile: QoSProfile,
@@ -43,18 +44,18 @@ class Publisher:
         A publisher is used as a primary means of communication in a ROS system by publishing
         messages on a ROS topic.
 
-        :param publisher_impl: Publisher wrapping the underlying ``rcl_publisher_t`` object.
+        :param publisher_handle: Capsule pointing to the underlying ``rcl_publisher_t`` object.
         :param msg_type: The type of ROS messages the publisher will publish.
         :param topic: The name of the topic the publisher will publish to.
         :param qos_profile: The quality of service profile to apply to the publisher.
         """
-        self.__publisher = publisher_impl
+        self.__handle = publisher_handle
         self.msg_type = msg_type
         self.topic = topic
         self.qos_profile = qos_profile
 
         self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
-            callback_group, publisher_impl, topic)
+            callback_group, publisher_handle, topic)
 
     def publish(self, msg: Union[MsgType, bytes]) -> None:
         """
@@ -64,32 +65,32 @@ class Publisher:
         :raises: TypeError if the type of the passed message isn't an instance
           of the provided type when the publisher was constructed.
         """
-        with self.handle:
+        with self.handle as capsule:
             if isinstance(msg, self.msg_type):
-                self.__publisher.publish(msg)
+                _rclpy.rclpy_publish(capsule, msg)
             elif isinstance(msg, bytes):
-                self.__publisher.publish_raw(msg)
+                _rclpy.rclpy_publish_raw(capsule, msg)
             else:
                 raise TypeError('Expected {}, got {}'.format(self.msg_type, type(msg)))
 
     def get_subscription_count(self) -> int:
         """Get the amount of subscribers that this publisher has."""
-        with self.handle:
-            return self.__publisher.get_subscription_count()
+        with self.handle as capsule:
+            return _rclpy.rclpy_publisher_get_subscription_count(capsule)
 
     @property
     def topic_name(self) -> str:
-        with self.handle:
-            return self.__publisher.get_topic_name()
+        with self.handle as capsule:
+            return _rclpy.rclpy_publisher_get_topic_name(capsule)
 
     @property
     def handle(self):
-        return self.__publisher
+        return self.__handle
 
     def destroy(self):
         for handler in self.event_handlers:
             handler.destroy()
-        self.__publisher.destroy_when_not_in_use()
+        self.handle.destroy()
 
     def assert_liveliness(self) -> None:
         """
@@ -98,5 +99,5 @@ class Publisher:
         If the QoS Liveliness policy is set to MANUAL_BY_TOPIC, the
         application must call this at least as often as ``QoSProfile.liveliness_lease_duration``.
         """
-        with self.handle:
-            _rclpy.rclpy_assert_liveliness(self.handle)
+        with self.handle as capsule:
+            _rclpy.rclpy_assert_liveliness(capsule)

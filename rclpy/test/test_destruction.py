@@ -38,7 +38,8 @@ def test_destroy_node_twice():
     try:
         node = rclpy.create_node('test_node2', context=context)
         node.destroy_node()
-        node.destroy_node()
+        with pytest.raises(InvalidHandle):
+            node.destroy_node()
     finally:
         rclpy.shutdown(context=context)
 
@@ -143,7 +144,11 @@ def test_destroy_subscription_asap():
             with sub.handle:
                 pass
 
-            node.destroy_subscription(sub)
+            with sub.handle:
+                node.destroy_subscription(sub)
+                # handle valid because it's still being used
+                with sub.handle:
+                    pass
 
             with pytest.raises(InvalidHandle):
                 # handle invalid because it was destroyed when no one was using it
@@ -161,8 +166,11 @@ def test_destroy_node_asap():
 
     try:
         node = rclpy.create_node('test_destroy_subscription_asap', context=context)
-
-        node.destroy_node()
+        with node.handle:
+            node.destroy_node()
+            # handle valid because it's still being used
+            with node.handle:
+                pass
 
         with pytest.raises(InvalidHandle):
             # handle invalid because it was destroyed when no one was using it
@@ -185,7 +193,11 @@ def test_destroy_publisher_asap():
             with pub.handle:
                 pass
 
-            node.destroy_publisher(pub)
+            with pub.handle:
+                node.destroy_publisher(pub)
+                # handle valid because it's still being used
+                with pub.handle:
+                    pass
 
             with pytest.raises(InvalidHandle):
                 # handle invalid because it was destroyed when no one was using it

@@ -19,8 +19,6 @@
 
 #include <string>
 
-#include "node.hpp"
-
 namespace py = pybind11;
 
 namespace rclpy
@@ -96,26 +94,26 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
  * Raises ValueError if the capsule is not the correct type
  * Raises RCLError if an unexpected error happens
  *
- * \param[in] Node node to remap the topic name
+ * \param[in] pynode Capsule pointing to the node
  * \param[in] topic_name topic string to be remapped
  * \return remapped topic name
  */
 std::string
-remap_topic_name(Node & node, const char * topic_name);
+remap_topic_name(py::capsule pynode, const char * topic_name);
 
 /// Expand and remap a topic name
 /**
  * Raises ValueError if the capsule is not the correct type
  * Raises RCLError if an unexpected error happens
  *
- * \param[in] node node to expand and remap a topic name
+ * \param[in] pynode Capsule pointing to the node
  * \param[in] topic_name topic string to be remapped
  * \param[in] only_expand when `false`, remapping rules are ignored
  * \param[in] is_service `true` for service names, `false` for topic names
  * \return expanded and remapped topic name
  */
 std::string
-resolve_name(Node & node, const char * topic_name, bool only_expand, bool is_service);
+resolve_name(py::capsule pynode, const char * topic_name, bool only_expand, bool is_service);
 }  // namespace rclpy
 
 #endif  // RCLPY__NAMES_HPP_
