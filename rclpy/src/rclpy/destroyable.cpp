@@ -19,8 +19,17 @@
 #include "destroyable.hpp"
 #include "rclpy_common/exceptions.hpp"
 
+
 namespace rclpy
 {
+Destroyable::Destroyable(const Destroyable &)
+{
+  // When a destroyable is copied, it does not matter if someone asked
+  // to destroy the original. The copy has its own lifetime.
+  use_count = 0;
+  please_destroy_ = false;
+}
+
 void
 Destroyable::enter()
 {
@@ -53,6 +62,10 @@ Destroyable::destroy()
 void
 Destroyable::destroy_when_not_in_use()
 {
+  if (please_destroy_) {
+    // already asked to destroy
+    return;
+  }
   please_destroy_ = true;
   if (0u == use_count) {
     destroy();
@@ -62,7 +75,7 @@ Destroyable::destroy_when_not_in_use()
 void
 define_destroyable(py::object module)
 {
-  py::class_<Destroyable>(module, "Destroyable")
+  py::class_<Destroyable, std::shared_ptr<Destroyable>>(module, "Destroyable")
   .def("__enter__", &Destroyable::enter)
   .def("__exit__", &Destroyable::exit)
   .def(

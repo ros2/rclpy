@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
 import unittest
 from unittest.mock import Mock
 
@@ -50,6 +51,11 @@ class TestQoSEvent(unittest.TestCase):
         self.is_fastrtps = 'rmw_fastrtps' in get_rmw_implementation_identifier()
 
     def tearDown(self):
+        # These tests create a bunch of events by hand instead of using Node APIs,
+        # so they won't be cleaned up when calling `node.destroy_node()`, but they could still
+        # keep the node alive from one test to the next.
+        # Invoke the garbage collector to destroy them.
+        gc.collect()
         self.node.destroy_node()
         rclpy.shutdown(context=self.context)
 
@@ -196,8 +202,8 @@ class TestQoSEvent(unittest.TestCase):
         rclpy.logging._root_logger = original_logger
 
     def _create_event_handle(self, parent_entity, event_type):
-        with parent_entity.handle as parent_capsule:
-            event = _rclpy.QoSEvent(parent_capsule, event_type)
+        with parent_entity.handle:
+            event = _rclpy.QoSEvent(parent_entity.handle, event_type)
         self.assertIsNotNone(event)
         return event
 
@@ -237,41 +243,40 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
-        wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        with self.context.handle as context_handle:
-            _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 3, context_handle)
+        with self.context.handle:
+            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
         deadline_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
         with deadline_event_handle:
-            deadline_event_index = _rclpy.rclpy_wait_set_add_event(wait_set, deadline_event_handle)
+            deadline_event_index = wait_set.add_event(deadline_event_handle)
         self.assertIsNotNone(deadline_event_index)
 
         liveliness_event_handle = self._create_event_handle(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
         with liveliness_event_handle:
-            liveliness_event_index = _rclpy.rclpy_wait_set_add_event(
-                    wait_set, liveliness_event_handle)
+            liveliness_event_index = wait_set.add_event(
+                    liveliness_event_handle)
         self.assertIsNotNone(liveliness_event_index)
 
         try:
             incompatible_qos_event_handle = self._create_event_handle(
                 publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
             with incompatible_qos_event_handle:
-                incompatible_qos_event_index = _rclpy.rclpy_wait_set_add_event(
-                        wait_set, incompatible_qos_event_handle)
+                incompatible_qos_event_index = wait_set.add_event(
+                        incompatible_qos_event_handle)
             self.assertIsNotNone(incompatible_qos_event_index)
         except UnsupportedEventTypeError:
             self.assertTrue(self.is_fastrtps)
 
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
-        _rclpy.rclpy_wait(wait_set, 0)
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, deadline_event_index))
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, liveliness_event_index))
+        wait_set.wait(0)
+        self.assertFalse(wait_set.is_ready('event', deadline_event_index))
+        self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
         if not self.is_fastrtps:
-            self.assertFalse(_rclpy.rclpy_wait_set_is_ready(
-                'event', wait_set, incompatible_qos_event_index))
+            self.assertFalse(wait_set.is_ready(
+                'event', incompatible_qos_event_index))
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side
@@ -310,42 +315,39 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         subscription = self.node.create_subscription(EmptyMsg, self.topic_name, Mock(), 10)
-        wait_set = _rclpy.rclpy_get_zero_initialized_wait_set()
-        with self.context.handle as context_handle:
-            _rclpy.rclpy_wait_set_init(wait_set, 0, 0, 0, 0, 0, 3, context_handle)
+        with self.context.handle:
+            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
         deadline_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
         with deadline_event_handle:
-            deadline_event_index = _rclpy.rclpy_wait_set_add_event(
-                    wait_set, deadline_event_handle)
+            deadline_event_index = wait_set.add_event(deadline_event_handle)
         self.assertIsNotNone(deadline_event_index)
 
         liveliness_event_handle = self._create_event_handle(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
         with liveliness_event_handle:
-            liveliness_event_index = _rclpy.rclpy_wait_set_add_event(
-                    wait_set, liveliness_event_handle)
+            liveliness_event_index = wait_set.add_event(liveliness_event_handle)
         self.assertIsNotNone(liveliness_event_index)
 
         try:
             incompatible_qos_event_handle = self._create_event_handle(
                 subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
             with incompatible_qos_event_handle:
-                incompatible_qos_event_index = _rclpy.rclpy_wait_set_add_event(
-                        wait_set, incompatible_qos_event_handle)
+                incompatible_qos_event_index = wait_set.add_event(
+                        incompatible_qos_event_handle)
             self.assertIsNotNone(incompatible_qos_event_index)
         except UnsupportedEventTypeError:
             self.assertTrue(self.is_fastrtps)
 
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
-        _rclpy.rclpy_wait(wait_set, 0)
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, deadline_event_index))
-        self.assertFalse(_rclpy.rclpy_wait_set_is_ready('event', wait_set, liveliness_event_index))
+        wait_set.wait(0)
+        self.assertFalse(wait_set.is_ready('event', deadline_event_index))
+        self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
         if not self.is_fastrtps:
-            self.assertFalse(_rclpy.rclpy_wait_set_is_ready(
-                'event', wait_set, incompatible_qos_event_index))
+            self.assertFalse(wait_set.is_ready(
+                'event', incompatible_qos_event_index))
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side

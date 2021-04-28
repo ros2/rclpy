@@ -22,13 +22,13 @@
 #include <memory>
 
 #include "destroyable.hpp"
-#include "handle.hpp"
+#include "node.hpp"
 
 namespace py = pybind11;
 
 namespace rclpy
 {
-class Client : public Destroyable
+class Client : public Destroyable, public std::enable_shared_from_this<Client>
 {
 public:
   /// Create a client
@@ -40,12 +40,12 @@ public:
    * Raises ValueError if the capsules are not the correct types
    * Raises RuntimeError if the client could not be created
    *
-   * \param[in] pynode Capsule pointing to the node to add the client to
+   * \param[in] node Node to add the client to
    * \param[in] pysrv_type Service module associated with the client
    * \param[in] service_name Python object containing the service name
    * \param[in] pyqos rmw_qos_profile_t object for this client
    */
-  Client(py::capsule pynode, py::object pysrv_type, const char * service_name, py::object pyqos);
+  Client(Node & node, py::object pysrv_type, const char * service_name, py::object pyqos);
 
   ~Client() = default;
 
@@ -91,8 +91,7 @@ public:
   destroy() override;
 
 private:
-  // TODO(sloretz) replace with std::shared_ptr<rcl_node_t> when rclpy::Node exists
-  std::shared_ptr<Handle> node_handle_;
+  Node node_;
   std::shared_ptr<rcl_client_t> rcl_client_;
 };
 

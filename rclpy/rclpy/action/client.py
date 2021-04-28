@@ -149,9 +149,9 @@ class ActionClient(Waitable):
         self._node = node
         self._action_type = action_type
         self._action_name = action_name
-        with node.handle as node_capsule:
-            self._client_handle = _rclpy.rclpy_action_create_client(
-                node_capsule,
+        with node.handle:
+            self._client_handle = _rclpy.ActionClient(
+                node.handle,
                 action_type,
                 action_name,
                 goal_service_qos_profile.get_c_qos_profile(),
@@ -220,9 +220,7 @@ class ActionClient(Waitable):
     # Start Waitable API
     def is_ready(self, wait_set):
         """Return True if one or more entities are ready in the wait set."""
-        ready_entities = _rclpy.rclpy_action_wait_set_is_ready(
-            self._client_handle,
-            wait_set)
+        ready_entities = self._client_handle.is_ready(wait_set)
         self._is_feedback_ready = ready_entities[0]
         self._is_status_ready = ready_entities[1]
         self._is_goal_response_ready = ready_entities[2]
@@ -234,36 +232,36 @@ class ActionClient(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         data = {}
         if self._is_goal_response_ready:
-            taken_data = _rclpy.rclpy_action_take_goal_response(
-                self._client_handle, self._action_type.Impl.SendGoalService.Response)
+            taken_data = self._client_handle.take_goal_response(
+                self._action_type.Impl.SendGoalService.Response)
             # If take fails, then we get (None, None)
             if all(taken_data):
                 data['goal'] = taken_data
 
         if self._is_cancel_response_ready:
-            taken_data = _rclpy.rclpy_action_take_cancel_response(
-                self._client_handle, self._action_type.Impl.CancelGoalService.Response)
+            taken_data = self._client_handle.take_cancel_response(
+                self._action_type.Impl.CancelGoalService.Response)
             # If take fails, then we get (None, None)
             if all(taken_data):
                 data['cancel'] = taken_data
 
         if self._is_result_response_ready:
-            taken_data = _rclpy.rclpy_action_take_result_response(
-                self._client_handle, self._action_type.Impl.GetResultService.Response)
+            taken_data = self._client_handle.take_result_response(
+                self._action_type.Impl.GetResultService.Response)
             # If take fails, then we get (None, None)
             if all(taken_data):
                 data['result'] = taken_data
 
         if self._is_feedback_ready:
-            taken_data = _rclpy.rclpy_action_take_feedback(
-                self._client_handle, self._action_type.Impl.FeedbackMessage)
+            taken_data = self._client_handle.take_feedback(
+                self._action_type.Impl.FeedbackMessage)
             # If take fails, then we get None
             if taken_data is not None:
                 data['feedback'] = taken_data
 
         if self._is_status_ready:
-            taken_data = _rclpy.rclpy_action_take_status(
-                self._client_handle, self._action_type.Impl.GoalStatusMessage)
+            taken_data = self._client_handle.take_status(
+                self._action_type.Impl.GoalStatusMessage)
             # If take fails, then we get None
             if taken_data is not None:
                 data['status'] = taken_data
@@ -347,12 +345,12 @@ class ActionClient(Waitable):
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
-        num_entities = _rclpy.rclpy_action_wait_set_get_num_entities(self._client_handle)
+        num_entities = self._client_handle.get_num_entities()
         return NumberOfEntities(*num_entities)
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        _rclpy.rclpy_action_wait_set_add(self._client_handle, wait_set)
+        self._client_handle.add_to_waitset(wait_set)
     # End Waitable API
 
     def send_goal(self, goal, **kwargs):
@@ -423,8 +421,7 @@ class ActionClient(Waitable):
         request = self._action_type.Impl.SendGoalService.Request()
         request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         request.goal = goal
-        sequence_number = _rclpy.rclpy_action_send_goal_request(
-            self._client_handle, request)
+        sequence_number = self._client_handle.send_goal_request(request)
         if sequence_number in self._pending_goal_requests:
             raise RuntimeError(
                 'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
@@ -482,9 +479,7 @@ class ActionClient(Waitable):
 
         cancel_request = CancelGoal.Request()
         cancel_request.goal_info.goal_id = goal_handle.goal_id
-        sequence_number = _rclpy.rclpy_action_send_cancel_request(
-            self._client_handle,
-            cancel_request)
+        sequence_number = self._client_handle.send_cancel_request(cancel_request)
         if sequence_number in self._pending_cancel_requests:
             raise RuntimeError(
                 'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
@@ -536,9 +531,7 @@ class ActionClient(Waitable):
 
         result_request = self._action_type.Impl.GetResultService.Request()
         result_request.goal_id = goal_handle.goal_id
-        sequence_number = _rclpy.rclpy_action_send_result_request(
-            self._client_handle,
-            result_request)
+        sequence_number = self._client_handle.send_result_request(result_request)
         if sequence_number in self._pending_result_requests:
             raise RuntimeError(
                 'Sequence ({}) conflicts with pending result request'.format(sequence_number))
@@ -557,10 +550,8 @@ class ActionClient(Waitable):
 
         :return: True if an action server is ready, False otherwise.
         """
-        with self._node.handle as node_capsule:
-            return _rclpy.rclpy_action_server_is_available(
-                node_capsule,
-                self._client_handle)
+        with self._node.handle:
+            return self._client_handle.is_action_server_available()
 
     def wait_for_server(self, timeout_sec=None):
         """
@@ -587,8 +578,8 @@ class ActionClient(Waitable):
         """Destroy the underlying action client handle."""
         if self._client_handle is None:
             return
-        with self._node.handle as node_capsule:
-            _rclpy.rclpy_action_destroy_entity(self._client_handle, node_capsule)
+        with self._node.handle:
+            self._client_handle.destroy_when_not_in_use()
             self._node.remove_waitable(self)
         self._client_handle = None
 

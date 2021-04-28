@@ -17,31 +17,75 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/error_handling.h>
+#include <rcl/guard_condition.h>
+
+#include <memory>
+
+#include "context.hpp"
+#include "destroyable.hpp"
+#include "rclpy_common/exceptions.hpp"
+#include "rclpy_common/handle.h"
+#include "utils.hpp"
+
 namespace py = pybind11;
 
 namespace rclpy
 {
 /// Create a general purpose guard condition
-/**
- * A successful call will return a Capsule with the pointer of the created
- * rcl_guard_condition_t * structure
- *
- * Raises RuntimeError if initializing the guard condition fails
- *
- * \return a guard condition capsule
- */
-py::capsule
-guard_condition_create(py::capsule pycontext);
+class GuardCondition : public Destroyable, public std::enable_shared_from_this<GuardCondition>
+{
+public:
+  /**
+   * Raises RuntimeError if initializing the guard condition fails
+   */
+  explicit GuardCondition(Context & context);
 
-/// Trigger a general purpose guard condition
-/**
- * Raises ValueError if pygc is not a guard condition capsule
- * Raises RCLError if the guard condition could not be triggered
- *
- * \param[in] pygc Capsule pointing to guard condtition
- */
-void
-guard_condition_trigger(py::capsule pygc);
+  /// Trigger a general purpose guard condition
+  /**
+   * Raises ValueError if pygc is not a guard condition capsule
+   * Raises RCLError if the guard condition could not be triggered
+   */
+  void
+  trigger_guard_condition();
+
+  /// Get rcl_guard_condition_t pointer
+  rcl_guard_condition_t * rcl_ptr() const
+  {
+    return rcl_guard_condition_.get();
+  }
+
+  // TODO(ahcorde): Remove the pycapsule method when #728 is in
+  /// Return a pycapsule object to be able to handle the signal in C.
+  py::capsule
+  pycapsule() const
+  {
+    PyObject * capsule = rclpy_create_handle_capsule(
+      rcl_guard_condition_.get(), "rcl_guard_condition_t", _rclpy_destroy_guard_condition);
+    if (!capsule) {
+      throw py::error_already_set();
+    }
+    return py::reinterpret_steal<py::capsule>(capsule);
+  }
+
+  /// Force an early destruction of this object
+  void destroy() override;
+
+private:
+  Context context_;
+  std::shared_ptr<rcl_guard_condition_t> rcl_guard_condition_;
+
+  /// Handle destructor for guard condition
+  static void
+  _rclpy_destroy_guard_condition(void * p)
+  {
+    (void)p;
+    // Empty destructor, the class should take care of the lifecycle.
+  }
+};
+
+/// Define a pybind11 wrapper for an rclpy::Service
+void define_guard_condition(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__GUARD_CONDITION_HPP_

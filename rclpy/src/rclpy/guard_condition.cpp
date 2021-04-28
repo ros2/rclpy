@@ -31,89 +31,66 @@
 
 namespace rclpy
 {
-/// Handle destructor for guard condition
-static void
-_rclpy_destroy_guard_condition(void * p)
+GuardCondition::GuardCondition(Context & context)
+: context_(context)
 {
-  auto gc = static_cast<rcl_guard_condition_t *>(p);
-  if (!gc) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "_rclpy_destroy_guard_condition got NULL pointer");
-    return;
-  }
+  rcl_guard_condition_ = std::shared_ptr<rcl_guard_condition_t>(
+    new rcl_guard_condition_t,
+    [](rcl_guard_condition_t * guard_condition)
+    {
+      rcl_ret_t ret = rcl_guard_condition_fini(guard_condition);
+      if (RCL_RET_OK != ret) {
+        // Warning should use line number of the current stack frame
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level, "Failed to fini guard condition: %s",
+          rcl_get_error_string().str);
+        rcl_reset_error();
+      }
+      delete guard_condition;
+    });
 
-  rcl_ret_t ret = rcl_guard_condition_fini(gc);
-  if (RCL_RET_OK != ret) {
-    // Warning should use line number of the current stack frame
-    int stack_level = 1;
-    PyErr_WarnFormat(
-      PyExc_RuntimeWarning, stack_level, "Failed to fini guard condition: %s",
-      rcl_get_error_string().str);
-  }
-  PyMem_Free(gc);
-}
-
-py::capsule
-guard_condition_create(py::capsule pycontext)
-{
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
-  // Use smart pointer to make sure memory is free'd on error
-  auto deleter = [](rcl_guard_condition_t * ptr) {_rclpy_destroy_guard_condition(ptr);};
-  auto gc = std::unique_ptr<rcl_guard_condition_t, decltype(deleter)>(
-    static_cast<rcl_guard_condition_t *>(PyMem_Malloc(sizeof(rcl_guard_condition_t))),
-    deleter);
-  if (!gc) {
-    throw std::bad_alloc();
-  }
-
-  *gc = rcl_get_zero_initialized_guard_condition();
+  *rcl_guard_condition_ = rcl_get_zero_initialized_guard_condition();
   rcl_guard_condition_options_t gc_options = rcl_guard_condition_get_default_options();
 
-  rcl_ret_t ret = rcl_guard_condition_init(gc.get(), context, gc_options);
-  if (ret != RCL_RET_OK) {
+  rcl_ret_t ret = rcl_guard_condition_init(
+    rcl_guard_condition_.get(), context.rcl_ptr(), gc_options);
+  if (RCL_RET_OK != ret) {
     throw RCLError("failed to create guard_condition");
   }
-
-  PyObject * pygc_c =
-    rclpy_create_handle_capsule(gc.get(), "rcl_guard_condition_t", _rclpy_destroy_guard_condition);
-  if (!pygc_c) {
-    throw py::error_already_set();
-  }
-  auto pygc = py::reinterpret_steal<py::capsule>(pygc_c);
-  // pygc now owns the rcl_guard_contition_t
-  gc.release();
-
-  auto gc_handle = static_cast<rclpy_handle_t *>(pygc);
-  auto context_handle = static_cast<rclpy_handle_t *>(pycontext);
-  _rclpy_handle_add_dependency(gc_handle, context_handle);
-  if (PyErr_Occurred()) {
-    _rclpy_handle_dec_ref(gc_handle);
-    throw py::error_already_set();
-  }
-
-  return pygc;
 }
 
 void
-guard_condition_trigger(py::capsule pygc)
+GuardCondition::destroy()
 {
-  auto gc = static_cast<rcl_guard_condition_t *>(
-    rclpy_handle_get_pointer_from_capsule(pygc.ptr(), "rcl_guard_condition_t"));
-  if (!gc) {
-    throw py::error_already_set();
-  }
+  rcl_guard_condition_.reset();
+  context_.destroy();
+}
 
-  rcl_ret_t ret = rcl_trigger_guard_condition(gc);
+void
+GuardCondition::trigger_guard_condition()
+{
+  rcl_ret_t ret = rcl_trigger_guard_condition(rcl_guard_condition_.get());
 
-  if (ret != RCL_RET_OK) {
+  if (RCL_RET_OK != ret) {
     throw RCLError("failed to trigger guard condition");
   }
+}
+
+void define_guard_condition(py::object module)
+{
+  py::class_<GuardCondition, Destroyable, std::shared_ptr<GuardCondition>>(module, "GuardCondition")
+  .def(py::init<Context &>())
+  .def_property_readonly(
+    "pointer", [](const GuardCondition & guard_condition) {
+      return reinterpret_cast<size_t>(guard_condition.rcl_ptr());
+    },
+    "Get the address of the entity as an integer")
+  .def(
+    "trigger_guard_condition", &GuardCondition::trigger_guard_condition,
+    "Trigger a general purpose guard condition")
+  .def(
+    "pycapsule", &GuardCondition::pycapsule,
+    "Return a pycapsule object with the guardcondition pointer");
 }
 }  // namespace rclpy

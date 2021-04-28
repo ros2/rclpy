@@ -36,19 +36,13 @@ namespace rclpy
 
 py::list
 graph_get_publisher_names_and_types_by_node(
-  py::capsule pynode, bool no_demangle,
+  Node & node, bool no_demangle,
   std::string node_name, std::string node_namespace)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t publisher_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_get_publisher_names_and_types_by_node(
-    node, &allocator, no_demangle, node_name.c_str(),
+    node.rcl_ptr(), &allocator, no_demangle, node_name.c_str(),
     node_namespace.c_str(), &publisher_names_and_types);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_NODE_NAME_NON_EXISTENT == ret) {
@@ -75,19 +69,13 @@ graph_get_publisher_names_and_types_by_node(
 
 py::list
 graph_get_subscriber_names_and_types_by_node(
-  py::capsule pynode, bool no_demangle,
+  Node & node, bool no_demangle,
   std::string node_name, std::string node_namespace)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t subscriber_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_get_subscriber_names_and_types_by_node(
-    node, &allocator, no_demangle, node_name.c_str(),
+    node.rcl_ptr(), &allocator, no_demangle, node_name.c_str(),
     node_namespace.c_str(), &subscriber_names_and_types);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_NODE_NAME_NON_EXISTENT == ret) {
@@ -114,18 +102,13 @@ graph_get_subscriber_names_and_types_by_node(
 
 py::list
 graph_get_service_names_and_types_by_node(
-  py::capsule pynode, std::string node_name, std::string node_namespace)
+  Node & node, std::string node_name, std::string node_namespace)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t service_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_get_service_names_and_types_by_node(
-    node, &allocator, node_name.c_str(), node_namespace.c_str(), &service_names_and_types);
+    node.rcl_ptr(), &allocator, node_name.c_str(), node_namespace.c_str(),
+    &service_names_and_types);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_NODE_NAME_NON_EXISTENT == ret) {
       throw NodeNameNonExistentError(
@@ -151,18 +134,12 @@ graph_get_service_names_and_types_by_node(
 
 py::list
 graph_get_client_names_and_types_by_node(
-  py::capsule pynode, std::string node_name, std::string node_namespace)
+  Node & node, std::string node_name, std::string node_namespace)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t client_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_get_client_names_and_types_by_node(
-    node, &allocator, node_name.c_str(), node_namespace.c_str(), &client_names_and_types);
+    node.rcl_ptr(), &allocator, node_name.c_str(), node_namespace.c_str(), &client_names_and_types);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_NODE_NAME_NON_EXISTENT == ret) {
       throw NodeNameNonExistentError(
@@ -187,18 +164,12 @@ graph_get_client_names_and_types_by_node(
 }
 
 py::list
-graph_get_topic_names_and_types(py::capsule pynode, bool no_demangle)
+graph_get_topic_names_and_types(Node & node, bool no_demangle)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret =
-    rcl_get_topic_names_and_types(node, &allocator, no_demangle, &topic_names_and_types);
+    rcl_get_topic_names_and_types(node.rcl_ptr(), &allocator, no_demangle, &topic_names_and_types);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to get topic names and types");
   }
@@ -220,17 +191,12 @@ graph_get_topic_names_and_types(py::capsule pynode, bool no_demangle)
 }
 
 py::list
-graph_get_service_names_and_types(py::capsule pynode)
+graph_get_service_names_and_types(Node & node)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcl_names_and_types_t service_names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_get_service_names_and_types(node, &allocator, &service_names_and_types);
+  rcl_ret_t ret = rcl_get_service_names_and_types(
+    node.rcl_ptr(), &allocator, &service_names_and_types);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to get service names and types");
   }
@@ -259,18 +225,12 @@ typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
 
 py::list
 _get_info_by_topic(
-  py::capsule pynode,
+  Node & node,
   const char * topic_name,
   bool no_mangle,
   const char * type,
   rcl_get_info_by_topic_func_t rcl_get_info_by_topic)
 {
-  auto node = static_cast<rcl_node_t *>(
-    rclpy_handle_get_pointer_from_capsule(pynode.ptr(), "rcl_node_t"));
-  if (!node) {
-    throw py::error_already_set();
-  }
-
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
   rcl_topic_endpoint_info_array_t info_array = rcl_get_zero_initialized_topic_endpoint_info_array();
 
@@ -287,7 +247,8 @@ _get_info_by_topic(
       }
     });
 
-  rcl_ret_t ret = rcl_get_info_by_topic(node, &allocator, topic_name, no_mangle, &info_array);
+  rcl_ret_t ret = rcl_get_info_by_topic(
+    node.rcl_ptr(), &allocator, topic_name, no_mangle, &info_array);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_UNSUPPORTED == ret) {
       throw NotImplementedError(
@@ -304,19 +265,19 @@ _get_info_by_topic(
 
 py::list
 graph_get_publishers_info_by_topic(
-  py::capsule pynode, const char * topic_name, bool no_mangle)
+  Node & node, const char * topic_name, bool no_mangle)
 {
   return _get_info_by_topic(
-    pynode, topic_name, no_mangle, "publishers",
+    node, topic_name, no_mangle, "publishers",
     rcl_get_publishers_info_by_topic);
 }
 
 py::list
 graph_get_subscriptions_info_by_topic(
-  py::capsule pynode, const char * topic_name, bool no_mangle)
+  Node & node, const char * topic_name, bool no_mangle)
 {
   return _get_info_by_topic(
-    pynode, topic_name, no_mangle, "subscriptions",
+    node, topic_name, no_mangle, "subscriptions",
     rcl_get_subscriptions_info_by_topic);
 }
 

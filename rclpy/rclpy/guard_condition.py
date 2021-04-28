@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.handle import Handle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
 
@@ -21,8 +20,8 @@ class GuardCondition:
 
     def __init__(self, callback, callback_group, context=None):
         self._context = get_default_context() if context is None else context
-        with self._context.handle as capsule:
-            self.__handle = Handle(_rclpy.rclpy_create_guard_condition(capsule))
+        with self._context.handle:
+            self.__gc = _rclpy.GuardCondition(self._context.handle)
         self.callback = callback
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
@@ -31,12 +30,12 @@ class GuardCondition:
         self._executor_triggered = False
 
     def trigger(self):
-        with self.handle as capsule:
-            _rclpy.rclpy_trigger_guard_condition(capsule)
+        with self.__gc:
+            self.__gc.trigger_guard_condition()
 
     @property
     def handle(self):
-        return self.__handle
+        return self.__gc
 
     def destroy(self):
-        self.handle.destroy()
+        self.handle.destroy_when_not_in_use()
