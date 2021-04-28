@@ -31,14 +31,9 @@
 
 namespace rclpy
 {
-GuardCondition::GuardCondition(py::capsule pycontext)
+GuardCondition::GuardCondition(Context & context)
+: context_(context)
 {
-  auto context = static_cast<rcl_context_t *>(
-    rclpy_handle_get_pointer_from_capsule(pycontext.ptr(), "rcl_context_t"));
-  if (!context) {
-    throw py::error_already_set();
-  }
-
   rcl_guard_condition_ = std::shared_ptr<rcl_guard_condition_t>(
     new rcl_guard_condition_t,
     [](rcl_guard_condition_t * guard_condition)
@@ -58,8 +53,9 @@ GuardCondition::GuardCondition(py::capsule pycontext)
   *rcl_guard_condition_ = rcl_get_zero_initialized_guard_condition();
   rcl_guard_condition_options_t gc_options = rcl_guard_condition_get_default_options();
 
-  rcl_ret_t ret = rcl_guard_condition_init(rcl_guard_condition_.get(), context, gc_options);
-  if (ret != RCL_RET_OK) {
+  rcl_ret_t ret = rcl_guard_condition_init(
+    rcl_guard_condition_.get(), context.rcl_ptr(), gc_options);
+  if (RCL_RET_OK != ret) {
     throw RCLError("failed to create guard_condition");
   }
 }
@@ -68,6 +64,7 @@ void
 GuardCondition::destroy()
 {
   rcl_guard_condition_.reset();
+  context_.destroy();
 }
 
 void
@@ -83,7 +80,7 @@ GuardCondition::trigger_guard_condition()
 void define_guard_condition(py::object module)
 {
   py::class_<GuardCondition, Destroyable, std::shared_ptr<GuardCondition>>(module, "GuardCondition")
-  .def(py::init<py::capsule>())
+  .def(py::init<Context &>())
   .def_property_readonly(
     "pointer", [](const GuardCondition & guard_condition) {
       return reinterpret_cast<size_t>(guard_condition.rcl_ptr());

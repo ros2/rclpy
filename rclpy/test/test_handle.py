@@ -23,7 +23,7 @@ def test_handle_destroyed_immediately():
 
     try:
         node = rclpy.create_node('test_handle_destroyed_immediately', context=context)
-        node.handle.destroy()
+        node.destroy_node()
         with pytest.raises(InvalidHandle):
             with node.handle:
                 pass
@@ -38,9 +38,7 @@ def test_handle_destroyed_when_not_used():
     try:
         node = rclpy.create_node('test_handle_destroyed_when_not_used', context=context)
         with node.handle:
-            node.handle.destroy()
-            with node.handle:
-                pass
+            node.destroy_node()
 
         with pytest.raises(InvalidHandle):
             with node.handle:

@@ -22,7 +22,7 @@
 #include <memory>
 
 #include "destroyable.hpp"
-#include "handle.hpp"
+#include "node.hpp"
 #include "wait_set.hpp"
 
 namespace py = pybind11;
@@ -42,7 +42,7 @@ public:
    * Raises ValueError if action name is invalid.
    * Raises RuntimeError if the action client could not be created.
    *
-   * \param[in] pynode Capsule pointing to the node to add the action client to.
+   * \param[in] node Node to add the action client to.
    * \param[in] pyaction_type Action module associated with the action client.
    * \param[in] pyaction_name Python object containing the action name.
    * \param[in] goal_service_qos rmw_qos_profile_t object for the goal service.
@@ -52,7 +52,7 @@ public:
    * \param[in] status_qos rmw_qos_profile_t object for the status subscriber.
    */
   ActionClient(
-    py::capsule pynode,
+    Node & node,
     py::object pyaction_type,
     const char * action_name,
     const rmw_qos_profile_t & goal_service_qos,
@@ -226,7 +226,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Handle> node_handle_;
+  Node node_;
   std::shared_ptr<rcl_action_client_t> rcl_action_client_;
 };
 /// Define a pybind11 wrapper for an rcl_time_point_t

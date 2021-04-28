@@ -34,9 +34,6 @@ class Context:
     """
 
     def __init__(self):
-        from rclpy.impl.implementation_singleton import rclpy_implementation
-        from .handle import Handle
-        self._handle = Handle(rclpy_implementation.rclpy_create_context())
         self._lock = threading.Lock()
         self._callbacks = []
         self._callbacks_lock = threading.Lock()
@@ -44,7 +41,10 @@ class Context:
 
     @property
     def handle(self):
-        return self._handle
+        return self.__context
+
+    def destroy(self):
+        self.__context.destroy_when_not_in_use()
 
     def init(self,
              args: Optional[List[str]] = None,
@@ -57,31 +57,36 @@ class Context:
         :param args: List of command line arguments.
         """
         # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
+        from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
         global g_logging_ref_count
-        with self._handle as capsule, self._lock:
+        with self._lock:
             if domain_id is not None and domain_id < 0:
                 raise RuntimeError(
                     'Domain id ({}) should not be lower than zero.'
                     .format(domain_id))
-            rclpy_implementation.rclpy_init(
-                args if args is not None else sys.argv,
-                capsule,
-                domain_id if domain_id is not None else rclpy_implementation.RCL_DEFAULT_DOMAIN_ID)
-            if initialize_logging and not self._logging_initialized:
-                with g_logging_configure_lock:
-                    g_logging_ref_count += 1
-                    if g_logging_ref_count == 1:
-                        rclpy_implementation.rclpy_logging_configure(capsule)
-                self._logging_initialized = True
+            try:
+                if self.__context is not None:
+                    raise RuntimeError
+            except AttributeError:
+                self.__context = _rclpy.Context(
+                    args if args is not None else sys.argv,
+                    domain_id if domain_id is not None else _rclpy.RCL_DEFAULT_DOMAIN_ID)
+                if initialize_logging and not self._logging_initialized:
+                    with g_logging_configure_lock:
+                        g_logging_ref_count += 1
+                        if g_logging_ref_count == 1:
+                            _rclpy.rclpy_logging_configure(self.__context)
+                    self._logging_initialized = True
 
     def ok(self):
         """Check if context hasn't been shut down."""
         # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
-        with self._handle as capsule, self._lock:
-            return rclpy_implementation.rclpy_ok(capsule)
+        try:
+            with self.__context, self._lock:
+                return self.__context.ok()
+        except AttributeError:
+            return False
 
     def _call_on_shutdown_callbacks(self):
         with self._callbacks_lock:
@@ -94,19 +99,17 @@ class Context:
     def shutdown(self):
         """Shutdown this context."""
         # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
-        with self._handle as capsule, self._lock:
-            rclpy_implementation.rclpy_shutdown(capsule)
+        with self.__context, self._lock:
+            self.__context.shutdown()
         self._call_on_shutdown_callbacks()
         self._logging_fini()
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
         # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
-        with self._handle as capsule, self._lock:
-            if rclpy_implementation.rclpy_ok(capsule):
-                rclpy_implementation.rclpy_shutdown(capsule)
+        with self.__context, self._lock:
+            if self.__context.ok():
+                self.__context.shutdown()
                 self._call_on_shutdown_callbacks()
 
     def _remove_callback(self, weak_method):
@@ -138,6 +141,5 @@ class Context:
 
     def get_domain_id(self):
         """Get domain id of context."""
-        from rclpy.impl.implementation_singleton import rclpy_implementation
-        with self._handle as capsule, self._lock:
-            return rclpy_implementation.rclpy_context_get_domain_id(capsule)
+        with self.__context, self._lock:
+            return self.__context.get_domain_id()

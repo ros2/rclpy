@@ -23,7 +23,6 @@
 #include <string>
 
 #include "rclpy_common/common.h"
-#include "rclpy_common/handle.h"
 
 #include "rclpy_common/exceptions.hpp"
 
@@ -36,12 +35,10 @@ using pybind11::literals::operator""_a;
 namespace rclpy
 {
 Subscription::Subscription(
-  py::capsule pynode, py::object pymsg_type, std::string topic,
+  Node & node, py::object pymsg_type, std::string topic,
   py::object pyqos_profile)
-: node_handle_(std::make_shared<Handle>(pynode))
+: node_(node)
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
     rclpy_common_get_type_support(pymsg_type.ptr()));
   if (!msg_type) {
@@ -56,11 +53,10 @@ Subscription::Subscription(
 
   rcl_subscription_ = std::shared_ptr<rcl_subscription_t>(
     new rcl_subscription_t,
-    [this](rcl_subscription_t * subscription)
+    [node](rcl_subscription_t * subscription)
     {
-      auto node = node_handle_->cast_or_warn<rcl_node_t *>("rcl_node_t");
-
-      rcl_ret_t ret = rcl_subscription_fini(subscription, node);
+      // Intentionally capture node by copy so shared_ptr can be transfered to copies
+      rcl_ret_t ret = rcl_subscription_fini(subscription, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
@@ -75,7 +71,7 @@ Subscription::Subscription(
   *rcl_subscription_ = rcl_get_zero_initialized_subscription();
 
   rcl_ret_t ret = rcl_subscription_init(
-    rcl_subscription_.get(), node, msg_type,
+    rcl_subscription_.get(), node_.rcl_ptr(), msg_type,
     topic.c_str(), &subscription_ops);
   if (ret != RCL_RET_OK) {
     if (ret == RCL_RET_TOPIC_NAME_INVALID) {
@@ -91,7 +87,7 @@ Subscription::Subscription(
 void Subscription::destroy()
 {
   rcl_subscription_.reset();
-  node_handle_.reset();
+  node_.destroy();
 }
 
 py::object
@@ -144,9 +140,7 @@ Subscription::take_message(py::object pymsg_type, bool raw)
 const char *
 Subscription::get_logger_name()
 {
-  auto node = node_handle_->cast<rcl_node_t *>("rcl_node_t");
-
-  const char * node_logger_name = rcl_node_get_logger_name(node);
+  const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
   if (!node_logger_name) {
     throw RCLError("Node logger name not set");
   }
@@ -168,7 +162,7 @@ void
 define_subscription(py::object module)
 {
   py::class_<Subscription, Destroyable, std::shared_ptr<Subscription>>(module, "Subscription")
-  .def(py::init<py::capsule, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Subscription & subscription) {
       return reinterpret_cast<size_t>(subscription.rcl_ptr());
