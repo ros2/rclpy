@@ -277,6 +277,10 @@ class RcutilsLogger:
         from rclpy.logging import LoggingSeverity
         severity = LoggingSeverity(severity)
 
+        # Gather context info and check filters only if the severity is appropriate.
+        if not self.is_enabled_for(severity):
+            return False
+
         name = kwargs.pop('name', self.name)
 
         # Infer the requested log filters from the keyword arguments
@@ -305,10 +309,6 @@ class RcutilsLogger:
                 if any(context[p] != kwargs.get(p, filter_params[p]) for p in filter_params):
                     raise ValueError(
                         'Logging filter parameters cannot be changed between calls.')
-
-        # Only check filters if the severity is appropriate.
-        if not self.is_enabled_for(severity):
-            return False
 
         # Check if any filter determines the message shouldn't be processed.
         # Note(dhood): even if a message doesn't get logged, a filter might still update its state
