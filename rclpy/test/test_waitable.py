@@ -41,9 +41,9 @@ class ClientWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.handle as node_capsule:
+        with node.handle:
             self.client = _rclpy.Client(
-                node_capsule, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile())
+                node.handle, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile())
         self.client_index = None
         self.client_is_ready = False
 
@@ -84,9 +84,9 @@ class ServerWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.handle as node_capsule:
+        with node.handle:
             self.server = _rclpy.Service(
-                node_capsule, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile())
+                node.handle, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile())
         self.server_index = None
         self.server_is_ready = False
 
@@ -129,9 +129,9 @@ class TimerWaitable(Waitable):
 
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         period_nanoseconds = 10000
-        with self._clock.handle, node.context.handle as context_capsule:
+        with self._clock.handle, node.context.handle:
             self.timer = _rclpy.Timer(
-                self._clock.handle, context_capsule, period_nanoseconds)
+                self._clock.handle, node.context.handle, period_nanoseconds)
         self.timer_index = None
         self.timer_is_ready = False
 
@@ -173,9 +173,9 @@ class SubscriptionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.handle as node_capsule:
+        with node.handle:
             self.subscription = _rclpy.Subscription(
-                node_capsule, EmptyMsg, 'test_topic', QoSProfile(depth=10).get_c_qos_profile())
+                node.handle, EmptyMsg, 'test_topic', QoSProfile(depth=10).get_c_qos_profile())
         self.subscription_index = None
         self.subscription_is_ready = False
 
@@ -219,8 +219,8 @@ class GuardConditionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.context.handle as context_capsule:
-            self.guard_condition = _rclpy.GuardCondition(context_capsule)
+        with node.context.handle:
+            self.guard_condition = _rclpy.GuardCondition(node.context.handle)
         self.guard_condition_index = None
         self.guard_is_ready = False
 

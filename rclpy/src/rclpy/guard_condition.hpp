@@ -22,6 +22,7 @@
 
 #include <memory>
 
+#include "context.hpp"
 #include "destroyable.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
@@ -38,7 +39,7 @@ public:
   /**
    * Raises RuntimeError if initializing the guard condition fails
    */
-  explicit GuardCondition(py::capsule pycontext);
+  explicit GuardCondition(Context & context);
 
   /// Trigger a general purpose guard condition
   /**
@@ -71,6 +72,7 @@ public:
   void destroy() override;
 
 private:
+  Context context_;
   std::shared_ptr<rcl_guard_condition_t> rcl_guard_condition_;
 
   /// Handle destructor for guard condition

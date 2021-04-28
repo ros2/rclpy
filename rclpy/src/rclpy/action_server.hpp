@@ -23,7 +23,7 @@
 
 #include "clock.hpp"
 #include "destroyable.hpp"
-#include "handle.hpp"
+#include "node.hpp"
 #include "wait_set.hpp"
 
 namespace py = pybind11;
@@ -44,7 +44,7 @@ public:
    * Raises ValueError if action name is invalid
    * Raises RuntimeError if the action server could not be created.
    *
-   * \param[in] pynode Capsule pointing to the node to add the action server to.
+   * \param[in] node Node to add the action server to.
    * \param[in] rclpy_clock Clock use to create the action server.
    * \param[in] pyaction_type Action module associated with the action server.
    * \param[in] pyaction_name Python object containing the action name.
@@ -55,7 +55,7 @@ public:
    * \param[in] status_qos rmw_qos_profile_t object for the status subscriber.
    */
   ActionServer(
-    py::capsule pynode,
+    Node & node,
     const rclpy::Clock & rclpy_clock,
     py::object pyaction_type,
     const char * action_name,
@@ -245,7 +245,7 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Handle> node_handle_;
+  Node node_;
   std::shared_ptr<rcl_action_server_t> rcl_action_server_;
 };
 /// Define a pybind11 wrapper for an rcl_time_point_t
