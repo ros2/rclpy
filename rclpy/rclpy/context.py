@@ -57,7 +57,7 @@ class Context:
         :param args: List of command line arguments.
         """
         # imported locally to avoid loading extensions on module import
-        from rclpy.impl.implementation_singleton import rclpy_implementation
+        from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
         global g_logging_ref_count
         with self._lock:
@@ -65,15 +65,19 @@ class Context:
                 raise RuntimeError(
                     'Domain id ({}) should not be lower than zero.'
                     .format(domain_id))
-            self.__context = rclpy_implementation.Context(
-                args if args is not None else sys.argv,
-                domain_id if domain_id is not None else rclpy_implementation.RCL_DEFAULT_DOMAIN_ID)
-            if initialize_logging and not self._logging_initialized:
-                with g_logging_configure_lock:
-                    g_logging_ref_count += 1
-                    if g_logging_ref_count == 1:
-                        rclpy_implementation.rclpy_logging_configure(self.__context)
-                self._logging_initialized = True
+            try:
+                if self.__context is not None:
+                    raise RuntimeError
+            except AttributeError:
+                self.__context = _rclpy.Context(
+                    args if args is not None else sys.argv,
+                    domain_id if domain_id is not None else _rclpy.RCL_DEFAULT_DOMAIN_ID)
+                if initialize_logging and not self._logging_initialized:
+                    with g_logging_configure_lock:
+                        g_logging_ref_count += 1
+                        if g_logging_ref_count == 1:
+                            _rclpy.rclpy_logging_configure(self.__context)
+                    self._logging_initialized = True
 
     def ok(self):
         """Check if context hasn't been shut down."""
