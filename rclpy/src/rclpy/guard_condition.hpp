@@ -55,19 +55,6 @@ public:
     return rcl_guard_condition_.get();
   }
 
-  // TODO(ahcorde): Remove the pycapsule method when #728 is in
-  /// Return a pycapsule object to be able to handle the signal in C.
-  py::capsule
-  pycapsule() const
-  {
-    PyObject * capsule = rclpy_create_handle_capsule(
-      rcl_guard_condition_.get(), "rcl_guard_condition_t", _rclpy_destroy_guard_condition);
-    if (!capsule) {
-      throw py::error_already_set();
-    }
-    return py::reinterpret_steal<py::capsule>(capsule);
-  }
-
   /// Force an early destruction of this object
   void destroy() override;
 
