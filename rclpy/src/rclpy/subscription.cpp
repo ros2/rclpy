@@ -40,7 +40,7 @@ Subscription::Subscription(
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
-    rclpy_common_get_type_support(pymsg_type.ptr()));
+    common_get_type_support(pymsg_type));
   if (!msg_type) {
     throw py::error_already_set();
   }
