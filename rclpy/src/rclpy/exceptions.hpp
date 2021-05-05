@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY_COMMON__EXCEPTIONS_HPP_
-#define RCLPY_COMMON__EXCEPTIONS_HPP_
+#ifndef RCLPY__EXCEPTIONS_HPP_
+#define RCLPY__EXCEPTIONS_HPP_
 
 #include <stdexcept>
 #include <string>
@@ -93,4 +93,4 @@ class InvalidHandle : public std::runtime_error
 
 }  // namespace rclpy
 
-#endif  // RCLPY_COMMON__EXCEPTIONS_HPP_
+#endif  // RCLPY__EXCEPTIONS_HPP_

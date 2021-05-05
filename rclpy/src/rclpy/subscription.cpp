@@ -24,8 +24,7 @@
 
 #include "rclpy_common/common.h"
 
-#include "rclpy_common/exceptions.hpp"
-
+#include "exceptions.hpp"
 #include "serialization.hpp"
 #include "subscription.hpp"
 #include "utils.hpp"

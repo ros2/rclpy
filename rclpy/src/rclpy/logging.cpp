@@ -24,9 +24,9 @@
 #include <mutex>
 #include <stdexcept>
 
-#include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
+#include "exceptions.hpp"
 #include "logging.hpp"
 
 namespace rclpy

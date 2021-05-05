@@ -22,10 +22,11 @@
 
 #include <memory>
 
+#include "rclpy_common/handle.h"
+
 #include "context.hpp"
 #include "destroyable.hpp"
-#include "rclpy_common/exceptions.hpp"
-#include "rclpy_common/handle.h"
+#include "exceptions.hpp"
 #include "utils.hpp"
 
 namespace py = pybind11;

@@ -26,8 +26,8 @@
 
 #include "rclpy_common/common.h"
 
+#include "exceptions.hpp"
 #include "qos_event.hpp"
-#include "rclpy_common/exceptions.hpp"
 
 namespace rclpy
 {
