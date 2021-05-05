@@ -162,7 +162,6 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/duration.cpp
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
-  src/rclpy/handle.cpp
   src/rclpy/logging.cpp
   src/rclpy/names.cpp
   src/rclpy/node.cpp

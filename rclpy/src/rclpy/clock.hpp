@@ -23,7 +23,6 @@
 #include <string>
 
 #include "destroyable.hpp"
-#include "handle.hpp"
 #include "rclpy_common/exceptions.hpp"
 #include "utils.hpp"
 
