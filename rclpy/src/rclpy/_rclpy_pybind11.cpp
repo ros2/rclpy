@@ -67,6 +67,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("CANCELED", GOAL_EVENT_CANCELED);
 
   m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
+  m.attr("RMW_DURATION_INFINITE") = py::int_(rmw_time_total_nsec(RMW_DURATION_INFINITE));
 
   py::enum_<rcl_clock_change_t>(m, "ClockChange")
   .value(
