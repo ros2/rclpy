@@ -26,11 +26,11 @@
 #include <memory>
 #include <string>
 
-#include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
 #include "exceptions.hpp"
 #include "qos.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
@@ -131,11 +131,7 @@ create_qos_profile(
 py::dict
 convert_qos_profile_to_dict(const rmw_qos_profile_t & qos_profile)
 {
-  PyObject * pydict = rclpy_common_convert_to_qos_dict(&qos_profile);
-  if (!pydict) {
-    throw py::error_already_set();
-  }
-  return py::reinterpret_steal<py::dict>(pydict);
+  return common_convert_to_qos_dict(&qos_profile);
 }
 
 // Fetch a predefined rmw_qos_profile_t instance.

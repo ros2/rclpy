@@ -19,8 +19,6 @@
 #include <memory>
 #include <string>
 
-#include "rclpy_common/common.h"
-
 #include "action_goal_handle.hpp"
 #include "exceptions.hpp"
 #include "utils.hpp"

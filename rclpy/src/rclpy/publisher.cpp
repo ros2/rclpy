@@ -20,8 +20,6 @@
 #include <memory>
 #include <string>
 
-#include "rclpy_common/common.h"
-
 #include "exceptions.hpp"
 #include "publisher.hpp"
 #include "utils.hpp"

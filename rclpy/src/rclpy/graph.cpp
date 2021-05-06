@@ -23,7 +23,6 @@
 #include <memory>
 #include <string>
 
-#include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
 #include "exceptions.hpp"
@@ -258,8 +257,7 @@ _get_info_by_topic(
             std::string("Failed to get information by topic for ") + type);
   }
 
-  return py::reinterpret_steal<py::list>(
-    rclpy_convert_to_py_topic_endpoint_info_list(&info_array));
+  return convert_to_py_topic_endpoint_info_list(&info_array);
 }
 
 py::list

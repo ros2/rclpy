@@ -24,7 +24,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
 #include "exceptions.hpp"

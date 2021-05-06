@@ -20,8 +20,6 @@
 #include <memory>
 #include <string>
 
-#include "rclpy_common/common.h"
-
 #include "client.hpp"
 #include "exceptions.hpp"
 #include "python_allocator.hpp"

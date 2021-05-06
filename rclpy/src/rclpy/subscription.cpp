@@ -22,8 +22,6 @@
 #include <memory>
 #include <string>
 
-#include "rclpy_common/common.h"
-
 #include "exceptions.hpp"
 #include "serialization.hpp"
 #include "subscription.hpp"
