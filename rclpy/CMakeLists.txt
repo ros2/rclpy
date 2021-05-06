@@ -122,7 +122,6 @@ function(configure_build_install_location _library_name)
 endfunction()
 
 add_library(rclpy_common SHARED
-  src/rclpy_common/src/common.c
   src/rclpy_common/src/exceptions.cpp
   src/rclpy_common/src/handle.c
 )

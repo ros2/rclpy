@@ -17,8 +17,9 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rmw/types.h>
 #include <rcl/timer.h>
+#include <rcl/rcl.h>
+#include <rmw/types.h>
 
 #include <memory>
 #include <string>

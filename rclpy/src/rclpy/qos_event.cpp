@@ -24,8 +24,6 @@
 #include <utility>
 #include <variant>  // NOLINT
 
-#include "rclpy_common/common.h"
-
 #include "qos_event.hpp"
 #include "rclpy_common/exceptions.hpp"
 
