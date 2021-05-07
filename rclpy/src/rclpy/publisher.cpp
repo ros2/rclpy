@@ -143,6 +143,19 @@ Publisher::publish_raw(std::string msg)
   }
 }
 
+bool
+Publisher::wait_for_all_acked(rcl_duration_t pytimeout)
+{
+  rcl_ret_t ret = rcl_publisher_wait_for_all_acked(rcl_publisher_.get(), pytimeout.nanoseconds);
+  if (ret == RCL_RET_OK) {
+    return true;
+  } else if (ret == RCL_RET_TIMEOUT) {
+    return false;
+  } else {
+    throw RCLError("Failed to wait for all acknowledges");
+  }
+}
+
 void
 define_publisher(py::object module)
 {
@@ -167,6 +180,9 @@ define_publisher(py::object module)
     "Publish a message")
   .def(
     "publish_raw", &Publisher::publish_raw,
-    "Publish a serialized message.");
+    "Publish a serialized message.")
+  .def(
+    "wait_for_all_acked", &Publisher::wait_for_all_acked,
+    "Wait all published message data is acknowledged");
 }
 }  // namespace rclpy

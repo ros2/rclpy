@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import unittest
 
 import rclpy
@@ -75,6 +76,26 @@ class TestPublisher(unittest.TestCase):
             assert publisher.topic_name == target_topic
             publisher.destroy()
 
+    @classmethod
+    def do_test_wait_for_all_acked(cls, test_topic, node):
+        pub = node.create_publisher(BasicTypes, test_topic, 1)
+        sub = node.create_subscription(BasicTypes, test_topic, lambda msg: print(msg), 1)
+        time.sleep(1)
+        assert pub.get_subscription_count() == 1
+        basic_types_msg = BasicTypes()
+        try:
+            pub.publish(basic_types_msg)
+        except Exception:
+            raise AssertionError('Publish data failed')
+
+        try:
+            assert pub.wait_for_all_acked() is True
+        except Exception:
+            raise AssertionError('wait_for_all_acked raise exception')
+
+        pub.destroy()
+        sub.destroy()
+
     def test_topic_name(self):
         test_topics = [
             (TEST_TOPIC, '/' + TEST_TOPIC),
@@ -102,6 +123,9 @@ class TestPublisher(unittest.TestCase):
             (TEST_FQN_TOPIC_FROM, TEST_FQN_TOPIC_TO),
         ]
         TestPublisher.do_test_topic_name(test_topics, self.node)
+
+    def test_wait_for_all_acked(self):
+        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node)
 
 
 if __name__ == '__main__':
