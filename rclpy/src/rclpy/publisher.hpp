@@ -17,87 +17,104 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/publisher.h>
+#include <rmw/types.h>
+
+#include <memory>
 #include <string>
+
+#include "destroyable.hpp"
+#include "node.hpp"
 
 namespace py = pybind11;
 
 namespace rclpy
 {
-/// Create a publisher
 /**
- * This function will create a publisher and attach it to the provided topic name
+ * This class will create a publisher and attach it to the provided topic name
  * This publisher will use the typesupport defined in the message module
- * provided as pymsg_type to send messages over the wire.
- *
- * Raises ValueError if the topic name is invalid
- * Raises ValueError if the capsules are not the correct types
- * Raises RCLError if the publisher cannot be created
- *
- * \param[in] pynode Capsule pointing to the node to add the publisher to
- * \param[in] pymsg_type Message type associated with the publisher
- * \param[in] topic The name of the topic to attach the publisher to
- * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher
- * \return Capsule of the pointer to the created rcl_publisher_t * structure, or
+ * provided as pymsg_type to send messages.
  */
-py::capsule
-publisher_create(
-  py::capsule pynode, py::object pymsg_type, std::string topic,
-  py::object pyqos_profile);
+class Publisher : public Destroyable, public std::enable_shared_from_this<Publisher>
+{
+public:
+  /// Create a publisher
+  /*
+   * Raises ValueError if the topic name is invalid
+   * Raises ValueError if the capsules are not the correct types
+   * Raises RCLError if the publisher cannot be created
+   *
+   * \param[in] node node to add the publisher to
+   * \param[in] pymsg_type Message type associated with the publisher
+   * \param[in] topic The name of the topic to attach the publisher to
+   * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher
+   */
+  Publisher(
+    Node & node, py::object pymsg_type, std::string topic,
+    py::object pyqos_profile);
 
-/// Get the name of the logger associated with the node of the publisher.
-/**
- * Raises ValueError if pypublisher is not a publisher capsule
- * Raises RCLError if logger name not set
- *
- * \param[in] pypublisher Capsule pointing to the publisher
- * \return logger_name of pypublisher
- */
-const char *
-publisher_get_logger_name(py::capsule pypublisher);
+  /// Get the name of the logger associated with the node of the publisher.
+  /**
+   * Raises RCLError if logger name not set
+   *
+   * \return the logger name
+   */
+  const char *
+  get_logger_name();
 
-/// Count subscribers from a publisher.
-/**
- * Raise ValueError if capsule is not a publisher
- * Raises RCLError if the subscriber count cannot be determined
- *
- * \param[in] pypublisher Capsule pointing to the publisher
- * \return count of subscribers
- */
-size_t
-publisher_get_subscription_count(py::capsule pypublisher);
+  /// Count subscribers from a publisher.
+  /**
+   * Raises RCLError if the subscriber count cannot be determined
+   *
+   * \return number of subscribers
+   */
+  size_t
+  get_subscription_count();
 
-/// Retrieve the topic name from a rclpy_publisher_t
-/**
- * Raise ValueError if capsule is not a publisher
- * Raises RCLError if the name cannot be determined
- *
- * \param[in] pypublisher Capsule pointing to the publisher
- * \return name of the publisher's topic
- */
-std::string
-publisher_get_topic_name(py::capsule pypublisher);
+  /// Retrieve the topic name from a rclpy_publisher_t
+  /**
+   * Raises RCLError if the name cannot be determined
+   *
+   * \return name of the publisher's topic
+   */
+  std::string
+  get_topic_name();
 
-/// Publish a message
-/**
- * Raises ValueError if pypublisher is not a publisher capsule
- * Raises RCLError if the message cannot be published
- *
- * \param[in] pypublisher Capsule pointing to the publisher
- * \param[in] pymsg Message to send
- */
-void
-publisher_publish_message(py::capsule pypublisher, py::object pymsg);
+  /// Publish a message
+  /**
+   * Raises RCLError if the message cannot be published
+   *
+   * \param[in] pymsg Message to send
+   */
+  void
+  publish(py::object pymsg);
 
-/// Publish a serialized message
-/**
- * Raises ValueError if pypublisher is not a publisher capsule
- * Raises RCLError if the message cannot be published
- *
- * \param[in] pypublisher Capsule pointing to the publisher
- * \param[in] msg serialized message to send
- */
-void
-publisher_publish_raw(py::capsule pypublisher, std::string msg);
+  /// Publish a serialized message
+  /**
+   * Raises RCLError if the message cannot be published
+   *
+   * \param[in] msg serialized message to send
+   */
+  void
+  publish_raw(std::string msg);
+
+  /// Get rcl_publisher_t pointer
+  rcl_publisher_t *
+  rcl_ptr() const
+  {
+    return rcl_publisher_.get();
+  }
+
+  /// Force an early destruction of this object
+  void
+  destroy() override;
+
+private:
+  Node node_;
+  std::shared_ptr<rcl_publisher_t> rcl_publisher_;
+};
+/// Define a pybind11 wrapper for an rclpy::Service
+void define_publisher(py::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__PUBLISHER_HPP_

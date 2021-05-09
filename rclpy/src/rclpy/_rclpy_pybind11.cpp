@@ -15,8 +15,11 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/domain_id.h>
+#include <rcl_action/rcl_action.h>
 
-#include "action_api.hpp"
+#include "action_client.hpp"
+#include "action_goal_handle.hpp"
+#include "action_server.hpp"
 #include "client.hpp"
 #include "clock.hpp"
 #include "context.hpp"
@@ -25,7 +28,6 @@
 #include "graph.hpp"
 #include "guard_condition.hpp"
 #include "handle_api.hpp"
-#include "init.hpp"
 #include "logging.hpp"
 #include "logging_api.hpp"
 #include "names.hpp"
@@ -57,7 +59,15 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("SYSTEM_TIME", RCL_SYSTEM_TIME)
   .value("STEADY_TIME", RCL_STEADY_TIME);
 
+  py::enum_<rcl_action_goal_event_t>(m, "GoalEvent")
+  .value("EXECUTE", GOAL_EVENT_EXECUTE)
+  .value("CANCEL_GOAL", GOAL_EVENT_CANCEL_GOAL)
+  .value("SUCCEED", GOAL_EVENT_SUCCEED)
+  .value("ABORT", GOAL_EVENT_ABORT)
+  .value("CANCELED", GOAL_EVENT_CANCELED);
+
   m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
+  m.attr("RMW_DURATION_INFINITE") = py::int_(rmw_time_total_nsec(RMW_DURATION_INFINITE));
 
   py::enum_<rcl_clock_change_t>(m, "ClockChange")
   .value(
@@ -100,45 +110,13 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   py::register_exception<rclpy::InvalidHandle>(
     m, "InvalidHandle", PyExc_RuntimeError);
 
-  m.def(
-    "rclpy_init", &rclpy::init,
-    "Initialize RCL.");
-  m.def(
-    "rclpy_shutdown", &rclpy::shutdown,
-    "rclpy_shutdown.");
-
   rclpy::define_client(m);
 
-  m.def(
-    "rclpy_context_get_domain_id", &rclpy::context_get_domain_id,
-    "Retrieves domain ID from init_options of context");
-  m.def(
-    "rclpy_create_context", &rclpy::create_context,
-    "Create a capsule with an rcl_context_t instance");
-  m.def(
-    "rclpy_ok", &rclpy::context_is_valid,
-    "Return true if the context is valid");
+  rclpy::define_context(m);
 
   rclpy::define_duration(m);
 
-  m.def(
-    "rclpy_create_publisher", &rclpy::publisher_create,
-    "Create a Publisher");
-  m.def(
-    "rclpy_get_publisher_logger_name", &rclpy::publisher_get_logger_name,
-    "Get the logger name associated with the node of a publisher.");
-  m.def(
-    "rclpy_publisher_get_subscription_count", &rclpy::publisher_get_subscription_count,
-    "Count subscribers from a publisher");
-  m.def(
-    "rclpy_publisher_get_topic_name", &rclpy::publisher_get_topic_name,
-    "Get the resolved name(topic) of publisher");
-  m.def(
-    "rclpy_publish", &rclpy::publisher_publish_message,
-    "Publish a message");
-  m.def(
-    "rclpy_publish_raw", &rclpy::publisher_publish_raw,
-    "Publish a serialized message");
+  rclpy::define_publisher(m);
 
   rclpy::define_service(m);
 
@@ -148,64 +126,18 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_qos_check_compatible", &rclpy::qos_check_compatible,
     "Check if two QoS profiles are compatible.");
 
+  rclpy::define_action_client(m);
+  rclpy::define_action_goal_handle(m);
+  rclpy::define_action_server(m);
   m.def(
-    "rclpy_create_guard_condition", &rclpy::guard_condition_create,
-    "Create a general purpose guard condition");
-  m.def(
-    "rclpy_trigger_guard_condition", &rclpy::guard_condition_trigger,
-    "Trigger a general purpose guard condition");
-
+    "rclpy_action_get_rmw_qos_profile", &rclpy::rclpy_action_get_rmw_qos_profile,
+    "Get an action RMW QoS profile.");
+  rclpy::define_guard_condition(m);
   rclpy::define_timer(m);
-
-  m.def(
-    "rclpy_create_subscription", &rclpy::subscription_create,
-    "Create a Subscription");
-  m.def(
-    "rclpy_get_subscription_logger_name", &rclpy::subscription_get_logger_name,
-    "Get the logger name associated with the node of a subscription");
-  m.def(
-    "rclpy_get_subscription_topic_name", &rclpy::subscription_get_topic_name,
-    "Get the topic name of a subscription");
-  m.def(
-    "rclpy_take", &rclpy::subscription_take_message,
-    "Take a message and its metadata from a subscription");
-
+  rclpy::define_subscription(m);
   rclpy::define_time_point(m);
   rclpy::define_clock(m);
-
-  m.def(
-    "rclpy_get_zero_initialized_wait_set", &rclpy::get_zero_initialized_wait_set,
-    "rclpy_get_zero_initialized_wait_set.");
-  m.def(
-    "rclpy_wait_set_init", &rclpy::wait_set_init,
-    "rclpy_wait_set_init.");
-  m.def(
-    "rclpy_wait_set_clear_entities", &rclpy::wait_set_clear_entities,
-    "rclpy_wait_set_clear_entities.");
-  m.def(
-    "rclpy_wait_set_add_entity", &rclpy::wait_set_add_entity,
-    "rclpy_wait_set_add_entity.");
-  m.def(
-    "rclpy_wait_set_add_client", &rclpy::wait_set_add_client,
-    "Add a client to the wait set.");
-  m.def(
-    "rclpy_wait_set_add_service", &rclpy::wait_set_add_service,
-    "Add a service to the wait set.");
-  m.def(
-    "rclpy_wait_set_add_timer", &rclpy::wait_set_add_timer,
-    "Add a timer to the wait set.");
-  m.def(
-    "rclpy_wait_set_add_event", &rclpy::wait_set_add_event,
-    "Add an event to the wait set.");
-  m.def(
-    "rclpy_wait_set_is_ready", &rclpy::wait_set_is_ready,
-    "rclpy_wait_set_is_ready.");
-  m.def(
-    "rclpy_get_ready_entities", &rclpy::get_ready_entities,
-    "List non null entities in wait set.");
-  m.def(
-    "rclpy_wait", &rclpy::wait,
-    "rclpy_wait.");
+  rclpy::define_waitset(m);
 
   m.def(
     "rclpy_expand_topic_name", &rclpy::expand_topic_name,
@@ -270,42 +202,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_deserialize", &rclpy::deserialize,
     "Deserialize a ROS message.");
 
-  m.def(
-    "rclpy_create_node", &rclpy::create_node,
-    "Create a Node.");
-  m.def(
-    "rclpy_node_get_fully_qualified_name", &rclpy::get_node_fully_qualified_name,
-    "Get the fully qualified name of node.");
-  m.def(
-    "rclpy_get_node_logger_name", &rclpy::get_node_logger_name,
-    "Get the logger name associated with a node.");
-  m.def(
-    "rclpy_get_node_name", &rclpy::get_node_name,
-    "Get the name of a node.");
-  m.def(
-    "rclpy_get_node_namespace", &rclpy::get_node_namespace,
-    "Get the namespace of a node.");
-  m.def(
-    "rclpy_get_node_names_and_namespaces", &rclpy::get_node_names_and_namespaces,
-    "Get node names and namespaces list from graph API.");
-  m.def(
-    "rclpy_get_node_names_and_namespaces_with_enclaves",
-    &rclpy::get_node_names_and_namespaces_with_enclaves,
-    "Get node names, namespaces, and enclaves list from graph API.");
-
-  m.def(
-    "rclpy_count_publishers", &rclpy::get_count_publishers,
-    "Count publishers for a topic.");
-
-  m.def(
-    "rclpy_count_subscribers", &rclpy::get_count_subscribers,
-    "Count subscribers for a topic.");
-
+  rclpy::define_node(m);
   rclpy::define_qos_event(m);
-
-  m.def(
-    "rclpy_get_node_parameters", &rclpy::get_node_parameters,
-    "Get the initial parameters for a node from the command line.");
 
   m.def(
     "rclpy_get_rmw_implementation_identifier",
@@ -332,5 +230,4 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_pycapsule_api(m);
   rclpy::define_handle_api(m);
   rclpy::define_logging_api(m);
-  rclpy::define_action_api(m);
 }

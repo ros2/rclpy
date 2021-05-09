@@ -22,6 +22,7 @@
 #include <memory>
 
 #include "clock.hpp"
+#include "context.hpp"
 #include "destroyable.hpp"
 #include "handle.hpp"
 
@@ -30,7 +31,7 @@ namespace py = pybind11;
 namespace rclpy
 {
 
-class Timer : public Destroyable
+class Timer : public Destroyable, public std::enable_shared_from_this<Timer>
 {
 public:
   /// Create a timer
@@ -46,7 +47,7 @@ public:
    * \param[in] period_nsec the period of the timer in nanoseconds
    * \return a timer capsule
    */
-  Timer(Clock & clock, py::capsule pycontext, int64_t period_nsec);
+  Timer(Clock & clock, Context & context, int64_t period_nsec);
 
   ~Timer() = default;
 
@@ -122,7 +123,7 @@ public:
    */
   bool is_timer_canceled();
 
-  /// Get rcl_client_t pointer
+  /// Get rcl_timer_t pointer
   rcl_timer_t *
   rcl_ptr() const
   {
@@ -133,8 +134,8 @@ public:
   void destroy() override;
 
 private:
-  // TODO(ahcorde) replace with std::shared_ptr<rcl_clock_t> when rclpy::Clock exists
-  std::shared_ptr<rcl_clock_t> clock_handle_;
+  Context context_;
+  Clock clock_;
   std::shared_ptr<rcl_timer_t> rcl_timer_;
 };
 

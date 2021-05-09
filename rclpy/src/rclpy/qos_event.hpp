@@ -24,27 +24,30 @@
 
 #include "destroyable.hpp"
 #include "handle.hpp"
+#include "publisher.hpp"
+#include "subscription.hpp"
 
 namespace py = pybind11;
 
 namespace rclpy
 {
-class QoSEvent : public Destroyable
+/*
+ * This class will create an event handle for the given subscription.
+ */
+class QoSEvent : public Destroyable, public std::enable_shared_from_this<QoSEvent>
 {
 public:
   /// Create a subscription event
   /**
-   * This function will create an event handle for the given subscription.
-   *
    * Raises UnsupportedEventTypeError if the event type is not supported
    * Raises TypeError if arguments are not of the correct types i.e. a subscription capsule
    * Raises MemoryError if the event can't be allocated
    * Raises RCLError if event initialization failed in rcl
    *
-   * \param[in] pysubscription Capsule containing the subscription
+   * \param[in] ssubscription Subscription wrapping the underlying ``rcl_subscription_t`` object.
    * \param[in] event_type Type of event to create
    */
-  QoSEvent(py::capsule pysubscription, rcl_subscription_event_type_t event_type);
+  QoSEvent(rclpy::Subscription & subscriber, rcl_subscription_event_type_t event_type);
 
   /// Create a publisher event
   /**
@@ -55,10 +58,10 @@ public:
    * Raises MemoryError if the event can't be allocated
    * Raises RCLError if event initialization failed in rcl
    *
-   * \param[in] pypublisher Capsule containing the publisher
+   * \param[in] publisher Publisher wrapping the underlying ``rcl_publisher_t`` object.
    * \param[in] event_type Type of event to create
    */
-  QoSEvent(py::capsule pypublisher, rcl_publisher_event_type_t event_type);
+  QoSEvent(rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type);
 
   ~QoSEvent() = default;
 
@@ -88,9 +91,9 @@ public:
   destroy() override;
 
 private:
-  std::shared_ptr<Handle> parent_handle_;
-  std::shared_ptr<rcl_event_t> rcl_event_;
   std::variant<rcl_subscription_event_type_t, rcl_publisher_event_type_t> event_type_;
+  std::variant<Publisher, Subscription> grandparent_;
+  std::shared_ptr<rcl_event_t> rcl_event_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::QoSEvent

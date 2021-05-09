@@ -41,7 +41,6 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.executors import SingleThreadedExecutor
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSDurabilityPolicy
@@ -160,8 +159,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         basic_types_pub.publish(basic_types_msg)
         cycle_count = 0
         while cycle_count < 5:
-            with sub.handle as capsule:
-                result = _rclpy.rclpy_take(capsule, sub.msg_type, False)
+            with sub.handle:
+                result = sub.handle.take_message(sub.msg_type, False)
             if result is not None:
                 msg, info = result
                 self.assertNotEqual(0, info['source_timestamp'])

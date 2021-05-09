@@ -41,9 +41,9 @@ class ClientWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.handle as node_capsule:
+        with node.handle:
             self.client = _rclpy.Client(
-                node_capsule, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile())
+                node.handle, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile())
         self.client_index = None
         self.client_is_ready = False
 
@@ -52,7 +52,7 @@ class ClientWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('client', wait_set, self.client_index):
+        if wait_set.is_ready('client', self.client_index):
             self.client_is_ready = True
         return self.client_is_ready
 
@@ -76,7 +76,7 @@ class ClientWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.client_index = _rclpy.rclpy_wait_set_add_client(wait_set, self.client)
+        self.client_index = wait_set.add_client(self.client)
 
 
 class ServerWaitable(Waitable):
@@ -84,9 +84,9 @@ class ServerWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.handle as node_capsule:
+        with node.handle:
             self.server = _rclpy.Service(
-                node_capsule, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile())
+                node.handle, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile())
         self.server_index = None
         self.server_is_ready = False
 
@@ -95,7 +95,7 @@ class ServerWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('service', wait_set, self.server_index):
+        if wait_set.is_ready('service', self.server_index):
             self.server_is_ready = True
         return self.server_is_ready
 
@@ -119,7 +119,7 @@ class ServerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.server_index = _rclpy.rclpy_wait_set_add_service(wait_set, self.server)
+        self.server_index = wait_set.add_service(self.server)
 
 
 class TimerWaitable(Waitable):
@@ -129,9 +129,9 @@ class TimerWaitable(Waitable):
 
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         period_nanoseconds = 10000
-        with self._clock.handle, node.context.handle as context_capsule:
+        with self._clock.handle, node.context.handle:
             self.timer = _rclpy.Timer(
-                self._clock.handle, context_capsule, period_nanoseconds)
+                self._clock.handle, node.context.handle, period_nanoseconds)
         self.timer_index = None
         self.timer_is_ready = False
 
@@ -140,7 +140,7 @@ class TimerWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('timer', wait_set, self.timer_index):
+        if wait_set.is_ready('timer', self.timer_index):
             self.timer_is_ready = True
         return self.timer_is_ready
 
@@ -165,7 +165,7 @@ class TimerWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.timer_index = _rclpy.rclpy_wait_set_add_timer(wait_set, self.timer)
+        self.timer_index = wait_set.add_timer(self.timer)
 
 
 class SubscriptionWaitable(Waitable):
@@ -173,9 +173,9 @@ class SubscriptionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.handle as node_capsule:
-            self.subscription = _rclpy.rclpy_create_subscription(
-                node_capsule, EmptyMsg, 'test_topic', QoSProfile(depth=10).get_c_qos_profile())
+        with node.handle:
+            self.subscription = _rclpy.Subscription(
+                node.handle, EmptyMsg, 'test_topic', QoSProfile(depth=10).get_c_qos_profile())
         self.subscription_index = None
         self.subscription_is_ready = False
 
@@ -184,7 +184,7 @@ class SubscriptionWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('subscription', wait_set, self.subscription_index):
+        if wait_set.is_ready('subscription', self.subscription_index):
             self.subscription_is_ready = True
         return self.subscription_is_ready
 
@@ -192,7 +192,7 @@ class SubscriptionWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.subscription_is_ready:
             self.subscription_is_ready = False
-            msg_info = _rclpy.rclpy_take(self.subscription, EmptyMsg, False)
+            msg_info = self.subscription.take_message(EmptyMsg, False)
             if msg_info is not None:
                 return msg_info[0]
         return None
@@ -210,8 +210,8 @@ class SubscriptionWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.subscription_index = _rclpy.rclpy_wait_set_add_entity(
-            'subscription', wait_set, self.subscription)
+        self.subscription_index = wait_set.add_subscription(
+            self.subscription)
 
 
 class GuardConditionWaitable(Waitable):
@@ -219,8 +219,8 @@ class GuardConditionWaitable(Waitable):
     def __init__(self, node):
         super().__init__(ReentrantCallbackGroup())
 
-        with node.context.handle as context_capsule:
-            self.guard_condition = _rclpy.rclpy_create_guard_condition(context_capsule)
+        with node.context.handle:
+            self.guard_condition = _rclpy.GuardCondition(node.context.handle)
         self.guard_condition_index = None
         self.guard_is_ready = False
 
@@ -229,7 +229,7 @@ class GuardConditionWaitable(Waitable):
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
-        if _rclpy.rclpy_wait_set_is_ready('guard_condition', wait_set, self.guard_condition_index):
+        if wait_set.is_ready('guard_condition', self.guard_condition_index):
             self.guard_is_ready = True
         return self.guard_is_ready
 
@@ -253,8 +253,7 @@ class GuardConditionWaitable(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
-        self.guard_condition_index = _rclpy.rclpy_wait_set_add_entity(
-            'guard_condition', wait_set, self.guard_condition)
+        self.guard_condition_index = wait_set.add_guard_condition(self.guard_condition)
 
 
 class MutuallyExclusiveWaitable(Waitable):
@@ -369,7 +368,7 @@ class TestWaitable(unittest.TestCase):
         self.node.add_waitable(self.waitable)
 
         thr = self.start_spin_thread(self.waitable)
-        _rclpy.rclpy_trigger_guard_condition(self.waitable.guard_condition)
+        self.waitable.guard_condition.trigger_guard_condition()
         thr.join()
 
         assert self.waitable.future.done()

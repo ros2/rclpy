@@ -16,6 +16,7 @@ import unittest
 
 from rclpy.clock import ClockType
 from rclpy.duration import Duration
+from rclpy.duration import Infinite
 from rclpy.time import Time
 
 from test_msgs.msg import Builtins
@@ -228,3 +229,7 @@ class TestTime(unittest.TestCase):
         assert (1, int(5e8)) == Time(seconds=1, nanoseconds=5e8).seconds_nanoseconds()
         assert (1, int(5e8)) == Time(seconds=0, nanoseconds=15e8).seconds_nanoseconds()
         assert (0, 0) == Time().seconds_nanoseconds()
+
+    def test_infinite_duration(self):
+        duration = Infinite
+        assert str(duration) == 'Infinite'

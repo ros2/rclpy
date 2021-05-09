@@ -17,17 +17,18 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl_action/rcl_action.h>
 #include <rcpputils/scope_exit.hpp>
 
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 #include "rclpy_common/exceptions.hpp"
 
-#include "init.hpp"
 #include "utils.hpp"
 
 namespace rclpy
@@ -81,6 +82,31 @@ create_from_py(py::object pymessage)
     void, destroy_ros_message_function *>(message, destroy_ros_message);
 }
 
+std::unique_ptr<void, destroy_ros_message_function *>
+convert_from_py(py::object pymessage)
+{
+  typedef bool convert_from_py_signature (PyObject *, void *);
+
+  std::unique_ptr<void, destroy_ros_message_function *> message =
+    create_from_py(pymessage);
+
+  py::object pymetaclass = pymessage.attr("__class__");
+
+  auto capsule_ptr = static_cast<void *>(
+    pymetaclass.attr("_CONVERT_FROM_PY").cast<py::capsule>());
+  auto convert =
+    reinterpret_cast<convert_from_py_signature *>(capsule_ptr);
+  if (!convert) {
+    throw py::error_already_set();
+  }
+
+  if (!convert(pymessage.ptr(), message.get())) {
+    throw py::error_already_set();
+  }
+
+  return message;
+}
+
 py::object
 convert_to_py(void * message, py::object pyclass)
 {
@@ -104,20 +130,10 @@ get_rmw_implementation_identifier()
 }
 
 void
-assert_liveliness(py::capsule pyentity)
+assert_liveliness(rclpy::Publisher * publisher)
 {
-  if (0 == strcmp("rclpy_publisher_t", pyentity.name())) {
-    auto publisher = static_cast<rclpy_publisher_t *>(
-      rclpy_handle_get_pointer_from_capsule(
-        pyentity.ptr(), "rclpy_publisher_t"));
-    if (nullptr == publisher) {
-      throw py::error_already_set();
-    }
-    if (RCL_RET_OK != rcl_publisher_assert_liveliness(&publisher->publisher)) {
-      throw RCLError("Failed to assert liveliness on the Publisher");
-    }
-  } else {
-    throw py::type_error("Passed capsule is not a valid Publisher.");
+  if (RCL_RET_OK != rcl_publisher_assert_liveliness(publisher->rcl_ptr())) {
+    throw RCLError("Failed to assert liveliness on the Publisher");
   }
 }
 
@@ -209,5 +225,55 @@ remove_ros_args(py::object pycli_args)
   }
 
   return result_args;
+}
+
+void
+throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
+{
+  int unparsed_ros_args_count = rcl_arguments_get_count_unparsed_ros(&rcl_args);
+
+  if (unparsed_ros_args_count < 0) {
+    throw std::runtime_error("failed to count unparsed arguments");
+  }
+  if (0 == unparsed_ros_args_count) {
+    return;
+  }
+
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+
+  int * unparsed_indices_c = nullptr;
+  rcl_ret_t ret = rcl_arguments_get_unparsed_ros(&rcl_args, allocator, &unparsed_indices_c);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to get unparsed arguments");
+  }
+
+  auto deallocator = [&](int ptr[]) {allocator.deallocate(ptr, allocator.state);};
+  auto unparsed_indices = std::unique_ptr<int[], decltype(deallocator)>(
+    unparsed_indices_c, deallocator);
+
+  py::list unparsed_args;
+  for (int i = 0; i < unparsed_ros_args_count; ++i) {
+    int index = unparsed_indices_c[i];
+    if (index < 0 || static_cast<size_t>(index) >= pyargs.size()) {
+      throw std::runtime_error("got invalid unparsed ROS arg index");
+    }
+    unparsed_args.append(pyargs[index]);
+  }
+
+  throw UnknownROSArgsError(static_cast<std::string>(py::repr(unparsed_args)));
+}
+
+py::dict
+rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
+{
+  PyObject * pyqos_profile = NULL;
+  if (0 == strcmp(rmw_profile, "rcl_action_qos_profile_status_default")) {
+    pyqos_profile = rclpy_common_convert_to_qos_dict(&rcl_action_qos_profile_status_default);
+  } else {
+    std::string error_text = "Requested unknown rmw_qos_profile: ";
+    error_text += rmw_profile;
+    throw std::runtime_error(error_text);
+  }
+  return py::reinterpret_steal<py::dict>(pyqos_profile);
 }
 }  // namespace rclpy
