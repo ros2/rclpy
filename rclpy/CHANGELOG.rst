@@ -2,6 +2,22 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.0 (2021-05-10)
+------------------
+* Print 'Infinite' for infinite durations in topic endpoint info (`#722 <https://github.com/ros2/rclpy/issues/722>`_)
+* Break log function execution ASAP if configured severity is too high (`#776 <https://github.com/ros2/rclpy/issues/776>`_)
+* Convert Node and Context to use C++ Classes (`#771 <https://github.com/ros2/rclpy/issues/771>`_)
+* Misc action server improvements (`#774 <https://github.com/ros2/rclpy/issues/774>`_)
+* Misc action goal handle improvements (`#767 <https://github.com/ros2/rclpy/issues/767>`_)
+* Convert Guardcondition to use C++ classes (`#772 <https://github.com/ros2/rclpy/issues/772>`_)
+* Removed unused structs ``rclpy_client_t`` and ``rclpy_service_t`` (`#770 <https://github.com/ros2/rclpy/issues/770>`_)
+* Convert WaitSet to use C++ Classes (`#769 <https://github.com/ros2/rclpy/issues/769>`_)
+* Convert ActionServer to use C++ Classes (`#766 <https://github.com/ros2/rclpy/issues/766>`_)
+* Convert ActionClient to use C++ classes (`#759 <https://github.com/ros2/rclpy/issues/759>`_)
+* Use py::class\_ for rcl_action_goal_handle_t (`#751 <https://github.com/ros2/rclpy/issues/751>`_)
+* Convert Publisher and Subscription to use C++ Classes (`#756 <https://github.com/ros2/rclpy/issues/756>`_)
+* Contributors: Alejandro Hernández Cordero, Emerson Knapp, Greg Balke, Shane Loretz, ksuszka
+
 1.8.1 (2021-04-12)
 ------------------
 * typo fix. (`#768 <https://github.com/ros2/rclpy/issues/768>`_)
