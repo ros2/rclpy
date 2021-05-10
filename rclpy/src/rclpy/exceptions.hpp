@@ -22,42 +22,33 @@
 
 namespace rclpy
 {
-RCLPY_COMMON_PUBLIC
 std::string append_rcutils_error(std::string prepend);
 
-RCLPY_COMMON_PUBLIC
 std::string append_rcl_error(std::string prepend);
 
-RCLPY_COMMON_PUBLIC
 std::string append_rmw_error(std::string prepend);
 
 class RCUtilsError : public std::runtime_error
 {
 public:
-  RCLPY_COMMON_PUBLIC
   explicit RCUtilsError(const std::string & error_text);
 
-  RCLPY_COMMON_PUBLIC
   ~RCUtilsError() = default;
 };
 
 class RCLError : public std::runtime_error
 {
 public:
-  RCLPY_COMMON_PUBLIC
   explicit RCLError(const std::string & error_text);
 
-  RCLPY_COMMON_PUBLIC
   ~RCLError() = default;
 };
 
 class RMWError : public std::runtime_error
 {
 public:
-  RCLPY_COMMON_PUBLIC
   explicit RMWError(const std::string & error_text);
 
-  RCLPY_COMMON_PUBLIC
   ~RMWError() = default;
 };
 
