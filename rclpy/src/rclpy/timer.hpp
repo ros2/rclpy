@@ -24,7 +24,6 @@
 #include "clock.hpp"
 #include "context.hpp"
 #include "destroyable.hpp"
-#include "handle.hpp"
 
 namespace py = pybind11;
 

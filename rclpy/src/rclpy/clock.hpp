@@ -23,8 +23,12 @@
 #include <string>
 
 #include "destroyable.hpp"
+<<<<<<< HEAD
 #include "handle.hpp"
 #include "rclpy_common/exceptions.hpp"
+=======
+#include "exceptions.hpp"
+>>>>>>> 5898ef2 (Deleted handle as it should no longer be used (#786))
 #include "utils.hpp"
 
 namespace py = pybind11;

@@ -23,7 +23,6 @@
 #include <variant>  // NOLINT
 
 #include "destroyable.hpp"
-#include "handle.hpp"
 #include "publisher.hpp"
 #include "subscription.hpp"
 

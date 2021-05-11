@@ -162,7 +162,6 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/duration.cpp
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
-  src/rclpy/handle.cpp
   src/rclpy/logging.cpp
   src/rclpy/names.cpp
   src/rclpy/node.cpp
@@ -260,7 +259,6 @@ if(BUILD_TESTING)
       test/test_executor.py
       test/test_expand_topic_name.py
       test/test_guard_condition.py
-      test/test_handle.py
       test/test_init_shutdown.py
       test/test_logging.py
       test/test_logging_rosout.py

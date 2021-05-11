@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
 
 class NotInitializedException(Exception):
     """Raised when the rclpy implementation is accessed before rclpy.init()."""
@@ -37,6 +39,9 @@ Invalid {name_type}: {error_msg}:
    {indent}^\
 """.format(name_type=name_type, name=name, error_msg=error_msg, indent=' ' * invalid_index)
         Exception.__init__(self, msg)
+
+
+InvalidHandle = _rclpy.InvalidHandle
 
 
 class InvalidNamespaceException(NameValidationException):

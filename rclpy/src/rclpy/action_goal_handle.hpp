@@ -23,7 +23,6 @@
 
 #include "action_server.hpp"
 #include "destroyable.hpp"
-#include "handle.hpp"
 
 namespace py = pybind11;
 
