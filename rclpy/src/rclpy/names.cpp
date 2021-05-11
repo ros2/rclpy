@@ -34,8 +34,7 @@
 
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
+#include "exceptions.hpp"
 #include "names.hpp"
 
 namespace rclpy

@@ -27,8 +27,7 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
+#include "exceptions.hpp"
 #include "serialization.hpp"
 
 namespace rclpy

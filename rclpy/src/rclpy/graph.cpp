@@ -24,12 +24,11 @@
 #include <string>
 
 #include "rclpy_common/common.h"
-#include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
+#include "exceptions.hpp"
 #include "graph.hpp"
 #include "utils.hpp"
-
 
 namespace rclpy
 {

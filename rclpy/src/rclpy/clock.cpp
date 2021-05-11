@@ -26,8 +26,6 @@
 
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
 #include "clock.hpp"
 
 using pybind11::literals::operator""_a;

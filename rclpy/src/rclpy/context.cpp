@@ -26,9 +26,8 @@
 
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
 #include "context.hpp"
+#include "exceptions.hpp"
 #include "utils.hpp"
 
 namespace rclpy
