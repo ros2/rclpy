@@ -51,6 +51,17 @@ convert_to_py_names_and_types(const rcl_names_and_types_t * names_and_types)
   return py_names_and_types;
 }
 
+void *
+common_get_type_support(py::object pymessage)
+{
+  py::object pymetaclass = pymessage.attr("__class__");
+
+  py::object value = pymetaclass.attr("_TYPE_SUPPORT");
+  auto capsule_ptr = static_cast<void *>(value.cast<py::capsule>());
+
+  return capsule_ptr;
+}
+
 std::unique_ptr<void, destroy_ros_message_function *>
 create_from_py(py::object pymessage)
 {

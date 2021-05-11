@@ -40,6 +40,14 @@ typedef void destroy_ros_message_function (void *);
 py::list
 convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_types);
 
+/// Get the type support structure for a Python ROS message type.
+/**
+ * \param[in] pymsg_type The Python ROS message type.
+ * \return The type support structure or NULL if an error occurred.
+ */
+void *
+common_get_type_support(py::object pymessage);
+
 /// Create the equivalent ROS message C type instance for a given Python type.
 /**
 * Raises AttributeError if \p pyclass is missing a required attribute.
