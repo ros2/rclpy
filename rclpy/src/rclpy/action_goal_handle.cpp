@@ -20,10 +20,10 @@
 #include <string>
 
 #include "rclpy_common/common.h"
-#include "rclpy_common/exceptions.hpp"
 
-#include "utils.hpp"
 #include "action_goal_handle.hpp"
+#include "exceptions.hpp"
+#include "utils.hpp"
 
 namespace py = pybind11;
 
@@ -33,19 +33,16 @@ ActionGoalHandle::ActionGoalHandle(
   rclpy::ActionServer & action_server, py::object pygoal_info_msg)
 : action_server_(action_server)
 {
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  auto goal_info_msg = static_cast<rcl_action_goal_info_t *>(
-    rclpy_convert_from_py(pygoal_info_msg.ptr(), &destroy_ros_message));
+  auto goal_info_msg = convert_from_py(pygoal_info_msg);
+  rcl_action_goal_info_t * goal_info_msg_ptr =
+    static_cast<rcl_action_goal_info_t *>(goal_info_msg.get());
 
   if (!goal_info_msg) {
     throw py::error_already_set();
   }
 
-  auto goal_info_msg_ptr = std::unique_ptr<rcl_action_goal_info_t, decltype(destroy_ros_message)>(
-    goal_info_msg, destroy_ros_message);
-
   auto rcl_handle = rcl_action_accept_new_goal(
-    action_server.rcl_ptr(), goal_info_msg);
+    action_server.rcl_ptr(), goal_info_msg_ptr);
   if (!rcl_handle) {
     throw rclpy::RCLError("Failed to accept new goal");
   }

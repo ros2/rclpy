@@ -123,7 +123,6 @@ endfunction()
 
 add_library(rclpy_common SHARED
   src/rclpy_common/src/common.c
-  src/rclpy_common/src/exceptions.cpp
   src/rclpy_common/src/handle.c
 )
 target_link_libraries(rclpy_common PUBLIC
@@ -160,6 +159,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/context.cpp
   src/rclpy/destroyable.cpp
   src/rclpy/duration.cpp
+  src/rclpy/exceptions.cpp
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
   src/rclpy/logging.cpp

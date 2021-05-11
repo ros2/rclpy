@@ -158,17 +158,18 @@ class TopicEndpointInfo:
             for slot in self.__slots__)
 
     def __str__(self):
-        result = 'Node name: %s\n' % self.node_name
-        result += 'Node namespace: %s\n' % self.node_namespace
-        result += 'Topic type: %s\n' % self.topic_type
-        result += 'Endpoint type: %s\n' % self.endpoint_type.name
-        result += 'GID: %s\n' % '.'.join(format(x, '02x') for x in self.endpoint_gid)
-        result += 'QoS profile:\n'
-        result += '  Reliability: %s\n' % self.qos_profile.reliability.name
-        result += '  Durability: %s\n' % self.qos_profile.durability.name
-        result += '  Lifespan: %d nanoseconds\n' % self.qos_profile.lifespan.nanoseconds
-        result += '  Deadline: %d nanoseconds\n' % self.qos_profile.deadline.nanoseconds
-        result += '  Liveliness: %s\n' % self.qos_profile.liveliness.name
-        result += '  Liveliness lease duration: %d nanoseconds' % \
-            self.qos_profile.liveliness_lease_duration.nanoseconds
-        return result
+        gid = '.'.join(format(x, '02x') for x in self.endpoint_gid)
+        return '\n'.join([
+            f'Node name: {self.node_name}',
+            f'Node namespace: {self.node_namespace}',
+            f'Topic type: {self.topic_type}',
+            f'Endpoint type: {self.endpoint_type.name}',
+            f'GID: {gid}',
+            'QoS profile:',
+            f'  Reliability: {self.qos_profile.reliability.name}',
+            f'  Durability: {self.qos_profile.durability.name}',
+            f'  Lifespan: {self.qos_profile.lifespan}',
+            f'  Deadline: {self.qos_profile.deadline}',
+            f'  Liveliness: {self.qos_profile.liveliness.name}',
+            f'  Liveliness lease duration: {self.qos_profile.liveliness_lease_duration}',
+        ])

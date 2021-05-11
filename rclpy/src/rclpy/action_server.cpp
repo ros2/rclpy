@@ -22,10 +22,10 @@
 #include <string>
 
 #include "rclpy_common/common.h"
-#include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
 #include "action_server.hpp"
+#include "exceptions.hpp"
 
 namespace rclpy
 {
@@ -53,7 +53,7 @@ ActionServer::ActionServer(
   rcl_clock_t * clock = rclpy_clock.rcl_ptr();
 
   rosidl_action_type_support_t * ts = static_cast<rosidl_action_type_support_t *>(
-    rclpy_common_get_type_support(pyaction_type.ptr()));
+    common_get_type_support(pyaction_type));
   if (!ts) {
     throw py::error_already_set();
   }

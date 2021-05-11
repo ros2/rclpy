@@ -23,8 +23,8 @@
 #include "rclpy_common/common.h"
 
 #include "client.hpp"
+#include "exceptions.hpp"
 #include "python_allocator.hpp"
-#include "rclpy_common/exceptions.hpp"
 #include "utils.hpp"
 
 namespace rclpy
@@ -42,7 +42,7 @@ Client::Client(
 : node_(node)
 {
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
-    rclpy_common_get_type_support(pysrv_type.ptr()));
+    common_get_type_support(pysrv_type));
   if (!srv_type) {
     throw py::error_already_set();
   }
@@ -92,15 +92,13 @@ Client::Client(
 int64_t
 Client::send_request(py::object pyrequest)
 {
-  destroy_ros_message_signature * destroy_ros_message = nullptr;
-  void * raw_ros_request = rclpy_convert_from_py(pyrequest.ptr(), &destroy_ros_message);
+  auto raw_ros_request = convert_from_py(pyrequest);
   if (!raw_ros_request) {
     throw py::error_already_set();
   }
 
   int64_t sequence_number;
-  rcl_ret_t ret = rcl_send_request(rcl_client_.get(), raw_ros_request, &sequence_number);
-  destroy_ros_message(raw_ros_request);
+  rcl_ret_t ret = rcl_send_request(rcl_client_.get(), raw_ros_request.get(), &sequence_number);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to send request");
   }

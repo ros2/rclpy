@@ -22,9 +22,9 @@
 
 #include "rclpy_common/common.h"
 
-#include "rclpy_common/exceptions.hpp"
-
+#include "exceptions.hpp"
 #include "publisher.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
@@ -34,7 +34,7 @@ Publisher::Publisher(
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
-    rclpy_common_get_type_support(pymsg_type.ptr()));
+    common_get_type_support(pymsg_type));
   if (!msg_type) {
     throw py::error_already_set();
   }
@@ -121,14 +121,12 @@ Publisher::get_topic_name()
 void
 Publisher::publish(py::object pymsg)
 {
-  destroy_ros_message_signature * destroy_ros_message = NULL;
-  void * raw_ros_message = rclpy_convert_from_py(pymsg.ptr(), &destroy_ros_message);
+  auto raw_ros_message = convert_from_py(pymsg);
   if (!raw_ros_message) {
     throw py::error_already_set();
   }
 
-  rcl_ret_t ret = rcl_publish(rcl_publisher_.get(), raw_ros_message, NULL);
-  destroy_ros_message(raw_ros_message);
+  rcl_ret_t ret = rcl_publish(rcl_publisher_.get(), raw_ros_message.get(), NULL);
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to publish");
   }

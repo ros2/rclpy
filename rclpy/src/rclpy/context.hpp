@@ -23,7 +23,7 @@
 #include <memory>
 
 #include "destroyable.hpp"
-#include "rclpy_common/exceptions.hpp"
+#include "exceptions.hpp"
 
 namespace py = pybind11;
 

@@ -24,8 +24,7 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
+#include "exceptions.hpp"
 #include "service.hpp"
 
 namespace rclpy
@@ -44,7 +43,7 @@ Service::Service(
 : node_(node)
 {
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
-    rclpy_common_get_type_support(pysrv_type.ptr()));
+    common_get_type_support(pysrv_type));
   if (!srv_type) {
     throw py::error_already_set();
   }
@@ -94,17 +93,13 @@ Service::Service(
 void
 Service::service_send_response(py::object pyresponse, rmw_request_id_t * header)
 {
-  destroy_ros_message_signature * destroy_ros_message = nullptr;
-  void * raw_ros_response = rclpy_convert_from_py(pyresponse.ptr(), &destroy_ros_message);
+  auto raw_ros_response = convert_from_py(pyresponse);
   if (!raw_ros_response) {
     throw py::error_already_set();
   }
-  auto message_deleter = [destroy_ros_message](void * ptr) {destroy_ros_message(ptr);};
-  auto ros_response = std::unique_ptr<void, decltype(message_deleter)>(
-    raw_ros_response, message_deleter);
 
-  rcl_ret_t ret = rcl_send_response(rcl_service_.get(), header, ros_response.get());
-  if (ret != RCL_RET_OK) {
+  rcl_ret_t ret = rcl_send_response(rcl_service_.get(), header, raw_ros_response.get());
+  if (RCL_RET_OK != ret) {
     throw RCLError("failed to send response");
   }
 }

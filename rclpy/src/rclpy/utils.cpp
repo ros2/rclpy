@@ -27,8 +27,8 @@
 
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
-#include "rclpy_common/exceptions.hpp"
 
+#include "exceptions.hpp"
 #include "utils.hpp"
 
 namespace rclpy
@@ -49,6 +49,17 @@ convert_to_py_names_and_types(const rcl_names_and_types_t * names_and_types)
       py::str(names_and_types->names.data[i]), py_types);
   }
   return py_names_and_types;
+}
+
+void *
+common_get_type_support(py::object pymessage)
+{
+  py::object pymetaclass = pymessage.attr("__class__");
+
+  py::object value = pymetaclass.attr("_TYPE_SUPPORT");
+  auto capsule_ptr = static_cast<void *>(value.cast<py::capsule>());
+
+  return capsule_ptr;
 }
 
 std::unique_ptr<void, destroy_ros_message_function *>

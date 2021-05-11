@@ -27,9 +27,9 @@
 #include "rclpy_common/common.h"
 #include "rclpy_common/handle.h"
 
-#include "rclpy_common/exceptions.hpp"
-
+#include "exceptions.hpp"
 #include "serialization.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
@@ -60,14 +60,12 @@ serialize(py::object pymsg, py::object pymsg_type)
 {
   // Get type support
   auto ts = static_cast<rosidl_message_type_support_t *>(
-    rclpy_common_get_type_support(pymsg_type.ptr()));
+    common_get_type_support(pymsg_type));
   if (!ts) {
     throw py::error_already_set();
   }
 
-  destroy_ros_message_signature * destroy_ros_message = nullptr;
-  auto ros_msg = std::unique_ptr<void, decltype(destroy_ros_message)>(
-    rclpy_convert_from_py(pymsg.ptr(), &destroy_ros_message), destroy_ros_message);
+  auto ros_msg = convert_from_py(pymsg);
   if (!ros_msg) {
     throw py::error_already_set();
   }
@@ -92,7 +90,7 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
 {
   // Get type support
   auto ts = static_cast<rosidl_message_type_support_t *>(
-    rclpy_common_get_type_support(pymsg_type.ptr()));
+    common_get_type_support(pymsg_type));
   if (!ts) {
     throw py::error_already_set();
   }
@@ -112,13 +110,10 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
   serialized_msg.buffer_length = length;
   serialized_msg.buffer = reinterpret_cast<uint8_t *>(serialized_buffer);
 
-  destroy_ros_message_signature * destroy_ros_message = nullptr;
-  void * deserialized_ros_msg_c = rclpy_create_from_py(pymsg_type.ptr(), &destroy_ros_message);
-  if (!deserialized_ros_msg_c) {
+  auto deserialized_ros_msg = create_from_py(pymsg_type);
+  if (!deserialized_ros_msg) {
     throw py::error_already_set();
   }
-  auto deserialized_ros_msg = std::unique_ptr<void, decltype(destroy_ros_message)>(
-    deserialized_ros_msg_c, destroy_ros_message);
 
   // Deserialize
   rmw_ret_t rmw_ret = rmw_deserialize(&serialized_msg, ts, deserialized_ros_msg.get());
@@ -127,8 +122,6 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
     throw RMWError("failed to deserialize ROS message");
   }
 
-  PyObject * pydeserialized_ros_msg_c =
-    rclpy_convert_to_py(deserialized_ros_msg.get(), pymsg_type.ptr());
-  return py::reinterpret_steal<py::object>(pydeserialized_ros_msg_c);
+  return convert_to_py(deserialized_ros_msg.get(), pymsg_type);
 }
 }  // namespace rclpy

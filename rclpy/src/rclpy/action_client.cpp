@@ -21,10 +21,10 @@
 #include <string>
 
 #include "rclpy_common/common.h"
-#include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
 
 #include "action_client.hpp"
+#include "exceptions.hpp"
 #include "utils.hpp"
 
 namespace rclpy
@@ -49,8 +49,7 @@ ActionClient::ActionClient(
 : node_(node)
 {
   rosidl_action_type_support_t * ts =
-    static_cast<rosidl_action_type_support_t *>(rclpy_common_get_type_support(
-      pyaction_type.ptr()));
+    static_cast<rosidl_action_type_support_t *>(common_get_type_support(pyaction_type));
   if (!ts) {
     throw py::error_already_set();
   }

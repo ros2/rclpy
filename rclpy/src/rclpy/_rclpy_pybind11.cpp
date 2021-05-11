@@ -25,6 +25,7 @@
 #include "context.hpp"
 #include "destroyable.hpp"
 #include "duration.hpp"
+#include "exceptions.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
 #include "handle_api.hpp"
@@ -36,7 +37,6 @@
 #include "pycapsule_api.hpp"
 #include "qos.hpp"
 #include "qos_event.hpp"
-#include "rclpy_common/exceptions.hpp"
 #include "serialization.hpp"
 #include "service.hpp"
 #include "service_info.hpp"
@@ -67,6 +67,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("CANCELED", GOAL_EVENT_CANCELED);
 
   m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
+  m.attr("RMW_DURATION_INFINITE") = py::int_(rmw_time_total_nsec(RMW_DURATION_INFINITE));
 
   py::enum_<rcl_clock_change_t>(m, "ClockChange")
   .value(
