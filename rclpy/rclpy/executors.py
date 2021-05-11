@@ -37,8 +37,8 @@ from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.context import Context
+from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
-from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
 from rclpy.signals import SignalHandlerGuardCondition

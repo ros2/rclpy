@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
-from rclpy.handle import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_signal_handler_implementation as _signals
 
 

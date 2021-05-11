@@ -24,7 +24,6 @@
 
 #include "destroyable.hpp"
 #include "exceptions.hpp"
-#include "handle.hpp"
 #include "utils.hpp"
 
 namespace py = pybind11;
