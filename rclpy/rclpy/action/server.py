@@ -28,6 +28,9 @@ from rclpy.task import Future
 from rclpy.type_support import check_for_type_support
 from rclpy.waitable import NumberOfEntities, Waitable
 
+# Re-export exception defined in _rclpy C extension.
+RCLError = _rclpy.RCLError
+
 
 class GoalResponse(Enum):
     """Possible goal responses."""
@@ -362,7 +365,15 @@ class ActionServer(Waitable):
 
             if CancelResponse.ACCEPT == response:
                 # Notify goal handle
-                goal_handle._update_state(_rclpy.GoalEvent.CANCEL_GOAL)
+                try:
+                    # If the goal's just succeeded after user cancel callback
+                    # that will generate an exception from invalid transition.
+                    goal_handle._update_state(GoalEvent.CANCEL_GOAL)
+                except RCLError as ex:
+                    self._node.get_logger().debug(
+                        'Failed to cancel goal in cancel callback: {0}'.format(ex))
+                    # Remove from response since goal has been succeeded
+                    cancel_response.goals_canceling.remove(goal_info)
             else:
                 # Remove from response
                 cancel_response.goals_canceling.remove(goal_info)
