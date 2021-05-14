@@ -77,9 +77,9 @@ class TestPublisher(unittest.TestCase):
             publisher.destroy()
 
     @classmethod
-    def do_test_wait_for_all_acked(cls, test_topic, node):
-        pub = node.create_publisher(BasicTypes, test_topic, 1)
-        sub = node.create_subscription(BasicTypes, test_topic, lambda msg: print(msg), 1)
+    def do_test_wait_for_all_acked(cls, test_topic, node, pub_qos, sub_qos):
+        pub = node.create_publisher(BasicTypes, test_topic, pub_qos)
+        sub = node.create_subscription(BasicTypes, test_topic, lambda msg: print(msg), sub_qos)
         time.sleep(1)
         assert pub.get_subscription_count() == 1
         basic_types_msg = BasicTypes()
@@ -125,7 +125,25 @@ class TestPublisher(unittest.TestCase):
         TestPublisher.do_test_topic_name(test_topics, self.node)
 
     def test_wait_for_all_acked(self):
-        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node)
+        pub_qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.QoSReliabilityPolicy.RELIABLE)
+        sub_qos = pub_qos
+
+        # Publisher and subscription are all reliable
+        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node, pub_qos, sub_qos)
+
+        # Publisher and subscription are all best effort
+        pub_qos.reliability = rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT
+        sub_qos.reliability = rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT
+        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node, pub_qos, sub_qos)
+
+        # Publisher is reliable and subscription is best effort
+        pub_qos.reliability = rclpy.qos.QoSReliabilityPolicy.RELIABLE
+        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node, pub_qos, sub_qos)
+
+        # Publisher is best effort and subscription is reliable
+        # Not work.
 
 
 if __name__ == '__main__':
