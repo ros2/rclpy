@@ -1861,6 +1861,10 @@ class TestNode(unittest.TestCase):
             self.node.set_parameters([Parameter('int_param_no_default', value=3)])[0].successful)
         self.assertEqual(self.node.get_parameter('int_param_no_default').value, 3)
 
+        result = self.node.set_parameters([Parameter('int_param_no_default', value=None)])[0]
+        self.assertFalse(result.successful)
+        self.assertTrue(result.reason.startswith('Static parameter cannot be undeclared'))
+
         self.assertTrue(
             self.node.set_parameters([Parameter('dynamic_param', value='asd')])[0].successful)
         self.assertTrue(

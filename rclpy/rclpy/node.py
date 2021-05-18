@@ -949,6 +949,12 @@ class Node:
 
         if descriptor.dynamic_typing:
             descriptor.type = parameter.type_.value
+        # If this parameter has already been declared, do not allow undeclaring it
+        elif self.has_parameter(parameter.name) and parameter.type_ == Parameter.Type.NOT_SET:
+            return SetParametersResult(
+                successful=False,
+                reason=f'Static parameter cannot be undeclared'
+            )
         elif (
             parameter.type_ != Parameter.Type.NOT_SET and
             parameter.type_.value != descriptor.type
