@@ -490,8 +490,7 @@ class Node:
             allow_undeclared_parameters=True
         )
         # Don't call get_parameters() to bypass check for NOT_SET parameters
-        parameter_names = [parameter.name for parameter in parameter_list]
-        return [self._parameters[name] for name in parameter_names]
+        return [self._parameters[parameter.name] for parameter in parameter_list]
 
     def undeclare_parameter(self, name: str):
         """
