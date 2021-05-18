@@ -36,10 +36,10 @@ from rclpy.exceptions import InvalidParameterTypeException
 from rclpy.exceptions import InvalidParameterValueException
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
-from rclpy.exceptions import NoParameterOverrideProvidedException
 from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
+from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
@@ -631,8 +631,9 @@ class TestNode(unittest.TestCase):
             ('value_not_set',)
         ]
 
-        with pytest.raises(NoParameterOverrideProvidedException):
-            self.node.declare_parameter('no_override', Parameter.Type.INTEGER)
+        # Declare uninitialized parameter
+        parameter_type = self.node.declare_parameter('no_override', Parameter.Type.INTEGER).type_
+        assert parameter_type == Parameter.Type.NOT_SET
 
         with pytest.raises(InvalidParameterTypeException):
             self.node.declare_parameter('initial_decl_wrong_type', Parameter.Type.INTEGER)
@@ -1833,15 +1834,32 @@ class TestNode(unittest.TestCase):
     def test_static_dynamic_typing(self):
         parameters = [
             ('int_param', 0),
+            ('int_param_no_default', Parameter.Type.INTEGER),
             ('dynamic_param', None, ParameterDescriptor(dynamic_typing=True)),
         ]
         result = self.node.declare_parameters('', parameters)
+
+        # Try getting parameters before setting values
+        int_param = self.node.get_parameter('int_param')
+        self.assertEqual(int_param.type_, Parameter.Type.INTEGER)
+        self.assertEqual(int_param.value, 0)
+        with pytest.raises(rclpy.exceptions.ParameterUninitializedException):
+            self.node.get_parameter('int_param_no_default')
+        self.assertEqual(self.node.get_parameter('dynamic_param').type_, Parameter.Type.NOT_SET)
 
         result = self.node.set_parameters([Parameter('int_param', value='asd')])[0]
         self.assertFalse(result.successful)
         self.assertTrue(result.reason.startswith('Wrong parameter type'))
 
         self.assertTrue(self.node.set_parameters([Parameter('int_param', value=3)])[0].successful)
+
+        result = self.node.set_parameters([Parameter('int_param_no_default', value='asd')])[0]
+        self.assertFalse(result.successful)
+        self.assertTrue(result.reason.startswith('Wrong parameter type'))
+
+        self.assertTrue(
+            self.node.set_parameters([Parameter('int_param_no_default', value=3)])[0].successful)
+        self.assertEqual(self.node.get_parameter('int_param_no_default').value, 3)
 
         self.assertTrue(
             self.node.set_parameters([Parameter('dynamic_param', value='asd')])[0].successful)
