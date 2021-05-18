@@ -131,6 +131,8 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile);
 
 /// Convert a C rmw_topic_endpoint_info_array_t into a Python list.
 /**
+ * Raises RuntimeError if the rmw_profile profile is null.
+ *
  * \param[in] info_array a pointer to a rmw_topic_endpoint_info_array_t
  * \return Python list
  */
@@ -143,7 +145,7 @@ convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * i
  * \return Python dictionary
  */
 py::dict
-common_convert_to_qos_dict(const rmw_qos_profile_t * qos_profile);
+convert_to_qos_dict(const rmw_qos_profile_t * qos_profile);
 }  // namespace rclpy
 
 #endif  // RCLPY__UTILS_HPP_

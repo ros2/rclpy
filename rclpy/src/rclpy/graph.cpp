@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
@@ -22,8 +21,6 @@
 
 #include <memory>
 #include <string>
-
-#include "rclpy_common/handle.h"
 
 #include "exceptions.hpp"
 #include "graph.hpp"

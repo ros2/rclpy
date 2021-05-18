@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
 
 #include <rcl/rcl.h>
@@ -25,8 +24,6 @@
 #include <cstring>
 #include <memory>
 #include <string>
-
-#include "rclpy_common/handle.h"
 
 #include "exceptions.hpp"
 #include "qos.hpp"
@@ -131,7 +128,7 @@ create_qos_profile(
 py::dict
 convert_qos_profile_to_dict(const rmw_qos_profile_t & qos_profile)
 {
-  return common_convert_to_qos_dict(&qos_profile);
+  return convert_to_qos_dict(&qos_profile);
 }
 
 // Fetch a predefined rmw_qos_profile_t instance.

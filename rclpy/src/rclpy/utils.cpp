@@ -15,7 +15,6 @@
 #include <assert.h>
 
 #include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
 
 #include <rcl/error_handling.h>
 #include <rcl_action/rcl_action.h>
@@ -25,8 +24,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "rclpy_common/handle.h"
 
 #include "exceptions.hpp"
 #include "utils.hpp"
@@ -279,7 +276,7 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
 {
   py::dict pyqos_profile;
   if (0 == strcmp(rmw_profile, "rcl_action_qos_profile_status_default")) {
-    pyqos_profile = common_convert_to_qos_dict(&rcl_action_qos_profile_status_default);
+    pyqos_profile = convert_to_qos_dict(&rcl_action_qos_profile_status_default);
   } else {
     std::string error_text = "Requested unknown rmw_qos_profile: ";
     error_text += rmw_profile;
@@ -308,7 +305,7 @@ _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpo
     py::int_(static_cast<int>(topic_endpoint_info->endpoint_type));
   py_endpoint_info_dict["endpoint_gid"] = py_endpoint_gid;
   py_endpoint_info_dict["qos_profile"] =
-    common_convert_to_qos_dict(&topic_endpoint_info->qos_profile);
+    convert_to_qos_dict(&topic_endpoint_info->qos_profile);
 
   return py_endpoint_info_dict;
 }
@@ -317,10 +314,10 @@ py::list
 convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array)
 {
   if (!info_array) {
-    throw RCLError("rmw_topic_endpoint_info_array_t pointer is empty");
+    throw std::runtime_error("rmw_topic_endpoint_info_array_t pointer is empty");
   }
 
-  py::list py_info_array = py::list(info_array->size);
+  py::list py_info_array(info_array->size);
 
   for (size_t i = 0; i < info_array->size; ++i) {
     rmw_topic_endpoint_info_t topic_endpoint_info = info_array->info_array[i];
@@ -329,22 +326,6 @@ convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * i
   }
   return py_info_array;
 }
-
-/**
- * Mirrors the struct rmw_qos_profile_t from rmw/types.h
- */
-typedef struct rclpy_qos_profile
-{
-  int depth;
-  int history;
-  int reliability;
-  int durability;
-  py::object lifespan;
-  py::object deadline;
-  int liveliness;
-  py::object liveliness_lease_duration;
-  bool avoid_ros_namespace_conventions;
-} rclpy_qos_profile_t;
 
 static
 py::object
@@ -358,35 +339,22 @@ _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
 }
 
 py::dict
-common_convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
+convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
 {
-  // Convert rmw members to Python objects
-  rclpy_qos_profile_t rclpy_qos;
-
-  rclpy_qos.depth = py::int_(qos_profile->depth);
-  rclpy_qos.history = py::int_(static_cast<int>(qos_profile->history));
-  rclpy_qos.reliability = py::int_(static_cast<int>(qos_profile->reliability));
-  rclpy_qos.durability = py::int_(static_cast<int>(qos_profile->durability));
-  rclpy_qos.lifespan = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
-  rclpy_qos.deadline = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
-  rclpy_qos.liveliness = py::int_(static_cast<int>(qos_profile->liveliness));
-  rclpy_qos.liveliness_lease_duration = _convert_rmw_time_to_py_duration(
-    &qos_profile->liveliness_lease_duration);
-  rclpy_qos.avoid_ros_namespace_conventions =
-    py::bool_(qos_profile->avoid_ros_namespace_conventions);
-
-  // Create dictionary to hold QoSProfile keyword arguments
+  // Create dictionary and populate arguments with QoSProfile object
   py::dict pyqos_kwargs;
-  // Populate keyword arguments for QoSProfile object
-  pyqos_kwargs["depth"] = rclpy_qos.depth;
-  pyqos_kwargs["history"] = rclpy_qos.history;
-  pyqos_kwargs["reliability"] = rclpy_qos.reliability;
-  pyqos_kwargs["durability"] = rclpy_qos.durability;
-  pyqos_kwargs["lifespan"] = rclpy_qos.lifespan;
-  pyqos_kwargs["deadline"] = rclpy_qos.deadline;
-  pyqos_kwargs["liveliness"] = rclpy_qos.liveliness;
-  pyqos_kwargs["liveliness_lease_duration"] = rclpy_qos.liveliness_lease_duration;
-  pyqos_kwargs["avoid_ros_namespace_conventions"] = rclpy_qos.avoid_ros_namespace_conventions;
+
+  pyqos_kwargs["depth"] = py::int_(qos_profile->depth);
+  pyqos_kwargs["history"] = py::int_(static_cast<int>(qos_profile->history));
+  pyqos_kwargs["reliability"] = py::int_(static_cast<int>(qos_profile->reliability));
+  pyqos_kwargs["durability"] = py::int_(static_cast<int>(qos_profile->durability));
+  pyqos_kwargs["lifespan"] = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
+  pyqos_kwargs["deadline"] = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
+  pyqos_kwargs["liveliness"] = py::int_(static_cast<int>(qos_profile->liveliness));
+  pyqos_kwargs["liveliness_lease_duration"] = _convert_rmw_time_to_py_duration(
+    &qos_profile->liveliness_lease_duration);
+  pyqos_kwargs["avoid_ros_namespace_conventions"] =
+    py::bool_(qos_profile->avoid_ros_namespace_conventions);
 
   return pyqos_kwargs;
 }
