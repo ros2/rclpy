@@ -1843,7 +1843,7 @@ class TestNode(unittest.TestCase):
         int_param = self.node.get_parameter('int_param')
         self.assertEqual(int_param.type_, Parameter.Type.INTEGER)
         self.assertEqual(int_param.value, 0)
-        with pytest.raises(rclpy.exceptions.ParameterUninitializedException):
+        with pytest.raises(ParameterUninitializedException):
             self.node.get_parameter('int_param_no_default')
         self.assertEqual(self.node.get_parameter('dynamic_param').type_, Parameter.Type.NOT_SET)
 
