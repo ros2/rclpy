@@ -961,7 +961,7 @@ class Node:
         elif self.has_parameter(parameter.name) and parameter.type_ == Parameter.Type.NOT_SET:
             return SetParametersResult(
                 successful=False,
-                reason=f'Static parameter cannot be undeclared'
+                reason='Static parameter cannot be undeclared'
             )
         elif (
             parameter.type_ != Parameter.Type.NOT_SET and
