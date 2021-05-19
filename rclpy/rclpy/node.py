@@ -612,11 +612,8 @@ class Node:
         if not self.has_parameter(name):
             return alternative_value
 
-        # Return alternative for uninitialized static parameters
-        if (
-            not self._descriptors[name].dynamic_typing and
-            self._parameters[name].type_ == Parameter.Type.NOT_SET
-        ):
+        # Return alternative for uninitialized parameters
+        if (self._parameters[name].type_ == Parameter.Type.NOT_SET):
             return alternative_value
 
         return self._parameters[name]

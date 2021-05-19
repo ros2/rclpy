@@ -859,11 +859,20 @@ class TestNode(unittest.TestCase):
         self.assertEqual(result.value, 152)
 
     def test_node_get_uninitialized_parameter_or(self):
+        # Statically typed parameter
         self.node.declare_parameter('uninitialized_foo', Parameter.Type.INTEGER)
         result = self.node.get_parameter_or(
             'uninitialized_foo', Parameter('foo', Parameter.Type.INTEGER, 152))
         self.assertEqual(result.name, 'foo')
         self.assertEqual(result.value, 152)
+
+        # Dynamically typed parameter
+        self.node.declare_parameter(
+            'uninitialized_bar', None, ParameterDescriptor(dynamic_typing=True))
+        result = self.node.get_parameter_or(
+            'uninitialized_bar', Parameter('foo', Parameter.Type.INTEGER, 153))
+        self.assertEqual(result.name, 'foo')
+        self.assertEqual(result.value, 153)
 
     def test_node_get_parameters_by_prefix(self):
         parameters = [
