@@ -603,12 +603,23 @@ class Node:
 
         :param name: Fully-qualified name of the parameter, including its namespace.
         :param alternative_value: Alternative parameter to get if it had not been declared before.
-        :return: Requested parameter, or alternative value if it hadn't been declared before.
+        :return: Requested parameter, or alternative value if it hadn't been declared before or is
+          an uninitialized statically typed parameter.
         """
         if alternative_value is None:
             alternative_value = Parameter(name, Parameter.Type.NOT_SET)
 
-        return self._parameters.get(name, alternative_value)
+        if not self.has_parameter(name):
+            return alternative_value
+
+        # Return alternative for uninitialized static parameters
+        if (
+            not self._descriptors[name].dynamic_typing and
+            self._parameters[name].type_ == Parameter.Type.NOT_SET
+        ):
+            return alternative_value
+
+        return self._parameters[name]
 
     def get_parameters_by_prefix(self, prefix: str) -> Dict[str, Optional[Union[
         bool, int, float, str, bytes,
