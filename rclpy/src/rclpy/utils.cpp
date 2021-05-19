@@ -285,7 +285,7 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
   return pyqos_profile;
 }
 
-py::object
+py::dict
 _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpoint_info)
 {
   py::list py_endpoint_gid = py::list(RMW_GID_STORAGE_SIZE);
