@@ -49,11 +49,11 @@ from rclpy.exceptions import InvalidHandle
 from rclpy.exceptions import InvalidParameterTypeException
 from rclpy.exceptions import InvalidParameterValueException
 from rclpy.exceptions import InvalidTopicNameException
-from rclpy.exceptions import NoParameterOverrideProvidedException
 from rclpy.exceptions import NotInitializedException
 from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
+from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
@@ -364,7 +364,6 @@ class Node:
         parameters: List[Union[
             Tuple[str],
             Tuple[str, Parameter.Type],
-            Tuple[str, Any],
             Tuple[str, Any, ParameterDescriptor],
         ]],
         ignore_override: bool = False
@@ -467,9 +466,6 @@ class Node:
             if not ignore_override and name in self._parameter_overrides:
                 value = self._parameter_overrides[name].value
 
-            if value is None and not descriptor.dynamic_typing:
-                raise NoParameterOverrideProvidedException(name)
-
             if namespace:
                 name = f'{namespace}.{name}'
 
@@ -493,7 +489,8 @@ class Node:
             raise_on_failure=True,
             allow_undeclared_parameters=True
         )
-        return self.get_parameters([parameter.name for parameter in parameter_list])
+        # Don't call get_parameters() to bypass check for NOT_SET parameters
+        return [self._parameters[parameter.name] for parameter in parameter_list]
 
     def undeclare_parameter(self, name: str):
         """
@@ -562,6 +559,8 @@ class Node:
             undeclared parameters are allowed.
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
             and at least one parameter hadn't been declared beforehand.
+        :raises: ParameterUninitializedException if at least one parameter is statically typed and
+            uninitialized.
         """
         if not all(isinstance(name, str) for name in names):
             raise TypeError('All names must be instances of type str')
@@ -577,9 +576,18 @@ class Node:
             undeclared parameters are allowed.
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
             and the parameter hadn't been declared beforehand.
+        :raises: ParameterUninitializedException if the parameter is statically typed and
+            uninitialized.
         """
         if self.has_parameter(name):
-            return self._parameters[name]
+            parameter = self._parameters[name]
+            if (
+                parameter.type_ != Parameter.Type.NOT_SET or
+                self._descriptors[name].dynamic_typing
+            ):
+                return self._parameters[name]
+            # Statically typed, uninitialized parameter
+            raise ParameterUninitializedException(name)
         elif self._allow_undeclared_parameters:
             return Parameter(name, Parameter.Type.NOT_SET, None)
         else:
@@ -595,12 +603,20 @@ class Node:
 
         :param name: Fully-qualified name of the parameter, including its namespace.
         :param alternative_value: Alternative parameter to get if it had not been declared before.
-        :return: Requested parameter, or alternative value if it hadn't been declared before.
+        :return: Requested parameter, or alternative value if it hadn't been declared before or is
+          an uninitialized statically typed parameter.
         """
         if alternative_value is None:
             alternative_value = Parameter(name, Parameter.Type.NOT_SET)
 
-        return self._parameters.get(name, alternative_value)
+        if not self.has_parameter(name):
+            return alternative_value
+
+        # Return alternative for uninitialized parameters
+        if (self._parameters[name].type_ == Parameter.Type.NOT_SET):
+            return alternative_value
+
+        return self._parameters[name]
 
     def get_parameters_by_prefix(self, prefix: str) -> Dict[str, Optional[Union[
         bool, int, float, str, bytes,
@@ -941,7 +957,16 @@ class Node:
 
         if descriptor.dynamic_typing:
             descriptor.type = parameter.type_.value
-        elif descriptor.type != parameter.type_.value:
+        # If this parameter has already been declared, do not allow undeclaring it
+        elif self.has_parameter(parameter.name) and parameter.type_ == Parameter.Type.NOT_SET:
+            return SetParametersResult(
+                successful=False,
+                reason='Static parameter cannot be undeclared'
+            )
+        elif (
+            parameter.type_ != Parameter.Type.NOT_SET and
+            parameter.type_.value != descriptor.type
+        ):
             return SetParametersResult(
                 successful=False,
                 reason=(

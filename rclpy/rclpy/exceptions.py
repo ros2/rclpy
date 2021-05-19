@@ -132,13 +132,13 @@ class ParameterImmutableException(ParameterException):
         Exception.__init__(self, 'Attempted to modify read-only parameter', parameter, *args)
 
 
-class NoParameterOverrideProvidedException(ParameterException):
-    """Raised when no override is provided for a statically typed parameter with no default."""
+class ParameterUninitializedException(ParameterException):
+    """Raised when an uninitialized parameter is accessed."""
 
     def __init__(self, parameter_name, *args):
         Exception.__init__(
             self,
-            f"No parameter override provided for '{parameter_name}' when one was expected",
+            f"The parameter '{parameter_name}' is not initialized",
             *args)
 
 
