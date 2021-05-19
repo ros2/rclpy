@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.0 (2021-05-19)
+------------------
+* Allow declaring uninitialized parameters (`#798 <https://github.com/ros2/rclpy/issues/798>`_)
+* Reject cancel request if failed to transit to CANCEL_GOAL state (`#791 <https://github.com/ros2/rclpy/issues/791>`_)
+* Deleted handle as it should no longer be used (`#786 <https://github.com/ros2/rclpy/issues/786>`_)
+* Removed some functions in common.c and replaced them in utils.cpp (`#787 <https://github.com/ros2/rclpy/issues/787>`_)
+* Moved exception.cpp/hpp to the _rclpy_pybind11 module (`#788 <https://github.com/ros2/rclpy/issues/788>`_)
+* Contributors: Alejandro Hernández Cordero, Jacob Perron, Tomoya Fujita
+
 2.0.0 (2021-05-10)
 ------------------
 * Print 'Infinite' for infinite durations in topic endpoint info (`#722 <https://github.com/ros2/rclpy/issues/722>`_)
