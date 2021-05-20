@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Allow declaring uninitialized statically typed parameters. (`#798 <https://github.com/ros2/rclpy/issues/798>`_) (`#799 <https://github.com/ros2/rclpy/issues/799>`_)
+* Reject cancel request if failed to transit to CANCEL_GOAL state. (`#791 <https://github.com/ros2/rclpy/issues/791>`_) (`#795 <https://github.com/ros2/rclpy/issues/795>`_)
+* Contributors: Jacob Perron, Tomoya Fujita
+
 1.8.2 (2021-05-10)
 ------------------
 * Break log function execution ASAP if configured severity is too high (`#776 <https://github.com/ros2/rclpy/issues/776>`_) (`#783 <https://github.com/ros2/rclpy/issues/783>`_)
