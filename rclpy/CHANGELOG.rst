@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.9.0 (2021-05-20)
+------------------
 * Allow declaring uninitialized statically typed parameters. (`#798 <https://github.com/ros2/rclpy/issues/798>`_) (`#799 <https://github.com/ros2/rclpy/issues/799>`_)
 * Reject cancel request if failed to transit to CANCEL_GOAL state. (`#791 <https://github.com/ros2/rclpy/issues/791>`_) (`#795 <https://github.com/ros2/rclpy/issues/795>`_)
 * Contributors: Jacob Perron, Tomoya Fujita
