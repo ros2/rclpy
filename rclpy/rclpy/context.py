@@ -101,8 +101,8 @@ class Context:
         # imported locally to avoid loading extensions on module import
         with self.__context, self._lock:
             self.__context.shutdown()
-        self._call_on_shutdown_callbacks()
-        self._logging_fini()
+            self._call_on_shutdown_callbacks()
+            self._logging_fini()
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
@@ -111,6 +111,7 @@ class Context:
             if self.__context.ok():
                 self.__context.shutdown()
                 self._call_on_shutdown_callbacks()
+                self._logging_fini()
 
     def _remove_callback(self, weak_method):
         self._callbacks.remove(weak_method)
@@ -126,18 +127,18 @@ class Context:
                 self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
 
     def _logging_fini(self):
+        # This function must be called with self._lock held.
         from rclpy.impl.implementation_singleton import rclpy_implementation
         global g_logging_ref_count
-        with self._lock:
-            if self._logging_initialized:
-                with g_logging_configure_lock:
-                    g_logging_ref_count -= 1
-                    if g_logging_ref_count == 0:
-                        rclpy_implementation.rclpy_logging_fini()
-                    if g_logging_ref_count < 0:
-                        raise RuntimeError(
-                            'Unexpected error: logger ref count should never be lower that zero')
-                self._logging_initialized = False
+        if self._logging_initialized:
+            with g_logging_configure_lock:
+                g_logging_ref_count -= 1
+                if g_logging_ref_count == 0:
+                    rclpy_implementation.rclpy_logging_fini()
+                if g_logging_ref_count < 0:
+                    raise RuntimeError(
+                        'Unexpected error: logger ref count should never be lower that zero')
+            self._logging_initialized = False
 
     def get_domain_id(self):
         """Get domain id of context."""
