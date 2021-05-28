@@ -290,8 +290,7 @@ _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpo
 {
   py::list py_endpoint_gid = py::list(RMW_GID_STORAGE_SIZE);
   for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
-    py::object py_val_at_index = py::int_(topic_endpoint_info->endpoint_gid[i]);
-    py_endpoint_gid[i] = py_val_at_index;
+    py_endpoint_gid[i] = py::int_(topic_endpoint_info->endpoint_gid[i]);
   }
 
   // Create dictionary that represents rmw_topic_endpoint_info_t

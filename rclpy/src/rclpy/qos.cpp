@@ -118,19 +118,6 @@ create_qos_profile(
   return qos_profile;
 }
 
-// Convert a a rmw_qos_profile_t instance to a dictionary.
-/**
- * This function is exposed to facilitate testing profile type conversion.
- *
- * \param[in] qos_profile an rmw_qos_profile_t instance
- * \return a dictionary suitable for rclpy.qos.QoSProfile instantiation.
- */
-py::dict
-convert_qos_profile_to_dict(const rmw_qos_profile_t & qos_profile)
-{
-  return convert_to_qos_dict(&qos_profile);
-}
-
 // Fetch a predefined rmw_qos_profile_t instance.
 /**
  * Raises InvalidArgument if the given \p qos_profile_name is unknown.
@@ -175,7 +162,7 @@ define_rmw_qos_profile(py::object module)
 {
   py::class_<rmw_qos_profile_t>(module, "rmw_qos_profile_t")
   .def(py::init<>(&create_qos_profile))
-  .def("to_dict", &convert_qos_profile_to_dict)
+  .def("to_dict", &convert_to_qos_dict)
   .def_static("predefined", &predefined_qos_profile_from_name);
 }
 
