@@ -21,7 +21,6 @@
 
 #include <memory>
 
-#include "rclpy_common/common.h"
 #include "publisher.hpp"
 
 namespace py = pybind11;
@@ -129,6 +128,24 @@ throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args);
  */
 py::dict
 rclpy_action_get_rmw_qos_profile(const char * rmw_profile);
+
+/// Convert a C rmw_topic_endpoint_info_array_t into a Python list.
+/**
+ * Raises RuntimeError if the rmw_profile profile is null.
+ *
+ * \param[in] info_array a pointer to a rmw_topic_endpoint_info_array_t
+ * \return Python list
+ */
+py::list
+convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array);
+
+/// Convert a C rmw_qos_profile_t into a Python dictionary with qos profile args.
+/**
+ * \param[in] profile Pointer to a rmw_qos_profile_t to convert
+ * \return Python dictionary
+ */
+py::dict
+convert_to_qos_dict(const rmw_qos_profile_t * qos_profile);
 }  // namespace rclpy
 
 #endif  // RCLPY__UTILS_HPP_

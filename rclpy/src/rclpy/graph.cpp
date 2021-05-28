@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Include pybind11 before rclpy_common/handle.h includes Python.h
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
@@ -22,9 +21,6 @@
 
 #include <memory>
 #include <string>
-
-#include "rclpy_common/common.h"
-#include "rclpy_common/handle.h"
 
 #include "exceptions.hpp"
 #include "graph.hpp"
@@ -258,8 +254,7 @@ _get_info_by_topic(
             std::string("Failed to get information by topic for ") + type);
   }
 
-  return py::reinterpret_steal<py::list>(
-    rclpy_convert_to_py_topic_endpoint_info_list(&info_array));
+  return convert_to_py_topic_endpoint_info_list(&info_array);
 }
 
 py::list

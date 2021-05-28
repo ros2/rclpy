@@ -25,9 +25,6 @@
 #include <string>
 #include <vector>
 
-#include "rclpy_common/common.h"
-#include "rclpy_common/handle.h"
-
 #include "exceptions.hpp"
 #include "utils.hpp"
 
@@ -277,14 +274,87 @@ throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
 py::dict
 rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
 {
-  PyObject * pyqos_profile = NULL;
+  py::dict pyqos_profile;
   if (0 == strcmp(rmw_profile, "rcl_action_qos_profile_status_default")) {
-    pyqos_profile = rclpy_common_convert_to_qos_dict(&rcl_action_qos_profile_status_default);
+    pyqos_profile = convert_to_qos_dict(&rcl_action_qos_profile_status_default);
   } else {
     std::string error_text = "Requested unknown rmw_qos_profile: ";
     error_text += rmw_profile;
     throw std::runtime_error(error_text);
   }
-  return py::reinterpret_steal<py::dict>(pyqos_profile);
+  return pyqos_profile;
+}
+
+py::dict
+_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpoint_info)
+{
+  py::list py_endpoint_gid = py::list(RMW_GID_STORAGE_SIZE);
+  for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
+    py_endpoint_gid[i] = py::int_(topic_endpoint_info->endpoint_gid[i]);
+  }
+
+  // Create dictionary that represents rmw_topic_endpoint_info_t
+  py::dict py_endpoint_info_dict;
+  // Populate keyword arguments
+  // A success returns 0, and a failure returns -1
+  py_endpoint_info_dict["node_name"] = py::str(topic_endpoint_info->node_name);
+  py_endpoint_info_dict["node_namespace"] = py::str(topic_endpoint_info->node_namespace);
+  py_endpoint_info_dict["topic_type"] = py::str(topic_endpoint_info->topic_type);
+  py_endpoint_info_dict["endpoint_type"] =
+    py::int_(static_cast<int>(topic_endpoint_info->endpoint_type));
+  py_endpoint_info_dict["endpoint_gid"] = py_endpoint_gid;
+  py_endpoint_info_dict["qos_profile"] =
+    convert_to_qos_dict(&topic_endpoint_info->qos_profile);
+
+  return py_endpoint_info_dict;
+}
+
+py::list
+convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array)
+{
+  if (!info_array) {
+    throw std::runtime_error("rmw_topic_endpoint_info_array_t pointer is empty");
+  }
+
+  py::list py_info_array(info_array->size);
+
+  for (size_t i = 0; i < info_array->size; ++i) {
+    rmw_topic_endpoint_info_t topic_endpoint_info = info_array->info_array[i];
+    // add this dict to the list
+    py_info_array[i] = _convert_to_py_topic_endpoint_info(&topic_endpoint_info);
+  }
+  return py_info_array;
+}
+
+static
+py::object
+_convert_rmw_time_to_py_duration(const rmw_time_t * duration)
+{
+  auto pyduration_module = py::module::import("rclpy.duration");
+  py::object pymetaclass = pyduration_module.attr("Duration");
+  // to bring in the `_a` literal
+  using namespace pybind11::literals;  // NOLINT
+  return pymetaclass("seconds"_a = duration->sec, "nanoseconds"_a = duration->nsec);
+}
+
+py::dict
+convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
+{
+  // Create dictionary and populate arguments with QoSProfile object
+  py::dict pyqos_kwargs;
+
+  pyqos_kwargs["depth"] = py::int_(qos_profile->depth);
+  pyqos_kwargs["history"] = py::int_(static_cast<int>(qos_profile->history));
+  pyqos_kwargs["reliability"] = py::int_(static_cast<int>(qos_profile->reliability));
+  pyqos_kwargs["durability"] = py::int_(static_cast<int>(qos_profile->durability));
+  pyqos_kwargs["lifespan"] = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
+  pyqos_kwargs["deadline"] = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
+  pyqos_kwargs["liveliness"] = py::int_(static_cast<int>(qos_profile->liveliness));
+  pyqos_kwargs["liveliness_lease_duration"] = _convert_rmw_time_to_py_duration(
+    &qos_profile->liveliness_lease_duration);
+  pyqos_kwargs["avoid_ros_namespace_conventions"] =
+    py::bool_(qos_profile->avoid_ros_namespace_conventions);
+
+  return pyqos_kwargs;
 }
 }  // namespace rclpy
