@@ -120,10 +120,10 @@ class Context:
         """Add a callback to be called on shutdown."""
         if not callable(callback):
             raise TypeError('callback should be a callable, got {}', type(callback))
-        with self._callbacks_lock:
-            if not self.ok():
-                callback()
-            else:
+        if not self.ok():
+            callback()
+        else:
+            with self._callbacks_lock:
                 self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
 
     def _logging_fini(self):
