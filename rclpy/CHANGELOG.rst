@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.1 (2021-06-11)
+------------------
+* Removed common.c/h (`#789 <https://github.com/ros2/rclpy/issues/789>`_)
+* Contributors: Alejandro Hernández Cordero
+
 3.0.0 (2021-05-19)
 ------------------
 * Allow declaring uninitialized parameters (`#798 <https://github.com/ros2/rclpy/issues/798>`_)
