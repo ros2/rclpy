@@ -131,7 +131,7 @@ target_link_libraries(rclpy_common PUBLIC
 )
 
 if(NOT APPLE)
-  target_link_libraries(rclpy_common ${PYTHON_LIBRARIES})
+  target_link_libraries(rclpy_common PUBLIC ${PYTHON_LIBRARIES})
 else()
   set_target_properties(rclpy_common PROPERTIES
                         LINK_FLAGS "-undefined dynamic_lookup")
