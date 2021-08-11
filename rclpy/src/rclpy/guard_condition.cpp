@@ -84,9 +84,6 @@ void define_guard_condition(py::object module)
     "Get the address of the entity as an integer")
   .def(
     "trigger_guard_condition", &GuardCondition::trigger_guard_condition,
-    "Trigger a general purpose guard condition")
-  .def(
-    "pycapsule", &GuardCondition::pycapsule,
-    "Return a pycapsule object with the guardcondition pointer");
+    "Trigger a general purpose guard condition");
 }
 }  // namespace rclpy

@@ -97,35 +97,10 @@ function(configure_build_install_location _library_name)
   )
 endfunction()
 
-add_library(rclpy_common SHARED
-  src/rclpy_common/src/handle.c
-)
-target_link_libraries(rclpy_common PUBLIC
-  pybind11::pybind11
-  ${PYTHON_LIBRARIES}
-  rcl::rcl
-  rmw::rmw
-)
-target_include_directories(rclpy_common PUBLIC
-  src/rclpy_common/include
-)
-
-# Causes the visibility macros to use dllexport rather than dllimport,
-# which is appropriate when building the dll but not consuming it.
-target_compile_definitions(rclpy_common PRIVATE "RCLPY_COMMON_BUILDING_DLL")
-
-install(TARGETS rclpy_common
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
-
 # Split from main extension and converted to pybind11
 pybind11_add_module(_rclpy_pybind11 SHARED
-  src/rclpy/_rclpy_handle.cpp
   src/rclpy/_rclpy_logging.cpp
   src/rclpy/_rclpy_pybind11.cpp
-  src/rclpy/_rclpy_pycapsule.cpp
   src/rclpy/action_client.cpp
   src/rclpy/action_goal_handle.cpp
   src/rclpy/action_server.cpp
@@ -160,7 +135,6 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rcl::rcl
   rcl_action::rcl_action
   rcl_logging_interface::rcl_logging_interface
-  rclpy_common
   rcpputils::rcpputils
   rcutils::rcutils
 )
@@ -196,11 +170,6 @@ if(BUILD_TESTING)
     # On Windows prevent CMake errors and prevent it being evaluated as a list.
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
-
-  ament_add_gtest(test_c_handle
-    src/test/rclpy_common/test_handle.cpp)
-  target_link_libraries(test_c_handle
-    rclpy_common)
 
   ament_add_gtest(test_python_allocator
     test/test_python_allocator.cpp)

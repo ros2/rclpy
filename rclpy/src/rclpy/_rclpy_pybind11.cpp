@@ -28,13 +28,11 @@
 #include "exceptions.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
-#include "handle_api.hpp"
 #include "logging.hpp"
 #include "logging_api.hpp"
 #include "names.hpp"
 #include "node.hpp"
 #include "publisher.hpp"
-#include "pycapsule_api.hpp"
 #include "qos.hpp"
 #include "qos_event.hpp"
 #include "serialization.hpp"
@@ -228,8 +226,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_logging_configure", rclpy::logging_configure,
     "Initialize RCL logging.");
 
-  rclpy::define_pycapsule_api(m);
-  rclpy::define_handle_api(m);
   rclpy::define_logging_api(m);
   rclpy::define_signal_handler_api(m);
 }
