@@ -38,6 +38,7 @@ class Context:
         self._callbacks = []
         self._callbacks_lock = threading.Lock()
         self._logging_initialized = False
+        self.__context = None
 
     @property
     def handle(self):
@@ -65,28 +66,27 @@ class Context:
                 raise RuntimeError(
                     'Domain id ({}) should not be lower than zero.'
                     .format(domain_id))
-            try:
-                if self.__context is not None:
-                    raise RuntimeError
-            except AttributeError:
-                self.__context = _rclpy.Context(
-                    args if args is not None else sys.argv,
-                    domain_id if domain_id is not None else _rclpy.RCL_DEFAULT_DOMAIN_ID)
-                if initialize_logging and not self._logging_initialized:
-                    with g_logging_configure_lock:
-                        g_logging_ref_count += 1
-                        if g_logging_ref_count == 1:
-                            _rclpy.rclpy_logging_configure(self.__context)
-                    self._logging_initialized = True
+
+            if self.__context is not None:
+                raise RuntimeError('Context.init() must only be called once')
+
+            self.__context = _rclpy.Context(
+                args if args is not None else sys.argv,
+                domain_id if domain_id is not None else _rclpy.RCL_DEFAULT_DOMAIN_ID)
+            if initialize_logging and not self._logging_initialized:
+                with g_logging_configure_lock:
+                    g_logging_ref_count += 1
+                    if g_logging_ref_count == 1:
+                        _rclpy.rclpy_logging_configure(self.__context)
+                self._logging_initialized = True
 
     def ok(self):
         """Check if context hasn't been shut down."""
-        # imported locally to avoid loading extensions on module import
-        try:
-            with self.__context, self._lock:
+        with self._lock:
+            if self.__context is None:
+                return False
+            with self.__context:
                 return self.__context.ok()
-        except AttributeError:
-            return False
 
     def _call_on_shutdown_callbacks(self):
         with self._callbacks_lock:
@@ -98,7 +98,8 @@ class Context:
 
     def shutdown(self):
         """Shutdown this context."""
-        # imported locally to avoid loading extensions on module import
+        if self.__context is None:
+            raise RuntimeError('Context must be initialized before it can be shutdown')
         with self.__context, self._lock:
             self.__context.shutdown()
         self._call_on_shutdown_callbacks()
@@ -106,7 +107,8 @@ class Context:
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
-        # imported locally to avoid loading extensions on module import
+        if self.__context is None:
+            return
         with self.__context, self._lock:
             if self.__context.ok():
                 self.__context.shutdown()
@@ -141,5 +143,7 @@ class Context:
 
     def get_domain_id(self):
         """Get domain id of context."""
+        if self.__context is None:
+            raise RuntimeError('Context must be initialized before it can have a domain id')
         with self.__context, self._lock:
             return self.__context.get_domain_id()
