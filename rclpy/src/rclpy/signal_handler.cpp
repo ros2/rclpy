@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <Python.h>
-#include <signal.h>
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
+
+#include <csignal>
+
+#include <atomic>
 
 #include "rcl/error_handling.h"
 #include "rcl/rcl.h"
 
-#include "rclpy_common/handle.h"
-
 #include "rcutils/allocator.h"
-#include "rcutils/stdatomic_helper.h"
+
+
+#include "guard_condition.hpp"
 
 #if __APPLE__ || _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE
 
@@ -165,28 +170,10 @@ register_sigint_signal_handler()
     install_signal_handler(SIGINT, get_rclpy_sigint_handler());
 }
 
-typedef _Atomic (rcl_guard_condition_t **) atomic_rcl_guard_condition_ptrptr_t;
-
 /// Global reference to guard conditions
 /// End with sentinel value instead of count to avoid mismatch if signal
 /// interrupts while adding or removing from the list
-atomic_rcl_guard_condition_ptrptr_t g_guard_conditions;
-
-/// Warn if getting g_guard_conditions could deadlock the signal handler
-/// \return 0 if no exception is raised, -1 if an exception was raised
-static int
-check_signal_safety()
-{
-  static bool did_warn = false;
-  if (!did_warn && !atomic_is_lock_free(&g_guard_conditions)) {
-    did_warn = true;
-    const char * deadlock_msg =
-      "Global guard condition list access is not lock-free on this platform."
-      "The program may deadlock when receiving SIGINT.";
-    return PyErr_WarnEx(PyExc_ResourceWarning, deadlock_msg, 1);
-  }
-  return 0;
-}
+std::atomic<rcl_guard_condition_t **> g_guard_conditions;
 
 /// Trigger all registered guard conditions
 /**
@@ -197,8 +184,7 @@ check_signal_safety()
 static bool
 trigger_guard_conditions()
 {
-  rcl_guard_condition_t ** guard_conditions;
-  rcutils_atomic_load(&g_guard_conditions, guard_conditions);
+  rcl_guard_condition_t ** guard_conditions = g_guard_conditions.load();
   if (!guard_conditions || !guard_conditions[0]) {
     return false;
   }
@@ -216,43 +202,45 @@ trigger_guard_conditions()
   return true;
 }
 
+namespace rclpy
+{
+/// Warn if getting g_guard_conditions could deadlock the signal handler
+void
+check_signal_safety()
+{
+  static bool did_warn = false;
+  if (!did_warn && !g_guard_conditions.is_lock_free()) {
+    did_warn = true;
+    const char * deadlock_msg =
+      "Global guard condition list access is not lock-free on this platform."
+      "The program may deadlock when receiving SIGINT.";
+    if (PyErr_WarnEx(PyExc_ResourceWarning, deadlock_msg, 1)) {
+      throw py::error_already_set();
+    }
+  }
+}
+
 /// Register a guard condition to be triggered when SIGINT is received.
 /**
- * Raises ValueError if the argument is not a guard condition handle
  * Raises ValueError if the argument was already registered
  *
- * \param[in] pygc a guard condition pycapsule
+ * \param[in] guard_condition a guard condition
  * \return None
  */
-static PyObject *
-rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
+void
+register_sigint_guard_condition(const GuardCondition & guard_condition)
 {
-  // Expect a pycapsule with a guard condition
-  PyObject * pygc;
-  if (!PyArg_ParseTuple(args, "O", &pygc)) {
-    return NULL;
-  }
+  check_signal_safety();
 
-  if (0 != check_signal_safety()) {
-    // exception raised
-    return NULL;
-  }
-
-  rcl_guard_condition_t * gc = rclpy_handle_get_pointer_from_capsule(pygc, "rcl_guard_condition_t");
-  if (!gc) {
-    return NULL;
-  }
-
-  rcl_guard_condition_t ** guard_conditions;
-  rcutils_atomic_load(&g_guard_conditions, guard_conditions);
+  rcl_guard_condition_t * gc = guard_condition.rcl_ptr();
+  rcl_guard_condition_t ** guard_conditions = g_guard_conditions.load();
 
   // Figure out how big the list currently is
   size_t count_gcs = 0;
   if (NULL != guard_conditions) {
     while (NULL != guard_conditions[count_gcs]) {
       if (gc == guard_conditions[count_gcs]) {
-        PyErr_Format(PyExc_ValueError, "Guard condition was already registered");
-        return NULL;
+        throw py::value_error("Guard condition was already registered");
       }
       ++count_gcs;
     }
@@ -261,8 +249,8 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
   // Current size of guard condition list: count_gcs + 1 (sentinel value)
   // Allocate space for one more guard condition: count_cs + 1 (new gc) + 1 (sentinel value)
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_guard_condition_t ** new_gcs =
-    allocator.allocate(sizeof(rcl_guard_condition_t *) * (count_gcs + 2), allocator.state);
+  auto new_gcs = static_cast<rcl_guard_condition_t **>(
+    allocator.allocate(sizeof(rcl_guard_condition_t *) * (count_gcs + 2), allocator.state));
 
   // populate the new guard condition list, ending with a sentinel of NULL
   for (size_t i = 0; i < count_gcs; ++i) {
@@ -272,42 +260,27 @@ rclpy_register_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * arg
   new_gcs[count_gcs + 1] = NULL;
 
   // Swap the lists and free the old
-  rcl_guard_condition_t ** old_gcs;
-  rcutils_atomic_exchange(&g_guard_conditions, old_gcs, new_gcs);
+  rcl_guard_condition_t ** old_gcs = g_guard_conditions.exchange(new_gcs);
   if (NULL != old_gcs) {
     allocator.deallocate(old_gcs, allocator.state);
   }
 
   // make sure our signal handler is registered
   register_sigint_signal_handler();
-
-  Py_RETURN_NONE;
 }
 
 /// Unregister a guard condition so it is not triggered when SIGINT is received.
 /**
- * Raises ValueError if the argument is not a guard condition handle
  * Raises ValueError if the argument was not registered
  *
- * \param[in] pygc a guard condition pycapsule
+ * \param[in] guard_condition a guard condition
  * \return None
  */
-static PyObject *
-rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * args)
+void
+unregister_sigint_guard_condition(const GuardCondition & guard_condition)
 {
-  // Expect a pycapsule with a guard condition
-  PyObject * pygc;
-  if (!PyArg_ParseTuple(args, "O", &pygc)) {
-    return NULL;
-  }
-
-  rcl_guard_condition_t * gc = rclpy_handle_get_pointer_from_capsule(pygc, "rcl_guard_condition_t");
-  if (!gc) {
-    return NULL;
-  }
-
-  rcl_guard_condition_t ** guard_conditions;
-  rcutils_atomic_load(&g_guard_conditions, guard_conditions);
+  rcl_guard_condition_t * gc = guard_condition.rcl_ptr();
+  rcl_guard_condition_t ** guard_conditions = g_guard_conditions.load();
 
   // Figure out how big the list currently is
   size_t count_gcs = 0;
@@ -326,16 +299,14 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
   }
 
   if (!found_gc) {
-    PyErr_Format(PyExc_ValueError, "Guard condition was not registered");
-    return NULL;
+    throw py::value_error("Guard condition was not registered");
   }
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
 
   if (count_gcs == 1) {
     // Just delete the list if there are no guard conditions left
-    rcl_guard_condition_t ** old_gcs;
-    rcutils_atomic_exchange(&g_guard_conditions, old_gcs, NULL);
+    rcl_guard_condition_t ** old_gcs = g_guard_conditions.exchange(NULL);
     allocator.deallocate(old_gcs, allocator.state);
     unregister_sigint_signal_handler();
   } else {
@@ -343,8 +314,8 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     // current list size: count_gcs + 1 (sentinel)
     // new list size: count_gcs - 1 (removing a guard condition) + 1 (sentinel)
     rcl_allocator_t allocator = rcl_get_default_allocator();
-    rcl_guard_condition_t ** new_gcs =
-      allocator.allocate(sizeof(rcl_guard_condition_t *) * (count_gcs), allocator.state);
+    auto new_gcs = static_cast<rcl_guard_condition_t **>(
+      allocator.allocate(sizeof(rcl_guard_condition_t *) * (count_gcs), allocator.state));
 
     // Put remaining guard conditions in the list, ending with a sentinel of NULL
     for (size_t i = 0; i < found_index; ++i) {
@@ -359,49 +330,21 @@ rclpy_unregister_sigint_guard_condition(PyObject * Py_UNUSED(self), PyObject * a
     new_gcs[count_gcs] = NULL;
 
     // Replace guard condition list
-    rcl_guard_condition_t ** old_gcs;
-    rcutils_atomic_exchange(&g_guard_conditions, old_gcs, new_gcs);
+    rcl_guard_condition_t ** old_gcs = g_guard_conditions.exchange(new_gcs);
     allocator.deallocate(old_gcs, allocator.state);
   }
-
-  Py_RETURN_NONE;
 }
 
-/// Define the public methods of this module
-static PyMethodDef rclpy_signal_handler_methods[] = {
-  {
-    "rclpy_register_sigint_guard_condition", rclpy_register_sigint_guard_condition,
-    METH_VARARGS,
-    "Register a guard condition to be called on SIGINT."
-  },
-  {
-    "rclpy_unregister_sigint_guard_condition", rclpy_unregister_sigint_guard_condition,
-    METH_VARARGS,
-    "Stop triggering a guard condition when SIGINT occurs."
-  },
-  {NULL, NULL, 0, NULL}  /* sentinel */
-};
-
-PyDoc_STRVAR(
-  rclpy_signal_handler__doc__, "RCLPY module for handling signals.");
-
-/// Define the Python module
-static struct PyModuleDef _rclpy_signal_handler_module = {
-  PyModuleDef_HEAD_INIT,
-  "_rclpy_signal_handler",
-  rclpy_signal_handler__doc__,
-  -1,  /* -1 means that the module keeps state in global variables */
-  rclpy_signal_handler_methods,
-  NULL,
-  NULL,
-  NULL,
-  NULL
-};
-
-/// Init function of this module
-PyMODINIT_FUNC PyInit__rclpy_signal_handler(void)
+void
+define_signal_handler_api(py::module m)
 {
-  atomic_init(&g_guard_conditions, NULL);
   g_original_sigint_handler = NULL_SIGNAL_HANDLER;
-  return PyModule_Create(&_rclpy_signal_handler_module);
+
+  m.def(
+    "register_sigint_guard_condition", &rclpy::register_sigint_guard_condition,
+    "Register a guard condition to be called on SIGINT.");
+  m.def(
+    "unregister_sigint_guard_condition", &rclpy::unregister_sigint_guard_condition,
+    "Stop triggering a guard condition when SIGINT occurs.");
 }
+}  // namespace rclpy
