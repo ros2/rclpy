@@ -151,9 +151,8 @@ Publisher::wait_for_all_acked(rcl_duration_t pytimeout)
     return true;
   } else if (RCL_RET_TIMEOUT == ret) {
     return false;
-  } else {
-    throw RCLError("Failed to wait for all acknowledges");
   }
+  throw RCLError("Failed to wait for all acknowledgements");
 }
 
 void
