@@ -112,16 +112,16 @@ public:
   /// Wait until all published message data is acknowledged or until the specified timeout elapses
   /**
    * If the timeout is negative then this function will block indefinitely until all published
-   * message data were acknowledged.
-   * If the timeout is 0 then this function will be non-blocking; checking all published message
-   * data were acknowledged, but not waiting.
-   * If the timeout is greater than 0 then this function will return after that period of time has
-   * elapsed or all published message data were acknowledged.
+   * message data is acknowledged.
+   * If the timeout is 0 then it will check if all published message has been acknowledged without
+   * waiting.
+   * If the timeout is greater than 0 then it will return after that period of time has elapsed or
+   * all published message data is acknowledged.
    *
-   * Raises RCLError if the middleware doesn't support or internal error
+   * Raises RCLError if an error occurs, such as the middleware not supporting this feature.
    *
-   * \param[in] pytimeout the duration to wait for all published message data were acknowledged.
-   * \return `true` if all published message data were acknowledged before timeout, otherwise
+   * \param[in] pytimeout the duration to wait for all published message data to be acknowledged.
+   * \return `true` if all published message data is acknowledged before the timeout, otherwise
    *   `false`.
    */
   bool

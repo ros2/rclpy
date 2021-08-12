@@ -183,6 +183,6 @@ define_publisher(py::object module)
     "Publish a serialized message.")
   .def(
     "wait_for_all_acked", &Publisher::wait_for_all_acked,
-    "Wait all published message data is acknowledged");
+    "Wait until all published message data is acknowledged");
 }
 }  // namespace rclpy

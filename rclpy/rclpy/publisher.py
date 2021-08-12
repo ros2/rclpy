@@ -107,14 +107,14 @@ class Publisher:
         Wait until all published message data is acknowledged or until the timeout elapses.
 
         If the timeout is negative then this function will block indefinitely until all published
-        message data were acknowledged.
-        If the timeout is 0 then this function will be non-blocking; checking all published message
-        data were acknowledged, but not waiting.
-        If the timeout is greater than 0 then this function will return after that period of time
-        has elapsed or all published message data were acknowledged.
+        message data is acknowledged.
+        If the timeout is 0 then it will check if all published message has been acknowledged
+        without waiting.
+        If the timeout is greater than 0 then it will return after that period of time has elapsed
+        or all published message data is acknowledged.
 
-        :param timeout: the duration to wait for all published message data were acknowledged
-        :returns: true if all published message data were acknowledged before timeout, otherwise
+        :param timeout: the duration to wait for all published message data to be acknowledged.
+        :returns: true if all published message data is acknowledged before the timeout, otherwise
             false.
         """
         with self.handle:
