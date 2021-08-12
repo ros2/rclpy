@@ -25,16 +25,6 @@ def setup_ros():
     rclpy.init()
 
 
-def make_mock_subscription(namespace, topic_name, cli_args=None):
-    node = Node('node_name', namespace=namespace, cli_args=cli_args)
-    return node.create_subscription(
-        msg_type=Empty,
-        topic=topic_name,
-        callback=lambda _: None,
-        qos_profile=10,
-    )
-
-
 @pytest.mark.parametrize('topic_name, namespace, expected', [
     # No namespaces
     ('topic', None, '/topic'),
