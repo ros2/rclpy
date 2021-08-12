@@ -147,9 +147,9 @@ bool
 Publisher::wait_for_all_acked(rcl_duration_t pytimeout)
 {
   rcl_ret_t ret = rcl_publisher_wait_for_all_acked(rcl_publisher_.get(), pytimeout.nanoseconds);
-  if (ret == RCL_RET_OK) {
+  if (RCL_RET_OK == ret) {
     return true;
-  } else if (ret == RCL_RET_TIMEOUT) {
+  } else if (RCL_RET_TIMEOUT == ret) {
     return false;
   } else {
     throw RCLError("Failed to wait for all acknowledges");
