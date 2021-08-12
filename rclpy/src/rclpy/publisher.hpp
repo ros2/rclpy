@@ -18,6 +18,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/publisher.h>
+#include <rcl/time.h>
 #include <rmw/types.h>
 
 #include <memory>
