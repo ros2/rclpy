@@ -16,6 +16,7 @@ import time
 import unittest
 
 import rclpy
+from rclpy.duration import Duration
 
 from test_msgs.msg import BasicTypes
 
@@ -76,26 +77,6 @@ class TestPublisher(unittest.TestCase):
             assert publisher.topic_name == target_topic
             publisher.destroy()
 
-    @classmethod
-    def do_test_wait_for_all_acked(cls, test_topic, node, pub_qos, sub_qos):
-        pub = node.create_publisher(BasicTypes, test_topic, pub_qos)
-        sub = node.create_subscription(BasicTypes, test_topic, lambda msg: print(msg), sub_qos)
-        time.sleep(1)
-        assert pub.get_subscription_count() == 1
-        basic_types_msg = BasicTypes()
-        try:
-            pub.publish(basic_types_msg)
-        except Exception:
-            raise AssertionError('Publish data failed')
-
-        try:
-            assert pub.wait_for_all_acked() is True
-        except Exception:
-            raise AssertionError('wait_for_all_acked raise exception')
-
-        pub.destroy()
-        sub.destroy()
-
     def test_topic_name(self):
         test_topics = [
             (TEST_TOPIC, '/' + TEST_TOPIC),
@@ -125,25 +106,27 @@ class TestPublisher(unittest.TestCase):
         TestPublisher.do_test_topic_name(test_topics, self.node)
 
     def test_wait_for_all_acked(self):
-        pub_qos = rclpy.qos.QoSProfile(
+        qos = rclpy.qos.QoSProfile(
             depth=1,
             reliability=rclpy.qos.QoSReliabilityPolicy.RELIABLE)
-        sub_qos = pub_qos
 
-        # Publisher and subscription are all reliable
-        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node, pub_qos, sub_qos)
+        pub = self.node.create_publisher(BasicTypes, TEST_TOPIC, qos)
+        sub = self.node.create_subscription(BasicTypes, TEST_TOPIC, lambda msg: print(msg), qos)
 
-        # Publisher and subscription are all best effort
-        pub_qos.reliability = rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT
-        sub_qos.reliability = rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT
-        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node, pub_qos, sub_qos)
+        max_seconds_to_wait = 1
+        end_time = time.time() + max_seconds_to_wait
+        while pub.get_subscription_count() != 1:
+            time.sleep(0.05)
+            assert time.time() <= end_time  # timeout waiting for pub/sub to discover each other
+        assert pub.get_subscription_count() == 1
 
-        # Publisher is reliable and subscription is best effort
-        pub_qos.reliability = rclpy.qos.QoSReliabilityPolicy.RELIABLE
-        TestPublisher.do_test_wait_for_all_acked(TEST_TOPIC, self.node, pub_qos, sub_qos)
+        basic_types_msg = BasicTypes()
+        pub.publish(basic_types_msg)
 
-        # Publisher is best effort and subscription is reliable
-        # Not work.
+        assert pub.wait_for_all_acked(Duration(seconds=max_seconds_to_wait))
+
+        pub.destroy()
+        sub.destroy()
 
 
 if __name__ == '__main__':
