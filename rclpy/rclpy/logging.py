@@ -13,26 +13,11 @@
 # limitations under the License.
 
 
-from enum import IntEnum
 from pathlib import Path
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.logging_severity import LoggingSeverity
 import rclpy.impl.rcutils_logger
-
-
-class LoggingSeverity(IntEnum):
-    """
-    Enum for logging severity levels.
-
-    This enum must match the one defined in rcutils/logging.h
-    """
-
-    UNSET = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_UNSET
-    DEBUG = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_DEBUG
-    INFO = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_INFO
-    WARN = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_WARN
-    ERROR = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_ERROR
-    FATAL = _rclpy.RCUTILS_LOG_SEVERITY.RCUTILS_LOG_SEVERITY_FATAL
 
 
 _root_logger = rclpy.impl.rcutils_logger.RcutilsLogger()
