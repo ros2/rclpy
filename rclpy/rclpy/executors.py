@@ -288,6 +288,9 @@ class Executor:
             end = start + timeout_sec
             timeout_left = timeout_sec
 
+            # Make sure the future wakes this executor when it is done
+            future.add_done_callback(lambda x: self.wake())
+
             while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once_until_future_complete(future, timeout_left)
                 now = time.monotonic()
@@ -754,5 +757,4 @@ class MultiThreadedExecutor(Executor):
         self._spin_once_impl(timeout_sec)
 
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
-        future.add_done_callback(lambda x: self.wake())
         self._spin_once_impl(timeout_sec, future.done)
