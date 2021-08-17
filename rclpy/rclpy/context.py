@@ -36,7 +36,6 @@ class Context:
     def __init__(self):
         self._lock = threading.Lock()
         self._callbacks = []
-        self._callbacks_lock = threading.Lock()
         self._logging_initialized = False
 
     @property
@@ -89,12 +88,11 @@ class Context:
             return False
 
     def _call_on_shutdown_callbacks(self):
-        with self._callbacks_lock:
-            for weak_method in self._callbacks:
-                callback = weak_method()
-                if callback is not None:
-                    callback()
-            self._callbacks = []
+        for weak_method in self._callbacks:
+            callback = weak_method()
+            if callback is not None:
+                callback()
+        self._callbacks = []
 
     def shutdown(self):
         """Shutdown this context."""
@@ -124,8 +122,7 @@ class Context:
             if not self.__context.ok():
                 callback()
             else:
-                with self._callbacks_lock:
-                    self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
+                self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
 
     def _logging_fini(self):
         # This function must be called with self._lock held.
