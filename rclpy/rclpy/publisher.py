@@ -112,6 +112,8 @@ class Publisher:
         without waiting.
         If the timeout is greater than 0 then it will return after that period of time has elapsed
         or all published message data is acknowledged.
+        This function only waits for acknowledgments if the publisher's QOS profile is RELIABLE.
+        Otherwise this function will immediately return true.
 
         :param timeout: the duration to wait for all published message data to be acknowledged.
         :returns: true if all published message data is acknowledged before the timeout, otherwise
