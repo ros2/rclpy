@@ -172,3 +172,39 @@ class Parameter:
 
     def to_parameter_msg(self):
         return ParameterMsg(name=self.name, value=self.get_parameter_value())
+
+
+def parameter_value_to_python(parameter_value: ParameterValue):
+    """
+    Get the Python value from a rcl_interfaces/msg/ParameterValue object.
+
+    Returns the value member of the message based on the ``type`` member.
+    Returns ``None`` if the parameter is "NOT_SET".
+
+    :param parameter_value: The message to get the value from.
+    :raises RuntimeError: if the member ``type`` has an unexpected value.
+    """
+    if parameter_value.type == ParameterType.PARAMETER_BOOL:
+        value = parameter_value.bool_value
+    elif parameter_value.type == ParameterType.PARAMETER_INTEGER:
+        value = parameter_value.integer_value
+    elif parameter_value.type == ParameterType.PARAMETER_DOUBLE:
+        value = parameter_value.double_value
+    elif parameter_value.type == ParameterType.PARAMETER_STRING:
+        value = parameter_value.string_value
+    elif parameter_value.type == ParameterType.PARAMETER_BYTE_ARRAY:
+        value = list(parameter_value.byte_array_value)
+    elif parameter_value.type == ParameterType.PARAMETER_BOOL_ARRAY:
+        value = list(parameter_value.bool_array_value)
+    elif parameter_value.type == ParameterType.PARAMETER_INTEGER_ARRAY:
+        value = list(parameter_value.integer_array_value)
+    elif parameter_value.type == ParameterType.PARAMETER_DOUBLE_ARRAY:
+        value = list(parameter_value.double_array_value)
+    elif parameter_value.type == ParameterType.PARAMETER_STRING_ARRAY:
+        value = list(parameter_value.string_array_value)
+    elif parameter_value.type == ParameterType.PARAMETER_NOT_SET:
+        value = None
+    else:
+        raise RuntimeError(f'unexpected parameter type {parameter_value.type}')
+
+    return value
