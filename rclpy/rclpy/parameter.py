@@ -176,7 +176,7 @@ class Parameter:
 
 def parameter_value_to_python(parameter_value: ParameterValue):
     """
-    Get the Python value from a rcl_interfaces/msg/ParameterValue object.
+    Get the value for the Python builtin type from a rcl_interfaces/msg/ParameterValue object.
 
     Returns the value member of the message based on the ``type`` member.
     Returns ``None`` if the parameter is "NOT_SET".
