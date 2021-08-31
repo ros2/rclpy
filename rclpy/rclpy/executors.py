@@ -280,6 +280,9 @@ class Executor:
 
     def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
         """Execute callbacks until a given future is done or a timeout occurs."""
+        # Make sure the future wakes this executor when it is done
+        future.add_done_callback(lambda x: self.wake())
+
         if timeout_sec is None or timeout_sec < 0:
             while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once_until_future_complete(future, timeout_sec)
@@ -287,9 +290,6 @@ class Executor:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = timeout_sec
-
-            # Make sure the future wakes this executor when it is done
-            future.add_done_callback(lambda x: self.wake())
 
             while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once_until_future_complete(future, timeout_left)
