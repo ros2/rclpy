@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.6 (2021-08-31)
+------------------
+* Reject cancel request if failed to transit to CANCEL_GOAL state (`#791 <https://github.com/ros2/rclpy/issues/791>`_) (`#796 <https://github.com/ros2/rclpy/issues/796>`_)
+* Break log function execution ASAP if configured severity is too high (`#776 <https://github.com/ros2/rclpy/issues/776>`_) (`#784 <https://github.com/ros2/rclpy/issues/784>`_)
+* Contributors: Jacob Perron, Tomoya Fujita, ksuszka
+
 1.0.5 (2021-01-05)
 ------------------
 * [documentation] Use only True to avoid confusion in autodoc config
