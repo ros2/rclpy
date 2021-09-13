@@ -18,6 +18,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/publisher.h>
+#include <rcl/time.h>
 #include <rmw/types.h>
 
 #include <memory>
@@ -108,6 +109,24 @@ public:
   /// Force an early destruction of this object
   void
   destroy() override;
+
+  /// Wait until all published message data is acknowledged or until the specified timeout elapses
+  /**
+   * If the timeout is negative then this function will block indefinitely until all published
+   * message data is acknowledged.
+   * If the timeout is 0 then it will check if all published message has been acknowledged without
+   * waiting.
+   * If the timeout is greater than 0 then it will return after that period of time has elapsed or
+   * all published message data is acknowledged.
+   *
+   * Raises RCLError if an error occurs, such as the middleware not supporting this feature.
+   *
+   * \param[in] pytimeout the duration to wait for all published message data to be acknowledged.
+   * \return `true` if all published message data is acknowledged before the timeout, otherwise
+   *   `false`.
+   */
+  bool
+  wait_for_all_acked(rcl_duration_t pytimeout);
 
 private:
   Node node_;

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import unittest
 
 import rclpy
+from rclpy.duration import Duration
 
 from test_msgs.msg import BasicTypes
 
@@ -102,6 +104,29 @@ class TestPublisher(unittest.TestCase):
             (TEST_FQN_TOPIC_FROM, TEST_FQN_TOPIC_TO),
         ]
         TestPublisher.do_test_topic_name(test_topics, self.node)
+
+    def test_wait_for_all_acked(self):
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.QoSReliabilityPolicy.RELIABLE)
+
+        pub = self.node.create_publisher(BasicTypes, TEST_TOPIC, qos)
+        sub = self.node.create_subscription(BasicTypes, TEST_TOPIC, lambda msg: print(msg), qos)
+
+        max_seconds_to_wait = 1
+        end_time = time.time() + max_seconds_to_wait
+        while pub.get_subscription_count() != 1:
+            time.sleep(0.05)
+            assert time.time() <= end_time  # timeout waiting for pub/sub to discover each other
+        assert pub.get_subscription_count() == 1
+
+        basic_types_msg = BasicTypes()
+        pub.publish(basic_types_msg)
+
+        assert pub.wait_for_all_acked(Duration(seconds=max_seconds_to_wait))
+
+        pub.destroy()
+        sub.destroy()
 
 
 if __name__ == '__main__':
