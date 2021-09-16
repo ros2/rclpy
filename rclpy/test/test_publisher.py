@@ -113,7 +113,7 @@ class TestPublisher(unittest.TestCase):
         pub = self.node.create_publisher(BasicTypes, TEST_TOPIC, qos)
         sub = self.node.create_subscription(BasicTypes, TEST_TOPIC, lambda msg: print(msg), qos)
 
-        max_seconds_to_wait = 1
+        max_seconds_to_wait = 5
         end_time = time.time() + max_seconds_to_wait
         while pub.get_subscription_count() != 1:
             time.sleep(0.05)
