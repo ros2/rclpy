@@ -14,8 +14,6 @@
 
 #include <pybind11/pybind11.h>
 
-namespace py = pybind11;
-
 #include <csignal>
 
 #include <atomic>
@@ -25,8 +23,9 @@ namespace py = pybind11;
 
 #include "rcutils/allocator.h"
 
-
 #include "guard_condition.hpp"
+
+namespace py = pybind11;
 
 #if __APPLE__ || _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE
 
