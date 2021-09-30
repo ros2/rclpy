@@ -126,10 +126,17 @@ add_library(rclpy_common SHARED
 )
 target_link_libraries(rclpy_common PUBLIC
   pybind11::pybind11
-  ${PYTHON_LIBRARIES}
   rcl::rcl
   rmw::rmw
 )
+
+if(NOT APPLE)
+  target_link_libraries(rclpy_common PUBLIC ${PYTHON_LIBRARIES})
+else()
+  set_target_properties(rclpy_common PROPERTIES
+                        LINK_FLAGS "-undefined dynamic_lookup")
+endif()
+
 target_include_directories(rclpy_common PUBLIC
   src/rclpy_common/include
 )
