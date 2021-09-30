@@ -12,9 +12,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
+
 from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
+
+class SignalHandlerOptions(Enum):
+    """Enum to indicate which signal handlers to install."""
+
+    # WARN: If this class changes, check also `signal_handler.cpp`
+
+    NO = 0
+    """No signal handler should be installed."""
+
+    SIGINT = 1
+    """Install only a sigint handler."""
+
+    SIGTERM = 2
+    """Install only a sigterm handler."""
+
+    All = 3
+    """Install both a sigint and a sigterm handler."""
+
+
+def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.All):
+    """
+    Install rclpy signal handlers.
+
+    :param options: Indicate if to install sigint, sigterm, both or no signal handler.
+    """
+    return _rclpy.install_signal_handlers(options.value)
+
+
+def get_current_signal_handlers_options():
+    """
+    Get current signal handler options.
+
+    :return: rclpy.signals.SignalHandlerOptions instance.
+    """
+    return SignalHandlerOptions(_rclpy.get_current_signal_handlers_options())
+
+
+def uninstall_signal_handlers():
+    """Uninstall the rclpy signal handlers."""
+    return _rclpy.uninstall_signal_handlers()
 
 
 class SignalHandlerGuardCondition(GuardCondition):

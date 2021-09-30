@@ -121,9 +121,13 @@ install_signal_handler(int signum, SIGNAL_HANDLER_T handler)
 // Forward declarations
 static bool trigger_guard_conditions();
 static void unregister_sigint_signal_handler();
+static void unregister_sigterm_signal_handler();
 
 /// Original signal handler for chaining purposes
 SIGNAL_HANDLER_T g_original_sigint_handler;
+
+/// Original sigterm handler for chaining purposes
+SIGNAL_HANDLER_T g_original_sigterm_handler;
 
 /// Signal handler function
 DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
@@ -138,6 +142,22 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
 
     // Try to unregister again.
     unregister_sigint_signal_handler();
+  }
+}
+
+/// Signal handler function
+DEFINE_SIGNAL_HANDLER(rclpy_sigterm_handler)
+{
+  if (!is_null_signal_handler(g_original_sigterm_handler)) {
+    call_signal_handler(g_original_sigterm_handler, SIGNAL_HANDLER_ARGS);
+  }
+
+  if (!trigger_guard_conditions()) {
+    // There may have been another signal handler chaining to this
+    // one when we last tried to unregister ourselves.
+
+    // Try to unregister again.
+    unregister_sigterm_signal_handler();
   }
 }
 
@@ -167,6 +187,34 @@ register_sigint_signal_handler()
   }
   g_original_sigint_handler =
     install_signal_handler(SIGINT, get_rclpy_sigint_handler());
+}
+
+/// Unregister our SIGTERM handler and restore the original one
+static void
+unregister_sigterm_signal_handler()
+{
+  const SIGNAL_HANDLER_T current_sigterm_handler =
+    install_signal_handler(SIGTERM, g_original_sigterm_handler);
+  if (!is_rclpy_sigterm_handler(current_sigterm_handler)) {
+    // Oops, someone else must have registered a signal handler
+    // that chains to us put it back so it continues to work
+    install_signal_handler(SIGTERM, current_sigterm_handler);
+    return;
+  }
+  // Got ourself out of the chain
+  g_original_sigterm_handler = NULL_SIGNAL_HANDLER;
+}
+
+/// Register our SIGTERM handler and store the current one
+static void
+register_sigterm_signal_handler()
+{
+  if (!is_null_signal_handler(g_original_sigterm_handler)) {
+    // Handler already registered
+    return;
+  }
+  g_original_sigterm_handler =
+    install_signal_handler(SIGTERM, get_rclpy_sigterm_handler());
 }
 
 /// Global reference to guard conditions
@@ -263,9 +311,6 @@ register_sigint_guard_condition(const GuardCondition & guard_condition)
   if (NULL != old_gcs) {
     allocator.deallocate(old_gcs, allocator.state);
   }
-
-  // make sure our signal handler is registered
-  register_sigint_signal_handler();
 }
 
 /// Unregister a guard condition so it is not triggered when SIGINT is received.
@@ -307,7 +352,6 @@ unregister_sigint_guard_condition(const GuardCondition & guard_condition)
     // Just delete the list if there are no guard conditions left
     rcl_guard_condition_t ** old_gcs = g_guard_conditions.exchange(NULL);
     allocator.deallocate(old_gcs, allocator.state);
-    unregister_sigint_signal_handler();
   } else {
     // Create space for one less guard condition
     // current list size: count_gcs + 1 (sentinel)
@@ -334,6 +378,65 @@ unregister_sigint_guard_condition(const GuardCondition & guard_condition)
   }
 }
 
+/// This should be updated to match signals.SignalHandlerOptions in python.
+enum class SignalHandlerOptions : int
+{
+  No = 0,
+  SigInt = 1,
+  SigTerm = 2,
+  All = 3,
+};
+
+/// Install rclpy signal handlers.
+/**
+ * \param options rclpy.signals.SignalHandlerOptions integer value.
+ */
+void
+install_signal_handlers(int options)
+{
+  if (
+    options > static_cast<int>(SignalHandlerOptions::All) ||
+    options < static_cast<int>(SignalHandlerOptions::No))
+  {
+    return;
+  }
+  switch (SignalHandlerOptions{options}) {
+    case SignalHandlerOptions::No:
+      return;
+    case SignalHandlerOptions::SigInt:
+      register_sigint_signal_handler();
+      return;
+    case SignalHandlerOptions::SigTerm:
+      register_sigterm_signal_handler();
+      return;
+    case SignalHandlerOptions::All:
+      register_sigint_signal_handler();
+      register_sigterm_signal_handler();
+      return;
+  }
+}
+
+/// Return the currently active signal handler options.
+/**
+ * \return rclpy.signals.SignalHandlerOptions converted to integer value.
+ */
+int
+get_current_signal_handlers_options()
+{
+  int sigterm_installed = !is_null_signal_handler(g_original_sigterm_handler);
+  int sigint_installed = !is_null_signal_handler(g_original_sigint_handler);
+  // conversion to SignalHandlerOptions value
+  return sigterm_installed * 2 + sigint_installed;
+}
+
+/// Uninstall the currently installed signal handlers.
+void
+uninstall_signal_handlers()
+{
+  unregister_sigint_signal_handler();
+  unregister_sigterm_signal_handler();
+}
+
 void
 define_signal_handler_api(py::module m)
 {
@@ -345,5 +448,14 @@ define_signal_handler_api(py::module m)
   m.def(
     "unregister_sigint_guard_condition", &rclpy::unregister_sigint_guard_condition,
     "Stop triggering a guard condition when SIGINT occurs.");
+  m.def(
+    "install_signal_handlers", &rclpy::install_signal_handlers,
+    "Install rclpy signal handlers.");
+  m.def(
+    "get_current_signal_handlers_options", &rclpy::get_current_signal_handlers_options,
+    "Get currently installed signal handler options.");
+  m.def(
+    "uninstall_signal_handlers", &rclpy::uninstall_signal_handlers,
+    "Uninstall rclpy signal handlers.");
 }
 }  // namespace rclpy
