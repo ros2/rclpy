@@ -71,30 +71,6 @@ function(clean_windows_flags target)
   endif()
 endfunction()
 
-# pybind11_add_module sets a compile definition Py_DEBUG, but the CPython
-# pyconfig.h header on windows also sets Py_DEBUG when _DEBUG is set.
-# This leadds to a C4005 compiler warning for a duplicate definition of
-# Py_DEBUG.
-# The pybind11.h header has logic to work around that, but not all of these
-# CPython extensions are using pybind11.
-# This function strips the Py_DEBUG compile definition.
-# It should only be used if pybind11_add_module is used but the module does not
-# include pybind11.h.
-function(remove_py_debug_definition_on_win32 target)
-  if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  get_target_property(compile_definitions "${target}" COMPILE_DEFINITIONS)
-  set(compile_definitions_to_keep "")
-  foreach(definition ${compile_definitions})
-    if("Py_DEBUG" STREQUAL definition)
-      # Skip!
-      continue()
-    endif()
-    list(APPEND compile_definitions_to_keep "${definition}")
-  endforeach()
-  set_target_properties("${target}" PROPERTIES COMPILE_DEFINITIONS "${compile_definitions_to_keep}")
-  endif()
-endfunction()
-
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
 
@@ -121,35 +97,10 @@ function(configure_build_install_location _library_name)
   )
 endfunction()
 
-add_library(rclpy_common SHARED
-  src/rclpy_common/src/handle.c
-)
-target_link_libraries(rclpy_common PUBLIC
-  pybind11::pybind11
-  ${PYTHON_LIBRARIES}
-  rcl::rcl
-  rmw::rmw
-)
-target_include_directories(rclpy_common PUBLIC
-  src/rclpy_common/include
-)
-
-# Causes the visibility macros to use dllexport rather than dllimport,
-# which is appropriate when building the dll but not consuming it.
-target_compile_definitions(rclpy_common PRIVATE "RCLPY_COMMON_BUILDING_DLL")
-
-install(TARGETS rclpy_common
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
-
 # Split from main extension and converted to pybind11
 pybind11_add_module(_rclpy_pybind11 SHARED
-  src/rclpy/_rclpy_handle.cpp
   src/rclpy/_rclpy_logging.cpp
   src/rclpy/_rclpy_pybind11.cpp
-  src/rclpy/_rclpy_pycapsule.cpp
   src/rclpy/action_client.cpp
   src/rclpy/action_goal_handle.cpp
   src/rclpy/action_server.cpp
@@ -170,6 +121,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/serialization.cpp
   src/rclpy/service.cpp
   src/rclpy/service_info.cpp
+  src/rclpy/signal_handler.cpp
   src/rclpy/subscription.cpp
   src/rclpy/time_point.cpp
   src/rclpy/timer.cpp
@@ -183,25 +135,11 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rcl::rcl
   rcl_action::rcl_action
   rcl_logging_interface::rcl_logging_interface
-  rclpy_common
   rcpputils::rcpputils
   rcutils::rcutils
 )
 configure_build_install_location(_rclpy_pybind11)
 clean_windows_flags(_rclpy_pybind11)
-
-# Signal handling library
-pybind11_add_module(_rclpy_signal_handler SHARED
-  src/rclpy/_rclpy_signal_handler.c
-)
-target_link_libraries(_rclpy_signal_handler PRIVATE
-  rclpy_common
-  rcl::rcl
-  rcutils::rcutils
-)
-configure_build_install_location(_rclpy_signal_handler)
-clean_windows_flags(_rclpy_signal_handler)
-remove_py_debug_definition_on_win32(_rclpy_signal_handler)
 
 if(NOT WIN32)
   ament_environment_hooks(
@@ -232,11 +170,6 @@ if(BUILD_TESTING)
     # On Windows prevent CMake errors and prevent it being evaluated as a list.
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
-
-  ament_add_gtest(test_c_handle
-    src/test/rclpy_common/test_handle.cpp)
-  target_link_libraries(test_c_handle
-    rclpy_common)
 
   ament_add_gtest(test_python_allocator
     test/test_python_allocator.cpp)

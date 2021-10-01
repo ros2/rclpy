@@ -14,7 +14,7 @@
 
 from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
-from rclpy.impl.implementation_singleton import rclpy_signal_handler_implementation as _signals
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class SignalHandlerGuardCondition(GuardCondition):
@@ -22,8 +22,7 @@ class SignalHandlerGuardCondition(GuardCondition):
     def __init__(self, context=None):
         super().__init__(callback=None, callback_group=None, context=context)
         with self.handle:
-            # TODO(ahcorde): Remove the pycapsule method when #728 is in
-            _signals.rclpy_register_sigint_guard_condition(self.handle.pycapsule())
+            _rclpy.register_sigint_guard_condition(self.handle)
 
     def __del__(self):
         try:
@@ -37,6 +36,5 @@ class SignalHandlerGuardCondition(GuardCondition):
 
     def destroy(self):
         with self.handle:
-            # TODO(ahcorde): Remove the pycapsule method when #728 is in
-            _signals.rclpy_unregister_sigint_guard_condition(self.handle.pycapsule())
+            _rclpy.unregister_sigint_guard_condition(self.handle)
         super().destroy()
