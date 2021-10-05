@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.7 (2021-10-05)
+------------------
+* Only add one done callback to a future (`#816 <https://github.com/ros2/rclpy/issues/816>`_) (`#820 <https://github.com/ros2/rclpy/issues/820>`_)
+* Contributors: Shane Loretz
+
 1.0.6 (2021-08-31)
 ------------------
 * Reject cancel request if failed to transit to CANCEL_GOAL state (`#791 <https://github.com/ros2/rclpy/issues/791>`_) (`#796 <https://github.com/ros2/rclpy/issues/796>`_)
