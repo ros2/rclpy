@@ -204,7 +204,7 @@ class TestParameter(unittest.TestCase):
             if isinstance(expected_value, list):
                 assert len(result_value) == len(expected_value)
                 # element-wise comparison for lists
-                assert all([x == y for x, y in zip(result_value, expected_value)])
+                assert all(x == y for x, y in zip(result_value, expected_value))
             else:
                 assert result_value == expected_value
 
