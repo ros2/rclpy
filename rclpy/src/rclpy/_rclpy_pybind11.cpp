@@ -38,7 +38,6 @@
 #include "serialization.hpp"
 #include "service.hpp"
 #include "service_info.hpp"
-#include "signal_handler.hpp"
 #include "subscription.hpp"
 #include "time_point.hpp"
 #include "timer.hpp"
@@ -227,5 +226,4 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Initialize RCL logging.");
 
   rclpy::define_logging_api(m);
-  rclpy::define_signal_handler_api(m);
 }

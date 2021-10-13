@@ -67,7 +67,7 @@ def init(
     args: Optional[List[str]] = None,
     context: Context = None,
     domain_id: Optional[int] = None,
-    signal_handler_options: SignalHandlerOptions = SignalHandlerOptions.All
+    signal_handler_options: SignalHandlerOptions = SignalHandlerOptions.ALL
 ) -> None:
     """
     Initialize ROS communications for a given context.

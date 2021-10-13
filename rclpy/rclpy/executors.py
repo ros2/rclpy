@@ -114,7 +114,7 @@ class TimeoutException(Exception):
 
 
 class ShutdownException(Exception):
-    """Signal that executor was shut down."""
+    """Signal that executor was shutdown."""
 
     pass
 

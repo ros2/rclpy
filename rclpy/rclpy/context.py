@@ -23,6 +23,18 @@ import weakref
 g_logging_configure_lock = threading.Lock()
 g_logging_ref_count = 0
 
+g_contexts_lock = threading.RLock()
+g_contexts = []
+
+
+def _shutdown_contexts_on_signal():
+    """Shutdown all contexts, internal use."""
+    global g_contexts_lock
+    global g_contexts
+    with g_contexts_lock:
+        for c in g_contexts:
+            c.shutdown()
+
 
 class Context:
     """
@@ -59,7 +71,10 @@ class Context:
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+        global g_logging_configure_lock
         global g_logging_ref_count
+        global g_contexts
+        global g_contexts_lock
         with self._lock:
             if domain_id is not None and domain_id < 0:
                 raise RuntimeError(
@@ -78,6 +93,8 @@ class Context:
                     if g_logging_ref_count == 1:
                         _rclpy.rclpy_logging_configure(self.__context)
                 self._logging_initialized = True
+            with g_contexts_lock:
+                g_contexts.append(self)
 
     def ok(self):
         """Check if context hasn't been shut down."""
@@ -96,12 +113,16 @@ class Context:
 
     def shutdown(self):
         """Shutdown this context."""
+        global g_contexts
+        global g_contexts_lock
         if self.__context is None:
             raise RuntimeError('Context must be initialized before it can be shutdown')
         with self.__context, self._lock:
             self.__context.shutdown()
             self._call_on_shutdown_callbacks()
             self._logging_fini()
+        with g_contexts_lock:
+            g_contexts.remove(self)
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
@@ -129,6 +150,7 @@ class Context:
     def _logging_fini(self):
         # This function must be called with self._lock held.
         from rclpy.impl.implementation_singleton import rclpy_implementation
+        global g_logging_configure_lock
         global g_logging_ref_count
         if self._logging_initialized:
             with g_logging_configure_lock:
