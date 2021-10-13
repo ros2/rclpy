@@ -18,7 +18,7 @@ from rclpy.impl.implementation_singleton import rclpy_handle_implementation as _
 from rclpy.impl.implementation_singleton import rclpy_pycapsule_implementation as _rclpy_capsule
 
 
-class InvalidHandle(Exception):
+class InvalidHandle(ValueError):
     pass
 
 
