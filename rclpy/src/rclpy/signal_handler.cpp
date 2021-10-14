@@ -14,11 +14,6 @@
 
 #include <pybind11/pybind11.h>
 
-<<<<<<< HEAD
-=======
-namespace py = pybind11;
-
->>>>>>> Revert "Use safer signal.signal module"
 #include <csignal>
 
 #include <atomic>
@@ -28,14 +23,9 @@ namespace py = pybind11;
 
 #include "rcutils/allocator.h"
 
-<<<<<<< HEAD
 #include "guard_condition.hpp"
 
 namespace py = pybind11;
-=======
-
-#include "guard_condition.hpp"
->>>>>>> Revert "Use safer signal.signal module"
 
 #if __APPLE__ || _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE
 

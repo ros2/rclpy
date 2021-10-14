@@ -69,6 +69,8 @@ class Context:
         from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
         global g_logging_ref_count
+        global g_contexts
+        global g_contexts_lock
         with self._lock:
             if domain_id is not None and domain_id < 0:
                 raise RuntimeError(
