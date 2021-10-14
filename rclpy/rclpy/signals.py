@@ -13,7 +13,10 @@
 # limitations under the License.
 
 from enum import Enum
+import signal
+import threading
 
+from rclpy import context
 from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -33,17 +36,28 @@ class SignalHandlerOptions(Enum):
     SIGTERM = 2
     """Install only a sigterm handler."""
 
-    All = 3
+    ALL = 3
     """Install both a sigint and a sigterm handler."""
 
 
-def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.All):
+g_lock = threading.Lock()
+g_old_sigterm_handler = None
+
+
+def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.ALL):
     """
     Install rclpy signal handlers.
 
     :param options: Indicate if to install sigint, sigterm, both or no signal handler.
     """
-    return _rclpy.install_signal_handlers(options.value)
+    global g_lock
+    global g_old_sigterm_handler
+    with g_lock:
+        if options in (SignalHandlerOptions.ALL, SignalHandlerOptions.SIGTERM):
+            def _signal_handler(signum, frame):
+                context._shutdown_all_contexts()
+            g_old_sigterm_handler = signal.signal(signal.SIGTERM, _signal_handler)
+        return _rclpy.install_signal_handlers(options.value)
 
 
 def get_current_signal_handlers_options():
@@ -57,7 +71,12 @@ def get_current_signal_handlers_options():
 
 def uninstall_signal_handlers():
     """Uninstall the rclpy signal handlers."""
-    return _rclpy.uninstall_signal_handlers()
+    global g_lock
+    global g_old_sigterm_handler
+    with g_lock:
+        if g_old_sigterm_handler is not None:
+            signal.signal(signal.SIGTERM, g_old_sigterm_handler)
+        return _rclpy.uninstall_signal_handlers()
 
 
 class SignalHandlerGuardCondition(GuardCondition):

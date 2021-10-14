@@ -23,6 +23,15 @@ import weakref
 g_logging_configure_lock = threading.Lock()
 g_logging_ref_count = 0
 
+g_contexts = []
+g_contexts_lock = threading.RLock();
+
+
+def _shutdown_all_contexts():
+    with g_contexts_lock:
+        for c in g_contexts:
+            c.shutdown()
+
 
 class Context:
     """
@@ -78,6 +87,8 @@ class Context:
                     if g_logging_ref_count == 1:
                         _rclpy.rclpy_logging_configure(self.__context)
                 self._logging_initialized = True
+            with g_contexts_lock:
+                g_contexts.append(self)
 
     def ok(self):
         """Check if context hasn't been shut down."""
@@ -104,6 +115,8 @@ class Context:
             self.__context.shutdown()
             self._call_on_shutdown_callbacks()
             self._logging_fini()
+        with g_contexts_lock:
+            g_contexts.remove(self)
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
