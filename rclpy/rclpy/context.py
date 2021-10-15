@@ -23,16 +23,6 @@ import weakref
 g_logging_configure_lock = threading.Lock()
 g_logging_ref_count = 0
 
-g_contexts = []
-g_contexts_lock = threading.RLock()
-
-
-def _shutdown_all_contexts():
-    with g_contexts_lock:
-        for c in g_contexts:
-            c.shutdown()
-
-
 class Context:
     """
     Encapsulates the lifecycle of init and shutdown.
@@ -68,8 +58,6 @@ class Context:
         from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
         global g_logging_ref_count
-        global g_contexts
-        global g_contexts_lock
         with self._lock:
             if domain_id is not None and domain_id < 0:
                 raise RuntimeError(
@@ -88,8 +76,6 @@ class Context:
                     if g_logging_ref_count == 1:
                         _rclpy.rclpy_logging_configure(self.__context)
                 self._logging_initialized = True
-            with g_contexts_lock:
-                g_contexts.append(self)
 
     def ok(self):
         """Check if context hasn't been shut down."""
@@ -108,19 +94,12 @@ class Context:
 
     def shutdown(self):
         """Shutdown this context."""
-        global g_contexts
-        global g_contexts_lock
         if self.__context is None:
             raise RuntimeError('Context must be initialized before it can be shutdown')
         with self.__context, self._lock:
             self.__context.shutdown()
             self._call_on_shutdown_callbacks()
             self._logging_fini()
-        with g_contexts_lock:
-            try:
-                g_contexts.remove(self)
-            except ValueError:
-                pass
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""

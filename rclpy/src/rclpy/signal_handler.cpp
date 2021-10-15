@@ -26,6 +26,7 @@
 #include "rcutils/allocator.h"
 #include "rcutils/logging_macros.h"
 
+#include "context.hpp"
 #include "guard_condition.hpp"
 
 // includes for semaphore notification code
@@ -139,6 +140,7 @@ setup_defered_signal_handler()
         wait_for_signal();
         if (g_signal_handler_installed.load()) {
           trigger_guard_conditions();
+          rclpy::shutdown_contexts();
         }
       }
     });
