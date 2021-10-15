@@ -22,23 +22,8 @@ from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-class SignalHandlerOptions(Enum):
-    """Enum to indicate which signal handlers to install."""
-
-    # WARN: If this class changes, check also `signal_handler.cpp`
-
-    NO = 0
-    """No signal handler should be installed."""
-
-    SIGINT = 1
-    """Install only a sigint handler."""
-
-    SIGTERM = 2
-    """Install only a sigterm handler."""
-
-    ALL = 3
-    """Install both a sigint and a sigterm handler."""
-
+SignalHandlerOptions = _rclpy.SignalHandlerOptions
+"""Enum with values: `ALL`, `SIGINT`, `SIGTERM`, `NO`."""
 
 g_lock = threading.Lock()
 g_old_sigterm_handler = None
@@ -57,7 +42,7 @@ def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions
             def _signal_handler(signum, frame):
                 context._shutdown_all_contexts()
             g_old_sigterm_handler = signal.signal(signal.SIGTERM, _signal_handler)
-        return _rclpy.install_signal_handlers(options.value)
+        return _rclpy.install_signal_handlers(options)
 
 
 def get_current_signal_handlers_options():
@@ -66,7 +51,8 @@ def get_current_signal_handlers_options():
 
     :return: rclpy.signals.SignalHandlerOptions instance.
     """
-    return SignalHandlerOptions(_rclpy.get_current_signal_handlers_options())
+    # return SignalHandlerOptions(_rclpy.get_current_signal_handlers_options())
+    return _rclpy.get_current_signal_handlers_options()
 
 
 def uninstall_signal_handlers():

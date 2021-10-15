@@ -378,12 +378,16 @@ unregister_sigint_guard_condition(const GuardCondition & guard_condition)
   }
 }
 
-/// This should be updated to match signals.SignalHandlerOptions in python.
+/// Enum to indicate which signal handlers to install.
 enum class SignalHandlerOptions : int
 {
+  /// Install no signal handlers.
   No = 0,
+  /// Install only a sigint handler.
   SigInt = 1,
+  /// Install only a sigterm handler.
   SigTerm = 2,
+  /// Install both a sigint and a sigterm handler.
   All = 3,
 };
 
@@ -392,14 +396,14 @@ enum class SignalHandlerOptions : int
  * \param options rclpy.signals.SignalHandlerOptions integer value.
  */
 void
-install_signal_handlers(int options)
+install_signal_handlers(SignalHandlerOptions options)
 {
-  if (
-    options > static_cast<int>(SignalHandlerOptions::All) ||
-    options < static_cast<int>(SignalHandlerOptions::No))
-  {
-    return;
-  }
+  // if (
+  //   options > static_cast<int>(SignalHandlerOptions::All) ||
+  //   options < static_cast<int>(SignalHandlerOptions::No))
+  // {
+  //   return;
+  // }
   switch (SignalHandlerOptions{options}) {
     case SignalHandlerOptions::No:
       return;
@@ -420,13 +424,13 @@ install_signal_handlers(int options)
 /**
  * \return rclpy.signals.SignalHandlerOptions converted to integer value.
  */
-int
+SignalHandlerOptions
 get_current_signal_handlers_options()
 {
   int sigterm_installed = !is_null_signal_handler(g_original_sigterm_handler);
   int sigint_installed = !is_null_signal_handler(g_original_sigint_handler);
   // conversion to SignalHandlerOptions value
-  return sigterm_installed * 2 + sigint_installed;
+  return SignalHandlerOptions{sigterm_installed * 2 + sigint_installed};
 }
 
 /// Uninstall the currently installed signal handlers.
@@ -457,5 +461,10 @@ define_signal_handler_api(py::module m)
   m.def(
     "uninstall_signal_handlers", &rclpy::uninstall_signal_handlers,
     "Uninstall rclpy signal handlers.");
+  py::enum_<SignalHandlerOptions>(m, "SignalHandlerOptions")
+    .value("ALL", SignalHandlerOptions::All)
+    .value("NO", SignalHandlerOptions::No)
+    .value("SIGINT", SignalHandlerOptions::SigInt)
+    .value("SIGTERM", SignalHandlerOptions::SigTerm);
 }
 }  // namespace rclpy
