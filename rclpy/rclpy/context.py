@@ -23,6 +23,7 @@ import weakref
 g_logging_configure_lock = threading.Lock()
 g_logging_ref_count = 0
 
+
 class Context:
     """
     Encapsulates the lifecycle of init and shutdown.

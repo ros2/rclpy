@@ -20,6 +20,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 SignalHandlerOptions = _rclpy.SignalHandlerOptions
 """Enum with values: `ALL`, `SIGINT`, `SIGTERM`, `NO`."""
 
+
 def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.ALL):
     """
     Install rclpy signal handlers.
