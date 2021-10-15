@@ -61,7 +61,7 @@ def uninstall_signal_handlers():
     with g_lock:
         if g_old_sigterm_handler is not None:
             signal.signal(signal.SIGTERM, g_old_sigterm_handler)
-        return _rclpy.uninstall_signal_handlers()
+        _rclpy.uninstall_signal_handlers()
 
 
 class SignalHandlerGuardCondition(GuardCondition):

@@ -17,15 +17,165 @@
 #include <csignal>
 
 #include <atomic>
+#include <string>
+#include <thread>
 
 #include "rcl/error_handling.h"
 #include "rcl/rcl.h"
 
 #include "rcutils/allocator.h"
+#include "rcutils/logging_macros.h"
 
 #include "guard_condition.hpp"
 
+// includes for semaphore notification code
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <dispatch/dispatch.h>
+#else  // posix
+#include <semaphore.h>
+#endif
+
+
 namespace py = pybind11;
+
+static bool trigger_guard_conditions();
+
+namespace
+{
+#if defined(_WIN32)
+HANDLE g_signal_handler_sem;
+#elif defined(__APPLE__)
+dispatch_semaphore_t g_signal_handler_sem;
+#else  // posix
+sem_t g_signal_handler_sem;
+#endif
+
+std::thread g_defered_signal_handling_thread;
+
+// relying on python GIL for safety
+std::atomic<bool> g_signal_handler_installed = false;
+
+void
+notify_signal_handler() noexcept
+{
+#if defined(_WIN32)
+  if (!ReleaseSemaphore(g_signal_handler_sem, 1, NULL)) {
+    return;
+  }
+#elif defined(__APPLE__)
+  dispatch_semaphore_signal(g_signal_handler_sem);
+#else  // posix
+  if (-1 == sem_post(&g_signal_handler_sem)) {
+    return;
+  }
+#endif
+}
+
+void
+wait_for_signal()
+{
+#if defined(_WIN32)
+  DWORD dw_wait_result = WaitForSingleObject(g_signal_handler_sem, INFINITE);
+  switch (dw_wait_result) {
+    case WAIT_ABANDONED:
+      RCUTILS_LOG_ERROR_NAMED(
+        "rclpy.signals",
+        "WaitForSingleObject() failed in wait_for_signal() with WAIT_ABANDONED: %s",
+        GetLastError());
+      break;
+    case WAIT_OBJECT_0:
+      // successful
+      break;
+    case WAIT_TIMEOUT:
+      RCUTILS_LOG_ERROR_NAMED(
+        "rclpy.signals", "WaitForSingleObject() timedout out in wait_for_signal()");
+      break;
+    case WAIT_FAILED:
+      RCUTILS_LOG_ERROR_NAMED(
+        "rclpy.signals", "WaitForSingleObject() failed in wait_for_signal(): %s", GetLastError());
+      break;
+    default:
+      RCUTILS_LOG_ERROR_NAMED(
+        "rclpy.signals", "WaitForSingleObject() gave unknown return in wait_for_signal(): %s",
+        GetLastError());
+  }
+#elif defined(__APPLE__)
+  dispatch_semaphore_wait(g_signal_handler_sem, DISPATCH_TIME_FOREVER);
+#else  // posix
+  int s;
+  do {
+    s = sem_wait(&g_signal_handler_sem);
+  } while (-1 == s && EINTR == errno);
+#endif
+}
+
+void
+setup_defered_signal_handler()
+{
+  if (g_signal_handler_installed.exchange(true)) {
+    return;
+  }
+#if defined(_WIN32)
+  g_signal_handler_sem = CreateSemaphore(
+    NULL,  // default security attributes
+    0,  // initial semaphore count
+    1,  // maximum semaphore count
+    NULL);  // unnamed semaphore
+  if (NULL == g_signal_handler_sem) {
+    throw std::runtime_error("CreateSemaphore() failed in setup_wait_for_signal()");
+  }
+#elif defined(__APPLE__)
+  g_signal_handler_sem = dispatch_semaphore_create(0);
+#else  // posix
+  if (-1 == sem_init(&g_signal_handler_sem, 0, 0)) {
+    throw std::runtime_error(std::string("sem_init() failed: ") + strerror(errno));
+  }
+#endif
+  g_defered_signal_handling_thread = std::thread(
+    []() {
+      while (g_signal_handler_installed.load()) {
+        wait_for_signal();
+        if (g_signal_handler_installed.load()) {
+          trigger_guard_conditions();
+        }
+      }
+    });
+}
+
+void
+teardown_defered_signal_handler()
+{
+  if (!g_signal_handler_installed.exchange(false)) {
+    return;
+  }
+  notify_signal_handler();
+  g_defered_signal_handling_thread.join();
+#if defined(_WIN32)
+  CloseHandle(g_signal_handler_sem);
+#elif defined(__APPLE__)
+  dispatch_release(g_signal_handler_sem);
+#else  // posix
+  if (-1 == sem_destroy(&g_signal_handler_sem)) {
+    std::runtime_error{"invalid semaphore in teardown_wait_for_signal()"};
+  }
+#endif
+}
+
+struct CleanupDeferedSignalHandler
+{
+  ~CleanupDeferedSignalHandler()
+  {
+    // just in case nobody calls rclpy.shutdown()
+    teardown_defered_signal_handler();
+  }
+};
+
+// TODO(ivanpauno): Create a singleton SignalHandler class instead of this mess.
+CleanupDeferedSignalHandler cleanup_defered_signal_handler;
+
+}  // namespace
 
 #if __APPLE__ || _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE
 
@@ -119,7 +269,6 @@ install_signal_handler(int signum, SIGNAL_HANDLER_T handler)
 #endif
 
 // Forward declarations
-static bool trigger_guard_conditions();
 static void unregister_sigint_signal_handler();
 static void unregister_sigterm_signal_handler();
 
@@ -136,12 +285,14 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
     call_signal_handler(g_original_sigint_handler, SIGNAL_HANDLER_ARGS);
   }
 
-  if (!trigger_guard_conditions()) {
+  if (!g_signal_handler_installed.load()) {
     // There may have been another signal handler chaining to this
     // one when we last tried to unregister ourselves.
 
     // Try to unregister again.
     unregister_sigint_signal_handler();
+  } else {
+    notify_signal_handler();
   }
 }
 
@@ -152,12 +303,14 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigterm_handler)
     call_signal_handler(g_original_sigterm_handler, SIGNAL_HANDLER_ARGS);
   }
 
-  if (!trigger_guard_conditions()) {
+  if (!g_signal_handler_installed.load()) {
     // There may have been another signal handler chaining to this
     // one when we last tried to unregister ourselves.
 
     // Try to unregister again.
-    unregister_sigterm_signal_handler();
+    unregister_sigint_signal_handler();
+  } else {
+    notify_signal_handler();
   }
 }
 
@@ -398,12 +551,7 @@ enum class SignalHandlerOptions : int
 void
 install_signal_handlers(SignalHandlerOptions options)
 {
-  // if (
-  //   options > static_cast<int>(SignalHandlerOptions::All) ||
-  //   options < static_cast<int>(SignalHandlerOptions::No))
-  // {
-  //   return;
-  // }
+  setup_defered_signal_handler();
   switch (SignalHandlerOptions{options}) {
     case SignalHandlerOptions::No:
       return;
@@ -437,6 +585,7 @@ get_current_signal_handlers_options()
 void
 uninstall_signal_handlers()
 {
+  teardown_defered_signal_handler();
   unregister_sigint_signal_handler();
   unregister_sigterm_signal_handler();
 }
