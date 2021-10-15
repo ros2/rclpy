@@ -118,7 +118,10 @@ class Context:
             self._call_on_shutdown_callbacks()
             self._logging_fini()
         with g_contexts_lock:
-            g_contexts.remove(self)
+            try:
+                g_contexts.remove(self)
+            except ValueError:
+                pass
 
     def try_shutdown(self):
         """Shutdown this context, if not already shutdown."""
