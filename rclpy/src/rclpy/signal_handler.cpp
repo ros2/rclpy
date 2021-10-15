@@ -462,9 +462,9 @@ define_signal_handler_api(py::module m)
     "uninstall_signal_handlers", &rclpy::uninstall_signal_handlers,
     "Uninstall rclpy signal handlers.");
   py::enum_<SignalHandlerOptions>(m, "SignalHandlerOptions")
-    .value("ALL", SignalHandlerOptions::All)
-    .value("NO", SignalHandlerOptions::No)
-    .value("SIGINT", SignalHandlerOptions::SigInt)
-    .value("SIGTERM", SignalHandlerOptions::SigTerm);
+  .value("ALL", SignalHandlerOptions::All)
+  .value("NO", SignalHandlerOptions::No)
+  .value("SIGINT", SignalHandlerOptions::SigInt)
+  .value("SIGTERM", SignalHandlerOptions::SigTerm);
 }
 }  // namespace rclpy

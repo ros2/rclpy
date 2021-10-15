@@ -24,7 +24,7 @@ g_logging_configure_lock = threading.Lock()
 g_logging_ref_count = 0
 
 g_contexts = []
-g_contexts_lock = threading.RLock();
+g_contexts_lock = threading.RLock()
 
 
 def _shutdown_all_contexts():
@@ -38,7 +38,6 @@ class Context:
     Encapsulates the lifecycle of init and shutdown.
 
     Context objects should not be reused, and are finalized in their destructor.
-
     Wraps the `rcl_context_t` type.
     """
 
