@@ -57,6 +57,7 @@ std::thread g_defered_signal_handling_thread;
 
 // relying on python GIL for safety
 std::atomic<bool> g_signal_handler_installed = false;
+std::atomic<bool> g_is_sigterm;
 
 void
 notify_signal_handler() noexcept
@@ -140,7 +141,9 @@ setup_defered_signal_handler()
         wait_for_signal();
         if (g_signal_handler_installed.load()) {
           trigger_guard_conditions();
-          rclpy::shutdown_contexts();
+          if (g_is_sigterm.exchange(false)) {
+            rclpy::shutdown_contexts();
+          }
         }
       }
     });
@@ -312,6 +315,7 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigterm_handler)
     // Try to unregister again.
     unregister_sigint_signal_handler();
   } else {
+    g_is_sigterm.exchange(true);
     notify_signal_handler();
   }
 }
