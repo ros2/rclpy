@@ -86,7 +86,7 @@ def init(
     install_signal_handlers(signal_handler_options)
     context = get_default_context() if context is None else context
     if (
-        install_handlers is True or (
+        install_handlers or (
             install_handlers is None and (
                 context is None or context is get_default_context()))
     ):
@@ -127,7 +127,7 @@ def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = No
         __executor = None
     _shutdown(context=context)
     if (
-        uninstall_handlers is True or (
+        uninstall_handlers or (
             uninstall_handlers is None and (
                 context is None or context is get_default_context()))
     ):
