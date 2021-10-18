@@ -417,7 +417,9 @@ trigger_guard_conditions()
   while (NULL != *pgc) {
     rcl_ret_t ret = rcl_trigger_guard_condition(*pgc);
     if (ret != RCL_RET_OK) {
-      // TODO(sloretz) find signal safe way to tell the world an error occurred
+      RCUTILS_LOG_ERROR_NAMED(
+        "rclpy.signals",
+        "rcl_trigger_guard_condition() failed: %s", rcutils_get_error_string().str);
       rcl_reset_error();
     }
     ++pgc;
