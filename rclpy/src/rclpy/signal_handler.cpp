@@ -265,7 +265,14 @@ install_signal_handler(int signum, SIGNAL_HANDLER_T handler)
 
 #define SIGNAL_HANDLER_ARGS signum
 
-#define call_signal_handler(handler, ...) handler(__VA_ARGS__)
+static void
+call_signal_handler(
+  SIGNAL_HANDLER_T handler, int signum)
+{
+  if (handler != NULL && handler != SIG_DFL && handler != SIG_IGN) {
+    handler(signum);
+  }
+}
 
 #define install_signal_handler(signum, handler) signal(signum, handler)
 
@@ -282,6 +289,12 @@ SIGNAL_HANDLER_T g_original_sigint_handler;
 
 /// Original sigterm handler for chaining purposes
 SIGNAL_HANDLER_T g_original_sigterm_handler;
+
+/// Flag to indicate if a sigint handler was installed
+static bool g_sigint_installed;
+
+/// Flag to indicate if a sigterm handler was installed
+static bool g_sigterm_installed;
 
 /// Signal handler function
 DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
@@ -334,16 +347,18 @@ unregister_sigint_signal_handler()
   }
   // Got ourself out of the chain
   g_original_sigint_handler = NULL_SIGNAL_HANDLER;
+  g_sigint_installed = false;
 }
 
 /// Register our SIGINT handler and store the current one
 static void
 register_sigint_signal_handler()
 {
-  if (!is_null_signal_handler(g_original_sigint_handler)) {
+  if (g_sigint_installed) {
     // Handler already registered
     return;
   }
+  g_sigint_installed = true;
   g_original_sigint_handler =
     install_signal_handler(SIGINT, get_rclpy_sigint_handler());
 }
@@ -362,16 +377,18 @@ unregister_sigterm_signal_handler()
   }
   // Got ourself out of the chain
   g_original_sigterm_handler = NULL_SIGNAL_HANDLER;
+  g_sigterm_installed = false;
 }
 
 /// Register our SIGTERM handler and store the current one
 static void
 register_sigterm_signal_handler()
 {
-  if (!is_null_signal_handler(g_original_sigterm_handler)) {
+  if (g_sigterm_installed) {
     // Handler already registered
     return;
   }
+  g_sigterm_installed = true;
   g_original_sigterm_handler =
     install_signal_handler(SIGTERM, get_rclpy_sigterm_handler());
 }
@@ -581,10 +598,8 @@ install_signal_handlers(SignalHandlerOptions options)
 SignalHandlerOptions
 get_current_signal_handlers_options()
 {
-  int sigterm_installed = !is_null_signal_handler(g_original_sigterm_handler);
-  int sigint_installed = !is_null_signal_handler(g_original_sigint_handler);
   // conversion to SignalHandlerOptions value
-  return SignalHandlerOptions{sigterm_installed * 2 + sigint_installed};
+  return SignalHandlerOptions{g_sigterm_installed * 2 + g_sigint_installed};
 }
 
 /// Uninstall the currently installed signal handlers.
@@ -600,6 +615,7 @@ void
 define_signal_handler_api(py::module m)
 {
   g_original_sigint_handler = NULL_SIGNAL_HANDLER;
+  g_original_sigterm_handler = NULL_SIGNAL_HANDLER;
 
   m.def(
     "register_sigint_guard_condition", &rclpy::register_sigint_guard_condition,
@@ -616,10 +632,11 @@ define_signal_handler_api(py::module m)
   m.def(
     "uninstall_signal_handlers", &rclpy::uninstall_signal_handlers,
     "Uninstall rclpy signal handlers.");
-  py::enum_<SignalHandlerOptions>(m, "SignalHandlerOptions")
-  .value("ALL", SignalHandlerOptions::All)
-  .value("NO", SignalHandlerOptions::No)
-  .value("SIGINT", SignalHandlerOptions::SigInt)
-  .value("SIGTERM", SignalHandlerOptions::SigTerm);
+  py::enum_<SignalHandlerOptions>(
+    m, "SignalHandlerOptions", "Enum with values: `ALL`, `SIGINT`, `SIGTERM`, `NO`.")
+    .value("ALL", SignalHandlerOptions::All)
+    .value("NO", SignalHandlerOptions::No)
+    .value("SIGINT", SignalHandlerOptions::SigInt)
+    .value("SIGTERM", SignalHandlerOptions::SigTerm);
 }
 }  // namespace rclpy
