@@ -608,9 +608,9 @@ get_current_signal_handlers_options()
 void
 uninstall_signal_handlers()
 {
-  teardown_deferred_signal_handler();
   unregister_sigint_signal_handler();
   unregister_sigterm_signal_handler();
+  teardown_deferred_signal_handler();
 }
 
 void
