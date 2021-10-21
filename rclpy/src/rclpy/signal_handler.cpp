@@ -53,7 +53,7 @@ dispatch_semaphore_t g_signal_handler_sem;
 sem_t g_signal_handler_sem;
 #endif
 
-std::thread g_defered_signal_handling_thread;
+std::thread g_deferred_signal_handling_thread;
 
 // relying on python GIL for safety
 std::atomic<bool> g_signal_handler_installed = false;
@@ -114,7 +114,7 @@ wait_for_signal()
 }
 
 void
-setup_defered_signal_handler()
+setup_deferred_signal_handler()
 {
   if (g_signal_handler_installed.exchange(true)) {
     return;
@@ -135,7 +135,7 @@ setup_defered_signal_handler()
     throw std::runtime_error(std::string("sem_init() failed: ") + strerror(errno));
   }
 #endif
-  g_defered_signal_handling_thread = std::thread(
+  g_deferred_signal_handling_thread = std::thread(
     []() {
       while (g_signal_handler_installed.load()) {
         wait_for_signal();
@@ -150,13 +150,13 @@ setup_defered_signal_handler()
 }
 
 void
-teardown_defered_signal_handler()
+teardown_deferred_signal_handler()
 {
   if (!g_signal_handler_installed.exchange(false)) {
     return;
   }
   notify_signal_handler();
-  g_defered_signal_handling_thread.join();
+  g_deferred_signal_handling_thread.join();
 #if defined(_WIN32)
   CloseHandle(g_signal_handler_sem);
 #elif defined(__APPLE__)
@@ -168,17 +168,17 @@ teardown_defered_signal_handler()
 #endif
 }
 
-struct CleanupDeferedSignalHandler
+struct CleanupdeferredSignalHandler
 {
-  ~CleanupDeferedSignalHandler()
+  ~CleanupdeferredSignalHandler()
   {
     // just in case nobody calls rclpy.shutdown()
-    teardown_defered_signal_handler();
+    teardown_deferred_signal_handler();
   }
 };
 
 // TODO(ivanpauno): Create a singleton SignalHandler class instead of this mess.
-CleanupDeferedSignalHandler cleanup_defered_signal_handler;
+CleanupdeferredSignalHandler cleanup_deferred_signal_handler;
 
 }  // namespace
 
@@ -576,7 +576,7 @@ enum class SignalHandlerOptions : int
 void
 install_signal_handlers(SignalHandlerOptions options)
 {
-  setup_defered_signal_handler();
+  setup_deferred_signal_handler();
   switch (SignalHandlerOptions{options}) {
     case SignalHandlerOptions::No:
       return;
@@ -608,7 +608,7 @@ get_current_signal_handlers_options()
 void
 uninstall_signal_handlers()
 {
-  teardown_defered_signal_handler();
+  teardown_deferred_signal_handler();
   unregister_sigint_signal_handler();
   unregister_sigterm_signal_handler();
 }
