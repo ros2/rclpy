@@ -17,6 +17,33 @@ from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
+# re-export SignalHandlerOptions enum
+SignalHandlerOptions = _rclpy.SignalHandlerOptions
+
+
+def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.ALL):
+    """
+    Install rclpy signal handlers.
+
+    :param options: Indicate if to install sigint, sigterm, both or no signal handler.
+    """
+    return _rclpy.install_signal_handlers(options)
+
+
+def get_current_signal_handlers_options():
+    """
+    Get current signal handler options.
+
+    :return: rclpy.signals.SignalHandlerOptions instance.
+    """
+    return _rclpy.get_current_signal_handlers_options()
+
+
+def uninstall_signal_handlers():
+    """Uninstall the rclpy signal handlers."""
+    _rclpy.uninstall_signal_handlers()
+
+
 class SignalHandlerGuardCondition(GuardCondition):
 
     def __init__(self, context=None):

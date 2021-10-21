@@ -56,6 +56,8 @@ struct InitOptions
   rcl_init_options_t rcl_options;
 };
 
+void shutdown_contexts();
+
 class Context : public Destroyable, public std::enable_shared_from_this<Context>
 {
 public:

@@ -29,7 +29,6 @@ class Context:
     Encapsulates the lifecycle of init and shutdown.
 
     Context objects should not be reused, and are finalized in their destructor.
-
     Wraps the `rcl_context_t` type.
     """
 
