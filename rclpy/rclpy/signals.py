@@ -36,7 +36,6 @@ def get_current_signal_handlers_options():
 
     :return: rclpy.signals.SignalHandlerOptions instance.
     """
-    # return SignalHandlerOptions(_rclpy.get_current_signal_handlers_options())
     return _rclpy.get_current_signal_handlers_options()
 
 

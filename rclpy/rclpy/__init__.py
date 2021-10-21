@@ -67,8 +67,7 @@ def init(
     args: Optional[List[str]] = None,
     context: Context = None,
     domain_id: Optional[int] = None,
-    signal_handler_options: SignalHandlerOptions = SignalHandlerOptions.ALL,
-    install_handlers: Optional[bool] = None
+    signal_handler_options: Optional[SignalHandlerOptions] = None,
 ) -> None:
     """
     Initialize ROS communications for a given context.
@@ -78,18 +77,15 @@ def init(
         (see :func:`.get_default_context`).
     :param domain_id: ROS domain id.
     :param signal_handler_options: Indicate which signal handlers to install.
-    :param install_handlers:
-        If `None`, signal handlers will be installed when initializing the default context.
-        If `True`, signal handlers will be installed.
-        If not, signal handlers won't be installed.
+        If `None`, SIGINT and SIGTERM will be installed when initializing the default context.
     """
     context = get_default_context() if context is None else context
-    if (
-        install_handlers or (
-            install_handlers is None and (
-                context is None or context is get_default_context()))
-    ):
-        install_signal_handlers(signal_handler_options)
+    if signal_handler_options is None:
+        if context is None or context is get_default_context():
+            signal_handler_options = SignalHandlerOptions.ALL
+        else:
+            signal_handler_options = SignalHandlerOptions.NO
+    install_signal_handlers(signal_handler_options)
     return context.init(args, domain_id=domain_id)
 
 
