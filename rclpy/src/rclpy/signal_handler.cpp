@@ -577,7 +577,7 @@ void
 install_signal_handlers(SignalHandlerOptions options)
 {
   setup_deferred_signal_handler();
-  switch (SignalHandlerOptions{options}) {
+  switch (options) {
     case SignalHandlerOptions::No:
       return;
     case SignalHandlerOptions::SigInt:
