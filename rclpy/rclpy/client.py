@@ -88,7 +88,11 @@ class Client:
         future = self.call_async(request)
         future.add_done_callback(unblock)
 
-        event.wait()
+        # Check future.done() before waiting on the event.
+        # The callback might have been added after the future is completed,
+        # resulting in the event never being set.
+        if not future.done():
+            event.wait()
         if future.exception() is not None:
             raise future.exception()
         return future.result()
