@@ -83,14 +83,13 @@ def init(
         If `True`, signal handlers will be installed.
         If not, signal handlers won't be installed.
     """
-    install_signal_handlers(signal_handler_options)
     context = get_default_context() if context is None else context
     if (
         install_handlers or (
             install_handlers is None and (
                 context is None or context is get_default_context()))
     ):
-        install_signal_handlers()
+        install_signal_handlers(signal_handler_options)
     return context.init(args, domain_id=domain_id)
 
 
