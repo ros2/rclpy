@@ -2,6 +2,20 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Handle sigterm. (`#830 <https://github.com/ros2/rclpy/issues/830>`_)
+* Use pybind11 for signal handling, and delete now unused rclpy_common, pycapsule, and handle code. (`#814 <https://github.com/ros2/rclpy/issues/814>`_)
+* Fix memory leak in Service::take_request() and Client::take_response(). (`#828 <https://github.com/ros2/rclpy/issues/828>`_)
+* Add Publisher.wait_for_all_acked(). (`#793 <https://github.com/ros2/rclpy/issues/793>`_)
+* Only add one done callback to a future in Executor. (`#816 <https://github.com/ros2/rclpy/issues/816>`_)
+* Add convert function from ParameterValue to Python builtin. (`#819 <https://github.com/ros2/rclpy/issues/819>`_)
+* Call Context._logging_fini() in Context.try_shutdown(). (`#800 <https://github.com/ros2/rclpy/issues/800>`_)
+* Lift LoggingSeverity enum as common dependency to logging and rcutils_logger modules (`#785 <https://github.com/ros2/rclpy/issues/785>`_)
+* Set Context.__context to None in __init_\_(). (`#812 <https://github.com/ros2/rclpy/issues/812>`_)
+* Remove unused function make_mock_subscription. (`#809 <https://github.com/ros2/rclpy/issues/809>`_)
+* Contributors: Barry Xu, Chris Lalancette, Ivan Santiago Paunovic, Jacob Perron, Lei Liu, Louise Poubel, Shane Loretz, ksuszka
+
 3.0.1 (2021-06-11)
 ------------------
 * Removed common.c/h (`#789 <https://github.com/ros2/rclpy/issues/789>`_)
