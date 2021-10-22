@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.1.0 (2021-10-22)
+------------------
 * Handle sigterm. (`#830 <https://github.com/ros2/rclpy/issues/830>`_)
 * Use pybind11 for signal handling, and delete now unused rclpy_common, pycapsule, and handle code. (`#814 <https://github.com/ros2/rclpy/issues/814>`_)
 * Fix memory leak in Service::take_request() and Client::take_response(). (`#828 <https://github.com/ros2/rclpy/issues/828>`_)
