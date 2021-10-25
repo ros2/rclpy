@@ -1373,8 +1373,8 @@ class Node:
         except Exception:
             subscription_object.destroy_when_not_in_use()
             raise
-        self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
+        self.__subscriptions.append(subscription)
         self._wake_executor()
 
         for event_handler in subscription.event_handlers:
@@ -1419,8 +1419,8 @@ class Node:
             self.context,
             client_impl, srv_type, srv_name, qos_profile,
             callback_group)
-        self.__clients.append(client)
         callback_group.add_entity(client)
+        self.__clients.append(client)
         self._wake_executor()
         return client
 
@@ -1463,8 +1463,8 @@ class Node:
         service = Service(
             service_impl,
             srv_type, srv_name, callback, callback_group, qos_profile)
-        self.__services.append(service)
         callback_group.add_entity(service)
+        self.__services.append(service)
         self._wake_executor()
         return service
 
@@ -1494,8 +1494,8 @@ class Node:
             clock = self._clock
         timer = Timer(callback, callback_group, timer_period_nsec, clock, context=self.context)
 
-        self.__timers.append(timer)
         callback_group.add_entity(timer)
+        self.__timers.append(timer)
         self._wake_executor()
         return timer
 
@@ -1509,8 +1509,8 @@ class Node:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
 
-        self.__guards.append(guard)
         callback_group.add_entity(guard)
+        self.__guards.append(guard)
         self._wake_executor()
         return guard
 
