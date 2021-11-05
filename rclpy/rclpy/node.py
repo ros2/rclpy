@@ -38,7 +38,6 @@ from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
 from rclpy.clock import Clock
@@ -159,7 +158,7 @@ class Node:
         self.__timers: List[Timer] = []
         self.__guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
-        self._default_callback_group = MutuallyExclusiveCallbackGroup()
+        self._default_callback_group = ReentrantCallbackGroup()
         self._parameters_callbacks: List[Callable[[List[Parameter]], SetParametersResult]] = []
         self._rate_group = ReentrantCallbackGroup()
         self._allow_undeclared_parameters = allow_undeclared_parameters
