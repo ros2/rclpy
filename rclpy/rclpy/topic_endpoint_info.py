@@ -167,6 +167,7 @@ class TopicEndpointInfo:
             f'GID: {gid}',
             'QoS profile:',
             f'  Reliability: {self.qos_profile.reliability.name}',
+            f'  History (Depth): {self.qos_profile.history.name} ({self.qos_profile.depth})',
             f'  Durability: {self.qos_profile.durability.name}',
             f'  Lifespan: {self.qos_profile.lifespan}',
             f'  Deadline: {self.qos_profile.deadline}',
