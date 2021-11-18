@@ -1761,6 +1761,17 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
+  rmw_publisher_t * publisher_rmw_handle = rcl_publisher_get_rmw_handle(
+      &(pub->publisher));
+  if (!publisher_rmw_handle) {
+    PyErr_Format(
+      RCLError,
+      "Failed to get publisher rmw handle: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    PyMem_Free(pub);
+    return NULL;
+  }
+
   rclpy_handle_t * pub_handle = _rclpy_create_handle(pub, _rclpy_destroy_publisher);
   if (!pub_handle) {
     _rclpy_destroy_publisher(pub);
