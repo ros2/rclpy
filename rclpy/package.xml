@@ -5,15 +5,15 @@
   <version>3.1.0</version>
   <description>Package containing the Python client.</description>
 
-  <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
   <maintainer email="aditya.pande@openrobotics.org">Aditya Pande</maintainer>
   <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
+  <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
 
   <license>Apache License 2.0</license>
 
   <author email="esteve@osrfoundation.org">Esteve Fernandez</author>
-  <author email="william@openrobotics.org">William Woodall</author>
   <author email="ivanpauno@ekumenlabs.com">Ivan Paunovic</author>
+  <author email="william@openrobotics.org">William Woodall</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>python_cmake_module</buildtool_depend>
