@@ -1761,8 +1761,7 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
-  rmw_publisher_t * publisher_rmw_handle = rcl_publisher_get_rmw_handle(
-      &(pub->publisher));
+  rmw_publisher_t * publisher_rmw_handle = rcl_publisher_get_rmw_handle(&(pub->publisher));
   if (!publisher_rmw_handle) {
     PyErr_Format(
       RCLError,
