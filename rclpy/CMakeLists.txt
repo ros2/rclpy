@@ -30,6 +30,7 @@ find_package(rmw_implementation_cmake REQUIRED)
 # Find python before pybind11
 find_package(python_cmake_module REQUIRED)
 find_package(PythonExtra REQUIRED)
+find_package(Python3 REQUIRED Interpreter Development)
 
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -47,31 +48,6 @@ if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   # This works around the issue.
   set(PYTHON_LIBRARIES "${PYTHON_DEBUG_LIBRARIES}")
 endif()
-
-function(clean_windows_flags target)
-  # Hack to avoid pybind11 issue.
-  #
-  # TODO(ivanpauno):
-  # This can be deleted when we update `pybind11_vendor` to a version including
-  # https://github.com/pybind/pybind11/pull/2590.
-  #
-  # They are enabling /LTCG on Windows to reduce binary size,
-  # but that doesn't play well with MSVC incremental linking (default for Debug/RelWithDebInfo).
-  #
-  # See:
-  # - https://docs.microsoft.com/en-us/cpp/build/reference/incremental-link-incrementally?view=vs-2019
-  # - https://docs.microsoft.com/en-us/cpp/build/reference/ltcg-link-time-code-generation?view=vs-2019
-
-  if(MSVC AND "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-    get_target_property(target_link_libraries ${target} LINK_LIBRARIES)
-    list(REMOVE_ITEM target_link_libraries "$<$<NOT:$<CONFIG:Debug>>:-LTCG>")
-    set_target_properties(${target} PROPERTIES LINK_LIBRARIES "${target_link_libraries}")
-
-    get_target_property(target_compile_options ${target} COMPILE_OPTIONS)
-    list(REMOVE_ITEM target_compile_options "$<$<NOT:$<CONFIG:Debug>>:/GL>")
-    set_target_properties(${target} PROPERTIES COMPILE_OPTIONS "${target_compile_options}")
-  endif()
-endfunction()
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
@@ -146,7 +122,6 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rcutils::rcutils
 )
 configure_build_install_location(_rclpy_pybind11)
-clean_windows_flags(_rclpy_pybind11)
 
 if(NOT WIN32)
   ament_environment_hooks(
