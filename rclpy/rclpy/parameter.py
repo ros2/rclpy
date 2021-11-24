@@ -65,9 +65,12 @@ class Parameter:
                 elif all(isinstance(v, str) for v in parameter_value):
                     return Parameter.Type.STRING_ARRAY
                 else:
-                    raise TypeError(f"The given value is not a list of one of the allowed types '{parameter_value}'.")
+                    raise TypeError(
+                        'The given value is not a list of one of the allowed types'
+                        f" '{parameter_value}'.")
             else:
-                raise TypeError(f"The given value is not one of the allowed types '{parameter_value}'.")
+                raise TypeError(
+                    f"The given value is not one of the allowed types '{parameter_value}'.")
 
         def check(self, parameter_value):
             if Parameter.Type.NOT_SET == self:
