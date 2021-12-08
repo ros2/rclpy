@@ -97,6 +97,7 @@ class TestQosProfile(unittest.TestCase):
             'GID: \n' \
             'QoS profile:\n' \
             '  Reliability: UNKNOWN\n' \
+            '  History (Depth): UNKNOWN\n' \
             '  Durability: UNKNOWN\n' \
             '  Lifespan: 0 nanoseconds\n' \
             '  Deadline: 0 nanoseconds\n' \
