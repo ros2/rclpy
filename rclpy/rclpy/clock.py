@@ -23,16 +23,28 @@ ClockChange = _rclpy.ClockChange
 
 class JumpThreshold:
 
-    def __init__(self, *, min_forward, min_backward, on_clock_change=True):
+    def __init__(self, *, min_forward: Duration, min_backward: Duration, on_clock_change=True):
         """
         Initialize an instance of JumpThreshold.
-
         :param min_forward: Minimum jump forwards to be considered exceeded, or None.
+            The min_forward threshold is enabled only when given a positive Duration.
+            The duration must be positive, and not zero.
         :param min_backward: Negative duration indicating minimum jump backwards to be considered
                              exceeded, or None.
+            The min_backward threshold enabled only when given a negative Duration.
+            The duration must be negative, and not zero.
         :param on_clock_change: True to make a callback happen when ROS_TIME is activated
                                 or deactivated.
         """
+        if min_forward is not None and min_forward.nanoseconds <= 0:
+            raise ValueError('min_forward must be a positive non-zero duration')
+
+        if min_backward is not None and min_backward.nanoseconds >= 0:
+            raise ValueError('min_backward must be a negative non-zero duration')
+
+        if min_forward is None and min_backward is None and not on_clock_change:
+            raise ValueError('At least one jump threshold must be enabled')
+
         self.min_forward = min_forward
         self.min_backward = min_backward
         self.on_clock_change = on_clock_change

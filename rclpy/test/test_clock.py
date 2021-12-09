@@ -16,6 +16,7 @@ import time
 import unittest
 from unittest.mock import Mock
 
+import pytest
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.clock import JumpThreshold
@@ -24,6 +25,34 @@ from rclpy.duration import Duration
 from rclpy.time import Time
 
 from .mock_compat import __name__ as _  # noqa: ignore=F401
+
+
+def test_invalid_jump_threshold():
+    with pytest.raises(ValueError, match='.*min_forward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=0),
+            min_backward=Duration(nanoseconds=-1))
+
+    with pytest.raises(ValueError, match='.*min_forward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=-1),
+            min_backward=Duration(nanoseconds=-1))
+
+    with pytest.raises(ValueError, match='.*min_backward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=1),
+            min_backward=Duration(nanoseconds=0))
+
+    with pytest.raises(ValueError, match='.*min_backward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=1),
+            min_backward=Duration(nanoseconds=1))
+
+    with pytest.raises(ValueError, match='.*must be enabled.*'):
+        JumpThreshold(
+            min_forward=None,
+            min_backward=None,
+            on_clock_change=False)
 
 
 class TestClock(unittest.TestCase):
