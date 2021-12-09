@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from inspect import ismethod
 import sys
 import threading
 from typing import Callable
@@ -123,7 +124,11 @@ class Context:
             if not self.__context.ok():
                 callback()
             else:
-                self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
+                if ismethod(callback):
+                    self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
+                else:
+                    self._callbacks.append(weakref.ref(callback, self._remove_callback))
+
 
     def _logging_fini(self):
         # This function must be called with self._lock held.

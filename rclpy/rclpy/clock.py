@@ -12,9 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TYPE_CHECKING
+
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .duration import Duration
+from .exceptions import NotInitializedException
+from .time import Time
+from .utilities import get_default_context
 
 
 ClockType = _rclpy.ClockType
@@ -23,16 +28,29 @@ ClockChange = _rclpy.ClockChange
 
 class JumpThreshold:
 
-    def __init__(self, *, min_forward, min_backward, on_clock_change=True):
+    def __init__(self, *, min_forward: Duration, min_backward: Duration, on_clock_change=True):
         """
         Initialize an instance of JumpThreshold.
 
         :param min_forward: Minimum jump forwards to be considered exceeded, or None.
+            The min_forward threshold is enabled only when given a positive Duration.
+            The duration must be positive, and not zero.
         :param min_backward: Negative duration indicating minimum jump backwards to be considered
                              exceeded, or None.
+            The min_backward threshold enabled only when given a negative Duration.
+            The duration must be negative, and not zero.
         :param on_clock_change: True to make a callback happen when ROS_TIME is activated
                                 or deactivated.
         """
+        if min_forward is not None and min_forward.nanoseconds <= 0:
+            raise ValueError('min_forward must be a positive non-zero duration')
+
+        if min_backward is not None and min_backward.nanoseconds >= 0:
+            raise ValueError('min_backward must be a negative and non-zero duration')
+
+        if min_forward is None and min_backward is None and not on_clock_change:
+            raise ValueError('At least one jump threshold must be enabled')
+
         self.min_forward = min_forward
         self.min_backward = min_backward
         self.on_clock_change = on_clock_change
@@ -94,6 +112,12 @@ class JumpHandle:
                 self._clock.handle.remove_clock_callback(self)
             self._clock = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, t, v, tb):
+        self.unregister()
+
 
 class Clock:
 
@@ -120,7 +144,6 @@ class Clock:
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
     def now(self):
-        from rclpy.time import Time
         with self.handle:
             rcl_time = self.__clock.get_now()
         return Time(nanoseconds=rcl_time.nanoseconds, clock_type=self.clock_type)
@@ -152,6 +175,61 @@ class Clock:
         return JumpHandle(
             clock=self, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback)
+
+    def sleep_until(self, until: Time, context=None):
+        if context is None:
+            context = get_default_context()
+
+        if not context.ok():
+            raise NotInitializedException()
+
+        if until.clock_type != self._clock_type:
+            raise ValueError("until's clock type does not match this clocks type")
+
+        event = _rclpy.Event()
+        time_source_changed = False
+
+        def on_time_jump(time_jump: TimeJump):
+            """Wake when time jumps and is past target time."""
+            nonlocal time_source_changed
+
+            # ROS time being activated or deactivated changes the epoch, so sleep
+            # time loses its meaning
+            time_source_changed = (
+                time_source_changed or
+                ClockChange.ROS_TIME_ACTIVATED == time_jump.clock_change or
+                ClockChange.ROS_TIME_DEACTIVATED == time_jump.clock_change)
+
+            if time_source_changed or self.now() >= until:
+                event.set()
+
+        def on_shutdown():
+            """Wake when context is shut down."""
+            event.set()
+
+        context.on_shutdown(on_shutdown)
+
+        threshold = JumpThreshold(
+            min_forward=Duration(nanoseconds=1),
+            min_backward=None,
+            on_clock_change=True)
+        with self.create_jump_callback(threshold, post_callback=on_time_jump):
+            if ClockType.SYSTEM_TIME == self._clock_type:
+                event.wait_until_system(self.__clock, until._time_handle)
+            elif ClockType.STEADY_TIME == self._clock_type:
+                event.wait_until_steady(self.__clock, until._time_handle)
+            elif ClockType.ROS_TIME == self._clock_type:
+                if self.__clock.get_ros_time_override_is_enabled():
+                    # ROS time will call the time jump callback every update
+                    event.wait()
+                else:
+                    # ROS time not enabled is system time
+                    event.wait_until_system(self.__clock, until._time_handle)
+
+        if not context.ok() or time_source_changed:
+            return False
+
+        return self.now() >= until
 
 
 class ROSClock(Clock):

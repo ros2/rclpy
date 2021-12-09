@@ -109,6 +109,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/context.cpp
   src/rclpy/destroyable.cpp
   src/rclpy/duration.cpp
+  src/rclpy/event.cpp
   src/rclpy/exceptions.cpp
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
