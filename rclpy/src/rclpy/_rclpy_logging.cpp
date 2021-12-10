@@ -177,8 +177,6 @@ namespace rclpy
 void
 define_logging_api(py::module m)
 {
-  m.doc() = "RCLPY module for logging.";
-
   py::enum_<RCUTILS_LOG_SEVERITY>(m, "RCUTILS_LOG_SEVERITY")
   .value("RCUTILS_LOG_SEVERITY_UNSET", RCUTILS_LOG_SEVERITY_UNSET)
   .value("RCUTILS_LOG_SEVERITY_DEBUG", RCUTILS_LOG_SEVERITY_DEBUG)
