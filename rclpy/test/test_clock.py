@@ -19,6 +19,7 @@ from unittest.mock import Mock
 import pytest
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
+from rclpy.clock import JumpHandle
 from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
 from rclpy.duration import Duration
@@ -208,3 +209,20 @@ class TestClock(unittest.TestCase):
         handler1.unregister()
         handler2.unregister()
         handler3.unregister()
+
+
+def test_with_jump_handle():
+    clock = ROSClock()
+    clock._set_ros_time_is_active(False)
+
+    post_callback = Mock()
+    threshold = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
+
+    with clock.create_jump_callback(threshold, post_callback=post_callback) as jump_handler:
+        assert isinstance(jump_handler, JumpHandle)
+        clock._set_ros_time_is_active(True)
+        post_callback.assert_called_once()
+
+    post_callback.reset_mock()
+    clock._set_ros_time_is_active(False)
+    post_callback.assert_not_called()

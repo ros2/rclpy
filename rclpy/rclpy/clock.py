@@ -108,6 +108,12 @@ class JumpHandle:
                 self._clock.handle.remove_clock_callback(self)
             self._clock = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, t, v, tb):
+        self.unregister()
+
 
 class Clock:
 
