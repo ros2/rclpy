@@ -26,6 +26,7 @@ class JumpThreshold:
     def __init__(self, *, min_forward: Duration, min_backward: Duration, on_clock_change=True):
         """
         Initialize an instance of JumpThreshold.
+
         :param min_forward: Minimum jump forwards to be considered exceeded, or None.
             The min_forward threshold is enabled only when given a positive Duration.
             The duration must be positive, and not zero.
