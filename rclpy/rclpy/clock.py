@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING
-
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .duration import Duration
@@ -46,7 +44,7 @@ class JumpThreshold:
             raise ValueError('min_forward must be a positive non-zero duration')
 
         if min_backward is not None and min_backward.nanoseconds >= 0:
-            raise ValueError('min_backward must be a negative and non-zero duration')
+            raise ValueError('min_backward must be a negative non-zero duration')
 
         if min_forward is None and min_backward is None and not on_clock_change:
             raise ValueError('At least one jump threshold must be enabled')
