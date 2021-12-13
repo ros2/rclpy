@@ -37,18 +37,30 @@ namespace py = pybind11;
 
 namespace
 {
-class LifecycleStateMachine : public rclpy::Destroyable, public std::enable_shared_from_this<LifecycleStateMachine>
+class LifecycleStateMachine : public rclpy::Destroyable
 {
 public:
   LifecycleStateMachine(
     rclpy::Node node, bool enable_com_interface)
   : node_(std::move(node))
   {
-    state_machine_ = rcl_lifecycle_get_zero_initialized_state_machine();
+    state_machine_ = std::shared_ptr<rcl_lifecycle_state_machine_t>(
+      new rcl_lifecycle_state_machine_t(rcl_lifecycle_get_zero_initialized_state_machine()),
+      [node] (rcl_lifecycle_state_machine_t * state_machine) {
+        rcl_ret_t ret = rcl_lifecycle_state_machine_fini(state_machine, node.rcl_ptr());
+        if (RCL_RET_OK != ret) {
+          // Warning should use line number of the current stack frame
+          int stack_level = 1;
+          PyErr_WarnFormat(
+            PyExc_RuntimeWarning, stack_level, "Failed to fini lifecycle state machine: %s",
+            rcl_get_error_string().str);
+          rcl_reset_error();
+        }
+      });
     auto state_machine_options = rcl_lifecycle_get_default_state_machine_options();
     state_machine_options.enable_com_interface = enable_com_interface;
     rcl_ret_t ret = rcl_lifecycle_state_machine_init(
-      &state_machine_,
+      state_machine_.get(),
       node_.rcl_ptr(),
       ROSIDL_GET_MSG_TYPE_SUPPORT(lifecycle_msgs, msg, TransitionEvent),
       ROSIDL_GET_SRV_TYPE_SUPPORT(lifecycle_msgs, srv, ChangeState),
@@ -60,37 +72,33 @@ public:
     if (RCL_RET_OK != ret) {
       throw rclpy::RCLError("Failed to create lifecycle state machine");
     }
+    if (state_machine_->options.enable_com_interface) {
+      srv_change_state_ = std::make_shared<rclpy::Service>(
+        node_,
+        std::shared_ptr<rcl_service_t>(
+          state_machine_, &state_machine_->com_interface.srv_change_state));
+      srv_get_state_ = std::make_shared<rclpy::Service>(
+        node_,
+        std::shared_ptr<rcl_service_t>(
+          state_machine_, &state_machine_->com_interface.srv_get_state));
+      srv_get_available_states_ = std::make_shared<rclpy::Service>(
+        node_,
+        std::shared_ptr<rcl_service_t>(
+          state_machine_, &state_machine_->com_interface.srv_get_available_states));
+      srv_get_available_transitions_ = std::make_shared<rclpy::Service>(
+        node_,
+        std::shared_ptr<rcl_service_t>(
+          state_machine_, &state_machine_->com_interface.srv_get_available_transitions));
+      srv_get_transition_graph_ = std::make_shared<rclpy::Service>(
+        node_,
+        std::shared_ptr<rcl_service_t>(
+          state_machine_, &state_machine_->com_interface.srv_get_transition_graph));
+    }
   }
 
   ~LifecycleStateMachine()
   {
     this->destroy();
-  }
-  
-  void init()
-  {
-    if (state_machine_.options.enable_com_interface) {
-      srv_change_state_ = std::make_shared<rclpy::Service>(
-        node_,
-        std::shared_ptr<rcl_service_t>(
-          this->shared_from_this(), &state_machine_.com_interface.srv_change_state));
-      srv_get_state_ = std::make_shared<rclpy::Service>(
-        node_,
-        std::shared_ptr<rcl_service_t>(
-          this->shared_from_this(), &state_machine_.com_interface.srv_get_state));
-      srv_get_available_states_ = std::make_shared<rclpy::Service>(
-        node_,
-        std::shared_ptr<rcl_service_t>(
-          this->shared_from_this(), &state_machine_.com_interface.srv_get_available_states));
-      srv_get_available_transitions_ = std::make_shared<rclpy::Service>(
-        node_,
-        std::shared_ptr<rcl_service_t>(
-          this->shared_from_this(), &state_machine_.com_interface.srv_get_available_transitions));
-      srv_get_transition_graph_ = std::make_shared<rclpy::Service>(
-        node_,
-        std::shared_ptr<rcl_service_t>(
-          this->shared_from_this(), &state_machine_.com_interface.srv_get_transition_graph));
-    }
   }
 
   void
@@ -101,22 +109,14 @@ public:
     srv_get_available_states_.reset();
     srv_get_available_transitions_.reset();
     srv_get_transition_graph_.reset();
-    rcl_ret_t ret = rcl_lifecycle_state_machine_fini(&state_machine_, node_.rcl_ptr());
-    if (RCL_RET_OK != ret) {
-      // Warning should use line number of the current stack frame
-      int stack_level = 1;
-      PyErr_WarnFormat(
-        PyExc_RuntimeWarning, stack_level, "Failed to fini lifecycle state machine: %s",
-        rcl_get_error_string().str);
-      rcl_reset_error();
-    }
+    state_machine_.reset();
     node_.destroy();
   }
 
   bool
   is_initialized()
   {
-    return RCL_RET_OK == rcl_lifecycle_state_machine_is_initialized(&state_machine_);
+    return RCL_RET_OK == rcl_lifecycle_state_machine_is_initialized(state_machine_.get());
   }
 
   void
@@ -124,7 +124,7 @@ public:
   {
     if (
       rcl_lifecycle_trigger_transition_by_id(
-        &state_machine_, transition_id, publish_update) != RCL_RET_OK)
+        state_machine_.get(), transition_id, publish_update) != RCL_RET_OK)
     {
       throw rclpy::RCLError("Failed to trigger lifecycle state machine transition");;
     }
@@ -135,10 +135,16 @@ public:
   {
     if (
       rcl_lifecycle_trigger_transition_by_label(
-        &state_machine_, label.c_str(), publish_update) != RCL_RET_OK)
+        state_machine_.get(), label.c_str(), publish_update) != RCL_RET_OK)
     {
       throw rclpy::RCLError("Failed to trigger lifecycle state machine transition");;
     }
+  }
+
+  void
+  print()
+  {
+    rcl_print_state_machine(state_machine_.get());
   }
 
   std::shared_ptr<rclpy::Service>
@@ -171,12 +177,6 @@ public:
     return srv_get_transition_graph_;
   }
 
-  void
-  print()
-  {
-    rcl_print_state_machine(&state_machine_);
-  }
-
 private:
   rclpy::Node node_;
   std::shared_ptr<rclpy::Service> srv_change_state_;
@@ -184,7 +184,7 @@ private:
   std::shared_ptr<rclpy::Service> srv_get_available_states_;
   std::shared_ptr<rclpy::Service> srv_get_available_transitions_;
   std::shared_ptr<rclpy::Service> srv_get_transition_graph_;
-  rcl_lifecycle_state_machine_t state_machine_;
+  std::shared_ptr<rcl_lifecycle_state_machine_t> state_machine_;
 };
 
 enum class TransitionCallbackReturnType
@@ -201,15 +201,9 @@ namespace rclpy
 void
 define_lifecycle_api(py::module m)
 {
-  py::class_<LifecycleStateMachine, Destroyable, std::shared_ptr<LifecycleStateMachine>>(
+  py::class_<LifecycleStateMachine, Destroyable>(
     m, "LifecycleStateMachine")
-    .def(py::init([](Node node, bool enable_com_interface)
-      {
-        auto state_machine = std::make_shared<LifecycleStateMachine>(std::move(node), enable_com_interface);
-        state_machine->init();
-        return state_machine;
-      }
-    ))
+    .def(py::init<Node, bool>())
     .def(
       "is_initialized", &LifecycleStateMachine::is_initialized,
       "Check if state machine is initialized.")
