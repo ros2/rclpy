@@ -36,15 +36,26 @@ namespace rclpy
 class Event
 {
 public:
+  /// Wait until a time specified by a system or steady clock.
+  /// \param clock the clock to use for time synchronization with until
   template<typename ClockType>
   void wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
+  /// Wait until a time specified by a ROS clock.
+  /// \warning the caller is responsible for creating a time jump callback to set this event when
+  /// the target ROS time is reached.
+  /// when a given ROS time is reached.
+  /// \param clock the clock to use for time synchronization.
   void wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
+  /// Indicate if the Event is set.
+  /// \return True if the Event is set.
   bool is_set();
 
+  /// Set the event.
   void set();
 
+  /// Clear the event.
   void clear();
 
 private:

@@ -55,6 +55,7 @@ void Event::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until)
 
 void Event::wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until)
 {
+  // Check if ROS time is enabled in C++ to avoid TOCTTOU with TimeSource by holding GIL
   if (clock->get_ros_time_override_is_enabled()) {
     // Could be a long wait, release the gil
     py::gil_scoped_release release;
