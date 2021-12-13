@@ -245,10 +245,21 @@ def test_sleep_until_non_default_context(non_default_context):
     assert clock.sleep_until(clock.now() + Duration(seconds=0.1), context=non_default_context)
 
 
+def test_sleep_for_non_default_context(non_default_context):
+    clock = Clock()
+    assert clock.sleep_for(Duration(seconds=0.1), context=non_default_context)
+
+
 def test_sleep_until_invalid_context():
     clock = Clock()
     with pytest.raises(NotInitializedException):
         clock.sleep_until(clock.now() + Duration(seconds=0.1), context=Context())
+
+
+def test_sleep_for_invalid_context():
+    clock = Clock()
+    with pytest.raises(NotInitializedException):
+        clock.sleep_for(Duration(seconds=0.1), context=Context())
 
 
 @pytest.mark.parametrize(
@@ -264,6 +275,17 @@ def test_sleep_until_basic(default_context, clock_type):
 
 @pytest.mark.parametrize(
     'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+def test_sleep_for_basic(default_context, clock_type):
+    clock = Clock(clock_type=clock_type)
+    sleep_duration = Duration(seconds=0.1)
+    start = clock.now()
+    assert clock.sleep_for(sleep_duration)
+    stop = clock.now()
+    assert stop - start >= sleep_duration
+
+
+@pytest.mark.parametrize(
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
 def test_sleep_until_time_in_past(default_context, clock_type):
     clock = Clock(clock_type=clock_type)
     sleep_duration = Duration(seconds=-1)
@@ -271,6 +293,18 @@ def test_sleep_until_time_in_past(default_context, clock_type):
     assert clock.sleep_until(clock.now() + sleep_duration)
     stop = clock.now()
     assert stop - start < A_SMALL_AMOUNT_OF_TIME
+
+
+@pytest.mark.parametrize(
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+def test_sleep_for_negative_duration(default_context, clock_type):
+    clock = Clock(clock_type=clock_type)
+    sleep_duration = Duration(seconds=-1)
+    start = clock.now()
+    assert clock.sleep_for(sleep_duration)
+    stop = clock.now()
+    a_small_amount_of_time = Duration(seconds=0.01)
+    assert stop - start < a_small_amount_of_time
 
 
 @pytest.mark.parametrize('ros_time_enabled', (True, False))
@@ -301,6 +335,31 @@ def test_sleep_until_ros_time_toggled(default_context, ros_time_enabled):
     assert retval is False
 
 
+@pytest.mark.parametrize('ros_time_enabled', (True, False))
+def test_sleep_for_ros_time_toggled(default_context, ros_time_enabled):
+    clock = ROSClock()
+    clock._set_ros_time_is_active(not ros_time_enabled)
+
+    retval = None
+
+    def run():
+        nonlocal retval
+        retval = clock.sleep_for(Duration(seconds=999999))
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+
+    # wait for thread to get inside sleep_for call
+    time.sleep(0.2)
+
+    clock._set_ros_time_is_active(ros_time_enabled)
+
+    # wait for thread to exit
+    time.sleep(0.2)
+
+    assert retval is False
+
+
 def test_sleep_until_context_shut_down(non_default_context):
     clock = Clock()
     retval = None
@@ -323,6 +382,28 @@ def test_sleep_until_context_shut_down(non_default_context):
     t.join()
     stop = clock.now()
     assert stop - start < A_SMALL_AMOUNT_OF_TIME
+
+    assert retval is False
+
+
+def test_sleep_for_context_shut_down(non_default_context):
+    clock = Clock()
+    retval = None
+
+    def run():
+        nonlocal retval
+        retval = clock.sleep_for(Duration(seconds=999999), context=non_default_context)
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+
+    # wait for thread to get inside sleep_for call
+    time.sleep(0.2)
+
+    non_default_context.shutdown()
+
+    # wait for thread to exit
+    time.sleep(0.2)
 
     assert retval is False
 
@@ -354,6 +435,35 @@ def test_sleep_until_ros_time_enabled(default_context):
     t.join()
     stop = clock.now()
     assert stop - start < A_SMALL_AMOUNT_OF_TIME
+
+    assert retval
+
+
+def test_sleep_for_ros_time_enabled(default_context):
+    clock = ROSClock()
+    clock._set_ros_time_is_active(True)
+
+    start_time = Time(seconds=1, clock_type=ClockType.ROS_TIME)
+    sleep_duration = Duration(seconds=99999)
+    stop_time = start_time + sleep_duration
+    clock.set_ros_time_override(start_time)
+
+    retval = None
+
+    def run():
+        nonlocal retval
+        retval = clock.sleep_for(sleep_duration)
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+
+    # wait for thread to get inside sleep_for call
+    time.sleep(0.2)
+
+    clock.set_ros_time_override(stop_time)
+
+    # wait for thread to exit
+    time.sleep(0.2)
 
     assert retval
 

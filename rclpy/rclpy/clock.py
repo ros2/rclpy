@@ -236,6 +236,30 @@ class Clock:
 
         return self.now() >= until
 
+    def sleep_for(self, rel_time: Duration, context=None) -> bool:
+        """
+        Sleep for a specified duration.
+
+        Equivalent to:
+
+        .. code-block:: python
+
+            clock.sleep_until(clock.now() + rel_time, context)
+
+
+        When using a ROSClock, this may sleep forever if the TimeSource is misconfigured and the
+        context is never shut down.
+        ROS time being activated or deactivated causes this function to cease sleeping and return
+        False.
+
+        :param rel_time: Duration of time to sleep for.
+        :param context: Context which when shut down will cause this sleep to wake early.
+            If context is None, then the default context is used.
+        :return: True if the full duration was slept, or False if it woke for another reason.
+        :raises NotInitializedException: context has not been initialized or is shutdown.
+        """
+        return self.sleep_until(self.now() + rel_time, context)
+
 
 class ROSClock(Clock):
 
