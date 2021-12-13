@@ -174,7 +174,22 @@ class Clock:
             clock=self, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback)
 
-    def sleep_until(self, until: Time, context=None):
+    def sleep_until(self, until: Time, context=None) -> bool:
+        """
+        Sleep until a Time on this Clock is reached.
+
+        When using a ROSClock, this may sleep forever if the TimeSource is misconfigured and the
+        context is never shut down.
+        ROS time being activated or deactivated causes this function to cease sleeping and return
+        False.
+
+        :param until: Time at which this function should stop sleeping.
+        :param context: Context which when shut down will cause this sleep to wake early.
+            If context is None, then the default context is used.
+        :return: True if until was reached, or False if it woke for another reason.
+        :raises ValueError: until is specified for a different type of clock than this one.
+        :raises NotInitializedException: context has not been initialized or is shutdown.
+        """
         if context is None:
             context = get_default_context()
 
@@ -182,7 +197,7 @@ class Clock:
             raise NotInitializedException()
 
         if until.clock_type != self._clock_type:
-            raise ValueError("until's clock type does not match this clocks type")
+            raise ValueError("until's clock type does not match this clock's type")
 
         event = _rclpy.Event()
         time_source_changed = False
