@@ -37,9 +37,9 @@ class Event
 {
 public:
   template<typename ClockType>
-  bool wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until);
+  void wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
-  bool wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until);
+  void wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
   bool is_set();
 
