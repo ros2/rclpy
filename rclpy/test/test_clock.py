@@ -292,7 +292,7 @@ def test_sleep_until_ros_time_toggled(default_context, ros_time_enabled):
 
     # wait for thread to exit
     time.sleep(0.2)
-    
+
     assert retval is False
 
 
@@ -315,7 +315,7 @@ def test_sleep_until_context_shut_down(non_default_context):
 
     # wait for thread to exit
     time.sleep(0.2)
-    
+
     assert retval is False
 
 
@@ -343,7 +343,7 @@ def test_sleep_until_ros_time_enabled(default_context):
 
     # wait for thread to exit
     time.sleep(0.2)
-    
+
     assert retval
 
 
