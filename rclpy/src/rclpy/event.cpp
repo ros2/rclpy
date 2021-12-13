@@ -53,13 +53,19 @@ bool Event::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until)
   return cv_.wait_until(lock, chrono_until, [this]() {return state_;});
 }
 
-bool Event::wait()
+bool Event::wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until)
 {
-  // Could be a long wait, release the gil
-  py::gil_scoped_release release;
-  std::unique_lock<std::mutex> lock(mutex_);
-  cv_.wait(lock, [this]() {return state_;});
-  return state_;
+  if (clock->get_ros_time_override_is_enabled()) {
+    // Could be a long wait, release the gil
+    py::gil_scoped_release release;
+    std::unique_lock<std::mutex> lock(mutex_);
+    // Expects caller to have setup a time jump callback to wake this event
+    cv_.wait(lock, [this]() {return state_;});
+    return state_;
+  } else {
+    // ROS time not enabled is system time
+    return wait_until<std::chrono::system_clock>(clock, until);
+  }
 }
 
 bool Event::is_set()
@@ -97,8 +103,8 @@ void define_event(py::object module)
     "wait_until_system", &Event::wait_until<std::chrono::system_clock>,
     "Wait for the event to be set (system timed wait)")
   .def(
-    "wait", &Event::wait,
-    "Wait indefinitely for the event to be set")
+    "wait_until_ros", &Event::wait_until_ros,
+    "Wait for the event to be set (ROS timed wait)")
   .def(
     "is_set", &Event::is_set,
     "Return True if the event is set, False otherwise.")

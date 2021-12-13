@@ -39,11 +39,10 @@ public:
   template<typename ClockType>
   bool wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
-  bool wait();
+  bool wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
   bool is_set();
 
-  ///
   void set();
 
   void clear();

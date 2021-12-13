@@ -232,12 +232,7 @@ class Clock:
             elif ClockType.STEADY_TIME == self._clock_type:
                 event.wait_until_steady(self.__clock, until._time_handle)
             elif ClockType.ROS_TIME == self._clock_type:
-                if self.__clock.get_ros_time_override_is_enabled():
-                    # ROS time will call the time jump callback every update
-                    event.wait()
-                else:
-                    # ROS time not enabled is system time
-                    event.wait_until_system(self.__clock, until._time_handle)
+                event.wait_until_ros(self.__clock, until._time_handle)
 
         if not context.ok() or time_source_changed:
             return False
