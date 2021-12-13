@@ -34,9 +34,9 @@ Service::destroy()
 }
 
 Service::Service(
-  Node node, py::object pysrv_type, std::string service_name,
+  Node & node, py::object pysrv_type, std::string service_name,
   py::object pyqos_profile)
-: node_(std::move(node))
+: node_(node)
 {
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
     common_get_type_support(pysrv_type));
@@ -87,8 +87,8 @@ Service::Service(
 }
 
 Service::Service(
-  Node node, std::shared_ptr<rcl_service_t> rcl_service)
-: node_(std::move(node)), rcl_service_(rcl_service)
+  Node & node, std::shared_ptr<rcl_service_t> rcl_service)
+: node_(node), rcl_service_(rcl_service)
 {}
 
 void
@@ -131,7 +131,7 @@ void
 define_service(py::object module)
 {
   py::class_<Service, Destroyable, std::shared_ptr<Service>>(module, "Service")
-  .def(py::init<Node, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, std::string, py::object>())
   .def_property_readonly(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());
