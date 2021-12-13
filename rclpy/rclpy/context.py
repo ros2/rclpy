@@ -129,7 +129,6 @@ class Context:
                 else:
                     self._callbacks.append(weakref.ref(callback, self._remove_callback))
 
-
     def _logging_fini(self):
         # This function must be called with self._lock held.
         from rclpy.impl.implementation_singleton import rclpy_implementation

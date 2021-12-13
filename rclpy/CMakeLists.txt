@@ -186,6 +186,7 @@ if(BUILD_TESTING)
       test/test_callback_group.py
       test/test_client.py
       test/test_clock.py
+      test/test_context.py
       test/test_create_node.py
       test/test_create_while_spinning.py
       test/test_destruction.py

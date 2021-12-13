@@ -21,6 +21,7 @@ import pytest
 import rclpy
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
+from rclpy.clock import JumpHandle
 from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
 from rclpy.context import Context
@@ -30,6 +31,34 @@ from rclpy.time import Time
 from rclpy.utilities import get_default_context
 
 from .mock_compat import __name__ as _  # noqa: ignore=F401
+
+
+def test_invalid_jump_threshold():
+    with pytest.raises(ValueError, match='.*min_forward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=0),
+            min_backward=Duration(nanoseconds=-1))
+
+    with pytest.raises(ValueError, match='.*min_forward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=-1),
+            min_backward=Duration(nanoseconds=-1))
+
+    with pytest.raises(ValueError, match='.*min_backward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=1),
+            min_backward=Duration(nanoseconds=0))
+
+    with pytest.raises(ValueError, match='.*min_backward.*'):
+        JumpThreshold(
+            min_forward=Duration(nanoseconds=1),
+            min_backward=Duration(nanoseconds=1))
+
+    with pytest.raises(ValueError, match='.*must be enabled.*'):
+        JumpThreshold(
+            min_forward=None,
+            min_backward=None,
+            on_clock_change=False)
 
 
 class TestClock(unittest.TestCase):
@@ -316,3 +345,20 @@ def test_sleep_until_ros_time_enabled(default_context):
     time.sleep(0.2)
     
     assert retval
+
+
+def test_with_jump_handle():
+    clock = ROSClock()
+    clock._set_ros_time_is_active(False)
+
+    post_callback = Mock()
+    threshold = JumpThreshold(min_forward=None, min_backward=None, on_clock_change=True)
+
+    with clock.create_jump_callback(threshold, post_callback=post_callback) as jump_handler:
+        assert isinstance(jump_handler, JumpHandle)
+        clock._set_ros_time_is_active(True)
+        post_callback.assert_called_once()
+
+    post_callback.reset_mock()
+    clock._set_ros_time_is_active(False)
+    post_callback.assert_not_called()

@@ -143,7 +143,7 @@ class Clock:
     def __repr__(self):
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
-    def now(self):
+    def now(self) -> Time:
         with self.handle:
             rcl_time = self.__clock.get_now()
         return Time(nanoseconds=rcl_time.nanoseconds, clock_type=self.clock_type)
@@ -247,8 +247,7 @@ class ROSClock(Clock):
         with self.handle:
             self.handle.set_ros_time_override_is_enabled(enabled)
 
-    def set_ros_time_override(self, time):
-        from rclpy.time import Time
+    def set_ros_time_override(self, time: Time):
         if not isinstance(time, Time):
             raise TypeError(
                 'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
