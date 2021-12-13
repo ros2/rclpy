@@ -47,7 +47,7 @@ void Event::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until)
   // Cast because system clock resolution is be too big for nanoseconds on Windows & OSX
   const typename ClockType::time_point chrono_until = chrono_entry +
     std::chrono::duration_cast<typename ClockType::duration>(
-      std::chrono::nanoseconds(delta_t.nanoseconds));
+    std::chrono::nanoseconds(delta_t.nanoseconds));
 
   // Could be a long wait, release the gil
   py::gil_scoped_release release;
