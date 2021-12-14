@@ -37,12 +37,12 @@ namespace py = pybind11;
 
 namespace
 {
-class LifecycleStateMachine : public rclpy::Destroyable
+class LifecycleStateMachine : public rclpy::Destroyable, public std::enable_shared_from_this<LifecycleStateMachine>
 {
 public:
   LifecycleStateMachine(
-    rclpy::Node node, bool enable_com_interface)
-  : node_(std::move(node))
+    rclpy::Node & node, bool enable_com_interface)
+  : node_(node)
   {
     state_machine_ = std::shared_ptr<rcl_lifecycle_state_machine_t>(
       new rcl_lifecycle_state_machine_t(rcl_lifecycle_get_zero_initialized_state_machine()),
@@ -104,12 +104,12 @@ public:
   void
   destroy() override
   {
+    state_machine_.reset();
     srv_change_state_.reset();
     srv_get_state_.reset();
     srv_get_available_states_.reset();
     srv_get_available_transitions_.reset();
     srv_get_transition_graph_.reset();
-    state_machine_.reset();
     node_.destroy();
   }
 
@@ -201,9 +201,9 @@ namespace rclpy
 void
 define_lifecycle_api(py::module m)
 {
-  py::class_<LifecycleStateMachine, Destroyable>(
+  py::class_<LifecycleStateMachine, Destroyable, std::shared_ptr<LifecycleStateMachine>>(
     m, "LifecycleStateMachine")
-    .def(py::init<Node, bool>())
+    .def(py::init<Node &, bool>())
     .def(
       "is_initialized", &LifecycleStateMachine::is_initialized,
       "Check if state machine is initialized.")
@@ -213,20 +213,20 @@ define_lifecycle_api(py::module m)
     .def(
       "trigger_transition_by_label", &LifecycleStateMachine::trigger_transition_by_id,
       "Trigger a transition by label.")
-    .def(
-      "get_srv_change_state", &LifecycleStateMachine::get_srv_change_state,
+    .def_property_readonly(
+      "service_change_state", &LifecycleStateMachine::get_srv_change_state,
       "Get the change state service.")
-    .def(
-      "get_srv_get_state", &LifecycleStateMachine::get_srv_get_state,
+    .def_property_readonly(
+      "service_get_state", &LifecycleStateMachine::get_srv_get_state,
       "Get the get state service.")
-    .def(
-      "get_srv_get_available_states", &LifecycleStateMachine::get_srv_get_available_states,
+    .def_property_readonly(
+      "service_get_available_states", &LifecycleStateMachine::get_srv_get_available_states,
       "Get the get available states service.")
-    .def(
-      "get_srv_get_available_transitions", &LifecycleStateMachine::get_srv_get_available_transitions,
+    .def_property_readonly(
+      "service_get_available_transitions", &LifecycleStateMachine::get_srv_get_available_transitions,
       "Get the get available transitions service.")
-    .def(
-      "get_srv_get_transition_graph", &LifecycleStateMachine::get_srv_get_transition_graph,
+    .def_property_readonly(
+      "service_get_transition_graph", &LifecycleStateMachine::get_srv_get_transition_graph,
       "Get the get transition graph service.");
   py::enum_<TransitionCallbackReturnType>(m, "TransitionCallbackReturnType")
     .value("SUCCESS", TransitionCallbackReturnType::Success)
