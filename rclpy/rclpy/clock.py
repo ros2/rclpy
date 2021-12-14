@@ -216,11 +216,8 @@ class Clock:
             if time_source_changed or self.now() >= until:
                 event.set()
 
-        def on_shutdown():
-            """Wake when context is shut down."""
-            event.set()
-
-        context.on_shutdown(on_shutdown)
+        # Wake when context is shut down
+        context.on_shutdown(event.set)
 
         threshold = JumpThreshold(
             min_forward=Duration(nanoseconds=1),
