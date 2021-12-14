@@ -280,7 +280,7 @@ def test_sleep_until_ros_time_toggled(default_context, ros_time_enabled):
 
     def run():
         nonlocal retval
-        retval = clock.sleep_until(clock.now() + Duration(seconds=999999))
+        retval = clock.sleep_until(clock.now() + Duration(seconds=10))
 
     t = threading.Thread(target=run, daemon=True)
     t.start()
@@ -303,7 +303,7 @@ def test_sleep_until_context_shut_down(non_default_context):
     def run():
         nonlocal retval
         retval = clock.sleep_until(
-            clock.now() + Duration(seconds=999999), context=non_default_context)
+            clock.now() + Duration(seconds=10), context=non_default_context)
 
     t = threading.Thread(target=run, daemon=True)
     t.start()
@@ -324,7 +324,7 @@ def test_sleep_until_ros_time_enabled(default_context):
     clock._set_ros_time_is_active(True)
 
     start_time = Time(seconds=1, clock_type=ClockType.ROS_TIME)
-    stop_time = start_time + Duration(seconds=99999)
+    stop_time = start_time + Duration(seconds=10)
     clock.set_ros_time_override(start_time)
 
     retval = None
