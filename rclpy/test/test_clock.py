@@ -303,7 +303,7 @@ def test_sleep_for_negative_duration(default_context, clock_type):
     start = clock.now()
     assert clock.sleep_for(sleep_duration)
     stop = clock.now()
-    a_small_amount_of_time = Duration(seconds=0.01)
+    a_small_amount_of_time = Duration(seconds=0.5)
     assert stop - start < a_small_amount_of_time
 
 
