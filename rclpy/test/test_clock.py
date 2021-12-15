@@ -303,8 +303,7 @@ def test_sleep_for_negative_duration(default_context, clock_type):
     start = clock.now()
     assert clock.sleep_for(sleep_duration)
     stop = clock.now()
-    a_small_amount_of_time = Duration(seconds=0.5)
-    assert stop - start < a_small_amount_of_time
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
 
 @pytest.mark.parametrize('ros_time_enabled', (True, False))
@@ -344,7 +343,7 @@ def test_sleep_for_ros_time_toggled(default_context, ros_time_enabled):
 
     def run():
         nonlocal retval
-        retval = clock.sleep_for(Duration(seconds=999999))
+        retval = clock.sleep_for(Duration(seconds=10))
 
     t = threading.Thread(target=run)
     t.start()
@@ -355,7 +354,10 @@ def test_sleep_for_ros_time_toggled(default_context, ros_time_enabled):
     clock._set_ros_time_is_active(ros_time_enabled)
 
     # wait for thread to exit
+    start = clock.now()
     t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
     assert retval is False
 
@@ -392,7 +394,7 @@ def test_sleep_for_context_shut_down(non_default_context):
 
     def run():
         nonlocal retval
-        retval = clock.sleep_for(Duration(seconds=999999), context=non_default_context)
+        retval = clock.sleep_for(Duration(seconds=10), context=non_default_context)
 
     t = threading.Thread(target=run)
     t.start()
@@ -403,7 +405,10 @@ def test_sleep_for_context_shut_down(non_default_context):
     non_default_context.shutdown()
 
     # wait for thread to exit
+    start = clock.now()
     t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
     assert retval is False
 
@@ -444,7 +449,7 @@ def test_sleep_for_ros_time_enabled(default_context):
     clock._set_ros_time_is_active(True)
 
     start_time = Time(seconds=1, clock_type=ClockType.ROS_TIME)
-    sleep_duration = Duration(seconds=99999)
+    sleep_duration = Duration(seconds=10)
     stop_time = start_time + sleep_duration
     clock.set_ros_time_override(start_time)
 
@@ -463,7 +468,10 @@ def test_sleep_for_ros_time_enabled(default_context):
     clock.set_ros_time_override(stop_time)
 
     # wait for thread to exit
+    start = clock.now()
     t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
     assert retval
 
