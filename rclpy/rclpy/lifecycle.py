@@ -29,17 +29,56 @@ from rclpy.type_support import check_is_valid_srv_type
 
 TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
 
-class LifecycleMixin:
+class ManagedEntity:
+    def on_configure(self, state) -> TransitionCallbackReturn:
+        """Callback that will be triggered when a configure transition is requested."""
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_cleanup(self, state) -> TransitionCallbackReturn:
+        """Callback that will be triggered when a cleanup transition is requested."""
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_shutdown(self, state) -> TransitionCallbackReturn:
+        """Callback that will be triggered when a shutdown transition is requested."""
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_activate(self, state) -> TransitionCallbackReturn:
+        """Callback that will be triggered when an activate transition is requested."""
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_deactivate(self, state) -> TransitionCallbackReturn:
+        """Callback that will be triggered when an deactivate transition is requested."""
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_error(self, state) -> TransitionCallbackReturn:
+        """Callback that will be triggered when an error transition is requested."""
+        return TransitionCallbackReturn.SUCCESS
+
+
+class LifecycleMixin(ManagedEntity):
+    """
+    Mixin class to share as most code as possible between `Node` and `LifecycleNode`.
+
+    This class is not useful if not used in multiple inheritance together with `Node`,
+    as it access attributes created by `Node` directly here!
+    """
 
     # TODO(ivanpauno): We could make this a bit nicer by adding State, Transition, StateMachine abstractions
     # in this module.
     # Anyways those are not directly useful to the user and the implementation is not too bad without them.
+    # TODO(ivanpauno): We actually need a State abstraction to make the register_callback() API nicer!
     def __init__(
         self,
         *,
         enable_communication_interface: bool = True,
         callback_group: Optional[CallbackGroup] = None,
     ):
+        """
+        Initialize a lifecycle node.
+
+        :param enable_communication_interface: Creates the lifecycle nodes services and publisher if True.
+        :param callback_group: Callback group that will be used by all the lifecycle node services.
+        """
         if callback_group is None:
             callback_group = self.default_callback_group
         self._callbacks : Dict[int, Callable[[int], TransitionCallbackReturn]] = {}
@@ -108,6 +147,12 @@ class LifecycleMixin:
     def register_callback(
         self, state_id: int, callback: Callable[[int], TransitionCallbackReturn]
     ) -> bool:
+        """
+        Register a callback that will be triggered when transitioning to state_id.
+
+        The registered callback takes as an argument the previous state id, and returns
+        a TransitionCallbackReturn value.
+        """
         self._callbacks[state_id] = callback
         # TODO(ivanpauno): Copying rclcpp style.
         # Maybe having a return value doesn't make sense (?).
@@ -218,27 +263,21 @@ class LifecycleMixin:
             resp.available_transitions.append(item)
         return resp
 
-    def on_configure(self, state) -> TransitionCallbackReturn:
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_cleanup(self, state) -> TransitionCallbackReturn:
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_shutdown(self, state) -> TransitionCallbackReturn:
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_activate(self, state) -> TransitionCallbackReturn:
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_deactivate(self, state) -> TransitionCallbackReturn:
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_error(self, state) -> TransitionCallbackReturn:
-        return TransitionCallbackReturn.SUCCESS
-
 
 class LifecycleNode(LifecycleMixin, Node):
+    """
+    A ROS 2 managed node.
+    
+    This class extends Node with the methods provided by LifecycleMixin.
+    Methods in LifecycleMixin overridde the ones in Node.
+    """
     def __init__(self, node_name, *, enable_communication_interface: bool = True, **kwargs):
+        """
+        Create a lifecycle node.
+        
+        See rclpy.lifecycle.LifecycleMixin.__init__() and rclpy.node.Node()
+        for the documentation of each parameter.
+        """
         Node.__init__(self, node_name, **kwargs)
         LifecycleMixin.__init__(self,
             enable_communication_interface=enable_communication_interface)
