@@ -15,6 +15,7 @@
 #include <memory>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <lifecycle_msgs/msg/transition_event.h>
 #include <lifecycle_msgs/srv/change_state.h>
@@ -141,6 +142,84 @@ public:
     }
   }
 
+  uint8_t
+  get_transition_by_label(std::string label)
+  {
+    const auto * transition = rcl_lifecycle_get_transition_by_label(
+      state_machine_->current_state, label.c_str());
+    if (nullptr == transition)
+    {
+      throw rclpy::RCLError("Failed to get transition from label");
+    }
+    return transition->id;
+  }
+
+  std::string
+  std_string_from_maybe_nullptr(const char * input)
+  {
+    if (input) {
+      return input;
+    }
+    return std::string{};
+  }
+
+  py::tuple
+  get_current_state()
+  {
+    return py::make_tuple(
+      state_machine_->current_state->id,
+      state_machine_->current_state->label);
+  }
+
+  std::vector<std::tuple<uint8_t, std::string>>
+  get_available_states()
+  {
+    std::vector<std::tuple<uint8_t, std::string>> ret;
+    ret.reserve(state_machine_->transition_map.states_size);
+    for (size_t i = 0; i <= state_machine_->transition_map.states_size; ++i) {
+      ret.emplace_back(std::make_tuple(
+        state_machine_->transition_map.states[i].id,
+        std_string_from_maybe_nullptr(state_machine_->transition_map.states[i].label)));
+    }
+    return ret;
+  }
+
+  std::vector<std::tuple<uint8_t, std::string, uint8_t, std::string, uint8_t, std::string>>
+  get_available_transitions()
+  {
+    std::vector<std::tuple<uint8_t, std::string, uint8_t, std::string, uint8_t, std::string>> ret;
+    ret.reserve(state_machine_->current_state->valid_transition_size);
+    for (size_t i = 0; i < state_machine_->current_state->valid_transition_size; ++i) {
+      ret.emplace_back(std::make_tuple(
+        state_machine_->current_state->valid_transitions[i].id,
+        std_string_from_maybe_nullptr(state_machine_->current_state->valid_transitions[i].label),
+        state_machine_->current_state->valid_transitions[i].start->id,
+        std_string_from_maybe_nullptr(
+          state_machine_->current_state->valid_transitions[i].start->label),
+        state_machine_->current_state->valid_transitions[i].goal->id,
+        std_string_from_maybe_nullptr(
+          state_machine_->current_state->valid_transitions[i].goal->label)));
+    }
+    return ret;
+  }
+
+  std::vector<std::tuple<uint8_t, std::string, uint8_t, std::string, uint8_t, std::string>>
+  get_transition_graph()
+  {
+    std::vector<std::tuple<uint8_t, std::string, uint8_t, std::string, uint8_t, std::string>> ret;
+    ret.reserve(state_machine_->transition_map.transitions_size);
+    for (size_t i = 0; i < state_machine_->transition_map.transitions_size; ++i) {
+      ret.emplace_back(std::make_tuple(
+        state_machine_->transition_map.transitions[i].id,
+        state_machine_->transition_map.transitions[i].label,
+        state_machine_->transition_map.transitions[i].start->id,
+        state_machine_->transition_map.transitions[i].start->label,
+        state_machine_->transition_map.transitions[i].goal->id,
+        state_machine_->transition_map.transitions[i].goal->label));
+    }
+    return ret;
+  }
+
   void
   print()
   {
@@ -194,6 +273,21 @@ enum class TransitionCallbackReturnType
   Error = lifecycle_msgs__msg__Transition__TRANSITION_CALLBACK_ERROR,
 };
 
+std::string
+convert_callback_ret_code_to_label(TransitionCallbackReturnType cb_ret)
+{
+  if (cb_ret == TransitionCallbackReturnType::Success) {
+    return rcl_lifecycle_transition_success_label;
+  }
+  if (cb_ret == TransitionCallbackReturnType::Failure) {
+    return rcl_lifecycle_transition_failure_label;
+  }
+  if (cb_ret == TransitionCallbackReturnType::Error) {
+    return rcl_lifecycle_transition_error_label;
+  }
+  throw std::runtime_error{"Invalid transition callback return type"};
+}
+
 }
 
 namespace rclpy
@@ -204,14 +298,29 @@ define_lifecycle_api(py::module m)
   py::class_<LifecycleStateMachine, Destroyable, std::shared_ptr<LifecycleStateMachine>>(
     m, "LifecycleStateMachine")
     .def(py::init<Node &, bool>())
-    .def(
-      "is_initialized", &LifecycleStateMachine::is_initialized,
+    .def_property_readonly(
+      "initialized", &LifecycleStateMachine::is_initialized,
       "Check if state machine is initialized.")
+    .def_property_readonly(
+      "current_state", &LifecycleStateMachine::get_current_state,
+      "Get the current state machine state.")
+    .def_property_readonly(
+      "available_states", &LifecycleStateMachine::get_available_states,
+      "Get the available states.")
+    .def_property_readonly(
+      "available_transitions", &LifecycleStateMachine::get_available_transitions,
+      "Get the available transitions.")
+    .def_property_readonly(
+      "transition_graph", &LifecycleStateMachine::get_transition_graph,
+      "Get the transition graph.")
+    .def(
+      "get_transition_by_label", &LifecycleStateMachine::get_transition_by_label,
+      "Get the transition id from a transition label.")
     .def(
       "trigger_transition_by_id", &LifecycleStateMachine::trigger_transition_by_id,
       "Trigger a transition by transition id.")
     .def(
-      "trigger_transition_by_label", &LifecycleStateMachine::trigger_transition_by_id,
+      "trigger_transition_by_label", &LifecycleStateMachine::trigger_transition_by_label,
       "Trigger a transition by label.")
     .def_property_readonly(
       "service_change_state", &LifecycleStateMachine::get_srv_change_state,
@@ -231,6 +340,9 @@ define_lifecycle_api(py::module m)
   py::enum_<TransitionCallbackReturnType>(m, "TransitionCallbackReturnType")
     .value("SUCCESS", TransitionCallbackReturnType::Success)
     .value("FAILURE", TransitionCallbackReturnType::Failure)
-    .value("ERROR", TransitionCallbackReturnType::Error);
+    .value("ERROR", TransitionCallbackReturnType::Error)
+    .def(
+      "to_label", &convert_callback_ret_code_to_label,
+      "Convert the transition callback return code to a transition label");
 }
 }  // namespace rclpy

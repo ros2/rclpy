@@ -91,6 +91,12 @@ public:
     return rcl_service_.get();
   }
 
+  const char *
+  get_service_name();
+
+  py::dict
+  get_qos_profile();
+
   /// Force an early destruction of this object
   void
   destroy() override;
