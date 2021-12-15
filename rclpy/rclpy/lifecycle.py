@@ -314,11 +314,11 @@ class SimpleManagedEntity(ManagedEntity):
 
     def on_activate(self, state) -> TransitionCallbackReturn:
         self._enabled = True
-        return super().on_activate(state)
+        return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state) -> TransitionCallbackReturn:
         self._enabled = False
-        return super().on_deactivate(state)
+        return TransitionCallbackReturn.SUCCESS
 
     @property
     def enabled(self):
