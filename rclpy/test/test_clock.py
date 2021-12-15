@@ -346,7 +346,7 @@ def test_sleep_for_ros_time_toggled(default_context, ros_time_enabled):
         nonlocal retval
         retval = clock.sleep_for(Duration(seconds=999999))
 
-    t = threading.Thread(target=run, daemon=True)
+    t = threading.Thread(target=run)
     t.start()
 
     # wait for thread to get inside sleep_for call
@@ -355,7 +355,7 @@ def test_sleep_for_ros_time_toggled(default_context, ros_time_enabled):
     clock._set_ros_time_is_active(ros_time_enabled)
 
     # wait for thread to exit
-    time.sleep(0.2)
+    t.join()
 
     assert retval is False
 
@@ -394,7 +394,7 @@ def test_sleep_for_context_shut_down(non_default_context):
         nonlocal retval
         retval = clock.sleep_for(Duration(seconds=999999), context=non_default_context)
 
-    t = threading.Thread(target=run, daemon=True)
+    t = threading.Thread(target=run)
     t.start()
 
     # wait for thread to get inside sleep_for call
@@ -403,7 +403,7 @@ def test_sleep_for_context_shut_down(non_default_context):
     non_default_context.shutdown()
 
     # wait for thread to exit
-    time.sleep(0.2)
+    t.join()
 
     assert retval is False
 
@@ -454,7 +454,7 @@ def test_sleep_for_ros_time_enabled(default_context):
         nonlocal retval
         retval = clock.sleep_for(sleep_duration)
 
-    t = threading.Thread(target=run, daemon=True)
+    t = threading.Thread(target=run)
     t.start()
 
     # wait for thread to get inside sleep_for call
@@ -463,7 +463,7 @@ def test_sleep_for_ros_time_enabled(default_context):
     clock.set_ros_time_override(stop_time)
 
     # wait for thread to exit
-    time.sleep(0.2)
+    t.join()
 
     assert retval
 
