@@ -33,6 +33,9 @@ from rclpy.utilities import get_default_context
 from .mock_compat import __name__ as _  # noqa: ignore=F401
 
 
+A_SMALL_AMOUNT_OF_TIME = Duration(seconds=0.5)
+
+
 def test_invalid_jump_threshold():
     with pytest.raises(ValueError, match='.*min_forward.*'):
         JumpThreshold(
@@ -267,8 +270,7 @@ def test_sleep_until_time_in_past(default_context, clock_type):
     start = clock.now()
     assert clock.sleep_until(clock.now() + sleep_duration)
     stop = clock.now()
-    a_small_amount_of_time = Duration(seconds=0.01)
-    assert stop - start < a_small_amount_of_time
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
 
 @pytest.mark.parametrize('ros_time_enabled', (True, False))
@@ -291,7 +293,10 @@ def test_sleep_until_ros_time_toggled(default_context, ros_time_enabled):
     clock._set_ros_time_is_active(ros_time_enabled)
 
     # wait for thread to exit
+    start = clock.now()
     t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
     assert retval is False
 
@@ -314,7 +319,10 @@ def test_sleep_until_context_shut_down(non_default_context):
     non_default_context.shutdown()
 
     # wait for thread to exit
+    start = clock.now()
     t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
     assert retval is False
 
@@ -342,7 +350,10 @@ def test_sleep_until_ros_time_enabled(default_context):
     clock.set_ros_time_override(stop_time)
 
     # wait for thread to exit
+    start = clock.now()
     t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
 
     assert retval
 
