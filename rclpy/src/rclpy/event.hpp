@@ -40,6 +40,7 @@ class Event
 public:
   /// Wait until a time specified by a system or steady clock.
   /// \param clock the clock to use for time synchronization with until
+  /// \param until this method will block until this time is reached.
   template<typename ClockType>
   void wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
@@ -48,6 +49,7 @@ public:
   /// the target ROS time is reached.
   /// when a given ROS time is reached.
   /// \param clock the clock to use for time synchronization.
+  /// \param until this method will block until this time is reached.
   void wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
   /// Indicate if the Event is set.
