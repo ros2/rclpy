@@ -135,7 +135,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
 target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/
 )
-target_link_libraries(_rclpy_pybind11 PRIVATE  
+target_link_libraries(_rclpy_pybind11 PRIVATE
   lifecycle_msgs::lifecycle_msgs__rosidl_generator_c
   lifecycle_msgs::lifecycle_msgs__rosidl_typesupport_c
   rcl::rcl

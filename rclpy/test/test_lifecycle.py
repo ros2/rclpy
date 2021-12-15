@@ -19,6 +19,7 @@ from rclpy.lifecycle import LifecycleNode
 def test_lifecycle_node_init():
     rclpy.init()
     node = LifecycleNode('my_lifecycle_node')
+    assert node
 
 
 if __name__ == '__main__':

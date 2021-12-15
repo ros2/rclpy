@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__LIFECYCLE_API_HPP_
-#define RCLPY__LIFECYCLE_API_HPP_
+#ifndef RCLPY__LIFECYCLE_HPP_
+#define RCLPY__LIFECYCLE_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -28,4 +28,4 @@ namespace rclpy
 void
 define_lifecycle_api(py::module module);
 }  // namespace rclpy
-#endif  // RCLPY__LIFECYCLE_API_HPP_
+#endif  // RCLPY__LIFECYCLE_HPP_

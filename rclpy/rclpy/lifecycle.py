@@ -18,40 +18,41 @@ from typing import Optional
 
 import lifecycle_msgs.srv
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.callback_groups import CallbackGroup
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.service import Service
-from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 
 
 TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
 
+
 class ManagedEntity:
+
     def on_configure(self, state) -> TransitionCallbackReturn:
-        """Callback that will be triggered when a configure transition is requested."""
+        """Handle configure transition request."""
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state) -> TransitionCallbackReturn:
-        """Callback that will be triggered when a cleanup transition is requested."""
+        """Handle cleanup transition request."""
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state) -> TransitionCallbackReturn:
-        """Callback that will be triggered when a shutdown transition is requested."""
+        """Handle shutdown transition request."""
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state) -> TransitionCallbackReturn:
-        """Callback that will be triggered when an activate transition is requested."""
+        """Handle activate transition request."""
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state) -> TransitionCallbackReturn:
-        """Callback that will be triggered when an deactivate transition is requested."""
+        """Handle deactivate transition request."""
         return TransitionCallbackReturn.SUCCESS
 
     def on_error(self, state) -> TransitionCallbackReturn:
-        """Callback that will be triggered when an error transition is requested."""
+        """Handle error transition request."""
         return TransitionCallbackReturn.SUCCESS
 
 
@@ -63,10 +64,12 @@ class LifecycleMixin(ManagedEntity):
     as it access attributes created by `Node` directly here!
     """
 
-    # TODO(ivanpauno): We could make this a bit nicer by adding State, Transition, StateMachine abstractions
-    # in this module.
-    # Anyways those are not directly useful to the user and the implementation is not too bad without them.
-    # TODO(ivanpauno): We actually need a State abstraction to make the register_callback() API nicer!
+    # TODO(ivanpauno): We could make this a bit nicer by adding State, Transition, StateMachine
+    # abstractions in this module.
+    # Anyways those are not directly useful to the user and the implementation is not too bad
+    # without them.
+    # TODO(ivanpauno): We actually need a State abstraction to make the register_callback()
+    # API nicer!
     def __init__(
         self,
         *,
@@ -76,12 +79,14 @@ class LifecycleMixin(ManagedEntity):
         """
         Initialize a lifecycle node.
 
-        :param enable_communication_interface: Creates the lifecycle nodes services and publisher if True.
-        :param callback_group: Callback group that will be used by all the lifecycle node services.
+        :param enable_communication_interface: Creates the lifecycle nodes services and publisher
+            if True.
+        :param callback_group: Callback group that will be used by all the lifecycle
+            node services.
         """
         if callback_group is None:
             callback_group = self.default_callback_group
-        self._callbacks : Dict[int, Callable[[int], TransitionCallbackReturn]] = {}
+        self._callbacks: Dict[int, Callable[[int], TransitionCallbackReturn]] = {}
         for srv_type in (
             lifecycle_msgs.srv.ChangeState,
             lifecycle_msgs.srv.GetState,
@@ -92,7 +97,8 @@ class LifecycleMixin(ManagedEntity):
             check_is_valid_srv_type(srv_type)
 
         with self.handle:
-            self._state_machine = _rclpy.LifecycleStateMachine(self.handle, enable_communication_interface)
+            self._state_machine = _rclpy.LifecycleStateMachine(
+                self.handle, enable_communication_interface)
         self._service_change_state = Service(
             self._state_machine.service_change_state,
             lifecycle_msgs.srv.ChangeState,
@@ -159,7 +165,9 @@ class LifecycleMixin(ManagedEntity):
         # Should we error/warn if overridding an existing callback?
         return True
 
-    def __execute_callback(self, current_state: int, previous_state: int) -> TransitionCallbackReturn:
+    def __execute_callback(
+        self, current_state: int, previous_state: int
+    ) -> TransitionCallbackReturn:
         cb = self._callbacks.get(current_state, None)
         if not cb:
             return TransitionCallbackReturn.SUCCESS
@@ -174,9 +182,9 @@ class LifecycleMixin(ManagedEntity):
         initial_state_id = self._state_machine.current_state[0]
         self._state_machine.trigger_transition_by_id(transition_id, True)
 
-        cb_return_code = self.__execute_callback(self._state_machine.current_state[0], initial_state_id)
+        cb_return_code = self.__execute_callback(
+            self._state_machine.current_state[0], initial_state_id)
         self._state_machine.trigger_transition_by_label(cb_return_code.to_label(), True)
-
 
         if cb_return_code == TransitionCallbackReturn.ERROR:
             # TODO(ivanpauno): I don't understand what rclcpp is doing here ...
@@ -199,14 +207,14 @@ class LifecycleMixin(ManagedEntity):
         resp: lifecycle_msgs.srv.ChangeState.Response
     ):
         self.__check_is_initialized()
-        transition_id = req.transition.id;
+        transition_id = req.transition.id
         if req.transition.label:
             try:
                 transition_id = self._state_machine.get_transition_by_label(req.transition.label)
             except _rclpy.RCLError:
                 resp.success = False
                 return resp
-        cb_return_code = self.__change_state(transition_id);
+        cb_return_code = self.__change_state(transition_id)
         resp.success = cb_return_code == TransitionCallbackReturn.SUCCESS
         return resp
 
@@ -225,8 +233,8 @@ class LifecycleMixin(ManagedEntity):
         resp: lifecycle_msgs.srv.GetAvailableStates.Response
     ):
         self.__check_is_initialized()
-        for id, label in self._state_machine.available_states:
-            resp.available_states.append(lifecycle_msgs.msg.State(id=id, label=label))
+        for state_id, label in self._state_machine.available_states:
+            resp.available_states.append(lifecycle_msgs.msg.State(id=state_id, label=label))
         return resp
 
     def __on_get_available_transitions(
@@ -235,10 +243,12 @@ class LifecycleMixin(ManagedEntity):
         resp: lifecycle_msgs.srv.GetAvailableTransitions.Response
     ):
         self.__check_is_initialized()
-        for id, label, start_id, start_label, goal_id, goal_label in self._state_machine.available_transitions:
+        for transition_description in self._state_machine.available_transitions:
+            transition_id, transition_label, start_id, start_label, goal_id, goal_label = \
+                transition_description
             item = lifecycle_msgs.msg.TransitionDescription()
-            item.transition.id = id
-            item.transition.label = label
+            item.transition.id = transition_id
+            item.transition.label = transition_label
             item.start_state.id = start_id
             item.start_state.label = start_label
             item.goal_state.id = goal_id
@@ -252,10 +262,12 @@ class LifecycleMixin(ManagedEntity):
         resp: lifecycle_msgs.srv.GetAvailableTransitions.Response
     ):
         self.__check_is_initialized()
-        for id, label, start_id, start_label, goal_id, goal_label in self._state_machine.transition_graph:
+        for transition_description in self._state_machine.transition_graph:
+            transition_id, transition_label, start_id, start_label, goal_id, goal_label = \
+                transition_description
             item = lifecycle_msgs.msg.TransitionDescription()
-            item.transition.id = id
-            item.transition.label = label
+            item.transition.id = transition_id
+            item.transition.label = transition_label
             item.start_state.id = start_id
             item.start_state.label = start_label
             item.goal_state.id = goal_id
@@ -267,17 +279,19 @@ class LifecycleMixin(ManagedEntity):
 class LifecycleNode(LifecycleMixin, Node):
     """
     A ROS 2 managed node.
-    
+
     This class extends Node with the methods provided by LifecycleMixin.
     Methods in LifecycleMixin overridde the ones in Node.
     """
+
     def __init__(self, node_name, *, enable_communication_interface: bool = True, **kwargs):
         """
         Create a lifecycle node.
-        
+
         See rclpy.lifecycle.LifecycleMixin.__init__() and rclpy.node.Node()
         for the documentation of each parameter.
         """
         Node.__init__(self, node_name, **kwargs)
-        LifecycleMixin.__init__(self,
+        LifecycleMixin.__init__(
+            self,
             enable_communication_interface=enable_communication_interface)
