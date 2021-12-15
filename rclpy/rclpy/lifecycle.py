@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
+from functools import wraps
+from typing import Callable, overload
 from typing import Dict
+from typing import Type
 from typing import Optional
 
 import lifecycle_msgs.srv
@@ -21,6 +23,7 @@ import lifecycle_msgs.srv
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
+from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
 from rclpy.service import Service
 from rclpy.type_support import check_is_valid_srv_type
@@ -165,6 +168,12 @@ class LifecycleMixin(ManagedEntity):
         # Should we error/warn if overridding an existing callback?
         return True
 
+    def create_publisher(self, *args, **kwargs):
+        if 'publisher_class' in kwargs:
+            raise TypeError(
+                "create_publisher() got an unexpected keyword argument 'publisher_class'")
+        return Node.create_publisher(self, *args, **kwargs, publisher_class=LifecyclePublisher)
+
     def __execute_callback(
         self, current_state: int, previous_state: int
     ) -> TransitionCallbackReturn:
@@ -295,3 +304,40 @@ class LifecycleNode(LifecycleMixin, Node):
         LifecycleMixin.__init__(
             self,
             enable_communication_interface=enable_communication_interface)
+
+
+class SimpleManagedEntity(ManagedEntity):
+    """A simple implementation of a managed entity that only sets a flag when (de)activated."""
+
+    def __init__(self):
+        self._enabled = False
+
+    def on_activate(self, state) -> TransitionCallbackReturn:
+        self._enabled = True
+        return super().on_activate(state)
+
+    def on_deactivate(self, state) -> TransitionCallbackReturn:
+        self._enabled = False
+        return super().on_deactivate(state)
+
+    @property
+    def enabled(self):
+        return self._enabled
+
+    def when_enabled(self, wrapped, when_not_enabled=None):
+        @wraps
+        def only_when_enabled_wrapper(*args, **kwargs):
+            if not self.enabled:
+                if when_not_enabled is not None:
+                    when_not_enabled()
+                return
+            wrapped(*args, **kwargs)
+
+        return only_when_enabled_wrapper
+
+
+class LifecyclePublisher(SimpleManagedEntity, Publisher):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.publish = self.when_enabled(self.publish)

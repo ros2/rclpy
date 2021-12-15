@@ -1245,6 +1245,7 @@ class Node:
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        publisher_class: Type[Publisher] = Publisher,
     ) -> Publisher:
         """
         Create a new publisher.
@@ -1294,7 +1295,7 @@ class Node:
             self._validate_topic_or_service_name(topic)
 
         try:
-            publisher = Publisher(
+            publisher = publisher_class(
                 publisher_object, msg_type, topic, qos_profile,
                 event_callbacks=event_callbacks or PublisherEventCallbacks(),
                 callback_group=callback_group)
