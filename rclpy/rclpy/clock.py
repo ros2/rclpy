@@ -199,7 +199,7 @@ class Clock:
         if until.clock_type != self._clock_type:
             raise ValueError("until's clock type does not match this clock's type")
 
-        event = _rclpy.Event()
+        event = _rclpy.ClockEvent()
         time_source_changed = False
 
         def on_time_jump(time_jump: TimeJump):

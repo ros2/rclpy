@@ -24,14 +24,14 @@
 #include <memory>
 #include <stdexcept>
 
-#include "event.hpp"
+#include "clock_event.hpp"
 
 namespace py = pybind11;
 
 namespace rclpy
 {
 template<typename ClockType>
-void Event::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until)
+void ClockEvent::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until)
 {
   // Synchronize because clock epochs might differ
   const rcl_time_point_t rcl_entry = clock->get_now();
@@ -55,7 +55,7 @@ void Event::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until)
   cv_.wait_until(lock, chrono_until, [this]() {return state_;});
 }
 
-void Event::wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until)
+void ClockEvent::wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until)
 {
   // Check if ROS time is enabled in C++ to avoid TOCTTOU with TimeSource by holding GIL
   if (clock->get_ros_time_override_is_enabled()) {
@@ -70,13 +70,13 @@ void Event::wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until)
   }
 }
 
-bool Event::is_set()
+bool ClockEvent::is_set()
 {
   std::unique_lock<std::mutex> lock(mutex_);
   return state_;
 }
 
-void Event::set()
+void ClockEvent::set()
 {
   {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -85,7 +85,7 @@ void Event::set()
   cv_.notify_all();
 }
 
-void Event::clear()
+void ClockEvent::clear()
 {
   {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -94,27 +94,27 @@ void Event::clear()
   cv_.notify_all();
 }
 
-void define_event(py::object module)
+void define_clock_event(py::object module)
 {
-  py::class_<Event>(module, "Event")
+  py::class_<ClockEvent>(module, "ClockEvent")
   .def(py::init())
   .def(
-    "wait_until_steady", &Event::wait_until<std::chrono::steady_clock>,
+    "wait_until_steady", &ClockEvent::wait_until<std::chrono::steady_clock>,
     "Wait for the event to be set (monotonic wait)")
   .def(
-    "wait_until_system", &Event::wait_until<std::chrono::system_clock>,
+    "wait_until_system", &ClockEvent::wait_until<std::chrono::system_clock>,
     "Wait for the event to be set (system timed wait)")
   .def(
-    "wait_until_ros", &Event::wait_until_ros,
+    "wait_until_ros", &ClockEvent::wait_until_ros,
     "Wait for the event to be set (ROS timed wait)")
   .def(
-    "is_set", &Event::is_set,
+    "is_set", &ClockEvent::is_set,
     "Return True if the event is set, False otherwise.")
   .def(
-    "set", &Event::set,
+    "set", &ClockEvent::set,
     "Set the event, waking all those who wait on it.")
   .def(
-    "clear", &Event::clear,
+    "clear", &ClockEvent::clear,
     "Unset the event.");
 }
 }  // namespace rclpy

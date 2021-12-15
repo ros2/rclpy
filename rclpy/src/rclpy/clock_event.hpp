@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__EVENT_HPP_
-#define RCLPY__EVENT_HPP_
+#ifndef RCLPY__CLOCK_EVENT_HPP_
+#define RCLPY__CLOCK_EVENT_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -35,7 +35,7 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-class Event
+class ClockEvent
 {
 public:
   /// Wait until a time specified by a system or steady clock.
@@ -52,8 +52,8 @@ public:
   /// \param until this method will block until this time is reached.
   void wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t until);
 
-  /// Indicate if the Event is set.
-  /// \return True if the Event is set.
+  /// Indicate if the ClockEvent is set.
+  /// \return True if the ClockEvent is set.
   bool is_set();
 
   /// Set the event.
@@ -68,8 +68,8 @@ private:
   std::condition_variable cv_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::Event
-void define_event(py::object module);
+/// Define a pybind11 wrapper for an rclpy::ClockEvent
+void define_clock_event(py::object module);
 }  // namespace rclpy
 
-#endif  // RCLPY__EVENT_HPP_
+#endif  // RCLPY__CLOCK_EVENT_HPP_

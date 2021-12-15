@@ -25,7 +25,7 @@
 #include "context.hpp"
 #include "destroyable.hpp"
 #include "duration.hpp"
-#include "event.hpp"
+#include "clock_event.hpp"
 #include "exceptions.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
@@ -229,5 +229,5 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
 
   rclpy::define_logging_api(m);
   rclpy::define_signal_handler_api(m);
-  rclpy::define_event(m);
+  rclpy::define_clock_event(m);
 }
