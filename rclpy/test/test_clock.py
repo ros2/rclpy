@@ -12,20 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
 import time
 import unittest
 from unittest.mock import Mock
 
 import pytest
+import rclpy
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.clock import JumpHandle
 from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
+from rclpy.context import Context
 from rclpy.duration import Duration
+from rclpy.exceptions import NotInitializedException
 from rclpy.time import Time
+from rclpy.utilities import get_default_context
 
 from .mock_compat import __name__ as _  # noqa: ignore=F401
+
+
+A_SMALL_AMOUNT_OF_TIME = Duration(seconds=0.5)
 
 
 def test_invalid_jump_threshold():
@@ -209,6 +217,145 @@ class TestClock(unittest.TestCase):
         handler1.unregister()
         handler2.unregister()
         handler3.unregister()
+
+
+@pytest.fixture()
+def default_context():
+    rclpy.init()
+    yield get_default_context()
+    rclpy.shutdown()
+
+
+@pytest.fixture()
+def non_default_context():
+    context = Context()
+    context.init()
+    yield context
+    context.try_shutdown()
+
+
+def test_sleep_until_mismatched_clock_type(default_context):
+    clock = Clock(clock_type=ClockType.SYSTEM_TIME)
+    with pytest.raises(ValueError, match='.*clock type does not match.*'):
+        clock.sleep_until(Time(clock_type=ClockType.STEADY_TIME))
+
+
+def test_sleep_until_non_default_context(non_default_context):
+    clock = Clock()
+    assert clock.sleep_until(clock.now() + Duration(seconds=0.1), context=non_default_context)
+
+
+def test_sleep_until_invalid_context():
+    clock = Clock()
+    with pytest.raises(NotInitializedException):
+        clock.sleep_until(clock.now() + Duration(seconds=0.1), context=Context())
+
+
+@pytest.mark.parametrize(
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+def test_sleep_until_basic(default_context, clock_type):
+    clock = Clock(clock_type=clock_type)
+    sleep_duration = Duration(seconds=0.1)
+    start = clock.now()
+    assert clock.sleep_until(clock.now() + sleep_duration)
+    stop = clock.now()
+    assert stop - start >= sleep_duration
+
+
+@pytest.mark.parametrize(
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+def test_sleep_until_time_in_past(default_context, clock_type):
+    clock = Clock(clock_type=clock_type)
+    sleep_duration = Duration(seconds=-1)
+    start = clock.now()
+    assert clock.sleep_until(clock.now() + sleep_duration)
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
+
+
+@pytest.mark.parametrize('ros_time_enabled', (True, False))
+def test_sleep_until_ros_time_toggled(default_context, ros_time_enabled):
+    clock = ROSClock()
+    clock._set_ros_time_is_active(not ros_time_enabled)
+
+    retval = None
+
+    def run():
+        nonlocal retval
+        retval = clock.sleep_until(clock.now() + Duration(seconds=10))
+
+    t = threading.Thread(target=run)
+    t.start()
+
+    # wait for thread to get inside sleep_until call
+    time.sleep(0.2)
+
+    clock._set_ros_time_is_active(ros_time_enabled)
+
+    # wait for thread to exit
+    start = clock.now()
+    t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
+
+    assert retval is False
+
+
+def test_sleep_until_context_shut_down(non_default_context):
+    clock = Clock()
+    retval = None
+
+    def run():
+        nonlocal retval
+        retval = clock.sleep_until(
+            clock.now() + Duration(seconds=10), context=non_default_context)
+
+    t = threading.Thread(target=run)
+    t.start()
+
+    # wait for thread to get inside sleep_until call
+    time.sleep(0.2)
+
+    non_default_context.shutdown()
+
+    # wait for thread to exit
+    start = clock.now()
+    t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
+
+    assert retval is False
+
+
+def test_sleep_until_ros_time_enabled(default_context):
+    clock = ROSClock()
+    clock._set_ros_time_is_active(True)
+
+    start_time = Time(seconds=1, clock_type=ClockType.ROS_TIME)
+    stop_time = start_time + Duration(seconds=10)
+    clock.set_ros_time_override(start_time)
+
+    retval = None
+
+    def run():
+        nonlocal retval
+        retval = clock.sleep_until(stop_time)
+
+    t = threading.Thread(target=run)
+    t.start()
+
+    # wait for thread to get inside sleep_until call
+    time.sleep(0.2)
+
+    clock.set_ros_time_override(stop_time)
+
+    # wait for thread to exit
+    start = clock.now()
+    t.join()
+    stop = clock.now()
+    assert stop - start < A_SMALL_AMOUNT_OF_TIME
+
+    assert retval
 
 
 def test_with_jump_handle():

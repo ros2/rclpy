@@ -15,7 +15,9 @@
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .duration import Duration
+from .exceptions import NotInitializedException
 from .time import Time
+from .utilities import get_default_context
 
 
 ClockType = _rclpy.ClockType
@@ -171,6 +173,68 @@ class Clock:
         return JumpHandle(
             clock=self, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback)
+
+    def sleep_until(self, until: Time, context=None) -> bool:
+        """
+        Sleep until a Time on this Clock is reached.
+
+        When using a ROSClock, this may sleep forever if the TimeSource is misconfigured and the
+        context is never shut down.
+        ROS time being activated or deactivated causes this function to cease sleeping and return
+        False.
+
+        :param until: Time at which this function should stop sleeping.
+        :param context: Context which when shut down will cause this sleep to wake early.
+            If context is None, then the default context is used.
+        :return: True if until was reached, or False if it woke for another reason.
+        :raises ValueError: until is specified for a different type of clock than this one.
+        :raises NotInitializedException: context has not been initialized or is shutdown.
+        """
+        if context is None:
+            context = get_default_context()
+
+        if not context.ok():
+            raise NotInitializedException()
+
+        if until.clock_type != self._clock_type:
+            raise ValueError("until's clock type does not match this clock's type")
+
+        event = _rclpy.ClockEvent()
+        time_source_changed = False
+
+        def on_time_jump(time_jump: TimeJump):
+            """Wake when time jumps and is past target time."""
+            nonlocal time_source_changed
+
+            # ROS time being activated or deactivated changes the epoch, so sleep
+            # time loses its meaning
+            time_source_changed = (
+                time_source_changed or
+                ClockChange.ROS_TIME_ACTIVATED == time_jump.clock_change or
+                ClockChange.ROS_TIME_DEACTIVATED == time_jump.clock_change)
+
+            if time_source_changed or self.now() >= until:
+                event.set()
+
+        # Wake when context is shut down
+        context.on_shutdown(event.set)
+
+        threshold = JumpThreshold(
+            min_forward=Duration(nanoseconds=1),
+            min_backward=None,
+            on_clock_change=True)
+        with self.create_jump_callback(threshold, post_callback=on_time_jump):
+            if ClockType.SYSTEM_TIME == self._clock_type:
+                event.wait_until_system(self.__clock, until._time_handle)
+            elif ClockType.STEADY_TIME == self._clock_type:
+                event.wait_until_steady(self.__clock, until._time_handle)
+            elif ClockType.ROS_TIME == self._clock_type:
+                event.wait_until_ros(self.__clock, until._time_handle)
+
+        if not context.ok() or time_source_changed:
+            return False
+
+        return self.now() >= until
 
 
 class ROSClock(Clock):
