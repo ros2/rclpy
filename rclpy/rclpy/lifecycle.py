@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from functools import wraps
-from typing import Callable, overload
+from typing import Callable
 from typing import Dict
-from typing import Type
 from typing import Optional
+from typing import Set
 
 import lifecycle_msgs.srv
 
@@ -59,6 +59,43 @@ class ManagedEntity:
         return TransitionCallbackReturn.SUCCESS
 
 
+class SimpleManagedEntity(ManagedEntity):
+    """A simple implementation of a managed entity that only sets a flag when (de)activated."""
+
+    def __init__(self):
+        self._enabled = False
+
+    def on_activate(self, state) -> TransitionCallbackReturn:
+        self._enabled = True
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_deactivate(self, state) -> TransitionCallbackReturn:
+        self._enabled = False
+        return TransitionCallbackReturn.SUCCESS
+
+    @property
+    def enabled(self):
+        return self._enabled
+
+    def when_enabled(self, wrapped, when_not_enabled=None):
+        @wraps
+        def only_when_enabled_wrapper(*args, **kwargs):
+            if not self.enabled:
+                if when_not_enabled is not None:
+                    when_not_enabled()
+                return
+            wrapped(*args, **kwargs)
+
+        return only_when_enabled_wrapper
+
+
+class LifecyclePublisher(SimpleManagedEntity, Publisher):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.publish = self.when_enabled(self.publish)
+
+
 class LifecycleMixin(ManagedEntity):
     """
     Mixin class to share as most code as possible between `Node` and `LifecycleNode`.
@@ -90,6 +127,7 @@ class LifecycleMixin(ManagedEntity):
         if callback_group is None:
             callback_group = self.default_callback_group
         self._callbacks: Dict[int, Callable[[int], TransitionCallbackReturn]] = {}
+        self._managed_entities: Set[ManagedEntity] = set()
         for srv_type in (
             lifecycle_msgs.srv.ChangeState,
             lifecycle_msgs.srv.GetState,
@@ -168,11 +206,68 @@ class LifecycleMixin(ManagedEntity):
         # Should we error/warn if overridding an existing callback?
         return True
 
+    def add_managed_entity(self, entity: ManagedEntity):
+        self._managed_entities.add(entity)
+
+    def on_configure(self, state) -> TransitionCallbackReturn:
+        for entity in self._managed_entities:
+            ret = entity.on_configure(state)
+            # TODO(ivanpauno): Should we stop calling the other managed entities callabacks
+            # if one fails or errors?
+            # Should the behavior be the same in all the other cases?
+            if ret != TransitionCallbackReturn.SUCCESS:
+                return ret
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_cleanup(self, state) -> TransitionCallbackReturn:
+        for entity in self._managed_entities:
+            ret = entity.on_cleanup(state)
+            if ret != TransitionCallbackReturn.SUCCESS:
+                return ret
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_shutdown(self, state) -> TransitionCallbackReturn:
+        for entity in self._managed_entities:
+            ret = entity.on_shutdown(state)
+            if ret != TransitionCallbackReturn.SUCCESS:
+                return ret
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_activate(self, state) -> TransitionCallbackReturn:
+        for entity in self._managed_entities:
+            ret = entity.on_activate(state)
+            if ret != TransitionCallbackReturn.SUCCESS:
+                return ret
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_deactivate(self, state) -> TransitionCallbackReturn:
+        for entity in self._managed_entities:
+            ret = entity.on_deactivate(state)
+            if ret != TransitionCallbackReturn.SUCCESS:
+                return ret
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_error(self, state) -> TransitionCallbackReturn:
+        for entity in self._managed_entities:
+            ret = entity.on_error(state)
+            if ret != TransitionCallbackReturn.SUCCESS:
+                return ret
+        return TransitionCallbackReturn.SUCCESS
+
     def create_publisher(self, *args, **kwargs):
         if 'publisher_class' in kwargs:
             raise TypeError(
                 "create_publisher() got an unexpected keyword argument 'publisher_class'")
-        return Node.create_publisher(self, *args, **kwargs, publisher_class=LifecyclePublisher)
+        pub = Node.create_publisher(self, *args, **kwargs, publisher_class=LifecyclePublisher)
+        self._managed_entities.add(pub)
+        return pub
+
+    def destroy_publisher(self, publisher: LifecyclePublisher):
+        try:
+            self._managed_entities.remove(publisher)
+        except KeyError:
+            pass
+        return Node.destroy_publisher(self, publisher)
 
     def __execute_callback(
         self, current_state: int, previous_state: int
@@ -304,40 +399,3 @@ class LifecycleNode(LifecycleMixin, Node):
         LifecycleMixin.__init__(
             self,
             enable_communication_interface=enable_communication_interface)
-
-
-class SimpleManagedEntity(ManagedEntity):
-    """A simple implementation of a managed entity that only sets a flag when (de)activated."""
-
-    def __init__(self):
-        self._enabled = False
-
-    def on_activate(self, state) -> TransitionCallbackReturn:
-        self._enabled = True
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_deactivate(self, state) -> TransitionCallbackReturn:
-        self._enabled = False
-        return TransitionCallbackReturn.SUCCESS
-
-    @property
-    def enabled(self):
-        return self._enabled
-
-    def when_enabled(self, wrapped, when_not_enabled=None):
-        @wraps
-        def only_when_enabled_wrapper(*args, **kwargs):
-            if not self.enabled:
-                if when_not_enabled is not None:
-                    when_not_enabled()
-                return
-            wrapped(*args, **kwargs)
-
-        return only_when_enabled_wrapper
-
-
-class LifecyclePublisher(SimpleManagedEntity, Publisher):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.publish = self.when_enabled(self.publish)
