@@ -65,28 +65,28 @@ class LifecycleMixin:
             self._state_machine.service_get_state,
             lifecycle_msgs.srv.GetState,
             self._state_machine.service_get_state.name,
-            self._on_get_state,
+            self.__on_get_state,
             callback_group,
             QoSProfile(**self._state_machine.service_get_state.qos))
         self._service_get_available_states = Service(
             self._state_machine.service_get_available_states,
             lifecycle_msgs.srv.GetAvailableStates,
             self._state_machine.service_get_available_states.name,
-            self._on_get_available_states,
+            self.__on_get_available_states,
             callback_group,
             QoSProfile(**self._state_machine.service_get_available_states.qos))
         self._service_get_available_transitions = Service(
             self._state_machine.service_get_available_transitions,
             lifecycle_msgs.srv.GetAvailableTransitions,
             self._state_machine.service_get_available_transitions.name,
-            self._on_get_available_transitions,
+            self.__on_get_available_transitions,
             callback_group,
             QoSProfile(**self._state_machine.service_get_available_transitions.qos))
         self._service_get_transition_graph = Service(
             self._state_machine.service_get_transition_graph,
             lifecycle_msgs.srv.GetAvailableTransitions,
             self._state_machine.service_get_transition_graph.name,
-            self._on_get_transition_graph,
+            self.__on_get_transition_graph,
             callback_group,
             QoSProfile(**self._state_machine.service_get_transition_graph.qos))
 
@@ -165,7 +165,7 @@ class LifecycleMixin:
         resp.success = cb_return_code == TransitionCallbackReturn.SUCCESS
         return resp
 
-    def _on_get_state(
+    def __on_get_state(
         self,
         req: lifecycle_msgs.srv.GetState.Request,
         resp: lifecycle_msgs.srv.GetState.Response
@@ -174,7 +174,7 @@ class LifecycleMixin:
         resp.current_state.id, resp.current_state.label = self._state_machine.current_state
         return resp
 
-    def _on_get_available_states(
+    def __on_get_available_states(
         self,
         req: lifecycle_msgs.srv.GetAvailableStates.Request,
         resp: lifecycle_msgs.srv.GetAvailableStates.Response
@@ -184,7 +184,7 @@ class LifecycleMixin:
             resp.available_states.append(lifecycle_msgs.msg.State(id=id, label=label))
         return resp
 
-    def _on_get_available_transitions(
+    def __on_get_available_transitions(
         self,
         req: lifecycle_msgs.srv.GetAvailableTransitions.Request,
         resp: lifecycle_msgs.srv.GetAvailableTransitions.Response
@@ -201,7 +201,7 @@ class LifecycleMixin:
             resp.available_transitions.append(item)
         return resp
 
-    def _on_get_transition_graph(
+    def __on_get_transition_graph(
         self,
         req: lifecycle_msgs.srv.GetAvailableTransitions.Request,
         resp: lifecycle_msgs.srv.GetAvailableTransitions.Response
