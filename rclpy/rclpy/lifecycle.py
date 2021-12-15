@@ -92,7 +92,8 @@ class SimpleManagedEntity(ManagedEntity):
 class LifecyclePublisher(SimpleManagedEntity, Publisher):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        SimpleManagedEntity.__init__(self)
+        Publisher.__init__(self, *args, **kwargs)
         self.publish = self.when_enabled(self.publish)
 
 
@@ -254,7 +255,13 @@ class LifecycleMixin(ManagedEntity):
                 return ret
         return TransitionCallbackReturn.SUCCESS
 
-    def create_publisher(self, *args, **kwargs):
+    def create_lifecycle_publisher(self, *args, **kwargs):
+        # TODO(ivanpauno): Should we override lifecycle publisher?
+        # There is an issue with python using the overridden method
+        # when creating publishers for builitin publishers (like parameters events).
+        # We could override them after init, similar to what we do to override publish()
+        # in LifecycleNode.
+        # Having both options seem fine.
         if 'publisher_class' in kwargs:
             raise TypeError(
                 "create_publisher() got an unexpected keyword argument 'publisher_class'")
@@ -262,7 +269,7 @@ class LifecycleMixin(ManagedEntity):
         self._managed_entities.add(pub)
         return pub
 
-    def destroy_publisher(self, publisher: LifecyclePublisher):
+    def destroy_lifecycle_publisher(self, publisher: LifecyclePublisher):
         try:
             self._managed_entities.remove(publisher)
         except KeyError:
