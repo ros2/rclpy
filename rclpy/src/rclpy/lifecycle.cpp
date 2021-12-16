@@ -345,9 +345,15 @@ define_lifecycle_api(py::module m)
     "service_get_transition_graph", &LifecycleStateMachine::get_srv_get_transition_graph,
     "Get the get transition graph service.");
   py::enum_<TransitionCallbackReturnType>(m, "TransitionCallbackReturnType")
-  .value("SUCCESS", TransitionCallbackReturnType::Success)
-  .value("FAILURE", TransitionCallbackReturnType::Failure)
-  .value("ERROR", TransitionCallbackReturnType::Error)
+  .value(
+    "SUCCESS", TransitionCallbackReturnType::Success,
+    "Callback succeeded.")
+  .value(
+    "FAILURE", TransitionCallbackReturnType::Failure,
+    "Callback failed.")
+  .value(
+    "ERROR", TransitionCallbackReturnType::Error,
+    "Callback had an error.")
   .def(
     "to_label", &convert_callback_ret_code_to_label,
     "Convert the transition callback return code to a transition label");

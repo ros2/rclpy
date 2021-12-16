@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import wraps
 from typing import Callable
 from typing import Dict
 from typing import Optional
@@ -23,78 +22,17 @@ import lifecycle_msgs.srv
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
-from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
 from rclpy.service import Service
 from rclpy.type_support import check_is_valid_srv_type
 
+from .managed_entity import ManagedEntity
+from .publisher import LifecyclePublisher
+
+from ..impl.implementation_singleton import rclpy_implementation as _rclpy
+
 
 TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
-
-
-class ManagedEntity:
-
-    def on_configure(self, state) -> TransitionCallbackReturn:
-        """Handle configure transition request."""
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_cleanup(self, state) -> TransitionCallbackReturn:
-        """Handle cleanup transition request."""
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_shutdown(self, state) -> TransitionCallbackReturn:
-        """Handle shutdown transition request."""
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_activate(self, state) -> TransitionCallbackReturn:
-        """Handle activate transition request."""
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_deactivate(self, state) -> TransitionCallbackReturn:
-        """Handle deactivate transition request."""
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_error(self, state) -> TransitionCallbackReturn:
-        """Handle error transition request."""
-        return TransitionCallbackReturn.SUCCESS
-
-
-class SimpleManagedEntity(ManagedEntity):
-    """A simple implementation of a managed entity that only sets a flag when (de)activated."""
-
-    def __init__(self):
-        self._enabled = False
-
-    def on_activate(self, state) -> TransitionCallbackReturn:
-        self._enabled = True
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_deactivate(self, state) -> TransitionCallbackReturn:
-        self._enabled = False
-        return TransitionCallbackReturn.SUCCESS
-
-    @property
-    def enabled(self):
-        return self._enabled
-
-    def when_enabled(self, wrapped, when_not_enabled=None):
-        @wraps
-        def only_when_enabled_wrapper(*args, **kwargs):
-            if not self.enabled:
-                if when_not_enabled is not None:
-                    when_not_enabled()
-                return
-            wrapped(*args, **kwargs)
-
-        return only_when_enabled_wrapper
-
-
-class LifecyclePublisher(SimpleManagedEntity, Publisher):
-
-    def __init__(self, *args, **kwargs):
-        SimpleManagedEntity.__init__(self)
-        Publisher.__init__(self, *args, **kwargs)
-        self.publish = self.when_enabled(self.publish)
 
 
 class LifecycleMixin(ManagedEntity):
