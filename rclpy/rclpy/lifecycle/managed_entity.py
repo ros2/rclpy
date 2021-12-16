@@ -65,13 +65,17 @@ class SimpleManagedEntity(ManagedEntity):
     def enabled(self):
         return self._enabled
 
-    def when_enabled(self, wrapped, when_not_enabled=None):
-        @wraps
-        def only_when_enabled_wrapper(*args, **kwargs):
-            if not self.enabled:
-                if when_not_enabled is not None:
-                    when_not_enabled()
-                return
-            wrapped(*args, **kwargs)
-
-        return only_when_enabled_wrapper
+    @staticmethod
+    def when_enabled(wrapped=None, *, when_not_enabled=None):
+        def decorator(wrapped):
+            @wraps
+            def only_when_enabled_wrapper(self: SimpleManagedEntity, *args, **kwargs):
+                if not self.enabled:
+                    if when_not_enabled is not None:
+                        when_not_enabled()
+                    return
+                wrapped(*args, **kwargs)
+            return only_when_enabled_wrapper
+        if wrapped is None:
+            return decorator
+        return decorator(wrapped)

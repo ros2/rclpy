@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Union
+
+from rclpy.publisher import MsgType
 from rclpy.publisher import Publisher
+
 from .managed_entity import SimpleManagedEntity
 
 
@@ -21,4 +25,7 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher):
     def __init__(self, *args, **kwargs):
         SimpleManagedEntity.__init__(self)
         Publisher.__init__(self, *args, **kwargs)
-        self.publish = self.when_enabled(self.publish)
+
+    @SimpleManagedEntity.when_enabled
+    def publish(self, msg: Union[MsgType, bytes]) -> None:
+        Publisher.publish(msg)
