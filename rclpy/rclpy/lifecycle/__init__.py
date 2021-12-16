@@ -16,6 +16,7 @@ from .managed_entity import ManagedEntity
 from .managed_entity import SimpleManagedEntity
 from .node import LifecycleMixin
 from .node import LifecycleNode
+from .node import LifecycleState
 from .publisher import LifecyclePublisher
 
 from ..impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -25,13 +26,17 @@ from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 # Do not include that in __all__ to avoid mixing it up with rclpy.node.Node.
 Node = LifecycleNode
 # same idea here
+State = LifecycleState
 Publisher = LifecyclePublisher
+
 # enum defined in pybind11 plugin
 TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
 
 
 __all__ = [
     'LifecycleMixin',
+    'LifecycleNode',
+    'LifecycleState',
     'LifecyclePublisher',
     'ManagedEntity',
     'SimpleManagedEntity',

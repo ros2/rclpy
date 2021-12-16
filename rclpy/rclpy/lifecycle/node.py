@@ -14,9 +14,11 @@
 
 from typing import Callable
 from typing import Dict
+from typing import NamedTuple
 from typing import Optional
 from typing import Set
 
+import lifecycle_msgs.msg
 import lifecycle_msgs.srv
 
 from rclpy.callback_groups import CallbackGroup
@@ -33,6 +35,11 @@ from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
+
+
+class LifecycleState(NamedTuple):
+    label: str
+    id: int
 
 
 class LifecycleMixin(ManagedEntity):
@@ -63,9 +70,29 @@ class LifecycleMixin(ManagedEntity):
         :param callback_group: Callback group that will be used by all the lifecycle
             node services.
         """
+        self._callbacks: Dict[int, Callable[[LifecycleState], TransitionCallbackReturn]] = {}
+        # register all state machine transition callbacks
+        self.__register_callback(
+            lifecycle_msgs.msg.State.TRANSITION_STATE_CONFIGURING,
+            self.on_configure)
+        self.__register_callback(
+            lifecycle_msgs.msg.State.TRANSITION_STATE_CLEANINGUP,
+            self.on_cleanup)
+        self.__register_callback(
+            lifecycle_msgs.msg.State.TRANSITION_STATE_SHUTTINGDOWN,
+            self.on_shutdown)
+        self.__register_callback(
+            lifecycle_msgs.msg.State.TRANSITION_STATE_ACTIVATING,
+            self.on_activate)
+        self.__register_callback(
+            lifecycle_msgs.msg.State.TRANSITION_STATE_DEACTIVATING,
+            self.on_deactivate)
+        self.__register_callback(
+            lifecycle_msgs.msg.State.TRANSITION_STATE_ERRORPROCESSING,
+            self.on_error)
+
         if callback_group is None:
             callback_group = self.default_callback_group
-        self._callbacks: Dict[int, Callable[[int], TransitionCallbackReturn]] = {}
         self._managed_entities: Set[ManagedEntity] = set()
         for srv_type in (
             lifecycle_msgs.srv.ChangeState,
@@ -130,8 +157,9 @@ class LifecycleMixin(ManagedEntity):
         # Maybe have some interface to add a service/etc instead (?).
         self._Node__services.extend(lifecycle_services)
 
-    def register_callback(
-        self, state_id: int, callback: Callable[[int], TransitionCallbackReturn]
+
+    def __register_callback(
+        self, state_id: int, callback: Callable[[LifecycleState], TransitionCallbackReturn]
     ) -> bool:
         """
         Register a callback that will be triggered when transitioning to state_id.
@@ -215,9 +243,9 @@ class LifecycleMixin(ManagedEntity):
         return Node.destroy_publisher(self, publisher)
 
     def __execute_callback(
-        self, current_state: int, previous_state: int
+        self, current_state_id: int, previous_state: LifecycleState
     ) -> TransitionCallbackReturn:
-        cb = self._callbacks.get(current_state, None)
+        cb = self._callbacks.get(current_state_id, None)
         if not cb:
             return TransitionCallbackReturn.SUCCESS
         try:
@@ -228,11 +256,12 @@ class LifecycleMixin(ManagedEntity):
 
     def __change_state(self, transition_id: int):
         self.__check_is_initialized()
-        initial_state_id = self._state_machine.current_state[0]
+        initial_state = self._state_machine.current_state
+        initial_state = LifecycleState(id=initial_state[0], label=initial_state[1])
         self._state_machine.trigger_transition_by_id(transition_id, True)
 
         cb_return_code = self.__execute_callback(
-            self._state_machine.current_state[0], initial_state_id)
+            self._state_machine.current_state[0], initial_state)
         self._state_machine.trigger_transition_by_label(cb_return_code.to_label(), True)
 
         if cb_return_code == TransitionCallbackReturn.ERROR:
