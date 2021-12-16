@@ -21,6 +21,7 @@ from .managed_entity import SimpleManagedEntity
 
 
 class LifecyclePublisher(SimpleManagedEntity, Publisher):
+    """Managed publisher entity."""
 
     def __init__(self, *args, **kwargs):
         SimpleManagedEntity.__init__(self)
@@ -28,4 +29,9 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher):
 
     @SimpleManagedEntity.when_enabled
     def publish(self, msg: Union[MsgType, bytes]) -> None:
+        """
+        Publish a message if the lifecycle publisher is enabled.
+
+        See rclpy.publisher.Publisher.publish() for more details.
+        """
         Publisher.publish(msg)
