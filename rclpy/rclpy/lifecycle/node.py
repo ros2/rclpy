@@ -261,14 +261,10 @@ class LifecycleNodeMixin(ManagedEntity):
         self, current_state_id: int, previous_state: LifecycleState
     ) -> TransitionCallbackReturn:
         cb = self._callbacks.get(current_state_id, None)
-        if current_state_id == lifecycle_msgs.msg.State.TRANSITION_STATE_CONFIGURING:
-            print(f'cb: {cb}')
         if cb is None:
             return TransitionCallbackReturn.SUCCESS
         try:
             ret = cb(previous_state)
-            if current_state_id == lifecycle_msgs.msg.State.TRANSITION_STATE_CONFIGURING:
-                print(f'ret: {ret}')
             return ret
         except Exception:
             # TODO(ivanpauno): log sth here

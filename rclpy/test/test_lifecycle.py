@@ -13,11 +13,15 @@
 # limitations under the License.
 
 import pytest
+from unittest import mock
 
 import rclpy
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
+from rclpy.publisher import Publisher
+
+from test_msgs.msg import BasicTypes
 
 
 def test_lifecycle_node_init():
@@ -80,7 +84,24 @@ def test_lifecycle_state_transitions():
     assert node.trigger_configure() == TransitionCallbackReturn.ERROR
     assert node._state_machine.current_state[1] == 'finalized'
 
+# TODO(ivanpauno): Add automated tests for lifecycle services!!
 
+def test_lifecycle_publisher():
+    node = LifecycleNode('test_lifecycle_publisher', enable_communication_interface=False)
+    with mock.patch.object(Publisher, 'publish') as mock_publish:
+        pub = node.create_lifecycle_publisher(BasicTypes, 'test_lifecycle_publisher_topic', 10)
+        pub.publish(BasicTypes())
+        mock_publish.assert_not_called()
+        assert node.trigger_configure() == TransitionCallbackReturn.SUCCESS
+        node.trigger_activate()
+        msg = BasicTypes()
+        pub.publish(msg)
+        mock_publish.assert_called()
+        mock_publish.assert_called_with(pub, msg)
+
+
+# TODO(ivanpauno): DELETE THIS BEFORE MERGING
+# CREATE A lifecycle_py demo
 if __name__ == '__main__':
     rclpy.init()
     node = LifecycleNode('my_lifecycle_node')

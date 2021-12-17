@@ -68,13 +68,13 @@ class SimpleManagedEntity(ManagedEntity):
     @staticmethod
     def when_enabled(wrapped=None, *, when_not_enabled=None):
         def decorator(wrapped):
-            @wraps
+            @wraps(wrapped)
             def only_when_enabled_wrapper(self: SimpleManagedEntity, *args, **kwargs):
                 if not self.enabled:
                     if when_not_enabled is not None:
                         when_not_enabled()
                     return
-                wrapped(*args, **kwargs)
+                wrapped(self, *args, **kwargs)
             return only_when_enabled_wrapper
         if wrapped is None:
             return decorator

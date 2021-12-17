@@ -34,4 +34,4 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher):
 
         See rclpy.publisher.Publisher.publish() for more details.
         """
-        Publisher.publish(msg)
+        Publisher.publish(self, msg)
