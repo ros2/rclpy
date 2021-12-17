@@ -153,22 +153,25 @@ class LifecycleNodeMixin(ManagedEntity):
             self._Node__services.extend(lifecycle_services)
 
     def trigger_configure(self):
-        self.__change_state(lifecycle_msgs.msg.TRANSITION_CONFIGURE)
+        return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE)
 
     def trigger_cleanup(self):
-        self.__change_state(lifecycle_msgs.msg.TRANSITION_CLEANUP)
+        return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_CLEANUP)
 
     def trigger_shutdown(self):
-        self.__change_state(lifecycle_msgs.msg.TRANSITION_SHUTDOWN)
+        current_state = self._state_machine.current_state[1]
+        if current_state == 'unconfigured':
+            return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_UNCONFIGURED_SHUTDOWN)
+        if current_state == 'inactive':
+            return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_INACTIVE_SHUTDOWN)
+        if current_state == 'active':
+            return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_ACTIVE_SHUTDOWN)
 
     def trigger_activate(self):
-        self.__change_state(lifecycle_msgs.msg.TRANSITION_ACTIVATE)
+        return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE)
 
     def trigger_deactivate(self):
-        self.__change_state(lifecycle_msgs.msg.TRANSITION_DEACTIVATE)
-
-    def trigger_error(self):
-        self.__change_state(lifecycle_msgs.msg.TRANSITION_ERROR)
+        return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_DEACTIVATE)
 
     def add_managed_entity(self, entity: ManagedEntity):
         self._managed_entities.add(entity)
@@ -258,15 +261,20 @@ class LifecycleNodeMixin(ManagedEntity):
         self, current_state_id: int, previous_state: LifecycleState
     ) -> TransitionCallbackReturn:
         cb = self._callbacks.get(current_state_id, None)
-        if not cb:
+        if current_state_id == lifecycle_msgs.msg.State.TRANSITION_STATE_CONFIGURING:
+            print(f'cb: {cb}')
+        if cb is None:
             return TransitionCallbackReturn.SUCCESS
         try:
-            return cb(previous_state)
+            ret = cb(previous_state)
+            if current_state_id == lifecycle_msgs.msg.State.TRANSITION_STATE_CONFIGURING:
+                print(f'ret: {ret}')
+            return ret
         except Exception:
             # TODO(ivanpauno): log sth here
             return TransitionCallbackReturn.ERROR
 
-    def __change_state(self, transition_id: int):
+    def __change_state(self, transition_id: int) -> TransitionCallbackReturn:
         self.__check_is_initialized()
         initial_state = self._state_machine.current_state
         initial_state = LifecycleState(id=initial_state[0], label=initial_state[1])
@@ -277,10 +285,11 @@ class LifecycleNodeMixin(ManagedEntity):
         self._state_machine.trigger_transition_by_label(cb_return_code.to_label(), True)
 
         if cb_return_code == TransitionCallbackReturn.ERROR:
-            # TODO(ivanpauno): I don't understand what rclcpp is doing here ...
-            # It's triggering the error transition twice (?)
-            # https://github.com/ros2/rclcpp/blob/b2b676d3172ada509e58fa552a676a446809d83c/rclcpp_lifecycle/src/lifecycle_node_interface_impl.hpp#L428-L443
-            pass
+            # Now we're in the errorprocessing state, trigger the on_error callback
+            # and transition again based on the return code.
+            error_cb_ret_code = self.__execute_callback(
+                self._state_machine.current_state[0], initial_state)
+            self._state_machine.trigger_transition_by_label(error_cb_ret_code.to_label(), True)
         return cb_return_code
 
     def __check_is_initialized(self):
