@@ -14,7 +14,7 @@
 
 from .managed_entity import ManagedEntity
 from .managed_entity import SimpleManagedEntity
-from .node import LifecycleMixin
+from .node import LifecycleNodeMixin
 from .node import LifecycleNode
 from .node import LifecycleState
 from .publisher import LifecyclePublisher
@@ -26,6 +26,7 @@ from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 # Do not include that in __all__ to avoid mixing it up with rclpy.node.Node.
 Node = LifecycleNode
 # same idea here
+NodeMixin = LifecycleNodeMixin
 State = LifecycleState
 Publisher = LifecyclePublisher
 
@@ -34,7 +35,7 @@ TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
 
 
 __all__ = [
-    'LifecycleMixin',
+    'LifecycleNodeMixin',
     'LifecycleNode',
     'LifecycleState',
     'LifecyclePublisher',

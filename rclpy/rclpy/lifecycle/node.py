@@ -42,7 +42,7 @@ class LifecycleState(NamedTuple):
     id: int
 
 
-class LifecycleMixin(ManagedEntity):
+class LifecycleNodeMixin(ManagedEntity):
     """
     Mixin class to share as most code as possible between `Node` and `LifecycleNode`.
 
@@ -50,12 +50,6 @@ class LifecycleMixin(ManagedEntity):
     as it access attributes created by `Node` directly here!
     """
 
-    # TODO(ivanpauno): We could make this a bit nicer by adding State, Transition, StateMachine
-    # abstractions in this module.
-    # Anyways those are not directly useful to the user and the implementation is not too bad
-    # without them.
-    # TODO(ivanpauno): We actually need a State abstraction to make the register_callback()
-    # API nicer!
     def __init__(
         self,
         *,
@@ -157,21 +151,23 @@ class LifecycleMixin(ManagedEntity):
         # Maybe have some interface to add a service/etc instead (?).
         self._Node__services.extend(lifecycle_services)
 
+    def trigger_configure(self):
+        self.__change_state(lifecycle_msgs.msg.TRANSITION_CONFIGURE)
 
-    def __register_callback(
-        self, state_id: int, callback: Callable[[LifecycleState], TransitionCallbackReturn]
-    ) -> bool:
-        """
-        Register a callback that will be triggered when transitioning to state_id.
+    def trigger_cleanup(self):
+        self.__change_state(lifecycle_msgs.msg.TRANSITION_CLEANUP)
 
-        The registered callback takes as an argument the previous state id, and returns
-        a TransitionCallbackReturn value.
-        """
-        self._callbacks[state_id] = callback
-        # TODO(ivanpauno): Copying rclcpp style.
-        # Maybe having a return value doesn't make sense (?).
-        # Should we error/warn if overridding an existing callback?
-        return True
+    def trigger_shutdown(self):
+        self.__change_state(lifecycle_msgs.msg.TRANSITION_SHUTDOWN)
+
+    def trigger_activate(self):
+        self.__change_state(lifecycle_msgs.msg.TRANSITION_ACTIVATE)
+
+    def trigger_deactivate(self):
+        self.__change_state(lifecycle_msgs.msg.TRANSITION_DEACTIVATE)
+
+    def trigger_error(self):
+        self.__change_state(lifecycle_msgs.msg.TRANSITION_ERROR)
 
     def add_managed_entity(self, entity: ManagedEntity):
         self._managed_entities.add(entity)
@@ -241,6 +237,21 @@ class LifecycleMixin(ManagedEntity):
         except KeyError:
             pass
         return Node.destroy_publisher(self, publisher)
+
+    def __register_callback(
+        self, state_id: int, callback: Callable[[LifecycleState], TransitionCallbackReturn]
+    ) -> bool:
+        """
+        Register a callback that will be triggered when transitioning to state_id.
+
+        The registered callback takes as an argument the previous state id, and returns
+        a TransitionCallbackReturn value.
+        """
+        self._callbacks[state_id] = callback
+        # TODO(ivanpauno): Copying rclcpp style.
+        # Maybe having a return value doesn't make sense (?).
+        # Should we error/warn if overridding an existing callback?
+        return True
 
     def __execute_callback(
         self, current_state_id: int, previous_state: LifecycleState
@@ -354,22 +365,22 @@ class LifecycleMixin(ManagedEntity):
         return resp
 
 
-class LifecycleNode(LifecycleMixin, Node):
+class LifecycleNode(LifecycleNodeMixin, Node):
     """
     A ROS 2 managed node.
 
-    This class extends Node with the methods provided by LifecycleMixin.
-    Methods in LifecycleMixin overridde the ones in Node.
+    This class extends Node with the methods provided by LifecycleNodeMixin.
+    Methods in LifecycleNodeMixin overridde the ones in Node.
     """
 
     def __init__(self, node_name, *, enable_communication_interface: bool = True, **kwargs):
         """
         Create a lifecycle node.
 
-        See rclpy.lifecycle.LifecycleMixin.__init__() and rclpy.node.Node()
+        See rclpy.lifecycle.LifecycleNodeMixin.__init__() and rclpy.node.Node()
         for the documentation of each parameter.
         """
         Node.__init__(self, node_name, **kwargs)
-        LifecycleMixin.__init__(
+        LifecycleNodeMixin.__init__(
             self,
             enable_communication_interface=enable_communication_interface)
