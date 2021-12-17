@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from unittest import mock
+
+import pytest
 
 import rclpy
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -49,7 +50,8 @@ def test_lifecycle_node_init():
 
 
 def test_lifecycle_state_transitions():
-    node = LifecycleNode('test_lifecycle_state_transitions_1', enable_communication_interface=False)
+    node = LifecycleNode(
+        'test_lifecycle_state_transitions_1', enable_communication_interface=False)
     # normal transitions
     assert node.trigger_configure() == TransitionCallbackReturn.SUCCESS
     assert node.trigger_activate() == TransitionCallbackReturn.SUCCESS
@@ -64,27 +66,36 @@ def test_lifecycle_state_transitions():
     node.destroy_node()
 
     class ErrorOnConfigureHandledCorrectlyNode(LifecycleNode):
-        on_configure = lambda: TransitionCallbackReturn.ERROR
+
+        def on_configure(self):
+            return TransitionCallbackReturn.ERROR
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
-    node = ErrorOnConfigureHandledCorrectlyNode('test_lifecycle_state_transitions_2', enable_communication_interface=False)
+    node = ErrorOnConfigureHandledCorrectlyNode(
+        'test_lifecycle_state_transitions_2', enable_communication_interface=False)
     assert node.trigger_configure() == TransitionCallbackReturn.ERROR
     assert node._state_machine.current_state[1] == 'unconfigured'
 
     class ErrorOnConfigureHandledInCorrectlyNode(LifecycleNode):
-        on_configure = lambda: TransitionCallbackReturn.ERROR
-        on_error = lambda: TransitionCallbackReturn.FAILURE
+
+        def on_configure(self):
+            return TransitionCallbackReturn.ERROR
+
+        def on_error(self):
+            return TransitionCallbackReturn.ERROR
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
-    node = ErrorOnConfigureHandledInCorrectlyNode('test_lifecycle_state_transitions_3', enable_communication_interface=False)
+    node = ErrorOnConfigureHandledInCorrectlyNode(
+        'test_lifecycle_state_transitions_3', enable_communication_interface=False)
     assert node.trigger_configure() == TransitionCallbackReturn.ERROR
     assert node._state_machine.current_state[1] == 'finalized'
 
 # TODO(ivanpauno): Add automated tests for lifecycle services!!
+
 
 def test_lifecycle_publisher():
     node = LifecycleNode('test_lifecycle_publisher', enable_communication_interface=False)

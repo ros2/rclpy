@@ -31,15 +31,13 @@ from rclpy.type_support import check_is_valid_srv_type
 from .managed_entity import ManagedEntity
 from .publisher import LifecyclePublisher
 
-from ..impl.implementation_singleton import rclpy_implementation as _rclpy
-
 
 TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
 
 
 class LifecycleState(NamedTuple):
     label: str
-    id: int
+    state_id: int
 
 
 class LifecycleNodeMixin(ManagedEntity):
@@ -161,9 +159,11 @@ class LifecycleNodeMixin(ManagedEntity):
     def trigger_shutdown(self):
         current_state = self._state_machine.current_state[1]
         if current_state == 'unconfigured':
-            return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_UNCONFIGURED_SHUTDOWN)
+            return self.__change_state(
+                lifecycle_msgs.msg.Transition.TRANSITION_UNCONFIGURED_SHUTDOWN)
         if current_state == 'inactive':
-            return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_INACTIVE_SHUTDOWN)
+            return self.__change_state(
+                lifecycle_msgs.msg.Transition.TRANSITION_INACTIVE_SHUTDOWN)
         if current_state == 'active':
             return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_ACTIVE_SHUTDOWN)
 
@@ -273,7 +273,7 @@ class LifecycleNodeMixin(ManagedEntity):
     def __change_state(self, transition_id: int) -> TransitionCallbackReturn:
         self.__check_is_initialized()
         initial_state = self._state_machine.current_state
-        initial_state = LifecycleState(id=initial_state[0], label=initial_state[1])
+        initial_state = LifecycleState(state_id=initial_state[0], label=initial_state[1])
         self._state_machine.trigger_transition_by_id(transition_id, True)
 
         cb_return_code = self.__execute_callback(

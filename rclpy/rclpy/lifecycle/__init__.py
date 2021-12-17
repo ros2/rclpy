@@ -14,8 +14,8 @@
 
 from .managed_entity import ManagedEntity
 from .managed_entity import SimpleManagedEntity
-from .node import LifecycleNodeMixin
 from .node import LifecycleNode
+from .node import LifecycleNodeMixin
 from .node import LifecycleState
 from .publisher import LifecyclePublisher
 
