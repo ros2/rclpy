@@ -346,8 +346,6 @@ class LifecycleNodeMixin(ManagedEntity):
         return cb_return_code
 
     def __check_is_initialized(self):
-        # TODO(ivanpauno): This sanity check is probably not needed, just doing the same checks as
-        # rclcpp for the moment.
         if not self._state_machine.initialized:
             raise RuntimeError(
                 'Internal error: got service request while lifecycle state machine '
