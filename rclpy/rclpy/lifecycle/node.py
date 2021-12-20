@@ -174,16 +174,35 @@ class LifecycleNodeMixin(ManagedEntity):
         self._managed_entities.add(entity)
 
     def on_configure(self, state) -> TransitionCallbackReturn:
+        """
+        Handle a configuring transition.
+
+        This is the default on_configure() callback.
+        It will call all on_configure() callbacks of managed entities, giving up at the first
+        entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.
+
+        It's possible to override this callback if the default behavior is not desired.
+        If you only want to extend what this callback does, make sure to call
+        super().on_configure() in derived classes.
+        """
         for entity in self._managed_entities:
             ret = entity.on_configure(state)
-            # TODO(ivanpauno): Should we stop calling the other managed entities callabacks
-            # if one fails or errors?
-            # Should the behavior be the same in all the other cases?
             if ret != TransitionCallbackReturn.SUCCESS:
                 return ret
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state) -> TransitionCallbackReturn:
+        """
+        Handle a cleaning up transition.
+
+        This is the default on_cleanup() callback.
+        It will call all on_cleanup() callbacks of managed entities, giving up at the first
+        entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.
+
+        It's possible to override this callback if the default behavior is not desired.
+        If you only want to extend what this callback does, make sure to call
+        super().on_cleanup() in derived classes.
+        """
         for entity in self._managed_entities:
             ret = entity.on_cleanup(state)
             if ret != TransitionCallbackReturn.SUCCESS:
@@ -191,6 +210,17 @@ class LifecycleNodeMixin(ManagedEntity):
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state) -> TransitionCallbackReturn:
+        """
+        Handle a shutting down transition.
+
+        This is the default on_shutdown() callback.
+        It will call all on_shutdown() callbacks of managed entities, giving up at the first
+        entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.
+
+        It's possible to override this callback if the default behavior is not desired.
+        If you only want to extend what this callback does, make sure to call
+        super().on_shutdown() in derived classes.
+        """
         for entity in self._managed_entities:
             ret = entity.on_shutdown(state)
             if ret != TransitionCallbackReturn.SUCCESS:
@@ -198,6 +228,17 @@ class LifecycleNodeMixin(ManagedEntity):
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state) -> TransitionCallbackReturn:
+        """
+        Handle an activating transition.
+
+        This is the default on_activate() callback.
+        It will call all on_activate() callbacks of managed entities, giving up at the first
+        entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.
+
+        It's possible to override this callback if the default behavior is not desired.
+        If you only want to extend what this callback does, make sure to call
+        super().on_activate() in derived classes.
+        """
         for entity in self._managed_entities:
             ret = entity.on_activate(state)
             if ret != TransitionCallbackReturn.SUCCESS:
@@ -205,6 +246,17 @@ class LifecycleNodeMixin(ManagedEntity):
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state) -> TransitionCallbackReturn:
+        """
+        Handle a deactivating transition.
+
+        This is the default on_deactivate() callback.
+        It will call all on_deactivate() callbacks of managed entities, giving up at the first
+        entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.
+
+        It's possible to override this callback if the default behavior is not desired.
+        If you only want to extend what this callback does, make sure to call
+        super().on_deactivate() in derived classes.
+        """
         for entity in self._managed_entities:
             ret = entity.on_deactivate(state)
             if ret != TransitionCallbackReturn.SUCCESS:
@@ -212,6 +264,17 @@ class LifecycleNodeMixin(ManagedEntity):
         return TransitionCallbackReturn.SUCCESS
 
     def on_error(self, state) -> TransitionCallbackReturn:
+        """
+        Handle a transition error.
+
+        This is the default on_error() callback.
+        It will call all on_error() callbacks of managed entities, giving up at the first
+        entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.
+
+        It's possible to override this callback if the default behavior is not desired.
+        If you only want to extend what this callback does, make sure to call
+        super().on_error() in derived classes.
+        """
         for entity in self._managed_entities:
             ret = entity.on_error(state)
             if ret != TransitionCallbackReturn.SUCCESS:
