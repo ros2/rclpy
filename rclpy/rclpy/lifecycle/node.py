@@ -376,7 +376,7 @@ class LifecycleNode(LifecycleNodeMixin, Node):
     A ROS 2 managed node.
 
     This class extends Node with the methods provided by LifecycleNodeMixin.
-    Methods in LifecycleNodeMixin overridde the ones in Node.
+    Methods in LifecycleNodeMixin override the ones in Node.
     """
 
     def __init__(self, node_name, *, enable_communication_interface: bool = True, **kwargs):
