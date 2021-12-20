@@ -62,7 +62,7 @@ class SimpleManagedEntity(ManagedEntity):
         return TransitionCallbackReturn.SUCCESS
 
     @property
-    def enabled(self):
+    def is_activated(self):
         return self._enabled
 
     @staticmethod
@@ -70,7 +70,7 @@ class SimpleManagedEntity(ManagedEntity):
         def decorator(wrapped):
             @wraps(wrapped)
             def only_when_enabled_wrapper(self: SimpleManagedEntity, *args, **kwargs):
-                if not self.enabled:
+                if not self._enabled:
                     if when_not_enabled is not None:
                         when_not_enabled()
                     return
