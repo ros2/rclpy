@@ -144,11 +144,8 @@ class LifecycleNodeMixin(ManagedEntity):
             ]
             for s in lifecycle_services:
                 callback_group.add_entity(s)
-            # TODO(ivanpauno): Modify attribute in Node to be "protected" instead of "private".
-            # i.e. Node.__services -> Node._services
-            # Maybe the same with similar attributes (__publishers, etc).
-            # Maybe have some interface to add a service/etc instead (?).
-            self._Node__services.extend(lifecycle_services)
+            # Extend base class list of services, so they are added to the executor when spinning.
+            self._services.extend(lifecycle_services)
 
     def trigger_configure(self):
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE)
