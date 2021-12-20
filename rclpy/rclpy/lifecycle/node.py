@@ -171,9 +171,24 @@ class LifecycleNodeMixin(ManagedEntity):
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_DEACTIVATE)
 
     def add_managed_entity(self, entity: ManagedEntity):
+        if not isinstance(entity, ManagedEntity):
+            raise TypeError('Expected a rclpy.lifecycle.ManagedEntity instance.')
         self._managed_entities.add(entity)
 
-    def on_configure(self, state) -> TransitionCallbackReturn:
+    def __transition_callback_impl(self, callback_name: str, state: LifecycleState):
+        for entity in self._managed_entities:
+            cb = getattr(entity, callback_name)
+            ret = cb(state)
+            if not isinstance(ret, TransitionCallbackReturn):
+                raise TypeError(
+                    f'{callback_name}() return value of class {type(entity)} should be'
+                    ' `TransitionCallbackReturn`.\n'
+                    f'Instance of the class that caused the failure: {entity}')
+            if ret != TransitionCallbackReturn.SUCCESS:
+                return ret
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         """
         Handle a configuring transition.
 
@@ -185,13 +200,9 @@ class LifecycleNodeMixin(ManagedEntity):
         If you only want to extend what this callback does, make sure to call
         super().on_configure() in derived classes.
         """
-        for entity in self._managed_entities:
-            ret = entity.on_configure(state)
-            if ret != TransitionCallbackReturn.SUCCESS:
-                return ret
-        return TransitionCallbackReturn.SUCCESS
+        return self.__transition_callback_impl('on_configure', state)
 
-    def on_cleanup(self, state) -> TransitionCallbackReturn:
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         """
         Handle a cleaning up transition.
 
@@ -203,13 +214,9 @@ class LifecycleNodeMixin(ManagedEntity):
         If you only want to extend what this callback does, make sure to call
         super().on_cleanup() in derived classes.
         """
-        for entity in self._managed_entities:
-            ret = entity.on_cleanup(state)
-            if ret != TransitionCallbackReturn.SUCCESS:
-                return ret
-        return TransitionCallbackReturn.SUCCESS
+        return self.__transition_callback_impl('on_cleanup', state)
 
-    def on_shutdown(self, state) -> TransitionCallbackReturn:
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
         """
         Handle a shutting down transition.
 
@@ -221,13 +228,9 @@ class LifecycleNodeMixin(ManagedEntity):
         If you only want to extend what this callback does, make sure to call
         super().on_shutdown() in derived classes.
         """
-        for entity in self._managed_entities:
-            ret = entity.on_shutdown(state)
-            if ret != TransitionCallbackReturn.SUCCESS:
-                return ret
-        return TransitionCallbackReturn.SUCCESS
+        return self.__transition_callback_impl('on_shutdown', state)
 
-    def on_activate(self, state) -> TransitionCallbackReturn:
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         """
         Handle an activating transition.
 
@@ -239,13 +242,9 @@ class LifecycleNodeMixin(ManagedEntity):
         If you only want to extend what this callback does, make sure to call
         super().on_activate() in derived classes.
         """
-        for entity in self._managed_entities:
-            ret = entity.on_activate(state)
-            if ret != TransitionCallbackReturn.SUCCESS:
-                return ret
-        return TransitionCallbackReturn.SUCCESS
+        return self.__transition_callback_impl('on_activate', state)
 
-    def on_deactivate(self, state) -> TransitionCallbackReturn:
+    def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         """
         Handle a deactivating transition.
 
@@ -257,13 +256,9 @@ class LifecycleNodeMixin(ManagedEntity):
         If you only want to extend what this callback does, make sure to call
         super().on_deactivate() in derived classes.
         """
-        for entity in self._managed_entities:
-            ret = entity.on_deactivate(state)
-            if ret != TransitionCallbackReturn.SUCCESS:
-                return ret
-        return TransitionCallbackReturn.SUCCESS
+        return self.__transition_callback_impl('on_deactivate', state)
 
-    def on_error(self, state) -> TransitionCallbackReturn:
+    def on_error(self, state: LifecycleState) -> TransitionCallbackReturn:
         """
         Handle a transition error.
 
@@ -275,11 +270,7 @@ class LifecycleNodeMixin(ManagedEntity):
         If you only want to extend what this callback does, make sure to call
         super().on_error() in derived classes.
         """
-        for entity in self._managed_entities:
-            ret = entity.on_error(state)
-            if ret != TransitionCallbackReturn.SUCCESS:
-                return ret
-        return TransitionCallbackReturn.SUCCESS
+        return self.__transition_callback_impl('on_error', state)
 
     def create_lifecycle_publisher(self, *args, **kwargs):
         # TODO(ivanpauno): Should we override lifecycle publisher?
