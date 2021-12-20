@@ -312,9 +312,6 @@ class LifecycleNodeMixin(ManagedEntity):
         a TransitionCallbackReturn value.
         """
         self._callbacks[state_id] = callback
-        # TODO(ivanpauno): Copying rclcpp style.
-        # Maybe having a return value doesn't make sense (?).
-        # Should we error/warn if overridding an existing callback?
         return True
 
     def __execute_callback(
