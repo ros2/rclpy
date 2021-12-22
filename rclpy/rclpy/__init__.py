@@ -100,6 +100,13 @@ def get_global_executor() -> 'Executor':
         # imported locally to avoid loading extensions on module import
         from rclpy.executors import SingleThreadedExecutor
         __executor = SingleThreadedExecutor()
+        context = get_default_context()
+
+        def reset_executor():
+            global __executor
+            __executor.shutdown()
+            __executor = None
+        context.on_shutdown(reset_executor)
     return __executor
 
 
@@ -116,10 +123,6 @@ def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = No
         If `True`, signal handlers will be uninstalled.
         If not, signal handlers won't be uninstalled.
     """
-    global __executor
-    if __executor is not None:
-        __executor.shutdown()
-        __executor = None
     _shutdown(context=context)
     if (
         uninstall_handlers or (

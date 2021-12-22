@@ -60,9 +60,19 @@ def shutdown(*, context=None):
 
 def try_shutdown(*, context=None):
     """Shutdown rclpy if not already shutdown."""
+    global g_context_lock
+    global g_default_context
     if context is None:
-        context = get_default_context()
-    return context.try_shutdown()
+        # Replace the default context with a new one if shutdown was successful
+        # or if the context was already shutdown.
+        with g_context_lock:
+            if g_default_context is None:
+                g_default_context = Context()
+            g_default_context.try_shutdown()
+            if not g_default_context.ok():
+                g_default_context = None
+    else:
+        return context.try_shutdown()
 
 
 def get_rmw_implementation_identifier():
