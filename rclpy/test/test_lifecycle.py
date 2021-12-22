@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from threading import Thread
 from unittest import mock
 
 import pytest
@@ -20,8 +21,12 @@ import rclpy
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
+from rclpy.executors import SingleThreadedExecutor
+from rclpy.node import Node
 from rclpy.publisher import Publisher
 
+import lifecycle_msgs.msg
+import lifecycle_msgs.srv
 from test_msgs.msg import BasicTypes
 
 
@@ -95,7 +100,76 @@ def test_lifecycle_state_transitions():
     assert node.trigger_configure() == TransitionCallbackReturn.ERROR
     assert node._state_machine.current_state[1] == 'finalized'
 
-# TODO(ivanpauno): Add automated tests for lifecycle services!!
+
+def test_lifecycle_services(request):
+    lc_node_name = 'test_lifecycle_services_lifecycle'
+    lc_node = LifecycleNode(lc_node_name)
+    client_node = Node('test_lifecycle_services_client')
+    get_state_cli = client_node.create_client(
+        lifecycle_msgs.srv.GetState,
+        f'/{lc_node_name}/get_state')
+    change_state_cli = client_node.create_client(
+        lifecycle_msgs.srv.ChangeState,
+        f'/{lc_node_name}/change_state')
+    get_available_states_cli = client_node.create_client(
+        lifecycle_msgs.srv.GetAvailableStates,
+        f'/{lc_node_name}/get_available_states')
+    get_available_transitions_cli = client_node.create_client(
+        lifecycle_msgs.srv.GetAvailableTransitions,
+        f'/{lc_node_name}/get_available_transitions')
+    get_transition_graph_cli = client_node.create_client(
+        lifecycle_msgs.srv.GetAvailableTransitions,
+        f'/{lc_node_name}/get_transition_graph')
+    for cli in (
+        get_state_cli,
+        change_state_cli,
+        get_available_states_cli,
+        get_available_transitions_cli,
+        get_transition_graph_cli,
+    ):
+        assert cli.wait_for_service(5.)
+    # lunch a thread to spin the executor, so we can make sync service calls easily
+    exec = SingleThreadedExecutor()
+    exec.add_node(client_node)
+    exec.add_node(lc_node)
+    thread = Thread(target=exec.spin)
+    thread.start()
+    def cleanup():
+        # Stop executor and join thread.
+        # This cleanup is run even if an assertion fails.
+        exec.shutdown()
+        thread.join()
+    request.addfinalizer(cleanup)
+
+    # test all services
+    req = lifecycle_msgs.srv.GetState.Request()
+    resp = get_state_cli.call(req)
+    assert resp.current_state.label == 'unconfigured'
+    req = lifecycle_msgs.srv.ChangeState.Request()
+    req.transition.id = lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE
+    resp = change_state_cli.call(req)
+    assert resp.success
+    req = lifecycle_msgs.srv.GetState.Request()
+    resp = get_state_cli.call(req)
+    assert resp.current_state.label == 'inactive'
+    req = lifecycle_msgs.srv.GetAvailableStates.Request()
+    resp = get_available_states_cli.call(req)
+    states_labels = {state.label for state in resp.available_states}
+    assert states_labels == {
+        'unknown', 'unconfigured', 'inactive', 'active', 'finalized', 'configuring', 'cleaningup',
+        'shuttingdown', 'activating', 'deactivating', 'errorprocessing', ''
+    }
+    req = lifecycle_msgs.srv.GetAvailableTransitions.Request()
+    resp = get_available_transitions_cli.call(req)
+    transitions_labels = {transition_def.transition.label for transition_def in resp.available_transitions}
+    assert transitions_labels == {'activate', 'cleanup', 'shutdown'}
+    req = lifecycle_msgs.srv.GetAvailableTransitions.Request()
+    resp = get_transition_graph_cli.call(req)
+    transitions_labels = {transition_def.transition.label for transition_def in resp.available_transitions}
+    assert transitions_labels == {
+        'configure' ,'activate', 'cleanup', 'shutdown', 'deactivate', 'transition_error',
+        'transition_failure', 'transition_success'
+    }
 
 
 def test_lifecycle_publisher():
