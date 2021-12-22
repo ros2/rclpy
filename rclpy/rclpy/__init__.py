@@ -54,7 +54,7 @@ from rclpy.utilities import get_default_context
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa: F401
 from rclpy.utilities import ok  # noqa: F401 forwarding to this module
 from rclpy.utilities import shutdown as _shutdown
-from rclpy.utilities import try_shutdown  # noqa: F401
+from rclpy.utilities import try_shutdown as _try_shutdown
 
 # Avoid loading extensions on module import
 if TYPE_CHECKING:
@@ -127,6 +127,23 @@ def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = No
                 context is None or context is get_default_context()))
     ):
         uninstall_signal_handlers()
+
+
+def try_shutdown(*, context: Context = None) -> None:
+    """
+    Try shutting down a previously initialized context.
+
+    This will also shutdown the global executor if the context was successfuly shutdown.
+
+    :param context: The context to invalidate. If ``None``, then the default context is used
+        (see :func:`.get_default_context`).
+    """
+    global __executor
+    _try_shutdown(context=context)
+    if not ok():
+        if __executor is not None:
+            __executor.shutdown()
+            __executor = None
 
 
 def create_node(
