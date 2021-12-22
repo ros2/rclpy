@@ -69,7 +69,19 @@ def test_lifecycle_state_transitions():
     with pytest.raises(_rclpy.RCLError):
         node.trigger_deactivate()
     assert node.trigger_shutdown() == TransitionCallbackReturn.SUCCESS
+    with pytest.raises(_rclpy.RCLError):
+        node.trigger_shutdown()
     node.destroy_node()
+    # Again but trigger shutdown from 'inactive' instead of 'unconfigured'
+    node = LifecycleNode(
+        'test_lifecycle_state_transitions_2', enable_communication_interface=False)
+    assert node.trigger_shutdown() == TransitionCallbackReturn.SUCCESS
+    # Again but trigger shutdown from 'active'
+    node = LifecycleNode(
+        'test_lifecycle_state_transitions_3', enable_communication_interface=False)
+    assert node.trigger_configure() == TransitionCallbackReturn.SUCCESS
+    assert node.trigger_activate() == TransitionCallbackReturn.SUCCESS
+    assert node.trigger_shutdown() == TransitionCallbackReturn.SUCCESS
 
     class ErrorOnConfigureHandledCorrectlyNode(LifecycleNode):
 

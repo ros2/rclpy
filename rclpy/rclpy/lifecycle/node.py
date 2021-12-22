@@ -163,6 +163,7 @@ class LifecycleNodeMixin(ManagedEntity):
                 lifecycle_msgs.msg.Transition.TRANSITION_INACTIVE_SHUTDOWN)
         if current_state == 'active':
             return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_ACTIVE_SHUTDOWN)
+        raise _rclpy.RCLError('Shutdown transtion not possible')
 
     def trigger_activate(self):
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE)
