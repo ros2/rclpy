@@ -184,11 +184,3 @@ def test_lifecycle_publisher():
         pub.publish(msg)
         mock_publish.assert_called()
         mock_publish.assert_called_with(pub, msg)
-
-
-# TODO(ivanpauno): DELETE THIS BEFORE MERGING
-# CREATE A lifecycle_py demo
-if __name__ == '__main__':
-    rclpy.init()
-    node = LifecycleNode('my_lifecycle_node')
-    rclpy.spin(node)
