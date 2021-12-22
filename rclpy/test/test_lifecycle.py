@@ -75,6 +75,7 @@ def test_lifecycle_state_transitions():
 
     node = ErrorOnConfigureHandledCorrectlyNode(
         'test_lifecycle_state_transitions_2', enable_communication_interface=False)
+    assert node._state_machine.current_state[1] == 'unconfigured'
     assert node.trigger_configure() == TransitionCallbackReturn.ERROR
     assert node._state_machine.current_state[1] == 'unconfigured'
 
