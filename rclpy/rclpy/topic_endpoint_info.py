@@ -14,7 +14,7 @@
 
 from enum import IntEnum
 
-from rclpy.qos import QoSPresetProfiles, QoSProfile
+from rclpy.qos import QoSHistoryPolicy, QoSPresetProfiles, QoSProfile
 
 
 class TopicEndpointTypeEnum(IntEnum):
@@ -159,6 +159,12 @@ class TopicEndpointInfo:
 
     def __str__(self):
         gid = '.'.join(format(x, '02x') for x in self.endpoint_gid)
+        if self.qos_profile.history.value == QoSHistoryPolicy.UNKNOWN:
+            history_depth_str = self.qos_profile.history.name
+        else:
+            history_depth_str = ' '.join([
+                f'{self.qos_profile.history.name}', f'({self.qos_profile.depth})'
+            ])
         return '\n'.join([
             f'Node name: {self.node_name}',
             f'Node namespace: {self.node_namespace}',
@@ -167,6 +173,7 @@ class TopicEndpointInfo:
             f'GID: {gid}',
             'QoS profile:',
             f'  Reliability: {self.qos_profile.reliability.name}',
+            f'  History (Depth): {history_depth_str}',
             f'  Durability: {self.qos_profile.durability.name}',
             f'  Lifespan: {self.qos_profile.lifespan}',
             f'  Deadline: {self.qos_profile.deadline}',
