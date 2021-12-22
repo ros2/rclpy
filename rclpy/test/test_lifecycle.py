@@ -15,18 +15,19 @@
 from threading import Thread
 from unittest import mock
 
+import lifecycle_msgs.msg
+import lifecycle_msgs.srv
+
 import pytest
 
 import rclpy
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
-from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 
-import lifecycle_msgs.msg
-import lifecycle_msgs.srv
 from test_msgs.msg import BasicTypes
 
 
@@ -129,15 +130,16 @@ def test_lifecycle_services(request):
     ):
         assert cli.wait_for_service(5.)
     # lunch a thread to spin the executor, so we can make sync service calls easily
-    exec = SingleThreadedExecutor()
-    exec.add_node(client_node)
-    exec.add_node(lc_node)
-    thread = Thread(target=exec.spin)
+    executor = SingleThreadedExecutor()
+    executor.add_node(client_node)
+    executor.add_node(lc_node)
+    thread = Thread(target=executor.spin)
     thread.start()
+
     def cleanup():
         # Stop executor and join thread.
         # This cleanup is run even if an assertion fails.
-        exec.shutdown()
+        executor.shutdown()
         thread.join()
     request.addfinalizer(cleanup)
 
@@ -161,13 +163,15 @@ def test_lifecycle_services(request):
     }
     req = lifecycle_msgs.srv.GetAvailableTransitions.Request()
     resp = get_available_transitions_cli.call(req)
-    transitions_labels = {transition_def.transition.label for transition_def in resp.available_transitions}
+    transitions_labels = {
+        transition_def.transition.label for transition_def in resp.available_transitions}
     assert transitions_labels == {'activate', 'cleanup', 'shutdown'}
     req = lifecycle_msgs.srv.GetAvailableTransitions.Request()
     resp = get_transition_graph_cli.call(req)
-    transitions_labels = {transition_def.transition.label for transition_def in resp.available_transitions}
+    transitions_labels = {
+        transition_def.transition.label for transition_def in resp.available_transitions}
     assert transitions_labels == {
-        'configure' ,'activate', 'cleanup', 'shutdown', 'deactivate', 'transition_error',
+        'configure', 'activate', 'cleanup', 'shutdown', 'deactivate', 'transition_error',
         'transition_failure', 'transition_success'
     }
 
