@@ -127,7 +127,7 @@ class Context:
                 if ismethod(callback):
                     self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
                 else:
-                    self._callbacks.append(weakref.ref(callback, self._remove_callback))
+                    self._callbacks.append(callback)
 
     def _logging_fini(self):
         # This function must be called with self._lock held.
