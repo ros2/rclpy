@@ -60,8 +60,13 @@ def test_lifecycle_state_transitions():
         'test_lifecycle_state_transitions_1', enable_communication_interface=False)
     # normal transitions
     assert node.trigger_configure() == TransitionCallbackReturn.SUCCESS
-    assert node.trigger_activate() == TransitionCallbackReturn.SUCCESS
-    assert node.trigger_deactivate() == TransitionCallbackReturn.SUCCESS
+    # test many times back to back, to make sure it works robustly
+    for _ in range(10):
+        assert node.trigger_cleanup() == TransitionCallbackReturn.SUCCESS
+        assert node.trigger_configure() == TransitionCallbackReturn.SUCCESS
+    for _ in range(10):
+        assert node.trigger_activate() == TransitionCallbackReturn.SUCCESS
+        assert node.trigger_deactivate() == TransitionCallbackReturn.SUCCESS
     assert node.trigger_cleanup() == TransitionCallbackReturn.SUCCESS
     # some that are not possible from the current state
     with pytest.raises(_rclpy.RCLError):
