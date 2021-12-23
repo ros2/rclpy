@@ -2,6 +2,25 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Implement managed nodes. (`#865 <https://github.com/ros2/rclpy/issues/865>`_)
+* Make rclpy.try_shutdown() behavior to follow rclpy.shutdown() more closely. (`#868 <https://github.com/ros2/rclpy/issues/868>`_)
+* Update TopicEndpointTypeEnum.__str_\_() method to include history kind and history depth. (`#849 <https://github.com/ros2/rclpy/issues/849>`_)
+* Add Clock.sleep_for() using Clock.sleep_until(). (`#864 <https://github.com/ros2/rclpy/issues/864>`_)
+* Add Clock.sleep_until() (`#858 <https://github.com/ros2/rclpy/issues/858>`_)
+* Add __enter_\_ and __exit_\_ to JumpHandle. (`#862 <https://github.com/ros2/rclpy/issues/862>`_)
+* Don't override rclpy._rclpy_pybind11 docs. (`#863 <https://github.com/ros2/rclpy/issues/863>`_)
+* Improve JumpThreshold documentation and forbid zero durations. (`#861 <https://github.com/ros2/rclpy/issues/861>`_)
+* Fix time.py and clock.py circular import. (`#860 <https://github.com/ros2/rclpy/issues/860>`_)
+* Make context.on_shutdown() allow free functions. (`#859 <https://github.com/ros2/rclpy/issues/859>`_)
+* Fix automatically declared parameters descriptor type. (`#853 <https://github.com/ros2/rclpy/issues/853>`_)
+* Shutdown asynchronously when sigint is received. (`#844 <https://github.com/ros2/rclpy/issues/844>`_)
+* Update maintainers. (`#845 <https://github.com/ros2/rclpy/issues/845>`_)
+* Add entities to callback group before making them available to the executor to avoid a race condition. (`#839 <https://github.com/ros2/rclpy/issues/839>`_)
+* Avoid race condition in client.call(). (`#838 <https://github.com/ros2/rclpy/issues/838>`_)
+* Contributors: Ivan Santiago Paunovic, Jacob Perron, Shane Loretz, Tomoya Fujita
+
 3.1.0 (2021-10-22)
 ------------------
 * Handle sigterm. (`#830 <https://github.com/ros2/rclpy/issues/830>`_)
