@@ -55,6 +55,9 @@ public:
     Node & node, py::object pysrv_type, std::string service_name,
     py::object pyqos_profile);
 
+  Service(
+    Node & node, std::shared_ptr<rcl_service_t> rcl_service);
+
   ~Service() = default;
 
   /// Publish a response message
@@ -87,6 +90,12 @@ public:
   {
     return rcl_service_.get();
   }
+
+  const char *
+  get_service_name();
+
+  py::dict
+  get_qos_profile();
 
   /// Force an early destruction of this object
   void

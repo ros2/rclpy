@@ -22,6 +22,7 @@
 
 #include "exceptions.hpp"
 #include "service.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
@@ -86,6 +87,11 @@ Service::Service(
   }
 }
 
+Service::Service(
+  Node & node, std::shared_ptr<rcl_service_t> rcl_service)
+: node_(node), rcl_service_(rcl_service)
+{}
+
 void
 Service::service_send_response(py::object pyresponse, rmw_request_id_t * header)
 {
@@ -104,7 +110,6 @@ py::tuple
 Service::service_take_request(py::object pyrequest_type)
 {
   auto taken_request = create_from_py(pyrequest_type);
-
   rmw_service_info_t header;
 
   py::tuple result_tuple(2);
@@ -122,6 +127,20 @@ Service::service_take_request(py::object pyrequest_type)
 
   return result_tuple;
 }
+
+const char *
+Service::get_service_name()
+{
+  return rcl_service_get_service_name(rcl_service_.get());
+}
+
+py::dict
+Service::get_qos_profile()
+{
+  const auto * options = rcl_service_get_options(rcl_service_.get());
+  return rclpy::convert_to_qos_dict(&options->qos);
+}
+
 void
 define_service(py::object module)
 {
@@ -132,6 +151,12 @@ define_service(py::object module)
       return reinterpret_cast<size_t>(service.rcl_ptr());
     },
     "Get the address of the entity as an integer")
+  .def_property_readonly(
+    "name", &Service::get_service_name,
+    "Get the name of the service")
+  .def_property_readonly(
+    "qos", &Service::get_qos_profile,
+    "Get the qos profile of the service")
   .def(
     "service_send_response", &Service::service_send_response,
     "Send a response")

@@ -29,6 +29,7 @@
 #include "exceptions.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
+#include "lifecycle.hpp"
 #include "logging.hpp"
 #include "logging_api.hpp"
 #include "names.hpp"
@@ -230,4 +231,5 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_logging_api(m);
   rclpy::define_signal_handler_api(m);
   rclpy::define_clock_event(m);
+  rclpy::define_lifecycle_api(m);
 }
