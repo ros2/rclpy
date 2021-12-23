@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.2.0 (2021-12-23)
+------------------
 * Implement managed nodes. (`#865 <https://github.com/ros2/rclpy/issues/865>`_)
 * Make rclpy.try_shutdown() behavior to follow rclpy.shutdown() more closely. (`#868 <https://github.com/ros2/rclpy/issues/868>`_)
 * Update TopicEndpointTypeEnum.__str_\_() method to include history kind and history depth. (`#849 <https://github.com/ros2/rclpy/issues/849>`_)
