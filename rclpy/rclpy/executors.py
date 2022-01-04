@@ -351,7 +351,8 @@ class Executor:
         if header is not None:
             try:
                 sequence = header.request_id.sequence_number
-                future = client._pending_requests[sequence]
+                with client.call_lock:
+                    future = client._pending_requests[sequence]
             except KeyError:
                 # The request was cancelled
                 pass

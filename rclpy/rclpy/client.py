@@ -64,6 +64,8 @@ class Client:
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
 
+        self.call_lock = threading.Lock()
+
     def call(self, request: SrvTypeRequest) -> SrvTypeResponse:
         """
         Make a service request and wait for the result.
@@ -126,15 +128,16 @@ class Client:
         if not isinstance(request, self.srv_type.Request):
             raise TypeError()
 
-        with self.handle:
-            sequence_number = self.__client.send_request(request)
-        if sequence_number in self._pending_requests:
-            raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)
+        with self.call_lock:
+            with self.handle:
+                sequence_number = self.__client.send_request(request)
+            if sequence_number in self._pending_requests:
+                raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)
 
-        future = Future()
-        self._pending_requests[sequence_number] = future
+            future = Future()
+            self._pending_requests[sequence_number] = future
 
-        future.add_done_callback(self.remove_pending_request)
+            future.add_done_callback(self.remove_pending_request)
 
         return future
 
