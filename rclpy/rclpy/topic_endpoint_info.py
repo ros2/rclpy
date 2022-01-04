@@ -159,12 +159,10 @@ class TopicEndpointInfo:
 
     def __str__(self):
         gid = '.'.join(format(x, '02x') for x in self.endpoint_gid)
-        if self.qos_profile.history.value == QoSHistoryPolicy.UNKNOWN:
+        if self.qos_profile.history.value != QoSHistoryPolicy.KEEP_LAST:
             history_depth_str = self.qos_profile.history.name
         else:
-            history_depth_str = ' '.join([
-                f'{self.qos_profile.history.name}', f'({self.qos_profile.depth})'
-            ])
+            history_depth_str = f'{self.qos_profile.history.name} ({self.qos_profile.depth})'
         return '\n'.join([
             f'Node name: {self.node_name}',
             f'Node namespace: {self.node_namespace}',
