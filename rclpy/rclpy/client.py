@@ -132,7 +132,7 @@ class Client:
             with self.handle:
                 sequence_number = self.__client.send_request(request)
             if sequence_number in self._pending_requests:
-                raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)
+                raise RuntimeError(f'Sequence ({sequence_number}) conflicts with pending request')
 
             future = Future()
             self._pending_requests[sequence_number] = future
