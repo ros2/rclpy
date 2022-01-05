@@ -35,19 +35,14 @@ find_package(Python3 REQUIRED Interpreter Development)
 set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
 if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   # Set the python debug interpreter.
-  # pybind11 will setup the build for debug now.
+  # We need to set *both* PYTHON_EXECUTABLE (for use in this CMake file),
+  # as well as Python3_EXECUTABLE (which is what pybind11 uses).
   set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
+  set(Python3_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
-
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # pybind11 logic for setting up a debug build when both a debug and release
-  # python interpreter are present in the system seems to be pretty much broken.
-  # This works around the issue.
-  set(PYTHON_LIBRARIES "${PYTHON_DEBUG_LIBRARIES}")
-endif()
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
