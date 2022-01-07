@@ -20,8 +20,15 @@ CONVERSION_CONSTANT = 10 ** 9
 
 
 class Duration:
+    """A period between two time points, with nanosecond precision."""
 
     def __init__(self, *, seconds=0, nanoseconds=0):
+        """
+        Create an instance of :class:`Duration`, combined from given seconds and nanoseconds.
+
+        :param seconds: Time span seconds, if any, fractional part will be discarded.
+        :param nanoseconds: Time span nanoseconds, if any, fractional part will be discarded.
+        """
         total_nanoseconds = int(seconds) * CONVERSION_CONSTANT
         total_nanoseconds += int(nanoseconds)
         if total_nanoseconds >= 2**63 or total_nanoseconds < -2**63:
@@ -75,11 +82,22 @@ class Duration:
         return NotImplemented
 
     def to_msg(self):
+        """
+        Get duration as :class:`builtin_interfaces.msg.Duration`.
+
+        :returns: duration as message
+        :rtype: builtin_interfaces.msg.Duration
+        """
         seconds, nanoseconds = divmod(self.nanoseconds, CONVERSION_CONSTANT)
         return builtin_interfaces.msg.Duration(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
     def from_msg(cls, msg):
+        """
+        Create an instance of :class:`Duration` from a duration message.
+
+        :param msg: An instance of :class:`builtin_interfaces.msg.Duration`.
+        """
         if not isinstance(msg, builtin_interfaces.msg.Duration):
             raise TypeError('Must pass a builtin_interfaces.msg.Duration object')
         return cls(seconds=msg.sec, nanoseconds=msg.nanosec)
