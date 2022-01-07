@@ -14,6 +14,15 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra)
 endif()
 
+# Figure out Python3 debug/release before anything else can find_package it
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  find_package(python_cmake_module REQUIRED)
+  find_package(PythonExtra REQUIRED)
+
+  # Force FindPython3 to use the debug interpreter where ROS 2 expects it
+  set(Python3_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
+endif()
+
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
@@ -28,18 +37,7 @@ find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
 # Find python before pybind11
-find_package(python_cmake_module REQUIRED)
-find_package(PythonExtra REQUIRED)
-find_package(Python3 REQUIRED Interpreter Development)
-
-set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # Set the python debug interpreter.
-  # We need to set *both* PYTHON_EXECUTABLE (for use in this CMake file),
-  # as well as Python3_EXECUTABLE (which is what pybind11 uses).
-  set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
-  set(Python3_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
-endif()
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
@@ -200,7 +198,6 @@ if(BUILD_TESTING)
     foreach(_test_path ${_rclpy_pytest_tests})
       get_filename_component(_test_name ${_test_path} NAME_WE)
       ament_add_pytest_test(${_test_name} ${_test_path}
-        PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
         APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
           PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
         TIMEOUT 120
@@ -209,6 +206,5 @@ if(BUILD_TESTING)
     endforeach()
   endif()
 endif()
-set(PYTHON_EXECUTABLE "${_PYTHON_EXECUTABLE}")
 
 ament_package()
