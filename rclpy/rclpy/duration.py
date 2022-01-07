@@ -16,10 +16,13 @@ import builtin_interfaces.msg
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
+CONVERSION_CONSTANT = 10 ** 9
+
+
 class Duration:
 
     def __init__(self, *, seconds=0, nanoseconds=0):
-        total_nanoseconds = int(seconds * 1e9)
+        total_nanoseconds = int(seconds) * CONVERSION_CONSTANT
         total_nanoseconds += int(nanoseconds)
         if total_nanoseconds >= 2**63 or total_nanoseconds < -2**63:
             # pybind11 would raise TypeError, but we want OverflowError
@@ -72,8 +75,7 @@ class Duration:
         return NotImplemented
 
     def to_msg(self):
-        seconds = int(self.nanoseconds * 1e-9)
-        nanoseconds = int(self.nanoseconds % 1e9)
+        seconds, nanoseconds = divmod(self.nanoseconds, CONVERSION_CONSTANT)
         return builtin_interfaces.msg.Duration(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
