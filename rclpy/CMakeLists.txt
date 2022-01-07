@@ -14,6 +14,15 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra)
 endif()
 
+# Figure out Python3 debug/release before anything else can find_package it
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  find_package(python_cmake_module REQUIRED)
+  find_package(PythonExtra REQUIRED)
+
+  # Force FindPython3 to use the debug interpreter where ROS 2 expects it
+  set(Python3_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
+endif()
+
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
@@ -28,50 +37,10 @@ find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 
 # Find python before pybind11
-find_package(python_cmake_module REQUIRED)
-find_package(PythonExtra REQUIRED)
-
-set(_PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}")
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # Set the python debug interpreter.
-  # pybind11 will setup the build for debug now.
-  set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
-endif()
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
-
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # pybind11 logic for setting up a debug build when both a debug and release
-  # python interpreter are present in the system seems to be pretty much broken.
-  # This works around the issue.
-  set(PYTHON_LIBRARIES "${PYTHON_DEBUG_LIBRARIES}")
-endif()
-
-function(clean_windows_flags target)
-  # Hack to avoid pybind11 issue.
-  #
-  # TODO(ivanpauno):
-  # This can be deleted when we update `pybind11_vendor` to a version including
-  # https://github.com/pybind/pybind11/pull/2590.
-  #
-  # They are enabling /LTCG on Windows to reduce binary size,
-  # but that doesn't play well with MSVC incremental linking (default for Debug/RelWithDebInfo).
-  #
-  # See:
-  # - https://docs.microsoft.com/en-us/cpp/build/reference/incremental-link-incrementally?view=vs-2019
-  # - https://docs.microsoft.com/en-us/cpp/build/reference/ltcg-link-time-code-generation?view=vs-2019
-
-  if(MSVC AND "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-    get_target_property(target_link_libraries ${target} LINK_LIBRARIES)
-    list(REMOVE_ITEM target_link_libraries "$<$<NOT:$<CONFIG:Debug>>:-LTCG>")
-    set_target_properties(${target} PROPERTIES LINK_LIBRARIES "${target_link_libraries}")
-
-    get_target_property(target_compile_options ${target} COMPILE_OPTIONS)
-    list(REMOVE_ITEM target_compile_options "$<$<NOT:$<CONFIG:Debug>>:/GL>")
-    set_target_properties(${target} PROPERTIES COMPILE_OPTIONS "${target_compile_options}")
-  endif()
-endfunction()
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
@@ -146,7 +115,6 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rcutils::rcutils
 )
 configure_build_install_location(_rclpy_pybind11)
-clean_windows_flags(_rclpy_pybind11)
 
 if(NOT WIN32)
   ament_environment_hooks(
@@ -230,7 +198,6 @@ if(BUILD_TESTING)
     foreach(_test_path ${_rclpy_pytest_tests})
       get_filename_component(_test_name ${_test_path} NAME_WE)
       ament_add_pytest_test(${_test_name} ${_test_path}
-        PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE}"
         APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
           PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
         TIMEOUT 120
@@ -239,6 +206,5 @@ if(BUILD_TESTING)
     endforeach()
   endif()
 endif()
-set(PYTHON_EXECUTABLE "${_PYTHON_EXECUTABLE}")
 
 ament_package()
