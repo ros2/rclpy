@@ -23,7 +23,7 @@ class Duration:
         """
         Create an instance of :class:`Duration`, combined from given seconds and nanoseconds.
 
-        :param seconds: Time span seconds, if any, fractional part will be discarded.
+        :param seconds: Time span seconds, if any, fractional part will be included.
         :param nanoseconds: Time span nanoseconds, if any, fractional part will be discarded.
         """
         total_nanoseconds = int(seconds * 10**9)
