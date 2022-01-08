@@ -16,9 +16,6 @@ import builtin_interfaces.msg
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-CONVERSION_CONSTANT = 10 ** 9
-
-
 class Duration:
     """A period between two time points, with nanosecond precision."""
 
@@ -29,7 +26,7 @@ class Duration:
         :param seconds: Time span seconds, if any, fractional part will be discarded.
         :param nanoseconds: Time span nanoseconds, if any, fractional part will be discarded.
         """
-        total_nanoseconds = int(seconds) * CONVERSION_CONSTANT
+        total_nanoseconds = int(seconds * 10**9)
         total_nanoseconds += int(nanoseconds)
         if total_nanoseconds >= 2**63 or total_nanoseconds < -2**63:
             # pybind11 would raise TypeError, but we want OverflowError
@@ -88,7 +85,7 @@ class Duration:
         :returns: duration as message
         :rtype: builtin_interfaces.msg.Duration
         """
-        seconds, nanoseconds = divmod(self.nanoseconds, CONVERSION_CONSTANT)
+        seconds, nanoseconds = divmod(self.nanoseconds, 10**9)
         return builtin_interfaces.msg.Duration(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
