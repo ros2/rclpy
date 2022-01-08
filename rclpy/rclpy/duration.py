@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import builtin_interfaces.msg
+from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
@@ -26,7 +27,7 @@ class Duration:
         :param seconds: Time span seconds, if any, fractional part will be included.
         :param nanoseconds: Time span nanoseconds, if any, fractional part will be discarded.
         """
-        total_nanoseconds = int(seconds * 10**9)
+        total_nanoseconds = int(seconds * S_TO_NS)
         total_nanoseconds += int(nanoseconds)
         if total_nanoseconds >= 2**63 or total_nanoseconds < -2**63:
             # pybind11 would raise TypeError, but we want OverflowError
@@ -85,7 +86,7 @@ class Duration:
         :returns: duration as message
         :rtype: builtin_interfaces.msg.Duration
         """
-        seconds, nanoseconds = divmod(self.nanoseconds, 10**9)
+        seconds, nanoseconds = divmod(self.nanoseconds, S_TO_NS)
         return builtin_interfaces.msg.Duration(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
