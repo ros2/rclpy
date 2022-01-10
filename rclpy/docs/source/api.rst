@@ -7,7 +7,6 @@ API
 
    api/init_shutdown
    api/node
-   api/duration
    api/topics
    api/services
    api/actions
