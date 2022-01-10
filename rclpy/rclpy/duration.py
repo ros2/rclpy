@@ -13,13 +13,21 @@
 # limitations under the License.
 
 import builtin_interfaces.msg
+from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class Duration:
+    """A period between two time points, with nanosecond precision."""
 
     def __init__(self, *, seconds=0, nanoseconds=0):
-        total_nanoseconds = int(seconds * 1e9)
+        """
+        Create an instance of :class:`Duration`, combined from given seconds and nanoseconds.
+
+        :param seconds: Time span seconds, if any, fractional part will be included.
+        :param nanoseconds: Time span nanoseconds, if any, fractional part will be discarded.
+        """
+        total_nanoseconds = int(seconds * S_TO_NS)
         total_nanoseconds += int(nanoseconds)
         try:
             self._duration_handle = _rclpy.rclpy_create_duration(total_nanoseconds)
@@ -67,12 +75,22 @@ class Duration:
         return NotImplemented
 
     def to_msg(self):
-        seconds = int(self.nanoseconds * 1e-9)
-        nanoseconds = int(self.nanoseconds % 1e9)
+        """
+        Get duration as :class:`builtin_interfaces.msg.Duration`.
+
+        :returns: duration as message
+        :rtype: builtin_interfaces.msg.Duration
+        """
+        seconds, nanoseconds = divmod(self.nanoseconds, S_TO_NS)
         return builtin_interfaces.msg.Duration(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
     def from_msg(cls, msg):
+        """
+        Create an instance of :class:`Duration` from a duration message.
+
+        :param msg: An instance of :class:`builtin_interfaces.msg.Duration`.
+        """
         if not isinstance(msg, builtin_interfaces.msg.Duration):
             raise TypeError('Must pass a builtin_interfaces.msg.Duration object')
         return cls(seconds=msg.sec, nanoseconds=msg.nanosec)
