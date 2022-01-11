@@ -64,7 +64,7 @@ class Client:
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
 
-        self.call_lock = threading.Lock()
+        self._lock = threading.Lock()
 
     def call(self, request: SrvTypeRequest) -> SrvTypeResponse:
         """
@@ -128,7 +128,7 @@ class Client:
         if not isinstance(request, self.srv_type.Request):
             raise TypeError()
 
-        with self.call_lock:
+        with self._lock:
             with self.handle:
                 sequence_number = self.__client.send_request(request)
             if sequence_number in self._pending_requests:
