@@ -99,22 +99,6 @@ class Client:
             raise future.exception()
         return future.result()
 
-    def remove_pending_request(self, future: Future) -> None:
-        """
-        Remove a future from the list of pending requests.
-
-        This prevents a future from receiving a response and executing its done callbacks.
-
-        :param future: A future returned from :meth:`call_async`
-        """
-        for seq, req_future in self._pending_requests.items():
-            if future == req_future:
-                try:
-                    del self._pending_requests[seq]
-                except KeyError:
-                    pass
-                break
-
     def call_async(self, request: SrvTypeRequest) -> Future:
         """
         Make a service request and asyncronously get the result.
@@ -140,6 +124,33 @@ class Client:
             future.add_done_callback(self.remove_pending_request)
 
         return future
+
+    def get_pending_request(self, sequence_number: int) -> Future:
+        """
+        Get a future from the list of pending requests.
+
+        :param sequence_number: Number identifying the pending request.
+        :return: The future corresponding to the sequence_number.
+        :raises: KeyError if the sequence_number is not in the pending requests.
+        """
+        with self._lock:
+            return self._pending_requests[sequence_number]
+
+    def remove_pending_request(self, future: Future) -> None:
+        """
+        Remove a future from the list of pending requests.
+
+        This prevents a future from receiving a response and executing its done callbacks.
+
+        :param future: A future returned from :meth:`call_async`
+        """
+        for seq, req_future in self._pending_requests.items():
+            if future == req_future:
+                try:
+                    del self._pending_requests[seq]
+                except KeyError:
+                    pass
+                break
 
     def service_is_ready(self) -> bool:
         """
