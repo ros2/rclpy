@@ -144,13 +144,11 @@ class Client:
 
         :param future: A future returned from :meth:`call_async`
         """
-        for seq, req_future in self._pending_requests.items():
-            if future == req_future:
-                try:
+        with self._lock:
+            for seq, req_future in self._pending_requests.items():
+                if future is req_future:
                     del self._pending_requests[seq]
-                except KeyError:
-                    pass
-                break
+                    break
 
     def service_is_ready(self) -> bool:
         """
