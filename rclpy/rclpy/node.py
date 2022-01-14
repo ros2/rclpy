@@ -460,7 +460,16 @@ class Node:
                 if not descriptor.dynamic_typing and value is not None:
                     # infer type from default value
                     if not isinstance(value, ParameterValue):
-                        descriptor.type = Parameter.Type.from_parameter_value(value).value
+                        deduced_type = Parameter.Type.from_parameter_value(value).value
+                        if descriptor.type != ParameterType.PARAMETER_NOT_SET:
+                            if deduced_type != descriptor.type:
+                                reason = f"Passed value is of type {deduced_type}, \
+                                            but ParameterDescriptor declared type {descriptor.type}"
+                                raise InvalidParameterValueException(
+                                            parameter=Parameter(name, value=value),
+                                            value=value,
+                                            reason=reason)
+                        descriptor.type = deduced_type
                     else:
                         if value.type == ParameterType.PARAMETER_NOT_SET:
                             raise ValueError(
