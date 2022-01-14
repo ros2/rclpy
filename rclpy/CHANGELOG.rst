@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.2.1 (2022-01-14)
+------------------
+* Fix multi-threaded race condition in client.call_async (`#871 <https://github.com/ros2/rclpy/issues/871>`_)
+* Fix include order for cpplint (`#877 <https://github.com/ros2/rclpy/issues/877>`_)
+* Bugfix/duration to msg precision (`#876 <https://github.com/ros2/rclpy/issues/876>`_)
+* Update to pybind11 2.7.1 (`#874 <https://github.com/ros2/rclpy/issues/874>`_)
+* QoS history depth is only available with KEEP_LAST (`#869 <https://github.com/ros2/rclpy/issues/869>`_)
+* Contributors: Auguste Lalande, Chris Lalancette, Erki Suurjaak, Jacob Perron, Tomoya Fujita
+
 3.2.0 (2021-12-23)
 ------------------
 * Implement managed nodes. (`#865 <https://github.com/ros2/rclpy/issues/865>`_)
