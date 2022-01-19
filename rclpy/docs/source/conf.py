@@ -34,13 +34,13 @@
 # -- Project information -----------------------------------------------------
 
 project = 'rclpy'
-copyright = '2016-2019, Open Source Robotics Foundation, Inc.'  # noqa
+copyright = '2016-2022, Open Source Robotics Foundation, Inc.'  # noqa
 author = 'Open Source Robotics Foundation, Inc.'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.6.1'
+release = '3.2.1'
 
 
 # -- General configuration ---------------------------------------------------
