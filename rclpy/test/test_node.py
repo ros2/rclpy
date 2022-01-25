@@ -801,16 +801,11 @@ class TestNode(unittest.TestCase):
         temp_node.destroy_node()
 
     def test_node_declare_parameters_value_and_type_mismatch(self):
+        inconsistent_parameters = ("param_name", "a_string_value",
+                                   ParameterDescriptor(type=ParameterType.PARAMETER_BOOL))
+
         with self.assertRaises(InvalidParameterValueException):
-            self.node.declare_parameters(namespace="",
-                parameters=[
-                    (
-                    "param_name",
-                    "a_string_value",
-                    ParameterDescriptor(type=ParameterType.PARAMETER_BOOL, description="a parameter")
-                    )
-                ]
-            )
+            self.node.declare_parameters(namespace="", parameters=[inconsistent_parameters])
 
     def test_node_undeclare_parameter_has_parameter(self):
         # Undeclare unexisting parameter.
@@ -1568,7 +1563,7 @@ class TestNode(unittest.TestCase):
                 type=ParameterType.PARAMETER_DOUBLE,
                 additional_constraints='some more constraints',
                 read_only=True,
-                floating_point_range=[FloatingPointRange(from_value=-10.0, to_value=10.0, step=1.)],
+                floating_point_range=[FloatingPointRange(from_value=-1.0, to_value=10.0, step=1.)],
                 integer_range=[IntegerRange(from_value=-20, to_value=20, step=3)]
             )
         )
@@ -1597,7 +1592,7 @@ class TestNode(unittest.TestCase):
         self.assertEqual(bar_descriptor.type, ParameterType.PARAMETER_DOUBLE)
         self.assertEqual(bar_descriptor.additional_constraints, 'some more constraints')
         self.assertEqual(bar_descriptor.read_only, True)
-        self.assertEqual(bar_descriptor.floating_point_range[0].from_value, -10.0)
+        self.assertEqual(bar_descriptor.floating_point_range[0].from_value, -1.0)
         self.assertEqual(bar_descriptor.floating_point_range[0].to_value, 10.0)
         self.assertEqual(bar_descriptor.floating_point_range[0].step, 1.)
         self.assertEqual(bar_descriptor.integer_range[0].from_value, -20)
