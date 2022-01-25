@@ -464,7 +464,7 @@ class Node:
                         if descriptor.type != ParameterType.PARAMETER_NOT_SET:
                             if deduced_type != descriptor.type:
                                 reason = f"Passed value is of type {deduced_type}, \
-                                            but ParameterDescriptor declared type {descriptor.type}"
+                                           but ParameterDescriptor declared type {descriptor.type}"
                                 raise InvalidParameterValueException(
                                             parameter=Parameter(name, value=value),
                                             value=value,
