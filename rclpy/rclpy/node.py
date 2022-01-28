@@ -437,7 +437,7 @@ class Node:
 
             if len(parameter_tuple) == 1:
                 warnings.warn(
-                    f"when declaring parmater named '{name}', "
+                    f"when declaring parameter named '{name}', "
                     'declaring a parameter only providing its name is deprecated. '
                     'You have to either:\n'
                     '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
