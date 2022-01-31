@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.8 (2022-01-31)
+------------------
+* Adding wake_executor to subscriber (`#855 <https://github.com/ros2/rclpy/issues/855>`_)
+* Contributors: Leonardo Oliveira Wellausen
+
 1.0.7 (2021-10-05)
 ------------------
 * Only add one done callback to a future (`#816 <https://github.com/ros2/rclpy/issues/816>`_) (`#820 <https://github.com/ros2/rclpy/issues/820>`_)
