@@ -124,7 +124,7 @@ class TimeSource:
 
     def _on_parameter_event(self, parameter_list):
         successful = True
-        reason = ""
+        reason = ''
 
         for parameter in parameter_list:
             if parameter.name == USE_SIM_TIME_NAME:
