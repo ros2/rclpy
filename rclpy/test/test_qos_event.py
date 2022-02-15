@@ -39,7 +39,6 @@ from test_msgs.msg import Empty as EmptyMsg
 
 
 class TestQoSEvent(unittest.TestCase):
-    is_fastrtps = False
     topic_name = 'test_topic'
 
     def setUp(self):
@@ -48,7 +47,6 @@ class TestQoSEvent(unittest.TestCase):
         self.node = rclpy.create_node('TestQoSEvent',
                                       namespace='/rclpy/test',
                                       context=self.context)
-        self.is_fastrtps = 'rmw_fastrtps' in get_rmw_implementation_identifier()
 
     def tearDown(self):
         # These tests create a bunch of events by hand instead of using Node APIs,
@@ -64,7 +62,7 @@ class TestQoSEvent(unittest.TestCase):
         liveliness_callback = Mock()
         deadline_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 0 if self.is_fastrtps else 1
+        expected_num_event_handlers = 1
 
         # No arg
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
@@ -95,13 +93,10 @@ class TestQoSEvent(unittest.TestCase):
 
         # Arg with three callbacks
         callbacks.incompatible_qos = incompatible_qos_callback
-        try:
-            publisher = self.node.create_publisher(
-                EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-            self.assertEqual(len(publisher.event_handlers), 3)
-            self.node.destroy_publisher(publisher)
-        except UnsupportedEventTypeError:
-            self.assertTrue(self.is_fastrtps)
+        publisher = self.node.create_publisher(
+            EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
+        self.assertEqual(len(publisher.event_handlers), 3)
+        self.node.destroy_publisher(publisher)
 
     def test_subscription_constructor(self):
         callbacks = SubscriptionEventCallbacks()
@@ -109,7 +104,7 @@ class TestQoSEvent(unittest.TestCase):
         deadline_callback = Mock()
         message_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 0 if self.is_fastrtps else 1
+        expected_num_event_handlers = 1
 
         # No arg
         subscription = self.node.create_subscription(
@@ -141,13 +136,10 @@ class TestQoSEvent(unittest.TestCase):
 
         # Arg with three callbacks
         callbacks.incompatible_qos = incompatible_qos_callback
-        try:
-            subscription = self.node.create_subscription(
-                EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-            self.assertEqual(len(subscription.event_handlers), 3)
-            self.node.destroy_subscription(subscription)
-        except UnsupportedEventTypeError:
-            self.assertTrue(self.is_fastrtps)
+        subscription = self.node.create_subscription(
+            EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
+        self.assertEqual(len(subscription.event_handlers), 3)
+        self.node.destroy_subscription(subscription)
 
     def test_default_incompatible_qos_callbacks(self):
         original_logger = rclpy.logging._root_logger
@@ -187,17 +179,16 @@ class TestQoSEvent(unittest.TestCase):
         executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
         rclpy.spin_until_future_complete(self.node, log_msgs_future, executor, 10.0)
 
-        if not self.is_fastrtps:
-            self.assertEqual(
-                pub_log_msg,
-                "New subscription discovered on topic '{}', requesting incompatible QoS. "
-                'No messages will be sent to it. '
-                'Last incompatible policy: DURABILITY'.format(self.topic_name))
-            self.assertEqual(
-                sub_log_msg,
-                "New publisher discovered on topic '{}', offering incompatible QoS. "
-                'No messages will be received from it. '
-                'Last incompatible policy: DURABILITY'.format(self.topic_name))
+        self.assertEqual(
+            pub_log_msg,
+            "New subscription discovered on topic '{}', requesting incompatible QoS. "
+            'No messages will be sent to it. '
+            'Last incompatible policy: DURABILITY'.format(self.topic_name))
+        self.assertEqual(
+            sub_log_msg,
+            "New publisher discovered on topic '{}', offering incompatible QoS. "
+            'No messages will be received from it. '
+            'Last incompatible policy: DURABILITY'.format(self.topic_name))
 
         rclpy.logging._root_logger = original_logger
 
@@ -217,11 +208,8 @@ class TestQoSEvent(unittest.TestCase):
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
         self._do_create_destroy(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
-        try:
-            self._do_create_destroy(
-                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
-        except UnsupportedEventTypeError:
-            self.assertTrue(self.is_fastrtps)
+        self._do_create_destroy(
+            publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
         self.node.destroy_publisher(publisher)
 
     def test_subscription_event_create_destroy(self):
@@ -232,11 +220,8 @@ class TestQoSEvent(unittest.TestCase):
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
         self._do_create_destroy(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
-        try:
-            self._do_create_destroy(
-                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
-        except UnsupportedEventTypeError:
-            self.assertTrue(self.is_fastrtps)
+        self._do_create_destroy(
+            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
         self.node.destroy_subscription(subscription)
 
     def test_call_publisher_rclpy_event_apis(self):
@@ -259,24 +244,19 @@ class TestQoSEvent(unittest.TestCase):
                     liveliness_event_handle)
         self.assertIsNotNone(liveliness_event_index)
 
-        try:
-            incompatible_qos_event_handle = self._create_event_handle(
-                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
-            with incompatible_qos_event_handle:
-                incompatible_qos_event_index = wait_set.add_event(
-                        incompatible_qos_event_handle)
-            self.assertIsNotNone(incompatible_qos_event_index)
-        except UnsupportedEventTypeError:
-            self.assertTrue(self.is_fastrtps)
+        incompatible_qos_event_handle = self._create_event_handle(
+            publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
+        with incompatible_qos_event_handle:
+            incompatible_qos_event_index = wait_set.add_event(
+                    incompatible_qos_event_handle)
+        self.assertIsNotNone(incompatible_qos_event_index)
 
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
         wait_set.wait(0)
         self.assertFalse(wait_set.is_ready('event', deadline_event_index))
         self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
-        if not self.is_fastrtps:
-            self.assertFalse(wait_set.is_ready(
-                'event', incompatible_qos_event_index))
+        self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side
@@ -298,16 +278,15 @@ class TestQoSEvent(unittest.TestCase):
         except NotImplementedError:
             pass
 
-        if not self.is_fastrtps:
-            try:
-                with incompatible_qos_event_handle:
-                    event_data = incompatible_qos_event_handle.take_event()
-                self.assertIsInstance(event_data, QoSOfferedIncompatibleQoSInfo)
-                self.assertEqual(event_data.total_count, 0)
-                self.assertEqual(event_data.total_count_change, 0)
-                self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
-            except NotImplementedError:
-                pass
+        try:
+            with incompatible_qos_event_handle:
+                event_data = incompatible_qos_event_handle.take_event()
+            self.assertIsInstance(event_data, QoSOfferedIncompatibleQoSInfo)
+            self.assertEqual(event_data.total_count, 0)
+            self.assertEqual(event_data.total_count_change, 0)
+            self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
+        except NotImplementedError:
+            pass
 
         self.node.destroy_publisher(publisher)
 
@@ -330,24 +309,19 @@ class TestQoSEvent(unittest.TestCase):
             liveliness_event_index = wait_set.add_event(liveliness_event_handle)
         self.assertIsNotNone(liveliness_event_index)
 
-        try:
-            incompatible_qos_event_handle = self._create_event_handle(
-                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
-            with incompatible_qos_event_handle:
-                incompatible_qos_event_index = wait_set.add_event(
-                        incompatible_qos_event_handle)
-            self.assertIsNotNone(incompatible_qos_event_index)
-        except UnsupportedEventTypeError:
-            self.assertTrue(self.is_fastrtps)
+        incompatible_qos_event_handle = self._create_event_handle(
+            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
+        with incompatible_qos_event_handle:
+            incompatible_qos_event_index = wait_set.add_event(
+                    incompatible_qos_event_handle)
+        self.assertIsNotNone(incompatible_qos_event_index)
 
         # We live in our own namespace and have created no other participants, so
         # there can't be any of these events.
         wait_set.wait(0)
         self.assertFalse(wait_set.is_ready('event', deadline_event_index))
         self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
-        if not self.is_fastrtps:
-            self.assertFalse(wait_set.is_ready(
-                'event', incompatible_qos_event_index))
+        self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
 
         # Calling take data even though not ready should provide me an empty initialized message
         # Tests data conversion utilities in C side
@@ -371,15 +345,14 @@ class TestQoSEvent(unittest.TestCase):
         except NotImplementedError:
             pass
 
-        if not self.is_fastrtps:
-            try:
-                with incompatible_qos_event_handle:
-                    event_data = incompatible_qos_event_handle.take_event()
-                self.assertIsInstance(event_data, QoSRequestedIncompatibleQoSInfo)
-                self.assertEqual(event_data.total_count, 0)
-                self.assertEqual(event_data.total_count_change, 0)
-                self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
-            except NotImplementedError:
-                pass
+        try:
+            with incompatible_qos_event_handle:
+                event_data = incompatible_qos_event_handle.take_event()
+            self.assertIsInstance(event_data, QoSRequestedIncompatibleQoSInfo)
+            self.assertEqual(event_data.total_count, 0)
+            self.assertEqual(event_data.total_count_change, 0)
+            self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
+        except NotImplementedError:
+            pass
 
         self.node.destroy_subscription(subscription)
