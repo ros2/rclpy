@@ -31,9 +31,7 @@ from rclpy.qos_event import QoSRequestedDeadlineMissedInfo
 from rclpy.qos_event import QoSRequestedIncompatibleQoSInfo
 from rclpy.qos_event import QoSSubscriptionEventType
 from rclpy.qos_event import SubscriptionEventCallbacks
-from rclpy.qos_event import UnsupportedEventTypeError
 from rclpy.task import Future
-from rclpy.utilities import get_rmw_implementation_identifier
 
 from test_msgs.msg import Empty as EmptyMsg
 
