@@ -1650,7 +1650,7 @@ class Node:
         self.destroy_timer(rate._timer)
         rate.destroy()
 
-    def destroy_node(self) -> bool:
+    def destroy_node(self):
         """
         Destroy the node.
 
