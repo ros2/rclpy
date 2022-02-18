@@ -5300,6 +5300,7 @@ rclpy_serialize(PyObject * Py_UNUSED(self), PyObject * args)
 {
   PyObject * pymsg;
   PyObject * pymsg_type;
+  PyObject * pyserialized_msg_buffer = NULL;
   if (!PyArg_ParseTuple(args, "OO", &pymsg, &pymsg_type)) {
     return NULL;
   }
@@ -5333,17 +5334,21 @@ rclpy_serialize(PyObject * Py_UNUSED(self), PyObject * args)
   destroy_ros_message(ros_msg);
   if (RMW_RET_OK != rmw_ret) {
     PyErr_Format(RCLError, "Failed to serialize ROS message");
-    rcutils_ret = rmw_serialized_message_fini(&serialized_msg);
-    if (RCUTILS_RET_OK != rcutils_ret) {
-      PyErr_Format(
-        RCLError,
-        "Failed to finalize serialized message: %s", rcutils_get_error_string().str);
-    }
-    return NULL;
+    goto cleanup;
   }
 
   // Bundle serialized message in a bytes object
-  return Py_BuildValue("y#", serialized_msg.buffer, serialized_msg.buffer_length);
+  pyserialized_msg_buffer =
+    Py_BuildValue("y#", serialized_msg.buffer, serialized_msg.buffer_length);
+
+cleanup:
+  rcutils_ret = rmw_serialized_message_fini(&serialized_msg);
+  if (RCUTILS_RET_OK != rcutils_ret) {
+    PyErr_Format(
+      RCLError,
+      "Failed to finalize serialized message: %s", rcutils_get_error_string().str);
+  }
+  return pyserialized_msg_buffer;
 }
 
 static PyObject *
