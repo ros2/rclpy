@@ -179,6 +179,19 @@ ActionServer::publish_status()
     throw rclpy::RCLError("Failed get goal status array");
   }
 
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      ret = rcl_action_goal_status_array_fini(&status_message);
+
+      if (RCL_RET_OK != ret) {
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level, "Failed to finalize goal status array: %s",
+          rcl_get_error_string().str);
+        rcl_reset_error();
+      }
+    });
+
   ret = rcl_action_publish_status(rcl_action_server_.get(), &status_message);
 
   if (RCL_RET_OK != ret) {
