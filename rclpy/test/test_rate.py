@@ -109,7 +109,8 @@ class TestRate:
 
         self._thread = threading.Thread(target=rate.sleep, daemon=True)
         self._thread.start()
-        self.node.destroy_rate(rate)
+        success = self.node.destroy_rate(rate)
+        assert success is True, "destroy_rate() returned %r instead of True" % success
         self._thread.join()
 
 
