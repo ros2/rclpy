@@ -1649,8 +1649,10 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        self.destroy_timer(rate._timer)
-        rate.destroy()
+        success = self.destroy_timer(rate._timer)
+        if success:
+            rate.destroy()
+        return success
 
     def destroy_node(self):
         """
