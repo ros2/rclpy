@@ -101,7 +101,8 @@ class TestRate:
 
     def test_destroy(self):
         rate = self.node.create_rate(FREQ)
-        self.node.destroy_rate(rate)
+        success = self.node.destroy_rate(rate)
+        assert success == True, "destroy_rate() returned %r instead of True" % success
 
     def test_destroy_wakes_rate(self):
         rate = self.node.create_rate(0.0000001)
