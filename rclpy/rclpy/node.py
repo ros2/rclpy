@@ -1643,14 +1643,15 @@ class Node:
             return True
         return False
 
-    def destroy_rate(self, rate: Rate):
+    def destroy_rate(self, rate: Rate) -> bool:
         """
         Destroy a Rate object created by the node.
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        self.destroy_timer(rate._timer)
+        success = self.destroy_timer(rate._timer)
         rate.destroy()
+        return success
 
     def destroy_node(self):
         """
