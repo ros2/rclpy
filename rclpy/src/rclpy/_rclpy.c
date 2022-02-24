@@ -3312,13 +3312,18 @@ rclpy_take_raw_with_info(rcl_subscription_t * subscription, rmw_message_info_t *
 
   ret = rcl_take_serialized_message(subscription, &msg, message_info, NULL);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      RCLError,
-      "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
-    rcl_reset_error();
+    if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+      PyErr_Format(
+        RCLError,
+        "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
+      rcl_reset_error();
+    }
     rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
     if (r_fini != RMW_RET_OK) {
       PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
+    }
+    if (ret == RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+      Py_RETURN_NONE;
     }
     return NULL;
   }
