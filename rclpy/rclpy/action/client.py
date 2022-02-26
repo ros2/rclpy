@@ -351,6 +351,19 @@ class ActionClient(Waitable):
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
         self._client_handle.add_to_waitset(wait_set)
+
+    def __enter__(self):
+        if self._client_handle is None:
+            return None
+
+        return self._client_handle.__enter__()
+
+    def __exit__(self, t, v, tb):
+        if self._client_handle is None:
+            return
+
+        self._client_handle.__exit__(t, v, tb)
+
     # End Waitable API
 
     def send_goal(self, goal, **kwargs):

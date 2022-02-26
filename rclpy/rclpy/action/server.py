@@ -493,6 +493,19 @@ class ActionServer(Waitable):
         """Add entities to wait set."""
         with self._lock:
             self._handle.add_to_waitset(wait_set)
+
+    def __enter__(self):
+        if self._handle is None:
+            return None
+
+        return self._handle.__enter__()
+
+    def __exit__(self, t, v, tb):
+        if self._handle is None:
+            return
+
+        self._handle.__exit__(t, v, tb)
+
     # End Waitable API
 
     def notify_execute(self, goal_handle, execute_callback):
