@@ -3328,6 +3328,7 @@ cleanup:
   ret = rmw_serialized_message_fini(&msg);
   if (ret != RMW_RET_OK) {
     PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", ret);
+    rcl_reset_error();
     if (python_bytes) {
       Py_DECREF(python_bytes);
       python_bytes = NULL;
