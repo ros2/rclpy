@@ -5326,6 +5326,7 @@ rclpy_serialize(PyObject * Py_UNUSED(self), PyObject * args)
     PyErr_Format(
       RCLError,
       "Failed to initialize serialized message: %s", rcutils_get_error_string().str);
+    rcl_reset_error();
     return NULL;
   }
 
@@ -5347,6 +5348,11 @@ cleanup:
     PyErr_Format(
       RCLError,
       "Failed to finalize serialized message: %s", rcutils_get_error_string().str);
+    rcl_reset_error();
+    if (pyserialized_msg_buffer) {
+      Py_DECREF(pyserialized_msg_buffer);
+      pyserialized_msg_buffer = NULL;
+    }
   }
   return pyserialized_msg_buffer;
 }
