@@ -17,6 +17,8 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/wait.h>
+
 #include <memory>
 #include <string>
 

@@ -17,7 +17,7 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl/graph.h>  // rcl_names_and_types_t
+#include <rcl/node.h>
 
 #include <memory>
 

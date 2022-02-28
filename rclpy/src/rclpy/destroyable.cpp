@@ -15,6 +15,7 @@
 #include <pybind11/pybind11.h>
 
 #include <memory>
+#include <stdexcept>
 
 #include "destroyable.hpp"
 #include "exceptions.hpp"

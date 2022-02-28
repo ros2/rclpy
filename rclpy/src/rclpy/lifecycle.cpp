@@ -21,12 +21,15 @@
 #include <lifecycle_msgs/srv/get_available_states.h>
 #include <lifecycle_msgs/srv/get_available_transitions.h>
 
+#include <rcl/error_handling.h>
+#include <rcl/types.h>
 #include <rcl_lifecycle/rcl_lifecycle.h>
 
 #include <rosidl_runtime_c/message_type_support_struct.h>
 #include <rosidl_runtime_c/service_type_support_struct.h>
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <vector>

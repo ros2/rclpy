@@ -17,7 +17,8 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl_action/rcl_action.h>
+#include <rcl_action/action_client.h>
+#include <rmw/types.h>
 
 #include <memory>
 

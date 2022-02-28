@@ -14,13 +14,18 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/client.h>
 #include <rcl/error_handling.h>
+#include <rcl/graph.h>
+#include <rosidl_runtime_c/service_type_support_struct.h>
+#include <rmw/types.h>
 
 #include <memory>
 #include <string>
 
 #include "client.hpp"
 #include "exceptions.hpp"
+#include "node.hpp"
 #include "python_allocator.hpp"
 #include "utils.hpp"
 

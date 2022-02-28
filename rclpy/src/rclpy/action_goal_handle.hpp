@@ -17,7 +17,8 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl_action/rcl_action.h>
+#include <rcl_action/goal_handle.h>
+#include <rcl_action/types.h>
 
 #include <memory>
 
@@ -28,8 +29,6 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-
-class ActionServer;
 
 class ActionGoalHandle : public Destroyable, public std::enable_shared_from_this<ActionGoalHandle>
 {

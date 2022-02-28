@@ -18,7 +18,6 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/subscription.h>
-#include <rmw/types.h>
 
 #include <memory>
 #include <string>

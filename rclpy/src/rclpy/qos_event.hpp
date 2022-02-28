@@ -20,7 +20,7 @@
 #include <rcl/event.h>
 
 #include <memory>
-#include <variant>  // NOLINT
+#include <variant>
 
 #include "destroyable.hpp"
 #include "publisher.hpp"

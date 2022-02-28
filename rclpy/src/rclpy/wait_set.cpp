@@ -15,8 +15,8 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
-#include <rcl/rcl.h>
 #include <rcl/types.h>
+#include <rcl/wait.h>
 
 #include <cstring>
 #include <memory>

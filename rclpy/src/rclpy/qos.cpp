@@ -14,15 +14,15 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl/rcl.h>
 #include <rcl/time.h>
 #include <rmw/error_handling.h>
 #include <rmw/incompatible_qos_events_statuses.h>
 #include <rmw/qos_profiles.h>
+#include <rmw/time.h>
 #include <rmw/types.h>
 
 #include <cstring>
-#include <memory>
+#include <stdexcept>
 #include <string>
 
 #include "exceptions.hpp"

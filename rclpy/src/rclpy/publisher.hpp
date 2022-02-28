@@ -19,7 +19,6 @@
 
 #include <rcl/publisher.h>
 #include <rcl/time.h>
-#include <rmw/types.h>
 
 #include <memory>
 #include <string>

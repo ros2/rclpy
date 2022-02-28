@@ -19,10 +19,10 @@ namespace py = pybind11;
 #include <rcutils/allocator.h>
 #include <rcutils/error_handling.h>
 #include <rcutils/logging.h>
-#include <rcutils/time.h>
 
 #include <rcl_logging_interface/rcl_logging_interface.h>
 
+#include <stdexcept>
 #include <string>
 
 #include "logging_api.hpp"

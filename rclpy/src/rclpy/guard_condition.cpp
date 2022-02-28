@@ -16,12 +16,11 @@
 
 #include <rcl/error_handling.h>
 #include <rcl/guard_condition.h>
-#include <rcl/rcl.h>
 #include <rcl/types.h>
 
 #include <memory>
-#include <stdexcept>
 
+#include "context.hpp"
 #include "exceptions.hpp"
 #include "guard_condition.hpp"
 

@@ -16,17 +16,16 @@
 
 #include <pybind11/pybind11.h>
 
-#include <csignal>
+#include <rcl/allocator.h>
+#include <rcl/error_handling.h>
+#include <rcl/guard_condition.h>
+#include <rcutils/logging_macros.h>
 
 #include <atomic>
+#include <csignal>
+#include <stdexcept>
 #include <string>
 #include <thread>
-
-#include "rcl/error_handling.h"
-#include "rcl/rcl.h"
-
-#include "rcutils/allocator.h"
-#include "rcutils/logging_macros.h"
 
 #include "context.hpp"
 #include "guard_condition.hpp"

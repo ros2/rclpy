@@ -17,7 +17,10 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/arguments.h>
 #include <rcl/graph.h>  // rcl_names_and_types_t
+#include <rmw/topic_endpoint_info.h>
+#include <rmw/types.h>
 
 #include <memory>
 

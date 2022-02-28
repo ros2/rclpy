@@ -15,11 +15,15 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl/publisher.h>
+#include <rosidl_runtime_c/message_type_support_struct.h>
+#include <rmw/serialized_message.h>
 
 #include <memory>
 #include <string>
 
 #include "exceptions.hpp"
+#include "node.hpp"
 #include "publisher.hpp"
 #include "utils.hpp"
 
