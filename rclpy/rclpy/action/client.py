@@ -583,6 +583,5 @@ class ActionClient(Waitable):
 
     def destroy(self):
         """Destroy the underlying action client handle."""
-        with self._node.handle:
-            self._client_handle.destroy_when_not_in_use()
+        self._client_handle.destroy_when_not_in_use()
         self._node.remove_waitable(self)
