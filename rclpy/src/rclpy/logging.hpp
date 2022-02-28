@@ -39,7 +39,7 @@ private:
 /// Initialize rcl logging
 /**
  * Raises RuntimeError if rcl logging could not be initialized
- * \param[in] pycontext a context instance to use to retrieve global CLI arguments
+ * \param[in] _context A context instance to use to retrieve global CLI arguments.
  */
 void
 logging_configure(Context & _context);

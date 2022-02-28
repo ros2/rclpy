@@ -40,7 +40,7 @@ public:
    * Raises MemoryError if memory could not be allocated for the node
    *
    * \param[in] node_name name of the node to be created
-   * \param[in] namespace namespace for the node
+   * \param[in] namespace_ namespace for the node
    * \param[in] context Context
    * \param[in] pycli_args a sequence of command line arguments for just this node, or None
    * \param[in] use_global_arguments if true then the node will also use cli arguments on context
@@ -91,7 +91,7 @@ public:
   get_namespace();
 
   /// Returns the count of all the publishers known for that topic in the entire ROS graph.
-  /*
+  /**
    * Raises RCLError if an error occurs in rcl
    *
    * \param[in] topic_name Name of the topic to count the number of publishers
@@ -101,8 +101,7 @@ public:
   get_count_publishers(const char * topic_name);
 
   /// Returns the count of all the subscribers known for that topic in the entire ROS graph
-  /*
-   *
+  /**
    * Raises RCLError if an error occurs in rcl
    *
    * \param[in] topic_name Name of the topic to count the number of subscribers
@@ -144,7 +143,7 @@ public:
   get_parameters(py::object pyparameter_cls);
 
   /// Get action client names and types by node.
-  /*
+  /**
    * \param[in] remote_node_name the node name of the actions to return
    * \param[in] remote_node_namespace the node namespace of the actions to return
    * \return list of action client names and their types
@@ -154,7 +153,7 @@ public:
     const char * remote_node_name, const char * remote_node_namespace);
 
   /// Get action server names and types by node.
-  /*
+  /**
    * \param[in] remote_node_name the node name of the actions to return
    * \param[in] remote_node_namespace the node namespace of the actions to return
    * \return list of action server names and their types
@@ -164,7 +163,7 @@ public:
     const char * remote_node_name, const char * remote_node_namespace);
 
   /// Get action names and types.
-  /*
+  /**
    * \return list of action names and types
    */
   py::list
@@ -186,8 +185,7 @@ private:
   /**
    * Raises RCLError if the names are unavailable.
    *
-   * \param[in] get_enclaves specifies if the output includes the enclaves names
-   *            or not
+   * \param[in] get_enclaves specifies whether the output includes the enclaves names
    * \return Python list of tuples, containing:
    *  node name, node namespace, and
    *  enclave if `get_enclaves` is true.

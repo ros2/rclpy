@@ -43,8 +43,8 @@ public:
    * Raises ValueError if argument cannot be converted
    *
    * \param[in] clock pycapsule containing an rcl_clock_t
-   * \param[in] pycontext Capsule for an rcl_timer_t
-   * \param[in] period_nsec the period of the timer in nanoseconds
+   * \param[in] context Capsule for an rcl_timer_t
+   * \param[in] period_nsec The period of the timer in nanoseconds
    * \return a timer capsule
    */
   Timer(Clock & clock, Context & context, int64_t period_nsec);

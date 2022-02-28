@@ -43,7 +43,7 @@ public:
    * Raises MemoryError if the event can't be allocated
    * Raises RCLError if event initialization failed in rcl
    *
-   * \param[in] ssubscription Subscription wrapping the underlying ``rcl_subscription_t`` object.
+   * \param[in] subscription Subscription wrapping the underlying ``rcl_subscription_t`` object.
    * \param[in] event_type Type of event to create
    */
   QoSEvent(rclpy::Subscription & subscriber, rcl_subscription_event_type_t event_type);

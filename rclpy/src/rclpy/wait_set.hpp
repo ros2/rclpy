@@ -45,13 +45,13 @@ public:
   /**
    * Raises RCLError if the wait set could not be initialized
    *
-   * \param[in] node_name string name of the node to be created
    * \param[in] number_of_subscriptions a positive number or zero
    * \param[in] number_of_guard_conditions int
    * \param[in] number_of_timers int
    * \param[in] number_of_clients int
    * \param[in] number_of_services int
-   * \param[in] pycontext Capsule pointing to an rcl_context_t
+   * \param[in] number_of_events int
+   * \param[in] context Capsule pointing to an rcl_context_t
    */
   WaitSet(
     size_t number_of_subscriptions,
@@ -73,7 +73,7 @@ public:
   /**
    * Raises RCLError if any lower level error occurs
    *
-   * \param[in] service a service to add to the wait set
+   * \param[in] service A service to add to the wait set
    * \return Index in waitset entity was added at
    */
   size_t
@@ -83,7 +83,7 @@ public:
   /**
    * Raises RCLError if any lower level error occurs
    *
-   * \param[in] service a service to add to the wait set
+   * \param[in] subscription A subscription to add to the wait set
    * \return Index in waitset entity was added at
    */
   size_t
@@ -93,7 +93,7 @@ public:
   /**
    * Raises RCLError if any lower level error occurs
    *
-   * \param[in] client a client to add to the wait set
+   * \param[in] client A client to add to the wait set
    * \return Index in waitset entity was added at
    */
   size_t
@@ -103,7 +103,7 @@ public:
   /**
    * Raises RCLError if any lower level error occurs
    *
-   * \param[in] timer a guard condition to add to the wait set
+   * \param[in] gc A guard condition to add to the wait set
    * \return Index in waitset entity was added at
    */
   size_t
@@ -113,7 +113,7 @@ public:
   /**
    * Raises RCLError if any lower level error occurs
    *
-   * \param[in] timer a timer to add to the wait set
+   * \param[in] timer A timer to add to the wait set
    * \return Index in waitset entity was added at
    */
   size_t
@@ -123,7 +123,7 @@ public:
   /**
    * Raises RCLError if any lower level error occurs
    *
-   * \param[in] event a QoSEvent to add to the wait set
+   * \param[in] event A QoSEvent to add to the wait set
    * \return Index in waitset entity was added at
    */
   size_t
@@ -135,8 +135,8 @@ public:
    * Raises RuntimeError if the entity type is unknown
    * Raises IndexError if the given index is beyond the number of entities in the set
    *
-   * \param[in] entity_type string defining the entity ["subscription, client, service"]
-   * \param[in] index location in the wait set of the entity to check
+   * \param[in] entity_type String defining the entity ["subscription, client, service"]
+   * \param[in] index Location in the wait set of the entity to check
    * \return True if the entity at the index in the wait set is not NULL
    */
   bool
@@ -146,7 +146,7 @@ public:
   /**
    * Raises RuntimeError if the entity type is not known
    *
-   * \param[in] entity_type string defining the entity ["subscription, client, service"]
+   * \param[in] entity_type String defining the entity ["subscription, client, service"]
    * \return List of wait set entities pointers ready for take
    */
   py::list
@@ -158,7 +158,7 @@ public:
    *
    * This function will wait for an event to happen or for the timeout to expire.
    * A negative timeout means wait forever, a timeout of 0 means no wait
-   * \param[in] timeout optional time to wait before waking up (in nanoseconds)
+   * \param[in] timeout Optional time to wait before waking up (in nanoseconds)
    */
   void
   wait(int64_t timeout);

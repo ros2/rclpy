@@ -139,8 +139,8 @@ rclpy_logging_rcutils_log(
  * Raises ValueError if log level is not a string.
  *
  * \param[in] log_level Name of the log level.
- * \return NULL on failure
-           Log level associated with the string representation
+ * \return NULL on failure,
+ * \return Log level associated with the string representation otherwise.
  */
 int
 rclpy_logging_severity_level_from_string(const char * log_level)

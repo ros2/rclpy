@@ -35,7 +35,7 @@ typedef void destroy_ros_message_function (void *);
 
 /// Convert a C rcl_names_and_types_t into a Python list.
 /**
- * \param[in] names_and_types The names and types struct to convert.
+ * \param[in] topic_names_and_types The names and types struct to convert.
  * \return List of tuples, where the first element of each tuple is a string
  *   for the name and the second element is a list of strings for the types.
  */
@@ -44,7 +44,7 @@ convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_type
 
 /// Get the type support structure for a Python ROS message type.
 /**
- * \param[in] pymsg_type The Python ROS message type.
+ * \param[in] pymessage The Python ROS message type.
  * \return The type support structure or NULL if an error occurred.
  */
 void *
@@ -97,7 +97,7 @@ get_rmw_implementation_identifier();
  * Raises RCLError on failure to assert liveliness
  * Raises TypeError if passed object is not a valid Publisher
  *
- * \param[in] pyentity A capsule containing an rcl_publisher_t
+ * \param[in] publisher A capsule containing an rcl_publisher_t
  * \return None
  */
 void
@@ -144,7 +144,7 @@ convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * i
 
 /// Convert a C rmw_qos_profile_t into a Python dictionary with qos profile args.
 /**
- * \param[in] profile Pointer to a rmw_qos_profile_t to convert
+ * \param[in] qos_profile Pointer to a rmw_qos_profile_t to convert
  * \return Python dictionary
  */
 py::dict
