@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.3.0 (2022-03-01)
+------------------
 * Properly implement action server/client handle cleanup. (`#905 <https://github.com/ros2/rclpy/issues/905>`_)
 * Make sure to take out contexts on Action{Client,Server}. (`#904 <https://github.com/ros2/rclpy/issues/904>`_)
 * Make sure to free the goal_status_array when done using it. (`#902 <https://github.com/ros2/rclpy/issues/902>`_)
