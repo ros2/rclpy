@@ -82,5 +82,6 @@ class TestCreateNode(unittest.TestCase):
             ]
         ).destroy_node()
 
+
 if __name__ == '__main__':
     unittest.main()
