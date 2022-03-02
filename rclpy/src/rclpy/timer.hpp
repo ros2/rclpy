@@ -84,6 +84,7 @@ public:
   /// Get the time before the timer will be ready
   /**
    * the returned time can be negative, this means that the timer is ready and hasn't been called yet
+   * the returned time for a canceled timer is the max representation of an int64_t
    *
    * Raises RCLError there is an rcl error
    *
