@@ -76,6 +76,7 @@ class TimeSource:
                 callback_group = MutuallyExclusiveCallbackGroup()
 
                 def clock_thread_fun(clock_executor, future):
+                    print("Start thread") # Only works if this print is there wtf. Definetly a TODO regarding some concurrency
                     clock_executor.add_callback_group(callback_group, node)
                     clock_executor.spin_until_future_complete(future)
 
