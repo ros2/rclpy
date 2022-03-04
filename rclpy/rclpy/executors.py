@@ -277,7 +277,7 @@ class Executor:
                 # Rebuild the wait set so it doesn't include this node
                 self._guard.trigger()
 
-    def remove_callback_group(self, group, node: 'Node') -> None:
+    def remove_callback_group(self, group: 'CallbackGroup', node: 'Node') -> None:
         """
         Stop managing this group's callbacks.
 
@@ -286,7 +286,7 @@ class Executor:
         """
         with self._nodes_lock:
             try:
-                self._nodes.remove((group, node))
+                self._cb_groups.remove((group, node))
             except KeyError:
                 pass
             else:
@@ -480,8 +480,8 @@ class Executor:
         self,
         timeout_sec: float = None,
         nodes: List['Node'] = None,
-        call_back_groups: List[Tuple[CallbackGroup, 'Node']] = None,
         condition: Callable[[], bool] = lambda: False,
+        call_back_groups: List[Tuple[CallbackGroup, 'Node']] = None,
     ) -> Generator[Tuple[Task, WaitableEntityType, 'Node'], None, None]:
         """
         Yield callbacks that are ready to be executed.
