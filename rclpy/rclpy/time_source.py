@@ -64,7 +64,7 @@ class TimeSource:
                 node = self._get_node()
                 if node is not None:
                     node.destroy_subscription(self._clock_sub)
-                    self._clock_thread_future.done()
+                    self._clock_thread_future.set_result(None)
                     self._clock_thread.join()
                     self._clock_thread = None
                     self._clock_sub = None
@@ -79,7 +79,7 @@ class TimeSource:
                     clock_executor.add_callback_group(callback_group, node)
                     clock_executor.spin_until_future_complete(future)
 
-                self._clock_thread_future = Future()
+                self._clock_thread_future = Future(executor=self._clock_executor)
                 self._clock_thread = threading.Thread(
                     target=clock_thread_fun,
                     args=(self._clock_executor, self._clock_thread_future))
