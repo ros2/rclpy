@@ -13,14 +13,18 @@
 # limitations under the License.
 
 import weakref
+import threading
 
 from rcl_interfaces.msg import SetParametersResult
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.clock import ClockType
 from rclpy.clock import ROSClock
 from rclpy.parameter import Parameter
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from rclpy.time import Time
+from rclpy.task import Future
 import rosgraph_msgs.msg
 
 CLOCK_TOPIC = '/clock'
@@ -35,6 +39,9 @@ class TimeSource:
         self._associated_clocks = []
         # Zero time is a special value that means time is uninitialzied
         self._last_time_set = Time(clock_type=ClockType.ROS_TIME)
+        self._clock_executor = SingleThreadedExecutor()
+        self._clock_thread = None
+        self._clock_thread_future = None
         self._ros_time_is_active = False
         if node is not None:
             self.attach_node(node)
@@ -57,17 +64,33 @@ class TimeSource:
                 node = self._get_node()
                 if node is not None:
                     node.destroy_subscription(self._clock_sub)
+                    self._clock_thread_future.done()
+                    self._clock_thread.join()
+                    self._clock_thread = None
                     self._clock_sub = None
 
     def _subscribe_to_clock_topic(self):
         if self._clock_sub is None:
             node = self._get_node()
             if node is not None:
+                callback_group = MutuallyExclusiveCallbackGroup()
+
+                def clock_thread_fun(clock_executor, future):
+                    clock_executor.add_callback_group(callback_group, node)
+                    clock_executor.spin_until_future_complete(future)
+
+                self._clock_thread_future = Future()
+                self._clock_thread = threading.Thread(
+                    target=clock_thread_fun,
+                    args=(self._clock_executor, self._clock_thread_future))
+                self._clock_thread.start()
+
                 self._clock_sub = node.create_subscription(
                     rosgraph_msgs.msg.Clock,
                     CLOCK_TOPIC,
                     self.clock_callback,
-                    QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
+                    QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT),
+                    callback_group=callback_group
                 )
 
     def attach_node(self, node):
