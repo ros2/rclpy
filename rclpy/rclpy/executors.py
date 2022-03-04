@@ -50,6 +50,7 @@ from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
+from rclpy.callback_groups import CallbackGroup
 
 # For documentation purposes
 # TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
@@ -149,6 +150,7 @@ class Executor:
         super().__init__()
         self._context = get_default_context() if context is None else context
         self._nodes: Set[Node] = set()
+        self._cb_groups: Set[Tuple[CallbackGroup, Node]] = set()
         self._nodes_lock = RLock()
         # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
         self._tasks: List[Tuple[Task, Optional[WaitableEntityType], Optional[Node]]] = []
@@ -244,6 +246,22 @@ class Executor:
                 return True
             return False
 
+    def add_callback_group(self, group: 'CallbackGroup', node: 'Node'):
+        """
+        Add a callback group whose callbacks should be managed by this executor.
+
+        :param group: The group to add to the executor.
+        :param node: The corresponding node.
+        :return: ``True`` if the group was added, ``False`` otherwise.
+        """
+        with self._nodes_lock:   # TODO add cb_groups_lock
+            if (group, node) not in self._cb_groups:
+                self._cb_groups.add((group, node))
+                # Rebuild the wait set so it includes this new node
+                self._guard.trigger()
+                return True
+            return False
+
     def remove_node(self, node: 'Node') -> None:
         """
         Stop managing this node's callbacks.
@@ -253,6 +271,22 @@ class Executor:
         with self._nodes_lock:
             try:
                 self._nodes.remove(node)
+            except KeyError:
+                pass
+            else:
+                # Rebuild the wait set so it doesn't include this node
+                self._guard.trigger()
+
+    def remove_callback_group(self, group, node: 'Node') -> None:
+        """
+        Stop managing this group's callbacks.
+
+        :param group: The group to remove from the executor.
+        :param node: The corresponding node.
+        """
+        with self._nodes_lock:
+            try:
+                self._nodes.remove((group, node))
             except KeyError:
                 pass
             else:
@@ -272,6 +306,11 @@ class Executor:
         """Return nodes that have been added to this executor."""
         with self._nodes_lock:
             return list(self._nodes)
+
+    def get_callback_groups(self) -> List['Node']:
+        """Return callback groups that have been added to this executor."""
+        with self._nodes_lock:
+            return list(self._cb_groups)
 
     def spin(self) -> None:
         """Execute callbacks until shutdown."""
@@ -441,6 +480,7 @@ class Executor:
         self,
         timeout_sec: float = None,
         nodes: List['Node'] = None,
+        call_back_groups: List[Tuple[CallbackGroup, 'Node']] = None,
         condition: Callable[[], bool] = lambda: False,
     ) -> Generator[Tuple[Task, WaitableEntityType, 'Node'], None, None]:
         """
@@ -466,6 +506,7 @@ class Executor:
             nodes_to_use = nodes
             if nodes is None:
                 nodes_to_use = self.get_nodes()
+                call_back_groups = self.get_callback_groups()
 
             # Yield tasks in-progress before waiting for new work
             tasks = None
@@ -505,6 +546,11 @@ class Executor:
 
             guards.append(self._guard)
             guards.append(self._sigint_gc)
+
+            # Add subscribtions from directly set callback groups
+            for (cb_group, _) in call_back_groups:
+                subs = [entity() for entity in cb_group.get_entites() if isinstance(entity(), Subscription)]
+                subscriptions.extend(filter(self.can_execute, subs))
 
             entity_count = NumberOfEntities(
                 len(subscriptions), len(guards), len(timers), len(clients), len(services))
@@ -657,6 +703,16 @@ class Executor:
                                 srv, node, self._take_service, self._execute_service)
                             yielded_work = True
                             yield handler, srv, node
+
+            for (callback_group, node) in call_back_groups:
+                subs = [entity() for entity in callback_group.get_entites() if isinstance(entity(), Subscription)]
+                for sub in subs:
+                    if sub.handle.pointer in subs_ready:
+                        if cb_group.can_execute(sub):
+                            handler = self._make_handler(
+                                sub, node, self._take_subscription, self._execute_subscription)
+                            yielded_work = True
+                            yield handler, sub, node
 
             # Check timeout timer
             if (
