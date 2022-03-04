@@ -39,6 +39,14 @@ class CallbackGroup:
         """
         self.entities.add(weakref.ref(entity))
 
+    def get_entites(self):
+        """
+        Get all entities from the callback group.
+
+        :return: A set containing weakrefs to the entities.
+        """
+        return self.entities
+
     def has_entity(self, entity) -> bool:
         """
         Determine if an entity has been added to this group.
