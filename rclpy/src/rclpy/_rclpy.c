@@ -3294,6 +3294,8 @@ rclpy_wait(PyObject * Py_UNUSED(self), PyObject * args)
 static PyObject *
 rclpy_take_raw_with_info(rcl_subscription_t * subscription, rmw_message_info_t * message_info)
 {
+  PyObject * python_bytes = NULL;
+
   // Create a serialized message object
   rcl_serialized_message_t msg = rmw_get_zero_initialized_serialized_message();
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
@@ -3303,34 +3305,36 @@ rclpy_take_raw_with_info(rcl_subscription_t * subscription, rmw_message_info_t *
       RCLError,
       "Failed to initialize message: %s", rcl_get_error_string().str);
     rcl_reset_error();
-    rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-    if (r_fini != RMW_RET_OK) {
-      PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
-    }
-    return NULL;
+    goto cleanup;
   }
 
   ret = rcl_take_serialized_message(subscription, &msg, message_info, NULL);
   if (ret != RCL_RET_OK) {
-    PyErr_Format(
-      RCLError,
-      "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
-    rcl_reset_error();
-    rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-    if (r_fini != RMW_RET_OK) {
-      PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
+    if (ret == RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+      python_bytes = Py_None;
+      Py_INCREF(Py_None);
+    } else {
+      PyErr_Format(
+        RCLError,
+        "Failed to take_serialized from a subscription: %s", rcl_get_error_string().str);
+      rcl_reset_error();
     }
-    return NULL;
+    goto cleanup;
   }
-  PyObject * python_bytes = PyBytes_FromStringAndSize((char *)(msg.buffer), msg.buffer_length);
-  rmw_ret_t r_fini = rmw_serialized_message_fini(&msg);
-  if (r_fini != RMW_RET_OK) {
-    PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", r_fini);
+
+  python_bytes = PyBytes_FromStringAndSize((char *)(msg.buffer), msg.buffer_length);
+
+cleanup:
+  ret = rmw_serialized_message_fini(&msg);
+  if (ret != RMW_RET_OK) {
+    PyErr_Format(RCLError, "Failed to deallocate message buffer: %d", ret);
+    rcl_reset_error();
     if (python_bytes) {
       Py_DECREF(python_bytes);
+      python_bytes = NULL;
     }
-    return NULL;
   }
+
   return python_bytes;
 }
 
