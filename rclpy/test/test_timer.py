@@ -18,6 +18,7 @@ import time
 
 import pytest
 import rclpy
+from rclpy.constants import S_TO_NS
 from rclpy.executors import SingleThreadedExecutor
 
 
@@ -49,7 +50,7 @@ def test_zero_callback(period):
             executor = SingleThreadedExecutor(context=context)
             try:
                 executor.add_node(node)
-                # The first spin_once() takes  long enough for 1ms timer tests to fail
+                # The first spin_once() takes long enough for 1ms timer tests to fail
                 executor.spin_once(timeout_sec=0)
 
                 callbacks = []
@@ -78,7 +79,7 @@ def test_number_callbacks(period):
             executor = SingleThreadedExecutor(context=context)
             try:
                 executor.add_node(node)
-                # The first spin_once() takes  long enough for 1ms timer tests to fail
+                # The first spin_once() takes long enough for 1ms timer tests to fail
                 executor.spin_once(timeout_sec=0)
 
                 callbacks = []
@@ -110,7 +111,7 @@ def test_cancel_reset(period):
             executor = SingleThreadedExecutor(context=context)
             try:
                 executor.add_node(node)
-                # The first spin_once() takes  long enough for 1ms timer tests to fail
+                # The first spin_once() takes long enough for 1ms timer tests to fail
                 executor.spin_once(timeout_sec=0)
 
                 callbacks = []
@@ -140,6 +141,38 @@ def test_cancel_reset(period):
                     while rclpy.ok(context=context) and time.time() - begin_time < 2.5 * period:
                         executor.spin_once(timeout_sec=period / 10)
                     assert len(callbacks) == 2
+                finally:
+                    node.destroy_timer(timer)
+            finally:
+                executor.shutdown()
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)
+
+
+def test_time_until_next_call():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    try:
+        node = rclpy.create_node('test_time_until_next_call', context=context)
+        try:
+            executor = SingleThreadedExecutor(context=context)
+            try:
+                executor.add_node(node)
+                executor.spin_once(timeout_sec=0)
+
+                timer = node.create_timer(1, lambda: None)
+                try:
+                    assert not timer.is_canceled()
+                    executor.spin_once(0.1)
+                    assert timer.time_until_next_call() <= (1 * S_TO_NS)
+                    timer.reset()
+                    assert not timer.is_canceled()
+                    assert timer.time_until_next_call() <= (1 * S_TO_NS)
+                    timer.cancel()
+                    assert timer.is_canceled()
+                    assert timer.time_until_next_call() is None
                 finally:
                     node.destroy_timer(timer)
             finally:

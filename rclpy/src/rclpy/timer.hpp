@@ -87,9 +87,10 @@ public:
    *
    * Raises RCLError there is an rcl error
    *
-   * \return the time until next call in nanoseconds
+   * \return the time until next call in nanoseconds.
+   *   std::nullopt if the timer is canceled.
    */
-  int64_t time_until_next_call();
+  std::optional<int64_t> time_until_next_call();
 
   /// Get the time since the timer has been called
   /**

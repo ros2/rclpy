@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <rcl/context.h>
 #include <rcl/error_handling.h>
@@ -105,11 +106,13 @@ void Timer::change_timer_period(int64_t period_nsec)
   }
 }
 
-int64_t Timer::time_until_next_call()
+std::optional<int64_t> Timer::time_until_next_call()
 {
   int64_t remaining_time;
   rcl_ret_t ret = rcl_timer_get_time_until_next_call(rcl_timer_.get(), &remaining_time);
-  if (ret != RCL_RET_OK) {
+  if (ret == RCL_RET_TIMER_CANCELED) {
+    return std::nullopt;
+  } else if (ret != RCL_RET_OK) {
     throw RCLError("failed to get time until next timer call");
   }
 
