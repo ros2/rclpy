@@ -152,32 +152,31 @@ def test_cancel_reset(period):
 
 
 def test_time_until_next_call():
+    node = None
+    executor = None
+    timer = None
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
         node = rclpy.create_node('test_time_until_next_call', context=context)
-        try:
-            executor = SingleThreadedExecutor(context=context)
-            try:
-                executor.add_node(node)
-                executor.spin_once(timeout_sec=0)
-
-                timer = node.create_timer(1, lambda: None)
-                try:
-                    assert not timer.is_canceled()
-                    executor.spin_once(0.1)
-                    assert timer.time_until_next_call() <= (1 * S_TO_NS)
-                    timer.reset()
-                    assert not timer.is_canceled()
-                    assert timer.time_until_next_call() <= (1 * S_TO_NS)
-                    timer.cancel()
-                    assert timer.is_canceled()
-                    assert timer.time_until_next_call() is None
-                finally:
-                    node.destroy_timer(timer)
-            finally:
-                executor.shutdown()
-        finally:
-            node.destroy_node()
+        executor = SingleThreadedExecutor(context=context)
+        executor.add_node(node)
+        executor.spin_once(timeout_sec=0)
+        timer = node.create_timer(1, lambda: None)
+        assert not timer.is_canceled()
+        executor.spin_once(0.1)
+        assert timer.time_until_next_call() <= (1 * S_TO_NS)
+        timer.reset()
+        assert not timer.is_canceled()
+        assert timer.time_until_next_call() <= (1 * S_TO_NS)
+        timer.cancel()
+        assert timer.is_canceled()
+        assert timer.time_until_next_call() is None
     finally:
+        if timer is not None:
+            node.destroy_timer(timer)
+        if executor is not None:
+            executor.shutdown()
+        if node is not None:
+            node.destroy_node()
         rclpy.shutdown(context=context)

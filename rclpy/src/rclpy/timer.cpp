@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <rcl/context.h>
 #include <rcl/error_handling.h>
