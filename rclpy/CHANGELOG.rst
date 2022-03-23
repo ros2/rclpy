@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.0 (2022-03-01)
+------------------
+* Properly implement action server/client handle cleanup. (`#905 <https://github.com/ros2/rclpy/issues/905>`_)
+* Make sure to take out contexts on Action{Client,Server}. (`#904 <https://github.com/ros2/rclpy/issues/904>`_)
+* Make sure to free the goal_status_array when done using it. (`#902 <https://github.com/ros2/rclpy/issues/902>`_)
+* Bugfix to Node.destroy_rate() result (`#901 <https://github.com/ros2/rclpy/issues/901>`_)
+* Remove fastrtps customization on tests (`#895 <https://github.com/ros2/rclpy/issues/895>`_)
+* fix typo (`#890 <https://github.com/ros2/rclpy/issues/890>`_)
+* Document that Future.result() may return None (`#884 <https://github.com/ros2/rclpy/issues/884>`_)
+* update doc release number (`#885 <https://github.com/ros2/rclpy/issues/885>`_)
+* Contributors: Anthony, Auguste Lalande, Chris Lalancette, Erki Suurjaak, Jacob Perron, Miguel Company
+
 3.2.1 (2022-01-14)
 ------------------
 * Fix multi-threaded race condition in client.call_async (`#871 <https://github.com/ros2/rclpy/issues/871>`_)

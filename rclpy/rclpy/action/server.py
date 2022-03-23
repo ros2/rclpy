@@ -493,6 +493,13 @@ class ActionServer(Waitable):
         """Add entities to wait set."""
         with self._lock:
             self._handle.add_to_waitset(wait_set)
+
+    def __enter__(self):
+        return self._handle.__enter__()
+
+    def __exit__(self, t, v, tb):
+        self._handle.__exit__(t, v, tb)
+
     # End Waitable API
 
     def notify_execute(self, goal_handle, execute_callback):
@@ -589,16 +596,8 @@ class ActionServer(Waitable):
 
     def destroy(self):
         """Destroy the underlying action server handle."""
-        if self._handle is None:
-            return
-
         for goal_handle in self._goal_handles.values():
             goal_handle.destroy()
 
         self._handle.destroy_when_not_in_use()
         self._node.remove_waitable(self)
-        self._handle = None
-
-    def __del__(self):
-        """Destroy the underlying action server handle."""
-        self.destroy()

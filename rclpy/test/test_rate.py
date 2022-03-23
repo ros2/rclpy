@@ -101,14 +101,14 @@ class TestRate:
 
     def test_destroy(self):
         rate = self.node.create_rate(FREQ)
-        self.node.destroy_rate(rate)
+        assert self.node.destroy_rate(rate)
 
     def test_destroy_wakes_rate(self):
         rate = self.node.create_rate(0.0000001)
 
         self._thread = threading.Thread(target=rate.sleep, daemon=True)
         self._thread.start()
-        self.node.destroy_rate(rate)
+        assert self.node.destroy_rate(rate)
         self._thread.join()
 
 
