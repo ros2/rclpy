@@ -40,6 +40,7 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.exceptions import ParameterUninitializedException
+from rclpy.exceptions import ParameterException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
@@ -806,6 +807,14 @@ class TestNode(unittest.TestCase):
 
         with self.assertRaises(InvalidParameterValueException):
             self.node.declare_parameters(namespace="", parameters=[inconsistent_parameters])
+
+    def test_node_declare_parameters_name_mismatch(self):
+        with self.assertRaises(ParameterException):
+            self.node.declare_parameter('foo', '_', ParameterDescriptor(name='bar'))
+
+        # node has neither foo nor bar parameter
+        self.assertFalse(self.node.has_parameter('foo'))
+        self.assertFalse(self.node.has_parameter('bar'))
 
     def test_node_undeclare_parameter_has_parameter(self):
         # Undeclare unexisting parameter.

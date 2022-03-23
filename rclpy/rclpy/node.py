@@ -55,6 +55,8 @@ from rclpy.exceptions import ParameterAlreadyDeclaredException
 from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.exceptions import ParameterUninitializedException
+from rclpy.exceptions import ParameterException
+
 from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
@@ -408,6 +410,8 @@ class Node:
         :raises: InvalidParameterException if the parameter name is invalid.
         :raises: InvalidParameterValueException if the registered callback rejects any parameter.
         :raises: TypeError if any tuple in **parameters** does not match the annotated type.
+        :raises: ParameterException if given name and descriptor.name do not match
+        :raises: InvalidParameterValueException if type of value does not match declared parameter
         """
         parameter_list = []
         descriptors = {}
@@ -431,11 +435,16 @@ class Node:
                 raise TypeError(
                         f'First element {name} at index {index} in parameters list '
                         'is not a str.')
+
             if not isinstance(descriptor, ParameterDescriptor):
                 raise TypeError(
                     f'Third element {descriptor} at index {index} in parameters list '
                     'is not a ParameterDescriptor.'
                 )
+
+            if descriptor.name and descriptor.name != name:
+                reason = f"Parameter name is '{name}', but descriptor declares '{descriptor.name}'"
+                raise ParameterException(error_msg=reason, parameters=[name, descriptor])
 
             if len(parameter_tuple) == 1:
                 warnings.warn(
@@ -465,8 +474,8 @@ class Node:
                         deduced_type = Parameter.Type.from_parameter_value(value).value
                         if descriptor.type != ParameterType.PARAMETER_NOT_SET:
                             if deduced_type != descriptor.type:
-                                reason = f"Passed value is of type {deduced_type}, \
-                                           but ParameterDescriptor declared type {descriptor.type}"
+                                reason = f'Passed value is of type {deduced_type} ' \
+                                         f'but ParameterDescriptor declared type {descriptor.type}'
                                 raise InvalidParameterValueException(
                                             parameter=Parameter(name, value=value),
                                             value=value,
