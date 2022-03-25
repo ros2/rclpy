@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.1 (2022-03-24)
+------------------
+* Avoid exception in Node constructor when use override for 'use_sim_time' (`#896 <https://github.com/ros2/rclpy/issues/896>`_)
+* time_until_next_call returns max if timer is canceled. (`#910 <https://github.com/ros2/rclpy/issues/910>`_)
+* Contributors: Artem Shumov, Ivan Santiago Paunovic, Tomoya Fujita
+
 3.3.0 (2022-03-01)
 ------------------
 * Properly implement action server/client handle cleanup. (`#905 <https://github.com/ros2/rclpy/issues/905>`_)
