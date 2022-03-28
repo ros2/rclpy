@@ -96,9 +96,9 @@ void Timer::call_timer()
   }
 }
 
-void Timer::change_timer_period(int64_t period_nsec)
+void Timer::change_timer_period(uint64_t period_nsec)
 {
-  int64_t old_period;
+  uint64_t old_period;
   rcl_ret_t ret = rcl_timer_exchange_period(rcl_timer_.get(), period_nsec, &old_period);
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to exchange timer period");
@@ -129,9 +129,9 @@ int64_t Timer::time_since_last_call()
   return elapsed_time;
 }
 
-int64_t Timer::get_timer_period()
+uint64_t Timer::get_timer_period()
 {
-  int64_t timer_period;
+  uint64_t timer_period;
   rcl_ret_t ret = rcl_timer_get_period(rcl_timer_.get(), &timer_period);
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to get timer period");

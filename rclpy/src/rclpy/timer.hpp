@@ -80,7 +80,7 @@ public:
    *
    * \param[in] period_nsec the new period in nanoseconds
    */
-  void change_timer_period(int64_t period_nsec);
+  void change_timer_period(uint64_t period_nsec);
 
   /// Get the time before the timer will be ready
   /**
@@ -107,7 +107,7 @@ public:
    *
    * \return the time since the last call in nanoseconds
    */
-  int64_t get_timer_period();
+  uint64_t get_timer_period();
 
   /// Cancel the timer
   /**

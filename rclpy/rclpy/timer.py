@@ -53,10 +53,9 @@ class Timer:
 
     @timer_period_ns.setter
     def timer_period_ns(self, value):
-        val = int(value)
         with self.__timer:
-            self.__timer.change_timer_period(val)
-        self.__timer_period_ns = val
+            self.__timer.change_timer_period(value)
+        self.__timer_period_ns = value
 
     def is_ready(self):
         with self.__timer:
