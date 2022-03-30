@@ -278,27 +278,51 @@ class Executor:
         while self._context.ok() and not self._is_shutdown:
             self.spin_once()
 
-    def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
-        """Execute callbacks until a given future is done or a timeout occurs."""
-        # Make sure the future wakes this executor when it is done
-        future.add_done_callback(lambda x: self.wake())
+    def spin_for(self, duration_sec: float = None) -> None:
+        """Execute callbacks until shutdown, or timeout."""
+        self.spin_until_complete(lambda: False, duration_sec)
+
+    def spin_until_complete(self, condition, timeout_sec: float = None) -> None:
+        """
+        Execute callbacks until a given condition is done or a timeout occurs.
+
+        Deprecated in favor of spin_until_complete.
+        """
+        # Common conditon for safisfying both Callable and Future
+        finish_condition = None
+        if (isinstance(condition, Future)):
+            # Make sure the future wakes this executor when it is done
+            condition.add_done_callback(lambda x: self.wake())
+            def finish_condition(): return condition.done()
+        elif (callable(condition)):
+            def finish_condition(): return condition()
+        else:
+            raise TypeError('Condition has to be of Future or Callable type')
 
         if timeout_sec is None or timeout_sec < 0:
-            while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once_until_future_complete(future, timeout_sec)
+            while self._context.ok() and not finish_condition() and not self._is_shutdown:
+                self.spin_once_until_complete(condition, timeout_sec)
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = timeout_sec
 
-            while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once_until_future_complete(future, timeout_left)
+            while self._context.ok() and not finish_condition() and not self._is_shutdown:
+                self.spin_once_until_complete(condition, timeout_left)
                 now = time.monotonic()
 
                 if now >= end:
                     return
 
                 timeout_left = end - now
+
+    def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        """
+        Execute callbacks until a given future is done or a timeout occurs.
+
+        Deprecated in favor of spin_until_complete.
+        """
+        self.spin_until_complete(future, timeout_sec)
 
     def spin_once(self, timeout_sec: float = None) -> None:
         """
@@ -307,6 +331,19 @@ class Executor:
         A custom executor should use :meth:`wait_for_ready_callbacks` to get work.
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        """
+        raise NotImplementedError()
+
+    def spin_once_until_complete(self, condition, timeout_sec: float = None) -> None:
+        """
+        Wait for and execute a single callback.
+
+        This should behave in the same way as :meth:`spin_once`.
+        If needed by the implementation, it should awake other threads waiting.
+
+        :param condition: The executor will wait until this condition is done.
+        :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
         raise NotImplementedError()
@@ -321,6 +358,8 @@ class Executor:
         :param future: The executor will wait until this future is done.
         :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
+
+        Deprecated in favor of spin_once_until_complete.
         """
         raise NotImplementedError()
 
@@ -722,8 +761,13 @@ class SingleThreadedExecutor(Executor):
             if handler.exception() is not None:
                 raise handler.exception()
 
-    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+    def spin_once_until_complete(self, condition, timeout_sec: float = None) -> None:
         self.spin_once(timeout_sec)
+
+    """Deprecated in favor of spin_once_until_complete"""
+
+    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        self.spin_once_until_complete(timeout_sec)
 
 
 class MultiThreadedExecutor(Executor):
@@ -767,5 +811,11 @@ class MultiThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
 
+    def spin_once_until_complete(self, condition, timeout_sec: float = None) -> None:
+        self._spin_once_impl(timeout_sec, condition if callable(
+            condition) else condition.done)
+
+    """Deprecated in favor of spin_once_until_complete"""
+
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
-        self._spin_once_impl(timeout_sec, future.done)
+        self.spin_once_until_complete(timeout_sec, future.done)

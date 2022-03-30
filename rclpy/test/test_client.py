@@ -83,8 +83,8 @@ class TestClient(unittest.TestCase):
             future1 = cli.call_async(GetParameters.Request())
             future2 = cli.call_async(GetParameters.Request())
             executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
-            rclpy.spin_until_future_complete(self.node, future1, executor=executor)
-            rclpy.spin_until_future_complete(self.node, future2, executor=executor)
+            rclpy.spin_until_complete(self.node, future1, executor=executor)
+            rclpy.spin_until_complete(self.node, future2, executor=executor)
             self.assertTrue(future1.result() is not None)
             self.assertTrue(future2.result() is not None)
         finally:
@@ -131,7 +131,7 @@ class TestClient(unittest.TestCase):
             future = cli.call_async(GetParameters.Request())
             executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
             with self.assertRaises(TypeError):
-                rclpy.spin_until_future_complete(self.node, future, executor=executor)
+                rclpy.spin_until_complete(self.node, future, executor=executor)
         finally:
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)

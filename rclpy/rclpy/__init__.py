@@ -33,7 +33,7 @@ and actions.
 After a node is created, items of work can be done (e.g. subscription callbacks) by *spinning* on
 the node.
 The following functions can be used to process work that is waiting to be executed: :func:`spin`,
-:func:`spin_once`, and :func:`spin_until_future_complete`.
+:func:`spin_once`, and :func:`spin_until_complete`.
 
 When finished with a previously initialized :class:`.Context` (ie. done using
 all ROS nodes associated with the context), the :func:`shutdown` function should be called.
@@ -224,6 +224,52 @@ def spin(node: 'Node', executor: 'Executor' = None) -> None:
         executor.remove_node(node)
 
 
+def spin_for(node: 'Node', executor: 'Executor' = None, duration_sec: float = None) -> None:
+    """
+    Execute block until the context associated with the executor is shutdown or time duration pass.
+
+    Callbacks will be executed by the provided executor.
+
+    This function blocks.
+
+    :param node: A node to add to the executor to check for work.
+    :param executor: The executor to use, or the global executor if ``None``.
+    :param timeout_sec: Seconds to wait.
+    """
+    executor = get_global_executor() if executor is None else executor
+    try:
+        executor.add_node(node)
+        executor.spin_once(duration_sec)
+    finally:
+        executor.remove_node(node)
+
+
+def spin_until_complete(
+    node: 'Node',
+    condition,
+    executor: 'Executor' = None,
+    timeout_sec: float = None
+) -> None:
+    """
+    Execute work until the condition is complete.
+
+    Callbacks and other work will be executed by the provided executor until ``condition()`` or
+    ``future.done()`` returns ``True`` or the context associated with the executor is shutdown.
+
+    :param node: A node to add to the executor to check for work.
+    :param condition: The callable or future object to wait on.
+    :param executor: The executor to use, or the global executor if ``None``.
+    :param timeout_sec: Seconds to wait. Block until the condition is complete
+        if ``None`` or negative. Don't wait if 0.
+    """
+    executor = get_global_executor() if executor is None else executor
+    try:
+        executor.add_node(node)
+        executor.spin_until_complete(condition, timeout_sec)
+    finally:
+        executor.remove_node(node)
+
+
 def spin_until_future_complete(
     node: 'Node',
     future: Future,
@@ -241,10 +287,7 @@ def spin_until_future_complete(
     :param executor: The executor to use, or the global executor if ``None``.
     :param timeout_sec: Seconds to wait. Block until the future is complete
         if ``None`` or negative. Don't wait if 0.
+
+    Deprecated in favor of spin_until_complete
     """
-    executor = get_global_executor() if executor is None else executor
-    try:
-        executor.add_node(node)
-        executor.spin_until_future_complete(future, timeout_sec)
-    finally:
-        executor.remove_node(node)
+    spin_until_complete(node, future, executor, timeout_sec)
