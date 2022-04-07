@@ -15,13 +15,12 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
-#include <rcl/rcl.h>
 #include <rcl/types.h>
 #include <rcutils/allocator.h>
 #include <rcutils/error_handling.h>
-
-#include <memory>
-#include <stdexcept>
+#include <rmw/rmw.h>
+#include <rmw/serialized_message.h>
+#include <rosidl_runtime_c/message_type_support_struct.h>
 
 #include "exceptions.hpp"
 #include "serialization.hpp"

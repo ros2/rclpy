@@ -59,7 +59,7 @@ get_validation_error_for_full_topic_name(const char * topic_name);
  * Raises MemoryError if memory could not be allocated
  * Raises RMWError if an unexpected error happened while validating the namespace
  *
- * \param[in] namespace namespace to be validated
+ * \param[in] namespace_ namespace to be validated
  * \return tuple of error message and invalid index if invalid, or
  * \return None if valid
  */
@@ -96,7 +96,7 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
  * Raises ValueError if the capsule is not the correct type
  * Raises RCLError if an unexpected error happens
  *
- * \param[in] Node node to remap the topic name
+ * \param[in] node node to remap the topic name
  * \param[in] topic_name topic string to be remapped
  * \return remapped topic name
  */

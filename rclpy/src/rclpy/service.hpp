@@ -17,8 +17,7 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl/timer.h>
-#include <rcl/rcl.h>
+#include <rcl/service.h>
 #include <rmw/types.h>
 
 #include <memory>
@@ -45,7 +44,7 @@ public:
    * Raises ValueError if the capsules are not the correct types
    * Raises RCLError if the service could not be created
    *
-   * \param[in] node node to add the service to
+   * \param[in] node Node to add the service to
    * \param[in] pysrv_type Service module associated with the service
    * \param[in] service_name Python object for the service name
    * \param[in] pyqos_profile QoSProfile Python object for this service
@@ -66,7 +65,7 @@ public:
    * Raises RCLError if the response could not be sent
    *
    * \param[in] pyresponse reply message to send
-   * \param[in] pyheader Capsule pointing to the rmw_request_id_t header of the request we respond to
+   * \param[in] header Capsule pointing to the rmw_request_id_t header of the request we respond to
    */
   void
   service_send_response(py::object pyresponse, rmw_request_id_t * header);
@@ -91,9 +90,11 @@ public:
     return rcl_service_.get();
   }
 
+  /// Get the service name.
   const char *
   get_service_name();
 
+  /// Get the QoS profile for this service.
   py::dict
   get_qos_profile();
 

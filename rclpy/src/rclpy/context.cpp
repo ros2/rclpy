@@ -14,15 +14,18 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/allocator.h>
 #include <rcl/context.h>
 #include <rcl/error_handling.h>
-#include <rcl/rcl.h>
+#include <rcl/init.h>
+#include <rcl/init_options.h>
 #include <rcl/types.h>
 
 #include <algorithm>
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <vector>
 
 #include "context.hpp"

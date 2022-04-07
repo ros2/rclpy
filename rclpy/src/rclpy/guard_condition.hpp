@@ -17,14 +17,12 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl/error_handling.h>
 #include <rcl/guard_condition.h>
 
 #include <memory>
 
 #include "context.hpp"
 #include "destroyable.hpp"
-#include "exceptions.hpp"
 #include "utils.hpp"
 
 namespace py = pybind11;

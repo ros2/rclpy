@@ -15,12 +15,15 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl/service.h>
+#include <rosidl_runtime_c/service_type_support_struct.h>
+#include <rmw/types.h>
 
 #include <memory>
 #include <string>
-#include <utility>
 
 #include "exceptions.hpp"
+#include "node.hpp"
 #include "service.hpp"
 #include "utils.hpp"
 

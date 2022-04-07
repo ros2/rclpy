@@ -15,7 +15,11 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/domain_id.h>
-#include <rcl_action/rcl_action.h>
+#include <rcl/time.h>
+#include <rcl_action/types.h>
+
+#include <rmw/qos_profiles.h>
+#include <rmw/time.h>
 
 #include "action_client.hpp"
 #include "action_goal_handle.hpp"

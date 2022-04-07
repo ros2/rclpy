@@ -17,7 +17,8 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl_action/rcl_action.h>
+#include <rcl_action/action_client.h>
+#include <rmw/types.h>
 
 #include <memory>
 
@@ -44,12 +45,12 @@ public:
    *
    * \param[in] node Node to add the action client to.
    * \param[in] pyaction_type Action module associated with the action client.
-   * \param[in] pyaction_name Python object containing the action name.
+   * \param[in] action_name The action name.
    * \param[in] goal_service_qos rmw_qos_profile_t object for the goal service.
    * \param[in] result_service_qos rmw_qos_profile_t object for the result service.
    * \param[in] cancel_service_qos rmw_qos_profile_t object for the cancel service.
-   * \param[in] feedback_qos rmw_qos_profile_t object for the feedback subscriber.
-   * \param[in] status_qos rmw_qos_profile_t object for the status subscriber.
+   * \param[in] feedback_topic_qos rmw_qos_profile_t object for the feedback subscriber.
+   * \param[in] status_topic_qos rmw_qos_profile_t object for the status subscriber.
    */
   ActionClient(
     Node & node,
@@ -67,7 +68,7 @@ public:
    * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pygoal_response_type An instance of the response message type to take.
+   * \param[in] pymsg_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
    * \return (None, None) if there is a failure in the rcl API call.
@@ -81,7 +82,7 @@ public:
    * Raises RuntimeError if the underlying rcl library returns an error when sending the request.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pyresult_request The request message to send.
+   * \param[in] pyrequest The request message to send.
    * \return sequence_number the index of the sent request
    */
   int64_t
@@ -93,7 +94,7 @@ public:
    * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pycancel_response_type An instance of the response message type to take.
+   * \param[in] pymsg_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
    * \return (None, None) if there is a failure in the rcl API call.
@@ -107,8 +108,8 @@ public:
    * Raises RuntimeError if the underlying rcl library returns an error when sending the request.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pycancel_request The request message to send.
-   * \return sequence_number the index of the sent request
+   * \param[in] pyrequest The request message to send.
+   * \return The index of the sent request.
    */
   int64_t
   send_cancel_request(py::object pyrequest);
@@ -120,7 +121,7 @@ public:
    * the case where there are no messages available.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pyfeedback_type Instance of the feedback message type to take.
+   * \param[in] pymsg_type Instance of the feedback message type to take.
    * \return Python message with all fields populated with received message, or
    * \return None if there is nothing to take, or
    * \return None if there is a failure in the rcl API call.
@@ -135,7 +136,7 @@ public:
    * the case where there are no messages available.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pystatus_type Instance of the status message type to take.
+   * \param[in] pymsg_type Instance of the status message type to take.
    * \return Python message with all fields populated with received message, or
    * \return None if there is nothing to take, or
    * \return None if there is a failure in the rcl API call.
@@ -149,8 +150,8 @@ public:
    * Raises RuntimeError on failure.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pygoal_request The request message to send.
-   * \return sequence_number PyLong object representing the index of the sent request
+   * \param[in] pyrequest The request message to send.
+   * \return The index of the sent request
    */
   int64_t
   send_goal_request(py::object pyrequest);
@@ -161,7 +162,7 @@ public:
    * Raises RuntimeError if the underlying rcl library returns an error when taking the response.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pyresult_response_type An instance of the response message type to take.
+   * \param[in] pymsg_type An instance of the response message type to take.
    * \return 2-tuple (sequence number, received response), or
    * \return 2-tuple (None, None) if there is no response, or
    * \return (None, None) if there is a failure in the rcl API call.

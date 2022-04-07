@@ -20,7 +20,6 @@
 #include <rcl/time.h>
 
 #include <memory>
-#include <string>
 
 #include "destroyable.hpp"
 #include "exceptions.hpp"

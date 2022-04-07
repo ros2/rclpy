@@ -17,9 +17,10 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/context.h>
 #include <rcl/error_handling.h>
+#include <rcl/init_options.h>
 
-#include <functional>
 #include <memory>
 
 #include "destroyable.hpp"

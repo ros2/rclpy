@@ -15,13 +15,18 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
-#include <rcl/rcl.h>
+#include <rcl/node.h>
+#include <rcl/subscription.h>
 #include <rcl/types.h>
+#include <rosidl_runtime_c/message_type_support_struct.h>
+#include <rmw/types.h>
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include "exceptions.hpp"
+#include "node.hpp"
 #include "serialization.hpp"
 #include "subscription.hpp"
 #include "utils.hpp"

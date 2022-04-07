@@ -23,12 +23,14 @@
   <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
 
-  <depend>rmw_implementation</depend>
   <depend>rcl</depend>
   <depend>rcl_lifecycle</depend>
   <depend>rcl_logging_interface</depend>
   <depend>rcl_action</depend>
   <depend>rcl_yaml_param_parser</depend>
+  <depend>rmw</depend>
+  <depend>rmw_implementation</depend>
+  <depend>rosidl_runtime_c</depend>
   <depend>unique_identifier_msgs</depend>
 
   <exec_depend>ament_index_python</exec_depend>
