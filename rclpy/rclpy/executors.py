@@ -335,12 +335,16 @@ class Executor:
         with sub.handle:
             msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
             if msg_info is not None:
-                return msg_info[0]
+                if sub.callback_type is Subscription.CallbackType.MessageOnly:
+                    return (msg_info[0], )
+                else:
+                    print(msg_info)
+                    return msg_info
         return None
 
-    async def _execute_subscription(self, sub, msg):
-        if msg:
-            await await_or_execute(sub.callback, msg)
+    async def _execute_subscription(self, sub, *args):
+        if args:
+            await await_or_execute(sub.callback, *args)
 
     def _take_client(self, client):
         with client.handle:
@@ -415,7 +419,10 @@ class Executor:
                 gc.trigger()
 
                 try:
-                    await call_coroutine(entity, arg)
+                    if isinstance(arg, tuple):
+                        await call_coroutine(entity, *arg)
+                    else:
+                        await call_coroutine(entity, arg)
                 finally:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive

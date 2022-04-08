@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
+import inspect
 from typing import Callable
 from typing import TypeVar
 
@@ -27,6 +29,10 @@ MsgType = TypeVar('MsgType')
 
 
 class Subscription:
+
+    class CallbackType(Enum):
+        MessageOnly = 0
+        WithMessageInfo = 1
 
     def __init__(
          self,
@@ -69,6 +75,21 @@ class Subscription:
 
         self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
             callback_group, subscription_impl, topic)
+        self.callback_type = Subscription.CallbackType.MessageOnly
+        try:
+            inspect.signature(self.callback).bind(object())
+            return
+        except TypeError:
+            pass
+        try:
+            inspect.signature(self.callback).bind(object(), object())
+            self.callback_type = Subscription.CallbackType.WithMessageInfo
+            return
+        except TypeError:
+            pass
+        raise RuntimeError(
+            'Subscription.__init__(): callback should be either be callable with one argument'
+            '(to get only the message) or two (to get message and message info)')
 
     @property
     def handle(self):
