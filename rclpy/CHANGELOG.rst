@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Make rclpy dependencies explicit (`#906 <https://github.com/ros2/rclpy/issues/906>`_)
+* Contributors: Chris Lalancette
+
 3.3.1 (2022-03-24)
 ------------------
 * Avoid exception in Node constructor when use override for 'use_sim_time' (`#896 <https://github.com/ros2/rclpy/issues/896>`_)
@@ -385,12 +390,11 @@ Changelog for package rclpy
 * Adding get_parameters_by_prefix method to Node. (`#386 <https://github.com/ros2/rclpy/issues/386>`_)
 * remove whitespace (`#385 <https://github.com/ros2/rclpy/issues/385>`_)
 * Added clients by node implementation from rcl (`#383 <https://github.com/ros2/rclpy/issues/383>`_)
-* Fix time conversion for a big nanoseconds value (`#384 <https://github.com/ros2/rclpy/issues/384>`_)
 * Allowing parameter declaration without a given value. (`#382 <https://github.com/ros2/rclpy/issues/382>`_)
 * Make flake8 happy on windows (`#381 <https://github.com/ros2/rclpy/issues/381>`_)
-* Rename QoS*Policy enum's to *Policy (`#379 <https://github.com/ros2/rclpy/issues/379>`_)
+* Rename QoS*Policy enum's to \*Policy (`#379 <https://github.com/ros2/rclpy/issues/379>`_)
 * Fixing namespace expansion for declare_parameters. (`#377 <https://github.com/ros2/rclpy/issues/377>`_)
-* Use params from node '/**' from parameter YAML file (`#370 <https://github.com/ros2/rclpy/issues/370>`_)
+* Use params from node '/\*\*' from parameter YAML file (`#370 <https://github.com/ros2/rclpy/issues/370>`_)
 * [executors] don't convert a timeout_sec to nsecs (`#372 <https://github.com/ros2/rclpy/issues/372>`_)
 * Fix API documentation related to ROS graph methods (`#366 <https://github.com/ros2/rclpy/issues/366>`_)
 * Treat warnings as test failures and fix warnings (`#365 <https://github.com/ros2/rclpy/issues/365>`_)
@@ -405,7 +409,7 @@ Changelog for package rclpy
 
 0.7.5 (2019-08-01)
 ------------------
-* Updated to use params from node '/**' from parameter YAML file. (`#399 <https://github.com/ros2/rclpy/issues/399>`_)
+* Updated to use params from node '/\*\*' from parameter YAML file. (`#399 <https://github.com/ros2/rclpy/issues/399>`_)
 * Updated to declare 'use_sim_time' when attaching node to time source. (`#401 <https://github.com/ros2/rclpy/issues/401>`_)
 * Fixed an errant conversion to nsecs in executors timeout.` (`#397 <https://github.com/ros2/rclpy/issues/397>`_)
 * Fixed parameter handling issues. (`#394 <https://github.com/ros2/rclpy/issues/394>`_)
