@@ -338,7 +338,6 @@ class Executor:
                 if sub.callback_type is Subscription.CallbackType.MessageOnly:
                     return (msg_info[0], )
                 else:
-                    print(msg_info)
                     return msg_info
         return None
 
