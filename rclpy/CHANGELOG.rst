@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.3.2 (2022-04-08)
+------------------
 * Make rclpy dependencies explicit (`#906 <https://github.com/ros2/rclpy/issues/906>`_)
 * Contributors: Chris Lalancette
 
