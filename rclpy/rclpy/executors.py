@@ -327,8 +327,9 @@ class Executor:
     def _take_timer(self, tmr):
         with tmr.handle:
             tmr.handle.call_timer()
+        return ()
 
-    async def _execute_timer(self, tmr, _):
+    async def _execute_timer(self, tmr):
         await await_or_execute(tmr.callback)
 
     def _take_subscription(self, sub):
@@ -339,7 +340,7 @@ class Executor:
                     return (msg_info[0], )
                 else:
                     return msg_info
-        return None
+        return ()
 
     async def _execute_subscription(self, sub, *args):
         if args:
@@ -347,7 +348,7 @@ class Executor:
 
     def _take_client(self, client):
         with client.handle:
-            return client.handle.take_response(client.srv_type.Response)
+            return (client.handle.take_response(client.srv_type.Response), )
 
     async def _execute_client(self, client, seq_and_response):
         header, response = seq_and_response
@@ -365,7 +366,7 @@ class Executor:
     def _take_service(self, srv):
         with srv.handle:
             request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
-        return request_and_header
+        return (request_and_header, )
 
     async def _execute_service(self, srv, request_and_header):
         if request_and_header is None:
@@ -377,8 +378,9 @@ class Executor:
 
     def _take_guard_condition(self, gc):
         gc._executor_triggered = False
+        return ()
 
-    async def _execute_guard_condition(self, gc, _):
+    async def _execute_guard_condition(self, gc):
         await await_or_execute(gc.callback)
 
     async def _execute_waitable(self, waitable, data):
@@ -418,10 +420,11 @@ class Executor:
                 gc.trigger()
 
                 try:
-                    if isinstance(arg, tuple):
-                        await call_coroutine(entity, *arg)
-                    else:
-                        await call_coroutine(entity, arg)
+                    await call_coroutine(entity, *arg)
+                    # if isinstance(arg, tuple):
+                    #     await call_coroutine(entity, *arg)
+                    # else:
+                    #     await call_coroutine(entity, arg)
                 finally:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
@@ -615,7 +618,7 @@ class Executor:
                         # Only check waitables that were added to the wait set
                         if wt in waitables and wt.is_ready(wait_set):
                             handler = self._make_handler(
-                                wt, node, lambda e: e.take_data(), self._execute_waitable)
+                                wt, node, lambda e: (e.take_data(), ), self._execute_waitable)
                             yielded_work = True
                             yield handler, wt, node
 
