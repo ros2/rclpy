@@ -421,10 +421,6 @@ class Executor:
 
                 try:
                     await call_coroutine(entity, *arg)
-                    # if isinstance(arg, tuple):
-                    #     await call_coroutine(entity, *arg)
-                    # else:
-                    #     await call_coroutine(entity, arg)
                 finally:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
