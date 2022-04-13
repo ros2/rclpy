@@ -752,6 +752,8 @@ class MultiThreadedExecutor(Executor):
             pass
         else:
             self._executor.submit(handler)
+            if handler.exception() is not None:
+                raise handler.exception()
 
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
