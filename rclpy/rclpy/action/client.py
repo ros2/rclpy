@@ -209,7 +209,10 @@ class ActionClient(Waitable):
     def _remove_pending_goal_request(self, future):
         seq = self._remove_pending_request(future, self._pending_goal_requests)
         if seq in self._sequence_number_to_goal_id:
+            goal_uuid = bytes(self._sequence_number_to_goal_id[seq].uuid)
             del self._sequence_number_to_goal_id[seq]
+            if goal_uuid in self._feedback_callbacks:
+                del self._feedback_callbacks[goal_uuid]
 
     def _remove_pending_cancel_request(self, future):
         self._remove_pending_request(future, self._pending_cancel_requests)
