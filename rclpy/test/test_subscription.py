@@ -76,13 +76,13 @@ def test_subscription_callback_type():
         topic='test_subscription/test_subscription_callback_type/topic',
         qos_profile=10,
         callback=lambda _: None)
-    assert sub.callback_type == Subscription.CallbackType.MessageOnly
+    assert sub._callback_type == Subscription.CallbackType.MessageOnly
     sub = node.create_subscription(
         msg_type=Empty,
         topic='test_subscription/test_subscription_callback_type/topic',
         qos_profile=10,
         callback=lambda _, _2: None)
-    assert sub.callback_type == Subscription.CallbackType.WithMessageInfo
+    assert sub._callback_type == Subscription.CallbackType.WithMessageInfo
     with pytest.raises(RuntimeError):
         node.create_subscription(
             msg_type=Empty,

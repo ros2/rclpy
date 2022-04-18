@@ -336,7 +336,7 @@ class Executor:
         with sub.handle:
             msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
             if msg_info is not None:
-                if sub.callback_type is Subscription.CallbackType.MessageOnly:
+                if sub._callback_type is Subscription.CallbackType.MessageOnly:
                     return (msg_info[0], )
                 else:
                     return msg_info
