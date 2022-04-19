@@ -480,6 +480,7 @@ class QoSPresetProfiles(Enum):
     PARAMETERS = qos_profile_parameters
     PARAMETER_EVENTS = qos_profile_parameter_events
     ACTION_STATUS_DEFAULT = qos_profile_action_status_default
+    BEST_AVAILABLE = qos_profile_best_available
 
     """Noted that the following are duplicated from QoSPolicyEnum.
 
