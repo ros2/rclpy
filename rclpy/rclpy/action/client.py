@@ -347,7 +347,6 @@ class ActionClient(Waitable):
                                 GoalStatus.STATUS_CANCELED == status or
                                 GoalStatus.STATUS_ABORTED == status):
                             del self._goal_handles[goal_uuid]
-                            #
                     else:
                         # Weak reference is None
                         del self._goal_handles[goal_uuid]
