@@ -362,8 +362,8 @@ class ReliabilityPolicy(QoSPolicyEnum):
     SYSTEM_DEFAULT = 0
     RELIABLE = 1
     BEST_EFFORT = 2
-    BEST_AVAILABLE = 3
-    UNKNOWN = 4
+    UNKNOWN = 3
+    BEST_AVAILABLE = 4
 
 
 # Alias with the old name, for retrocompatibility
@@ -386,8 +386,8 @@ class DurabilityPolicy(QoSPolicyEnum):
     SYSTEM_DEFAULT = 0
     TRANSIENT_LOCAL = 1
     VOLATILE = 2
-    BEST_AVAILABLE = 3
-    UNKNOWN = 4
+    UNKNOWN = 3
+    BEST_AVAILABLE = 4
 
 
 # Alias with the old name, for retrocompatibility
@@ -410,8 +410,8 @@ class LivelinessPolicy(QoSPolicyEnum):
     SYSTEM_DEFAULT = 0
     AUTOMATIC = 1
     MANUAL_BY_TOPIC = 3
-    BEST_AVAILABLE = 4
-    UNKNOWN = 5
+    UNKNOWN = 4
+    BEST_AVAILABLE = 5
 
 
 # Alias with the old name, for retrocompatibility
