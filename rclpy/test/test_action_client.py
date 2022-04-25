@@ -179,10 +179,10 @@ class TestActionClient(unittest.TestCase):
                 goal_uuid=goal_uuid)
             rclpy.spin_until_future_complete(self.node, future, self.executor)
 
-            # Publish feedback after goal has been completed
+            # Publish feedback after goal has been accepted
             self.mock_action_server.publish_feedback(goal_uuid)
             self.timed_spin(1.0)
-            self.assertEqual(self.feedback, None)
+            self.assertNotEqual(self.feedback, None)
         finally:
             ac.destroy()
 
@@ -236,7 +236,7 @@ class TestActionClient(unittest.TestCase):
             # Publish feedback for the first goal (with callback)
             self.mock_action_server.publish_feedback(first_goal_uuid)
             self.timed_spin(1.0)
-            self.assertEqual(self.feedback, None)
+            self.assertNotEqual(self.feedback, None)
         finally:
             ac.destroy()
 
