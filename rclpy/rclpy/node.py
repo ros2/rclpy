@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import time
 
 from typing import Any
 from typing import Callable
@@ -1949,3 +1950,22 @@ class Node:
             topic_name,
             no_mangle,
             _rclpy.rclpy_get_subscriptions_info_by_topic)
+
+    def wait_for_node(
+        self,
+        node_name: str,
+        timeout: float = 8.0
+    ) -> bool:
+        """
+        Wait until node name is present in the system or timeout.
+
+        :param node_name: name of the node to wait for.
+        :timeout: seconds to wait for the node to be present.
+        :return: true if the node was found, false if timeout.
+        """
+        start = time.time()
+        flag = False
+        while time.time() - start < timeout and not flag:
+            flag = node_name in self.get_node_names()
+            time.sleep(0.1)
+        return flag
