@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.9.1 (2022-04-28)
+------------------
 * Remove -> bool annotation for destroy_node `#886 <https://github.com/ros2/rclpy/issues/886>`_ (`#891 <https://github.com/ros2/rclpy/issues/891>`_)
 * Fix memory leak. (`#840 <https://github.com/ros2/rclpy/issues/840>`_)
 * Fix automatically declared parameters descriptor type. (backport `#853 <https://github.com/ros2/rclpy/issues/853>`_) (`#854 <https://github.com/ros2/rclpy/issues/854>`_)
