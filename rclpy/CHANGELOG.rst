@@ -2,6 +2,25 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove -> bool annotation for destroy_node `#886 <https://github.com/ros2/rclpy/issues/886>`_ (`#891 <https://github.com/ros2/rclpy/issues/891>`_)
+* Fix memory leak. (`#840 <https://github.com/ros2/rclpy/issues/840>`_)
+* Fix automatically declared parameters descriptor type. (backport `#853 <https://github.com/ros2/rclpy/issues/853>`_) (`#854 <https://github.com/ros2/rclpy/issues/854>`_)
+* Only add one done callback to a future (`#816 <https://github.com/ros2/rclpy/issues/816>`_) (`#821 <https://github.com/ros2/rclpy/issues/821>`_)
+* Remove unused function make_mock_subscription (`#809 <https://github.com/ros2/rclpy/issues/809>`_) (`#810 <https://github.com/ros2/rclpy/issues/810>`_)
+* Convert Node and Context to use C++ Classes (`#771 <https://github.com/ros2/rclpy/issues/771>`_)
+* Pybind11 actionserver nitpicks and docblock improvements (`#774 <https://github.com/ros2/rclpy/issues/774>`_)
+* Pybind11 action goal handle nitpicks (`#767 <https://github.com/ros2/rclpy/issues/767>`_)
+* Convert Guardcondition to use C++ classes (`#772 <https://github.com/ros2/rclpy/issues/772>`_)
+* Removed unused structs (`#770 <https://github.com/ros2/rclpy/issues/770>`_)
+* Convert WaitSet to use C++ Classes (`#769 <https://github.com/ros2/rclpy/issues/769>`_)
+* Convert ActionServer to use C++ Classes (`#766 <https://github.com/ros2/rclpy/issues/766>`_)
+* Convert ActionClient to use C++ classes (`#759 <https://github.com/ros2/rclpy/issues/759>`_)
+* Use py::class\_ for rcl_action_goal_handle_t (`#751 <https://github.com/ros2/rclpy/issues/751>`_)
+* Convert Publisher and Subscription to use C++ Classes (`#756 <https://github.com/ros2/rclpy/issues/756>`_)
+* Contributors: Alejandro Hernández Cordero, Greg Balke, Shane Loretz, Suraj Pattar, mergify[bot]
+
 1.9.0 (2021-05-20)
 ------------------
 * Allow declaring uninitialized statically typed parameters. (`#798 <https://github.com/ros2/rclpy/issues/798>`_) (`#799 <https://github.com/ros2/rclpy/issues/799>`_)
