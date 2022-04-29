@@ -168,11 +168,13 @@ class ActionClient(Waitable):
         # key: goal request sequence_number, value: Future for goal response
         self._pending_goal_requests = {}
         # key: goal request sequence_number, value: UUID
-        self._sequence_number_to_goal_id = {}
+        self._goal_sequence_number_to_goal_id = {}
         # key: cancel request sequence number, value: Future for cancel response
         self._pending_cancel_requests = {}
         # key: result request sequence number, value: Future for result response
         self._pending_result_requests = {}
+        # key: result request sequence_number, value: UUID
+        self._result_sequence_number_to_goal_id = {}
         # key: UUID in bytes, value: callback function
         self._feedback_callbacks = {}
 
@@ -208,14 +210,20 @@ class ActionClient(Waitable):
 
     def _remove_pending_goal_request(self, future):
         seq = self._remove_pending_request(future, self._pending_goal_requests)
-        if seq in self._sequence_number_to_goal_id:
-            del self._sequence_number_to_goal_id[seq]
+        if seq in self._goal_sequence_number_to_goal_id:
+            del self._goal_sequence_number_to_goal_id[seq]
 
     def _remove_pending_cancel_request(self, future):
         self._remove_pending_request(future, self._pending_cancel_requests)
 
     def _remove_pending_result_request(self, future):
-        self._remove_pending_request(future, self._pending_result_requests)
+        seq = self._remove_pending_request(future, self._pending_result_requests)
+        if seq in self._result_sequence_number_to_goal_id:
+            goal_uuid = bytes(self._result_sequence_number_to_goal_id[seq].uuid)
+            del self._result_sequence_number_to_goal_id[seq]
+            # remove feeback_callback if user is aware of result and it's been received
+            if goal_uuid in self._feedback_callbacks:
+                del self._feedback_callbacks[goal_uuid]
 
     # Start Waitable API
     def is_ready(self, wait_set):
@@ -277,10 +285,10 @@ class ActionClient(Waitable):
         """
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
-            if sequence_number in self._sequence_number_to_goal_id:
+            if sequence_number in self._goal_sequence_number_to_goal_id:
                 goal_handle = ClientGoalHandle(
                     self,
-                    self._sequence_number_to_goal_id[sequence_number],
+                    self._goal_sequence_number_to_goal_id[sequence_number],
                     goal_response)
 
                 if goal_handle.accepted:
@@ -440,7 +448,7 @@ class ActionClient(Waitable):
 
         future = Future()
         self._pending_goal_requests[sequence_number] = future
-        self._sequence_number_to_goal_id[sequence_number] = request.goal_id
+        self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
         future.add_done_callback(self._remove_pending_goal_request)
         # Add future so executor is aware
         self.add_future(future)
@@ -545,6 +553,7 @@ class ActionClient(Waitable):
 
         future = Future()
         self._pending_result_requests[sequence_number] = future
+        self._result_sequence_number_to_goal_id[sequence_number] = result_request.goal_id
         future.add_done_callback(self._remove_pending_result_request)
         # Add future so executor is aware
         self.add_future(future)
