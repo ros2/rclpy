@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.4.0 (2022-04-29)
+------------------
+* remove feedback callback when the goal has been completed. (`#927 <https://github.com/ros2/rclpy/issues/927>`_)
+* Allow to create a subscription with a callback that also receives the message info (`#922 <https://github.com/ros2/rclpy/issues/922>`_)
+* Contributors: Ivan Santiago Paunovic, Tomoya Fujita
+
 3.3.2 (2022-04-08)
 ------------------
 * Make rclpy dependencies explicit (`#906 <https://github.com/ros2/rclpy/issues/906>`_)
