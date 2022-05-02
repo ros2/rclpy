@@ -157,8 +157,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             1)
         basic_types_msg = BasicTypes()
         basic_types_pub.publish(basic_types_msg)
-        cycle_count = 0
-        while cycle_count < 5:
+        for i in range(5):
             with sub.handle:
                 result = sub.handle.take_message(sub.msg_type, False)
             if result is not None:
