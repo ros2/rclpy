@@ -149,6 +149,9 @@ predefined_qos_profile_from_name(const char * qos_profile_name)
   if (0 == strcmp(qos_profile_name, "qos_profile_parameter_events")) {
     return rmw_qos_profile_parameter_events;
   }
+  if (0 == strcmp(qos_profile_name, "qos_profile_best_available")) {
+    return rmw_qos_profile_best_available;
+  }
 
   std::string error_text = "Requested unknown rmw_qos_profile: ";
   error_text += qos_profile_name;

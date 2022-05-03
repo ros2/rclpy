@@ -73,6 +73,10 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
 
   m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
   m.attr("RMW_DURATION_INFINITE") = py::int_(rmw_time_total_nsec(RMW_DURATION_INFINITE));
+  m.attr("RMW_QOS_DEADLINE_BEST_AVAILABLE") = py::int_(
+    rmw_time_total_nsec(RMW_QOS_DEADLINE_BEST_AVAILABLE));
+  m.attr("RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE") = py::int_(
+    rmw_time_total_nsec(RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE));
 
   py::enum_<rcl_clock_change_t>(m, "ClockChange")
   .value(
