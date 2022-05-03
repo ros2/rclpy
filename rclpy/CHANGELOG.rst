@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.5.0 (2022-05-03)
+------------------
+* Avoid causing infinite loop when message is empty (`#935 <https://github.com/ros2/rclpy/issues/935>`_)
+* Expose 'best available' QoS policies (`#928 <https://github.com/ros2/rclpy/issues/928>`_)
+* Contributors: Jacob Perron, Takeshi Ishita
+
 3.4.0 (2022-04-29)
 ------------------
 * remove feedback callback when the goal has been completed. (`#927 <https://github.com/ros2/rclpy/issues/927>`_)
