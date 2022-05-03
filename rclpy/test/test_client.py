@@ -111,7 +111,7 @@ class TestClient(unittest.TestCase):
                     self.assertNotEqual(0, header.source_timestamp)
                     return
                 else:
-                    time.sleep(0.1)
+                    time.sleep(0.2)
             self.fail('Did not get a request in time')
         finally:
             self.node.destroy_client(cli)
