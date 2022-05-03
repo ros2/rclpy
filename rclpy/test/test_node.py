@@ -165,7 +165,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
                 self.assertNotEqual(0, info['source_timestamp'])
                 return
             else:
-                time.sleep(0.1)
+                time.sleep(0.2)
 
     def test_create_client(self):
         self.node.create_client(GetParameters, 'get/parameters')
