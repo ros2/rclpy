@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.3 (2022-05-10)
+------------------
+* remove feedback callback when the goal has been completed. (`#927 <https://github.com/ros2/rclpy/issues/927>`_) (`#931 <https://github.com/ros2/rclpy/issues/931>`_)
+* Contributors: mergify[bot]
+
 3.3.2 (2022-04-08)
 ------------------
 * Make rclpy dependencies explicit (`#906 <https://github.com/ros2/rclpy/issues/906>`_)
