@@ -34,6 +34,7 @@
 
 namespace
 {
+// g_contexts is a collection of valid contexts
 std::vector<rcl_context_t *> g_contexts;
 std::mutex g_contexts_mutex;
 }
@@ -48,6 +49,7 @@ void shutdown_contexts()
     rcl_ret_t ret = rcl_shutdown(c);
     (void)ret;
   }
+  g_contexts.clear();
 }
 
 Context::Context(py::list pyargs, size_t domain_id)
@@ -150,16 +152,20 @@ Context::shutdown()
 {
   {
     std::lock_guard guard{g_contexts_mutex};
-    g_contexts.erase(
-      std::remove(g_contexts.begin(), g_contexts.end(), rcl_context_.get()),
-      g_contexts.end());
+    if (std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get()) != g_contexts.end()) {
+      g_contexts.erase(
+        std::remove(g_contexts.begin(), g_contexts.end(), rcl_context_.get()),
+        g_contexts.end());
+    }
   }
-  // check if context is already shutdown by signal handler
+  // Just in case, check if context is valid
   if (rcl_context_is_valid(rcl_context_.get())) {
     rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
     if (RCL_RET_OK != ret) {
       throw RCLError("failed to shutdown");
     }
+  } else {
+    throw RCLError("context is already shutdown");
   }
 }
 
