@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* check if the context is already shutdown. (`#939 <https://github.com/ros2/rclpy/issues/939>`_) (`#943 <https://github.com/ros2/rclpy/issues/943>`_)
+* Contributors: mergify[bot]
+
 3.3.3 (2022-05-10)
 ------------------
 * remove feedback callback when the goal has been completed. (`#927 <https://github.com/ros2/rclpy/issues/927>`_) (`#931 <https://github.com/ros2/rclpy/issues/931>`_)
