@@ -1954,17 +1954,20 @@ class Node:
     def wait_for_node(
         self,
         node_name: str,
-        timeout: float = 8.0
+        timeout: float
     ) -> bool:
         """
         Wait until node name is present in the system or timeout.
 
         :param node_name: name of the node to wait for.
-        :timeout: seconds to wait for the node to be present.
-        :return: true if the node was found, false if timeout.
+        :param timeout: seconds to wait for the node to be present. If negative, the function
+                         won't timeout.
+        :return: True if the node was found, False if timeout.
         """
         start = time.time()
         flag = False
+        # TODO refactor this implementation when we can react to guard condition events, or replace
+        # it entirely with an implementation in rcl. see https://github.com/ros2/rclpy/issues/929
         while time.time() - start < timeout and not flag:
             flag = node_name in self.get_node_names()
             time.sleep(0.1)
