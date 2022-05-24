@@ -97,7 +97,8 @@ class AsyncParameterClient:
         :rtype: ``rclpy.task.Future``
         """
         request = ListParameters.Request()
-        request.prefixes = prefixes
+        if prefixes:
+            request.prefixes = prefixes
         request.depth = depth
         future = self.list_parameter_client_.call_async(request)
         if callback:
