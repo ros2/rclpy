@@ -45,6 +45,20 @@ class AsyncParameterClient:
             SetParametersAtomically, f'{target_node_name}/set_parameters_atomically'
         )
 
+    def service_is_ready(self, ) -> bool:
+        """ 
+        """
+        return all([
+            self.list_parameter_client_.service_is_ready(),
+            self.set_parameter_client_.service_is_ready(),
+            self.get_parameter_client_.service_is_ready(),
+            self.get_parameter_types_client_.service_is_ready(),
+            self.describe_parameters_client_.service_is_ready(),
+            self.set_parameters_atomically_client_.service_is_ready(),
+        ])
+
+
+
     def wait_for_service(self, timeout_sec: Union[float, None] = None) -> bool:
         """Wait for all parameter services to be available.
 
