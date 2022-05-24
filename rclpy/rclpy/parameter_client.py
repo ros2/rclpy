@@ -8,11 +8,13 @@ from rcl_interfaces.srv import (
     SetParameters,
     SetParametersAtomically,
 )
-from rclpy.parameter import Parameter
+import rclpy
+from rcl_interfaces.msg import Parameter
+from rclpy.parameter import Parameter as RclpyParameter
 from rclpy.task import Future
 
 
-class AsyncParameterClient:
+class AsyncParameterClient(object):
     def __init__(self, node, target_node_name):
         # TODO: qos_profile, callback group
         """Create an AsyncParameterClient.
@@ -26,14 +28,14 @@ class AsyncParameterClient:
         # TODO: Link to them???
         self.target_node = target_node_name
         self.node = node
+        self.get_parameter_client_ = self.node.create_client(
+            GetParameters, f'{target_node_name}/get_parameters'
+        )
         self.list_parameter_client_ = self.node.create_client(
             ListParameters, f'{target_node_name}/list_parameters'
         )
         self.set_parameter_client_ = self.node.create_client(
             SetParameters, f'{target_node_name}/set_parameters'
-        )
-        self.get_parameter_client_ = self.node.create_client(
-            GetParameters, f'{target_node_name}/get_parameters'
         )
         self.get_parameter_types_client_ = self.node.create_client(
             GetParameterTypes, f'{target_node_name}/get_parameter_types'
@@ -69,19 +71,17 @@ class AsyncParameterClient:
 
         :return: ``True`` if all services are available, False otherwise.
         """
-        return all(
-            [
-                self.list_parameter_client_.wait_for_service(timeout_sec),
-                self.set_parameter_client_.wait_for_service(timeout_sec),
-                self.get_parameter_client_.wait_for_service(timeout_sec),
-                self.get_parameter_types_client_.wait_for_service(timeout_sec),
-                self.describe_parameters_client_.wait_for_service(timeout_sec),
-                self.set_parameters_atomically_client_.wait_for_service(timeout_sec),
-            ]
-        )
+        return all([
+            self.list_parameter_client_.wait_for_service(timeout_sec),
+            self.set_parameter_client_.wait_for_service(timeout_sec),
+            self.get_parameter_client_.wait_for_service(timeout_sec),
+            self.get_parameter_types_client_.wait_for_service(timeout_sec),
+            self.describe_parameters_client_.wait_for_service(timeout_sec),
+            self.set_parameters_atomically_client_.wait_for_service(timeout_sec),
+        ])
 
     def list_parameters(
-        self, prefixes: List[str], depth: int, callback: Union[Callable, None] = None
+        self, prefixes: Union[None, List[str]] = None, depth: int = 1, callback: Union[Callable, None] = None
     ) -> Future:
         # TODO: add typing/etc to handle listing all
 
@@ -137,7 +137,7 @@ class AsyncParameterClient:
         :rtype:
         """
         request = SetParameters.Request()
-        request.parameters = [i.to_parameter_msg() for i in parameters]
+        request.parameters = parameters
         future = self.set_parameter_client_.call_async(request)
         if callback:
             future.add_done_callback(callback)
@@ -197,8 +197,7 @@ class AsyncParameterClient:
         :rtype:
         """
         request = SetParametersAtomically.Request()
-        request.parameters = [i.to_parameter_msg() for i in parameters]
-        # request.parameters = parameters[0].to_parameter_msg()
+        request.parameters = parameters
         future = self.set_parameters_atomically_client_.call_async(request)
         if callback:
             future.add_done_callback(callback)
@@ -218,7 +217,7 @@ class AsyncParameterClient:
         :rtype:
         """
         request = SetParameters.Request()
-        request.parameters = [Parameter(name=i).to_parameter_msg() for i in names]
+        request.parameters = [RclpyParameter(name=i).to_parameter_msg() for i in names]
         future = self.set_parameter_client_.call_async(request)
         if callback:
             future.add_done_callback(callback)
