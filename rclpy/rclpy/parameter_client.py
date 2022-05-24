@@ -237,3 +237,50 @@ class AsyncParameterClient:
         :rtype: Future
         """
         raise NotImplementedError
+
+class SyncParameterClient(AsyncParameterClient):
+    """
+    Synchronous parameters client class.
+    """
+
+    # TODO(ihasdapie): configure timeout
+    def __init__(self, node, target_node_name):
+        super().__init__(node, target_node_name)
+
+    def set_parameters(
+            self,
+            parameters: Sequence[Parameter],
+            callback: Union[Callable, None] = None):
+        future = super().set_parameters(parameters, callback)
+        rclpy.spin_until_future_complete(self.node, future)
+        response = future.result()
+        return response
+
+    def get_parameters(self, names: List[str], callback: Union[Callable, None] = None):
+        future = super().get_parameters(names, callback)
+        rclpy.spin_until_future_complete(self.node, future)
+        response = future.result()
+        return response
+
+    def list_parameters(self, prefixes: Union[List[str], None] = None, depth: int = 1, callback: Union[Callable, None] = None):
+        future = super().list_parameters(prefixes, depth, callback)
+        rclpy.spin_until_future_complete(self.node, future)
+        response = future.result()
+        return response
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
