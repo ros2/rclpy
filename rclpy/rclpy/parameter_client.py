@@ -8,10 +8,13 @@ from rcl_interfaces.srv import (
     SetParameters,
     SetParametersAtomically,
 )
-import rclpy
+import yaml
 from rcl_interfaces.msg import Parameter
 from rclpy.parameter import Parameter as RclpyParameter
+from rclpy.parameter import get_parameter_value
+from rclpy.parameter import PARAMETER_SEPARATOR_STRING
 from rclpy.task import Future
+
 
 
 class AsyncParameterClient(object):
@@ -144,12 +147,12 @@ class AsyncParameterClient(object):
         return future
 
     def describe_parameters(
-        self, names: Union[List[str], str], callback: Union[Callable, None] = None
+        self, names: List[str], callback: Union[Callable, None] = None
     ) -> Future:
         """
 
         :param names:
-        :type names: Union[List[str], str]
+        :type names: List[str]
         :param callback:
         :type callback: Union[Callable, None]
         :return:
@@ -223,63 +226,48 @@ class AsyncParameterClient(object):
             future.add_done_callback(callback)
         return future
 
-    def load_parameters(
-        self, yaml_filename: str, callback: Union[Callable, None] = None
-    ) -> Future:
-        """ See: https://github.com/ros2/ros2cli/blob/master/ros2param/ros2param/api/__init__.py.
+    def load_parameter_file(self, parameter_file, use_wildcard, return_parameters=False):
+        with open(parameter_file, 'r') as f:
+            param_file = yaml.safe_load(f)
+            param_keys = []
+            if use_wildcard and '/**' in param_file:
+                param_keys.append('/**')
+            if self.target_node in param_file:
+                param_keys.append(self.target_node)
 
-        :param yaml_filename: Full name of the ``yaml`` file
-        :type yaml_filename: str
-        :param callback: Callback function to perform on future completion
-        :type callback: Union[Callable, None]
-        :return: Future of set ``set_parameter`` service used to load the parameters
-        :rtype: Future
-        """
-        raise NotImplementedError
+            if param_keys == []:
+                raise RuntimeError('Param file does not contain parameters for {}, '
+                                   ' only for nodes: {}' .format(node_name, param_file.keys()))
+            param_dict = {}
+            for k in param_keys:
+                value = param_file[k]
+                if type(value) != dict or 'ros__parameters' not in value:
+                    raise RuntimeError('Invalid structure of parameter file for node {}'
+                                       'expected same format as provided by ros2 param dump'
+                                       .format(k))
+                param_dict.update(value['ros__parameters'])
+            parameters = parse_parameter_dict(namespace='', parameter_dict=param_dict)
+            future = self.set_parameters(parameters)
+            if return_parameters:
+                return (future, parameters)
+            return future
 
-class SyncParameterClient(AsyncParameterClient):
+def parse_parameter_dict(namespace, parameter_dict):
     """
-    Synchronous parameters client class.
+    Builds a list of parameters from a dictionary.
     """
-
-    # TODO(ihasdapie): configure timeout
-    def __init__(self, node, target_node_name):
-        super().__init__(node, target_node_name)
-
-    def set_parameters(
-            self,
-            parameters: Sequence[Parameter],
-            callback: Union[Callable, None] = None):
-        future = super().set_parameters(parameters, callback)
-        rclpy.spin_until_future_complete(self.node, future)
-        response = future.result()
-        return response
-
-    def get_parameters(self, names: List[str], callback: Union[Callable, None] = None):
-        future = super().get_parameters(names, callback)
-        rclpy.spin_until_future_complete(self.node, future)
-        response = future.result()
-        return response
-
-    def list_parameters(self, prefixes: Union[List[str], None] = None, depth: int = 1, callback: Union[Callable, None] = None):
-        future = super().list_parameters(prefixes, depth, callback)
-        rclpy.spin_until_future_complete(self.node, future)
-        response = future.result()
-        return response
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    parameters = []
+    for param_name, param_value in parameter_dict.items():
+        full_param_name = namespace + param_name
+        # Unroll nested parameters
+        if type(param_value) == dict:
+            parameters += parse_parameter_dict(
+                    namespace=full_param_name + PARAMETER_SEPARATOR_STRING,
+                    parameter_dict=param_value)
+        else:
+            parameter = Parameter()
+            parameter.name = full_param_name
+            parameter.value = get_parameter_value(str(param_value))
+            parameters.append(parameter)
+    return parameters
 
