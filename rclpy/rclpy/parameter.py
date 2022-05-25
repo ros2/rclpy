@@ -14,6 +14,7 @@
 
 import array
 from enum import Enum
+import yaml
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterType, ParameterValue
@@ -176,6 +177,44 @@ class Parameter:
     def to_parameter_msg(self):
         return ParameterMsg(name=self.name, value=self.get_parameter_value())
 
+
+def get_parameter_value(string_value):
+    """Guess the desired type of the parameter based on the string value."""
+    value = ParameterValue()
+    try:
+        yaml_value = yaml.safe_load(string_value)
+    except yaml.parser.ParserError:
+        yaml_value = string_value
+
+    if isinstance(yaml_value, bool):
+        value.type = ParameterType.PARAMETER_BOOL
+        value.bool_value = yaml_value
+    elif isinstance(yaml_value, int):
+        value.type = ParameterType.PARAMETER_INTEGER
+        value.integer_value = yaml_value
+    elif isinstance(yaml_value, float):
+        value.type = ParameterType.PARAMETER_DOUBLE
+        value.double_value = yaml_value
+    elif isinstance(yaml_value, list):
+        if all((isinstance(v, bool) for v in yaml_value)):
+            value.type = ParameterType.PARAMETER_BOOL_ARRAY
+            value.bool_array_value = yaml_value
+        elif all((isinstance(v, int) for v in yaml_value)):
+            value.type = ParameterType.PARAMETER_INTEGER_ARRAY
+            value.integer_array_value = yaml_value
+        elif all((isinstance(v, float) for v in yaml_value)):
+            value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
+            value.double_array_value = yaml_value
+        elif all((isinstance(v, str) for v in yaml_value)):
+            value.type = ParameterType.PARAMETER_STRING_ARRAY
+            value.string_array_value = yaml_value
+        else:
+            value.type = ParameterType.PARAMETER_STRING
+            value.string_value = string_value
+    else:
+        value.type = ParameterType.PARAMETER_STRING
+        value.string_value = yaml_value
+    return value
 
 def parameter_value_to_python(parameter_value: ParameterValue):
     """
