@@ -79,20 +79,21 @@ class _WorkTracker:
             self._num_work_executing -= 1
             self._work_condition.notify_all()
 
-    def wait(self, timeout_sec=None):
+    def wait(self, timeout_sec: Optional[float] = None, is_shutdown: bool = False):
         """
         Wait until all work completes.
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
+        :param: is_shutdown: if this is a shutdown call
         :rtype: bool True if all work completed
         """
-        if timeout_sec is not None and timeout_sec < 0:
+        if timeout_sec is not None and timeout_sec < 0.0:
             timeout_sec = None
         # Wait for all work to complete
         with self._work_condition:
             if not self._work_condition.wait_for(
-                    lambda: self._num_work_executing == 0, timeout_sec):
+                    lambda: self._num_work_executing == 0 or is_shutdown, timeout_sec):
                 return False
         return True
 
@@ -205,7 +206,7 @@ class Executor:
                 # Tell executor it's been shut down
                 self._guard.trigger()
 
-        if not self._work_tracker.wait(timeout_sec):
+        if not self._work_tracker.wait(timeout_sec, is_shutdown=self._is_shutdown):
             return False
 
         # Clean up stuff that won't be used anymore
@@ -425,7 +426,13 @@ class Executor:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-                    gc.trigger()
+
+                    # Catch expected error where calling executor.shutdown()
+                    # from callback causes the GuardCondition to be destroyed 
+                    try:
+                        gc.trigger()
+                    except InvalidHandle:
+                        pass
         task = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
