@@ -428,7 +428,7 @@ class Executor:
                     # callback group can get executed
 
                     # Catch expected error where calling executor.shutdown()
-                    # from callback causes the GuardCondition to be destroyed 
+                    # from callback causes the GuardCondition to be destroyed
                     try:
                         gc.trigger()
                     except InvalidHandle:
