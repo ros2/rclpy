@@ -56,27 +56,27 @@ class AsyncParameterClient(object):
         """
         self.target_node = target_node_name
         self.node = node
-        self.get_parameter_client_ = self.node.create_client(
+        self._get_parameter_client = self.node.create_client(
             GetParameters, f'{target_node_name}/get_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self.list_parameter_client_ = self.node.create_client(
+        self._list_parameter_client = self.node.create_client(
             ListParameters, f'{target_node_name}/list_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self.set_parameter_client_ = self.node.create_client(
+        self._set_parameter_client = self.node.create_client(
             SetParameters, f'{target_node_name}/set_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self.get_parameter_types_client_ = self.node.create_client(
+        self._get_parameter_types_client = self.node.create_client(
             GetParameterTypes, f'{target_node_name}/get_parameter_types',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self.describe_parameters_client_ = self.node.create_client(
+        self._describe_parameters_client = self.node.create_client(
             DescribeParameters, f'{target_node_name}/describe_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self.set_parameters_atomically_client_ = self.node.create_client(
+        self._set_parameters_atomically_client = self.node.create_client(
             SetParametersAtomically, f'{target_node_name}/set_parameters_atomically',
             qos_profile=qos_profile, callback_group=callback_group
         )
@@ -88,12 +88,12 @@ class AsyncParameterClient(object):
         :return: ``True`` if all services are available, False otherwise.
         """
         return all([
-            self.list_parameter_client_.service_is_ready(),
-            self.set_parameter_client_.service_is_ready(),
-            self.get_parameter_client_.service_is_ready(),
-            self.get_parameter_types_client_.service_is_ready(),
-            self.describe_parameters_client_.service_is_ready(),
-            self.set_parameters_atomically_client_.service_is_ready(),
+            self._list_parameter_client.service_is_ready(),
+            self._set_parameter_client.service_is_ready(),
+            self._get_parameter_client.service_is_ready(),
+            self._get_parameter_types_client.service_is_ready(),
+            self._describe_parameters_client.service_is_ready(),
+            self._set_parameters_atomically_client.service_is_ready(),
         ])
 
     def wait_for_service(self, timeout_sec: Optional[float] = None) -> bool:
@@ -105,12 +105,12 @@ class AsyncParameterClient(object):
         :return: ``True`` if all services were waite , ``False`` otherwise.
         """
         client_wait_fns = [
-                self.list_parameter_client_.wait_for_service,
-                self.set_parameter_client_.wait_for_service,
-                self.get_parameter_client_.wait_for_service,
-                self.get_parameter_types_client_.wait_for_service,
-                self.describe_parameters_client_.wait_for_service,
-                self.set_parameters_atomically_client_.wait_for_service,
+                self._list_parameter_client.wait_for_service,
+                self._set_parameter_client.wait_for_service,
+                self._get_parameter_client.wait_for_service,
+                self._get_parameter_types_client.wait_for_service,
+                self._describe_parameters_client.wait_for_service,
+                self._set_parameters_atomically_client.wait_for_service,
         ]
 
         if timeout_sec is None:
@@ -142,7 +142,7 @@ class AsyncParameterClient(object):
         if prefixes:
             request.prefixes = prefixes
         request.depth = depth
-        future = self.list_parameter_client_.call_async(request)
+        future = self._list_parameter_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
         return future
@@ -157,7 +157,7 @@ class AsyncParameterClient(object):
         """
         request = GetParameters.Request()
         request.names = names
-        future = self.get_parameter_client_.call_async(request)
+        future = self._get_parameter_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
         return future
@@ -179,7 +179,7 @@ class AsyncParameterClient(object):
         """
         request = SetParameters.Request()
         request.parameters = parameters
-        future = self.set_parameter_client_.call_async(request)
+        future = self._set_parameter_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
         return future
@@ -201,7 +201,7 @@ class AsyncParameterClient(object):
         """
         request = DescribeParameters.Request()
         request.names = names
-        future = self.describe_parameters_client_.call_async(request)
+        future = self._describe_parameters_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
         return future
@@ -225,7 +225,7 @@ class AsyncParameterClient(object):
         """
         request = GetParameterTypes.Request()
         request.names = names
-        future = self.get_parameter_types_client_.call_async(request)
+        future = self._get_parameter_types_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
         return future
@@ -247,7 +247,7 @@ class AsyncParameterClient(object):
         """
         request = SetParametersAtomically.Request()
         request.parameters = parameters
-        future = self.set_parameters_atomically_client_.call_async(request)
+        future = self._set_parameters_atomically_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
         return future
@@ -267,7 +267,7 @@ class AsyncParameterClient(object):
         """
         request = SetParameters.Request()
         request.parameters = [RclpyParameter(name=i).to_parameter_msg() for i in names]
-        future = self.set_parameter_client_.call_async(request)
+        future = self._set_parameter_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
         return future
