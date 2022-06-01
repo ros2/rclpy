@@ -42,8 +42,8 @@ This will invalidate all entities derived from the context.
 
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import TYPE_CHECKING
+from typing import Union
 
 from rclpy.context import Context
 from rclpy.parameter import Parameter
@@ -131,6 +131,7 @@ def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = No
                 context is None or context is get_default_context()))
     ):
         uninstall_signal_handlers()
+
 
 def create_node(
     node_name: str,
