@@ -1901,12 +1901,12 @@ class TestNode(unittest.TestCase):
             node = rclpy.create_node(
                 TEST_NODE + '_create_node', namespace='/my_ns', context=self.context
             )
-            self.assertTrue(self.node.wait_for_node('my_node'))
+            self.assertTrue(self.node.wait_for_node('my_node', 0.5))
         finally:
             node.destroy_node()
 
     def test_wait_for_node_timeout(self):
-        self.assertFalse(self.node.wait_for_node(TEST_NODE + '_create_node_no', timeout=0.5))
+        self.assertFalse(self.node.wait_for_node(TEST_NODE + '_create_node_no', 0.5))
 
 
 class TestCreateNode(unittest.TestCase):
