@@ -264,7 +264,7 @@ def parameter_value_to_python(parameter_value: ParameterValue):
 
 def parameter_dict_from_yaml_file(
     parameter_file: str,
-    use_wildcard: bool,
+    use_wildcard: bool = False,
     target_nodes: Optional[List[str]] = None,
     namespace: str = ''
 ) -> Dict[str, ParameterMsg]:
