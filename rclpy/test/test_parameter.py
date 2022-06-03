@@ -218,15 +218,15 @@ class TestParameter(unittest.TestCase):
         yaml_string = """/param_test_target:
             ros__parameters:
                 param_1: 1
-                param_str: "string"
+                param_str: string
             """
         expected = {
             'param_1': Parameter('param_1', Parameter.Type.INTEGER, 1).to_parameter_msg(),
             'param_str': Parameter('param_str', Parameter.Type.STRING, 'string').to_parameter_msg()
         }
 
-        with NamedTemporaryFile() as f:
-            f.write(str.encode(yaml_string))
+        with NamedTemporaryFile(mode='w') as f:
+            f.write(yaml_string)
             f.seek(0)
             parameter_dict = parameter_dict_from_yaml_file(f.name)
         assert parameter_dict == expected
