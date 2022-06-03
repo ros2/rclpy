@@ -194,7 +194,9 @@ class AsyncParameterClient:
         """
         request = SetParameters.Request()
         request.parameters = [
-            i.to_parameter_msg() if isinstance(i, Parameter) else i for i in parameters
+            param.to_parameter_msg()
+            if isinstance(param, Parameter) else param
+            for param in parameters
         ]
         future = self._set_parameter_client.call_async(request)
         if callback:
@@ -264,7 +266,9 @@ class AsyncParameterClient:
         """
         request = SetParametersAtomically.Request()
         request.parameters = [
-            i.to_parameter_msg() if isinstance(i, Parameter) else i for i in parameters
+            param.to_parameter_msg()
+            if isinstance(param, Parameter) else param
+            for param in parameters
         ]
         future = self._set_parameters_atomically_client.call_async(request)
         if callback:
