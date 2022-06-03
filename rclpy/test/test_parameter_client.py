@@ -16,6 +16,7 @@ from tempfile import NamedTemporaryFile
 import unittest
 
 import rcl_interfaces.msg
+from rcl_interfaces.msg import ParameterType
 import rcl_interfaces.srv
 import rclpy
 import rclpy.context
@@ -58,6 +59,7 @@ class TestParameterClient(unittest.TestCase):
         self.executor.spin_until_future_complete(future)
         results = future.result()
         assert results is not None
+        assert len(results.results) == 2
         res = [i.successful for i in results.results]
         assert all(res)
 
@@ -66,6 +68,7 @@ class TestParameterClient(unittest.TestCase):
         self.executor.spin_until_future_complete(future)
         results = future.result()
         assert results is not None
+        assert len(results.values) == 2
         assert list(results.values[0].integer_array_value) == [1, 2, 3]
         assert results.values[1].double_value == 3.14
 
@@ -90,7 +93,7 @@ class TestParameterClient(unittest.TestCase):
         self.executor.spin_until_future_complete(future)
         results = future.result()
         assert results is not None
-        assert results.types[0] == 7  # refer to rcl_interfaces.msg.ParameterType
+        assert results.types[0] == ParameterType.PARAMETER_INTEGER_ARRAY
 
     def test_set_parameters_atomically(self):
         future = self.client.set_parameters_atomically([

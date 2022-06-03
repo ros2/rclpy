@@ -13,11 +13,7 @@
 # limitations under the License.
 
 import time
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Union
+from typing import Callable, List, Optional, Sequence, Union
 
 from rcl_interfaces.msg import Parameter
 from rcl_interfaces.srv import DescribeParameters
@@ -26,6 +22,7 @@ from rcl_interfaces.srv import GetParameterTypes
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.srv import SetParametersAtomically
+
 from rclpy.callback_groups import CallbackGroup
 from rclpy.node import Node
 from rclpy.parameter import Parameter as RclpyParameter
@@ -35,49 +32,68 @@ from rclpy.qos import QoSProfile
 from rclpy.task import Future
 
 
-class AsyncParameterClient(object):
+class AsyncParameterClient:
     def __init__(
             self,
             node: Node,
-            target_node_name: str,
+            remote_node_name: str,
             qos_profile: QoSProfile = qos_profile_services_default,
             callback_group: Optional[CallbackGroup] = None):
-        # TODO: qos_profile, callback group
         """
         Create an AsyncParameterClient.
 
-        For more on service names, see: `ROS 2 docs`_.
+        An AsyncParameterClient that uses services offered by a remote node
+        to query and modify parameters in a streamlined way.
+        
+        Usage example:
 
+        .. code-block:: python
+
+            import rclpy
+            from rclpy.parameter import Parameter
+            node = rclpy.create_node('my_node')
+
+            client = AsyncParameterClient(node, 'example_node')
+
+            # set parameters
+            future = client.set_parameters([
+                Parameter('int_param', Parameter.Type.INTEGER, 88).to_parameter_msg(),
+                Parameter('string/param', Parameter.Type.STRING, 'hello world').to_parameter_msg(),
+            ])
+            self.executor.spin_until_future_complete(future)
+            results = future.result()  # rcl_interfaces.srv.SetParameters.Response
+
+        For more on service names, see: `ROS 2 docs`_.
 
         .. _ROS 2 docs: https://docs.ros.org/en/rolling/Concepts/About-ROS-2-Parameters.html#interacting-with-parameters # noqa E501
 
-        :param node: Node for which the parameter clients will be added to
-        :param target_node_name: Name of remote node for which the parameters will be managed
+        :param node: Node used to create clients that will interact with the remote node
+        :param remote_node_name: Name of remote node for which the parameters will be managed
         """
-        self.target_node = target_node_name
+        self.remote_node_name = remote_node_name
         self.node = node
         self._get_parameter_client = self.node.create_client(
-            GetParameters, f'{target_node_name}/get_parameters',
+            GetParameters, f'{remote_node_name}/get_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
         self._list_parameter_client = self.node.create_client(
-            ListParameters, f'{target_node_name}/list_parameters',
+            ListParameters, f'{remote_node_name}/list_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
         self._set_parameter_client = self.node.create_client(
-            SetParameters, f'{target_node_name}/set_parameters',
+            SetParameters, f'{remote_node_name}/set_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
         self._get_parameter_types_client = self.node.create_client(
-            GetParameterTypes, f'{target_node_name}/get_parameter_types',
+            GetParameterTypes, f'{remote_node_name}/get_parameter_types',
             qos_profile=qos_profile, callback_group=callback_group
         )
         self._describe_parameters_client = self.node.create_client(
-            DescribeParameters, f'{target_node_name}/describe_parameters',
+            DescribeParameters, f'{remote_node_name}/describe_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
         self._set_parameters_atomically_client = self.node.create_client(
-            SetParametersAtomically, f'{target_node_name}/set_parameters_atomically',
+            SetParametersAtomically, f'{remote_node_name}/set_parameters_atomically',
             qos_profile=qos_profile, callback_group=callback_group
         )
 
