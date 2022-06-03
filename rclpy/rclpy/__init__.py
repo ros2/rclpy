@@ -136,9 +136,9 @@ def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = No
 def create_node(
     node_name: str,
     *,
-    context: Union[Context, None] = None,
-    cli_args: Union[List[str], None] = None,
-    namespace: Union[str, None] = None,
+    context: Context = None,
+    cli_args: List[str] = None,
+    namespace: str = None,
     use_global_arguments: bool = True,
     enable_rosout: bool = True,
     start_parameter_services: bool = True,
