@@ -85,7 +85,6 @@ class _WorkTracker:
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
-        :param: is_shutdown: if this is a shutdown call
         :rtype: bool True if all work completed
         """
         if timeout_sec is not None and timeout_sec < 0.0:

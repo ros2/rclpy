@@ -470,7 +470,7 @@ class TestExecutor(unittest.TestCase):
 
         tmr = self.node.create_timer(timer_period, timer_callback)
         executor.add_node(self.node)
-        t = threading.Thread(target=executor.spin_once, daemon=True)
+        t = threading.Thread(target=executor.spin, daemon=True)
         t.start()
         self.assertTrue(shutdown_event.wait(120))
         self.node.destroy_timer(tmr)
