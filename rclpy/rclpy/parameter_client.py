@@ -15,7 +15,7 @@
 import time
 from typing import Callable, List, Optional, Sequence, Union
 
-from rcl_interfaces.msg import Parameter
+from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.srv import DescribeParameters
 from rcl_interfaces.srv import GetParameters
 from rcl_interfaces.srv import GetParameterTypes
@@ -25,7 +25,7 @@ from rcl_interfaces.srv import SetParametersAtomically
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.node import Node
-from rclpy.parameter import Parameter as RclpyParameter
+from rclpy.parameter import Parameter as Parameter
 from rclpy.parameter import parameter_dict_from_yaml_file
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
@@ -117,7 +117,6 @@ class AsyncParameterClient:
         Wait for all parameter services to be available.
 
         :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
-        :type timeout_sec: Union[float, None]
         :return: ``True`` if all services were waite , ``False`` otherwise.
         """
         client_wait_fns = [
@@ -180,8 +179,8 @@ class AsyncParameterClient:
 
     def set_parameters(
         self,
-        parameters: Sequence[Parameter],
-        callback: Union[Callable, None] = None
+        parameters: Sequence[Union[Parameter, ParameterMsg]],
+        callback: Optional[Callable] = None
     ) -> Future:
         """
         Set parameters given a list of parameters.
@@ -194,7 +193,9 @@ class AsyncParameterClient:
         :return: ``Future`` with the result of the request.
         """
         request = SetParameters.Request()
-        request.parameters = parameters
+        request.parameters = [
+            i.to_parameter_msg() if isinstance(i, Parameter) else i for i in parameters
+        ]
         future = self._set_parameter_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
@@ -248,7 +249,7 @@ class AsyncParameterClient:
 
     def set_parameters_atomically(
         self,
-        parameters: Sequence[Parameter],
+        parameters: Sequence[Union[Parameter, ParameterMsg]],
         callback: Optional[Callable] = None
     ) -> Future:
         """
@@ -262,7 +263,9 @@ class AsyncParameterClient:
         :return: ``Future`` with the result of the request.
         """
         request = SetParametersAtomically.Request()
-        request.parameters = parameters
+        request.parameters = [
+            i.to_parameter_msg() if isinstance(i, Parameter) else i for i in parameters
+        ]
         future = self._set_parameters_atomically_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
@@ -282,7 +285,7 @@ class AsyncParameterClient:
         :return: ``Future`` with the result of the request.
         """
         request = SetParameters.Request()
-        request.parameters = [RclpyParameter(name=i).to_parameter_msg() for i in names]
+        request.parameters = [Parameter(name=i).to_parameter_msg() for i in names]
         future = self._set_parameter_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
@@ -296,7 +299,7 @@ class AsyncParameterClient:
         """
         Load parameters from a yaml file.
 
-        Wrapper around `parse_parameter_dict` and `load_dict`
+        Wrapper around `rclpy.parameter.parameter_dict_from_yaml_file`.
 
         The result after the returned future is complete
         will be of type ``rcl_interfaces.srv.SetParameters.Response``.

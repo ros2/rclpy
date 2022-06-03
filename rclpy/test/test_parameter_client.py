@@ -54,7 +54,7 @@ class TestParameterClient(unittest.TestCase):
     def test_set_parameter(self):
         future = self.client.set_parameters([
             Parameter('int_param', Parameter.Type.INTEGER, 88).to_parameter_msg(),
-            Parameter('string/param', Parameter.Type.STRING, 'hello world').to_parameter_msg(),
+            Parameter('string/param', Parameter.Type.STRING, 'hello world'),
         ])
         self.executor.spin_until_future_complete(future)
         results = future.result()
@@ -86,7 +86,7 @@ class TestParameterClient(unittest.TestCase):
         results = future.result()
         assert results is not None
         assert len(results.descriptors) == 1
-        assert results.descriptors[0].type == 7
+        assert results.descriptors[0].type == ParameterType.PARAMETER_INTEGER_ARRAY
         assert results.descriptors[0].name == 'int_arr_param'
 
     def test_get_paramter_types(self):
@@ -99,7 +99,7 @@ class TestParameterClient(unittest.TestCase):
 
     def test_set_parameters_atomically(self):
         future = self.client.set_parameters_atomically([
-            Parameter('int_param', Parameter.Type.INTEGER, 888).to_parameter_msg(),
+            Parameter('int_param', Parameter.Type.INTEGER, 888),
             Parameter('string/param', Parameter.Type.STRING, 'Hello World').to_parameter_msg(),
         ])
         self.executor.spin_until_future_complete(future)
@@ -124,6 +124,7 @@ class TestParameterClient(unittest.TestCase):
         self.executor.spin_until_future_complete(future)
         result = future.result()
         assert result is not None
+        assert len(result.results) == 1
         assert result.results[0].successful
 
     def test_load_parameter_file(self):
@@ -132,11 +133,12 @@ class TestParameterClient(unittest.TestCase):
                 param_1: 1
                 param_str: "string"
             """
-        with NamedTemporaryFile() as f:
-            f.write(str.encode(yaml_string))
-            f.seek(0)
+        with NamedTemporaryFile(mode='w') as f:
+            f.write(yaml_string)
+            f.flush()
             future = self.client.load_parameter_file(f.name)
         self.executor.spin_until_future_complete(future)
         result = future.result()
         assert result is not None
+        assert len(result.results) == 2
         assert all([i.successful for i in result.results])
