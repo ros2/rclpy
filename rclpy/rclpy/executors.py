@@ -79,7 +79,7 @@ class _WorkTracker:
             self._num_work_executing -= 1
             self._work_condition.notify_all()
 
-    def wait(self, timeout_sec: Optional[float] = None, is_shutdown: bool = False):
+    def wait(self, timeout_sec: Optional[float] = None):
         """
         Wait until all work completes.
 
@@ -93,7 +93,7 @@ class _WorkTracker:
         # Wait for all work to complete
         with self._work_condition:
             if not self._work_condition.wait_for(
-                    lambda: self._num_work_executing == 0 or is_shutdown, timeout_sec):
+                    lambda: self._num_work_executing == 0, timeout_sec):
                 return False
         return True
 
@@ -191,7 +191,7 @@ class Executor:
         # Task inherits from Future
         return task
 
-    def shutdown(self, timeout_sec: float = None) -> bool:
+    def shutdown(self, timeout_sec: float = 0) -> bool:
         """
         Stop executing callbacks and wait for their completion.
 
@@ -205,9 +205,9 @@ class Executor:
                 self._is_shutdown = True
                 # Tell executor it's been shut down
                 self._guard.trigger()
-
-        if not self._work_tracker.wait(timeout_sec, is_shutdown=self._is_shutdown):
-            return False
+        if not self._is_shutdown:
+            if not self._work_tracker.wait(timeout_sec):
+                return False
 
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
