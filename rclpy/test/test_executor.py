@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import asyncio
-import multiprocessing as mp
 import threading
 import time
 import unittest
@@ -461,23 +460,19 @@ class TestExecutor(unittest.TestCase):
         """Test regression of rclpy#944: executor shutdown from callback hangs indefinitely."""
         self.assertIsNotNone(self.node.handle)
         timer_period = 0.1
-        hung_on_shutdown = True
         executor = SingleThreadedExecutor(context=self.context)
+        shutdown_event = threading.Event()
 
         def timer_callback():
-            nonlocal hung_on_shutdown, executor
+            nonlocal shutdown_event, executor
             executor.shutdown()
-            hung_on_shutdown = False
+            shutdown_event.set()
 
         tmr = self.node.create_timer(timer_period, timer_callback)
         executor.add_node(self.node)
-
-        # Use process so we can terminate it if it hangs
-        p = mp.Process(target=executor.spin_once, daemon=True)
-        p.start()
-        time.sleep(1 + timer_period)
-        self.assertFalse(hung_on_shutdown)
-        p.terminate()
+        t = threading.Thread(target=executor.spin_once, daemon=True)
+        t.start()
+        self.assertTrue(shutdown_event.wait(120))
         self.node.destroy_timer(tmr)
 
 
