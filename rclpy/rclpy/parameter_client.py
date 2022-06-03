@@ -97,7 +97,7 @@ class AsyncParameterClient:
             qos_profile=qos_profile, callback_group=callback_group
         )
 
-    def service_is_ready(self) -> bool:
+    def services_are_ready(self) -> bool:
         """
         Check if all services are ready.
 
@@ -112,7 +112,7 @@ class AsyncParameterClient:
             self._set_parameters_atomically_client.service_is_ready(),
         ])
 
-    def wait_for_service(self, timeout_sec: Optional[float] = None) -> bool:
+    def wait_for_services(self, timeout_sec: Optional[float] = None) -> bool:
         """
         Wait for all parameter services to be available.
 
@@ -234,7 +234,7 @@ class AsyncParameterClient:
         The result after the returned future is complete
         will be of type ``rcl_interfaces.srv.GetParameterTypes.Response``.
 
-        Parameter type definitions are given in rcl_interfaces.msg.ParameterType
+        Parameter type definitions are given in Parameter.Type
 
         :param names: List of parameter names to get types for.
         :param callback: Callback function to call when the request is complete.
@@ -279,6 +279,8 @@ class AsyncParameterClient:
 
         The result after the returned future is complete
         will be of type ``rcl_interfaces.srv.SetParameters.Response``.
+
+        Note: Only parameters that have been declared as dynamically typed can be unset.
 
         :param names: List of parameter names to unset.
         :param callback: Callback function to call when the request is complete.
