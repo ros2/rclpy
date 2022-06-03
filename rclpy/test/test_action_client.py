@@ -220,12 +220,12 @@ class TestActionClient(unittest.TestCase):
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
                 goal_uuid=goal_uuid)
-            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            rclpy.spin_until_complete(self.node, goal_future, self.executor)
             self.assertTrue(goal_future.done())
             # Then request result
             goal_handle = goal_future.result()
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(self.node, result_future, self.executor)
+            rclpy.spin_until_complete(self.node, result_future, self.executor)
             self.assertTrue(result_future.done())
 
             # Publish feedback after goal result is requested
