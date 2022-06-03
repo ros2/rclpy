@@ -457,7 +457,7 @@ class TestExecutor(unittest.TestCase):
             self.node.destroy_timer(tmr)
 
     def shutdown_executor_from_callback(self):
-        """Test regression of rclpy#944: executor shutdown from callback hangs indefinitely."""
+        """https://github.com/ros2/rclpy/issues/944: allow for executor shutdown from callback."""
         self.assertIsNotNone(self.node.handle)
         timer_period = 0.1
         executor = SingleThreadedExecutor(context=self.context)
