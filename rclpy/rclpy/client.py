@@ -16,7 +16,6 @@ import threading
 import time
 from typing import Dict
 from typing import TypeVar
-from typing import Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.context import Context
@@ -160,7 +159,7 @@ class Client:
         with self.handle:
             return self.__client.service_server_is_available()
 
-    def wait_for_service(self, timeout_sec: Union[float, None] = None) -> bool:
+    def wait_for_service(self, timeout_sec: float = None) -> bool:
         """
         Wait for a service server to become ready.
 
