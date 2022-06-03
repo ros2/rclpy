@@ -85,6 +85,7 @@ class TestParameterClient(unittest.TestCase):
         self.executor.spin_until_future_complete(future)
         results = future.result()
         assert results is not None
+        assert len(results.descriptors) == 1
         assert results.descriptors[0].type == 7
         assert results.descriptors[0].name == 'int_arr_param'
 
@@ -93,6 +94,7 @@ class TestParameterClient(unittest.TestCase):
         self.executor.spin_until_future_complete(future)
         results = future.result()
         assert results is not None
+        assert len(results.types) == 1
         assert results.types[0] == ParameterType.PARAMETER_INTEGER_ARRAY
 
     def test_set_parameters_atomically(self):
@@ -114,6 +116,7 @@ class TestParameterClient(unittest.TestCase):
         self.executor.spin_until_future_complete(future)
         result = future.result()
         assert result is not None
+        assert len(result.results) == 1
         assert not result.results[0].successful
         assert result.results[0].reason == 'Static parameter cannot be undeclared'
 

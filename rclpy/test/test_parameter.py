@@ -227,9 +227,12 @@ class TestParameter(unittest.TestCase):
 
         with NamedTemporaryFile(mode='w') as f:
             f.write(yaml_string)
-            f.seek(0)
+            f.flush()
             parameter_dict = parameter_dict_from_yaml_file(f.name)
+            print(parameter_dict)
         assert parameter_dict == expected
+
+        self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
 
 
 if __name__ == '__main__':
