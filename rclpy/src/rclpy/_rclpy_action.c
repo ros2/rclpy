@@ -1127,7 +1127,7 @@ rclpy_action_take_cancel_response(PyObject * Py_UNUSED(self), PyObject * args)
   rcl_ret_t ret = rcl_action_take_ ## Type(action_client, taken_msg); \
   if (ret != RCL_RET_OK) { \
     destroy_ros_message(taken_msg); \
-    if (ret != RCL_RET_ACTION_CLIENT_TAKE_FAILED) { \
+    if (ret == RCL_RET_ACTION_CLIENT_TAKE_FAILED) { \
       /* if take failed, just do nothing */ \
       Py_RETURN_NONE; \
     } \
