@@ -190,7 +190,7 @@ class Executor:
         # Task inherits from Future
         return task
 
-    def shutdown(self, timeout_sec: float = 0) -> bool:
+    def shutdown(self, timeout_sec: float = None) -> bool:
         """
         Stop executing callbacks and wait for their completion.
 
