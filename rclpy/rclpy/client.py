@@ -101,7 +101,7 @@ class Client:
 
     def call_async(self, request: SrvTypeRequest) -> Future:
         """
-        Make a service request and asyncronously get the result.
+        Make a service request and asynchronously get the result.
 
         :param request: The service request.
         :return: A future that completes when the request does.

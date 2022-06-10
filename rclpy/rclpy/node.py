@@ -750,7 +750,7 @@ class Node:
         allowed for the node, this method will raise a ParameterNotDeclaredException exception.
 
         Parameters are set all at once.
-        If setting a parameter fails due to not being declared, then no parameter will be set set.
+        If setting a parameter fails due to not being declared, then no parameter will be set.
         Either all of the parameters are set or none of them are set.
 
         If undeclared parameters are allowed for the node, then all the parameters will be
