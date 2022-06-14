@@ -371,42 +371,42 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
 
   py_node_name = PyUnicode_FromString(topic_endpoint_info->node_name);
   if (!py_node_name) {
-    goto fail;
+    goto cleanup;
   }
   py_node_namespace = PyUnicode_FromString(topic_endpoint_info->node_namespace);
   if (!py_node_namespace) {
-    goto fail;
+    goto cleanup;
   }
   py_topic_type = PyUnicode_FromString(topic_endpoint_info->topic_type);
   if (!py_topic_type) {
-    goto fail;
+    goto cleanup;
   }
   py_endpoint_type = PyLong_FromUnsignedLong(topic_endpoint_info->endpoint_type);
   if (!py_endpoint_type) {
-    goto fail;
+    goto cleanup;
   }
 
   py_endpoint_gid = PyList_New(RMW_GID_STORAGE_SIZE);
   if (!py_endpoint_gid) {
-    goto fail;
+    goto cleanup;
   }
   for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
     PyObject * py_val_at_index = PyLong_FromUnsignedLong(topic_endpoint_info->endpoint_gid[i]);
     if (!py_val_at_index) {
-      goto fail;
+      goto cleanup;
     }
     PyList_SET_ITEM(py_endpoint_gid, i, py_val_at_index);
   }
 
   py_qos_profile = rclpy_common_convert_to_qos_dict(&topic_endpoint_info->qos_profile);
   if (!py_qos_profile) {
-    goto fail;
+    goto cleanup;
   }
 
   // Create dictionary that represents rmw_topic_endpoint_info_t
   py_endpoint_info_dict = PyDict_New();
   if (!py_endpoint_info_dict) {
-    goto fail;
+    goto cleanup;
   }
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
@@ -418,19 +418,19 @@ _rclpy_convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "endpoint_gid", py_endpoint_gid);
   set_result += PyDict_SetItemString(py_endpoint_info_dict, "qos_profile", py_qos_profile);
   if (set_result != 0) {
-    goto fail;
+    Py_DECREF(py_endpoint_info_dict);
+    py_endpoint_info_dict = NULL;
+    goto cleanup;
   }
-  return py_endpoint_info_dict;
 
-fail:
+cleanup:
   Py_XDECREF(py_node_name);
   Py_XDECREF(py_node_namespace);
   Py_XDECREF(py_topic_type);
   Py_XDECREF(py_endpoint_type);
   Py_XDECREF(py_endpoint_gid);
   Py_XDECREF(py_qos_profile);
-  Py_XDECREF(py_endpoint_info_dict);
-  return NULL;
+  return py_endpoint_info_dict;
 }
 
 PyObject *

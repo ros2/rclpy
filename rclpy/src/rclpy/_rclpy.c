@@ -1122,6 +1122,7 @@ _get_info_by_topic(
   if (RCL_RET_OK != fini_ret) {
     PyErr_Format(RCLError, "rcl_topic_endpoint_info_array_fini failed.");
     rcl_reset_error();
+    Py_XDECREF(py_info_array);
     return NULL;
   }
   return py_info_array;
