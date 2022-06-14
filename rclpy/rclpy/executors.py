@@ -79,7 +79,7 @@ class _WorkTracker:
             self._num_work_executing -= 1
             self._work_condition.notify_all()
 
-    def wait(self, timeout_sec=None):
+    def wait(self, timeout_sec: Optional[float] = None):
         """
         Wait until all work completes.
 
@@ -87,7 +87,7 @@ class _WorkTracker:
         :type timeout_sec: float or None
         :rtype: bool True if all work completed
         """
-        if timeout_sec is not None and timeout_sec < 0:
+        if timeout_sec is not None and timeout_sec < 0.0:
             timeout_sec = None
         # Wait for all work to complete
         with self._work_condition:
@@ -204,9 +204,9 @@ class Executor:
                 self._is_shutdown = True
                 # Tell executor it's been shut down
                 self._guard.trigger()
-
-        if not self._work_tracker.wait(timeout_sec):
-            return False
+        if not self._is_shutdown:
+            if not self._work_tracker.wait(timeout_sec):
+                return False
 
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
@@ -425,7 +425,13 @@ class Executor:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-                    gc.trigger()
+
+                    # Catch expected error where calling executor.shutdown()
+                    # from callback causes the GuardCondition to be destroyed
+                    try:
+                        gc.trigger()
+                    except InvalidHandle:
+                        pass
         task = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
