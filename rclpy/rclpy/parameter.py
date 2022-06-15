@@ -281,19 +281,27 @@ def parameter_dict_from_yaml_file(
     """
     with open(parameter_file, 'r') as f:
         param_file = yaml.safe_load(f)
-        param_keys = set()
+        param_keys = []
         param_dict = {}
 
         if use_wildcard and '/**' in param_file:
-            param_keys.add('/**')
+            param_keys.append('/**')
+
         if target_nodes:
             for n in target_nodes:
                 if n not in param_file.keys():
                     raise RuntimeError(f'Param file does not contain parameters for {n},'
                                        f'only for nodes: {list(param_file.keys())} ')
-                param_keys.add(n)
+                param_keys.append(n)
         else:
-            param_keys = param_file.keys()
+            # wildcard key must go to the front of param_keys so that
+            # node-namespaced parameters will override the wildcard parameters
+            keys = set(param_file.keys())
+            keys.discard('/**')
+            param_keys.extend(keys)
+
+        if len(param_keys) == 0:
+            raise RuntimeError('Param file does not contain selected parameters')
 
         for n in param_keys:
             value = param_file[n]
@@ -317,10 +325,10 @@ def _unpack_parameter_dict(namespace, parameter_dict):
     for param_name, param_value in parameter_dict.items():
         full_param_name = namespace + param_name
         # Unroll nested parameters
-        if type(param_value) == Dict:
-            parameters += _unpack_parameter_dict(
+        if type(param_value) == dict:
+            parameters.update(_unpack_parameter_dict(
                     namespace=full_param_name + PARAMETER_SEPARATOR_STRING,
-                    parameter_dict=param_value)
+                    parameter_dict=param_value))
         else:
             parameter = ParameterMsg()
             parameter.name = full_param_name
