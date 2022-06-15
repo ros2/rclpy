@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from array import array
+import os
 from tempfile import NamedTemporaryFile
 import unittest
 
@@ -225,11 +226,12 @@ class TestParameter(unittest.TestCase):
             'param_str': Parameter('param_str', Parameter.Type.STRING, 'string').to_parameter_msg()
         }
 
-        with NamedTemporaryFile(mode='w') as f:
+        with NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(yaml_string)
             f.flush()
+            f.close()
             parameter_dict = parameter_dict_from_yaml_file(f.name)
-            print(parameter_dict)
+            os.unlink(f.name)
         assert parameter_dict == expected
 
         self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
