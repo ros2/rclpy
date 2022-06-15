@@ -43,6 +43,7 @@ This will invalidate all entities derived from the context.
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Union
 
 from rclpy.context import Context
 from rclpy.parameter import Parameter
@@ -141,7 +142,7 @@ def create_node(
     use_global_arguments: bool = True,
     enable_rosout: bool = True,
     start_parameter_services: bool = True,
-    parameter_overrides: List[Parameter] = None,
+    parameter_overrides: Union[List[Parameter], None] = None,
     allow_undeclared_parameters: bool = False,
     automatically_declare_parameters_from_overrides: bool = False
 ) -> 'Node':
