@@ -22,7 +22,6 @@ from rcl_interfaces.srv import GetParameterTypes
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.srv import SetParametersAtomically
-
 from rclpy.callback_groups import CallbackGroup
 from rclpy.node import Node
 from rclpy.parameter import Parameter as Parameter
@@ -127,7 +126,6 @@ class AsyncParameterClient:
                 self._describe_parameters_client.wait_for_service,
                 self._set_parameters_atomically_client.wait_for_service,
         ]
-
         if timeout_sec is None:
             return all([fn() for fn in client_wait_fns])
 
@@ -142,21 +140,22 @@ class AsyncParameterClient:
     def list_parameters(
         self,
         prefixes: Optional[List[str]] = None,
-        depth: int = 1,
+        depth: Optional[int] = None,
         callback: Optional[Callable] = None
     ) -> Future:
         """
         List all parameters with given prefixs.
 
         :param prefixes: List of prefixes to filter by.
-        :param depth: Depth of the parameter tree to list.
+        :param depth: Depth of the parameter tree to list. ``None`` means unlimited.
         :param callback: Callback function to call when the request is complete.
         :return: ``Future`` with the result of the request.
         """
         request = ListParameters.Request()
         if prefixes:
             request.prefixes = prefixes
-        request.depth = depth
+        if depth:
+            request.depth = depth
         future = self._list_parameter_client.call_async(request)
         if callback:
             future.add_done_callback(callback)
