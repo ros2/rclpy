@@ -116,26 +116,17 @@ class AsyncParameterClient:
         Wait for all parameter services to be available.
 
         :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
-        :return: ``True`` if all services were waite , ``False`` otherwise.
+        :return: ``True`` if all services becomes avaliable, ``False`` otherwise.
         """
-        client_wait_fns = [
-                self._list_parameter_client.wait_for_service,
-                self._set_parameter_client.wait_for_service,
-                self._get_parameter_client.wait_for_service,
-                self._get_parameter_types_client.wait_for_service,
-                self._describe_parameters_client.wait_for_service,
-                self._set_parameters_atomically_client.wait_for_service,
-        ]
+        # TODO(ihasdapie) See: rclpy.Client.wait_for_service
+        sleep_time = 0.25
         if timeout_sec is None:
-            return all([fn() for fn in client_wait_fns])
+            timeout_sec = float('inf')
+        while not self.services_are_ready() and timeout_sec > 0.0:
+            time.sleep(sleep_time)
+            timeout_sec -= sleep_time
+        return self.services_are_ready()
 
-        prev = time.time()
-        for wait_for_service in client_wait_fns:
-            if timeout_sec < 0 or not wait_for_service(timeout_sec):
-                return False
-            timeout_sec -= time.time() - prev
-            prev = time.time()
-        return True
 
     def list_parameters(
         self,

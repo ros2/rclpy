@@ -170,6 +170,7 @@ class Client:
         """
         # TODO(sloretz) Return as soon as the service is available
         # This is a temporary implementation. The sleep time is arbitrary.
+        # https://github.com/ros2/rclpy/issues/58
         sleep_time = 0.25
         if timeout_sec is None:
             timeout_sec = float('inf')
