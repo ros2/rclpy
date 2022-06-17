@@ -274,7 +274,7 @@ def parameter_dict_from_yaml_file(
     Will load all parameters if ``target_nodes`` is None or empty.
 
     :raises RuntimeError: if a target node is not in the file
-    :raises RuntimeError: if the file is not in the same format as provided by ros2 param dump
+    :raises RuntimeError: if the is not a valid ROS parameter file
 
     :param parameter_file: Path to the YAML file to load parameters from.
     :param use_wildcard: Use wildcard matching for the target nodes.
@@ -309,8 +309,7 @@ def parameter_dict_from_yaml_file(
         for n in param_keys:
             value = param_file[n]
             if type(value) != dict or 'ros__parameters' not in value:
-                raise RuntimeError('Invalid structure of parameter file for node {}'
-                                   'expected same format as provided by ros2 param dump'
+                raise RuntimeError( 'YAML file is not a valid ROS parameter file for node {}'
                                    .format(n))
             param_dict.update(value['ros__parameters'])
         return _unpack_parameter_dict(namespace, param_dict)
