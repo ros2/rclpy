@@ -127,7 +127,6 @@ class AsyncParameterClient:
             timeout_sec -= sleep_time
         return self.services_are_ready()
 
-
     def list_parameters(
         self,
         prefixes: Optional[List[str]] = None,
