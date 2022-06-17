@@ -54,9 +54,9 @@ class AsyncParameterClient:
 
             client = AsyncParameterClient(node, 'example_node')
 
-            # set parameters
+            # set parameters on example node
             future = client.set_parameters([
-                Parameter('int_param', Parameter.Type.INTEGER, 88).to_parameter_msg(),
+                Parameter('int_param', Parameter.Type.INTEGER, 88),
                 Parameter('string/param', Parameter.Type.STRING, 'hello world').to_parameter_msg(),
             ])
             self.executor.spin_until_future_complete(future)

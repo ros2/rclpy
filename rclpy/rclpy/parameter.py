@@ -269,15 +269,18 @@ def parameter_dict_from_yaml_file(
     namespace: str = ''
 ) -> Dict[str, ParameterMsg]:
     """
-    Build a dict of parameters from a YAML file formatted as per ``ros2 param dump``.
+    Build a dict of parameters from a YAML file.
 
-    Will load all parameters if ``target_nodes`` is None
+    Will load all parameters if ``target_nodes`` is None or empty.
+
+    :raises RuntimeError: if a target node is not in the file
+    :raises RuntimeError: if the file is not in the same format as provided by ros2 param dump
 
     :param parameter_file: Path to the YAML file to load parameters from.
     :param use_wildcard: Use wildcard matching for the target nodes.
     :param target_nodes: List of nodes in the YAML file to load parameters from.
     :param namespace: Namespace to prepend to all parameters.
-    :return: A dict of Parameter objects keyed by the parameter names
+    :return: A dict of Parameter messages keyed by the parameter names
     """
     with open(parameter_file, 'r') as f:
         param_file = yaml.safe_load(f)
