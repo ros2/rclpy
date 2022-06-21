@@ -309,7 +309,7 @@ def parameter_dict_from_yaml_file(
         for n in param_keys:
             value = param_file[n]
             if type(value) != dict or 'ros__parameters' not in value:
-                raise RuntimeError( f'YAML file is not a valid ROS parameter file for node {n}')
+                raise RuntimeError(f'YAML file is not a valid ROS parameter file for node {n}')
             param_dict.update(value['ros__parameters'])
         return _unpack_parameter_dict(namespace, param_dict)
 
