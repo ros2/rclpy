@@ -51,10 +51,10 @@ class TestActionGraph(unittest.TestCase):
         cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0, lambda: None)
         cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1, lambda: None)
 
-        assert cls.node1.wait_for_node(cls.node0.get_name(), 2)
-        assert cls.node1.wait_for_node(cls.node2.get_name(), 2)
-        assert cls.node2.wait_for_node(cls.node0.get_name(), 2)
-        assert cls.node2.wait_for_node(cls.node1.get_name(), 2)
+        assert cls.node1.wait_for_node(cls.node0.get_fully_qualified_name(), 2.0)
+        assert cls.node1.wait_for_node(cls.node2.get_fully_qualified_name(), 2.0)
+        assert cls.node2.wait_for_node(cls.node0.get_fully_qualified_name(), 2.0)
+        assert cls.node2.wait_for_node(cls.node1.get_fully_qualified_name(), 2.0)
 
     @classmethod
     def tearDownClass(cls):

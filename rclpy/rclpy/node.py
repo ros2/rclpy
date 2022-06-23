@@ -1959,16 +1959,26 @@ class Node:
         """
         Wait until node name is present in the system or timeout.
 
-        :param node_name: name of the node to wait for.
+        The node name should be the full name with namespace.
+
+        :param node_name: fully qualified name of the node to wait for.
         :param timeout: seconds to wait for the node to be present. If negative, the function
                          won't timeout.
         :return: True if the node was found, False if timeout.
         """
+        if not node_name.startswith('/'):
+            node_name = f'/{node_name}'
+
         start = time.time()
         flag = False
         # TODO refactor this implementation when we can react to guard condition events, or replace
         # it entirely with an implementation in rcl. see https://github.com/ros2/rclpy/issues/929
         while time.time() - start < timeout and not flag:
-            flag = node_name in self.get_node_names()
+            names_and_namespaces = self.get_node_names_and_namespaces()
+            fully_qualified_node_names = [
+                ns + ('' if ns.endswith('/') else '/') + name
+                for name, ns in names_and_namespaces
+            ]
+            flag = node_name in fully_qualified_node_names
             time.sleep(0.1)
         return flag

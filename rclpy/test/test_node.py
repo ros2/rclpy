@@ -1899,14 +1899,14 @@ class TestNode(unittest.TestCase):
     def test_wait_for_node(self):
         try:
             node = rclpy.create_node(
-                TEST_NODE + '_create_node', namespace='/my_ns', context=self.context
+                'waiting_for_this_node', namespace='/my_ns', context=self.context
             )
-            self.assertTrue(self.node.wait_for_node('my_node', 0.5))
+            self.assertTrue(self.node.wait_for_node('/my_ns/waiting_for_this_node', 0.5))
         finally:
             node.destroy_node()
 
     def test_wait_for_node_timeout(self):
-        self.assertFalse(self.node.wait_for_node(TEST_NODE + '_create_node_no', 0.5))
+        self.assertFalse(self.node.wait_for_node('node_does_not_exist', 0.1))
 
 
 class TestCreateNode(unittest.TestCase):
