@@ -142,3 +142,18 @@ class TestParameterClient(unittest.TestCase):
         assert result is not None
         assert len(result.results) == 2
         assert all([i.successful for i in result.results])
+
+    def test_load_parameter_file_atomically(self):
+        yaml_string = """/param_test_target:
+            ros__parameters:
+                param_1: 1
+                param_str: "string"
+            """
+        with NamedTemporaryFile(mode='w') as f:
+            f.write(yaml_string)
+            f.flush()
+            future = self.client.load_parameter_file_atomically(f.name)
+        self.executor.spin_until_future_complete(future)
+        result = future.result()
+        assert result is not None
+        assert result.result.successful

@@ -306,3 +306,24 @@ class AsyncParameterClient:
         param_dict = parameter_dict_from_yaml_file(parameter_file, use_wildcard)
         future = self.set_parameters(list(param_dict.values()))
         return future
+
+    def load_parameter_file_atomically(
+        self,
+        parameter_file: str,
+        use_wildcard: bool = False,
+    ) -> Future:
+        """
+        Load parameters from a yaml file atomically.
+
+        Wrapper around `rclpy.parameter.parameter_dict_from_yaml_file`.
+
+        The result after the returned future is complete
+        will be of type ``rcl_interfaces.srv.SetParameters.Response``.
+
+        :param parameter_file: Path to the parameter file.
+        :param use_wildcard: Whether to use wildcard expansion.
+        :return: Future with the result from the set_parameter call.
+        """
+        param_dict = parameter_dict_from_yaml_file(parameter_file, use_wildcard)
+        future = self.set_parameters_atomically(list(param_dict.values()))
+        return future
