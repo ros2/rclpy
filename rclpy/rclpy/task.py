@@ -212,6 +212,7 @@ class Task(Future):
             self._handler = handler(*args, **kwargs)
             self._args = None
             self._kwargs = None
+            self._future = None
         # True while the task is being executed
         self._executing = False
         # Lock acquired to prevent task from executing in parallel with itself
@@ -236,7 +237,10 @@ class Task(Future):
             if inspect.iscoroutine(self._handler):
                 # Execute a coroutine
                 try:
-                    self._handler.send(None)
+                    if self._future is None or self._future.done():
+                        if self._future and self._future.exception():
+                            raise self._future.exception()
+                        self._future = self._handler.send(None)
                 except StopIteration as e:
                     # The coroutine finished; store the result
                     self._handler.close()
