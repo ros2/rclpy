@@ -32,7 +32,6 @@
 
 
 # -- Project information -----------------------------------------------------
-import sphinx_rtd_theme  # noqa : F401
 
 project = 'rclpy'
 copyright = '2016-2022, Open Source Robotics Foundation, Inc.'  # noqa
