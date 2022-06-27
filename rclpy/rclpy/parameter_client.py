@@ -134,7 +134,7 @@ class AsyncParameterClient:
         callback: Optional[Callable] = None
     ) -> Future:
         """
-        List all parameters with given prefixs.
+        List all parameters with given prefixes.
 
         :param prefixes: List of prefixes to filter by.
         :param depth: Depth of the parameter tree to list. ``None`` means unlimited.
@@ -290,6 +290,7 @@ class AsyncParameterClient:
         self,
         parameter_file: str,
         use_wildcard: bool = False,
+        callback: Optional[Callable] = None
     ) -> Future:
         """
         Load parameters from a yaml file.
@@ -301,16 +302,17 @@ class AsyncParameterClient:
 
         :param parameter_file: Path to the parameter file.
         :param use_wildcard: Whether to use wildcard expansion.
-        :return: Future with the result from the set_parameter call.
+        :return: Future with the result from the set_parameters call.
         """
         param_dict = parameter_dict_from_yaml_file(parameter_file, use_wildcard)
-        future = self.set_parameters(list(param_dict.values()))
+        future = self.set_parameters(list(param_dict.values()), callback=callback)
         return future
 
     def load_parameter_file_atomically(
         self,
         parameter_file: str,
         use_wildcard: bool = False,
+        callback: Optional[Callable] = None
     ) -> Future:
         """
         Load parameters from a yaml file atomically.
@@ -322,8 +324,8 @@ class AsyncParameterClient:
 
         :param parameter_file: Path to the parameter file.
         :param use_wildcard: Whether to use wildcard expansion.
-        :return: Future with the result from the set_parameter call.
+        :return: Future with the result from the set_parameters_atomically call.
         """
         param_dict = parameter_dict_from_yaml_file(parameter_file, use_wildcard)
-        future = self.set_parameters_atomically(list(param_dict.values()))
+        future = self.set_parameters_atomically(list(param_dict.values()), callback=callback)
         return future

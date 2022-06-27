@@ -226,14 +226,16 @@ class TestParameter(unittest.TestCase):
             'param_str': Parameter('param_str', Parameter.Type.STRING, 'string').to_parameter_msg()
         }
 
-        with NamedTemporaryFile(mode='w', delete=False) as f:
-            f.write(yaml_string)
-            f.flush()
-            f.close()
-            parameter_dict = parameter_dict_from_yaml_file(f.name)
-            os.unlink(f.name)
-        assert parameter_dict == expected
-
+        try:
+            with NamedTemporaryFile(mode='w', delete=False) as f:
+                f.write(yaml_string)
+                f.flush()
+                f.close()
+                parameter_dict = parameter_dict_from_yaml_file(f.name)
+            assert parameter_dict == expected
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
         self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
 
 

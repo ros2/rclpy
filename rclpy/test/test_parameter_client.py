@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from tempfile import NamedTemporaryFile
 import unittest
 
@@ -30,15 +31,17 @@ class TestParameterClient(unittest.TestCase):
     def setUp(self):
         self.context = rclpy.context.Context()
         rclpy.init(context=self.context)
-        self.client_node = rclpy.create_node('test_parameter_client',
-                                             namespace='/rclpy',
-                                             context=self.context)
-        self.target_node = rclpy.create_node('test_parameter_client_target',
-                                             namespace='rclpy',
-                                             allow_undeclared_parameters=True,
-                                             context=self.context)
+        self.client_node = rclpy.create_node(
+            'test_parameter_client',
+            namespace='/rclpy',
+            context=self.context)
+        self.target_node = rclpy.create_node(
+            'test_parameter_client_target',
+            namespace='/rclpy',
+            allow_undeclared_parameters=True,
+            context=self.context)
         self.target_node.declare_parameter('int_arr_param', [1, 2, 3])
-        self.target_node.declare_parameter('float/param//', 3.14)
+        self.target_node.declare_parameter('float.param..', 3.14)
 
         self.client = AsyncParameterClient(self.client_node, 'test_parameter_client_target')
         self.executor = SingleThreadedExecutor(context=self.context)
@@ -54,7 +57,7 @@ class TestParameterClient(unittest.TestCase):
     def test_set_parameter(self):
         future = self.client.set_parameters([
             Parameter('int_param', Parameter.Type.INTEGER, 88).to_parameter_msg(),
-            Parameter('string/param', Parameter.Type.STRING, 'hello world'),
+            Parameter('string.param', Parameter.Type.STRING, 'hello world'),
         ])
         self.executor.spin_until_future_complete(future)
         results = future.result()
@@ -64,7 +67,7 @@ class TestParameterClient(unittest.TestCase):
         assert all(res)
 
     def test_get_parameter(self):
-        future = self.client.get_parameters(['int_arr_param', 'float/param//'])
+        future = self.client.get_parameters(['int_arr_param', 'float.param..'])
         self.executor.spin_until_future_complete(future)
         results = future.result()
         assert results is not None
@@ -78,7 +81,7 @@ class TestParameterClient(unittest.TestCase):
         results = future.result()
         assert results is not None
         assert 'int_arr_param' in results.result.names
-        assert 'float/param//' in results.result.names
+        assert 'float.param..' in results.result.names
 
     def test_describe_parameters(self):
         future = self.client.describe_parameters(['int_arr_param'])
@@ -100,7 +103,7 @@ class TestParameterClient(unittest.TestCase):
     def test_set_parameters_atomically(self):
         future = self.client.set_parameters_atomically([
             Parameter('int_param', Parameter.Type.INTEGER, 888),
-            Parameter('string/param', Parameter.Type.STRING, 'Hello World').to_parameter_msg(),
+            Parameter('string.param', Parameter.Type.STRING, 'Hello World').to_parameter_msg(),
         ])
         self.executor.spin_until_future_complete(future)
         results = future.result()
@@ -133,15 +136,20 @@ class TestParameterClient(unittest.TestCase):
                 param_1: 1
                 param_str: "string"
             """
-        with NamedTemporaryFile(mode='w') as f:
-            f.write(yaml_string)
-            f.flush()
-            future = self.client.load_parameter_file(f.name)
-        self.executor.spin_until_future_complete(future)
-        result = future.result()
-        assert result is not None
-        assert len(result.results) == 2
-        assert all([i.successful for i in result.results])
+        try:
+            with NamedTemporaryFile(mode='w', delete=False) as f:
+                f.write(yaml_string)
+                f.flush()
+                f.close()
+                future = self.client.load_parameter_file(f.name)
+            self.executor.spin_until_future_complete(future)
+            result = future.result()
+            assert result is not None
+            assert len(result.results) == 2
+            assert all([i.successful for i in result.results])
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
 
     def test_load_parameter_file_atomically(self):
         yaml_string = """/param_test_target:
@@ -149,11 +157,16 @@ class TestParameterClient(unittest.TestCase):
                 param_1: 1
                 param_str: "string"
             """
-        with NamedTemporaryFile(mode='w') as f:
-            f.write(yaml_string)
-            f.flush()
-            future = self.client.load_parameter_file_atomically(f.name)
-        self.executor.spin_until_future_complete(future)
-        result = future.result()
-        assert result is not None
-        assert result.result.successful
+        try:
+            with NamedTemporaryFile(mode='w', delete=False) as f:
+                f.write(yaml_string)
+                f.flush()
+                f.close()
+                future = self.client.load_parameter_file_atomically(f.name)
+            self.executor.spin_until_future_complete(future)
+            result = future.result()
+            assert result is not None
+            assert result.result.successful
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
