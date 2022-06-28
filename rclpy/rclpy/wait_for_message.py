@@ -22,7 +22,7 @@ def wait_for_message(
     msg_type,
     node: 'Node',
     topic: str,
-    timeout_sec=-1
+    time_to_wait=-1
 ):
     """
     Wait for the next incoming message.
@@ -30,6 +30,7 @@ def wait_for_message(
     :param msg_type: message type
     :param node: node you've created
     :param topic: topic name you've defined
+    :time_to_wait: the timeout before returning
     :return (True, msg) if a message was successfully received, (False, ()) if message
         could not be obtained or shutdown was triggered asynchronously on the context.
     """
@@ -39,17 +40,17 @@ def wait_for_message(
 
     sub = node.create_subscription(msg_type, topic, lambda _: None, 1)
     wait_set.add_subscription(sub.handle)
-    sigint_gc = SignalHandlerGuardCondition(context)
+    sigint_gc = SignalHandlerGuardCondition(context=context)
     wait_set.add_guard_condition(sigint_gc.handle)
 
-    timeout_nsec = timeout_sec_to_nsec(timeout_sec)
+    timeout_nsec = timeout_sec_to_nsec(time_to_wait)
     wait_set.wait(timeout_nsec)
 
     subs_ready = wait_set.get_ready_entities('subscription')
     guards_ready = wait_set.get_ready_entities('guard_condition')
 
     if guards_ready:
-        if sigint_gc.pointer in guards_ready:
+        if sigint_gc.handle.pointer in guards_ready:
             return (False, None)
 
     if subs_ready:
