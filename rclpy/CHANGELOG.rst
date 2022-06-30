@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.9.2 (2022-06-30)
+------------------
 * Bugfix/duration to msg precision (`#876 <https://github.com/ros2/rclpy/issues/876>`_) (`#916 <https://github.com/ros2/rclpy/issues/916>`_)
 * Avoid exception in Node constructor when use override for 'use_sim_time' (`#896 <https://github.com/ros2/rclpy/issues/896>`_) (`#913 <https://github.com/ros2/rclpy/issues/913>`_)
 * Contributors: mergify[bot]
