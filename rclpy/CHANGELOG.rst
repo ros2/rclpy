@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Bugfix/duration to msg precision (`#876 <https://github.com/ros2/rclpy/issues/876>`_) (`#916 <https://github.com/ros2/rclpy/issues/916>`_)
+* Avoid exception in Node constructor when use override for 'use_sim_time' (`#896 <https://github.com/ros2/rclpy/issues/896>`_) (`#913 <https://github.com/ros2/rclpy/issues/913>`_)
+* Contributors: mergify[bot]
+
 1.9.1 (2022-04-28)
 ------------------
 * Remove -> bool annotation for destroy_node `#886 <https://github.com/ros2/rclpy/issues/886>`_ (`#891 <https://github.com/ros2/rclpy/issues/891>`_)
