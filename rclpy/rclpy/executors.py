@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
+import warnings
 
 from rclpy.client import Client
 from rclpy.clock import Clock
@@ -283,11 +284,7 @@ class Executor:
         self.spin_until_complete(lambda: False, duration_sec)
 
     def spin_until_complete(self, condition, timeout_sec: float = None) -> None:
-        """
-        Execute callbacks until a given condition is done or a timeout occurs.
-
-        Deprecated in favor of spin_until_complete.
-        """
+        """Execute callbacks until a given condition is done or a timeout occurs."""
         # Common conditon for safisfying both Callable and Future
         finish_condition = None
         if (isinstance(condition, Future)):
@@ -317,11 +314,8 @@ class Executor:
                 timeout_left = end - now
 
     def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
-        """
-        Execute callbacks until a given future is done or a timeout occurs.
-
-        Deprecated in favor of spin_until_complete.
-        """
+        """Execute callbacks until a given future is done or a timeout occurs."""
+        warnings.warn('Deprecated in favor of spin_until_complete.')
         self.spin_until_complete(future, timeout_sec)
 
     def spin_once(self, timeout_sec: float = None) -> None:
@@ -358,9 +352,8 @@ class Executor:
         :param future: The executor will wait until this future is done.
         :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
-
-        Deprecated in favor of spin_once_until_complete.
         """
+        warnings.warn('Deprecated in favor of spin_once_until_complete.')
         raise NotImplementedError()
 
     def _take_timer(self, tmr):
@@ -764,9 +757,8 @@ class SingleThreadedExecutor(Executor):
     def spin_once_until_complete(self, condition, timeout_sec: float = None) -> None:
         self.spin_once(timeout_sec)
 
-    """Deprecated in favor of spin_once_until_complete"""
-
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        warnings.warn('Deprecated in favor of spin_once_until_complete.')
         self.spin_once_until_complete(timeout_sec)
 
 
@@ -815,7 +807,6 @@ class MultiThreadedExecutor(Executor):
         self._spin_once_impl(timeout_sec, condition if callable(
             condition) else condition.done)
 
-    """Deprecated in favor of spin_once_until_complete"""
-
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+        warnings.warn('Deprecated in favor of spin_once_until_complete.')
         self.spin_once_until_complete(timeout_sec, future.done)

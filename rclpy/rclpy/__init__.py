@@ -239,7 +239,7 @@ def spin_for(node: 'Node', executor: 'Executor' = None, duration_sec: float = No
     executor = get_global_executor() if executor is None else executor
     try:
         executor.add_node(node)
-        executor.spin_once(duration_sec)
+        executor.spin_for(duration_sec)
     finally:
         executor.remove_node(node)
 

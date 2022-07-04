@@ -355,12 +355,12 @@ class TestExecutor(unittest.TestCase):
 
         def timer_callback():
             pass
-        timer = self.node.create_timer(0.1, timer_callback)
+        timer = self.node.create_timer(1.0, timer_callback)
 
         start = time.monotonic()
-        executor.spin_for(duration_sec=1.0)
+        executor.spin_for(duration_sec=10.0)
         end = time.monotonic()
-        self.assertGreaterEqual(end - start, 1.0)
+        self.assertGreaterEqual(end - start, 10.0)
 
         timer.cancel()
 
