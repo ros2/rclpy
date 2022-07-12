@@ -539,7 +539,7 @@ class Node:
         results = []
         for param in parameter_list:
             # If undeclared parameters are allowed, parameters with type NOT_SET shall be stored.
-            result = self._set_parameters_atomically(
+            result = self._set_parameters_atomically_common(
                 [param],
                 descriptors,
                 allow_not_set_type=True
@@ -811,23 +811,17 @@ class Node:
         """
         return self._set_parameters_atomically(parameter_list)
 
-    def _check_undeclared_parameters(self, parameter_list: List[Parameter]):
-        """
-        Check if parameter list has correct types and was declared beforehand.
-
-        :raises: ParameterNotDeclaredException if at least one parameter in the list was not
-            declared beforehand.
-        """
-        if not all(isinstance(parameter, Parameter) for parameter in parameter_list):
-            raise TypeError("parameter must be instance of type '{}'".format(repr(Parameter)))
-
-        undeclared_parameters = (
-            param.name for param in parameter_list if param.name not in self._parameters
-        )
-        if (not self._allow_undeclared_parameters and any(undeclared_parameters)):
-            raise ParameterNotDeclaredException(list(undeclared_parameters))
-
     def _set_parameters_atomically(
+        self,
+        parameter_list: List[Parameter],
+        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
+        allow_not_set_type: bool = False
+    ) -> SetParametersResult:
+        self._call_pre_set_parameters_callback(parameter_list)
+        self._check_undeclared_parameters(parameter_list)
+        return self._set_parameters_atomically_common(parameter_list)
+
+    def _set_parameters_atomically_common(
         self,
         parameter_list: List[Parameter],
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
@@ -854,10 +848,6 @@ class Node:
             True if they should be stored despite not having an actual value.
         :return: Aggregate result of setting all the parameters atomically.
         """
-
-        self._call_pre_set_parameters_callback(parameter_list)
-
-        self._check_undeclared_parameters(parameter_list)
 
         if descriptors is not None:
             # If new descriptors are provided, ensure every parameter has an assigned descriptor
@@ -925,6 +915,22 @@ class Node:
                     callback(parameter_event.new_parameters)
 
         return result
+
+    def _check_undeclared_parameters(self, parameter_list: List[Parameter]):
+        """
+        Check if parameter list has correct types and was declared beforehand.
+
+        :raises: ParameterNotDeclaredException if at least one parameter in the list was not
+            declared beforehand.
+        """
+        if not all(isinstance(parameter, Parameter) for parameter in parameter_list):
+            raise TypeError("parameter must be instance of type '{}'".format(repr(Parameter)))
+
+        undeclared_parameters = (
+            param.name for param in parameter_list if param.name not in self._parameters
+        )
+        if not self._allow_undeclared_parameters and any(undeclared_parameters):
+            raise ParameterNotDeclaredException(list(undeclared_parameters))
 
     def add_pre_set_parameters_callback(
             self,
