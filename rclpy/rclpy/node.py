@@ -784,7 +784,16 @@ class Node:
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
         allow_not_set_type: bool = False
     ) -> SetParametersResult:
+
         self._call_pre_set_parameters_callback(parameter_list)
+
+        if len(parameter_list) is 0:
+            result = SetParametersResult()
+            result.successful = False
+            result.reason = "parameter list cannot be empty, this might be due to " \
+                            "pre_set_parameters_callback modifying the original parameters list."
+            return result
+
         self._check_undeclared_parameters(parameter_list)
         return self._set_parameters_atomically_common(parameter_list)
 
@@ -815,8 +824,6 @@ class Node:
             True if they should be stored despite not having an actual value.
         :return: Aggregate result of setting all the parameters atomically.
         """
-        print("## _set_parameters_atomically_common")
-
         if descriptors is not None:
             # If new descriptors are provided, ensure every parameter has an assigned descriptor
             # and do not check for read-only.
@@ -899,6 +906,11 @@ class Node:
         )
         if not self._allow_undeclared_parameters and any(undeclared_parameters):
             raise ParameterNotDeclaredException(list(undeclared_parameters))
+
+    def _call_pre_set_parameters_callback(self, parameter_list: [List[Parameter]]):
+        if self._pre_set_parameters_callbacks:
+            for callback in self._pre_set_parameters_callbacks:
+                callback(parameter_list)
 
     def add_pre_set_parameters_callback(
             self,
@@ -1004,13 +1016,6 @@ class Node:
         :raises: ValueError if a callback is not present in the list of callbacks.
         """
         self._post_set_parameters_callbacks.remove(callback)
-
-    def _call_pre_set_parameters_callback(self, parameter_list: [List[Parameter]]):
-        if self._pre_set_parameters_callbacks:
-            for callback in self._pre_set_parameters_callbacks:
-                callback(parameter_list)
-
-        return len(parameter_list) == 0
 
     def _apply_descriptors(
         self,
