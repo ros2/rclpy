@@ -982,7 +982,7 @@ class Node:
 
     def remove_pre_set_parameters_callback(
             self,
-            callback: Callable[[List[Parameter]], None]
+            callback: Callable[[List[Parameter]], List[Parameter]]
     ) -> None:
         """
         Remove a callback from list of callbacks.
