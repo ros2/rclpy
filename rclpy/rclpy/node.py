@@ -740,44 +740,11 @@ class Node:
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
             and at least one parameter in the list hadn't been declared beforehand.
         """
-        return self._set_parameters(parameter_list)
-
-    def _set_parameters(
-        self,
-        parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None
-    ) -> List[SetParametersResult]:
-        """
-        Set parameters for the node, and return the result for the set action.
-
-        Method for internal usage; applies a setter method for each parameters in the list.
-        By default it checks if the parameters were declared, raising an exception if at least
-        one of them was not.
-
-        TODO(deepanshu): update this documentation based on new callbacks
-        If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
-        will be called prior to setting the parameters for the node, once for each parameter.
-        If the callback doesn't succeed for a given parameter, it won't be set and either an
-        unsuccessful result will be returned for that parameter, or an exception will be raised
-        according to `raise_on_failure` flag.
-
-        :param parameter_list: List of parameters to set.
-        :param descriptors: Descriptors to set to the given parameters.
-            If descriptors are given, each parameter in the list must have a corresponding one.
-        :return: The result for each set action as a list.
-        :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
-            method and at least one parameter in the list hadn't been declared beforehand.
-        """
-        if descriptors is not None:
-            assert all(parameter.name in descriptors for parameter in parameter_list)
-
         results = []
         for param in parameter_list:
-            result = self._set_parameters_atomically(
-                [param],
-                descriptors
-            )
+            result = self._set_parameters_atomically([param])
             results.append(result)
+
         return results
 
     def set_parameters_atomically(self, parameter_list: List[Parameter]) -> SetParametersResult:
@@ -848,6 +815,7 @@ class Node:
             True if they should be stored despite not having an actual value.
         :return: Aggregate result of setting all the parameters atomically.
         """
+        print("## _set_parameters_atomically_common")
 
         if descriptors is not None:
             # If new descriptors are provided, ensure every parameter has an assigned descriptor
