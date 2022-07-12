@@ -402,11 +402,20 @@ class Node:
         expanding "namespace.name".
         This allows you to declare several parameters at once without a namespace.
 
-        This method, if successful, will result in any callback registered with
-        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
-        to be called once for each parameter. If one of those calls fail, an exception
-        will be raised and the remaining parameters will not be declared.
-        Parameters declared up to that point will not be undeclared.
+        This method will result in any callback registered with :func:`add_on_set_parameters_callback`
+        and :func:`add_post_set_parameters_callback` to be called once for each parameter.
+
+        If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
+        will be called prior to setting the parameters for the node, once for each parameter.
+        If one of the calls due to :func:`add_on_set_parameters_callback` fail, an exception will be
+        raised and the remaining parameters will not be declared. Parameters declared up to that point
+        will not be undeclared.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
+        will be called after setting the parameters successfully for the node, once for each parameter.
+
+        Note: The callbacks registered with func:`add_pre_set_parameters_callback` are not called while
+        declaring the parameters.
 
         :param namespace: Namespace for parameters.
         :param parameters: List of tuples with parameters to declare.
@@ -512,27 +521,34 @@ class Node:
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None
     ) -> List[SetParametersResult]:
         """
-       Declare parameters for the node, and return the result for the declare action.
+      ` Declare parameters for the node, and return the result for the declare action.
 
-       Method for internal usage; applies a setter method for each parameters in the list.
-       By default, it checks if the parameters were declared, raising an exception if at least
-       one of them was not.
+        Method for internal usage; applies a setter method for each parameters in the list.
+        By default, it checks if the parameters were declared, raising an exception if at least
+        one of them was not.
 
-       If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
-       will be called prior to setting the parameters for the node, once for each parameter.
-       If the callback doesn't succeed for a given parameter, it won't be set and either an
-       unsuccessful result will be returned for that parameter, or an exception will be raised
-       according to `raise_on_failure` flag.
+        This method will result in any callback registered with :func:`add_on_set_parameters_callback`
+        and :func:`add_post_set_parameters_callback` to be called once for each parameter.
 
-       :param parameter_list: List of parameters to set.
-       :param descriptors: Descriptors to set to the given parameters.
+        If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
+        will be called prior to setting the parameters for the node, once for each parameter.
+        If the callback doesn't succeed for a given parameter an exception will be raised.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
+        will be called after setting the parameters successfully for the node, once for each parameter.
+
+        Note: The callbacks registered with func:`add_pre_set_parameters_callback` are not called while
+        declaring the parameters.
+
+        :param parameter_list: List of parameters to set.
+        :param descriptors: Descriptors to set to the given parameters.
            If descriptors are given, each parameter in the list must have a corresponding one.
-       :return: The result for each set action as a list.
-       :raises: InvalidParameterValueException if the user-defined callback rejects the
-           parameter value.
-       :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
-           method and at least one parameter in the list hadn't been declared beforehand.
-       """
+        :return: The result for each set action as a list.
+        :raises: InvalidParameterValueException if the user-defined callback rejects the
+            parameter value.
+        :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
+            method and at least one parameter in the list hadn't been declared beforehand.`
+        """
         if descriptors is not None:
             assert all(parameter.name in descriptors for parameter in parameter_list)
 
@@ -724,11 +740,23 @@ class Node:
         declared before being set even if they were not declared beforehand.
         Parameter overrides are ignored by this method.
 
-        TODO(deepanshu): update this documentation based on new callbacks
+        This method will result in any callback registered with :func:`add_pre_set_parameters_callback`
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback` to be
+        called once for each parameter.
+
+        If a callback was registered previously with :func:`add_pre_set_parameters_callback`, it
+        will be called prior to the validation of parameters for the node, once for each parameter.
+        If this callback makes modified parameter list empty, then it will be reflected in the
+        returned result; no exceptions will be raised in this case.
+
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node, once for each parameter.
-        If the callback prevents a parameter from being set, then it will be reflected in the
+        If this callback prevents a parameter from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
+        will be called after setting the parameters successfully for the node, once for each parameter.
+
         For each successfully set parameter, a :class:`ParameterEvent` message is
         published.
 
@@ -761,11 +789,23 @@ class Node:
         If undeclared parameters are allowed for the node, then all the parameters will be
         implicitly declared before being set even if they were not declared beforehand.
 
-        TODO(deepanshu): update this documentation based on new callbacks
+        This method will result in any callback registered with :func:`add_pre_set_parameters_callback`
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback` to be
+        called only once for all parameters.
+
+        If a callback was registered previously with :func:`add_pre_set_parameters_callback`, it
+        will be called prior to the validation of node parameters only once for all parameters.
+        If this callback makes modified parameter list empty, then it will be reflected in the
+        returned result; no exceptions will be raised in this case.
+
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node only once for all parameters.
         If the callback prevents the parameters from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
+        will be called after setting the node parameters successfully only once for all parameters.
+
         For each successfully set parameter, a :class:`ParameterEvent` message is published.
 
         If the value type of the parameter is NOT_SET, and the existing parameter type is
@@ -809,11 +849,17 @@ class Node:
         This internal method does not reject undeclared parameters.
         If :param:`allow_not_set_type` is False, a parameter with type NOT_SET will be undeclared.
 
-        TODO(deepanshu): update this documentation based on new callbacks
+        This method will result in any callback registered with :func:`add_on_set_parameters_callback`
+        and :func:`add_post_set_parameters_callback` to be called only once for all parameters.
+
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node only once for all parameters.
         If the callback prevents the parameters from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
+        will be called after setting the node parameters successfully only once for all parameters.
+
         For each successfully set parameter, a :class:`ParameterEvent` message is
         published.
 
