@@ -161,7 +161,7 @@ class Node:
         self._guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
-        self._pre_set_parameters_callbacks: List[Callable[[List[Parameter]], None]] = []
+        self._pre_set_parameters_callbacks: List[Callable[[List[Parameter]], List[Parameter]]] = []
         self._on_set_parameters_callbacks: List[Callable[[List[Parameter]], SetParametersResult]] = []
         self._post_set_parameters_callbacks: List[Callable[[List[Parameter]], None]] = []
         self._rate_group = ReentrantCallbackGroup()
@@ -785,7 +785,7 @@ class Node:
         allow_not_set_type: bool = False
     ) -> SetParametersResult:
 
-        self._call_pre_set_parameters_callback(parameter_list)
+        parameter_list = self._call_pre_set_parameters_callback(parameter_list)
 
         if len(parameter_list) is 0:
             result = SetParametersResult()
@@ -908,13 +908,16 @@ class Node:
             raise ParameterNotDeclaredException(list(undeclared_parameters))
 
     def _call_pre_set_parameters_callback(self, parameter_list: [List[Parameter]]):
+        modified_parameter_list = []
         if self._pre_set_parameters_callbacks:
             for callback in self._pre_set_parameters_callbacks:
-                callback(parameter_list)
+                modified_parameter_list.extend(callback(parameter_list))
+
+        return modified_parameter_list
 
     def add_pre_set_parameters_callback(
             self,
-            callback: Callable[[List[Parameter]], None]
+            callback: Callable[[List[Parameter]], List[Parameter]]
     ) -> None:
         """
         Add a callback gets triggered before parameters are validated.
