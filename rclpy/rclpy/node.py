@@ -510,13 +510,29 @@ class Node:
         self,
         parameter_list: List[Parameter],
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None
-        ) -> List[SetParametersResult]:
+    ) -> List[SetParametersResult]:
         """
+       Declare parameters for the node, and return the result for the declare action.
 
-        :param parameter_list:
-        :param descriptors:
-        :return:
-        """
+       Method for internal usage; applies a setter method for each parameters in the list.
+       By default, it checks if the parameters were declared, raising an exception if at least
+       one of them was not.
+
+       If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
+       will be called prior to setting the parameters for the node, once for each parameter.
+       If the callback doesn't succeed for a given parameter, it won't be set and either an
+       unsuccessful result will be returned for that parameter, or an exception will be raised
+       according to `raise_on_failure` flag.
+
+       :param parameter_list: List of parameters to set.
+       :param descriptors: Descriptors to set to the given parameters.
+           If descriptors are given, each parameter in the list must have a corresponding one.
+       :return: The result for each set action as a list.
+       :raises: InvalidParameterValueException if the user-defined callback rejects the
+           parameter value.
+       :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
+           method and at least one parameter in the list hadn't been declared beforehand.
+       """
         if descriptors is not None:
             assert all(parameter.name in descriptors for parameter in parameter_list)
 
@@ -725,8 +741,6 @@ class Node:
         """
         return self._set_parameters(parameter_list)
 
-    # raise_on_failure -> True only for declare param
-    # allow_undeclared_parameters -> true only for declare param
     def _set_parameters(
         self,
         parameter_list: List[Parameter],
@@ -749,8 +763,6 @@ class Node:
         :param descriptors: Descriptors to set to the given parameters.
             If descriptors are given, each parameter in the list must have a corresponding one.
         :return: The result for each set action as a list.
-        :raises: InvalidParameterValueException if the user-defined callback rejects the
-            parameter value and raise_on_failure flag is True.
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
             method and at least one parameter in the list hadn't been declared beforehand.
         """
