@@ -781,18 +781,18 @@ class Node:
     def _set_parameters_atomically(
         self,
         parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
-        allow_not_set_type: bool = False
     ) -> SetParametersResult:
 
-        parameter_list = self._call_pre_set_parameters_callback(parameter_list)
+        modified_parameter_list = self._call_pre_set_parameters_callback(parameter_list)
+        if modified_parameter_list is not None:
+            parameter_list = modified_parameter_list
 
-        if len(parameter_list) is 0:
-            result = SetParametersResult()
-            result.successful = False
-            result.reason = "parameter list cannot be empty, this might be due to " \
-                            "pre_set_parameters_callback modifying the original parameters list."
-            return result
+            if len(parameter_list) is 0:
+                result = SetParametersResult()
+                result.successful = False
+                result.reason = "parameter list cannot be empty, this might be due to " \
+                                "pre_set_parameters_callback modifying the original parameters list."
+                return result
 
         self._check_undeclared_parameters(parameter_list)
         return self._set_parameters_atomically_common(parameter_list)
@@ -908,12 +908,14 @@ class Node:
             raise ParameterNotDeclaredException(list(undeclared_parameters))
 
     def _call_pre_set_parameters_callback(self, parameter_list: [List[Parameter]]):
-        modified_parameter_list = []
         if self._pre_set_parameters_callbacks:
+            modified_parameter_list = []
             for callback in self._pre_set_parameters_callbacks:
                 modified_parameter_list.extend(callback(parameter_list))
 
-        return modified_parameter_list
+            return modified_parameter_list
+        else:
+            return None
 
     def add_pre_set_parameters_callback(
             self,
