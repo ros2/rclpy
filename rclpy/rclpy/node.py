@@ -499,11 +499,9 @@ class Node:
 
         # Call the callback once for each of the parameters, using method that doesn't
         # check whether the parameter was declared beforehand or not.
-        self._set_parameters(
+        self._declare_parameter_common(
             parameter_list,
-            descriptors,
-            raise_on_failure=True,
-            allow_undeclared_parameters=True
+            descriptors
         )
         # Don't call get_parameters() to bypass check for NOT_SET parameters
         return [self._parameters[parameter.name] for parameter in parameter_list]
@@ -697,12 +695,37 @@ class Node:
         """
         return self._set_parameters(parameter_list)
 
+    def _declare_parameter_common(
+            self,
+            parameter_list: List[Parameter],
+            descriptors: Optional[Dict[str, ParameterDescriptor]] = None
+    ) -> List[SetParametersResult]:
+
+        if descriptors is not None:
+            assert all(parameter.name in descriptors for parameter in parameter_list)
+
+        results = []
+        for param in parameter_list:
+            # If undeclared parameters are allowed, parameters with type NOT_SET shall be stored.
+            result = self._set_parameters_atomically(
+                [param],
+                descriptors,
+                allow_not_set_type=True
+            )
+            if not result.successful:
+                if result.reason.startswith('Wrong parameter type'):
+                    raise InvalidParameterTypeException(
+                        param, Parameter.Type(descriptors[param._name].type).name)
+                raise InvalidParameterValueException(param.name, param.value, result.reason)
+            results.append(result)
+        return results
+
+    # raise_on_failure -> True only for declare param
+    # allow_undeclared_parameters -> true only for declare param
     def _set_parameters(
         self,
         parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
-        raise_on_failure: bool = False,
-        allow_undeclared_parameters: bool = False
+        descriptors: Optional[Dict[str, ParameterDescriptor]] = None
     ) -> List[SetParametersResult]:
         """
         Set parameters for the node, and return the result for the set action.
@@ -735,19 +758,12 @@ class Node:
 
         results = []
         for param in parameter_list:
-            if not allow_undeclared_parameters:
-                self._check_undeclared_parameters([param])
+            self._check_undeclared_parameters([param])
             # If undeclared parameters are allowed, parameters with type NOT_SET shall be stored.
             result = self._set_parameters_atomically(
                 [param],
-                descriptors,
-                allow_not_set_type=allow_undeclared_parameters
+                descriptors
             )
-            if raise_on_failure and not result.successful:
-                if result.reason.startswith('Wrong parameter type'):
-                    raise InvalidParameterTypeException(
-                        param, Parameter.Type(descriptors[param._name].type).name)
-                raise InvalidParameterValueException(param.name, param.value, result.reason)
             results.append(result)
         return results
 
@@ -798,6 +814,7 @@ class Node:
         if (not self._allow_undeclared_parameters and any(undeclared_parameters)):
             raise ParameterNotDeclaredException(list(undeclared_parameters))
 
+    # Note: allow_not_set_type -> True for decalre_parameter only
     def _set_parameters_atomically(
         self,
         parameter_list: List[Parameter],
