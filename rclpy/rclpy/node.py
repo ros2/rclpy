@@ -724,6 +724,7 @@ class Node:
         declared before being set even if they were not declared beforehand.
         Parameter overrides are ignored by this method.
 
+        TODO(deepanshu): update this documentation based on new callbacks
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node, once for each parameter.
         If the callback prevents a parameter from being set, then it will be reflected in the
@@ -753,6 +754,7 @@ class Node:
         By default it checks if the parameters were declared, raising an exception if at least
         one of them was not.
 
+        TODO(deepanshu): update this documentation based on new callbacks
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node, once for each parameter.
         If the callback doesn't succeed for a given parameter, it won't be set and either an
@@ -792,6 +794,7 @@ class Node:
         If undeclared parameters are allowed for the node, then all the parameters will be
         implicitly declared before being set even if they were not declared beforehand.
 
+        TODO(deepanshu): update this documentation based on new callbacks
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node only once for all parameters.
         If the callback prevents the parameters from being set, then it will be reflected in the
@@ -836,6 +839,7 @@ class Node:
         This internal method does not reject undeclared parameters.
         If :param:`allow_not_set_type` is False, a parameter with type NOT_SET will be undeclared.
 
+        TODO(deepanshu): update this documentation based on new callbacks
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node only once for all parameters.
         If the callback prevents the parameters from being set, then it will be reflected in the
