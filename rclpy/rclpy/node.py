@@ -885,9 +885,7 @@ class Node:
             self._parameter_event_publisher.publish(parameter_event)
 
             # call post set parameter registered callbacks
-            if self._post_set_parameters_callbacks:
-                for callback in self._post_set_parameters_callbacks:
-                    callback(parameter_event.new_parameters)
+            self._call_post_set_parameters_callback(parameter_list)
 
         return result
 
@@ -916,6 +914,11 @@ class Node:
             return modified_parameter_list
         else:
             return None
+
+    def _call_post_set_parameters_callback(self, parameter_list: [List[Parameter]]):
+        if self._post_set_parameters_callbacks:
+            for callback in self._post_set_parameters_callbacks:
+                callback(parameter_list)
 
     def add_pre_set_parameters_callback(
             self,
