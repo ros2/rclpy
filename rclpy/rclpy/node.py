@@ -741,8 +741,7 @@ class Node:
             result = self._set_parameters_atomically(
                 [param],
                 descriptors,
-                allow_not_set_type=allow_undeclared_parameters,
-                allow_undeclared_parameters=True
+                allow_not_set_type=allow_undeclared_parameters
             )
             if raise_on_failure and not result.successful:
                 if result.reason.startswith('Wrong parameter type'):
@@ -780,6 +779,7 @@ class Node:
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
             and at least one parameter in the list hadn't been declared beforehand.
         """
+        self._check_undeclared_parameters(parameter_list)
         return self._set_parameters_atomically(parameter_list)
 
     def _check_undeclared_parameters(self, parameter_list: List[Parameter]):
@@ -802,8 +802,7 @@ class Node:
         self,
         parameter_list: List[Parameter],
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
-        allow_not_set_type: bool = False,
-        allow_undeclared_parameters: bool = False
+        allow_not_set_type: bool = False
     ) -> SetParametersResult:
         """
         Set the given parameters, all at one time, and then aggregate result.
@@ -823,24 +822,8 @@ class Node:
             If descriptors are given, each parameter in the list must have a corresponding one.
         :param allow_not_set_type: False if parameters with NOT_SET type shall be undeclared,
             True if they should be stored despite not having an actual value.
-        :param allow_undeclared_parameters: If False, this method will check for undeclared
-            parameters for each of the elements in the parameter list.
         :return: Aggregate result of setting all the parameters atomically.
         """
-
-        # call any user registered pre set parameter callbacks
-        # this callback can make changes to the original parameters list
-        # also check if the changed parameter list is empty or not, if empty return
-        if self._call_pre_set_parameters_callback(parameter_list):
-            result = SetParametersResult()
-            result.successful = False
-            result.reason = "parameter list cannot be empty, this might be due to " \
-                            "pre_set_parameters_callback modifying the original parameters list"
-            return result
-
-        if not allow_undeclared_parameters:
-            self._check_undeclared_parameters(parameter_list)
-
         if descriptors is not None:
             # If new descriptors are provided, ensure every parameter has an assigned descriptor
             # and do not check for read-only.
@@ -915,6 +898,8 @@ class Node:
         """
         Add a callback gets triggered before parameters are validated.
 
+        Calling this function will add a callback in self._pre_set_parameter_callbacks list.
+
         This callback can be used to modify the original list of parameters being
         set by the user. The modified list of parameters is then forwarded to the
         "on set parameter" callback for validation.
@@ -955,6 +940,8 @@ class Node:
         """
         Add a callback gets triggered after parameters are set successfully.
 
+        Calling this function will add a callback in self._post_set_parameter_callbacks list.
+
         The callback signature is designed to allow handling of the `set_parameter*`
         or `declare_parameter*` methods. The callback takes a list of parameters that
         have been set successfully.
@@ -974,7 +961,7 @@ class Node:
         """
         Remove a callback from list of callbacks.
 
-        Calling this function will remove the callback from self._parameter_callbacks list.
+        Calling this function will remove the callback from self._pre_set_parameter_callbacks list.
 
         :param callback: The function that is called whenever parameters are set for the node.
         :raises: ValueError if a callback is not present in the list of callbacks.
@@ -1009,7 +996,7 @@ class Node:
         """
         self._post_set_parameters_callbacks.remove(callback)
 
-    def _call_pre_set_parameters_callback(self, parameter_list):
+    def _call_pre_set_parameters_callback(self, parameter_list: [List[Parameter]]):
         if self._pre_set_parameters_callbacks:
             for callback in self._pre_set_parameters_callbacks:
                 callback(parameter_list)

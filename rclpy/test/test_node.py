@@ -16,6 +16,7 @@ import pathlib
 import platform
 import time
 import unittest
+from typing import List
 from unittest.mock import Mock
 import warnings
 
@@ -401,6 +402,36 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
+        self.node.undeclare_parameter('foo')
+        self.node.undeclare_parameter('bar')
+        self.node.undeclare_parameter('baz')
+
+        # adding a parameter using func: "add_pre_set parameter" callback when
+        # that parameter has not been declared will not throw if undeclared
+        # parameters are allowed
+
+        def pre_set_callback(parameters_list: List[Parameter]):
+            for param in parameters_list:
+                if param.name == 'foo':
+                    parameters_list.append(Parameter('bar', Parameter.Type.STRING, 'hello'))
+
+        self.node.add_pre_set_parameters_callback(pre_set_callback)
+        #
+        # results = self.node.set_parameters([
+        #     Parameter('foo', Parameter.Type.INTEGER, 42),
+        #     Parameter('baz', Parameter.Type.DOUBLE, 2.41)
+        # ])
+
+        # self.assertEqual(2, len(results))
+        # self.assertTrue(all(isinstance(result, SetParametersResult) for result in results))
+        # self.assertTrue(all(result.successful for result in results))
+        self.assertTrue(self.node.has_parameter('foo'))
+        self.assertTrue(self.node.has_parameter('bar'))
+        self.assertTrue(self.node.has_parameter('baz'))
+        self.assertEqual(self.node.get_parameter('foo').value, 42)
+        self.assertEqual(self.node.get_parameter('bar').value, 'hello')
+        self.assertEqual(self.node.get_parameter('baz').value, 2.41)
+
     def test_node_cannot_set_invalid_parameters(self):
         with self.assertRaises(TypeError):
             self.node.set_parameters([42])
@@ -414,6 +445,31 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertIsInstance(result, SetParametersResult)
         self.assertTrue(result.successful)
+
+    def test_node_set_parameters_atomically_add_pre_set_parameter_callback(self):
+        # adding a parameter using func: "add_pre_set parameter" callback,
+        # when that parameter has not been declared will not throw if undeclared
+        # parameters are allowed
+
+        def pre_set_callback(parameters_list: List[Parameter]):
+            for param in parameters_list:
+                if param.name == 'foo':
+                    parameters_list.append(Parameter('bar', Parameter.Type.STRING, 'hello'))
+
+        self.node.add_pre_set_parameters_callback(pre_set_callback)
+        #
+        # result = self.node.set_parameters_atomically([
+        #     Parameter('foo', Parameter.Type.INTEGER, 42),
+        #     Parameter('baz', Parameter.Type.DOUBLE, 2.41)
+        # ])
+
+        # self.assertEqual(True, result.successful)
+        self.assertTrue(self.node.has_parameter('foo'))
+        self.assertTrue(self.node.has_parameter('bar'))
+        self.assertTrue(self.node.has_parameter('baz'))
+        self.assertEqual(self.node.get_parameter('foo').value, 42)
+        self.assertEqual(self.node.get_parameter('bar').value, 'hello')
+        self.assertEqual(self.node.get_parameter('baz').value, 2.41)
 
     def test_describe_undeclared_parameter(self):
         self.assertFalse(self.node.has_parameter('foo'))
@@ -1092,7 +1148,7 @@ class TestNode(unittest.TestCase):
         for callback in callbacks:
             self.node.add_on_set_parameters_callback(callback)
         for callback in callbacks:
-            self.assertTrue(callback in self.node._parameters_callbacks)
+            self.assertTrue(callback in self.node._on_set_parameters_callbacks)
         for callback in callbacks:
             self.node.remove_on_set_parameters_callback(callback)
 
@@ -1125,6 +1181,55 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result[1], SetParametersResult)
         self.assertTrue(result[1].successful)
 
+    def test_add_remove_pre_set_parameter_callback(self):
+        def pre_set_param_append_callback(parameter_list: List[Parameter]):
+            for param in parameter_list:
+                if param.name == 'foo':
+                    parameter_list.append(Parameter('bar', Parameter.Type.STRING, 'hello'))
+
+        def pre_set_param_empty_callback(parameter_list: List[Parameter]):
+            for param in parameter_list:
+                if param.name == 'foo':
+                    parameter_list = []
+            pass
+
+        callbacks = [
+            pre_set_param_empty_callback,
+            pre_set_param_append_callback]
+
+        for callback in callbacks:
+            self.node.add_pre_set_parameters_callback(callback)
+        for callback in callbacks:
+            self.assertTrue(callback in self.node._pre_set_parameters_callbacks)
+        for callback in callbacks:
+            self.node.remove_pre_set_parameters_callback(callback)
+
+        # adding a parameter using "add_pre_set_parameter" callback, when that
+        # parameter has not been declared before will throw.
+
+        # parameter 'bar' not declared here, only declare 'foo'
+        default_value = 0
+        self.node.declare_parameter('foo', 0)
+        self.node.add_pre_set_parameters_callback(pre_set_param_append_callback)
+
+        with self.assertRaises(ParameterNotDeclaredException):
+            self.node.set_parameters([
+                Parameter('foo', Parameter.Type.INTEGER, 42)])
+        self.assertTrue(self.node.has_parameter('foo'))
+        self.assertEqual(self.node.get_parameter('foo').value, default_value)
+        self.assertFalse(self.node.has_parameter('bar'))
+
+        self.node.remove_pre_set_parameters_callback(pre_set_param_append_callback)
+
+        # An empty list from  'add_pre_set_parameter' callback will return
+        # an unsuccessful result
+        self.node.add_pre_set_parameters_callback(pre_set_param_empty_callback)
+        results = self.node.set_parameters([Parameter('foo', Parameter.Type.INTEGER, 42)])
+        # self.assertFalse(results[0].successful)
+
+    def test_add_remove_post_set_parameter_callback(self):
+        pass
+
     def test_node_remove_from_set_callback(self):
         # Remove callbacks from list of callbacks.
         parameter_tuple = (
@@ -1137,7 +1242,7 @@ class TestNode(unittest.TestCase):
         ]
         # Checking if the callbacks are not already present.
         for callback in callbacks:
-            self.assertFalse(callback in self.node._parameters_callbacks)
+            self.assertFalse(callback in self.node._on_set_parameters_callbacks)
 
         for callback in callbacks:
             self.node.add_on_set_parameters_callback(callback)
@@ -1156,7 +1261,7 @@ class TestNode(unittest.TestCase):
         self.assertFalse(result[0].successful)
         # Removing the callback which is causing the rejection.
         self.node.remove_on_set_parameters_callback(self.reject_parameter_callback_1)
-        self.assertFalse(self.reject_parameter_callback_1 in self.node._parameters_callbacks)
+        self.assertFalse(self.reject_parameter_callback_1 in self.node._on_set_parameters_callbacks)
         # Now the setting its value again.
         result = self.node.set_parameters(
             [
