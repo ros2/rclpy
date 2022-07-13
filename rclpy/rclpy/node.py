@@ -162,7 +162,8 @@ class Node:
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._pre_set_parameters_callbacks: List[Callable[[List[Parameter]], List[Parameter]]] = []
-        self._on_set_parameters_callbacks: List[Callable[[List[Parameter]], SetParametersResult]] = []
+        self._on_set_parameters_callbacks: \
+            List[Callable[[List[Parameter]], SetParametersResult]] = []
         self._post_set_parameters_callbacks: List[Callable[[List[Parameter]], None]] = []
         self._rate_group = ReentrantCallbackGroup()
         self._allow_undeclared_parameters = allow_undeclared_parameters
@@ -402,20 +403,22 @@ class Node:
         expanding "namespace.name".
         This allows you to declare several parameters at once without a namespace.
 
-        This method will result in any callback registered with :func:`add_on_set_parameters_callback`
-        and :func:`add_post_set_parameters_callback` to be called once for each parameter.
+        This method will result in any callback registered with
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
+        to be called once for each parameter.
 
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node, once for each parameter.
-        If one of the calls due to :func:`add_on_set_parameters_callback` fail, an exception will be
-        raised and the remaining parameters will not be declared. Parameters declared up to that point
-        will not be undeclared.
+        If one of the calls due to :func:`add_on_set_parameters_callback` fail, an exception will
+        be raised and the remaining parameters will not be declared. Parameters declared up to that
+        point will not be undeclared.
 
-        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
-        will be called after setting the parameters successfully for the node, once for each parameter.
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the parameters successfully for the node,
+        once for each parameter.
 
-        This method will `not` result in any callbacks registered with :func:`add_pre_set_parameters_callback`
-        to be called.
+        This method will `not` result in any callbacks registered with
+        :func:`add_pre_set_parameters_callback` to be called.
 
         :param namespace: Namespace for parameters.
         :param parameters: List of tuples with parameters to declare.
@@ -527,18 +530,20 @@ class Node:
         By default, it checks if the parameters were declared, raising an exception if at least
         one of them was not.
 
-        This method will result in any callback registered with :func:`add_on_set_parameters_callback`
-        and :func:`add_post_set_parameters_callback` to be called once for each parameter.
+        This method will result in any callback registered with
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
+        to be called once for each parameter.
 
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node, once for each parameter.
         If the callback doesn't succeed for a given parameter an exception will be raised.
 
-        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
-        will be called after setting the parameters successfully for the node, once for each parameter.
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the parameters successfully for the node,
+        once for each parameter.
 
-        Note: The callbacks registered with func:`add_pre_set_parameters_callback` are not called while
-        declaring the parameters.
+        This method will `not` result in any callbacks registered with
+        :func:`add_pre_set_parameters_callback` to be called.
 
         :param parameter_list: List of parameters to set.
         :param descriptors: Descriptors to set to the given parameters.
@@ -740,9 +745,9 @@ class Node:
         declared before being set even if they were not declared beforehand.
         Parameter overrides are ignored by this method.
 
-        This method will result in any callback registered with :func:`add_pre_set_parameters_callback`
-        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback` to be
-        called once for each parameter.
+        This method will result in any callback registered with
+        :func:`add_pre_set_parameters_callback`, :func:`add_on_set_parameters_callback` and
+        :func:`add_post_set_parameters_callback` to be called once for each parameter.
 
         If a callback was registered previously with :func:`add_pre_set_parameters_callback`, it
         will be called prior to the validation of parameters for the node, once for each parameter.
@@ -754,8 +759,9 @@ class Node:
         If this callback prevents a parameter from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
 
-        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
-        will be called after setting the parameters successfully for the node, once for each parameter.
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the parameters successfully for the node,
+        once for each parameter.
 
         For each successfully set parameter, a :class:`ParameterEvent` message is
         published.
@@ -789,9 +795,9 @@ class Node:
         If undeclared parameters are allowed for the node, then all the parameters will be
         implicitly declared before being set even if they were not declared beforehand.
 
-        This method will result in any callback registered with :func:`add_pre_set_parameters_callback`
-        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback` to be
-        called only once for all parameters.
+        This method will result in any callback registered with
+        :func:`add_pre_set_parameters_callback` :func:`add_on_set_parameters_callback` and
+        :func:`add_post_set_parameters_callback` to be called only once for all parameters.
 
         If a callback was registered previously with :func:`add_pre_set_parameters_callback`, it
         will be called prior to the validation of node parameters only once for all parameters.
@@ -827,11 +833,12 @@ class Node:
         if modified_parameter_list is not None:
             parameter_list = modified_parameter_list
 
-            if len(parameter_list) is 0:
+            if len(parameter_list) == 0:
                 result = SetParametersResult()
                 result.successful = False
                 result.reason = "parameter list cannot be empty, this might be due to " \
-                                "pre_set_parameters_callback modifying the original parameters list."
+                                "pre_set_parameters_callback modifying the original parameters " \
+                                "list."
                 return result
 
         self._check_undeclared_parameters(parameter_list)
@@ -849,16 +856,18 @@ class Node:
         This internal method does not reject undeclared parameters.
         If :param:`allow_not_set_type` is False, a parameter with type NOT_SET will be undeclared.
 
-        This method will result in any callback registered with :func:`add_on_set_parameters_callback`
-        and :func:`add_post_set_parameters_callback` to be called only once for all parameters.
+        This method will result in any callback registered with
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
+        to be called only once for all parameters.
 
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node only once for all parameters.
         If the callback prevents the parameters from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
 
-        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
-        will be called after setting the node parameters successfully only once for all parameters.
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the node parameters successfully only once for all
+        parameters.
 
         For each successfully set parameter, a :class:`ParameterEvent` message is
         published.
@@ -1004,7 +1013,8 @@ class Node:
         It is considered bad practice to reject changes for "unknown" parameters as this prevents
         other parts of the node (that may be aware of these parameters) from handling them.
 
-        :param callback: The function that is called whenever parameters are being validated for the node.
+        :param callback: The function that is called whenever parameters are being validated
+                         for the node.
         """
         self._on_set_parameters_callbacks.insert(0, callback)
 

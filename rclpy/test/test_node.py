@@ -1250,7 +1250,8 @@ class TestNode(unittest.TestCase):
         self.assertFalse(result[0].successful)
         # Removing the callback which is causing the rejection.
         self.node.remove_on_set_parameters_callback(self.reject_parameter_callback_1)
-        self.assertFalse(self.reject_parameter_callback_1 in self.node._on_set_parameters_callbacks)
+        self.assertFalse(self.reject_parameter_callback_1 in
+                         self.node._on_set_parameters_callbacks)
         # Now the setting its value again.
         result = self.node.set_parameters(
             [
@@ -1553,7 +1554,8 @@ class TestNode(unittest.TestCase):
         # An empty list from  'add_pre_set_parameter' callback will return
         # an unsuccessful result
         self.node.add_pre_set_parameters_callback(self.empty_parameter_callback)
-        result = self.node.set_parameters_atomically([Parameter('foo', Parameter.Type.INTEGER, 42)])
+        result = self.node.set_parameters_atomically(
+                      [Parameter('foo', Parameter.Type.INTEGER, 42)])
 
         self.assertFalse(result.successful)
         self.assertTrue(self.node.has_parameter('foo'))
