@@ -414,8 +414,8 @@ class Node:
         If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
         will be called after setting the parameters successfully for the node, once for each parameter.
 
-        Note: The callbacks registered with func:`add_pre_set_parameters_callback` are not called while
-        declaring the parameters.
+        This method will `not` result in any callbacks registered with :func:`add_pre_set_parameters_callback`
+        to be called.
 
         :param namespace: Namespace for parameters.
         :param parameters: List of tuples with parameters to declare.
