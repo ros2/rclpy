@@ -524,7 +524,7 @@ class Node:
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None
     ) -> List[SetParametersResult]:
         """
-      ` Declare parameters for the node, and return the result for the declare action.
+        Declare parameters for the node, and return the result for the declare action.
 
         Method for internal usage; applies a setter method for each parameters in the list.
         By default, it checks if the parameters were declared, raising an exception if at least
