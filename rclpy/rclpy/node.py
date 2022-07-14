@@ -988,14 +988,24 @@ class Node:
         set by the user. The modified list of parameters is then forwarded to the
         "on set parameter" callback for validation.
 
-        The callback takes a LIST of parameters to be set. This LIST of parameters
-        can further be modified based on the user requirement.
+        The callback takes a list of parameters to be set and returns a list of
+        modified parameters.
 
         One of the use case of "pre set callback" can be updating additional parameters
         conditioned on changes to a parameter.
 
-        Note that once the parameters are modified parameters they will be set atomically.
-        This is because the change of one parameter is conditioned on some other parameter.
+        All parameters in the modified list will be set atomically.
+
+        Note that the callback is only called while setting parameters with `set_parameters`,
+        `set_parameters_atomically`, or externally with a parameters service.
+
+        The callback is not called when parameters are declared with `declare_parameter`
+        or `declare_parameters`.
+
+        The callback is not called when parameters are undeclared with `undeclare_parameter`.
+
+        An empty modified parameter list from the callback will result in "set_parameter*"
+        returning an unsuccessful result.
 
         :param callback: The function that is called before parameters are validated.
         """

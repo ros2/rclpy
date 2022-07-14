@@ -391,7 +391,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             node.destroy_node()
 
     def modify_parameter_callback(self, parameters_list: List[Parameter]):
-        modified_list = parameters_list
+        modified_list = parameters_list.copy()
         for param in parameters_list:
             if param.name == 'foo':
                 modified_list.append(Parameter('bar', Parameter.Type.STRING, 'hello'))
@@ -1144,7 +1144,7 @@ class TestNode(unittest.TestCase):
         self.assertTrue(result[2].successful)
 
     def modify_parameter_callback(self, parameter_list: List[Parameter]):
-        modified_list = parameter_list
+        modified_list = parameter_list.copy()
         for param in parameter_list:
             if param.name == 'foo':
                 modified_list.append(Parameter('bar', Parameter.Type.STRING, 'hello'))
