@@ -2,6 +2,17 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.6.0 (2022-07-14)
+------------------
+* Add Parameter Client (`#959 <https://github.com/ros2/rclpy/issues/959>`_)
+* Change sphinx theme to readthedocs (`#950 <https://github.com/ros2/rclpy/issues/950>`_)
+* Name and type in descriptor(s) is ignored via declare_parameter(s). (`#957 <https://github.com/ros2/rclpy/issues/957>`_)
+* Typo fix (`#951 <https://github.com/ros2/rclpy/issues/951>`_)
+* Add py.typed to package (`#946 <https://github.com/ros2/rclpy/issues/946>`_)
+* Fix rclpy.shutdown() from hanging when triggered from callback (`#947 <https://github.com/ros2/rclpy/pull/947>`_)
+* Check if the context is already shutdown. (`#939 <https://github.com/ros2/rclpy/issues/939>`_)
+* Contributors: Brian Chen, Tomoya Fujita, Yuki Igarashi
+
 3.5.0 (2022-05-03)
 ------------------
 * Avoid causing infinite loop when message is empty (`#935 <https://github.com/ros2/rclpy/issues/935>`_)
