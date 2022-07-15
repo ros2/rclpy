@@ -54,7 +54,7 @@ Service::Service(
     service_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
-  // Create a client
+  // Create a service
   rcl_service_ = std::shared_ptr<rcl_service_t>(
     new rcl_service_t,
     [node](rcl_service_t * service)
