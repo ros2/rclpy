@@ -17,7 +17,8 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl_action/rcl_action.h>
+#include <rcl_action/action_server.h>
+#include <rmw/types.h>
 
 #include <memory>
 
@@ -47,12 +48,13 @@ public:
    * \param[in] node Node to add the action server to.
    * \param[in] rclpy_clock Clock use to create the action server.
    * \param[in] pyaction_type Action module associated with the action server.
-   * \param[in] pyaction_name Python object containing the action name.
+   * \param[in] action_name The action name.
    * \param[in] goal_service_qos rmw_qos_profile_t object for the goal service.
    * \param[in] result_service_qos rmw_qos_profile_t object for the result service.
    * \param[in] cancel_service_qos rmw_qos_profile_t object for the cancel service.
-   * \param[in] feedback_qos rmw_qos_profile_t object for the feedback subscriber.
-   * \param[in] status_qos rmw_qos_profile_t object for the status subscriber.
+   * \param[in] feedback_topic_qos rmw_qos_profile_t object for the feedback subscriber.
+   * \param[in] status_topic_qos rmw_qos_profile_t object for the status subscriber.
+   * \param[in] result_timeout The number of seconds to wait for the result.
    */
   ActionServer(
     Node & node,
@@ -96,7 +98,7 @@ public:
    * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
-   * \param[in] pyheader Pointer to the message header.
+   * \param[in] header Pointer to the message header.
    * \param[in] pyresponse The response message to send.
    */
   void
@@ -134,7 +136,7 @@ public:
    * Raises RCLError if an error occurs in rcl
    * Raises RuntimeError on failure.
    *
-   * \param[in] pyheader Pointer to the message header.
+   * \param[in] header Pointer to the message header.
    * \param[in] pyresponse The response message to send.
    */
   void
@@ -167,10 +169,10 @@ public:
   notify_goal_done();
 
   /// Check if a goal is already being tracked by an action server.
-  /*
+  /**
    * Raises AttributeError if there is an issue parsing the pygoal_info.
    *
-   * \param[in] pygoal_info the identifiers of goals that expired, or set to `NULL` if unused
+   * \param[in] pygoal_info The identifiers of goals that expired, or set to `NULL` if unused.
    * \return True if the goal exists, false otherwise.
    */
   bool
@@ -183,13 +185,19 @@ public:
    * Raises RuntimeError on failure while publishing a status message.
    * Raises RCLError if an error occurs in rcl
    *
-   * \return the cancel response message
+   * \param[in] pycancel_request The request message to send.
+   * \param[in] pycancel_response_type The cancel response type.
+   * \return The cancel response message.
    */
   py::object
   process_cancel_request(
     py::object pycancel_request, py::object pycancel_response_type);
 
   /// Expires goals associated with an action server.
+  /**
+   * \param[in] max_num_goals The maximum number of goals to expire.
+   * \return A tuple of GoalInfos corresponding to the canceled goals.
+   */
   py::tuple
   expire_goals(int64_t max_num_goals);
 
@@ -213,7 +221,7 @@ public:
    * Raises RuntimeError on failure.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pywait_set Capsule pointing to the wait set structure.
+   * \param[in] wait_set Capsule pointing to the wait set structure.
    * \return A tuple of booleans representing ready sub-entities.
    *       (is_goal_request_ready,
    *        is_cancel_request_ready,
@@ -228,7 +236,7 @@ public:
    * Raises RuntimeError on failure.
    * Raises RCLError if an error occurs in rcl
    *
-   * \param[in] pywait_set Capsule pointer to an rcl_wait_set_t.
+   * \param[in] wait_set Capsule pointer to an rcl_wait_set_t.
    */
   void
   add_to_waitset(WaitSet & wait_set);

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import builtin_interfaces.msg
-from rclpy.clock import ClockType
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
@@ -23,8 +22,11 @@ CONVERSION_CONSTANT = 10 ** 9
 
 class Time:
 
-    def __init__(self, *, seconds=0, nanoseconds=0, clock_type=ClockType.SYSTEM_TIME):
-        if not isinstance(clock_type, ClockType):
+    def __init__(
+            self, *,
+            seconds=0, nanoseconds=0,
+            clock_type: _rclpy.ClockType = _rclpy.ClockType.SYSTEM_TIME):
+        if not isinstance(clock_type, _rclpy.ClockType):
             raise TypeError('Clock type must be a ClockType enum')
         if seconds < 0:
             raise ValueError('Seconds value must not be negative')
@@ -139,7 +141,7 @@ class Time:
         return builtin_interfaces.msg.Time(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
-    def from_msg(cls, msg, clock_type=ClockType.ROS_TIME):
+    def from_msg(cls, msg, clock_type: _rclpy.ClockType = _rclpy.ClockType.ROS_TIME):
         if not isinstance(msg, builtin_interfaces.msg.Time):
             raise TypeError('Must pass a builtin_interfaces.msg.Time object')
         return cls(seconds=msg.sec, nanoseconds=msg.nanosec, clock_type=clock_type)

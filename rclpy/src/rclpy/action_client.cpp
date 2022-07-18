@@ -15,12 +15,18 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl/types.h>
+#include <rcl_action/action_client.h>
+#include <rcl_action/wait.h>
+#include <rosidl_runtime_c/action_type_support_struct.h>
+#include <rmw/types.h>
 
 #include <memory>
 #include <string>
 
 #include "action_client.hpp"
 #include "exceptions.hpp"
+#include "node.hpp"
 #include "utils.hpp"
 
 namespace rclpy

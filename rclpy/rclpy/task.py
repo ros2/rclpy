@@ -88,7 +88,7 @@ class Future:
 
         :raises: Exception if one was set during the task.
 
-        :return: The result set by the task
+        :return: The result set by the task, or None if no result was set.
         """
         if self._exception:
             raise self.exception()

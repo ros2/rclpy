@@ -14,21 +14,44 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/allocator.h>
 #include <rcl/context.h>
 #include <rcl/error_handling.h>
-#include <rcl/rcl.h>
+#include <rcl/init.h>
+#include <rcl/init_options.h>
 #include <rcl/types.h>
 
+#include <algorithm>
 #include <limits>
 #include <memory>
+#include <mutex>
+#include <stdexcept>
 #include <vector>
 
 #include "context.hpp"
 #include "exceptions.hpp"
 #include "utils.hpp"
 
+namespace
+{
+// g_contexts is a collection of valid contexts
+std::vector<rcl_context_t *> g_contexts;
+std::mutex g_contexts_mutex;
+}
+
 namespace rclpy
 {
+void shutdown_contexts()
+{
+  // graceful shutdown all contexts
+  std::lock_guard guard{g_contexts_mutex};
+  for (auto * c : g_contexts) {
+    rcl_ret_t ret = rcl_shutdown(c);
+    (void)ret;
+  }
+  g_contexts.clear();
+}
+
 Context::Context(py::list pyargs, size_t domain_id)
 {
   rcl_context_ = std::shared_ptr<rcl_context_t>(
@@ -94,6 +117,10 @@ Context::Context(py::list pyargs, size_t domain_id)
   }
 
   throw_if_unparsed_ros_args(pyargs, rcl_context_.get()->global_arguments);
+  {
+    std::lock_guard guard{g_contexts_mutex};
+    g_contexts.push_back(rcl_context_.get());
+  }
 }
 
 void
@@ -123,6 +150,14 @@ Context::ok()
 void
 Context::shutdown()
 {
+  {
+    std::lock_guard guard{g_contexts_mutex};
+    auto iter = std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get());
+    if (iter != g_contexts.end()) {
+      g_contexts.erase(iter);
+    }
+  }
+
   rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to shutdown");

@@ -19,9 +19,8 @@
 #include <rmw/incompatible_qos_events_statuses.h>
 
 #include <memory>
-#include <string>
+#include <stdexcept>
 #include <utility>
-#include <variant>  // NOLINT
 
 #include "exceptions.hpp"
 #include "qos_event.hpp"

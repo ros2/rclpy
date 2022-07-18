@@ -22,6 +22,7 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import Type
 from typing import TypeVar
 from typing import Union
 
@@ -152,12 +153,12 @@ class Node:
         self.__handle = None
         self._context = get_default_context() if context is None else context
         self._parameters: dict = {}
-        self.__publishers: List[Publisher] = []
-        self.__subscriptions: List[Subscription] = []
-        self.__clients: List[Client] = []
-        self.__services: List[Service] = []
-        self.__timers: List[Timer] = []
-        self.__guards: List[GuardCondition] = []
+        self._publishers: List[Publisher] = []
+        self._subscriptions: List[Subscription] = []
+        self._clients: List[Client] = []
+        self._services: List[Service] = []
+        self._timers: List[Timer] = []
+        self._guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._parameters_callbacks: List[Callable[[List[Parameter]], SetParametersResult]] = []
@@ -205,14 +206,21 @@ class Node:
         if parameter_overrides is not None:
             self._parameter_overrides.update({p.name: p for p in parameter_overrides})
 
-        if automatically_declare_parameters_from_overrides:
-            self._parameters.update(self._parameter_overrides)
-            self._descriptors.update({p: ParameterDescriptor() for p in self._parameters})
-
         # Clock that has support for ROS time.
+        self._clock = ROSClock()
+
+        if automatically_declare_parameters_from_overrides:
+            self.declare_parameters(
+                '',
+                [
+                    (name, param.value, ParameterDescriptor())
+                    for name, param in self._parameter_overrides.items()],
+                ignore_override=True,
+            )
+
+        # Init a time source.
         # Note: parameter overrides and parameter event publisher need to be ready at this point
         # to be able to declare 'use_sim_time' if it was not declared yet.
-        self._clock = ROSClock()
         self._time_source = TimeSource(node=self)
         self._time_source.attach_clock(self._clock)
 
@@ -222,32 +230,32 @@ class Node:
     @property
     def publishers(self) -> Iterator[Publisher]:
         """Get publishers that have been created on this node."""
-        yield from self.__publishers
+        yield from self._publishers
 
     @property
     def subscriptions(self) -> Iterator[Subscription]:
         """Get subscriptions that have been created on this node."""
-        yield from self.__subscriptions
+        yield from self._subscriptions
 
     @property
     def clients(self) -> Iterator[Client]:
         """Get clients that have been created on this node."""
-        yield from self.__clients
+        yield from self._clients
 
     @property
     def services(self) -> Iterator[Service]:
         """Get services that have been created on this node."""
-        yield from self.__services
+        yield from self._services
 
     @property
     def timers(self) -> Iterator[Timer]:
         """Get timers that have been created on this node."""
-        yield from self.__timers
+        yield from self._timers
 
     @property
     def guards(self) -> Iterator[GuardCondition]:
         """Get guards that have been created on this node."""
-        yield from self.__guards
+        yield from self._guards
 
     @property
     def waitables(self) -> Iterator[Waitable]:
@@ -341,6 +349,9 @@ class Node:
         This method, if successful, will result in any callback registered with
         :func:`add_on_set_parameters_callback` to be called.
 
+        The name and type in the given descriptor is ignored, and should be specified using
+        the name argument to this function and the default value's type instead.
+
         :param name: Fully-qualified name of the parameter, including its namespace.
         :param value: Value of the parameter to declare.
         :param descriptor: Descriptor for the parameter to declare.
@@ -373,6 +384,8 @@ class Node:
 
         The tuples in the given parameter list shall contain the name for each parameter,
         optionally providing a value and a descriptor.
+        The name and type in the given descriptors are ignored, and should be specified using
+        the name argument to this function and the default value's type instead.
         For each entry in the list, a parameter with a name of "namespace.name"
         will be declared.
         The resulting value for each declared parameter will be returned, considering
@@ -431,7 +444,7 @@ class Node:
 
             if len(parameter_tuple) == 1:
                 warnings.warn(
-                    f"when declaring parmater named '{name}', "
+                    f"when declaring parameter named '{name}', "
                     'declaring a parameter only providing its name is deprecated. '
                     'You have to either:\n'
                     '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
@@ -742,7 +755,7 @@ class Node:
         allowed for the node, this method will raise a ParameterNotDeclaredException exception.
 
         Parameters are set all at once.
-        If setting a parameter fails due to not being declared, then no parameter will be set set.
+        If setting a parameter fails due to not being declared, then no parameter will be set.
         Either all of the parameters are set or none of them are set.
 
         If undeclared parameters are allowed for the node, then all the parameters will be
@@ -1240,6 +1253,7 @@ class Node:
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        publisher_class: Type[Publisher] = Publisher,
     ) -> Publisher:
         """
         Create a new publisher.
@@ -1289,14 +1303,14 @@ class Node:
             self._validate_topic_or_service_name(topic)
 
         try:
-            publisher = Publisher(
+            publisher = publisher_class(
                 publisher_object, msg_type, topic, qos_profile,
                 event_callbacks=event_callbacks or PublisherEventCallbacks(),
                 callback_group=callback_group)
         except Exception:
             publisher_object.destroy_when_not_in_use()
             raise
-        self.__publishers.append(publisher)
+        self._publishers.append(publisher)
         self._wake_executor()
 
         for event_callback in publisher.event_handlers:
@@ -1373,8 +1387,8 @@ class Node:
         except Exception:
             subscription_object.destroy_when_not_in_use()
             raise
-        self.__subscriptions.append(subscription)
         callback_group.add_entity(subscription)
+        self._subscriptions.append(subscription)
         self._wake_executor()
 
         for event_handler in subscription.event_handlers:
@@ -1419,8 +1433,8 @@ class Node:
             self.context,
             client_impl, srv_type, srv_name, qos_profile,
             callback_group)
-        self.__clients.append(client)
         callback_group.add_entity(client)
+        self._clients.append(client)
         self._wake_executor()
         return client
 
@@ -1463,8 +1477,8 @@ class Node:
         service = Service(
             service_impl,
             srv_type, srv_name, callback, callback_group, qos_profile)
-        self.__services.append(service)
         callback_group.add_entity(service)
+        self._services.append(service)
         self._wake_executor()
         return service
 
@@ -1494,8 +1508,8 @@ class Node:
             clock = self._clock
         timer = Timer(callback, callback_group, timer_period_nsec, clock, context=self.context)
 
-        self.__timers.append(timer)
         callback_group.add_entity(timer)
+        self._timers.append(timer)
         self._wake_executor()
         return timer
 
@@ -1509,8 +1523,8 @@ class Node:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
 
-        self.__guards.append(guard)
         callback_group.add_entity(guard)
+        self._guards.append(guard)
         self._wake_executor()
         return guard
 
@@ -1542,8 +1556,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if publisher in self.__publishers:
-            self.__publishers.remove(publisher)
+        if publisher in self._publishers:
+            self._publishers.remove(publisher)
             for event_handler in publisher.event_handlers:
                 self.__waitables.remove(event_handler)
             try:
@@ -1560,8 +1574,8 @@ class Node:
 
         :return: ``True`` if succesful, ``False`` otherwise.
         """
-        if subscription in self.__subscriptions:
-            self.__subscriptions.remove(subscription)
+        if subscription in self._subscriptions:
+            self._subscriptions.remove(subscription)
             for event_handler in subscription.event_handlers:
                 self.__waitables.remove(event_handler)
             try:
@@ -1578,8 +1592,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if client in self.__clients:
-            self.__clients.remove(client)
+        if client in self._clients:
+            self._clients.remove(client)
             try:
                 client.destroy()
             except InvalidHandle:
@@ -1594,8 +1608,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if service in self.__services:
-            self.__services.remove(service)
+        if service in self._services:
+            self._services.remove(service)
             try:
                 service.destroy()
             except InvalidHandle:
@@ -1610,8 +1624,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if timer in self.__timers:
-            self.__timers.remove(timer)
+        if timer in self._timers:
+            self._timers.remove(timer)
             try:
                 timer.destroy()
             except InvalidHandle:
@@ -1626,8 +1640,8 @@ class Node:
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        if guard in self.__guards:
-            self.__guards.remove(guard)
+        if guard in self._guards:
+            self._guards.remove(guard)
             try:
                 guard.destroy()
             except InvalidHandle:
@@ -1636,16 +1650,17 @@ class Node:
             return True
         return False
 
-    def destroy_rate(self, rate: Rate):
+    def destroy_rate(self, rate: Rate) -> bool:
         """
         Destroy a Rate object created by the node.
 
         :return: ``True`` if successful, ``False`` otherwise.
         """
-        self.destroy_timer(rate._timer)
+        success = self.destroy_timer(rate._timer)
         rate.destroy()
+        return success
 
-    def destroy_node(self) -> bool:
+    def destroy_node(self):
         """
         Destroy the node.
 
@@ -1665,18 +1680,18 @@ class Node:
 
         # Destroy dependent items eagerly to work around a possible hang
         # https://github.com/ros2/build_cop/issues/248
-        while self.__publishers:
-            self.destroy_publisher(self.__publishers[0])
-        while self.__subscriptions:
-            self.destroy_subscription(self.__subscriptions[0])
-        while self.__clients:
-            self.destroy_client(self.__clients[0])
-        while self.__services:
-            self.destroy_service(self.__services[0])
-        while self.__timers:
-            self.destroy_timer(self.__timers[0])
-        while self.__guards:
-            self.destroy_guard_condition(self.__guards[0])
+        while self._publishers:
+            self.destroy_publisher(self._publishers[0])
+        while self._subscriptions:
+            self.destroy_subscription(self._subscriptions[0])
+        while self._clients:
+            self.destroy_client(self._clients[0])
+        while self._services:
+            self.destroy_service(self._services[0])
+        while self._timers:
+            self.destroy_timer(self._timers[0])
+        while self._guards:
+            self.destroy_guard_condition(self._guards[0])
         self.__node.destroy_when_not_in_use()
         self._wake_executor()
 

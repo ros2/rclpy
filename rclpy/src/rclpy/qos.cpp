@@ -14,15 +14,15 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rcl/rcl.h>
 #include <rcl/time.h>
 #include <rmw/error_handling.h>
 #include <rmw/incompatible_qos_events_statuses.h>
 #include <rmw/qos_profiles.h>
+#include <rmw/time.h>
 #include <rmw/types.h>
 
 #include <cstring>
-#include <memory>
+#include <stdexcept>
 #include <string>
 
 #include "exceptions.hpp"
@@ -63,7 +63,7 @@ _convert_py_duration_to_rmw_time(const rcl_duration_t & duration, rmw_time_t * o
   out_time->nsec = duration.nanoseconds % (1000LL * 1000LL * 1000LL);
 }
 
-// Create an rmw_qos_profile_t instance.
+/// Create an rmw_qos_profile_t instance.
 /**
  * Raises ValueError if a any capsule is not of the expected type.
  * Raises MemoryError if rmw_qos_profile_t allocation fails.
@@ -118,7 +118,7 @@ create_qos_profile(
   return qos_profile;
 }
 
-// Fetch a predefined rmw_qos_profile_t instance.
+/// Fetch a predefined rmw_qos_profile_t instance.
 /**
  * Raises InvalidArgument if the given \p qos_profile_name is unknown.
  *
@@ -148,6 +148,9 @@ predefined_qos_profile_from_name(const char * qos_profile_name)
   }
   if (0 == strcmp(qos_profile_name, "qos_profile_parameter_events")) {
     return rmw_qos_profile_parameter_events;
+  }
+  if (0 == strcmp(qos_profile_name, "qos_profile_best_available")) {
+    return rmw_qos_profile_best_available;
   }
 
   std::string error_text = "Requested unknown rmw_qos_profile: ";

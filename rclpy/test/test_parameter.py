@@ -13,11 +13,17 @@
 # limitations under the License.
 
 from array import array
+import os
+from tempfile import NamedTemporaryFile
 import unittest
 
+import pytest
 from rcl_interfaces.msg import Parameter as ParameterMsg
+from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
 from rclpy.parameter import Parameter
+from rclpy.parameter import parameter_dict_from_yaml_file
+from rclpy.parameter import parameter_value_to_python
 
 
 class TestParameter(unittest.TestCase):
@@ -160,6 +166,77 @@ class TestParameter(unittest.TestCase):
             name='double_array',
             value=ParameterValue(type=8, double_array_value=[1.0, 2.0, 3.0])
         ))
+
+    def test_parameter_value_to_python(self):
+        """Test the parameter_value_to_python conversion function."""
+        test_cases = [
+            (ParameterValue(type=int(ParameterType.PARAMETER_NOT_SET)), None),
+            (ParameterValue(type=int(ParameterType.PARAMETER_INTEGER), integer_value=42), 42),
+            (ParameterValue(type=int(ParameterType.PARAMETER_DOUBLE), double_value=3.5), 3.5),
+            (ParameterValue(type=int(ParameterType.PARAMETER_STRING), string_value='foo'), 'foo'),
+            (
+                ParameterValue(
+                    type=int(ParameterType.PARAMETER_BYTE_ARRAY),
+                    byte_array_value=[b'J', b'P']
+                ),
+                [b'J', b'P']
+            ),
+            (
+                ParameterValue(
+                    type=int(ParameterType.PARAMETER_INTEGER_ARRAY),
+                    integer_array_value=[1, 2, 3]),
+                [1, 2, 3]
+            ),
+            (
+                ParameterValue(
+                    type=int(ParameterType.PARAMETER_DOUBLE_ARRAY),
+                    double_array_value=[1.0, 2.0, 3.0]),
+                [1.0, 2.0, 3.0]
+            ),
+            (
+                ParameterValue(
+                    type=int(ParameterType.PARAMETER_STRING_ARRAY),
+                    string_array_value=['foo', 'bar']),
+                ['foo', 'bar']
+            ),
+        ]
+
+        for input_value, expected_value in test_cases:
+            result_value = parameter_value_to_python(input_value)
+            if isinstance(expected_value, list):
+                assert len(result_value) == len(expected_value)
+                # element-wise comparison for lists
+                assert all(x == y for x, y in zip(result_value, expected_value))
+            else:
+                assert result_value == expected_value
+
+        # Test invalid 'type' member
+        parameter_value = ParameterValue(type=42)
+        with pytest.raises(RuntimeError):
+            parameter_value_to_python(parameter_value)
+
+    def test_parameter_dict_from_yaml_file(self):
+        yaml_string = """/param_test_target:
+            ros__parameters:
+                param_1: 1
+                param_str: string
+            """
+        expected = {
+            'param_1': Parameter('param_1', Parameter.Type.INTEGER, 1).to_parameter_msg(),
+            'param_str': Parameter('param_str', Parameter.Type.STRING, 'string').to_parameter_msg()
+        }
+
+        try:
+            with NamedTemporaryFile(mode='w', delete=False) as f:
+                f.write(yaml_string)
+                f.flush()
+                f.close()
+                parameter_dict = parameter_dict_from_yaml_file(f.name)
+            assert parameter_dict == expected
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
+        self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
 
 
 if __name__ == '__main__':

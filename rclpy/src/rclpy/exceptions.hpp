@@ -18,8 +18,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "rclpy_common/visibility_control.h"
-
 namespace rclpy
 {
 std::string append_rcutils_error(std::string prepend);

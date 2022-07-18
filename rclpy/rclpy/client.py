@@ -64,6 +64,8 @@ class Client:
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
 
+        self._lock = threading.Lock()
+
     def call(self, request: SrvTypeRequest) -> SrvTypeResponse:
         """
         Make a service request and wait for the result.
@@ -88,30 +90,18 @@ class Client:
         future = self.call_async(request)
         future.add_done_callback(unblock)
 
-        event.wait()
+        # Check future.done() before waiting on the event.
+        # The callback might have been added after the future is completed,
+        # resulting in the event never being set.
+        if not future.done():
+            event.wait()
         if future.exception() is not None:
             raise future.exception()
         return future.result()
 
-    def remove_pending_request(self, future: Future) -> None:
-        """
-        Remove a future from the list of pending requests.
-
-        This prevents a future from receiving a response and executing its done callbacks.
-
-        :param future: A future returned from :meth:`call_async`
-        """
-        for seq, req_future in self._pending_requests.items():
-            if future == req_future:
-                try:
-                    del self._pending_requests[seq]
-                except KeyError:
-                    pass
-                break
-
     def call_async(self, request: SrvTypeRequest) -> Future:
         """
-        Make a service request and asyncronously get the result.
+        Make a service request and asynchronously get the result.
 
         :param request: The service request.
         :return: A future that completes when the request does.
@@ -122,17 +112,43 @@ class Client:
         if not isinstance(request, self.srv_type.Request):
             raise TypeError()
 
-        with self.handle:
-            sequence_number = self.__client.send_request(request)
-        if sequence_number in self._pending_requests:
-            raise RuntimeError('Sequence (%r) conflicts with pending request' % sequence_number)
+        with self._lock:
+            with self.handle:
+                sequence_number = self.__client.send_request(request)
+            if sequence_number in self._pending_requests:
+                raise RuntimeError(f'Sequence ({sequence_number}) conflicts with pending request')
 
-        future = Future()
-        self._pending_requests[sequence_number] = future
+            future = Future()
+            self._pending_requests[sequence_number] = future
 
-        future.add_done_callback(self.remove_pending_request)
+            future.add_done_callback(self.remove_pending_request)
 
         return future
+
+    def get_pending_request(self, sequence_number: int) -> Future:
+        """
+        Get a future from the list of pending requests.
+
+        :param sequence_number: Number identifying the pending request.
+        :return: The future corresponding to the sequence_number.
+        :raises: KeyError if the sequence_number is not in the pending requests.
+        """
+        with self._lock:
+            return self._pending_requests[sequence_number]
+
+    def remove_pending_request(self, future: Future) -> None:
+        """
+        Remove a future from the list of pending requests.
+
+        This prevents a future from receiving a response and executing its done callbacks.
+
+        :param future: A future returned from :meth:`call_async`
+        """
+        with self._lock:
+            for seq, req_future in self._pending_requests.items():
+                if future is req_future:
+                    del self._pending_requests[seq]
+                    break
 
     def service_is_ready(self) -> bool:
         """
@@ -154,6 +170,7 @@ class Client:
         """
         # TODO(sloretz) Return as soon as the service is available
         # This is a temporary implementation. The sleep time is arbitrary.
+        # https://github.com/ros2/rclpy/issues/58
         sleep_time = 0.25
         if timeout_sec is None:
             timeout_sec = float('inf')

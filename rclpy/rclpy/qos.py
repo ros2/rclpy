@@ -363,6 +363,7 @@ class ReliabilityPolicy(QoSPolicyEnum):
     RELIABLE = 1
     BEST_EFFORT = 2
     UNKNOWN = 3
+    BEST_AVAILABLE = 4
 
 
 # Alias with the old name, for retrocompatibility
@@ -386,6 +387,7 @@ class DurabilityPolicy(QoSPolicyEnum):
     TRANSIENT_LOCAL = 1
     VOLATILE = 2
     UNKNOWN = 3
+    BEST_AVAILABLE = 4
 
 
 # Alias with the old name, for retrocompatibility
@@ -409,10 +411,23 @@ class LivelinessPolicy(QoSPolicyEnum):
     AUTOMATIC = 1
     MANUAL_BY_TOPIC = 3
     UNKNOWN = 4
+    BEST_AVAILABLE = 5
 
 
 # Alias with the old name, for retrocompatibility
 QoSLivelinessPolicy = LivelinessPolicy
+
+# Deadline policy to match the majority of endpoints while being as strict as possible
+# See `RMW_QOS_DEADLINE_BEST_AVAILABLE` in rmw/types.h for more info.
+DeadlineBestAvailable = Duration(nanoseconds=_rclpy.RMW_QOS_DEADLINE_BEST_AVAILABLE)
+
+# Liveliness lease duraiton policy to match the majority of endpoints while being as strict as
+# possible
+# See `RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE` in rmw/types.h for more info.
+LivelinessLeaseDurationeBestAvailable = Duration(
+    nanoseconds=_rclpy.RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE
+)
+
 
 # The details of the following profiles can be found at
 # 1. ROS QoS principles:
@@ -440,6 +455,14 @@ qos_profile_parameters = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
 #: parameters.
 qos_profile_parameter_events = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
     'qos_profile_parameter_events').to_dict())
+#: Match majority of endpoints currently available while maintaining the highest level of service.
+#: Policies are chosen at the time of creating a subscription or publisher.
+#: The middleware is not expected to update policies after creating a subscription or
+#: publisher, even if one or more policies are incompatible with newly discovered endpoints.
+#: Therefore, this profile should be used with care since non-deterministic behavior
+#: can occur due to races with discovery.
+qos_profile_best_available = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_best_available').to_dict())
 
 # Separate rcl_action profile defined at
 # ros2/rcl : rcl/rcl_action/include/rcl_action/default_qos.h
@@ -457,6 +480,7 @@ class QoSPresetProfiles(Enum):
     PARAMETERS = qos_profile_parameters
     PARAMETER_EVENTS = qos_profile_parameter_events
     ACTION_STATUS_DEFAULT = qos_profile_action_status_default
+    BEST_AVAILABLE = qos_profile_best_available
 
     """Noted that the following are duplicated from QoSPolicyEnum.
 

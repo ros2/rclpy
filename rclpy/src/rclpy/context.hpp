@@ -17,9 +17,10 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/context.h>
 #include <rcl/error_handling.h>
+#include <rcl/init_options.h>
 
-#include <functional>
 #include <memory>
 
 #include "destroyable.hpp"
@@ -55,6 +56,8 @@ struct InitOptions
 
   rcl_init_options_t rcl_options;
 };
+
+void shutdown_contexts();
 
 class Context : public Destroyable, public std::enable_shared_from_this<Context>
 {

@@ -79,7 +79,7 @@ class _WorkTracker:
             self._num_work_executing -= 1
             self._work_condition.notify_all()
 
-    def wait(self, timeout_sec=None):
+    def wait(self, timeout_sec: Optional[float] = None):
         """
         Wait until all work completes.
 
@@ -87,7 +87,7 @@ class _WorkTracker:
         :type timeout_sec: float or None
         :rtype: bool True if all work completed
         """
-        if timeout_sec is not None and timeout_sec < 0:
+        if timeout_sec is not None and timeout_sec < 0.0:
             timeout_sec = None
         # Wait for all work to complete
         with self._work_condition:
@@ -204,9 +204,9 @@ class Executor:
                 self._is_shutdown = True
                 # Tell executor it's been shut down
                 self._guard.trigger()
-
-        if not self._work_tracker.wait(timeout_sec):
-            return False
+        if not self._is_shutdown:
+            if not self._work_tracker.wait(timeout_sec):
+                return False
 
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
@@ -280,6 +280,9 @@ class Executor:
 
     def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
         """Execute callbacks until a given future is done or a timeout occurs."""
+        # Make sure the future wakes this executor when it is done
+        future.add_done_callback(lambda x: self.wake())
+
         if timeout_sec is None or timeout_sec < 0:
             while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once_until_future_complete(future, timeout_sec)
@@ -324,31 +327,35 @@ class Executor:
     def _take_timer(self, tmr):
         with tmr.handle:
             tmr.handle.call_timer()
+        return ()
 
-    async def _execute_timer(self, tmr, _):
+    async def _execute_timer(self, tmr):
         await await_or_execute(tmr.callback)
 
     def _take_subscription(self, sub):
         with sub.handle:
             msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
             if msg_info is not None:
-                return msg_info[0]
-        return None
+                if sub._callback_type is Subscription.CallbackType.MessageOnly:
+                    return (msg_info[0], )
+                else:
+                    return msg_info
+        return ()
 
-    async def _execute_subscription(self, sub, msg):
-        if msg:
-            await await_or_execute(sub.callback, msg)
+    async def _execute_subscription(self, sub, *args):
+        if args:
+            await await_or_execute(sub.callback, *args)
 
     def _take_client(self, client):
         with client.handle:
-            return client.handle.take_response(client.srv_type.Response)
+            return (client.handle.take_response(client.srv_type.Response), )
 
     async def _execute_client(self, client, seq_and_response):
         header, response = seq_and_response
         if header is not None:
             try:
                 sequence = header.request_id.sequence_number
-                future = client._pending_requests[sequence]
+                future = client.get_pending_request(sequence)
             except KeyError:
                 # The request was cancelled
                 pass
@@ -359,7 +366,7 @@ class Executor:
     def _take_service(self, srv):
         with srv.handle:
             request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
-        return request_and_header
+        return (request_and_header, )
 
     async def _execute_service(self, srv, request_and_header):
         if request_and_header is None:
@@ -371,8 +378,9 @@ class Executor:
 
     def _take_guard_condition(self, gc):
         gc._executor_triggered = False
+        return ()
 
-    async def _execute_guard_condition(self, gc, _):
+    async def _execute_guard_condition(self, gc):
         await await_or_execute(gc.callback)
 
     async def _execute_waitable(self, waitable, data):
@@ -412,12 +420,18 @@ class Executor:
                 gc.trigger()
 
                 try:
-                    await call_coroutine(entity, arg)
+                    await call_coroutine(entity, *arg)
                 finally:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-                    gc.trigger()
+
+                    # Catch expected error where calling executor.shutdown()
+                    # from callback causes the GuardCondition to be destroyed
+                    try:
+                        gc.trigger()
+                    except InvalidHandle:
+                        pass
         task = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
@@ -606,7 +620,7 @@ class Executor:
                         # Only check waitables that were added to the wait set
                         if wt in waitables and wt.is_ready(wait_set):
                             handler = self._make_handler(
-                                wt, node, lambda e: e.take_data(), self._execute_waitable)
+                                wt, node, lambda e: (e.take_data(), ), self._execute_waitable)
                             yielded_work = True
                             yield handler, wt, node
 
@@ -754,5 +768,4 @@ class MultiThreadedExecutor(Executor):
         self._spin_once_impl(timeout_sec)
 
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
-        future.add_done_callback(lambda x: self.wake())
         self._spin_once_impl(timeout_sec, future.done)

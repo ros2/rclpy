@@ -16,12 +16,11 @@
 
 #include <rcl/error_handling.h>
 #include <rcl/guard_condition.h>
-#include <rcl/rcl.h>
 #include <rcl/types.h>
 
 #include <memory>
-#include <stdexcept>
 
+#include "context.hpp"
 #include "exceptions.hpp"
 #include "guard_condition.hpp"
 
@@ -84,9 +83,6 @@ void define_guard_condition(py::object module)
     "Get the address of the entity as an integer")
   .def(
     "trigger_guard_condition", &GuardCondition::trigger_guard_condition,
-    "Trigger a general purpose guard condition")
-  .def(
-    "pycapsule", &GuardCondition::pycapsule,
-    "Return a pycapsule object with the guardcondition pointer");
+    "Trigger a general purpose guard condition");
 }
 }  // namespace rclpy

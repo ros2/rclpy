@@ -14,13 +14,18 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/client.h>
 #include <rcl/error_handling.h>
+#include <rcl/graph.h>
+#include <rosidl_runtime_c/service_type_support_struct.h>
+#include <rmw/types.h>
 
 #include <memory>
 #include <string>
 
 #include "client.hpp"
 #include "exceptions.hpp"
+#include "node.hpp"
 #include "python_allocator.hpp"
 #include "utils.hpp"
 
@@ -137,8 +142,6 @@ Client::take_response(py::object pyresponse_type)
   result_tuple[0] = header;
 
   result_tuple[1] = convert_to_py(taken_response.get(), pyresponse_type);
-  // result_tuple now owns the message
-  taken_response.release();
 
   return result_tuple;
 }

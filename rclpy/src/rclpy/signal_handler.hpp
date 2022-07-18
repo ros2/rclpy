@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__HANDLE_API_HPP_
-#define RCLPY__HANDLE_API_HPP_
+#ifndef RCLPY__SIGNAL_HANDLER_HPP_
+#define RCLPY__SIGNAL_HANDLER_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -21,11 +21,11 @@ namespace py = pybind11;
 
 namespace rclpy
 {
-/// Define methods on a module for the handle API
+/// Define methods on a module for working with signal handlers
 /**
  * \param[in] module a pybind11 module to add the definition to
  */
 void
-define_handle_api(py::module module);
+define_signal_handler_api(py::module module);
 }  // namespace rclpy
-#endif  // RCLPY__HANDLE_API_HPP_
+#endif  // RCLPY__SIGNAL_HANDLER_HPP_

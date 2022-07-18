@@ -456,6 +456,25 @@ class TestExecutor(unittest.TestCase):
             executor.shutdown()
             self.node.destroy_timer(tmr)
 
+    def shutdown_executor_from_callback(self):
+        """https://github.com/ros2/rclpy/issues/944: allow for executor shutdown from callback."""
+        self.assertIsNotNone(self.node.handle)
+        timer_period = 0.1
+        executor = SingleThreadedExecutor(context=self.context)
+        shutdown_event = threading.Event()
+
+        def timer_callback():
+            nonlocal shutdown_event, executor
+            executor.shutdown()
+            shutdown_event.set()
+
+        tmr = self.node.create_timer(timer_period, timer_callback)
+        executor.add_node(self.node)
+        t = threading.Thread(target=executor.spin, daemon=True)
+        t.start()
+        self.assertTrue(shutdown_event.wait(120))
+        self.node.destroy_timer(tmr)
+
 
 if __name__ == '__main__':
     unittest.main()

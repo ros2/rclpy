@@ -46,6 +46,9 @@ from typing import TYPE_CHECKING
 
 from rclpy.context import Context
 from rclpy.parameter import Parameter
+from rclpy.signals import install_signal_handlers
+from rclpy.signals import SignalHandlerOptions
+from rclpy.signals import uninstall_signal_handlers
 from rclpy.task import Future
 from rclpy.utilities import get_default_context
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa: F401
@@ -63,7 +66,8 @@ def init(
     *,
     args: Optional[List[str]] = None,
     context: Context = None,
-    domain_id: Optional[int] = None
+    domain_id: Optional[int] = None,
+    signal_handler_options: Optional[SignalHandlerOptions] = None,
 ) -> None:
     """
     Initialize ROS communications for a given context.
@@ -71,8 +75,17 @@ def init(
     :param args: List of command line arguments.
     :param context: The context to initialize. If ``None``, then the default context is used
         (see :func:`.get_default_context`).
+    :param domain_id: ROS domain id.
+    :param signal_handler_options: Indicate which signal handlers to install.
+        If `None`, SIGINT and SIGTERM will be installed when initializing the default context.
     """
     context = get_default_context() if context is None else context
+    if signal_handler_options is None:
+        if context is None or context is get_default_context():
+            signal_handler_options = SignalHandlerOptions.ALL
+        else:
+            signal_handler_options = SignalHandlerOptions.NO
+    install_signal_handlers(signal_handler_options)
     return context.init(args, domain_id=domain_id)
 
 
@@ -87,10 +100,17 @@ def get_global_executor() -> 'Executor':
         # imported locally to avoid loading extensions on module import
         from rclpy.executors import SingleThreadedExecutor
         __executor = SingleThreadedExecutor()
+        context = get_default_context()
+
+        def reset_executor():
+            global __executor
+            __executor.shutdown()
+            __executor = None
+        context.on_shutdown(reset_executor)
     return __executor
 
 
-def shutdown(*, context: Context = None) -> None:
+def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = None) -> None:
     """
     Shutdown a previously initialized context.
 
@@ -98,12 +118,18 @@ def shutdown(*, context: Context = None) -> None:
 
     :param context: The context to invalidate. If ``None``, then the default context is used
         (see :func:`.get_default_context`).
+    :param uninstall_handlers:
+        If `None`, signal handlers will be uninstalled when shutting down the default context.
+        If `True`, signal handlers will be uninstalled.
+        If not, signal handlers won't be uninstalled.
     """
-    global __executor
-    if __executor is not None:
-        __executor.shutdown()
-        __executor = None
     _shutdown(context=context)
+    if (
+        uninstall_handlers or (
+            uninstall_handlers is None and (
+                context is None or context is get_default_context()))
+    ):
+        uninstall_signal_handlers()
 
 
 def create_node(

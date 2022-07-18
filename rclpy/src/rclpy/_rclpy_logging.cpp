@@ -19,10 +19,10 @@ namespace py = pybind11;
 #include <rcutils/allocator.h>
 #include <rcutils/error_handling.h>
 #include <rcutils/logging.h>
-#include <rcutils/time.h>
 
 #include <rcl_logging_interface/rcl_logging_interface.h>
 
+#include <stdexcept>
 #include <string>
 
 #include "logging_api.hpp"
@@ -139,8 +139,8 @@ rclpy_logging_rcutils_log(
  * Raises ValueError if log level is not a string.
  *
  * \param[in] log_level Name of the log level.
- * \return NULL on failure
-           Log level associated with the string representation
+ * \return NULL on failure,
+ * \return Log level associated with the string representation otherwise.
  */
 int
 rclpy_logging_severity_level_from_string(const char * log_level)
@@ -177,8 +177,6 @@ namespace rclpy
 void
 define_logging_api(py::module m)
 {
-  m.doc() = "RCLPY module for logging.";
-
   py::enum_<RCUTILS_LOG_SEVERITY>(m, "RCUTILS_LOG_SEVERITY")
   .value("RCUTILS_LOG_SEVERITY_UNSET", RCUTILS_LOG_SEVERITY_UNSET)
   .value("RCUTILS_LOG_SEVERITY_DEBUG", RCUTILS_LOG_SEVERITY_DEBUG)

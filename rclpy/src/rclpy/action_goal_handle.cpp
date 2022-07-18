@@ -15,11 +15,14 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
+#include <rcl_action/action_server.h>
+#include <rcl_action/goal_handle.h>
+#include <rcl_action/types.h>
 
 #include <memory>
-#include <string>
 
 #include "action_goal_handle.hpp"
+#include "action_server.hpp"
 #include "exceptions.hpp"
 #include "utils.hpp"
 

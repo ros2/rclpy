@@ -2,16 +2,18 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>rclpy</name>
-  <version>3.0.1</version>
+  <version>3.6.0</version>
   <description>Package containing the Python client.</description>
 
-  <maintainer email="ivanpauno@ekumenlabs.com">Ivan Paunovic</maintainer>
   <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
+  <maintainer email="aditya.pande@openrobotics.org">Aditya Pande</maintainer>
+  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
 
   <license>Apache License 2.0</license>
 
   <author email="esteve@osrfoundation.org">Esteve Fernandez</author>
   <author email="william@openrobotics.org">William Woodall</author>
+  <author email="ivanpauno@ekumenlabs.com">Ivan Paunovic</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>python_cmake_module</buildtool_depend>
@@ -21,11 +23,14 @@
   <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
 
-  <depend>rmw_implementation</depend>
   <depend>rcl</depend>
+  <depend>rcl_lifecycle</depend>
   <depend>rcl_logging_interface</depend>
   <depend>rcl_action</depend>
   <depend>rcl_yaml_param_parser</depend>
+  <depend>rmw</depend>
+  <depend>rmw_implementation</depend>
+  <depend>rosidl_runtime_c</depend>
   <depend>unique_identifier_msgs</depend>
 
   <exec_depend>ament_index_python</exec_depend>
@@ -43,6 +48,7 @@
   <test_depend>test_msgs</test_depend>
 
   <doc_depend>python3-sphinx</doc_depend>
+  <doc_depend>python3-sphinx-rtd-theme</doc_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

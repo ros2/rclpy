@@ -18,7 +18,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/publisher.h>
-#include <rmw/types.h>
+#include <rcl/time.h>
 
 #include <memory>
 #include <string>
@@ -39,15 +39,15 @@ class Publisher : public Destroyable, public std::enable_shared_from_this<Publis
 {
 public:
   /// Create a publisher
-  /*
+  /**
    * Raises ValueError if the topic name is invalid
    * Raises ValueError if the capsules are not the correct types
    * Raises RCLError if the publisher cannot be created
    *
-   * \param[in] node node to add the publisher to
-   * \param[in] pymsg_type Message type associated with the publisher
-   * \param[in] topic The name of the topic to attach the publisher to
-   * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher
+   * \param[in] node Node to add the publisher to.
+   * \param[in] pymsg_type Message type associated with the publisher.
+   * \param[in] topic The name of the topic to attach the publisher to.
+   * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher.
    */
   Publisher(
     Node & node, py::object pymsg_type, std::string topic,
@@ -84,7 +84,7 @@ public:
   /**
    * Raises RCLError if the message cannot be published
    *
-   * \param[in] pymsg Message to send
+   * \param[in] pymsg Message to send.
    */
   void
   publish(py::object pymsg);
@@ -93,7 +93,7 @@ public:
   /**
    * Raises RCLError if the message cannot be published
    *
-   * \param[in] msg serialized message to send
+   * \param[in] msg The serialized message to send.
    */
   void
   publish_raw(std::string msg);
@@ -108,6 +108,24 @@ public:
   /// Force an early destruction of this object
   void
   destroy() override;
+
+  /// Wait until all published message data is acknowledged or until the specified timeout elapses
+  /**
+   * If the timeout is negative then this function will block indefinitely until all published
+   * message data is acknowledged.
+   * If the timeout is 0 then it will check if all published message has been acknowledged without
+   * waiting.
+   * If the timeout is greater than 0 then it will return after that period of time has elapsed or
+   * all published message data is acknowledged.
+   *
+   * Raises RCLError if an error occurs, such as the middleware not supporting this feature.
+   *
+   * \param[in] pytimeout The duration to wait for all published message data to be acknowledged.
+   * \return `true` if all published message data is acknowledged before the timeout, otherwise
+   *   `false`.
+   */
+  bool
+  wait_for_all_acked(rcl_duration_t pytimeout);
 
 private:
   Node node_;

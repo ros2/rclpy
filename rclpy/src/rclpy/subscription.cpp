@@ -15,13 +15,18 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/error_handling.h>
-#include <rcl/rcl.h>
+#include <rcl/node.h>
+#include <rcl/subscription.h>
 #include <rcl/types.h>
+#include <rosidl_runtime_c/message_type_support_struct.h>
+#include <rmw/types.h>
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include "exceptions.hpp"
+#include "node.hpp"
 #include "serialization.hpp"
 #include "subscription.hpp"
 #include "utils.hpp"
@@ -126,11 +131,20 @@ Subscription::take_message(py::object pymsg_type, bool raw)
 
     pytaken_msg = convert_to_py(taken_msg.get(), pymsg_type);
   }
-
+  py::object pub_seq_number = py::none();
+  if (message_info.publication_sequence_number != RMW_MESSAGE_INFO_SEQUENCE_NUMBER_UNSUPPORTED) {
+    pub_seq_number = py::int_(message_info.publication_sequence_number);
+  }
+  py::object rec_seq_number = py::none();
+  if (message_info.reception_sequence_number != RMW_MESSAGE_INFO_SEQUENCE_NUMBER_UNSUPPORTED) {
+    rec_seq_number = py::int_(message_info.reception_sequence_number);
+  }
   return py::make_tuple(
     pytaken_msg, py::dict(
       "source_timestamp"_a = message_info.source_timestamp,
-      "received_timestamp"_a = message_info.received_timestamp));
+      "received_timestamp"_a = message_info.received_timestamp,
+      "publication_sequence_number"_a = pub_seq_number,
+      "reception_sequence_number"_a = rec_seq_number));
 }
 
 const char *
