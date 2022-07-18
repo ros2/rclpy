@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import inspect
 import sys
 import threading
@@ -52,10 +53,11 @@ class Future:
                 file=sys.stderr)
 
     def __await__(self):
-        # Yield if the task is not finished
-        while not self._done:
-            yield
+        if not self._done:
+            yield self
         return self.result()
+
+    __iter__ = __await__
 
     def cancel(self):
         """Request cancellation of the running task if it is not done already."""
@@ -142,7 +144,7 @@ class Future:
         if executor is not None:
             # Have the executor take care of the callbacks
             for callback in callbacks:
-                executor.create_task(callback, self)
+                executor.call_soon(callback, self)
         else:
             # No executor, call right away
             for callback in callbacks:
@@ -176,7 +178,7 @@ class Future:
             if self._done:
                 executor = self._executor()
                 if executor is not None:
-                    executor.create_task(callback, self)
+                    executor.call_soon(callback, self)
                 else:
                     invoke = True
             else:
@@ -199,6 +201,8 @@ class Task(Future):
 
     def __init__(self, handler, args=None, kwargs=None, executor=None):
         super().__init__(executor=executor)
+        if executor is None:
+            raise RuntimeError('Task requires an executor')
         # _handler is either a normal function or a coroutine
         self._handler = handler
         # Arguments passed into the function
@@ -212,12 +216,8 @@ class Task(Future):
             self._handler = handler(*args, **kwargs)
             self._args = None
             self._kwargs = None
-        # True while the task is being executed
-        self._executing = False
-        # Lock acquired to prevent task from executing in parallel with itself
-        self._task_lock = threading.Lock()
 
-    def __call__(self):
+    def __call__(self, future=None):
         """
         Run or resume a task.
 
@@ -225,49 +225,57 @@ class Task(Future):
         await it. If there are done callbacks it will schedule them with the executor.
 
         The return value of the handler is stored as the task result.
+
+        This function must not be called in parallel with itself.
+
+        :param future: do not use
         """
-        if self._done or self._executing or not self._task_lock.acquire(blocking=False):
+        if self._done:
             return
-        try:
-            if self._done:
-                return
-            self._executing = True
-
-            if inspect.iscoroutine(self._handler):
-                # Execute a coroutine
-                try:
-                    self._handler.send(None)
-                except StopIteration as e:
-                    # The coroutine finished; store the result
-                    self._handler.close()
-                    self.set_result(e.value)
-                    self._complete_task()
-                except Exception as e:
-                    self.set_exception(e)
-                    self._complete_task()
-            else:
-                # Execute a normal function
-                try:
-                    self.set_result(self._handler(*self._args, **self._kwargs))
-                except Exception as e:
-                    self.set_exception(e)
+        if inspect.iscoroutine(self._handler):
+            # Execute a coroutine
+            try:
+                result = self._handler.send(None)
+                if isinstance(result, Future):
+                    # Wait for an rclpy future to complete
+                    result.add_done_callback(self)
+                elif asyncio.isfuture(result):
+                    # Get the event loop of this thread (raises RuntimeError if there isn't one)
+                    event_loop = asyncio.get_running_loop()
+                    # Make sure we're in the same thread as the future's event loop.
+                    # TODO(sloretz) is asyncio.Future.get_loop() thread-safe?
+                    if result.get_loop() is not event_loop:
+                        raise RuntimeError('Cannot await asyncio future from a different thread')
+                    # Resume this task when the asyncio future completes
+                    result.add_done_callback(lambda _: self._executor().call_soon(self))
+                elif result is None:
+                    # Wait for one iteration if a bare yield is used
+                    self._executor().call_soon(self)
+                else:
+                    # What is this intermediate value?
+                    # Could be a different async library's coroutine
+                    # Could be a generator yielded a value
+                    raise RuntimeError(f'Coroutine yielded unexpected value: {result}')
+            except StopIteration as e:
+                # Coroutine or generator returning a result
+                self._handler.close()
+                self.set_result(e.value)
                 self._complete_task()
-
-            self._executing = False
-        finally:
-            self._task_lock.release()
+            except Exception as e:
+                # Coroutine or generator raising an exception
+                self._handler.close()
+                self.set_exception(e)
+                self._complete_task()
+        else:
+            # Execute a normal function
+            try:
+                self.set_result(self._handler(*self._args, **self._kwargs))
+            except Exception as e:
+                self.set_exception(e)
+            self._complete_task()
 
     def _complete_task(self):
         """Cleanup after task finished."""
         self._handler = None
         self._args = None
         self._kwargs = None
-
-    def executing(self):
-        """
-        Check if the task is currently being executed.
-
-        :return: True if the task is currently executing.
-        :rtype: bool
-        """
-        return self._executing

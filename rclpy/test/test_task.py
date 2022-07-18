@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import unittest
 
 from rclpy.task import Future
@@ -27,15 +26,24 @@ class DummyExecutor:
     def create_task(self, cb, *args):
         self.done_callbacks.append((cb, args))
 
+    def call_soon(self, cb, *args):
+        self.done_callbacks.append((cb, args))
+
 
 class TestTask(unittest.TestCase):
+
+    def setUp(self):
+        self.executor = DummyExecutor()
+
+    def tearDown(self):
+        self.executor = None
 
     def test_task_normal_callable(self):
 
         def func():
             return 'Sentinel Result'
 
-        t = Task(func)
+        t = Task(func, executor=self.executor)
         t()
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
@@ -45,58 +53,53 @@ class TestTask(unittest.TestCase):
         def func():
             return 'Sentinel Result'
 
-        t = Task(lambda: func())
+        t = Task(lambda: func(), executor=self.executor)
         t()
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
 
     def test_coroutine(self):
         called1 = False
-        called2 = False
 
-        async def coro():
+        # async based coroutine
+        async def coro(fut):
             nonlocal called1
-            nonlocal called2
             called1 = True
-            await asyncio.sleep(0)
-            called2 = True
-            return 'Sentinel Result'
+            result = await fut
+            return 'Sentinel ' + result
 
-        t = Task(coro)
+        fut = Future()
+        t = Task(coro, args=(fut,), executor=self.executor)
         t()
         self.assertTrue(called1)
-        self.assertFalse(called2)
+        self.assertFalse(t.done())
 
         called1 = False
+        fut.set_result('Result')
         t()
         self.assertFalse(called1)
-        self.assertTrue(called2)
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
 
     def test_done_callback_scheduled(self):
-        executor = DummyExecutor()
-
-        t = Task(lambda: None, executor=executor)
+        t = Task(lambda: None, executor=self.executor)
         t.add_done_callback('Sentinel Value')
         t()
         self.assertTrue(t.done())
-        self.assertEqual(1, len(executor.done_callbacks))
-        self.assertEqual('Sentinel Value', executor.done_callbacks[0][0])
-        args = executor.done_callbacks[0][1]
+        self.assertEqual(1, len(self.executor.done_callbacks))
+        self.assertEqual('Sentinel Value', self.executor.done_callbacks[0][0])
+        args = self.executor.done_callbacks[0][1]
         self.assertEqual(1, len(args))
         self.assertEqual(t, args[0])
 
     def test_done_task_done_callback_scheduled(self):
-        executor = DummyExecutor()
-
-        t = Task(lambda: None, executor=executor)
+        t = Task(lambda: None, executor=self.executor)
         t()
         self.assertTrue(t.done())
         t.add_done_callback('Sentinel Value')
-        self.assertEqual(1, len(executor.done_callbacks))
-        self.assertEqual('Sentinel Value', executor.done_callbacks[0][0])
-        args = executor.done_callbacks[0][1]
+        self.assertEqual(1, len(self.executor.done_callbacks))
+        self.assertEqual('Sentinel Value', self.executor.done_callbacks[0][0])
+        args = self.executor.done_callbacks[0][1]
         self.assertEqual(1, len(args))
         self.assertEqual(t, args[0])
 
@@ -107,7 +110,7 @@ class TestTask(unittest.TestCase):
             nonlocal called
             called = True
 
-        t = Task(func)
+        t = Task(func, executor=self.executor)
         t()
         self.assertTrue(called)
         self.assertTrue(t.done())
@@ -117,12 +120,12 @@ class TestTask(unittest.TestCase):
         self.assertTrue(t.done())
 
     def test_cancelled(self):
-        t = Task(lambda: None)
+        t = Task(lambda: None, executor=self.executor)
         t.cancel()
         self.assertTrue(t.cancelled())
 
     def test_done_task_cancelled(self):
-        t = Task(lambda: None)
+        t = Task(lambda: None, executor=self.executor)
         t()
         t.cancel()
         self.assertFalse(t.cancelled())
@@ -134,7 +137,7 @@ class TestTask(unittest.TestCase):
             e.sentinel_value = 'Sentinel Exception'
             raise e
 
-        t = Task(func)
+        t = Task(func, executor=self.executor)
         t()
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Exception', t.exception().sentinel_value)
@@ -148,7 +151,7 @@ class TestTask(unittest.TestCase):
             e.sentinel_value = 'Sentinel Exception'
             raise e
 
-        t = Task(coro)
+        t = Task(coro, executor=self.executor)
         t()
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Exception', t.exception().sentinel_value)
@@ -161,7 +164,7 @@ class TestTask(unittest.TestCase):
         def func(arg):
             return arg
 
-        t = Task(func, args=(arg_in,))
+        t = Task(func, args=(arg_in,), executor=self.executor)
         t()
         self.assertEqual('Sentinel Arg', t.result())
 
@@ -171,7 +174,7 @@ class TestTask(unittest.TestCase):
         async def coro(arg):
             return arg
 
-        t = Task(coro, args=(arg_in,))
+        t = Task(coro, args=(arg_in,), executor=self.executor)
         t()
         self.assertEqual('Sentinel Arg', t.result())
 
@@ -181,7 +184,7 @@ class TestTask(unittest.TestCase):
         def func(kwarg=None):
             return kwarg
 
-        t = Task(func, kwargs={'kwarg': arg_in})
+        t = Task(func, kwargs={'kwarg': arg_in}, executor=self.executor)
         t()
         self.assertEqual('Sentinel Arg', t.result())
 
@@ -191,13 +194,9 @@ class TestTask(unittest.TestCase):
         async def coro(kwarg=None):
             return kwarg
 
-        t = Task(coro, kwargs={'kwarg': arg_in})
+        t = Task(coro, kwargs={'kwarg': arg_in}, executor=self.executor)
         t()
         self.assertEqual('Sentinel Arg', t.result())
-
-    def test_executing(self):
-        t = Task(lambda: None)
-        self.assertFalse(t.executing())
 
 
 class TestFuture(unittest.TestCase):

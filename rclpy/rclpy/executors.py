@@ -190,6 +190,27 @@ class Executor:
         # Task inherits from Future
         return task
 
+    def call_soon(self, callback, *args) -> Task:
+        """
+        Add a callback or coroutine to be executed during :meth:`spin`.
+
+        Arguments to this function are passed to the callback.
+
+        :param callback: A callback to be run in the executor.
+        :return: A Task which the executor will execute.
+        """
+        if self._is_shutdown:
+            raise ShutdownException()
+
+        if not isinstance(callback, Task):
+            callback = Task(callback, args, None, executor=self)
+
+        with self._tasks_lock:
+            self._tasks.append((callback, None, None))
+            self._guard.trigger()
+
+        return callback
+
     def shutdown(self, timeout_sec: float = None) -> bool:
         """
         Stop executing callbacks and wait for their completion.
@@ -432,12 +453,9 @@ class Executor:
                         gc.trigger()
                     except InvalidHandle:
                         pass
-        task = Task(
+        return Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
-        with self._tasks_lock:
-            self._tasks.append((task, entity, node))
-        return task
 
     def can_execute(self, entity: WaitableEntityType) -> bool:
         """
@@ -481,16 +499,19 @@ class Executor:
             # Yield tasks in-progress before waiting for new work
             tasks = None
             with self._tasks_lock:
-                tasks = list(self._tasks)
-            if tasks:
-                for task, entity, node in reversed(tasks):
-                    if (not task.executing() and not task.done() and
-                            (node is None or node in nodes_to_use)):
-                        yielded_work = True
-                        yield task, entity, node
-                with self._tasks_lock:
-                    # Get rid of any tasks that are done
-                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
+                tasks = self._tasks
+                # Tasks that need to be executed again will add themselves back to the executor
+                self._tasks = []
+            while tasks:
+                task_trio = tasks.pop()
+                task, entity, node = task_trio
+                if node is None or node in nodes_to_use:
+                    yielded_work = True
+                    yield task_trio
+                else:
+                    # Asked not to execute these tasks, so don't do them yet
+                    with self._tasks_lock:
+                        self._tasks.append(task_trio)
 
             # Gather entities that can be waited on
             subscriptions: List[Subscription] = []

@@ -159,6 +159,7 @@ if(BUILD_TESTING)
       test/test_action_client.py
       test/test_action_graph.py
       test/test_action_server.py
+      test/test_asyncio_interop.py
       test/test_callback_group.py
       test/test_client.py
       test/test_clock.py
