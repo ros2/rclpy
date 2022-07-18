@@ -15,8 +15,8 @@
 import pathlib
 import platform
 import time
-import unittest
 from typing import List
+import unittest
 from unittest.mock import Mock
 import warnings
 
@@ -1164,10 +1164,22 @@ class TestNode(unittest.TestCase):
             self.node.remove_pre_set_parameters_callback(callback)
             self.assertFalse(callback in self.node._pre_set_parameters_callbacks)
 
+        # register a callback
+        self.node.add_pre_set_parameters_callback(self.modify_parameter_callback)
+
         self.node.declare_parameter('foo', 0)
         self.node.declare_parameter('bar', '')
-        self.node.add_pre_set_parameters_callback(self.modify_parameter_callback)
+
+        # check that declare_parameter will not result in a call to any of the
+        # pre_set_parameter registered callbacks
+        self.assertTrue(self.node.has_parameter('foo'))
+        self.assertTrue(self.node.has_parameter('bar'))
+        self.assertTrue(self.node.get_parameter('foo').value == 0)
+        self.assertTrue(self.node.get_parameter('bar').value == '')
+
+        # setting of parameter 'foo' will result in setting of parameter 'bar'
         results = self.node.set_parameters([Parameter('foo', Parameter.Type.INTEGER, 42)])
+        self.node.remove_pre_set_parameters_callback(self.modify_parameter_callback)
 
         # param 'bar' should be modified because of registered callback
         self.assertEqual(len(results), 1)
@@ -1176,6 +1188,15 @@ class TestNode(unittest.TestCase):
         self.assertTrue(self.node.has_parameter('bar'))
         self.assertTrue(self.node.get_parameter('foo').value == 42)
         self.assertTrue(self.node.get_parameter('bar').value == 'hello')
+
+        # result will be unsuccessful if the callback return an empty list
+        self.node.add_pre_set_parameters_callback(self.empty_parameter_callback)
+        results = self.node.set_parameters([Parameter('foo', Parameter.Type.INTEGER, 42)])
+        self.node.remove_pre_set_parameters_callback(self.empty_parameter_callback)
+        self.assertFalse(results[0].successful)
+        self.assertEqual(results[0].reason,
+                         'parameter list cannot be empty, this might be due to '
+                         'pre_set_parameters_callback modifying the original parameters list.')
 
     def test_node_add_on_set_parameter_callback(self):
         # Add callbacks to the list of callbacks.

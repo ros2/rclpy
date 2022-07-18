@@ -836,9 +836,9 @@ class Node:
             if len(parameter_list) == 0:
                 result = SetParametersResult()
                 result.successful = False
-                result.reason = "parameter list cannot be empty, this might be due to " \
-                                "pre_set_parameters_callback modifying the original parameters " \
-                                "list."
+                result.reason = 'parameter list cannot be empty, this might be due to ' \
+                                'pre_set_parameters_callback modifying the original parameters ' \
+                                'list.'
                 return result
 
         self._check_undeclared_parameters(parameter_list)
