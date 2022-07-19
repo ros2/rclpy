@@ -233,6 +233,18 @@ class Node:
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
+        
+        if enable_service_introspection:
+            # TODO(ihasdapie): This is so verbose...
+            self.declare_parameters(
+                namespace='',
+                parameters=[
+                    (_rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_PARAMETER, True, ParameterDescriptor()),
+                    (_rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_PARAMETER, True, ParameterDescriptor()),
+                    (_rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_SERVICE_EVENT_CONTENT_PARAMETER, True, ParameterDescriptor()),
+                    (_rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_EVENT_CONTENT_PARAMETER, True, ParameterDescriptor())
+                ])
+            self.add_post_set_parameters_callback(self._configure_service_introspection)
 
     @property
     def publishers(self) -> Iterator[Publisher]:
@@ -1578,6 +1590,32 @@ class Node:
             self.add_waitable(event_handler)
 
         return subscription
+
+    def _configure_service_introspection(self, parameters: List[Parameter]):
+        for param in parameters:
+            if param.name == _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_PARAMETER:
+                for srv in self.services:
+                    _rclpy.service_introspection.configure_service_events(
+                        srv.handle.pointer(),
+                        self.handle.pointer(),
+                        param.value)
+            elif param.name == _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_PARAMETER:
+                for cli in self.clients:
+                    _rclpy.service_introspection.configure_client_events(
+                        cli.handle.pointer(),
+                        self.handle.pointer(),
+                        param.value)
+            elif param.name == _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_SERVICE_EVENT_CONTENT_PARAMETER:
+                for srv in self.services:
+                    _rclpy.service_introspection.configure_service_message_payload(
+                        srv.handle.pointer(),
+                        param.value)
+
+            elif param.name == _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_EVENT_CONTENT_PARAMETER:
+                for cli in self.clients:
+                    _rclpy.service_introspection.configure_client_message_payload(
+                        cli.handle.pointer(),
+                        param.value)
 
     def create_client(
         self,
