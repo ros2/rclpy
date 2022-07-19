@@ -125,7 +125,8 @@ class Node:
         start_parameter_services: bool = True,
         parameter_overrides: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_parameters_from_overrides: bool = False
+        automatically_declare_parameters_from_overrides: bool = False,
+        enable_service_introspection: bool = False,
     ) -> None:
         """
         Create a Node.
@@ -149,6 +150,8 @@ class Node:
             This flag affects the behavior of parameter-related operations.
         :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
             will be used to implicitly declare parameters on the node during creation.
+        :param enable_service_introspection: If True, the node will enable introspection of
+            services.
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
@@ -181,7 +184,8 @@ class Node:
                     self._context.handle,
                     cli_args,
                     use_global_arguments,
-                    enable_rosout
+                    enable_rosout,
+                    enable_service_introspection
                 )
             except ValueError:
                 # these will raise more specific errors if the name or namespace is bad

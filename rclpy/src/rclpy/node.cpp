@@ -16,6 +16,7 @@
 
 #include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
+#include <rcl/introspection.h>
 #include <rcl/graph.h>
 #include <rcl/types.h>
 #include <rcl_interfaces/msg/parameter_type.h>
@@ -372,7 +373,8 @@ Node::Node(
   Context & context,
   py::object pycli_args,
   bool use_global_arguments,
-  bool enable_rosout)
+  bool enable_rosout,
+  bool enable_service_introspection)
 : context_(context)
 {
   rcl_ret_t ret;
@@ -448,6 +450,7 @@ Node::Node(
   options.use_global_arguments = use_global_arguments;
   options.arguments = arguments;
   options.enable_rosout = enable_rosout;
+  options.enable_service_introspection = enable_service_introspection;
 
   {
     rclpy::LoggingGuard scoped_logging_guard;
@@ -521,11 +524,12 @@ Node::get_action_names_and_types()
   return convert_to_py_names_and_types(&names_and_types);
 }
 
+
 void
 define_node(py::object module)
 {
   py::class_<Node, Destroyable, std::shared_ptr<Node>>(module, "Node")
-  .def(py::init<const char *, const char *, Context &, py::object, bool, bool>())
+  .def(py::init<const char *, const char *, Context &, py::object, bool, bool, bool>())
   .def_property_readonly(
     "pointer", [](const Node & node) {
       return reinterpret_cast<size_t>(node.rcl_ptr());
