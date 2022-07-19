@@ -156,6 +156,11 @@ if(BUILD_TESTING)
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
     set(_rclpy_pytest_tests
+      test/benchmark/test_benchmark_actions.py
+      test/benchmark/test_benchmark_client_service.py
+      test/benchmark/test_benchmark_guard_condition.py
+      test/benchmark/test_benchmark_pub_sub.py
+      test/benchmark/test_benchmark_timer.py
       test/test_action_client.py
       test/test_action_graph.py
       test/test_action_server.py
@@ -198,13 +203,24 @@ if(BUILD_TESTING)
     )
 
     foreach(_test_path ${_rclpy_pytest_tests})
+      if(NOT AMENT_RUN_PERFORMANCE_TESTS)
+        get_filename_component(_test_dir ${_test_path} DIRECTORY)
+        get_filename_component(_test_dir ${_test_dir} NAME)
+        if(_test_dir STREQUAL "benchmark")
+          set(_SKIP_TEST "SKIP_TEST")
+        else()
+          set(_SKIP_TEST "")
+        endif()
+      endif()
       get_filename_component(_test_name ${_test_path} NAME_WE)
       ament_add_pytest_test(${_test_name} ${_test_path}
+        ${_SKIP_TEST}
         APPEND_ENV AMENT_PREFIX_PATH=${ament_index_build_path}
           PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
         TIMEOUT 120
         WERROR ON
       )
+      # Skip benchmark tests by default
     endforeach()
   endif()
 endif()
