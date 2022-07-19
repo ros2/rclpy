@@ -1647,7 +1647,8 @@ class Node:
                     self.handle,
                     srv_type,
                     srv_name,
-                    qos_profile.get_c_qos_profile())
+                    qos_profile.get_c_qos_profile(),
+                    self._clock.handle)
         except ValueError:
             failed = True
         if failed:

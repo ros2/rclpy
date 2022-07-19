@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 
+#include "clock.hpp"
 #include "destroyable.hpp"
 #include "node.hpp"
 #include "utils.hpp"
@@ -51,8 +52,11 @@ public:
    * \return capsule containing the rcl_service_t
    */
   Service(
-    Node & node, py::object pysrv_type, std::string service_name,
-    py::object pyqos_profile);
+    Node & node,
+    py::object pysrv_type,
+    std::string service_name,
+    py::object pyqos_profile,
+    Clock & clock);
 
   Service(
     Node & node, std::shared_ptr<rcl_service_t> rcl_service);

@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 
+#include "clock.hpp"
 #include "exceptions.hpp"
 #include "node.hpp"
 #include "service.hpp"
@@ -38,8 +39,11 @@ Service::destroy()
 }
 
 Service::Service(
-  Node & node, py::object pysrv_type, std::string service_name,
-  py::object pyqos_profile)
+  Node & node,
+  py::object pysrv_type,
+  std::string service_name,
+  py::object pyqos_profile,
+  Clock & clock)
 : node_(node)
 {
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
@@ -49,6 +53,11 @@ Service::Service(
   }
 
   rcl_service_options_t service_ops = rcl_service_get_default_options();
+
+  if (rcl_node_get_options(node.rcl_ptr())->enable_service_introspection) {
+    service_ops.clock = clock.rcl_ptr();
+    service_ops.enable_service_introspection = true;
+  }
 
   if (!pyqos_profile.is_none()) {
     service_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
@@ -148,7 +157,7 @@ void
 define_service(py::object module)
 {
   py::class_<Service, Destroyable, std::shared_ptr<Service>>(module, "Service")
-  .def(py::init<Node &, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, std::string, py::object, Clock &>())
   .def_property_readonly(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());
