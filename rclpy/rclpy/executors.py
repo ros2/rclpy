@@ -562,6 +562,11 @@ class Executor:
                         guard_handles.append(gc.handle)
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
+                    except AttributeError:
+                        if self._is_shutdown:
+                            raise ShutdownException()
+                        else:
+                            raise ExternalShutdownException()
 
                 for waitable in waitables:
                     try:
