@@ -21,6 +21,7 @@
 #include <rcl/timer.h>
 
 #include <memory>
+#include <optional>
 
 #include "clock.hpp"
 #include "context.hpp"

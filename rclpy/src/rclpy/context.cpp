@@ -44,7 +44,7 @@ namespace rclpy
 void shutdown_contexts()
 {
   // graceful shutdown all contexts
-  std::lock_guard guard{g_contexts_mutex};
+  std::lock_guard<std::mutex> guard{g_contexts_mutex};
   for (auto * c : g_contexts) {
     rcl_ret_t ret = rcl_shutdown(c);
     (void)ret;
@@ -118,7 +118,7 @@ Context::Context(py::list pyargs, size_t domain_id)
 
   throw_if_unparsed_ros_args(pyargs, rcl_context_.get()->global_arguments);
   {
-    std::lock_guard guard{g_contexts_mutex};
+    std::lock_guard<std::mutex> guard{g_contexts_mutex};
     g_contexts.push_back(rcl_context_.get());
   }
 }
@@ -151,7 +151,7 @@ void
 Context::shutdown()
 {
   {
-    std::lock_guard guard{g_contexts_mutex};
+    std::lock_guard<std::mutex> guard{g_contexts_mutex};
     auto iter = std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get());
     if (iter != g_contexts.end()) {
       g_contexts.erase(iter);
