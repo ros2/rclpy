@@ -20,7 +20,7 @@ from threading import Condition
 from threading import Lock
 from threading import RLock
 import time
-from typing import Any
+from typing import Any, cast
 from typing import Callable
 from typing import Coroutine
 from typing import Generator
@@ -29,7 +29,6 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
-from typing import TypeVar
 from typing import Union
 
 
@@ -37,27 +36,29 @@ from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.context import Context
-from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
+from rclpy.exceptions import InvalidHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
 from rclpy.signals import SignalHandlerGuardCondition
-from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.timer import Timer
+from rclpy.type_support import MsgType
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
-# For documentation purposes
-# TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
-WaitableEntityType = TypeVar('WaitableEntityType')
 
 # Avoid import cycle
 if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
+    from rclpy.subscription import Subscription
+
+
+RclpyEntity = Union['Subscription[Any]', Timer,
+                    Client[Any], Service[Any], Waitable, GuardCondition]
 
 
 class _WorkTracker:
@@ -73,7 +74,7 @@ class _WorkTracker:
         with self._work_condition:
             self._num_work_executing += 1
 
-    def __exit__(self, t, v, tb):
+    def __exit__(self, t: Any, v: Any, tb: Any):
         """Decrement the amount of work executing by 1."""
         with self._work_condition:
             self._num_work_executing -= 1
@@ -87,7 +88,7 @@ class _WorkTracker:
         :type timeout_sec: float or None
         :rtype: bool True if all work completed
         """
-        if timeout_sec is not None and timeout_sec < 0.0:
+        if timeout_sec is not None and timeout_sec < 0:
             timeout_sec = None
         # Wait for all work to complete
         with self._work_condition:
@@ -97,9 +98,13 @@ class _WorkTracker:
         return True
 
 
-async def await_or_execute(callback: Union[Callable, Coroutine], *args) -> Any:
+async def await_or_execute(
+    callback: Union[Callable[..., Any], Callable[..., Coroutine[Any, Any, Any]]],
+    *args: Any
+) -> Any:
     """Await a callback if it is a coroutine, else execute it."""
     if inspect.iscoroutinefunction(callback):
+        callback = cast(Callable[..., Coroutine[Any, Any, Any]], callback)
         # Await a coroutine
         return await callback(*args)
     else:
@@ -145,13 +150,13 @@ class Executor:
     :param context: The context to be associated with, or ``None`` for the default global context.
     """
 
-    def __init__(self, *, context: Context = None) -> None:
+    def __init__(self, *, context: Optional[Context] = None) -> None:
         super().__init__()
         self._context = get_default_context() if context is None else context
-        self._nodes: Set[Node] = set()
+        self._nodes: Set['Node'] = set()
         self._nodes_lock = RLock()
         # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
-        self._tasks: List[Tuple[Task, Optional[WaitableEntityType], Optional[Node]]] = []
+        self._tasks: List[Tuple[Task[Any], Optional['RclpyEntity'], Optional['Node']]] = []
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         self._guard = GuardCondition(
@@ -175,7 +180,12 @@ class Executor:
         """Get the context associated with the executor."""
         return self._context
 
-    def create_task(self, callback: Union[Callable, Coroutine], *args, **kwargs) -> Task:
+    def create_task(
+        self,
+        callback: Union[Callable[..., Any], Callable[..., Coroutine[Any, Any, Any]]],
+        *args: Any,
+        **kwargs: Any
+    ) -> Task[Any]:
         """
         Add a callback or coroutine to be executed during :meth:`spin` and return a Future.
 
@@ -186,11 +196,12 @@ class Executor:
         task = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
             self._tasks.append((task, None, None))
+            assert self._guard is not None
             self._guard.trigger()
         # Task inherits from Future
         return task
 
-    def shutdown(self, timeout_sec: float = None) -> bool:
+    def shutdown(self, timeout_sec: Optional[float] = None) -> bool:
         """
         Stop executing callbacks and wait for their completion.
 
@@ -204,9 +215,9 @@ class Executor:
                 self._is_shutdown = True
                 # Tell executor it's been shut down
                 self._guard.trigger()
-        if not self._is_shutdown:
-            if not self._work_tracker.wait(timeout_sec):
-                return False
+
+        if not self._work_tracker.wait(timeout_sec):
+            return False
 
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
@@ -240,6 +251,8 @@ class Executor:
                 self._nodes.add(node)
                 node.executor = self
                 # Rebuild the wait set so it includes this new node
+
+                assert self._guard is not None
                 self._guard.trigger()
                 return True
             return False
@@ -257,6 +270,7 @@ class Executor:
                 pass
             else:
                 # Rebuild the wait set so it doesn't include this node
+                assert self._guard is not None
                 self._guard.trigger()
 
     def wake(self) -> None:
@@ -278,10 +292,17 @@ class Executor:
         while self._context.ok() and not self._is_shutdown:
             self.spin_once()
 
-    def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+    def spin_until_future_complete(
+        self,
+        future: Future[Any],
+        timeout_sec: Optional[float] = None
+    ) -> None:
         """Execute callbacks until a given future is done or a timeout occurs."""
         # Make sure the future wakes this executor when it is done
-        future.add_done_callback(lambda x: self.wake())
+        def done_callback(_future: Future[Any]):
+            self.wake()
+
+        future.add_done_callback(done_callback)
 
         if timeout_sec is None or timeout_sec < 0:
             while self._context.ok() and not future.done() and not self._is_shutdown:
@@ -300,7 +321,7 @@ class Executor:
 
                 timeout_left = end - now
 
-    def spin_once(self, timeout_sec: float = None) -> None:
+    def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         """
         Wait for and execute a single callback.
 
@@ -311,7 +332,11 @@ class Executor:
         """
         raise NotImplementedError()
 
-    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+    def spin_once_until_future_complete(
+        self,
+        future: Future[Any],
+        timeout_sec: Optional[float] = None
+    ) -> None:
         """
         Wait for and execute a single callback.
 
@@ -324,51 +349,48 @@ class Executor:
         """
         raise NotImplementedError()
 
-    def _take_timer(self, tmr):
+    def _take_timer(self, tmr: Timer):
         with tmr.handle:
             tmr.handle.call_timer()
-        return ()
 
-    async def _execute_timer(self, tmr):
+    async def _execute_timer(self, tmr: Timer, _: Any):
+        assert tmr.callback is not None
         await await_or_execute(tmr.callback)
 
-    def _take_subscription(self, sub):
+    def _take_subscription(self, sub: 'Subscription[Any]'):
         with sub.handle:
             msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
             if msg_info is not None:
-                if sub._callback_type is Subscription.CallbackType.MessageOnly:
-                    return (msg_info[0], )
-                else:
-                    return msg_info
-        return ()
+                return msg_info[0]
+        return None
 
-    async def _execute_subscription(self, sub, *args):
-        if args:
-            await await_or_execute(sub.callback, *args)
+    async def _execute_subscription(self, sub: 'Subscription[MsgType]', msg: MsgType):
+        if msg:
+            await await_or_execute(sub.callback, msg)
 
-    def _take_client(self, client):
+    def _take_client(self, client: Client[Any]):
         with client.handle:
-            return (client.handle.take_response(client.srv_type.Response), )
+            return client.handle.take_response(client.srv_type.Response)
 
-    async def _execute_client(self, client, seq_and_response):
+    async def _execute_client(self, client: Client[Any], seq_and_response: Any):
         header, response = seq_and_response
         if header is not None:
             try:
                 sequence = header.request_id.sequence_number
-                future = client.get_pending_request(sequence)
+                future = client._pending_requests[sequence]  # type: ignore
             except KeyError:
                 # The request was cancelled
                 pass
             else:
-                future._set_executor(self)
+                future._set_executor(self)  # type: ignore
                 future.set_result(response)
 
-    def _take_service(self, srv):
+    def _take_service(self, srv: Service[Any]):
         with srv.handle:
             request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
-        return (request_and_header, )
+        return request_and_header
 
-    async def _execute_service(self, srv, request_and_header):
+    async def _execute_service(self, srv: Service[Any], request_and_header: Any):
         if request_and_header is None:
             return
         (request, header) = request_and_header
@@ -376,25 +398,25 @@ class Executor:
             response = await await_or_execute(srv.callback, request, srv.srv_type.Response())
             srv.send_response(response, header)
 
-    def _take_guard_condition(self, gc):
-        gc._executor_triggered = False
-        return ()
+    def _take_guard_condition(self, gc: GuardCondition):
+        gc._executor_triggered = False  # type: ignore
 
-    async def _execute_guard_condition(self, gc):
+    async def _execute_guard_condition(self, gc: GuardCondition, _: Any):
+        assert gc.callback is not None
         await await_or_execute(gc.callback)
 
-    async def _execute_waitable(self, waitable, data):
-        for future in waitable._futures:
-            future._set_executor(self)
+    async def _execute_waitable(self, waitable: Waitable, data: Any):
+        for future in waitable._futures:  # type: ignore
+            future._set_executor(self)  # type: ignore
         await waitable.execute(data)
 
     def _make_handler(
         self,
-        entity: WaitableEntityType,
+        entity: 'RclpyEntity',
         node: 'Node',
-        take_from_wait_list: Callable,
-        call_coroutine: Coroutine
-    ) -> Task:
+        take_from_wait_list: Callable[..., Any],
+        call_coroutine: Callable[..., Coroutine[Any, Any, Any]]
+    ) -> Task[Any]:
         """
         Make a handler that performs work on an entity.
 
@@ -404,34 +426,33 @@ class Executor:
         :param call_coroutine: Does the work the entity is ready for
         """
         # Mark this so it doesn't get added back to the wait list
-        entity._executor_event = True
+        entity._executor_event = True  # type: ignore
 
-        async def handler(entity, gc, is_shutdown, work_tracker):
+        async def handler(
+            entity: Waitable,
+            gc: GuardCondition,
+            is_shutdown: bool,
+            work_tracker: _WorkTracker
+        ):
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
-                entity._executor_event = False
+                entity._executor_event = False  # type: ignore
                 gc.trigger()
                 return
             with work_tracker:
                 arg = take_from_wait_list(entity)
 
                 # Signal that this has been 'taken' and can be added back to the wait list
-                entity._executor_event = False
+                entity._executor_event = False  # type: ignore
                 gc.trigger()
 
                 try:
-                    await call_coroutine(entity, *arg)
+                    await call_coroutine(entity, arg)
                 finally:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-
-                    # Catch expected error where calling executor.shutdown()
-                    # from callback causes the GuardCondition to be destroyed
-                    try:
-                        gc.trigger()
-                    except InvalidHandle:
-                        pass
+                    gc.trigger()
         task = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
@@ -439,7 +460,7 @@ class Executor:
             self._tasks.append((task, entity, node))
         return task
 
-    def can_execute(self, entity: WaitableEntityType) -> bool:
+    def can_execute(self, entity: 'RclpyEntity') -> bool:
         """
         Determine if a callback for an entity can be executed.
 
@@ -450,10 +471,10 @@ class Executor:
 
     def _wait_for_ready_callbacks(
         self,
-        timeout_sec: float = None,
-        nodes: List['Node'] = None,
+        timeout_sec: Optional[float] = None,
+        nodes: Optional[List['Node']] = None,
         condition: Callable[[], bool] = lambda: False,
-    ) -> Generator[Tuple[Task, WaitableEntityType, 'Node'], None, None]:
+    ) -> Generator[Tuple[Task[Any], Optional['RclpyEntity'], Optional['Node']], None, None]:
         """
         Yield callbacks that are ready to be executed.
 
@@ -477,6 +498,7 @@ class Executor:
             nodes_to_use = nodes
             if nodes is None:
                 nodes_to_use = self.get_nodes()
+            assert nodes_to_use is not None
 
             # Yield tasks in-progress before waiting for new work
             tasks = None
@@ -493,12 +515,14 @@ class Executor:
                     self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
 
             # Gather entities that can be waited on
-            subscriptions: List[Subscription] = []
+            subscriptions: List['Subscription[Any]'] = []
             guards: List[GuardCondition] = []
             timers: List[Timer] = []
-            clients: List[Client] = []
-            services: List[Service] = []
+            clients: List[Client[Any]] = []
+            services: List[Service[Any]] = []
             waitables: List[Waitable] = []
+
+            assert nodes_to_use is not None
             for node in nodes_to_use:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
                 timers.extend(filter(self.can_execute, node.timers))
@@ -508,12 +532,14 @@ class Executor:
                 waitables.extend(filter(self.can_execute, node.waitables))
                 # retrigger a guard condition that was triggered but not handled
                 for gc in node_guards:
-                    if gc._executor_triggered:
+                    if gc._executor_triggered:  # type: ignore
                         gc.trigger()
                     guards.append(gc)
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
+            assert self._guard is not None
+            assert self._sigint_gc is not None
             guards.append(self._guard)
             guards.append(self._sigint_gc)
 
@@ -523,7 +549,7 @@ class Executor:
             # Construct a wait set
             wait_set = None
             with ExitStack() as context_stack:
-                sub_handles = []
+                sub_handles: List[_rclpy.Subscription] = []
                 for sub in subscriptions:
                     try:
                         context_stack.enter_context(sub.handle)
@@ -531,7 +557,7 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_subscriptions -= 1
 
-                client_handles = []
+                client_handles: List[_rclpy.Client] = []
                 for cli in clients:
                     try:
                         context_stack.enter_context(cli.handle)
@@ -539,7 +565,7 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_clients -= 1
 
-                service_handles = []
+                service_handles: List[_rclpy.Service] = []
                 for srv in services:
                     try:
                         context_stack.enter_context(srv.handle)
@@ -547,7 +573,7 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_services -= 1
 
-                timer_handles = []
+                timer_handles: List[_rclpy.Timer] = []
                 for tmr in timers:
                     try:
                         context_stack.enter_context(tmr.handle)
@@ -555,7 +581,7 @@ class Executor:
                     except InvalidHandle:
                         entity_count.num_timers -= 1
 
-                guard_handles = []
+                guard_handles: List[_rclpy.GuardCondition] = []
                 for gc in guards:
                     try:
                         context_stack.enter_context(gc.handle)
@@ -570,6 +596,7 @@ class Executor:
                     except InvalidHandle:
                         pass
 
+                assert self._context.handle is not None
                 context_stack.enter_context(self._context.handle)
 
                 wait_set = _rclpy.WaitSet(
@@ -612,7 +639,7 @@ class Executor:
                 # Mark all guards as triggered before yielding since they're auto-taken
                 for gc in guards:
                     if gc.handle.pointer in guards_ready:
-                        gc._executor_triggered = True
+                        gc._executor_triggered = True  # type: ignore
 
                 # Check waitables before wait set is destroyed
                 for node in nodes_to_use:
@@ -620,7 +647,7 @@ class Executor:
                         # Only check waitables that were added to the wait set
                         if wt in waitables and wt.is_ready(wait_set):
                             handler = self._make_handler(
-                                wt, node, lambda e: (e.take_data(), ), self._execute_waitable)
+                                wt, node, lambda e: e.take_data(), self._execute_waitable)
                             yielded_work = True
                             yield handler, wt, node
 
@@ -630,6 +657,7 @@ class Executor:
                     if tmr.handle.pointer in timers_ready:
                         # Check timer is ready to workaround rcl issue with cancelled timers
                         if tmr.handle.is_timer_ready():
+                            assert tmr.callback_group is not None
                             if tmr.callback_group.can_execute(tmr):
                                 handler = self._make_handler(
                                     tmr, node, self._take_timer, self._execute_timer)
@@ -645,7 +673,8 @@ class Executor:
                             yield handler, sub, node
 
                 for gc in node.guards:
-                    if gc._executor_triggered:
+                    if gc._executor_triggered:  # type: ignore
+                        assert gc.callback_group is not None
                         if gc.callback_group.can_execute(gc):
                             handler = self._make_handler(
                                 gc, node, self._take_guard_condition,
@@ -680,7 +709,11 @@ class Executor:
         if condition():
             raise ConditionReachedException()
 
-    def wait_for_ready_callbacks(self, *args, **kwargs) -> Tuple[Task, WaitableEntityType, 'Node']:
+    def wait_for_ready_callbacks(
+        self,
+        *args: Any,
+        **kwargs: Any
+    ) -> Tuple[Task[Any], Optional['RclpyEntity'], 'Node']:
         """
         Return callbacks that are ready to be executed.
 
@@ -707,10 +740,10 @@ class Executor:
 class SingleThreadedExecutor(Executor):
     """Runs callbacks in the thread that calls :meth:`Executor.spin`."""
 
-    def __init__(self, *, context: Context = None) -> None:
+    def __init__(self, *, context: Optional[Context] = None) -> None:
         super().__init__(context=context)
 
-    def spin_once(self, timeout_sec: float = None) -> None:
+    def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         try:
             handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
         except ShutdownException:
@@ -719,10 +752,14 @@ class SingleThreadedExecutor(Executor):
             pass
         else:
             handler()
-            if handler.exception() is not None:
-                raise handler.exception()
+            if (ex := handler.exception()) is not None:
+                raise ex
 
-    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+    def spin_once_until_future_complete(
+        self,
+        future: Future[Any],
+        timeout_sec: Optional[float] = None
+    ) -> None:
         self.spin_once(timeout_sec)
 
 
@@ -736,7 +773,13 @@ class MultiThreadedExecutor(Executor):
     :param context: The context associated with the executor.
     """
 
-    def __init__(self, num_threads: int = None, *, context: Context = None) -> None:
+    def __init__(
+        self,
+        num_threads: Optional[int] = None,
+        *,
+        context: Optional[Context] = None
+    ) -> None:
+
         super().__init__(context=context)
         if num_threads is None:
             try:
@@ -747,7 +790,7 @@ class MultiThreadedExecutor(Executor):
 
     def _spin_once_impl(
         self,
-        timeout_sec: float = None,
+        timeout_sec: Optional[float] = None,
         wait_condition: Callable[[], bool] = lambda: False
     ) -> None:
         try:
@@ -764,8 +807,12 @@ class MultiThreadedExecutor(Executor):
         else:
             self._executor.submit(handler)
 
-    def spin_once(self, timeout_sec: float = None) -> None:
+    def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
 
-    def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
+    def spin_once_until_future_complete(
+        self,
+        future: Future[Any],
+        timeout_sec: Optional[float] = None
+    ) -> None:
         self._spin_once_impl(timeout_sec, future.done)

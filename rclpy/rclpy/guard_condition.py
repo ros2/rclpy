@@ -12,14 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Callable, Optional
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.callback_groups import CallbackGroup
+from rclpy.context import Context
 from rclpy.utilities import get_default_context
 
 
 class GuardCondition:
 
-    def __init__(self, callback, callback_group, context=None):
+    def __init__(
+        self,
+        callback: Optional[Callable[[], None]],
+        callback_group: Optional[CallbackGroup],
+        context: Optional[Context] = None
+    ):
         self._context = get_default_context() if context is None else context
+        assert self._context.handle is not None
         with self._context.handle:
             self.__gc = _rclpy.GuardCondition(self._context.handle)
         self.callback = callback

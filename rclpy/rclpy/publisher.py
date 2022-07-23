@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeVar, Union
+from typing import Generic, List, Type, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.duration import Duration
@@ -20,16 +20,15 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import QoSEventHandler
+from rclpy.type_support import MsgType
 
-MsgType = TypeVar('MsgType')
 
-
-class Publisher:
+class Publisher(Generic[MsgType]):
 
     def __init__(
         self,
         publisher_impl: _rclpy.Publisher,
-        msg_type: MsgType,
+        msg_type: Type[MsgType],
         topic: str,
         qos_profile: QoSProfile,
         event_callbacks: PublisherEventCallbacks,
@@ -54,7 +53,7 @@ class Publisher:
         self.topic = topic
         self.qos_profile = qos_profile
 
-        self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
+        self.event_handlers: List[QoSEventHandler] = event_callbacks.create_event_handlers(
             callback_group, publisher_impl, topic)
 
     def publish(self, msg: Union[MsgType, bytes]) -> None:
@@ -120,4 +119,4 @@ class Publisher:
             false.
         """
         with self.handle:
-            return self.__publisher.wait_for_all_acked(timeout._duration_handle)
+            return self.__publisher.wait_for_all_acked(timeout._duration_handle)  # type: ignore

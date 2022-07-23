@@ -12,26 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union
+from typing import Any, Union
 
-from rclpy.publisher import MsgType
+from rclpy.type_support import MsgType
 from rclpy.publisher import Publisher
 
 from .managed_entity import SimpleManagedEntity
 
 
-class LifecyclePublisher(SimpleManagedEntity, Publisher):
+class LifecyclePublisher(SimpleManagedEntity, Publisher[Any]):
     """Managed publisher entity."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         SimpleManagedEntity.__init__(self)
-        Publisher.__init__(self, *args, **kwargs)
+        Publisher[Any].__init__(self, *args, **kwargs)
 
-    @SimpleManagedEntity.when_enabled
+    @SimpleManagedEntity.when_enabled  # type: ignore
     def publish(self, msg: Union[MsgType, bytes]) -> None:
         """
         Publish a message if the lifecycle publisher is enabled.
 
         See rclpy.publisher.Publisher.publish() for more details.
         """
-        Publisher.publish(self, msg)
+        Publisher[Any].publish(self, msg)

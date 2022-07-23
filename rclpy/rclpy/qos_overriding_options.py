@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
+from typing import Any, Callable
 from typing import Iterable
 from typing import Optional
 from typing import Text
@@ -31,6 +31,7 @@ from rclpy.publisher import Publisher
 from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
 from rclpy.subscription import Subscription
+import rclpy.qos
 
 if TYPE_CHECKING:
     from rclpy.node import Node
@@ -98,12 +99,12 @@ class QoSOverridingOptions:
 
 
 def _declare_qos_parameters(
-    entity_type: Union[Type[Publisher], Type[Subscription]],
+    entity_type: Union[Type[Publisher[Any]], Type[Subscription[Any]]],
     node: 'Node',
     topic_name: Text,
     qos: QoSProfile,
     options: QoSOverridingOptions
-) -> QoSProfile:
+) -> None:
     """
     Declare QoS parameters for a Publisher or a Subscription.
 
@@ -114,7 +115,7 @@ def _declare_qos_parameters(
         with the user provided QoS parameter overrides.
     :param options: Options that indicates which parameters are going to be declared.
     """
-    if not issubclass(entity_type, (Publisher, Subscription)):
+    if not issubclass(entity_type, (Publisher, Subscription)):  # type: ignore
         raise TypeError('Argument `entity_type` should be a subclass of Publisher or Subscription')
     entity_type_str = 'publisher' if issubclass(entity_type, Publisher) else 'subscription'
     id_suffix = '' if options.entity_id is None else f'_{options.entity_id}'
@@ -138,12 +139,13 @@ def _declare_qos_parameters(
         _override_qos_policy_with_param(qos, policy, param)
     if options.callback is not None:
         result = options.callback(qos)
-        if not result.successful:
+        if not result.successful:  # type: ignore
             raise InvalidQosOverridesError(
-                f"{description.format('Provided QoS overrides')}, are not valid: {result.reason}")
+                f"{description.format('Provided QoS overrides')}, "
+                f"are not valid: {result.reason}")  # type: ignore
 
 
-def _get_allowed_policies(entity_type: Union[Type[Publisher], Type[Subscription]]):
+def _get_allowed_policies(entity_type: Union[Type[Publisher[Any]], Type[Subscription[Any]]]):
     allowed_policies = list(QoSPolicyKind.__members__.values())
     if issubclass(entity_type, Subscription):
         allowed_policies.remove(QoSPolicyKind.LIFESPAN)
@@ -166,14 +168,14 @@ def _get_qos_policy_parameter(qos: QoSProfile, policy: QoSPolicyKind) -> Union[s
     return value
 
 
-def _override_qos_policy_with_param(qos: QoSProfile, policy: QoSPolicyKind, param: Parameter):
+def _override_qos_policy_with_param(qos: QoSProfile, policy: QoSPolicyKind, param: Parameter[Any]):
     value = param.value
     policy_name = policy.name.lower()
     if policy in (
         QoSPolicyKind.LIVELINESS, QoSPolicyKind.RELIABILITY,
         QoSPolicyKind.HISTORY, QoSPolicyKind.DURABILITY
     ):
-        def capitalize_first_letter(x):
+        def capitalize_first_letter(x: str):
             return x[0].upper() + x[1:]
         # e.g. `policy=QosPolicyKind.LIVELINESS` -> `policy_enum_class=rclpy.qos.LivelinessPolicy`
         policy_enum_class = getattr(

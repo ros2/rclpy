@@ -14,7 +14,7 @@
 
 import threading
 import time
-from typing import Dict
+from typing import Any, ClassVar, Dict, Generic, Optional, Protocol, Type
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
@@ -23,18 +23,29 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.task import Future
 
-# Used for documentation purposes only
-SrvType = TypeVar('SrvType')
-SrvTypeRequest = TypeVar('SrvTypeRequest')
-SrvTypeResponse = TypeVar('SrvTypeResponse')
+
+class PRequest(Protocol):
+    pass
 
 
-class Client:
+class Presponse(Protocol):
+    pass
+
+
+class SrvType(Protocol):
+    Request: ClassVar = PRequest
+    Response: ClassVar = Presponse
+
+
+SrvTypeT = TypeVar('SrvTypeT', bound=SrvType)
+
+
+class Client(Generic[SrvTypeT]):
     def __init__(
         self,
         context: Context,
         client_impl: _rclpy.Client,
-        srv_type: SrvType,
+        srv_type: Type[SrvTypeT],
         srv_name: str,
         qos_profile: QoSProfile,
         callback_group: CallbackGroup
@@ -59,14 +70,14 @@ class Client:
         self.srv_name = srv_name
         self.qos_profile = qos_profile
         # Key is a sequence number, value is an instance of a Future
-        self._pending_requests: Dict[int, Future] = {}
+        self._pending_requests: Dict[int, Future[Any]] = {}
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
 
         self._lock = threading.Lock()
 
-    def call(self, request: SrvTypeRequest) -> SrvTypeResponse:
+    def call(self, request: 'SrvType.Request') -> 'SrvType.Response':
         """
         Make a service request and wait for the result.
 
@@ -78,12 +89,12 @@ class Client:
           of the Request type of the provided service when the client was
           constructed.
         """
-        if not isinstance(request, self.srv_type.Request):
+        if not isinstance(request, self.srv_type.Request):  # type: ignore
             raise TypeError()
 
         event = threading.Event()
 
-        def unblock(future):
+        def unblock(future: Future[Any]):
             nonlocal event
             event.set()
 
@@ -95,11 +106,11 @@ class Client:
         # resulting in the event never being set.
         if not future.done():
             event.wait()
-        if future.exception() is not None:
-            raise future.exception()
+        if (ex := future.exception()) is not None:
+            raise ex
         return future.result()
 
-    def call_async(self, request: SrvTypeRequest) -> Future:
+    def call_async(self, request: 'SrvType.Request') -> 'Future[SrvType.Response]':
         """
         Make a service request and asynchronously get the result.
 
@@ -109,7 +120,7 @@ class Client:
           of the Request type of the provided service when the client was
           constructed.
         """
-        if not isinstance(request, self.srv_type.Request):
+        if not isinstance(request, self.srv_type.Request):  # type: ignore
             raise TypeError()
 
         with self._lock:
@@ -118,14 +129,14 @@ class Client:
             if sequence_number in self._pending_requests:
                 raise RuntimeError(f'Sequence ({sequence_number}) conflicts with pending request')
 
-            future = Future()
+            future: Future[Any] = Future()
             self._pending_requests[sequence_number] = future
 
             future.add_done_callback(self.remove_pending_request)
 
         return future
 
-    def get_pending_request(self, sequence_number: int) -> Future:
+    def get_pending_request(self, sequence_number: int) -> Future[SrvType.Response]:
         """
         Get a future from the list of pending requests.
 
@@ -136,7 +147,7 @@ class Client:
         with self._lock:
             return self._pending_requests[sequence_number]
 
-    def remove_pending_request(self, future: Future) -> None:
+    def remove_pending_request(self, future: Future[SrvType.Response]) -> None:
         """
         Remove a future from the list of pending requests.
 
@@ -159,7 +170,7 @@ class Client:
         with self.handle:
             return self.__client.service_server_is_available()
 
-    def wait_for_service(self, timeout_sec: float = None) -> bool:
+    def wait_for_service(self, timeout_sec: Optional[float] = None) -> bool:
         """
         Wait for a service server to become ready.
 

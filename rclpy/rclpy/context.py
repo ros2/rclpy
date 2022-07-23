@@ -15,10 +15,15 @@
 from inspect import ismethod
 import sys
 import threading
+from types import MethodType
 from typing import Callable
 from typing import List
 from typing import Optional
 import weakref
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 g_logging_configure_lock = threading.Lock()
@@ -35,15 +40,16 @@ class Context:
 
     def __init__(self):
         self._lock = threading.Lock()
-        self._callbacks = []
+        self._callbacks: List[Callable[[], Optional[MethodType]]] = []
         self._logging_initialized = False
-        self.__context = None
+        self.__context: Optional[_rclpy.Context] = None
 
     @property
     def handle(self):
         return self.__context
 
     def destroy(self):
+        assert self.__context is not None
         self.__context.destroy_when_not_in_use()
 
     def init(self,
@@ -113,13 +119,15 @@ class Context:
                 self._call_on_shutdown_callbacks()
                 self._logging_fini()
 
-    def _remove_callback(self, weak_method):
+    def _remove_callback(self, weak_method: Callable[[], None]):
         self._callbacks.remove(weak_method)
 
     def on_shutdown(self, callback: Callable[[], None]):
         """Add a callback to be called on shutdown."""
         if not callable(callback):
             raise TypeError('callback should be a callable, got {}', type(callback))
+
+        assert self.__context is not None
         with self.__context, self._lock:
             if not self.__context.ok():
                 callback()

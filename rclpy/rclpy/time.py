@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
+from typing import Union
 
 import builtin_interfaces.msg
+
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
 
 CONVERSION_CONSTANT = 10 ** 9
 
@@ -24,9 +27,9 @@ class Time:
 
     def __init__(
             self, *,
-            seconds=0, nanoseconds=0,
+            seconds: Union[int, float] = 0, nanoseconds: int = 0,
             clock_type: _rclpy.ClockType = _rclpy.ClockType.SYSTEM_TIME):
-        if not isinstance(clock_type, _rclpy.ClockType):
+        if not isinstance(clock_type, _rclpy.ClockType):  # type: ignore
             raise TypeError('Clock type must be a ClockType enum')
         if seconds < 0:
             raise ValueError('Seconds value must not be negative')
@@ -62,8 +65,8 @@ class Time:
         return 'Time(nanoseconds={0}, clock_type={1})'.format(
             self.nanoseconds, self.clock_type.name)
 
-    def __add__(self, other):
-        if isinstance(other, Duration):
+    def __add__(self, other: Duration):
+        if isinstance(other, Duration):  # type: ignore
             try:
                 return Time(
                     nanoseconds=(self.nanoseconds + other.nanoseconds),
@@ -73,10 +76,10 @@ class Time:
         else:
             return NotImplemented
 
-    def __radd__(self, other):
+    def __radd__(self, other: Duration):
         return self.__add__(other)
 
-    def __sub__(self, other):
+    def __sub__(self, other: Union[Time, Duration]):
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't subtract times with different clock types")
@@ -84,7 +87,7 @@ class Time:
                 return Duration(nanoseconds=(self.nanoseconds - other.nanoseconds))
             except ValueError as e:
                 raise ValueError('Subtraction leads to negative duration.') from e
-        if isinstance(other, Duration):
+        if isinstance(other, Duration):  # type: ignore
             try:
                 return Time(
                     nanoseconds=(self.nanoseconds - other.nanoseconds),
@@ -94,7 +97,7 @@ class Time:
         else:
             return NotImplemented
 
-    def __eq__(self, other):
+    def __eq__(self, other: object):
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
@@ -105,32 +108,32 @@ class Time:
         # could lead to hard-to-find bugs.
         raise TypeError("Can't compare time with object of type: ", type(other))
 
-    def __ne__(self, other):
+    def __ne__(self, other: object):
         return not self.__eq__(other)
 
-    def __lt__(self, other):
-        if isinstance(other, Time):
+    def __lt__(self, other: Time):
+        if isinstance(other, Time):  # type: ignore
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds < other.nanoseconds
         return NotImplemented
 
-    def __le__(self, other):
-        if isinstance(other, Time):
+    def __le__(self, other: Time):
+        if isinstance(other, Time):  # type: ignore
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds <= other.nanoseconds
         return NotImplemented
 
-    def __gt__(self, other):
-        if isinstance(other, Time):
+    def __gt__(self, other: Time):
+        if isinstance(other, Time):  # type: ignore
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds > other.nanoseconds
         return NotImplemented
 
-    def __ge__(self, other):
-        if isinstance(other, Time):
+    def __ge__(self, other: Time):
+        if isinstance(other, Time):  # type: ignore
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds >= other.nanoseconds
@@ -141,7 +144,11 @@ class Time:
         return builtin_interfaces.msg.Time(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
-    def from_msg(cls, msg, clock_type: _rclpy.ClockType = _rclpy.ClockType.ROS_TIME):
-        if not isinstance(msg, builtin_interfaces.msg.Time):
+    def from_msg(
+        cls,
+        msg: builtin_interfaces.msg.Time,
+        clock_type: _rclpy.ClockType = _rclpy.ClockType.ROS_TIME
+    ):
+        if not isinstance(msg, builtin_interfaces.msg.Time):  # type: ignore
             raise TypeError('Must pass a builtin_interfaces.msg.Time object')
-        return cls(seconds=msg.sec, nanoseconds=msg.nanosec, clock_type=clock_type)
+        return cls(seconds=msg.sec, nanoseconds=msg.nanosec, clock_type=clock_type)  # type: ignore

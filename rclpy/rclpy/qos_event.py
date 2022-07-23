@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
-from typing import Callable
+from typing import Any, Callable, Union
 from typing import List
 from typing import Optional
 
@@ -24,7 +23,7 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
-
+import rclpy.executors
 
 QoSPublisherEventType = _rclpy.rcl_publisher_event_type_t
 QoSSubscriptionEventType = _rclpy.rcl_subscription_event_type_t
@@ -67,9 +66,9 @@ class QoSEventHandler(Waitable):
         self,
         *,
         callback_group: CallbackGroup,
-        callback: Callable,
-        event_type: IntEnum,
-        parent_impl,
+        callback: Callable[..., None],
+        event_type: Union[_rclpy.rcl_publisher_event_type_t, _rclpy.rcl_subscription_event_type_t],
+        parent_impl: Any,
     ):
         # Waitable init adds self to callback_group
         super().__init__(callback_group)
@@ -83,7 +82,7 @@ class QoSEventHandler(Waitable):
         self._event_index = None
 
     # Start Waitable API
-    def is_ready(self, wait_set):
+    def is_ready(self, wait_set: _rclpy.WaitSet):
         """Return True if entities are ready in the wait set."""
         if self._event_index is None:
             return False
@@ -91,7 +90,7 @@ class QoSEventHandler(Waitable):
             self._ready_to_take_data = True
         return self._ready_to_take_data
 
-    def take_data(self):
+    def take_data(self) -> Optional[Any]:
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self._ready_to_take_data:
             self._ready_to_take_data = False
@@ -99,7 +98,7 @@ class QoSEventHandler(Waitable):
                 return self.__event.take_event()
         return None
 
-    async def execute(self, taken_data):
+    async def execute(self, taken_data: Any):
         """Execute work after data has been taken from a ready wait set."""
         if not taken_data:
             return
@@ -109,7 +108,7 @@ class QoSEventHandler(Waitable):
         """Return number of each type of entity used."""
         return NumberOfEntities(num_events=1)
 
-    def add_to_wait_set(self, wait_set):
+    def add_to_wait_set(self, wait_set: _rclpy.WaitSet):
         """Add entites to wait set."""
         with self.__event:
             self._event_index = wait_set.add_event(self.__event)
@@ -118,7 +117,7 @@ class QoSEventHandler(Waitable):
         """Mark event as in-use to prevent destruction while waiting on it."""
         self.__event.__enter__()
 
-    def __exit__(self, t, v, tb):
+    def __exit__(self, t: Any, v: Any, tb: Any):
         """Mark event as not-in-use to allow destruction after waiting on it."""
         self.__event.__exit__(t, v, tb)
 
@@ -163,7 +162,7 @@ class SubscriptionEventCallbacks:
         with subscription:
             logger = get_logger(subscription.get_logger_name())
 
-        event_handlers = []
+        event_handlers: List[QoSEventHandler] = []
         if self.deadline:
             event_handlers.append(QoSEventHandler(
                 callback_group=callback_group,
@@ -180,7 +179,7 @@ class SubscriptionEventCallbacks:
         elif self.use_default_callbacks:
             # Register default callback when not specified
             try:
-                def _default_incompatible_qos_callback(event):
+                def _default_incompatible_qos_callback(event: _rclpy.QoSEvent):
                     policy_name = qos_policy_name_from_kind(event.last_policy_kind)
                     logger.warn(
                         "New publisher discovered on topic '{}', offering incompatible QoS. "
@@ -248,7 +247,7 @@ class PublisherEventCallbacks:
         with publisher:
             logger = get_logger(publisher.get_logger_name())
 
-        event_handlers = []
+        event_handlers: List[QoSEventHandler] = []
         if self.deadline:
             event_handlers.append(QoSEventHandler(
                 callback_group=callback_group,
@@ -272,7 +271,7 @@ class PublisherEventCallbacks:
         elif self.use_default_callbacks:
             # Register default callback when not specified
             try:
-                def _default_incompatible_qos_callback(event):
+                def _default_incompatible_qos_callback(event: _rclpy.QoSEvent):
                     policy_name = qos_policy_name_from_kind(event.last_policy_kind)
                     logger.warn(
                         "New subscription discovered on topic '{}', requesting incompatible QoS. "

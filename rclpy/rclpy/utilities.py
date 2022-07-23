@@ -15,6 +15,7 @@
 import os
 import sys
 import threading
+from typing import Any, Optional, Set
 
 import ament_index_python
 
@@ -25,7 +26,7 @@ g_default_context = None
 g_context_lock = threading.Lock()
 
 
-def get_default_context(*, shutting_down=False):
+def get_default_context(*, shutting_down: bool = False):
     """Return the global default context singleton."""
     global g_context_lock
     with g_context_lock:
@@ -39,26 +40,26 @@ def get_default_context(*, shutting_down=False):
         return g_default_context
 
 
-def remove_ros_args(args=None):
+def remove_ros_args(args: Any = None):
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
     return rclpy_implementation.rclpy_remove_ros_args(
         args if args is not None else sys.argv)
 
 
-def ok(*, context=None):
+def ok(*, context: Optional[Context] = None):
     if context is None:
         context = get_default_context()
     return context.ok()
 
 
-def shutdown(*, context=None):
+def shutdown(*, context: Optional[Context] = None):
     if context is None:
         context = get_default_context(shutting_down=True)
     return context.shutdown()
 
 
-def try_shutdown(*, context=None):
+def try_shutdown(*, context: Optional[Context] = None):
     """Shutdown rclpy if not already shutdown."""
     global g_context_lock
     global g_default_context
@@ -91,9 +92,9 @@ def get_available_rmw_implementations():
     specific path separator.
     Including an unavailable RMW implementation results in a RuntimeError.
     """
-    available_rmw_implementations = ament_index_python.get_resources(
+    available_rmw_implementations = ament_index_python.get_resources(  # type: ignore
         'rmw_typesupport')
-    available_rmw_implementations = {
+    available_rmw_implementations: Set[str] = {
         name for name in available_rmw_implementations
         if name != 'rmw_implementation'}
 
@@ -115,7 +116,7 @@ def get_available_rmw_implementations():
     return available_rmw_implementations
 
 
-def timeout_sec_to_nsec(timeout_sec):
+def timeout_sec_to_nsec(timeout_sec: Optional[float]):
     """
     Convert timeout in seconds to rcl compatible timeout in nanoseconds.
 

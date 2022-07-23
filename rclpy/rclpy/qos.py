@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
-from enum import IntEnum
-from typing import Union
-
 import warnings
+from enum import Enum, IntEnum
+from typing import Any, Union
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -50,7 +48,7 @@ def qos_policy_name_from_kind(policy_kind: Union[QoSPolicyKind, int]):
 class InvalidQoSProfileException(Exception):
     """Raised when constructing a QoSProfile with invalid arguments."""
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any):
         Exception.__init__(self, 'Invalid QoSProfile', *args)
 
 
@@ -73,7 +71,7 @@ class QoSProfile:
         '_avoid_ros_namespace_conventions',
     ]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         assert all('_' + key in self.__slots__ for key in kwargs.keys()), \
             'Invalid arguments passed to constructor: %r' % kwargs.keys()
 
@@ -117,7 +115,7 @@ class QoSProfile:
         return self._history
 
     @history.setter
-    def history(self, value):
+    def history(self, value: Union['QoSHistoryPolicy', int]):
         assert isinstance(value, QoSHistoryPolicy) or isinstance(value, int)
         self._history = QoSHistoryPolicy(value)
 
@@ -492,7 +490,7 @@ class QoSPresetProfiles(Enum):
         return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
 
     @classmethod
-    def get_from_short_key(cls, name):
+    def get_from_short_key(cls, name: str):
         """Retrieve a policy type from a short name, case-insensitive."""
         return cls[name.upper()].value
 

@@ -12,26 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
-from typing import TypeVar
+from typing import Callable, Generic, Type, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 
-# Used for documentation purposes only
-SrvType = TypeVar('SrvType')
-SrvTypeRequest = TypeVar('SrvTypeRequest')
-SrvTypeResponse = TypeVar('SrvTypeResponse')
+from rclpy.client import SrvTypeT, SrvType
 
 
-class Service:
+class Service(Generic[SrvTypeT]):
     def __init__(
         self,
         service_impl: _rclpy.Service,
-        srv_type: SrvType,
+        srv_type: Type[SrvTypeT],
         srv_name: str,
-        callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
+        callback: Callable[[SrvType.Request, SrvType.Response], SrvType.Response],
         callback_group: CallbackGroup,
         qos_profile: QoSProfile
     ) -> None:
@@ -59,7 +55,11 @@ class Service:
         self._executor_event = False
         self.qos_profile = qos_profile
 
-    def send_response(self, response: SrvTypeResponse, header) -> None:
+    def send_response(
+        self,
+        response: SrvType.Response,
+        header: Union[_rclpy.rmw_service_info_t, _rclpy.rmw_request_id_t]
+    ) -> None:
         """
         Send a service response.
 
@@ -69,12 +69,12 @@ class Service:
           of the Response type of the provided service when the service was
           constructed.
         """
-        if not isinstance(response, self.srv_type.Response):
+        if not isinstance(response, self.srv_type.Response):  # type: ignore
             raise TypeError()
         with self.handle:
             if isinstance(header, _rclpy.rmw_service_info_t):
                 self.__service.service_send_response(response, header.request_id)
-            elif isinstance(header, _rclpy.rmw_request_id_t):
+            elif isinstance(header, _rclpy.rmw_request_id_t):  # type: ignore
                 self.__service.service_send_response(response, header)
             else:
                 raise TypeError()

@@ -12,27 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any, List, Type, Union
+from rclpy.parameter import Parameter
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 class NotInitializedException(Exception):
     """Raised when the rclpy implementation is accessed before rclpy.init()."""
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any):
         Exception.__init__(self, 'rclpy.init() has not been called', *args)
 
 
 class NoTypeSupportImportedException(Exception):
     """Raised when there is no type support imported."""
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any):
         Exception.__init__(self, 'no type_support imported')
 
 
 class NameValidationException(Exception):
     """Raised when a topic name, node name, or namespace are invalid."""
 
-    def __init__(self, name_type, name, error_msg, invalid_index, *args):
+    def __init__(self, name_type: str, name: str, error_msg: str, invalid_index: int, *args: Any):
         msg = """\
 Invalid {name_type}: {error_msg}:
   '{name}'
@@ -47,68 +49,68 @@ InvalidHandle = _rclpy.InvalidHandle
 class InvalidNamespaceException(NameValidationException):
     """Raised when a namespace is invalid."""
 
-    def __init__(self, name, error_msg, invalid_index, *args):
+    def __init__(self, name: str, error_msg: str, invalid_index: int, *args: Any):
         NameValidationException.__init__(self, 'namespace', name, error_msg, invalid_index)
 
 
 class InvalidNodeNameException(NameValidationException):
     """Raised when a node name is invalid."""
 
-    def __init__(self, name, error_msg, invalid_index, *args):
+    def __init__(self, name: str, error_msg: str, invalid_index: int, *args: Any):
         NameValidationException.__init__(self, 'node name', name, error_msg, invalid_index)
 
 
 class InvalidTopicNameException(NameValidationException):
     """Raised when a topic name is invalid."""
 
-    def __init__(self, name, error_msg, invalid_index, *args):
+    def __init__(self, name: str, error_msg: str, invalid_index: int, *args: Any):
         NameValidationException.__init__(self, 'topic name', name, error_msg, invalid_index)
 
 
 class InvalidServiceNameException(NameValidationException):
     """Raised when a service name is invalid."""
 
-    def __init__(self, name, error_msg, invalid_index, *args):
+    def __init__(self, name: str, error_msg: str, invalid_index: int, *args: Any):
         NameValidationException.__init__(self, 'service name', name, error_msg, invalid_index)
 
 
 class ParameterException(Exception):
     """Base exception for parameter-related errors."""
 
-    def __init__(self, error_msg, parameters, *args):
+    def __init__(self, error_msg: str, parameters: Union[str, List[str]], *args: Any):
         Exception.__init__(self, f'{error_msg}: {parameters}')
 
 
 class ParameterNotDeclaredException(ParameterException):
     """Raised when handling an undeclared parameter when it is not allowed."""
 
-    def __init__(self, parameters, *args):
+    def __init__(self, parameters: Union[str, List[str]], *args: Any):
         Exception.__init__(self, 'Invalid access to undeclared parameter(s)', parameters, *args)
 
 
 class ParameterAlreadyDeclaredException(ParameterException):
     """Raised when declaring a parameter that had been declared before."""
 
-    def __init__(self, parameters, *args):
+    def __init__(self, parameters: Union[str, List[str]], *args: Any):
         Exception.__init__(self, 'Parameter(s) already declared', parameters, *args)
 
 
 class InvalidParameterException(ParameterException):
     """Raised when a parameter to be declared has an invalid name."""
 
-    def __init__(self, parameter, *args):
+    def __init__(self, parameter: str, *args: Any):
         Exception.__init__(self, 'Invalid parameter name', parameter, *args)
 
 
 class InvalidParameterTypeException(ParameterException):
     """Raised when a parameter is rejected for having an invalid type."""
 
-    def __init__(self, desired_parameter, expected_type, *args):
+    def __init__(self, desired_parameter: Parameter[Any], expected_type: Type[Any], *args: Any):
         from rclpy.parameter import Parameter
         Exception.__init__(
             self,
-            f"Trying to set parameter '{desired_parameter._name}' to '{desired_parameter._value}'"
-            f" of type '{Parameter.Type.from_parameter_value(desired_parameter._value).name}'"
+            f"Trying to set parameter '{desired_parameter.name}' to '{desired_parameter.value}'"
+            f" of type '{Parameter.Type.from_parameter_value(desired_parameter.value).name}'"
             f", expecting type '{expected_type}'",
             *args)
         self._actual_type = desired_parameter.type_
@@ -118,7 +120,7 @@ class InvalidParameterTypeException(ParameterException):
 class InvalidParameterValueException(ParameterException):
     """Raised when a parameter is rejected by a user callback or when applying a descriptor."""
 
-    def __init__(self, parameter, value, reason, *args):
+    def __init__(self, parameter: str, value: Any, reason: str, *args: Any):
         Exception.__init__(
             self,
             'Invalid parameter value ({value}) for parameter. Reason: {reason}'.format(
@@ -128,14 +130,14 @@ class InvalidParameterValueException(ParameterException):
 class ParameterImmutableException(ParameterException):
     """Raised when a read-only parameter is modified."""
 
-    def __init__(self, parameter, *args):
+    def __init__(self, parameter: str, *args: Any):
         Exception.__init__(self, 'Attempted to modify read-only parameter', parameter, *args)
 
 
 class ParameterUninitializedException(ParameterException):
     """Raised when an uninitialized parameter is accessed."""
 
-    def __init__(self, parameter_name, *args):
+    def __init__(self, parameter_name: str, *args: Any):
         Exception.__init__(
             self,
             f"The parameter '{parameter_name}' is not initialized",
@@ -145,5 +147,5 @@ class ParameterUninitializedException(ParameterException):
 class ROSInterruptException(Exception):
     """Raised when an operation is canceled by rclpy shutting down."""
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any):
         Exception.__init__(self, 'rclpy.shutdown() has been called', *args)

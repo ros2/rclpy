@@ -11,22 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import array
 from enum import Enum
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import (Any, Dict, Generic, List, Optional, Tuple, TypeVar, Union,
+                    cast)
 
-from rcl_interfaces.msg import Parameter as ParameterMsg
-from rcl_interfaces.msg import ParameterType
-from rcl_interfaces.msg import ParameterValue
 import yaml
+import yaml.parser
+from rcl_interfaces.msg import Parameter as ParameterMsg
+from rcl_interfaces.msg import ParameterType, ParameterValue
 
 PARAMETER_SEPARATOR_STRING = '.'
 
+AllowableParameterValue = Union[None, bool, int, float, str, List[bool], List[int], List[float],
+                                List[str], Tuple[bool, ...], Tuple[int, ...], Tuple[float, ...],
+                                Tuple[str, ...], 'array.ArrayType[Any]']
 
-class Parameter:
+AllowableParameterT = TypeVar('AllowableParameterT', bound=AllowableParameterValue)
+
+
+class Parameter(Generic[AllowableParameterT]):
 
     class Type(Enum):
         NOT_SET = ParameterType.PARAMETER_NOT_SET
@@ -41,7 +47,7 @@ class Parameter:
         STRING_ARRAY = ParameterType.PARAMETER_STRING_ARRAY
 
         @classmethod
-        def from_parameter_value(cls, parameter_value):
+        def from_parameter_value(cls, parameter_value: AllowableParameterValue):
             """
             Get a Parameter.Type from a given variable.
 
@@ -58,7 +64,7 @@ class Parameter:
                 return Parameter.Type.DOUBLE
             elif isinstance(parameter_value, str):
                 return Parameter.Type.STRING
-            elif isinstance(parameter_value, (list, tuple, array.array)):
+            elif isinstance(parameter_value, (list, tuple, array.array)):  # type: ignore
                 if all(isinstance(v, bytes) for v in parameter_value):
                     return Parameter.Type.BYTE_ARRAY
                 elif all(isinstance(v, bool) for v in parameter_value):
@@ -77,7 +83,7 @@ class Parameter:
                 raise TypeError(
                     f"The given value is not one of the allowed types '{parameter_value}'.")
 
-        def check(self, parameter_value):
+        def check(self, parameter_value: Any) -> bool:
             if Parameter.Type.NOT_SET == self:
                 return parameter_value is None
             if Parameter.Type.BOOL == self:
@@ -106,7 +112,7 @@ class Parameter:
             return False
 
     @classmethod
-    def from_parameter_msg(cls, param_msg):
+    def from_parameter_msg(cls, param_msg: ParameterMsg) -> Parameter[Any]:
         value = None
         type_ = Parameter.Type(value=param_msg.value.type)
         if Parameter.Type.BOOL == type_:
@@ -127,14 +133,19 @@ class Parameter:
             value = param_msg.value.double_array_value
         elif Parameter.Type.STRING_ARRAY == type_:
             value = param_msg.value.string_array_value
-        return cls(param_msg.name, type_, value)
+        return cls(cast(str, param_msg.name), type_, value)  # type: ignore
 
-    def __init__(self, name, type_=None, value=None):
+    def __init__(
+        self,
+        name: str,
+        type_: Optional[Parameter.Type] = None,
+        value: Optional[AllowableParameterT] = None
+    ):
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
 
-        if not isinstance(type_, Parameter.Type):
+        if not isinstance(type_, Parameter.Type):  # type: ignore
             raise TypeError("type must be an instance of '{}'".format(repr(Parameter.Type)))
 
         if not type_.check(value):
@@ -153,7 +164,7 @@ class Parameter:
         return self._type_
 
     @property
-    def value(self):
+    def value(self) -> AllowableParameterT:
         return self._value
 
     def get_parameter_value(self):
@@ -284,8 +295,8 @@ def parameter_dict_from_yaml_file(
     """
     with open(parameter_file, 'r') as f:
         param_file = yaml.safe_load(f)
-        param_keys = []
-        param_dict = {}
+        param_keys: List[str] = []
+        param_dict: RecursiveParameterDictType = {}
 
         if use_wildcard and '/**' in param_file:
             param_keys.append('/**')
@@ -314,7 +325,13 @@ def parameter_dict_from_yaml_file(
         return _unpack_parameter_dict(namespace, param_dict)
 
 
-def _unpack_parameter_dict(namespace, parameter_dict):
+RecursiveParameterDictType = Dict[str, Union[Parameter[Any], 'RecursiveParameterDictType']]
+
+
+def _unpack_parameter_dict(
+    namespace: str,
+    parameter_dict: RecursiveParameterDictType
+) -> Dict[str, ParameterMsg]:
     """
     Flatten a parameter dictionary recursively.
 
@@ -327,9 +344,10 @@ def _unpack_parameter_dict(namespace, parameter_dict):
         full_param_name = namespace + param_name
         # Unroll nested parameters
         if type(param_value) == dict:
+            assert not isinstance(param_value, Parameter)
             parameters.update(_unpack_parameter_dict(
-                    namespace=full_param_name + PARAMETER_SEPARATOR_STRING,
-                    parameter_dict=param_value))
+                namespace=full_param_name + PARAMETER_SEPARATOR_STRING,
+                parameter_dict=param_value))
         else:
             parameter = ParameterMsg()
             parameter.name = full_param_name

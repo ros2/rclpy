@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any, Union
 import builtin_interfaces.msg
 from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -20,7 +21,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class Duration:
     """A period between two time points, with nanosecond precision."""
 
-    def __init__(self, *, seconds=0, nanoseconds=0):
+    def __init__(self, *, seconds: Union[float, int] = 0, nanoseconds: int = 0):
         """
         Create an instance of :class:`Duration`, combined from given seconds and nanoseconds.
 
@@ -47,7 +48,7 @@ class Duration:
             return 'Infinite'
         return f'{self.nanoseconds} nanoseconds'
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         if isinstance(other, Duration):
             return self.nanoseconds == other.nanoseconds
         # Raise instead of returning NotImplemented to prevent comparison with invalid types,
@@ -56,25 +57,25 @@ class Duration:
         # could lead to hard-to-find bugs.
         raise TypeError("Can't compare duration with object of type: ", type(other))
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any):
         return not self.__eq__(other)
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any):
         if isinstance(other, Duration):
             return self.nanoseconds < other.nanoseconds
         return NotImplemented
 
-    def __le__(self, other):
+    def __le__(self, other: Any):
         if isinstance(other, Duration):
             return self.nanoseconds <= other.nanoseconds
         return NotImplemented
 
-    def __gt__(self, other):
+    def __gt__(self, other: Any):
         if isinstance(other, Duration):
             return self.nanoseconds > other.nanoseconds
         return NotImplemented
 
-    def __ge__(self, other):
+    def __ge__(self, other: Any):
         if isinstance(other, Duration):
             return self.nanoseconds >= other.nanoseconds
         return NotImplemented
@@ -90,15 +91,15 @@ class Duration:
         return builtin_interfaces.msg.Duration(sec=seconds, nanosec=nanoseconds)
 
     @classmethod
-    def from_msg(cls, msg):
+    def from_msg(cls, msg: builtin_interfaces.msg.Duration):
         """
         Create an instance of :class:`Duration` from a duration message.
 
         :param msg: An instance of :class:`builtin_interfaces.msg.Duration`.
         """
-        if not isinstance(msg, builtin_interfaces.msg.Duration):
+        if not isinstance(msg, builtin_interfaces.msg.Duration):  # type: ignore
             raise TypeError('Must pass a builtin_interfaces.msg.Duration object')
-        return cls(seconds=msg.sec, nanoseconds=msg.nanosec)
+        return cls(seconds=msg.sec, nanoseconds=msg.nanosec)  # type: ignore
 
     def get_c_duration(self):
         return self._duration_handle

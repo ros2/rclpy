@@ -13,6 +13,17 @@
 # limitations under the License.
 
 
+from typing import Any, List
+from rclpy.callback_groups import CallbackGroup
+from rclpy.task import Future
+
+import typing
+if typing.TYPE_CHECKING:
+    from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
+from abc import ABC, abstractmethod
+
+
 class NumberOfEntities:
 
     __slots__ = [
@@ -24,8 +35,8 @@ class NumberOfEntities:
         'num_events']
 
     def __init__(
-        self, num_subs=0, num_gcs=0, num_timers=0,
-        num_clients=0, num_services=0, num_events=0
+        self, num_subs: int = 0, num_gcs: int = 0, num_timers: int = 0,
+        num_clients: int = 0, num_services: int = 0, num_events: int = 0
     ):
         self.num_subscriptions = num_subs
         self.num_guard_conditions = num_gcs
@@ -34,7 +45,7 @@ class NumberOfEntities:
         self.num_services = num_services
         self.num_events = num_events
 
-    def __add__(self, other):
+    def __add__(self, other: object):
         result = self.__class__()
         for attr in result.__slots__:
             left = getattr(self, attr)
@@ -49,52 +60,57 @@ class NumberOfEntities:
             self.num_services, self.num_events)
 
 
-class Waitable:
+class Waitable(ABC):
     """
     Add something to a wait set and execute it.
 
     This class wraps a collection of entities which can be added to a wait set.
     """
 
-    def __init__(self, callback_group):
+    def __init__(self, callback_group: CallbackGroup):
         # A callback group to control when this entity can execute (used by Executor)
         self.callback_group = callback_group
         self.callback_group.add_entity(self)
         # Flag set by executor when a handler has been created but not executed (used by Executor)
         self._executor_event = False
         # List of Futures that have callbacks needing execution
-        self._futures = []
+        self._futures: List[Future[Any]] = []
 
     def __enter__(self):
         """Implement to mark entities as in-use to prevent destruction while waiting on them."""
         pass
 
-    def __exit__(self, t, v, tb):
+    def __exit__(self, t: Any, v: Any, tb: Any):
         """Implement to mark entities as not-in-use to allow destruction after waiting on them."""
         pass
 
-    def add_future(self, future):
+    def add_future(self, future: Future[Any]):
         self._futures.append(future)
 
-    def remove_future(self, future):
+    def remove_future(self, future: Future[Any]):
         self._futures.remove(future)
 
-    def is_ready(self, wait_set):
+    @abstractmethod
+    def is_ready(self, wait_set: '_rclpy.WaitSet') -> bool:
         """Return True if entities are ready in the wait set."""
         raise NotImplementedError('Must be implemented by subclass')
 
-    def take_data(self):
+    @abstractmethod
+    def take_data(self) -> None:
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         raise NotImplementedError('Must be implemented by subclass')
 
-    async def execute(self, taken_data):
+    @abstractmethod
+    async def execute(self, taken_data: Any) -> None:
         """Execute work after data has been taken from a ready wait set."""
         raise NotImplementedError('Must be implemented by subclass')
 
-    def get_num_entities(self):
+    @abstractmethod
+    def get_num_entities(self) -> NumberOfEntities:
         """Return number of each type of entity used."""
         raise NotImplementedError('Must be implemented by subclass')
 
-    def add_to_wait_set(self, wait_set):
+    @abstractmethod
+    def add_to_wait_set(self, wait_set: '_rclpy.WaitSet') -> None:
         """Add entities to wait set."""
         raise NotImplementedError('Must be implemented by subclass')

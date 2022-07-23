@@ -16,7 +16,7 @@ from rclpy.exceptions import InvalidNamespaceException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-def validate_namespace(namespace):
+def validate_namespace(namespace: str):
     """
     Validate a given namespace, and raise an exception if it is invalid.
 

@@ -12,8 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import Lock
+import typing
 import weakref
+from threading import Lock
+from typing import Any, Set, Union
+
+
+if typing.TYPE_CHECKING:
+    from rclpy.client import Client
+    from rclpy.guard_condition import GuardCondition
+    from rclpy.service import Service
+    from rclpy.subscription import Subscription
+    from rclpy.timer import Timer
+    from rclpy.waitable import Waitable
+
+    RclpyEntity = Union[
+        Subscription[Any],
+        Timer,
+        Client[Any],
+        Service[Any],
+        Waitable,
+        GuardCondition
+    ]
 
 
 class CallbackGroup:
@@ -29,9 +49,9 @@ class CallbackGroup:
 
     def __init__(self) -> None:
         super().__init__()
-        self.entities: set = set()
+        self.entities: Set[weakref.ref['RclpyEntity']] = set()
 
-    def add_entity(self, entity) -> None:
+    def add_entity(self, entity: 'RclpyEntity') -> None:
         """
         Add an entity to the callback group.
 
@@ -39,7 +59,7 @@ class CallbackGroup:
         """
         self.entities.add(weakref.ref(entity))
 
-    def has_entity(self, entity) -> bool:
+    def has_entity(self, entity: 'RclpyEntity') -> bool:
         """
         Determine if an entity has been added to this group.
 
@@ -47,7 +67,7 @@ class CallbackGroup:
         """
         return weakref.ref(entity) in self.entities
 
-    def can_execute(self, entity) -> bool:
+    def can_execute(self, entity: 'RclpyEntity') -> bool:
         """
         Determine if an entity can be executed.
 
@@ -56,7 +76,7 @@ class CallbackGroup:
         """
         raise NotImplementedError()
 
-    def beginning_execution(self, entity) -> bool:
+    def beginning_execution(self, entity: 'RclpyEntity') -> bool:
         """
         Get permission for the callback from the group to begin executing an entity.
 
@@ -68,7 +88,7 @@ class CallbackGroup:
         """
         raise NotImplementedError()
 
-    def ending_execution(self, entity) -> None:
+    def ending_execution(self, entity: 'RclpyEntity') -> None:
         """
         Notify group that a callback has finished executing.
 
@@ -80,13 +100,13 @@ class CallbackGroup:
 class ReentrantCallbackGroup(CallbackGroup):
     """Allow callbacks to be executed in parallel without restriction."""
 
-    def can_execute(self, entity):
+    def can_execute(self, entity: 'RclpyEntity'):
         return True
 
-    def beginning_execution(self, entity):
+    def beginning_execution(self, entity: 'RclpyEntity'):
         return True
 
-    def ending_execution(self, entity):
+    def ending_execution(self, entity: 'RclpyEntity'):
         pass
 
 
@@ -98,12 +118,12 @@ class MutuallyExclusiveCallbackGroup(CallbackGroup):
         self._active_entity = None
         self._lock = Lock()
 
-    def can_execute(self, entity):
+    def can_execute(self, entity: 'RclpyEntity'):
         with self._lock:
             assert weakref.ref(entity) in self.entities
             return self._active_entity is None
 
-    def beginning_execution(self, entity):
+    def beginning_execution(self, entity: 'RclpyEntity'):
         with self._lock:
             assert weakref.ref(entity) in self.entities
             if self._active_entity is None:
@@ -111,7 +131,7 @@ class MutuallyExclusiveCallbackGroup(CallbackGroup):
                 return True
         return False
 
-    def ending_execution(self, entity):
+    def ending_execution(self, entity: 'RclpyEntity'):
         with self._lock:
             assert self._active_entity == entity
             self._active_entity = None

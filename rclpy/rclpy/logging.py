@@ -23,7 +23,7 @@ import rclpy.impl.rcutils_logger
 _root_logger = rclpy.impl.rcutils_logger.RcutilsLogger()
 
 
-def get_logger(name):
+def get_logger(name: str):
     if not name:
         raise ValueError('Logger name must not be empty.')
     return _root_logger.get_child(name)
@@ -43,17 +43,17 @@ def clear_config():
     initialize()
 
 
-def set_logger_level(name, level):
+def set_logger_level(name: str, level: LoggingSeverity):
     level = LoggingSeverity(level)
     return _rclpy.rclpy_logging_set_logger_level(name, level)
 
 
-def get_logger_effective_level(name):
+def get_logger_effective_level(name: str):
     logger_level = _rclpy.rclpy_logging_get_logger_effective_level(name)
     return LoggingSeverity(logger_level)
 
 
-def get_logging_severity_from_string(log_severity):
+def get_logging_severity_from_string(log_severity: str):
     return LoggingSeverity(
         _rclpy.rclpy_logging_severity_level_from_string(log_severity))
 

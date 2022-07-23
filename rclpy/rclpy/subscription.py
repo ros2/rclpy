@@ -12,38 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
 import inspect
-from typing import Callable
-from typing import TypeVar
+from enum import Enum
+from typing import Callable, Generic, List, Type
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.qos_event import QoSEventHandler
-from rclpy.qos_event import SubscriptionEventCallbacks
+from rclpy.qos_event import QoSEventHandler, SubscriptionEventCallbacks
+from rclpy.type_support import MsgType
 
 
-# For documentation only
-MsgType = TypeVar('MsgType')
-
-
-class Subscription:
+class Subscription(Generic[MsgType]):
 
     class CallbackType(Enum):
         MessageOnly = 0
         WithMessageInfo = 1
 
     def __init__(
-         self,
-         subscription_impl: _rclpy.Subscription,
-         msg_type: MsgType,
-         topic: str,
-         callback: Callable,
-         callback_group: CallbackGroup,
-         qos_profile: QoSProfile,
-         raw: bool,
-         event_callbacks: SubscriptionEventCallbacks,
+        self,
+        subscription_impl: _rclpy.Subscription,
+        msg_type: Type[MsgType],
+        topic: str,
+        callback: Callable[[MsgType], None],
+        callback_group: CallbackGroup,
+        qos_profile: QoSProfile,
+        raw: bool,
+        event_callbacks: SubscriptionEventCallbacks,
     ) -> None:
         """
         Create a container for a ROS subscription.
@@ -73,7 +68,7 @@ class Subscription:
         self.qos_profile = qos_profile
         self.raw = raw
 
-        self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
+        self.event_handlers: List[QoSEventHandler] = event_callbacks.create_event_handlers(
             callback_group, subscription_impl, topic)
 
     @property
@@ -91,11 +86,11 @@ class Subscription:
             return self.__subscription.get_topic_name()
 
     @property
-    def callback(self):
+    def callback(self) -> Callable[[MsgType], None]:
         return self._callback
 
     @callback.setter
-    def callback(self, value):
+    def callback(self, value: Callable[[MsgType], None]):
         self._callback = value
         self._callback_type = Subscription.CallbackType.MessageOnly
         try:

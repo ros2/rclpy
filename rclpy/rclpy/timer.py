@@ -13,17 +13,32 @@
 # limitations under the License.
 
 import threading
+from typing import Callable, Optional, SupportsInt
+from rclpy.callback_groups import CallbackGroup
+from rclpy.clock import Clock
+from rclpy.context import Context
 
 from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
 
 
-class Timer:
+class Timer():
 
-    def __init__(self, callback, callback_group, timer_period_ns, clock, *, context=None):
+    def __init__(
+        self,
+        callback: Optional[Callable[[], None]],
+        callback_group: Optional[CallbackGroup],
+        timer_period_ns: int,
+        clock: Clock,
+        *,
+        context: Optional[Context] = None
+    ) -> None:
         self._context = get_default_context() if context is None else context
         self._clock = clock
+
+        assert self._context.handle is not None
+
         with self._clock.handle, self._context.handle:
             self.__timer = _rclpy.Timer(
                 self._clock.handle, self._context.handle, timer_period_ns)
@@ -52,7 +67,7 @@ class Timer:
         return val
 
     @timer_period_ns.setter
-    def timer_period_ns(self, value):
+    def timer_period_ns(self, value: SupportsInt):
         val = int(value)
         with self.__timer:
             self.__timer.change_timer_period(val)
@@ -86,7 +101,7 @@ class Timer:
 class Rate:
     """A utility for sleeping at a fixed rate."""
 
-    def __init__(self, timer: Timer, *, context):
+    def __init__(self, timer: Timer, *, context: Context):
         # Rate is a wrapper around a timer
         self._timer = timer
         self._is_shutdown = False

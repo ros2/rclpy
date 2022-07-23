@@ -17,7 +17,7 @@ from rclpy.exceptions import InvalidTopicNameException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-def validate_full_topic_name(name, *, is_service=False):
+def validate_full_topic_name(name: str, *, is_service: bool = False):
     """
     Validate a given topic or service name, and raise an exception if invalid.
 

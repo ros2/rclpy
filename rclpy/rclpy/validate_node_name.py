@@ -16,7 +16,7 @@ from rclpy.exceptions import InvalidNodeNameException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-def validate_node_name(node_name):
+def validate_node_name(node_name: str):
     """
     Validate a given node_name, and raise an exception if it is invalid.
 

@@ -13,22 +13,29 @@
 # limitations under the License.
 
 
-from collections import namedtuple
 from collections import OrderedDict
 import inspect
 import os
+from typing import Any, Dict, List, Mapping, NamedTuple, Optional, Type, cast
 
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
+from typing import TypedDict
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
-_internal_callers = []
+_internal_callers: List[str] = []
 # This will cause rclpy filenames to be registered in `_internal_callers` on first logging call.
 _populate_internal_callers = True
 
 
-def _find_caller(frame):
+class RcutilsLoggerContext(TypedDict, total=True):
+    name: str
+    severity: LoggingSeverity
+    filters: List[str]
+
+
+def _find_caller(frame: Any):
     """Get the first calling frame that is outside of rclpy."""
     global _populate_internal_callers
     global _internal_callers
@@ -52,9 +59,14 @@ def _find_caller(frame):
 
 
 class CallerId(
-        namedtuple('CallerId', ['function_name', 'file_path', 'line_number', 'last_index'])):
+        NamedTuple('CallerId', [
+            ('function_name', str),
+            ('file_path', str),
+            ('line_number', int),
+            ('last_index', int)
+        ])):
 
-    def __new__(cls, frame=None):
+    def __new__(cls, frame: Any = None):
         if not frame:
             frame = _find_caller(inspect.currentframe())
         return super(CallerId, cls).__new__(
@@ -74,14 +86,14 @@ class LoggingFilter:
 
     A default value of None makes a parameter required.
     """
-    params = {}
+    params: Mapping[str, Any] = {}
 
     """
     Initialize the context of a logging call, e.g. declare variables needed for
     determining the log condition and add them to the context.
     """
     @classmethod
-    def initialize_context(cls, context, **kwargs):
+    def initialize_context(cls, context: RcutilsLoggerContext, **kwargs: Any):
         # Store all parameters in the context so we can check that users never try to change them.
         for param in cls.params:
             context[param] = kwargs.get(param, cls.params[param])
@@ -94,24 +106,33 @@ class LoggingFilter:
     Decide if it's appropriate to log given a context, and update the context accordingly.
     """
     @staticmethod
-    def should_log(context):
+    def should_log(context: Any) -> bool:
         return True
+
+
+class OnceParams(TypedDict):
+    once: Optional[bool]
+
+
+class OnceContext(RcutilsLoggerContext):
+    has_been_logged_once: bool
 
 
 class Once(LoggingFilter):
     """Ignore all log calls except the first one."""
 
-    params = {
+    params: OnceParams = {
         'once': None,
     }
 
     @classmethod
-    def initialize_context(cls, context, **kwargs):
+    def initialize_context(cls, context: RcutilsLoggerContext, **kwargs: Any):
         super(Once, cls).initialize_context(context, **kwargs)
+        context = cast(OnceContext, context)
         context['has_been_logged_once'] = False
 
     @staticmethod
-    def should_log(context):
+    def should_log(context: Dict[str, Any]):
         logging_condition = False
         if not context['has_been_logged_once']:
             logging_condition = True
@@ -119,26 +140,39 @@ class Once(LoggingFilter):
         return logging_condition
 
 
+class ThrottleParams(TypedDict):
+    throttle_duration_sec: Optional[int]
+    throttle_time_source_type: Clock
+
+
+class ThrottleContext(RcutilsLoggerContext):
+    throttle_last_logged: int
+    throttle_time_source_type: Clock
+    throttle_duration_sec: int
+
+
 class Throttle(LoggingFilter):
     """Ignore log calls if the last call is not longer ago than the specified duration."""
 
-    params = {
+    params: ThrottleParams = {
         'throttle_duration_sec': None,
         'throttle_time_source_type': Clock(),
     }
 
     @classmethod
-    def initialize_context(cls, context, **kwargs):
+    def initialize_context(cls, context: RcutilsLoggerContext, **kwargs: Any):
         super(Throttle, cls).initialize_context(context, **kwargs)
+        context = cast(ThrottleContext, context)
         context['throttle_last_logged'] = 0
-        if not isinstance(context['throttle_time_source_type'], Clock):
+        if not isinstance(context['throttle_time_source_type'], Clock):  # type: ignore
             raise ValueError(
                 'Received throttle_time_source_type of "{0}" '
                 'is not a clock instance'
                 .format(context['throttle_time_source_type']))
 
     @staticmethod
-    def should_log(context):
+    def should_log(context: RcutilsLoggerContext):
+        context = cast(ThrottleContext, context)
         logging_condition = True
         now = context['throttle_time_source_type'].now().nanoseconds
         next_log_time = context['throttle_last_logged'] + (context['throttle_duration_sec'] * 1e+9)
@@ -148,20 +182,30 @@ class Throttle(LoggingFilter):
         return logging_condition
 
 
+class SkipFirstParams(TypedDict):
+    skip_first: Optional[bool]
+
+
+class SkipFirstContext(RcutilsLoggerContext):
+    first_has_been_skipped: bool
+
+
 class SkipFirst(LoggingFilter):
     """Ignore the first log call but process all subsequent calls."""
 
-    params = {
+    params: SkipFirstParams = {
         'skip_first': None,
     }
 
     @classmethod
-    def initialize_context(cls, context, **kwargs):
+    def initialize_context(cls, context: RcutilsLoggerContext, **kwargs: Any):
         super(SkipFirst, cls).initialize_context(context, **kwargs)
+        context = cast(SkipFirstContext, context)
         context['first_has_been_skipped'] = False
 
     @staticmethod
-    def should_log(context):
+    def should_log(context: RcutilsLoggerContext):
+        context = cast(SkipFirstContext, context)
         logging_condition = True
         if not context['first_has_been_skipped']:
             logging_condition = False
@@ -170,20 +214,20 @@ class SkipFirst(LoggingFilter):
 
 
 # The ordering of this dictionary defines the order in which filters will be processed.
-supported_filters = OrderedDict()
+supported_filters: 'OrderedDict[str, Type[LoggingFilter]]' = OrderedDict()
 supported_filters['throttle'] = Throttle
 supported_filters['skip_first'] = SkipFirst
 supported_filters['once'] = Once
 
 
-def get_filters_from_kwargs(**kwargs):
+def get_filters_from_kwargs(**kwargs: Any):
     """
     Determine which filters have had parameters specified in the given keyword arguments.
 
     Returns the list of filters using the order specified by `supported_filters`.
     """
-    detected_filters = []
-    all_supported_params = []
+    detected_filters: List[str] = []
+    all_supported_params: List[str] = []
     for supported_filter, filter_class in supported_filters.items():
         filter_params = filter_class.params.keys()
         all_supported_params.extend(filter_params)
@@ -213,11 +257,11 @@ def get_filters_from_kwargs(**kwargs):
 
 class RcutilsLogger:
 
-    def __init__(self, name=''):
+    def __init__(self, name: str = ''):
         self.name = name
-        self.contexts = {}
+        self.contexts: Dict[CallerId, RcutilsLoggerContext] = {}
 
-    def get_child(self, name):
+    def get_child(self, name: str):
         if not name:
             raise ValueError('Child logger name must not be empty.')
         if self.name:
@@ -225,7 +269,7 @@ class RcutilsLogger:
             name = self.name + '.' + name
         return RcutilsLogger(name=name)
 
-    def set_level(self, level):
+    def set_level(self, level: LoggingSeverity):
         level = LoggingSeverity(level)
         return _rclpy.rclpy_logging_set_logger_level(self.name, level)
 
@@ -234,11 +278,11 @@ class RcutilsLogger:
             _rclpy.rclpy_logging_get_logger_effective_level(self.name))
         return level
 
-    def is_enabled_for(self, severity):
+    def is_enabled_for(self, severity: LoggingSeverity):
         severity = LoggingSeverity(severity)
         return _rclpy.rclpy_logging_logger_is_enabled_for(self.name, severity)
 
-    def log(self, message, severity, **kwargs):
+    def log(self, message: str, severity: LoggingSeverity, **kwargs: Any):
         r"""
         Log a message with the specified severity.
 
@@ -278,19 +322,19 @@ class RcutilsLogger:
 
         severity = LoggingSeverity(severity)
 
-        name = kwargs.pop('name', self.name)
+        name = cast(str, kwargs.pop('name', self.name))
 
         # Infer the requested log filters from the keyword arguments
         detected_filters = get_filters_from_kwargs(**kwargs)
 
         # Get/prepare the context corresponding to the caller.
-        caller_id = CallerId()
+        caller_id: CallerId = CallerId()
         if caller_id not in self.contexts:
-            context = {'name': name, 'severity': severity}
+            context: RcutilsLoggerContext = {'name': name,
+                                             'severity': severity, 'filters': detected_filters}
             for detected_filter in detected_filters:
                 if detected_filter in supported_filters:
                     supported_filters[detected_filter].initialize_context(context, **kwargs)
-            context['filters'] = detected_filters
             self.contexts[caller_id] = context
         else:
             context = self.contexts[caller_id]
@@ -320,19 +364,19 @@ class RcutilsLogger:
             caller_id.function_name, caller_id.file_path, caller_id.line_number)
         return True
 
-    def debug(self, message, **kwargs):
+    def debug(self, message: str, **kwargs: Any):
         """Log a message with `DEBUG` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.DEBUG, **kwargs)
 
-    def info(self, message, **kwargs):
+    def info(self, message: str, **kwargs: Any):
         """Log a message with `INFO` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.INFO, **kwargs)
 
-    def warning(self, message, **kwargs):
+    def warning(self, message: str, **kwargs: Any):
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.WARN, **kwargs)
 
-    def warn(self, message, **kwargs):
+    def warn(self, message: str, **kwargs: Any):
         """
         Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.
 
@@ -340,10 +384,10 @@ class RcutilsLogger:
         """
         return self.warning(message, **kwargs)
 
-    def error(self, message, **kwargs):
+    def error(self, message: str, **kwargs: Any):
         """Log a message with `ERROR` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.ERROR, **kwargs)
 
-    def fatal(self, message, **kwargs):
+    def fatal(self, message: str, **kwargs: Any):
         """Log a message with `FATAL` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.FATAL, **kwargs)

@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any, Callable, Optional
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.context import Context
 
 from .duration import Duration
 from .exceptions import NotInitializedException
@@ -26,7 +28,13 @@ ClockChange = _rclpy.ClockChange
 
 class JumpThreshold:
 
-    def __init__(self, *, min_forward: Duration, min_backward: Duration, on_clock_change=True):
+    def __init__(
+        self,
+        *,
+        min_forward: Optional[Duration],
+        min_backward: Optional[Duration],
+        on_clock_change: bool = True
+    ):
         """
         Initialize an instance of JumpThreshold.
 
@@ -56,8 +64,8 @@ class JumpThreshold:
 
 class TimeJump:
 
-    def __init__(self, clock_change, delta):
-        if not isinstance(clock_change, ClockChange):
+    def __init__(self, clock_change: ClockChange, delta: Duration):
+        if not isinstance(clock_change, ClockChange):  # type: ignore
             raise TypeError('clock_change must be an instance of rclpy.clock.ClockChange')
         self._clock_change = clock_change
         self._delta = delta
@@ -73,7 +81,14 @@ class TimeJump:
 
 class JumpHandle:
 
-    def __init__(self, *, clock, threshold, pre_callback, post_callback):
+    def __init__(
+        self,
+        *,
+        clock: 'Clock',
+        threshold: JumpThreshold,
+        pre_callback: Optional[Callable[[TimeJump], None]],
+        post_callback: Optional[Callable[[TimeJump], None]]
+    ):
         """
         Register a clock jump callback.
 
@@ -101,7 +116,7 @@ class JumpHandle:
 
         with self._clock.handle:
             self._clock.handle.add_clock_callback(
-                 self, threshold.on_clock_change, min_forward, min_backward)
+                self, threshold.on_clock_change, min_forward, min_backward)
 
     def unregister(self):
         """Remove a jump callback from the clock."""
@@ -113,14 +128,17 @@ class JumpHandle:
     def __enter__(self):
         return self
 
-    def __exit__(self, t, v, tb):
+    def __exit__(self, t, v, tb):  # type: ignore
         self.unregister()
 
 
 class Clock:
 
-    def __new__(cls, *, clock_type=ClockType.SYSTEM_TIME):
-        if not isinstance(clock_type, ClockType):
+    _clock_type: ClockType
+    __clock: _rclpy.Clock
+
+    def __new__(cls, *, clock_type: ClockType = ClockType.SYSTEM_TIME):
+        if not isinstance(clock_type, ClockType):  # type: ignore
             raise TypeError('Clock type must be a ClockType enum')
         if clock_type is ClockType.ROS_TIME:
             self = super().__new__(ROSClock)
@@ -131,7 +149,7 @@ class Clock:
         return self
 
     @property
-    def clock_type(self):
+    def clock_type(self) -> ClockType:
         return self._clock_type
 
     @property
@@ -146,7 +164,13 @@ class Clock:
             rcl_time = self.__clock.get_now()
         return Time(nanoseconds=rcl_time.nanoseconds, clock_type=self.clock_type)
 
-    def create_jump_callback(self, threshold, *, pre_callback=None, post_callback=None):
+    def create_jump_callback(
+        self,
+        threshold: JumpThreshold,
+        *,
+        pre_callback: Optional[Callable[[TimeJump], None]] = None,
+        post_callback: Optional[Callable[[TimeJump], None]] = None
+    ):
         """
         Create callback handler for clock time jumps.
 
@@ -162,7 +186,7 @@ class Clock:
         if post_callback is not None and callable(post_callback):
             original_callback = post_callback
 
-            def callback_shim(jump_dict):
+            def callback_shim(jump_dict: Any):
                 nonlocal original_callback
                 clock_change = jump_dict['clock_change']
                 duration = Duration(nanoseconds=jump_dict['delta'])
@@ -174,7 +198,7 @@ class Clock:
             clock=self, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback)
 
-    def sleep_until(self, until: Time, context=None) -> bool:
+    def sleep_until(self, until: Time, context: Optional[Context] = None) -> bool:
         """
         Sleep until a Time on this Clock is reached.
 
@@ -225,18 +249,18 @@ class Clock:
             on_clock_change=True)
         with self.create_jump_callback(threshold, post_callback=on_time_jump):
             if ClockType.SYSTEM_TIME == self._clock_type:
-                event.wait_until_system(self.__clock, until._time_handle)
+                event.wait_until_system(self.__clock, until._time_handle)  # type: ignore
             elif ClockType.STEADY_TIME == self._clock_type:
-                event.wait_until_steady(self.__clock, until._time_handle)
+                event.wait_until_steady(self.__clock, until._time_handle)  # type: ignore
             elif ClockType.ROS_TIME == self._clock_type:
-                event.wait_until_ros(self.__clock, until._time_handle)
+                event.wait_until_ros(self.__clock, until._time_handle)  # type: ignore
 
         if not context.ok() or time_source_changed:
             return False
 
         return self.now() >= until
 
-    def sleep_for(self, rel_time: Duration, context=None) -> bool:
+    def sleep_for(self, rel_time: Duration, context: Optional[Context] = None) -> bool:
         """
         Sleep for a specified duration.
 
@@ -267,18 +291,18 @@ class ROSClock(Clock):
         return super().__new__(Clock, clock_type=ClockType.ROS_TIME)
 
     @property
-    def ros_time_is_active(self):
+    def ros_time_is_active(self) -> bool:
         with self.handle:
             return self.handle.get_ros_time_override_is_enabled()
 
-    def _set_ros_time_is_active(self, enabled):
+    def _set_ros_time_is_active(self, enabled: bool):
         # This is not public because it is only to be called by a TimeSource managing the Clock
         with self.handle:
             self.handle.set_ros_time_override_is_enabled(enabled)
 
     def set_ros_time_override(self, time: Time):
-        if not isinstance(time, Time):
+        if not isinstance(time, Time):  # type: ignore
             raise TypeError(
                 'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
         with self.handle:
-            self.handle.set_ros_time_override(time._time_handle)
+            self.handle.set_ros_time_override(time._time_handle)  # type: ignore
