@@ -161,7 +161,10 @@ class Node:
         self._guards: List[GuardCondition] = []
         self.__waitables: List[Waitable] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
-        self._parameters_callbacks: List[Callable[[List[Parameter]], SetParametersResult]] = []
+        self._pre_set_parameters_callbacks: List[Callable[[List[Parameter]], List[Parameter]]] = []
+        self._on_set_parameters_callbacks: \
+            List[Callable[[List[Parameter]], SetParametersResult]] = []
+        self._post_set_parameters_callbacks: List[Callable[[List[Parameter]], None]] = []
         self._rate_group = ReentrantCallbackGroup()
         self._allow_undeclared_parameters = allow_undeclared_parameters
         self._parameter_overrides = {}
@@ -347,7 +350,8 @@ class Node:
         Declare and initialize a parameter.
 
         This method, if successful, will result in any callback registered with
-        :func:`add_on_set_parameters_callback` to be called.
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
+        to be called.
 
         The name and type in the given descriptor is ignored, and should be specified using
         the name argument to this function and the default value's type instead.
@@ -399,11 +403,22 @@ class Node:
         expanding "namespace.name".
         This allows you to declare several parameters at once without a namespace.
 
-        This method, if successful, will result in any callback registered with
-        :func:`add_on_set_parameters_callback` to be called once for each parameter.
-        If one of those calls fail, an exception will be raised and the remaining parameters will
-        not be declared.
-        Parameters declared up to that point will not be undeclared.
+        This method will result in any callback registered with
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
+        to be called once for each parameter.
+
+        If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
+        will be called prior to setting the parameters for the node, once for each parameter.
+        If one of the calls due to :func:`add_on_set_parameters_callback` fail, an exception will
+        be raised and the remaining parameters will not be declared. Parameters declared up to that
+        point will not be undeclared.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the parameters successfully for the node,
+        once for each parameter.
+
+        This method will `not` result in any callbacks registered with
+        :func:`add_pre_set_parameters_callback` to be called.
 
         :param namespace: Namespace for parameters.
         :param parameters: List of tuples with parameters to declare.
@@ -496,21 +511,75 @@ class Node:
 
         # Call the callback once for each of the parameters, using method that doesn't
         # check whether the parameter was declared beforehand or not.
-        self._set_parameters(
+        self._declare_parameter_common(
             parameter_list,
-            descriptors,
-            raise_on_failure=True,
-            allow_undeclared_parameters=True
+            descriptors
         )
         # Don't call get_parameters() to bypass check for NOT_SET parameters
         return [self._parameters[parameter.name] for parameter in parameter_list]
+
+    def _declare_parameter_common(
+        self,
+        parameter_list: List[Parameter],
+        descriptors: Optional[Dict[str, ParameterDescriptor]] = None
+    ) -> List[SetParametersResult]:
+        """
+        Declare parameters for the node, and return the result for the declare action.
+
+        Method for internal usage; applies a setter method for each parameters in the list.
+        By default, it checks if the parameters were declared, raising an exception if at least
+        one of them was not.
+
+        This method will result in any callback registered with
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
+        to be called once for each parameter.
+
+        If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
+        will be called prior to setting the parameters for the node, once for each parameter.
+        If the callback doesn't succeed for a given parameter an exception will be raised.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the parameters successfully for the node,
+        once for each parameter.
+
+        This method will `not` result in any callbacks registered with
+        :func:`add_pre_set_parameters_callback` to be called.
+
+        :param parameter_list: List of parameters to set.
+        :param descriptors: Descriptors to set to the given parameters.
+           If descriptors are given, each parameter in the list must have a corresponding one.
+        :return: The result for each set action as a list.
+        :raises: InvalidParameterValueException if the user-defined callback rejects the
+            parameter value.
+        :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
+            method and at least one parameter in the list hadn't been declared beforehand.`
+        """
+        if descriptors is not None:
+            assert all(parameter.name in descriptors for parameter in parameter_list)
+
+        results = []
+        for param in parameter_list:
+            # If undeclared parameters are allowed, parameters with type NOT_SET shall be stored.
+            result = self._set_parameters_atomically_common(
+                [param],
+                descriptors,
+                allow_not_set_type=True
+            )
+            if not result.successful:
+                if result.reason.startswith('Wrong parameter type'):
+                    raise InvalidParameterTypeException(
+                        param, Parameter.Type(descriptors[param._name].type).name)
+                raise InvalidParameterValueException(param.name, param.value, result.reason)
+            results.append(result)
+        return results
 
     def undeclare_parameter(self, name: str):
         """
         Undeclare a previously declared parameter.
 
-        This method will not cause a callback registered with
-        :func:`add_on_set_parameters_callback` to be called.
+        This method will not cause a callback registered with any of the
+        :func:`add_pre_set_parameters_callback`, `add_pre_set_parameters_callback`
+        and `add_post_set_parameters_callback`to be called.
 
         :param name: Fully-qualified name of the parameter, including its namespace.
         :raises: ParameterNotDeclaredException if parameter had not been declared before.
@@ -676,10 +745,24 @@ class Node:
         declared before being set even if they were not declared beforehand.
         Parameter overrides are ignored by this method.
 
+        This method will result in any callback registered with
+        :func:`add_pre_set_parameters_callback`, :func:`add_on_set_parameters_callback` and
+        :func:`add_post_set_parameters_callback` to be called once for each parameter.
+
+        If a callback was registered previously with :func:`add_pre_set_parameters_callback`, it
+        will be called prior to the validation of parameters for the node, once for each parameter.
+        If this callback makes modified parameter list empty, then it will be reflected in the
+        returned result; no exceptions will be raised in this case.
+
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node, once for each parameter.
-        If the callback prevents a parameter from being set, then it will be reflected in the
+        If this callback prevents a parameter from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the parameters successfully for the node,
+        once for each parameter.
+
         For each successfully set parameter, a :class:`ParameterEvent` message is
         published.
 
@@ -691,60 +774,11 @@ class Node:
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
             and at least one parameter in the list hadn't been declared beforehand.
         """
-        return self._set_parameters(parameter_list)
-
-    def _set_parameters(
-        self,
-        parameter_list: List[Parameter],
-        descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
-        raise_on_failure: bool = False,
-        allow_undeclared_parameters: bool = False
-    ) -> List[SetParametersResult]:
-        """
-        Set parameters for the node, and return the result for the set action.
-
-        Method for internal usage; applies a setter method for each parameters in the list.
-        By default it checks if the parameters were declared, raising an exception if at least
-        one of them was not.
-
-        If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
-        will be called prior to setting the parameters for the node, once for each parameter.
-        If the callback doesn't succeed for a given parameter, it won't be set and either an
-        unsuccessful result will be returned for that parameter, or an exception will be raised
-        according to `raise_on_failure` flag.
-
-        :param parameter_list: List of parameters to set.
-        :param descriptors: Descriptors to set to the given parameters.
-            If descriptors are given, each parameter in the list must have a corresponding one.
-        :param raise_on_failure: True if InvalidParameterValueException has to be raised when
-            the user callback rejects a parameter, False otherwise.
-        :param allow_undeclared_parameters: If False, this method will check for undeclared
-            parameters for each of the elements in the parameter list.
-        :return: The result for each set action as a list.
-        :raises: InvalidParameterValueException if the user-defined callback rejects the
-            parameter value and raise_on_failure flag is True.
-        :raises: ParameterNotDeclaredException if undeclared parameters are not allowed in this
-            method and at least one parameter in the list hadn't been declared beforehand.
-        """
-        if descriptors is not None:
-            assert all(parameter.name in descriptors for parameter in parameter_list)
-
         results = []
         for param in parameter_list:
-            if not allow_undeclared_parameters:
-                self._check_undeclared_parameters([param])
-            # If undeclared parameters are allowed, parameters with type NOT_SET shall be stored.
-            result = self._set_parameters_atomically(
-                [param],
-                descriptors,
-                allow_not_set_type=allow_undeclared_parameters
-            )
-            if raise_on_failure and not result.successful:
-                if result.reason.startswith('Wrong parameter type'):
-                    raise InvalidParameterTypeException(
-                        param, Parameter.Type(descriptors[param._name].type).name)
-                raise InvalidParameterValueException(param.name, param.value, result.reason)
+            result = self._set_parameters_atomically([param])
             results.append(result)
+
         return results
 
     def set_parameters_atomically(self, parameter_list: List[Parameter]) -> SetParametersResult:
@@ -761,10 +795,23 @@ class Node:
         If undeclared parameters are allowed for the node, then all the parameters will be
         implicitly declared before being set even if they were not declared beforehand.
 
+        This method will result in any callback registered with
+        :func:`add_pre_set_parameters_callback` :func:`add_on_set_parameters_callback` and
+        :func:`add_post_set_parameters_callback` to be called only once for all parameters.
+
+        If a callback was registered previously with :func:`add_pre_set_parameters_callback`, it
+        will be called prior to the validation of node parameters only once for all parameters.
+        If this callback makes modified parameter list empty, then it will be reflected in the
+        returned result; no exceptions will be raised in this case.
+
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node only once for all parameters.
         If the callback prevents the parameters from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`, it
+        will be called after setting the node parameters successfully only once for all parameters.
+
         For each successfully set parameter, a :class:`ParameterEvent` message is published.
 
         If the value type of the parameter is NOT_SET, and the existing parameter type is
@@ -775,26 +822,29 @@ class Node:
         :raises: ParameterNotDeclaredException if undeclared parameters are not allowed,
             and at least one parameter in the list hadn't been declared beforehand.
         """
-        self._check_undeclared_parameters(parameter_list)
         return self._set_parameters_atomically(parameter_list)
 
-    def _check_undeclared_parameters(self, parameter_list: List[Parameter]):
-        """
-        Check if parameter list has correct types and was declared beforehand.
-
-        :raises: ParameterNotDeclaredException if at least one parameter in the list was not
-            declared beforehand.
-        """
-        if not all(isinstance(parameter, Parameter) for parameter in parameter_list):
-            raise TypeError("parameter must be instance of type '{}'".format(repr(Parameter)))
-
-        undeclared_parameters = (
-            param.name for param in parameter_list if param.name not in self._parameters
-        )
-        if (not self._allow_undeclared_parameters and any(undeclared_parameters)):
-            raise ParameterNotDeclaredException(list(undeclared_parameters))
-
     def _set_parameters_atomically(
+        self,
+        parameter_list: List[Parameter],
+    ) -> SetParametersResult:
+
+        modified_parameter_list = self._call_pre_set_parameters_callback(parameter_list)
+        if modified_parameter_list is not None:
+            parameter_list = modified_parameter_list
+
+            if len(parameter_list) == 0:
+                result = SetParametersResult()
+                result.successful = False
+                result.reason = 'parameter list cannot be empty, this might be due to ' \
+                                'pre_set_parameters_callback modifying the original parameters ' \
+                                'list.'
+                return result
+
+        self._check_undeclared_parameters(parameter_list)
+        return self._set_parameters_atomically_common(parameter_list)
+
+    def _set_parameters_atomically_common(
         self,
         parameter_list: List[Parameter],
         descriptors: Optional[Dict[str, ParameterDescriptor]] = None,
@@ -806,10 +856,19 @@ class Node:
         This internal method does not reject undeclared parameters.
         If :param:`allow_not_set_type` is False, a parameter with type NOT_SET will be undeclared.
 
+        This method will result in any callback registered with
+        :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
+        to be called only once for all parameters.
+
         If a callback was registered previously with :func:`add_on_set_parameters_callback`, it
         will be called prior to setting the parameters for the node only once for all parameters.
         If the callback prevents the parameters from being set, then it will be reflected in the
         returned result; no exceptions will be raised in this case.
+
+        If a callback was registered previously with :func:`add_post_set_parameters_callback`,
+        it will be called after setting the node parameters successfully only once for all
+        parameters.
+
         For each successfully set parameter, a :class:`ParameterEvent` message is
         published.
 
@@ -831,8 +890,8 @@ class Node:
 
         if not result.successful:
             return result
-        elif self._parameters_callbacks:
-            for callback in self._parameters_callbacks:
+        elif self._on_set_parameters_callbacks:
+            for callback in self._on_set_parameters_callbacks:
                 result = callback(parameter_list)
                 if not result.successful:
                     return result
@@ -880,27 +939,133 @@ class Node:
             parameter_event.stamp = self._clock.now().to_msg()
             self._parameter_event_publisher.publish(parameter_event)
 
+            # call post set parameter registered callbacks
+            self._call_post_set_parameters_callback(parameter_list)
+
         return result
 
+    def _check_undeclared_parameters(self, parameter_list: List[Parameter]):
+        """
+        Check if parameter list has correct types and was declared beforehand.
+
+        :raises: ParameterNotDeclaredException if at least one parameter in the list was not
+            declared beforehand.
+        """
+        if not all(isinstance(parameter, Parameter) for parameter in parameter_list):
+            raise TypeError("parameter must be instance of type '{}'".format(repr(Parameter)))
+
+        undeclared_parameters = (
+            param.name for param in parameter_list if param.name not in self._parameters
+        )
+        if not self._allow_undeclared_parameters and any(undeclared_parameters):
+            raise ParameterNotDeclaredException(list(undeclared_parameters))
+
+    def _call_pre_set_parameters_callback(self, parameter_list: [List[Parameter]]):
+        if self._pre_set_parameters_callbacks:
+            modified_parameter_list = []
+            for callback in self._pre_set_parameters_callbacks:
+                modified_parameter_list.extend(callback(parameter_list))
+
+            return modified_parameter_list
+        else:
+            return None
+
+    def _call_post_set_parameters_callback(self, parameter_list: [List[Parameter]]):
+        if self._post_set_parameters_callbacks:
+            for callback in self._post_set_parameters_callbacks:
+                callback(parameter_list)
+
+    def add_pre_set_parameters_callback(
+            self,
+            callback: Callable[[List[Parameter]], List[Parameter]]
+    ) -> None:
+        """
+        Add a callback gets triggered before parameters are validated.
+
+        Calling this function will add a callback in self._pre_set_parameter_callbacks list.
+
+        This callback can be used to modify the original list of parameters being
+        set by the user. The modified list of parameters is then forwarded to the
+        "on set parameter" callback for validation.
+
+        The callback takes a list of parameters to be set and returns a list of
+        modified parameters.
+
+        One of the use case of "pre set callback" can be updating additional parameters
+        conditioned on changes to a parameter.
+
+        All parameters in the modified list will be set atomically.
+
+        Note that the callback is only called while setting parameters with `set_parameters`,
+        `set_parameters_atomically`, or externally with a parameters service.
+
+        The callback is not called when parameters are declared with `declare_parameter`
+        or `declare_parameters`.
+
+        The callback is not called when parameters are undeclared with `undeclare_parameter`.
+
+        An empty modified parameter list from the callback will result in "set_parameter*"
+        returning an unsuccessful result.
+
+        :param callback: The function that is called before parameters are validated.
+        """
+        self._pre_set_parameters_callbacks.insert(0, callback)
+
     def add_on_set_parameters_callback(
-        self,
-        callback: Callable[[List[Parameter]], SetParametersResult]
+            self,
+            callback: Callable[[List[Parameter]], SetParametersResult]
     ) -> None:
         """
         Add a callback in front to the list of callbacks.
 
-        Calling this function will add a callback in self._parameter_callbacks list.
+        Calling this function will add a callback in self._on_set_parameter_callbacks list.
 
         It is considered bad practice to reject changes for "unknown" parameters as this prevents
         other parts of the node (that may be aware of these parameters) from handling them.
 
-        :param callback: The function that is called whenever parameters are set for the node.
+        :param callback: The function that is called whenever parameters are being validated
+                         for the node.
         """
-        self._parameters_callbacks.insert(0, callback)
+        self._on_set_parameters_callbacks.insert(0, callback)
+
+    def add_post_set_parameters_callback(
+            self,
+            callback: Callable[[List[Parameter]], None]
+    ) -> None:
+        """
+        Add a callback gets triggered after parameters are set successfully.
+
+        Calling this function will add a callback in self._post_set_parameter_callbacks list.
+
+        The callback signature is designed to allow handling of the `set_parameter*`
+        or `declare_parameter*` methods. The callback takes a list of parameters that
+        have been set successfully.
+
+        The callback can be valuable as a place to cause side effects based on parameter
+        changes. For instance updating the internally tracked class attributes once the params
+        have been changed successfully.
+
+        :param callback: The function that is called after parameters are set for the node.
+        """
+        self._post_set_parameters_callbacks.insert(0, callback)
+
+    def remove_pre_set_parameters_callback(
+            self,
+            callback: Callable[[List[Parameter]], List[Parameter]]
+    ) -> None:
+        """
+        Remove a callback from list of callbacks.
+
+        Calling this function will remove the callback from self._pre_set_parameter_callbacks list.
+
+        :param callback: The function that is called whenever parameters are set for the node.
+        :raises: ValueError if a callback is not present in the list of callbacks.
+        """
+        self._pre_set_parameters_callbacks.remove(callback)
 
     def remove_on_set_parameters_callback(
-        self,
-        callback: Callable[[List[Parameter]], SetParametersResult]
+            self,
+            callback: Callable[[List[Parameter]], SetParametersResult]
     ) -> None:
         """
         Remove a callback from list of callbacks.
@@ -910,7 +1075,21 @@ class Node:
         :param callback: The function that is called whenever parameters are set for the node.
         :raises: ValueError if a callback is not present in the list of callbacks.
         """
-        self._parameters_callbacks.remove(callback)
+        self._on_set_parameters_callbacks.remove(callback)
+
+    def remove_post_set_parameters_callback(
+            self,
+            callback: Callable[[List[Parameter]], None]
+    ) -> None:
+        """
+        Remove a callback from list of callbacks.
+
+        Calling this function will remove the callback from self._parameter_callbacks list.
+
+        :param callback: The function that is called whenever parameters are set for the node.
+        :raises: ValueError if a callback is not present in the list of callbacks.
+        """
+        self._post_set_parameters_callbacks.remove(callback)
 
     def _apply_descriptors(
         self,
