@@ -33,6 +33,20 @@
 
 namespace rclpy
 {
+<<<<<<< HEAD
+=======
+void shutdown_contexts()
+{
+  // graceful shutdown all contexts
+  std::lock_guard<std::mutex> guard{g_contexts_mutex};
+  for (auto * c : g_contexts) {
+    rcl_ret_t ret = rcl_shutdown(c);
+    (void)ret;
+  }
+  g_contexts.clear();
+}
+
+>>>>>>> 3cf1592 (fix gcc 7.5 build errors (#977))
 Context::Context(py::list pyargs, size_t domain_id)
 {
   rcl_context_ = std::shared_ptr<rcl_context_t>(
@@ -98,6 +112,13 @@ Context::Context(py::list pyargs, size_t domain_id)
   }
 
   throw_if_unparsed_ros_args(pyargs, rcl_context_.get()->global_arguments);
+<<<<<<< HEAD
+=======
+  {
+    std::lock_guard<std::mutex> guard{g_contexts_mutex};
+    g_contexts.push_back(rcl_context_.get());
+  }
+>>>>>>> 3cf1592 (fix gcc 7.5 build errors (#977))
 }
 
 void
@@ -127,6 +148,17 @@ Context::ok()
 void
 Context::shutdown()
 {
+<<<<<<< HEAD
+=======
+  {
+    std::lock_guard<std::mutex> guard{g_contexts_mutex};
+    auto iter = std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get());
+    if (iter != g_contexts.end()) {
+      g_contexts.erase(iter);
+    }
+  }
+
+>>>>>>> 3cf1592 (fix gcc 7.5 build errors (#977))
   rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to shutdown");
