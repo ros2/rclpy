@@ -21,7 +21,6 @@ from action_msgs.msg import GoalInfo, GoalStatus
 
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.logging import get_logger
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
