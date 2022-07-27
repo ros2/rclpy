@@ -263,7 +263,7 @@ class ActionServer(Waitable):
 
         callback_group.add_entity(self)
         self._node.add_waitable(self)
-        self._logger = get_logger("rclpy_action")
+        self._logger = self._node.get_logger().get_child('action_client')
 
     async def _execute_goal_request(self, request_header_and_message):
         request_header, goal_request = request_header_and_message

@@ -181,7 +181,7 @@ class ActionClient(Waitable):
 
         callback_group.add_entity(self)
         self._node.add_waitable(self)
-        self._logger = get_logger("rclpy_action")
+        self._logger = self._node.get_logger().get_child('action_client')
 
     def _generate_random_uuid(self):
         return UUID(uuid=list(uuid.uuid4().bytes))
