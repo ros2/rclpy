@@ -180,6 +180,7 @@ class ActionClient(Waitable):
 
         callback_group.add_entity(self)
         self._node.add_waitable(self)
+        self._logger = self._node.get_logger().get_child('action_client')
 
     def _generate_random_uuid(self):
         return UUID(uuid=list(uuid.uuid4().bytes))
@@ -300,7 +301,7 @@ class ActionClient(Waitable):
 
                 self._pending_goal_requests[sequence_number].set_result(goal_handle)
             else:
-                self._node.get_logger().warning(
+                self._logger.warning(
                     'Ignoring unexpected goal response. There may be more than '
                     f"one action server for the action '{self._action_name}'"
                 )
@@ -310,7 +311,7 @@ class ActionClient(Waitable):
             if sequence_number in self._pending_cancel_requests:
                 self._pending_cancel_requests[sequence_number].set_result(cancel_response)
             else:
-                self._node.get_logger().warning(
+                self._logger.warning(
                     'Ignoring unexpected cancel response. There may be more than '
                     f"one action server for the action '{self._action_name}'"
                 )
@@ -320,7 +321,7 @@ class ActionClient(Waitable):
             if sequence_number in self._pending_result_requests:
                 self._pending_result_requests[sequence_number].set_result(result_response)
             else:
-                self._node.get_logger().warning(
+                self._logger.warning(
                     'Ignoring unexpected result response. There may be more than '
                     f"one action server for the action '{self._action_name}'"
                 )
