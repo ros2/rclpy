@@ -44,6 +44,10 @@ class Time:
     def nanoseconds(self):
         return self._time_handle.nanoseconds
 
+    @property
+    def seconds(self):
+        return self.nanoseconds / CONVERSION_CONSTANT
+
     def seconds_nanoseconds(self):
         """
         Get time as separate seconds and nanoseconds components.

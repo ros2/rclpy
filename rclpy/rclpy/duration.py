@@ -39,6 +39,10 @@ class Duration:
     def nanoseconds(self):
         return self._duration_handle.nanoseconds
 
+    @property
+    def seconds(self):
+        return self.nanoseconds / S_TO_NS
+
     def __repr__(self):
         return 'Duration(nanoseconds={0})'.format(self.nanoseconds)
 
