@@ -29,8 +29,8 @@ find_package(rmw_implementation_cmake REQUIRED)
 find_package(rosidl_runtime_c REQUIRED)
 
 # Figure out Python3 debug/release before anything else can find_package it
-if(NOT Python_FIND_ABI AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(Python_FIND_ABI "ON" "ANY" "ANY")
+if(NOT Python3_FIND_ABI AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(Python3_FIND_ABI "ON" "ANY" "ANY")
 endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
