@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 project(rclpy)
 
@@ -12,15 +12,6 @@ if(NOT CMAKE_C_STANDARD)
 endif()
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra)
-endif()
-
-# Figure out Python3 debug/release before anything else can find_package it
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  find_package(python_cmake_module REQUIRED)
-  find_package(PythonExtra REQUIRED)
-
-  # Force FindPython3 to use the debug interpreter where ROS 2 expects it
-  set(Python3_EXECUTABLE "${PYTHON_EXECUTABLE_DEBUG}")
 endif()
 
 find_package(ament_cmake REQUIRED)
@@ -37,7 +28,11 @@ find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 find_package(rosidl_runtime_c REQUIRED)
 
-# Find python before pybind11
+# Figure out Python3 debug/release before anything else can find_package it
+if(NOT Python_FIND_ABI AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(Python_FIND_ABI "ON" "ANY" "ANY")
+endif()
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
 find_package(pybind11_vendor REQUIRED)
