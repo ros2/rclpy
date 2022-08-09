@@ -2256,6 +2256,7 @@ def test_node_resolve_name():
     assert node.resolve_service_name('foo', only_expand=True) == '/my_ns/foo'
     rclpy.shutdown(context=context)
 
+
 class TestNodeParamsFile(unittest.TestCase):
 
     @classmethod
@@ -2277,10 +2278,13 @@ class TestNodeParamsFile(unittest.TestCase):
             automatically_declare_parameters_from_overrides=True)
         self.assertEqual('full_wild', node.get_parameter('full_wild').value)
         self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
-        self.assertEqual('namespace_wild_another', node.get_parameter('namespace_wild_another').value)
-        self.assertEqual('namespace_wild_one_star', node.get_parameter('namespace_wild_one_star').value)
+        self.assertEqual(
+          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+        self.assertEqual(
+          'namespace_wild_one_star', node.get_parameter('namespace_wild_one_star').value)
         self.assertEqual('node_wild_in_ns', node.get_parameter('node_wild_in_ns').value)
-        self.assertEqual('node_wild_in_ns_another', node.get_parameter('node_wild_in_ns_another').value)
+        self.assertEqual(
+          'node_wild_in_ns_another', node.get_parameter('node_wild_in_ns_another').value)
         self.assertEqual('explicit_in_ns', node.get_parameter('explicit_in_ns').value)
         with self.assertRaises(ParameterNotDeclaredException):
             node.get_parameter('node_wild_no_ns')
@@ -2299,7 +2303,8 @@ class TestNodeParamsFile(unittest.TestCase):
             automatically_declare_parameters_from_overrides=True)
         self.assertEqual('full_wild', node.get_parameter('full_wild').value)
         self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
-        self.assertEqual('namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+        self.assertEqual(
+          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
         with self.assertRaises(ParameterNotDeclaredException):
             node.get_parameter('namespace_wild_one_star')
         with self.assertRaises(ParameterNotDeclaredException):
