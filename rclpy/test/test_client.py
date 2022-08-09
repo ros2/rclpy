@@ -130,8 +130,8 @@ class TestClient(unittest.TestCase):
             self.assertTrue(cli.wait_for_service(timeout_sec=20))
             future = cli.call_async(GetParameters.Request())
             executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
-            with self.assertRaises(TypeError):
-                rclpy.spin_until_future_complete(self.node, future, executor=executor)
+            # future will never complete, so add timeout here.
+            rclpy.spin_until_future_complete(self.node, future, executor=executor, timeout_sec=1.0)
         finally:
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
