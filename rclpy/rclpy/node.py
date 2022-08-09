@@ -1966,7 +1966,7 @@ class Node:
 
     def wait_for_node(
         self,
-        node_name: str,
+        fully_qualified_node_name: str,
         timeout: float
     ) -> bool:
         """
@@ -1988,6 +1988,6 @@ class Node:
         # it entirely with an implementation in rcl. see https://github.com/ros2/rclpy/issues/929
         while time.time() - start < timeout and not flag:
             fully_qualified_node_names = self.get_fully_qualified_node_names()
-            flag = node_name in fully_qualified_node_names
+            flag = fully_qualified_node_name in fully_qualified_node_names
             time.sleep(0.1)
         return flag

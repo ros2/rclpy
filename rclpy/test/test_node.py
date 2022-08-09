@@ -1901,7 +1901,7 @@ class TestNode(unittest.TestCase):
             node = rclpy.create_node(
                 'waiting_for_this_node', namespace='/my_ns', context=self.context
             )
-            self.assertTrue(self.node.wait_for_node('/my_ns/waiting_for_this_node', 0.5))
+            self.assertTrue(self.node.wait_for_node('/my_ns/waiting_for_this_node', 3.0))
         finally:
             node.destroy_node()
 
