@@ -1979,8 +1979,8 @@ class Node:
                          won't timeout.
         :return: True if the node was found, False if timeout.
         """
-        if not node_name.startswith('/'):
-            node_name = f'/{node_name}'
+        if not fully_qualified_node_name.startswith('/'):
+            fully_qualified_node_name = f'/{fully_qualified_node_name}'
 
         start = time.time()
         flag = False
