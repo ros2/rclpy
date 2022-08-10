@@ -2105,6 +2105,18 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('int_param').value, 4)
         self.assertFalse(self.node.has_parameter('dynamic_param'))
 
+    def test_wait_for_node(self):
+        try:
+            node = rclpy.create_node(
+                'waiting_for_this_node', namespace='/my_ns', context=self.context
+            )
+            self.assertTrue(self.node.wait_for_node('/my_ns/waiting_for_this_node', 3.0))
+        finally:
+            node.destroy_node()
+
+    def test_wait_for_node_timeout(self):
+        self.assertFalse(self.node.wait_for_node('node_does_not_exist', 0.1))
+
 
 class TestCreateNode(unittest.TestCase):
 

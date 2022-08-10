@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import time
 
 from typing import Any
 from typing import Callable
@@ -1991,6 +1992,19 @@ class Node:
             names_ns = self.handle.get_node_names_and_namespaces()
         return [n[0] for n in names_ns]
 
+    def get_fully_qualified_node_names(self) -> List[str]:
+        """
+        Get a list of fully qualified names for discovered nodes.
+
+        Similar to ``get_node_names_namespaces()``, but concatenates the names and namespaces.
+        :return: List of fully qualified node names.
+        """
+        names_and_namespaces = self.get_node_names_and_namespaces()
+        return [
+            ns + ('' if ns.endswith('/') else '/') + name
+            for name, ns in names_and_namespaces
+        ]
+
     def get_node_names_and_namespaces(self) -> List[Tuple[str, str]]:
         """
         Get a list of names and namespaces for discovered nodes.
@@ -2133,3 +2147,31 @@ class Node:
             topic_name,
             no_mangle,
             _rclpy.rclpy_get_subscriptions_info_by_topic)
+
+    def wait_for_node(
+        self,
+        fully_qualified_node_name: str,
+        timeout: float
+    ) -> bool:
+        """
+        Wait until node name is present in the system or timeout.
+
+        The node name should be the full name with namespace.
+
+        :param node_name: fully qualified name of the node to wait for.
+        :param timeout: seconds to wait for the node to be present. If negative, the function
+                         won't timeout.
+        :return: True if the node was found, False if timeout.
+        """
+        if not fully_qualified_node_name.startswith('/'):
+            fully_qualified_node_name = f'/{fully_qualified_node_name}'
+
+        start = time.time()
+        flag = False
+        # TODO refactor this implementation when we can react to guard condition events, or replace
+        # it entirely with an implementation in rcl. see https://github.com/ros2/rclpy/issues/929
+        while time.time() - start < timeout and not flag:
+            fully_qualified_node_names = self.get_fully_qualified_node_names()
+            flag = fully_qualified_node_name in fully_qualified_node_names
+            time.sleep(0.1)
+        return flag
