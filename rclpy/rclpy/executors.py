@@ -319,6 +319,7 @@ class Executor:
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
+        :raise RuntimeError: Unexpected failure.
         """
         raise NotImplementedError()
 
@@ -332,6 +333,7 @@ class Executor:
         :param future: The executor will wait until this future is done.
         :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
+        :raise RuntimeError: Unexpected failure.
         """
         raise NotImplementedError()
 
@@ -753,7 +755,11 @@ class MultiThreadedExecutor(Executor):
         except ConditionReachedException:
             pass
         else:
-            self._executor.submit(handler)
+            def handler_wrapper(handler):
+                handler()
+                if handler.exception() is not None:
+                    raise handler.exception()
+            self._executor.submit(handler_wrapper(handler))
 
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
