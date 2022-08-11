@@ -33,7 +33,6 @@ from typing import TypeVar
 from typing import Union
 
 
-import rclpy
 from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
@@ -41,7 +40,6 @@ from rclpy.context import Context
 from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.impl.logging_severity import LoggingSeverity
 from rclpy.service import Service
 from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import Subscription
@@ -722,11 +720,7 @@ class SingleThreadedExecutor(Executor):
         else:
             handler()
             if handler.exception() is not None:
-                rclpy.logging._root_logger.log(
-                    'Exception: ' + str(handler.exception()),
-                    LoggingSeverity.WARN,
-                    name='SingleThreadedExecutor',
-                )
+                raise handler.exception()
 
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
         self.spin_once(timeout_sec)
@@ -771,11 +765,7 @@ class MultiThreadedExecutor(Executor):
             def handler_wrapper(handler):
                 handler()
                 if handler.exception() is not None:
-                    rclpy.logging._root_logger.log(
-                        'Exception: ' + str(handler.exception()),
-                        LoggingSeverity.WARN,
-                        name='MultiThreadedExecutor',
-                    )
+                    raise handler.exception()
             self._executor.submit(handler_wrapper(handler))
 
     def spin_once(self, timeout_sec: float = None) -> None:
