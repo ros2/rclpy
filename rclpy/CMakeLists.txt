@@ -186,6 +186,7 @@ if(BUILD_TESTING)
       test/test_time_source.py
       test/test_time.py
       test/test_timer.py
+      test/test_timer_in_task.py
       test/test_topic_or_service_is_hidden.py
       test/test_topic_endpoint_info.py
       test/test_type_support.py
