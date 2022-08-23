@@ -28,9 +28,9 @@ def wait_for_message(
     Wait for the next incoming message.
 
     :param msg_type: message type
-    :param node: node you've created
-    :param topic: topic name you've defined
-    :time_to_wait: the timeout before returning
+    :param node: node to initialize the subscription on
+    :param topic: topic name to wait for message
+    :time_to_wait: seconds to wait before returning
     :return (True, msg) if a message was successfully received, (False, ()) if message
         could not be obtained or shutdown was triggered asynchronously on the context.
     """
