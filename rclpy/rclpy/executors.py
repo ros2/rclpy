@@ -327,7 +327,8 @@ class Executor:
         raise NotImplementedError()
 
     def spin_some(self, timeout_sec: Optional[float] = None):
-        """Execute all currently avaliable work.
+        """
+        Execute all currently avaliable work.
 
         :param timeout_sec: Seconds to wait. Waits forever if ``None`` or negative.
         """
@@ -828,7 +829,6 @@ class MultiThreadedExecutor(Executor):
                     self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
                 try:
                     handler, _, _ = next(self._cb_iter)
-                    
                     def handler_wrapper(handler):
                         handler()
                         if handler.exception() is not None:
