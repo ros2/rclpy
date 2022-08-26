@@ -22,8 +22,10 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "client.hpp"
+#include "clock.hpp"
 #include "exceptions.hpp"
 #include "node.hpp"
 #include "python_allocator.hpp"
@@ -40,21 +42,28 @@ Client::destroy()
 }
 
 Client::Client(
-  Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos_profile)
+  Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos_profile,
+  py::object pyqos_service_event_pub, Clock & clock)
 : node_(node)
 {
   auto srv_type = static_cast<rosidl_service_type_support_t *>(
     common_get_type_support(pysrv_type));
-  if (!srv_type) {
+  if (nullptr == srv_type) {
     throw py::error_already_set();
   }
 
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
+  if (rcl_node_get_options(node.rcl_ptr())->enable_service_introspection) {
+    client_ops.clock = clock.rcl_ptr();
+    client_ops.enable_service_introspection = true;
+    client_ops.event_publisher_options.qos = pyqos_service_event_pub.is_none() ?
+      rcl_publisher_get_default_options().qos : pyqos_service_event_pub.cast<rmw_qos_profile_t>();
+  }
+
   if (!pyqos_profile.is_none()) {
     client_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
-
 
   // Create a client
   rcl_client_ = std::shared_ptr<rcl_client_t>(
@@ -150,7 +159,7 @@ void
 define_client(py::object module)
 {
   py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
-  .def(py::init<Node &, py::object, const std::string &, py::object>())
+  .def(py::init<Node &, py::object, const std::string &, py::object, py::object, Clock &>())
   .def_property_readonly(
     "pointer", [](const Client & client) {
       return reinterpret_cast<size_t>(client.rcl_ptr());

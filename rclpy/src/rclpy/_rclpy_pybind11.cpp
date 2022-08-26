@@ -44,6 +44,7 @@
 #include "serialization.hpp"
 #include "service.hpp"
 #include "service_info.hpp"
+#include "service_introspection.hpp"
 #include "signal_handler.hpp"
 #include "subscription.hpp"
 #include "time_point.hpp"
@@ -240,4 +241,5 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_signal_handler_api(m);
   rclpy::define_clock_event(m);
   rclpy::define_lifecycle_api(m);
+  rclpy::define_service_introspection(m);
 }

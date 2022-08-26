@@ -18,10 +18,12 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/client.h>
+#include <rmw/types.h>
 
 #include <memory>
 #include <string>
 
+#include "clock.hpp"
 #include "destroyable.hpp"
 #include "node.hpp"
 
@@ -44,9 +46,13 @@ public:
    * \param[in] node Node to add the client to
    * \param[in] pysrv_type Service module associated with the client
    * \param[in] service_name The service name
-   * \param[in] pyqos rmw_qos_profile_t object for this client
+   * \param[in] pyqos QoSProfile python object for this client
+   * \param[in] pyqos_service_event_pub QoSProfile python object for the service event publisher
+   * \param[in] clock Clock to use for service event timestamps
    */
-  Client(Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos);
+  Client(
+    Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos,
+    py::object pyqos_service_event_pub, Clock & clock);
 
   ~Client() = default;
 

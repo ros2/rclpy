@@ -52,7 +52,8 @@ public:
     Context & context,
     py::object pycli_args,
     bool use_global_arguments,
-    bool enable_rosout);
+    bool enable_rosout,
+    bool enable_service_introspection);
 
   /// Get the fully qualified name of the node.
   /**

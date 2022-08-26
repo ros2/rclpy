@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 
+#include "clock.hpp"
 #include "destroyable.hpp"
 #include "node.hpp"
 #include "utils.hpp"
@@ -47,12 +48,13 @@ public:
    * \param[in] node Node to add the service to
    * \param[in] pysrv_type Service module associated with the service
    * \param[in] service_name Python object for the service name
-   * \param[in] pyqos_profile QoSProfile Python object for this service
-   * \return capsule containing the rcl_service_t
+   * \param[in] pyqos_srv_profile QoSProfile Python object for this service
+   * \param[in] pyqos_service_event_pub QoSProfile Python object for the service event publisher
+   * \param[in] clock Clock to use for service event timestamps
    */
   Service(
     Node & node, py::object pysrv_type, const std::string & service_name,
-    py::object pyqos_profile);
+    py::object pyqos_srv_profile, py::object pyqos_service_event_pub, Clock & clock);
 
   Service(
     Node & node, std::shared_ptr<rcl_service_t> rcl_service);

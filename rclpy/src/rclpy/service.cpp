@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 
+#include "clock.hpp"
 #include "exceptions.hpp"
 #include "node.hpp"
 #include "service.hpp"
@@ -37,24 +38,32 @@ Service::destroy()
   node_.destroy();
 }
 
+// TODO(clalancette): Why is this a std::string, while Client is a const char *?
 Service::Service(
   Node & node, py::object pysrv_type, const std::string & service_name,
-  py::object pyqos_profile)
+  py::object pyqos_srv_profile, py::object pyqos_service_event_pub, Clock & clock)
 : node_(node)
 {
-  auto srv_type = static_cast<rosidl_service_type_support_t *>(
+  auto * srv_type = static_cast<rosidl_service_type_support_t *>(
     common_get_type_support(pysrv_type));
-  if (!srv_type) {
+  if (nullptr == srv_type) {
     throw py::error_already_set();
   }
 
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
-  if (!pyqos_profile.is_none()) {
-    service_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
+  if (rcl_node_get_options(node.rcl_ptr())->enable_service_introspection) {
+    service_ops.clock = clock.rcl_ptr();
+    service_ops.enable_service_introspection = true;
+    service_ops.event_publisher_options.qos = pyqos_service_event_pub.is_none() ?
+      rcl_publisher_get_default_options().qos : pyqos_service_event_pub.cast<rmw_qos_profile_t>();
   }
 
-  // Create a client
+  if (!pyqos_srv_profile.is_none()) {
+    service_ops.qos = pyqos_srv_profile.cast<rmw_qos_profile_t>();
+  }
+
+  // Create a service
   rcl_service_ = std::shared_ptr<rcl_service_t>(
     new rcl_service_t,
     [node](rcl_service_t * service)
@@ -147,7 +156,7 @@ void
 define_service(py::object module)
 {
   py::class_<Service, Destroyable, std::shared_ptr<Service>>(module, "Service")
-  .def(py::init<Node &, py::object, const std::string &, py::object>())
+  .def(py::init<Node &, py::object, const std::string &, py::object, py::object, Clock &>())
   .def_property_readonly(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());

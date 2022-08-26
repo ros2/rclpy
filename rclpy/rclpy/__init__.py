@@ -143,7 +143,8 @@ def create_node(
     start_parameter_services: bool = True,
     parameter_overrides: List[Parameter] = None,
     allow_undeclared_parameters: bool = False,
-    automatically_declare_parameters_from_overrides: bool = False
+    automatically_declare_parameters_from_overrides: bool = False,
+    enable_service_introspection: bool = False,
 ) -> 'Node':
     """
     Create an instance of :class:`.Node`.
@@ -165,6 +166,7 @@ def create_node(
         This option doesn't affect `parameter_overrides`.
     :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides" will
         be used to implicitly declare parameters on the node during creation, default False.
+    :param enable_service_introspection: Flag to enable service introspection, default False.
     :return: An instance of the newly created node.
     """
     # imported locally to avoid loading extensions on module import
@@ -178,7 +180,8 @@ def create_node(
         allow_undeclared_parameters=allow_undeclared_parameters,
         automatically_declare_parameters_from_overrides=(
             automatically_declare_parameters_from_overrides
-        ))
+        ),
+        enable_service_introspection=enable_service_introspection)
 
 
 def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:
