@@ -326,6 +326,13 @@ class Executor:
         """
         raise NotImplementedError()
 
+    def spin_some(self, timeout_sec: Optional[float] = None):
+        """Execute all currently avaliable work.
+
+        :param timeout_sec: Seconds to wait. Waits forever if ``None`` or negative.
+        """
+        raise NotImplementedError()
+
     def _take_timer(self, tmr):
         with tmr.handle:
             tmr.handle.call_timer()
@@ -727,6 +734,36 @@ class SingleThreadedExecutor(Executor):
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
         self.spin_once(timeout_sec)
 
+    def spin_some(self, timeout_sec: Optional[float] = None):
+        timeout_sec = float('inf') if timeout_sec is None or timeout_sec < 0 else timeout_sec
+
+        def _poll_ready_callbacks(*args, **kwargs):
+            timeout_sec = kwargs['timeout_sec']
+            while True:
+                t1 = time.time()
+                t2 = t1
+                if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
+                    # Create a new generator
+                    self._last_args = args
+                    self._last_kwargs = kwargs
+                    self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+                try:
+                    handler, _, _ = next(self._cb_iter)
+                    handler()
+                    if handler.exception() is not None:
+                        raise handler.exception()
+                except StopIteration:
+                    # Generator ran out of work
+                    self._cb_iter = None
+                    t2 = time.time()
+                timeout_sec -= t2 - t1
+        try:
+            _poll_ready_callbacks(timeout_sec=timeout_sec)
+        except ShutdownException:
+            pass
+        except TimeoutException:
+            pass
+
 
 class MultiThreadedExecutor(Executor):
     """
@@ -775,3 +812,40 @@ class MultiThreadedExecutor(Executor):
 
     def spin_once_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec, future.done)
+
+    def spin_some(self, timeout_sec: Optional[float] = None):
+        timeout_sec = float('inf') if timeout_sec is None or timeout_sec < 0 else timeout_sec
+
+        def _poll_ready_callbacks(*args, **kwargs):
+            timeout_sec = kwargs['timeout_sec']
+            while True:
+                t1 = time.time()
+                t2 = t1
+                if self._cb_iter is None or self._last_args != args or self._last_kwargs != kwargs:
+                    # Create a new generator
+                    self._last_args = args
+                    self._last_kwargs = kwargs
+                    self._cb_iter = self._wait_for_ready_callbacks(*args, **kwargs)
+                try:
+                    handler, _, _ = next(self._cb_iter)
+                    
+                    def handler_wrapper(handler):
+                        handler()
+                        if handler.exception() is not None:
+                            raise handler.exception()
+                    self._executor.submit(handler_wrapper(handler))
+                except StopIteration:
+                    # Generator ran out of work
+                    self._cb_iter = None
+                    t2 = time.time()
+                timeout_sec -= t2 - t1
+        try:
+            _poll_ready_callbacks(timeout_sec=timeout_sec)
+        except ExternalShutdownException:
+            pass
+        except ShutdownException:
+            pass
+        except TimeoutException:
+            pass
+        except ConditionReachedException:
+            pass
