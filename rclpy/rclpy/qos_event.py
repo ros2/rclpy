@@ -179,11 +179,11 @@ class QoSEventHandler(Waitable):
 
     def __enter__(self):
         """Mark event as in-use to prevent destruction while waiting on it."""
-        self.__event.__enter__()
+        self._event_handle.__enter__()
 
     def __exit__(self, t, v, tb):
         """Mark event as not-in-use to allow destruction after waiting on it."""
-        self.__event.__exit__(t, v, tb)
+        self._event_handle.__exit__(t, v, tb)
 
     def destroy(self):
         self._event_handle.destroy()
