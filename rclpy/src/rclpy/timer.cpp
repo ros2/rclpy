@@ -59,9 +59,9 @@ Timer::Timer(
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
 
-  rcl_ret_t ret = rcl_timer_init(
+  rcl_ret_t ret = rcl_timer_init2(
     rcl_timer_.get(), clock_.rcl_ptr(), context.rcl_ptr(),
-    period_nsec, NULL, allocator);
+    period_nsec, NULL, allocator, true);
 
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to create timer");
