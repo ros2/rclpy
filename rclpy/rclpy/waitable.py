@@ -65,6 +65,14 @@ class Waitable:
         # List of Futures that have callbacks needing execution
         self._futures = []
 
+    def __enter__(self):
+        """Implement to mark entities as in-use to prevent destruction while waiting on them."""
+        pass
+
+    def __exit__(self, t, v, tb):
+        """Implement to mark entities as not-in-use to allow destruction after waiting on them."""
+        pass
+
     def add_future(self, future):
         self._futures.append(future)
 

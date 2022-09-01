@@ -177,6 +177,14 @@ class QoSEventHandler(Waitable):
         with self._event_handle as event_capsule:
             self._event_index = _rclpy.rclpy_wait_set_add_entity('event', wait_set, event_capsule)
 
+    def __enter__(self):
+        """Mark event as in-use to prevent destruction while waiting on it."""
+        self._event_handle.__enter__()
+
+    def __exit__(self, t, v, tb):
+        """Mark event as not-in-use to allow destruction after waiting on it."""
+        self._event_handle.__exit__(t, v, tb)
+
     def destroy(self):
         self._event_handle.destroy()
 
