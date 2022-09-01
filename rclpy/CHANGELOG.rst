@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.9 (2022-09-01)
+------------------
+* Add __enter_\_ and __exit_\_ to Waitable (`#761 <https://github.com/ros2/rclpy/issues/761>`_) (`#998 <https://github.com/ros2/rclpy/issues/998>`_)
+* Remove feedback callback when the goal has been completed (`#927 <https://github.com/ros2/rclpy/issues/927>`_) (`#933 <https://github.com/ros2/rclpy/issues/933>`_)
+* Fix memory leak for get\_(publishers|subscriptions)_info_by_topic (`#955 <https://github.com/ros2/rclpy/issues/955>`_)
+* Fix type annotation for get_parameters_by_prefix (`#964 <https://github.com/ros2/rclpy/issues/964>`_)
+* Fix rclpy.duration.Duration.to_msg() losing precision (`#876 <https://github.com/ros2/rclpy/issues/876>`_) (`#917 <https://github.com/ros2/rclpy/issues/917>`_)
+* Fix inverted error code for action client take (`#949 <https://github.com/ros2/rclpy/issues/949>`_)
+* Fix memory leak for serialization (`#898 <https://github.com/ros2/rclpy/issues/898>`_)
+* Fix crash on spinning raw subscription when publishes closes (`#827 <https://github.com/ros2/rclpy/issues/827>`_). (`#903 <https://github.com/ros2/rclpy/issues/903>`_)
+* Contributors: Chen Lihui, Chris Lalancette, Erki Suurjaak, HyunSeok Kil, Jonathan Chapple, Shane Loretz, Tully Foote, Tomoya Fujita
+
 1.0.8 (2022-01-31)
 ------------------
 * Adding wake_executor to subscriber (`#855 <https://github.com/ros2/rclpy/issues/855>`_)
