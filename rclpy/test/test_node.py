@@ -2269,5 +2269,93 @@ def test_node_resolve_name():
     rclpy.shutdown(context=context)
 
 
+class TestNodeParamsFile(unittest.TestCase):
+
+    @classmethod
+    def setUp(self):
+        rclpy.init()
+
+    @classmethod
+    def tearDown(self):
+        rclpy.shutdown()
+
+    def test_node_ns_params_file_with_wildcards(self):
+        node = rclpy.create_node(
+            'node2',
+            namespace='/ns',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'wildcards.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('full_wild', node.get_parameter('full_wild').value)
+        self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
+        self.assertEqual(
+          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+        self.assertEqual(
+          'namespace_wild_one_star', node.get_parameter('namespace_wild_one_star').value)
+        self.assertEqual('node_wild_in_ns', node.get_parameter('node_wild_in_ns').value)
+        self.assertEqual(
+          'node_wild_in_ns_another', node.get_parameter('node_wild_in_ns_another').value)
+        self.assertEqual('explicit_in_ns', node.get_parameter('explicit_in_ns').value)
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('node_wild_no_ns')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('explicit_no_ns')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('should_not_appear')
+
+    def test_node_params_file_with_wildcards(self):
+        node = rclpy.create_node(
+            'node2',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'wildcards.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('full_wild', node.get_parameter('full_wild').value)
+        self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
+        self.assertEqual(
+          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('namespace_wild_one_star')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('node_wild_in_ns')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('node_wild_in_ns_another')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('explicit_in_ns')
+        self.assertEqual('node_wild_no_ns', node.get_parameter('node_wild_no_ns').value)
+        self.assertEqual('explicit_no_ns', node.get_parameter('explicit_no_ns').value)
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('should_not_appear')
+
+    def test_node_ns_params_file_by_order(self):
+        node = rclpy.create_node(
+            'node2',
+            namespace='/ns',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'params_by_order.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('last_one_win', node.get_parameter('a_value').value)
+        self.assertEqual('foo', node.get_parameter('foo').value)
+        self.assertEqual('bar', node.get_parameter('bar').value)
+
+    def test_node_ns_params_file_with_complicated_wildcards(self):
+        # regex matched: /**/foo/*/bar
+        node = rclpy.create_node(
+            'node2',
+            namespace='/a/b/c/foo/d/bar',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'complicated_wildcards.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('foo', node.get_parameter('foo').value)
+        self.assertEqual('bar', node.get_parameter('bar').value)
+
+
 if __name__ == '__main__':
     unittest.main()
