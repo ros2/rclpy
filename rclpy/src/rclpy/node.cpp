@@ -22,7 +22,6 @@
 #include <rcl/types.h>
 #include <rcl_interfaces/msg/parameter_type.h>
 #include <rcl_yaml_param_parser/parser.h>
-#include <rcpputils/scope_exit.hpp>
 #include <rcutils/format_string.h>
 
 #include <limits>
