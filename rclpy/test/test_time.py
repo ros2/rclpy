@@ -149,7 +149,7 @@ class TestTime(unittest.TestCase):
         self.assertFalse(time1 == 1)
         duration = Duration(nanoseconds=1)
         self.assertFalse(time1 == duration)
-        self.assertTrue(time != duration)
+        self.assertTrue(time1 != duration)
         with self.assertRaises(TypeError):
             time1 > duration
         with self.assertRaises(TypeError):
