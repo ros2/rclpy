@@ -22,6 +22,8 @@
 #include <rcl/types.h>
 #include <rcl_interfaces/msg/parameter_type.h>
 #include <rcl_yaml_param_parser/parser.h>
+#include <rcpputils/find_and_replace.hpp>
+#include <rcpputils/scope_exit.hpp>
 #include <rcutils/format_string.h>
 
 #include <limits>
@@ -31,9 +33,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <rcpputils/find_and_replace.hpp>
-#include <rcpputils/scope_exit.hpp>
 
 #include "rclpy_common/exceptions.hpp"
 #include "rclpy_common/handle.h"
