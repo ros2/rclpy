@@ -33,13 +33,11 @@
 #include <utility>
 #include <vector>
 
-<<<<<<< HEAD
-#include "rclpy_common/exceptions.hpp"
-#include "rclpy_common/handle.h"
-=======
 #include <rcpputils/find_and_replace.hpp>
 #include <rcpputils/scope_exit.hpp>
->>>>>>> 3586009 (support wildcard matching for params file (#987))
+
+#include "rclpy_common/exceptions.hpp"
+#include "rclpy_common/handle.h"
 
 #include "logging.hpp"
 #include "node.hpp"
