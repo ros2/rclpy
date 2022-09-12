@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.10 (2022-09-12)
+-------------------
+* Raise user handler exception in MultiThreadedExecutor (`#984 <https://github.com/ros2/rclpy/issues/984>`_) (`#992 <https://github.com/ros2/rclpy/issues/992>`_)
+* Contributors: Tomoya Fujita
+
 1.0.9 (2022-09-01)
 ------------------
 * Add __enter_\_ and __exit_\_ to Waitable (`#761 <https://github.com/ros2/rclpy/issues/761>`_) (`#998 <https://github.com/ros2/rclpy/issues/998>`_)
