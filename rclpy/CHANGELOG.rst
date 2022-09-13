@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.7.0 (2022-09-13)
+------------------
 * support wildcard matching for params file (`#987 <https://github.com/ros2/rclpy/issues/987>`_)
 * Raise user handler exception in MultiThreadedExecutor. (`#984 <https://github.com/ros2/rclpy/issues/984>`_)
 * Add wait_for_node method (`#930 <https://github.com/ros2/rclpy/issues/930>`_)
