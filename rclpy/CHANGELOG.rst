@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* support wildcard matching for params file (`#987 <https://github.com/ros2/rclpy/issues/987>`_)
+* Raise user handler exception in MultiThreadedExecutor. (`#984 <https://github.com/ros2/rclpy/issues/984>`_)
+* Add wait_for_node method (`#930 <https://github.com/ros2/rclpy/issues/930>`_)
+* Create sublogger for action server and action client (`#982 <https://github.com/ros2/rclpy/issues/982>`_)
+* Support for pre-set and post-set parameter callback. (`#966 <https://github.com/ros2/rclpy/issues/966>`_)
+* fix gcc 7.5 build errors (`#977 <https://github.com/ros2/rclpy/issues/977>`_)
+* make _on_parameter_event return result correctly (`#817 <https://github.com/ros2/rclpy/issues/817>`_)
+* Fix a small typo in documentation. (`#967 <https://github.com/ros2/rclpy/issues/967>`_)
+* Contributors: Chen Lihui, Chris Lalancette, Deepanshu Bansal, Gonzo, Seulbae Kim, Steve Nogar, Tomoya Fujita, Tony Najjar
+
 3.6.0 (2022-07-14)
 ------------------
 * Add Parameter Client (`#959 <https://github.com/ros2/rclpy/issues/959>`_)
