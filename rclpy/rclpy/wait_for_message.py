@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from rclpy.node import Node
-from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.signals import SignalHandlerGuardCondition
 
 
