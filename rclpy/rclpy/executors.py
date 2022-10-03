@@ -14,6 +14,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
+from functools import partial
 import inspect
 import multiprocessing
 from threading import Condition
@@ -769,7 +770,7 @@ class MultiThreadedExecutor(Executor):
                 handler()
                 if handler.exception() is not None:
                     raise handler.exception()
-            self._executor.submit(handler_wrapper(handler))
+            self._executor.submit(partial(handler_wrapper, handler))
 
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
