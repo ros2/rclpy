@@ -110,6 +110,30 @@ Node::get_count_subscribers(const char * topic_name)
   return count;
 }
 
+size_t
+Node::get_count_clients(const char * service_name)
+{
+  size_t count = 0;
+  rcl_ret_t ret = rcl_count_clients(rcl_node_.get(), service_name, &count);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_count_clients");
+  }
+
+  return count;
+}
+
+size_t
+Node::get_count_services(const char * service_name)
+{
+  size_t count = 0;
+  rcl_ret_t ret = rcl_count_services(rcl_node_.get(), service_name, &count);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_count_services");
+  }
+
+  return count;
+}
+
 py::list
 Node::get_names_impl(bool get_enclaves)
 {
@@ -581,6 +605,12 @@ define_node(py::object module)
   .def(
     "get_count_subscribers", &Node::get_count_subscribers,
     "Returns the count of all the subscribers known for that topic in the entire ROS graph.")
+  .def(
+    "get_count_clients", &Node::get_count_clients,
+    "Returns the count of all the clients known for that service in the entire ROS graph.")
+  .def(
+    "get_count_services", &Node::get_count_services,
+    "Returns the count of all the servers known for that service in the entire ROS graph.")
   .def(
     "get_node_names_and_namespaces", &Node::get_node_names_and_namespaces,
     "Get the list of nodes discovered by the provided node")
