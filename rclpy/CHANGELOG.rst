@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Revert "Raise user handler exception in MultiThreadedExecutor. (`#984 <https://github.com/ros2/rclpy/issues/984>`_)" (`#1017 <https://github.com/ros2/rclpy/issues/1017>`_) (`#1021 <https://github.com/ros2/rclpy/issues/1021>`_)
+* Contributors: Tomoya Fujita, mergify[bot]
+
 1.0.10 (2022-09-12)
 -------------------
 * Raise user handler exception in MultiThreadedExecutor (`#984 <https://github.com/ros2/rclpy/issues/984>`_) (`#992 <https://github.com/ros2/rclpy/issues/992>`_)
