@@ -1565,7 +1565,7 @@ class Node:
         """
         Destroy a subscription created by the node.
 
-        :return: ``True`` if successful, ``False`` otherwise.
+        :return: ``True`` if succesful, ``False`` otherwise.
         """
         if subscription in self.__subscriptions:
             self.__subscriptions.remove(subscription)
