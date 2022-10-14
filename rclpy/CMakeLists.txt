@@ -207,6 +207,7 @@ if(BUILD_TESTING)
         get_filename_component(_test_dir ${_test_path} DIRECTORY)
         get_filename_component(_test_dir ${_test_dir} NAME)
         if(_test_dir STREQUAL "benchmark")
+          # Skip benchmark tests by default
           set(_SKIP_TEST "SKIP_TEST")
         else()
           set(_SKIP_TEST "")
@@ -220,7 +221,6 @@ if(BUILD_TESTING)
         TIMEOUT 120
         WERROR ON
       )
-      # Skip benchmark tests by default
     endforeach()
   endif()
 endif()
