@@ -42,9 +42,8 @@ def test_one_thousand_guard_callbacks(benchmark):
             while num_calls < ONE_THOUSAND:
                 gc.trigger()
                 executor.spin_once(timeout_sec=0)
-            return num_calls == ONE_THOUSAND
 
-        assert benchmark(bm)
+        benchmark(bm)
 
         executor.shutdown()
         node.destroy_guard_condition(gc)

@@ -41,9 +41,8 @@ def test_one_thousand_timer_coroutine_callbacks(benchmark):
             num_calls = 0
             while num_calls < ONE_THOUSAND:
                 executor.spin_once(timeout_sec=0)
-            return num_calls == ONE_THOUSAND
 
-        assert benchmark(bm)
+        benchmark(bm)
 
         executor.shutdown()
         node.destroy_timer(timer)
@@ -74,9 +73,8 @@ def test_one_thousand_timer_callbacks(benchmark):
             num_calls = 0
             while num_calls < ONE_THOUSAND:
                 executor.spin_once(timeout_sec=0)
-            return num_calls == ONE_THOUSAND
 
-        assert benchmark(bm)
+        benchmark(bm)
 
         executor.shutdown()
         node.destroy_timer(timer)
