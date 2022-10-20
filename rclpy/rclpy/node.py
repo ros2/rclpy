@@ -1522,7 +1522,7 @@ class Node:
             KEEP_LAST, the QoS history depth is set to the value
             of the parameter, and all other QoS settings are set to their default values.
         :param callback_group: The callback group for the subscription. If ``None``, then the
-            default callback group fro the node is used.
+            default callback group for the node is used.
         :param event_callbacks: User-defined callbacks for middleware events.
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
