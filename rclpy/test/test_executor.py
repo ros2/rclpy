@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import threading
 import time
 import unittest
@@ -157,25 +156,15 @@ class TestExecutor(unittest.TestCase):
         executor.add_node(self.node)
 
         called1 = False
-        called2 = False
 
         async def coroutine():
             nonlocal called1
-            nonlocal called2
             called1 = True
-            await asyncio.sleep(0)
-            called2 = True
 
         tmr = self.node.create_timer(0.1, coroutine)
         try:
             executor.spin_once(timeout_sec=1.23)
             self.assertTrue(called1)
-            self.assertFalse(called2)
-
-            called1 = False
-            executor.spin_once(timeout_sec=0)
-            self.assertFalse(called1)
-            self.assertTrue(called2)
         finally:
             self.node.destroy_timer(tmr)
 
@@ -185,26 +174,16 @@ class TestExecutor(unittest.TestCase):
         executor.add_node(self.node)
 
         called1 = False
-        called2 = False
 
         async def coroutine():
             nonlocal called1
-            nonlocal called2
             called1 = True
-            await asyncio.sleep(0)
-            called2 = True
 
         gc = self.node.create_guard_condition(coroutine)
         try:
             gc.trigger()
             executor.spin_once(timeout_sec=0)
             self.assertTrue(called1)
-            self.assertFalse(called2)
-
-            called1 = False
-            executor.spin_once(timeout_sec=1)
-            self.assertFalse(called1)
-            self.assertTrue(called2)
         finally:
             self.node.destroy_guard_condition(gc)
 
