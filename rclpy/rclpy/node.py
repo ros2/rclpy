@@ -997,15 +997,15 @@ class Node:
 
         All parameters in the modified list will be set atomically.
 
-        Note that the callback is only called while setting parameters with `set_parameters`,
-        `set_parameters_atomically`, or externally with a parameters service.
+        Note that the callback is only called while setting parameters with ``set_parameters``,
+        ``set_parameters_atomically``, or externally with a parameters service.
 
-        The callback is not called when parameters are declared with `declare_parameter`
-        or `declare_parameters`.
+        The callback is not called when parameters are declared with ``declare_parameter``
+        or ``declare_parameters``.
 
-        The callback is not called when parameters are undeclared with `undeclare_parameter`.
+        The callback is not called when parameters are undeclared with ``undeclare_parameter``.
 
-        An empty modified parameter list from the callback will result in "set_parameter*"
+        An empty modified parameter list from the callback will result in ``set_parameter*``
         returning an unsuccessful result.
 
         :param callback: The function that is called before parameters are validated.
@@ -1038,8 +1038,8 @@ class Node:
 
         Calling this function will add a callback in self._post_set_parameter_callbacks list.
 
-        The callback signature is designed to allow handling of the `set_parameter*`
-        or `declare_parameter*` methods. The callback takes a list of parameters that
+        The callback signature is designed to allow handling of the ``set_parameter*``
+        or ``declare_parameter*`` methods. The callback takes a list of parameters that
         have been set successfully.
 
         The callback can be valuable as a place to cause side effects based on parameter
@@ -1106,7 +1106,7 @@ class Node:
 
         :param parameter_list: Parameters to be checked.
         :param descriptors: Descriptors to apply.
-        :param check_read_only: True if read-only check has to be applied.
+        :param check_read_only: ``True`` if read-only check has to be applied.
         :return: SetParametersResult; successful if checks passed, unsuccessful otherwise.
         :raises: ParameterNotDeclaredException if a descriptor is not provided, the given parameter
             name had not been declared and undeclared parameters are not allowed.
@@ -1131,9 +1131,9 @@ class Node:
         If a descriptor is provided, its name will be set to the name of the parameter.
 
         :param parameter: Parameter to be checked.
-        :param descriptor: Descriptor to apply. If None, the stored descriptor for the given
+        :param descriptor: Descriptor to apply. If ``None``, the stored descriptor for the given
             parameter's name is used instead.
-        :param check_read_only: True if read-only check has to be applied.
+        :param check_read_only: ``True`` if read-only check has to be applied.
         :return: SetParametersResult; successful if checks passed, unsuccessful otherwise.
         :raises: ParameterNotDeclaredException if a descriptor is not provided, the given parameter
             name had not been declared and undeclared parameters are not allowed.
@@ -1315,7 +1315,7 @@ class Node:
         """
         Set a new descriptor for a given parameter.
 
-        The name in the descriptor is ignored and set to **name**.
+        The name in the descriptor is ignored and set to ``name``.
 
         :param name: Fully-qualified name of the parameter to set the descriptor to.
         :param descriptor: New descriptor to apply to the parameter.
@@ -1402,10 +1402,10 @@ class Node:
         """
         Return a topic name expanded and remapped.
 
-        :param topic: topic name to be expanded and remapped.
-        :param only_expand: if `True`, remapping rules won't be applied.
-        :return: a fully qualified topic name,
-            result of applying expansion and remapping to the given `topic`.
+        :param topic: Topic name to be expanded and remapped.
+        :param only_expand: If ``True``, remapping rules won't be applied.
+        :return: A fully qualified topic name,
+            the result of applying expansion and remapping to the given ``topic``.
         """
         with self.handle:
             return _rclpy.rclpy_resolve_name(self.handle, topic, only_expand, False)
@@ -1416,10 +1416,10 @@ class Node:
         """
         Return a service name expanded and remapped.
 
-        :param service: service name to be expanded and remapped.
-        :param only_expand: if `True`, remapping rules won't be applied.
-        :return: a fully qualified service name,
-            result of applying expansion and remapping to the given `service`.
+        :param service: Service name to be expanded and remapped.
+        :param only_expand: If ``True``, remapping rules won't be applied.
+        :return: A fully qualified service name,
+            the result of applying expansion and remapping to the given ``service``.
         """
         with self.handle:
             return _rclpy.rclpy_resolve_name(self.handle, service, only_expand, True)
@@ -1441,11 +1441,11 @@ class Node:
         :param msg_type: The type of ROS messages the publisher will publish.
         :param topic: The name of the topic the publisher will publish to.
         :param qos_profile: A QoSProfile or a history depth to apply to the publisher.
-          In the case that a history depth is provided, the QoS history is set to
-          KEEP_LAST, the QoS history depth is set to the value
-          of the parameter, and all other QoS settings are set to their default values.
+            In the case that a history depth is provided, the QoS history is set to
+            KEEP_LAST, the QoS history depth is set to the value
+            of the parameter, and all other QoS settings are set to their default values.
         :param callback_group: The callback group for the publisher's event handlers.
-            If ``None``, then the node's default callback group is used.
+            If ``None``, then the default callback group for the node is used.
         :param event_callbacks: User-defined callbacks for middleware events.
         :return: The new publisher.
         """
@@ -1518,11 +1518,11 @@ class Node:
         :param callback: A user-defined callback function that is called when a message is
             received by the subscription.
         :param qos_profile: A QoSProfile or a history depth to apply to the subscription.
-          In the case that a history depth is provided, the QoS history is set to
-          KEEP_LAST, the QoS history depth is set to the value
-          of the parameter, and all other QoS settings are set to their default values.
+            In the case that a history depth is provided, the QoS history is set to
+            KEEP_LAST, the QoS history depth is set to the value
+            of the parameter, and all other QoS settings are set to their default values.
         :param callback_group: The callback group for the subscription. If ``None``, then the
-            nodes default callback group is used.
+            default callback group for the node is used.
         :param event_callbacks: User-defined callbacks for middleware events.
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
@@ -1591,7 +1591,7 @@ class Node:
         :param srv_name: The name of the service.
         :param qos_profile: The quality of service profile to apply the service client.
         :param callback_group: The callback group for the service client. If ``None``, then the
-            nodes default callback group is used.
+            default callback group for the node is used.
         """
         if callback_group is None:
             callback_group = self.default_callback_group
@@ -1636,7 +1636,7 @@ class Node:
             received by the server.
         :param qos_profile: The quality of service profile to apply the service server.
         :param callback_group: The callback group for the service server. If ``None``, then the
-            nodes default callback group is used.
+            default callback group for the node is used.
         """
         if callback_group is None:
             callback_group = self.default_callback_group
@@ -1677,8 +1677,8 @@ class Node:
 
         :param timer_period_sec: The period (s) of the timer.
         :param callback: A user-defined callback function that is called when the timer expires.
-        :param callback_group: The callback group for the timer. If ``None``, then the nodes
-            default callback group is used.
+        :param callback_group: The callback group for the timer. If ``None``, then the
+            default callback group for the node is used.
         :param clock: The clock which the timer gets time from.
         """
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
@@ -1752,7 +1752,7 @@ class Node:
         """
         Destroy a subscription created by the node.
 
-        :return: ``True`` if successful, ``False`` otherwise.
+        :return: ``True`` if succesful, ``False`` otherwise.
         """
         if subscription in self._subscriptions:
             self._subscriptions.remove(subscription)
@@ -1925,7 +1925,7 @@ class Node:
         node_namespace: str
     ) -> List[Tuple[str, List[str]]]:
         """
-        Get a list of discovered service server topics for a remote node.
+        Get a list of discovered service servers for a remote node.
 
         :param node_name: Name of a remote node to get services for.
         :param node_namespace: Namespace of the remote node.
@@ -1945,12 +1945,12 @@ class Node:
         node_namespace: str
     ) -> List[Tuple[str, List[str]]]:
         """
-        Get a list of discovered service client topics for a remote node.
+        Get a list of discovered service clients for a remote node.
 
         :param node_name: Name of a remote node to get service clients for.
         :param node_namespace: Namespace of the remote node.
         :return: List of tuples.
-          The fist element of each tuple is the service client name
+          The first element of each tuple is the service client name
           and the second element is a list of service client types.
         :raise NodeNameNonExistentError: If the node wasn't found.
         :raise RuntimeError: Unexpected failure.
@@ -1961,7 +1961,7 @@ class Node:
 
     def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, List[str]]]:
         """
-        Get a list topic names and types for the node.
+        Get a list of discovered topic names and types.
 
         :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
         :return: List of tuples.
@@ -1973,7 +1973,7 @@ class Node:
 
     def get_service_names_and_types(self) -> List[Tuple[str, List[str]]]:
         """
-        Get a list of service topics for the node.
+        Get a list of discovered service names and types.
 
         :return: List of tuples.
           The first element of each tuple is the service name and the second element is a list of
@@ -1997,6 +1997,7 @@ class Node:
         Get a list of fully qualified names for discovered nodes.
 
         Similar to ``get_node_names_namespaces()``, but concatenates the names and namespaces.
+
         :return: List of fully qualified node names.
         """
         names_and_namespaces = self.get_node_names_and_namespaces()
@@ -2043,12 +2044,12 @@ class Node:
         """
         Return the number of publishers on a given topic.
 
-        `topic_name` may be a relative, private, or fully qualified topic name.
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
         A relative or private topic is expanded using this node's namespace and name.
         The queried topic name is not remapped.
 
-        :param topic_name: the topic_name on which to count the number of publishers.
-        :return: the number of publishers on the topic.
+        :param topic_name: The topic name on which to count the number of publishers.
+        :return: The number of publishers on the topic.
         """
         with self.handle:
             return self._count_publishers_or_subscribers(
@@ -2058,12 +2059,12 @@ class Node:
         """
         Return the number of subscribers on a given topic.
 
-        `topic_name` may be a relative, private, or fully qualified topic name.
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
         A relative or private topic is expanded using this node's namespace and name.
         The queried topic name is not remapped.
 
-        :param topic_name: the topic_name on which to count the number of subscribers.
-        :return: the number of subscribers on the topic.
+        :param topic_name: The topic name on which to count the number of subscribers.
+        :return: The number of subscribers on the topic.
         """
         with self.handle:
             return self._count_publishers_or_subscribers(
@@ -2099,18 +2100,18 @@ class Node:
         The returned parameter is a list of TopicEndpointInfo objects, where each will contain
         the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
 
-        When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
-        name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
-        When the `no_mangle` parameter is `false`, the provided `topic_name` should follow
-        ROS topic name conventions.
+        When the ``no_mangle`` parameter is ``True``, the provided ``topic_name`` should be a valid
+        topic name for the middleware (useful when combining ROS with native middleware (e.g. DDS)
+        apps).  When the ``no_mangle`` parameter is ``False``, the provided ``topic_name`` should
+        follow ROS topic name conventions.
 
-        `topic_name` may be a relative, private, or fully qualified topic name.
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
         A relative or private topic will be expanded using this node's namespace and name.
-        The queried `topic_name` is not remapped.
+        The queried ``topic_name`` is not remapped.
 
-        :param topic_name: the topic_name on which to find the publishers.
-        :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
-            name, otherwise it should be a valid ROS topic name. Defaults to `false`.
+        :param topic_name: The topic_name on which to find the publishers.
+        :param no_mangle: If ``True``, ``topic_name`` needs to be a valid middleware topic
+            name, otherwise it should be a valid ROS topic name. Defaults to ``False``.
         :return: a list of TopicEndpointInfo for all the publishers on this topic.
         """
         return self._get_info_by_topic(
@@ -2129,19 +2130,19 @@ class Node:
         The returned parameter is a list of TopicEndpointInfo objects, where each will contain
         the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
 
-        When the `no_mangle` parameter is `true`, the provided `topic_name` should be a valid topic
-        name for the middleware (useful when combining ROS with native middleware (e.g. DDS) apps).
-        When the `no_mangle` parameter is `false`, the provided `topic_name` should follow
-        ROS topic name conventions.
+        When the ``no_mangle`` parameter is ``True``, the provided ``topic_name`` should be a valid
+        topic name for the middleware (useful when combining ROS with native middleware (e.g. DDS)
+        apps).  When the ``no_mangle`` parameter is ``False``, the provided ``topic_name`` should
+        follow ROS topic name conventions.
 
-        `topic_name` may be a relative, private, or fully qualified topic name.
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
         A relative or private topic will be expanded using this node's namespace and name.
-        The queried `topic_name` is not remapped.
+        The queried ``topic_name`` is not remapped.
 
-        :param topic_name: the topic_name on which to find the subscriptions.
-        :param no_mangle: no_mangle if `true`, `topic_name` needs to be a valid middleware topic
-            name, otherwise it should be a valid ROS topic name. Defaults to `false`.
-        :return: a list of TopicEndpointInfo for all the subscriptions on this topic.
+        :param topic_name: The topic_name on which to find the subscriptions.
+        :param no_mangle: If ``True``, `topic_name` needs to be a valid middleware topic
+            name, otherwise it should be a valid ROS topic name. Defaults to ``False``.
+        :return: A list of TopicEndpointInfo for all the subscriptions on this topic.
         """
         return self._get_info_by_topic(
             topic_name,
@@ -2158,10 +2159,10 @@ class Node:
 
         The node name should be the full name with namespace.
 
-        :param node_name: fully qualified name of the node to wait for.
-        :param timeout: seconds to wait for the node to be present. If negative, the function
+        :param node_name: Fully qualified name of the node to wait for.
+        :param timeout: Seconds to wait for the node to be present. If negative, the function
                          won't timeout.
-        :return: True if the node was found, False if timeout.
+        :return: ``True`` if the node was found, ``False`` if timeout.
         """
         if not fully_qualified_node_name.startswith('/'):
             fully_qualified_node_name = f'/{fully_qualified_node_name}'

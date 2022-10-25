@@ -308,7 +308,6 @@ class Executor:
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
-        :raise RuntimeError: Unexpected failure.
         """
         raise NotImplementedError()
 
@@ -322,7 +321,6 @@ class Executor:
         :param future: The executor will wait until this future is done.
         :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
-        :raise RuntimeError: Unexpected failure.
         """
         raise NotImplementedError()
 
@@ -621,10 +619,11 @@ class Executor:
                     for wt in node.waitables:
                         # Only check waitables that were added to the wait set
                         if wt in waitables and wt.is_ready(wait_set):
-                            handler = self._make_handler(
-                                wt, node, lambda e: (e.take_data(), ), self._execute_waitable)
-                            yielded_work = True
-                            yield handler, wt, node
+                            if wt.callback_group.can_execute(wt):
+                                handler = self._make_handler(
+                                    wt, node, lambda e: (e.take_data(), ), self._execute_waitable)
+                                yielded_work = True
+                                yield handler, wt, node
 
             # Process ready entities one node at a time
             for node in nodes_to_use:
@@ -764,11 +763,7 @@ class MultiThreadedExecutor(Executor):
         except ConditionReachedException:
             pass
         else:
-            def handler_wrapper(handler):
-                handler()
-                if handler.exception() is not None:
-                    raise handler.exception()
-            self._executor.submit(handler_wrapper(handler))
+            self._executor.submit(handler)
 
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
