@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
+import warnings
 
 from rclpy.client import Client
 from rclpy.clock import Clock
@@ -732,8 +733,8 @@ class MultiThreadedExecutor(Executor):
     Runs callbacks in a pool of threads.
 
     :param num_threads: number of worker threads in the pool. If ``None``, the number of threads
-        will use :func:`multiprocessing.cpu_count`. If that's not implemented the number of threads
-        defaults to 1.
+        will use :func:`multiprocessing.cpu_count` (minimum of 2).
+        If that's not implemented, the number of threads defaults to 2.
     :param context: The context associated with the executor.
     """
 
@@ -741,9 +742,13 @@ class MultiThreadedExecutor(Executor):
         super().__init__(context=context)
         if num_threads is None:
             try:
-                num_threads = multiprocessing.cpu_count()
+                num_threads = max(multiprocessing.cpu_count(), 2)
             except NotImplementedError:
-                num_threads = 1
+                num_threads = 2
+        if num_threads == 1:
+            warnings.warn(
+                'MultiThreadedExecutor is used with a single thread.\n'
+                'Use the SingleThreadedExecutor instead.')
         self._executor = ThreadPoolExecutor(num_threads)
 
     def _spin_once_impl(
