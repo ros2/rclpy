@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import asyncio
+import os
 import threading
 import time
 import unittest
+import warnings
 
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
@@ -127,6 +129,32 @@ class TestExecutor(unittest.TestCase):
             executor.shutdown()
 
         assert not got_callback
+
+    def test_multi_threaded_executor_num_threads(self):
+        self.assertIsNotNone(self.node.handle)
+
+        # check default behavior, either platform configuration or defaults to 2
+        executor = MultiThreadedExecutor(context=self.context)
+        if hasattr(os, 'sched_getaffinity'):
+            platform_threads = len(os.sched_getaffinity(0))
+        else:
+            platform_threads = os.cpu_count()
+        self.assertEqual(platform_threads, executor._executor._max_workers)
+        executor.shutdown()
+
+        # check specified thread number w/o warning
+        executor = MultiThreadedExecutor(num_threads=3, context=self.context)
+        self.assertEqual(3, executor._executor._max_workers)
+        executor.shutdown()
+
+        # check specified thread number = 1, expecting UserWarning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always', category=UserWarning)
+            executor = MultiThreadedExecutor(num_threads=1, context=self.context)
+            self.assertEqual(1, executor._executor._max_workers)
+            executor.shutdown()
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
 
     def test_multi_threaded_executor_executes(self):
         self.assertIsNotNone(self.node.handle)
