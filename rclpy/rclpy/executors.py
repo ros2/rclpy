@@ -734,7 +734,8 @@ class MultiThreadedExecutor(Executor):
 
     :param num_threads: number of worker threads in the pool.
         If ``None``, the number of threads will be automatically set by querying the underlying OS
-        for the CPU affinity of the process space. If it is not set, defaults to 2.
+        for the CPU affinity of the process space.
+        If the OS doesn't provide this information, defaults to 2.
     :param context: The context associated with the executor.
     """
 
@@ -742,7 +743,7 @@ class MultiThreadedExecutor(Executor):
         super().__init__(context=context)
         if num_threads is None:
             # On Linux, it will try to use the number of CPU this process has access to.
-            # On other platforms, os.sched_getaffinity() doesn't exist so we use the number of CPU.
+            # Other platforms, os.sched_getaffinity() doesn't exist so we use the number of CPUs.
             if hasattr(os, 'sched_getaffinity'):
                 num_threads = len(os.sched_getaffinity(0))
             else:
