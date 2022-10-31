@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import asyncio
-import multiprocessing
+import os
 import threading
 import time
 import unittest
@@ -133,12 +133,12 @@ class TestExecutor(unittest.TestCase):
     def test_multi_threaded_executor_num_threads(self):
         self.assertIsNotNone(self.node.handle)
 
-        # check default behavior, either multiprocessing.cpu_count() or defaults to 2
+        # check default behavior, either platform configuration or defaults to 2
         executor = MultiThreadedExecutor(context=self.context)
-        try:
-            platform_threads = max(multiprocessing.cpu_count(), 2)
-        except NotImplementedError:
-            platform_threads = 2
+        if hasattr(os, 'sched_getaffinity'):
+            platform_threads = len(os.sched_getaffinity(0))
+        else:
+            platform_threads = os.cpu_count()
         self.assertEqual(platform_threads, executor._executor._max_workers)
         executor.shutdown()
 

@@ -15,7 +15,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 import inspect
-import multiprocessing
+import os
 from threading import Condition
 from threading import Lock
 from threading import RLock
@@ -732,18 +732,23 @@ class MultiThreadedExecutor(Executor):
     """
     Runs callbacks in a pool of threads.
 
-    :param num_threads: number of worker threads in the pool. If ``None``, the number of threads
-        will use :func:`multiprocessing.cpu_count` (minimum of 2).
-        If that's not implemented, the number of threads defaults to 2.
+    :param num_threads: number of worker threads in the pool.
+        If ``None``, the number of threads will be automatically set by querying the underlying OS
+        for the CPU affinity of the process space. If it is not set, defaults to 2.
     :param context: The context associated with the executor.
     """
 
     def __init__(self, num_threads: int = None, *, context: Context = None) -> None:
         super().__init__(context=context)
         if num_threads is None:
-            try:
-                num_threads = max(multiprocessing.cpu_count(), 2)
-            except NotImplementedError:
+            # On Linux, it will try to use the number of CPU this process has access to.
+            # On other platforms, os.sched_getaffinity() doesn't exist so we use the number of CPU.
+            if hasattr(os, 'sched_getaffinity'):
+                num_threads = len(os.sched_getaffinity(0))
+            else:
+                num_threads = os.cpu_count()
+            # The calls above may still return None if they aren't supported
+            if num_threads is None:
                 num_threads = 2
         if num_threads == 1:
             warnings.warn(
