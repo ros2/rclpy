@@ -170,3 +170,23 @@ class TestParameterClient(unittest.TestCase):
         finally:
             if os.path.exists(f.name):
                 os.unlink(f.name)
+
+    def test_get_uninitialized_parameter(self):
+        self.target_node.declare_parameter('uninitialized_parameter', Parameter.Type.STRING)
+
+        # The type in description should be STRING
+        future = self.client.describe_parameters(['uninitialized_parameter'])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.descriptors) == 1
+        assert results.descriptors[0].type == ParameterType.PARAMETER_STRING
+        assert results.descriptors[0].name == 'uninitialized_parameter'
+
+        # The type in value should be NOT SET
+        future = self.client.get_parameters(['uninitialized_parameter'])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.values) == 1
+        assert results.values[0].type == ParameterType.PARAMETER_NOT_SET
