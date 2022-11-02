@@ -183,10 +183,11 @@ class TestParameterClient(unittest.TestCase):
         assert results.descriptors[0].type == ParameterType.PARAMETER_STRING
         assert results.descriptors[0].name == 'uninitialized_parameter'
 
-        # The type in value should be NOT SET
+        # The value should be empty
         future = self.client.get_parameters(['uninitialized_parameter'])
         self.executor.spin_until_future_complete(future)
         results = future.result()
         assert results is not None
-        assert len(results.values) == 1
-        assert results.values[0].type == ParameterType.PARAMETER_NOT_SET
+        assert results.values == []
+
+        self.target_node.undeclare_parameter('uninitialized_parameter')

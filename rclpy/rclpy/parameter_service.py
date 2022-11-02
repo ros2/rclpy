@@ -14,7 +14,7 @@
 
 import weakref
 
-from rcl_interfaces.msg import ParameterValue, ParameterType, SetParametersResult
+from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTypes
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
 from rclpy.exceptions import ParameterNotDeclaredException, ParameterUninitializedException
@@ -80,12 +80,9 @@ class ParameterService:
         for name in request.names:
             try:
                 param = node.get_parameter(name)
-            except ParameterNotDeclaredException:
+            except (ParameterNotDeclaredException, ParameterUninitializedException):
                 response.values = node.get_parameters([])
                 return response
-            except ParameterUninitializedException:
-                response.values.append(ParameterValue(type=ParameterType.PARAMETER_NOT_SET))
-                continue
             response.values.append(param.get_parameter_value())
         return response
 
