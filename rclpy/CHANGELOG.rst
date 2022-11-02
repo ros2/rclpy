@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Set the default number of threads of the MultiThreadedExecutor to 2 (`#1031 <https://github.com/ros2/rclpy/issues/1031>`_)
+* Update the rclpy method documentation. (`#1026 <https://github.com/ros2/rclpy/issues/1026>`_)
+* Revert "Raise user handler exception in MultiThreadedExecutor. (`#984 <https://github.com/ros2/rclpy/issues/984>`_)" (`#1017 <https://github.com/ros2/rclpy/issues/1017>`_)
+* Waitable should check callback_group if it can be executed. (`#1001 <https://github.com/ros2/rclpy/issues/1001>`_)
+* Contributors: Chris Lalancette, Tomoya Fujita
+
 3.7.0 (2022-09-13)
 ------------------
 * support wildcard matching for params file (`#987 <https://github.com/ros2/rclpy/issues/987>`_)
