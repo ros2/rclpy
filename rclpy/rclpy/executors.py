@@ -608,10 +608,11 @@ class Executor:
                     for wt in node.waitables:
                         # Only check waitables that were added to the wait set
                         if wt in waitables and wt.is_ready(wait_set):
-                            handler = self._make_handler(
-                                wt, node, lambda e: e.take_data(), self._execute_waitable)
-                            yielded_work = True
-                            yield handler, wt, node
+                            if wt.callback_group.can_execute(wt):
+                                handler = self._make_handler(
+                                    wt, node, lambda e: e.take_data(), self._execute_waitable)
+                                yielded_work = True
+                                yield handler, wt, node
 
             # Process ready entities one node at a time
             for node in nodes_to_use:
