@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.5 (2022-11-07)
+------------------
+* Waitable should check callback_group if it can be executed. (`#1001 <https://github.com/ros2/rclpy/issues/1001>`_) (`#1013 <https://github.com/ros2/rclpy/issues/1013>`_)
+* Revert "Raise user handler exception in MultiThreadedExecutor. (`#984 <https://github.com/ros2/rclpy/issues/984>`_)" (`#1017 <https://github.com/ros2/rclpy/issues/1017>`_) (`#1023 <https://github.com/ros2/rclpy/issues/1023>`_)
+* support wildcard matching for params file (`#987 <https://github.com/ros2/rclpy/issues/987>`_) (`#1002 <https://github.com/ros2/rclpy/issues/1002>`_)
+* Raise user handler exception in MultiThreadedExecutor. (`#984 <https://github.com/ros2/rclpy/issues/984>`_) (`#990 <https://github.com/ros2/rclpy/issues/990>`_)
+* fix gcc 7.5 build errors (`#977 <https://github.com/ros2/rclpy/issues/977>`_) (`#980 <https://github.com/ros2/rclpy/issues/980>`_)
+* Contributors: mergify[bot]
+
 3.3.4 (2022-05-17)
 ------------------
 * check if the context is already shutdown. (`#939 <https://github.com/ros2/rclpy/issues/939>`_) (`#943 <https://github.com/ros2/rclpy/issues/943>`_)
