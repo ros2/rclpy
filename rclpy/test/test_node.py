@@ -832,6 +832,11 @@ class TestNode(unittest.TestCase):
                 )]
             )
 
+        # Declare a parameter with parameter type 'Not Set'
+        with self.assertRaises(ValueError):
+            self.node.declare_parameter(
+                'wrong_parameter_value_type_not_set', Parameter.Type.NOT_SET)
+
     def reject_parameter_callback(self, parameter_list):
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
