@@ -15,14 +15,9 @@
 import os
 import sys
 import threading
+from typing import List
 from typing import Optional
-
-if sys.version_info < (3, 9, 0):
-    from typing import List
-    from typing import Sequence
-else:
-    List = list
-    from collections.abc import Sequence
+from typing import Sequence
 
 import ament_index_python
 
