@@ -15,6 +15,9 @@
 import os
 import sys
 import threading
+from typing import List
+from typing import Optional
+from typing import Sequence
 
 import ament_index_python
 
@@ -39,7 +42,14 @@ def get_default_context(*, shutting_down=False):
         return g_default_context
 
 
-def remove_ros_args(args=None):
+def remove_ros_args(args: Optional[Sequence[str]] = None) -> List[str]:
+    """
+    Return a list of only the non-ROS command line arguments.
+
+    :param args: A list of command line arguments to filter from. If None then
+    ``sys.argv`` is used instead.
+    :returns: A list of all command line arguments that are not used by ROS.
+    """
     # imported locally to avoid loading extensions on module import
     from rclpy.impl.implementation_singleton import rclpy_implementation
     return rclpy_implementation.rclpy_remove_ros_args(
