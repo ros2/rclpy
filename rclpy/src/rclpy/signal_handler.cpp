@@ -62,6 +62,7 @@ std::atomic<bool> g_signal_handler_installed = false;
 void
 notify_signal_handler() noexcept
 {
+  RCUTILS_LOG_ERROR("notify_signal_handler - enter");
 #if defined(_WIN32)
   if (!ReleaseSemaphore(g_signal_handler_sem, 1, NULL)) {
     return;
@@ -73,11 +74,13 @@ notify_signal_handler() noexcept
     return;
   }
 #endif
+  RCUTILS_LOG_ERROR("notify_signal_handler - exit");
 }
 
 void
 wait_for_signal()
 {
+  RCUTILS_LOG_ERROR("wait_for_signal - enter");
 #if defined(_WIN32)
   DWORD dw_wait_result = WaitForSingleObject(g_signal_handler_sem, INFINITE);
   switch (dw_wait_result) {
@@ -111,6 +114,7 @@ wait_for_signal()
     s = sem_wait(&g_signal_handler_sem);
   } while (-1 == s && EINTR == errno);
 #endif
+  RCUTILS_LOG_ERROR("wait_for_signal - exit");
 }
 
 void
@@ -297,6 +301,7 @@ static bool g_sigterm_installed;
 /// Signal handler function
 DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
 {
+  RCUTILS_LOG_ERROR("rclpy_sigint_handler");
   if (!is_null_signal_handler(g_original_sigint_handler)) {
     call_signal_handler(g_original_sigint_handler, SIGNAL_HANDLER_ARGS);
   }
@@ -308,6 +313,7 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
     // Try to unregister again.
     unregister_sigint_signal_handler();
   } else {
+    RCUTILS_LOG_ERROR("rclpy_sigint_handler - notify_signal_handler()");
     notify_signal_handler();
   }
 }
@@ -315,6 +321,7 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigint_handler)
 /// Signal handler function
 DEFINE_SIGNAL_HANDLER(rclpy_sigterm_handler)
 {
+  RCUTILS_LOG_ERROR("rclpy_sigterm_handler");
   if (!is_null_signal_handler(g_original_sigterm_handler)) {
     call_signal_handler(g_original_sigterm_handler, SIGNAL_HANDLER_ARGS);
   }
@@ -326,6 +333,7 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigterm_handler)
     // Try to unregister again.
     unregister_sigint_signal_handler();
   } else {
+    RCUTILS_LOG_ERROR("rclpy_sigterm_handler - notify_signal_handler()");
     notify_signal_handler();
   }
 }

@@ -32,6 +32,8 @@
 #include "exceptions.hpp"
 #include "utils.hpp"
 
+#include <rcutils/logging_macros.h>
+
 namespace
 {
 // g_contexts is a collection of valid contexts
@@ -43,17 +45,21 @@ namespace rclpy
 {
 void shutdown_contexts()
 {
+  RCUTILS_LOG_ERROR("shutdown_contexts() - enter");
   // graceful shutdown all contexts
   std::lock_guard<std::mutex> guard{g_contexts_mutex};
+  RCUTILS_LOG_ERROR("Found: %zi contexts", g_contexts.size());
   for (auto * c : g_contexts) {
     rcl_ret_t ret = rcl_shutdown(c);
     (void)ret;
   }
   g_contexts.clear();
+  RCUTILS_LOG_ERROR("shutdown_contexts() - exit");
 }
 
 Context::Context(py::list pyargs, size_t domain_id)
 {
+  RCUTILS_LOG_ERROR("Context::Context()");
   rcl_context_ = std::shared_ptr<rcl_context_t>(
     new rcl_context_t,
     [](rcl_context_t * context)
@@ -121,12 +127,15 @@ Context::Context(py::list pyargs, size_t domain_id)
     std::lock_guard<std::mutex> guard{g_contexts_mutex};
     g_contexts.push_back(rcl_context_.get());
   }
+  RCUTILS_LOG_ERROR("Context::Context() - exit");
 }
 
 void
 Context::destroy()
 {
+  RCUTILS_LOG_ERROR("Context::destroy() - enter");
   rcl_context_.reset();
+  RCUTILS_LOG_ERROR("Context::destroy() - exit");
 }
 
 size_t
@@ -150,18 +159,22 @@ Context::ok()
 void
 Context::shutdown()
 {
+  RCUTILS_LOG_ERROR("Context::shutdown() - enter");
   {
     std::lock_guard<std::mutex> guard{g_contexts_mutex};
+    RCUTILS_LOG_ERROR("Context::shutdown() - lock aquired");
     auto iter = std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get());
     if (iter != g_contexts.end()) {
       g_contexts.erase(iter);
     }
   }
+  RCUTILS_LOG_ERROR("Context::shutdown() - lock released");
 
   rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to shutdown");
   }
+  RCUTILS_LOG_ERROR("Context::shutdown() - exit");
 }
 
 void define_context(py::object module)
