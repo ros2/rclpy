@@ -10,14 +10,16 @@ For building documentation, you need an installation of ROS 2.
 
 #### Install dependencies
 
-    sudo apt install python3-sphinx python3-pip
-    sudo -H pip3 install sphinx_autodoc_typehints
+    sudo apt install \
+      python3-sphinx \
+      python3-sphinx-autodoc-typehints \
+      python3-sphinx-rtd-theme
 
 #### Build
 
 Source your ROS 2 installation, for example:
 
-    . /opt/ros/foxy/setup.bash
+    . /opt/ros/rolling/setup.bash
 
 Build code:
 
