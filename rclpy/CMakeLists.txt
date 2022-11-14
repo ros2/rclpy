@@ -228,7 +228,11 @@ if(BUILD_TESTING)
       test/test_messages.py
       test/test_node.py
       test/test_parameter.py
+<<<<<<< HEAD
       test/test_parameters_callback.py
+=======
+      test/test_parameter_client.py
+>>>>>>> e442ad2 (Deal with ParameterUninitializedException for parameter service (#1033))
       test/test_publisher.py
       test/test_qos.py
       test/test_qos_event.py

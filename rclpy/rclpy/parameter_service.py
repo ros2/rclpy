@@ -18,7 +18,7 @@ from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTypes
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
-from rclpy.exceptions import ParameterNotDeclaredException
+from rclpy.exceptions import ParameterNotDeclaredException, ParameterUninitializedException
 from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
 from rclpy.qos import qos_profile_parameters
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
@@ -78,8 +78,17 @@ class ParameterService:
     def _get_parameters_callback(self, request, response):
         node = self._get_node()
         for name in request.names:
+<<<<<<< HEAD
             p = node.get_parameter_or(name)
             response.values.append(p.get_parameter_value())
+=======
+            try:
+                param = node.get_parameter(name)
+            except (ParameterNotDeclaredException, ParameterUninitializedException):
+                response.values = node.get_parameters([])
+                return response
+            response.values.append(param.get_parameter_value())
+>>>>>>> e442ad2 (Deal with ParameterUninitializedException for parameter service (#1033))
         return response
 
     def _get_parameter_types_callback(self, request, response):
