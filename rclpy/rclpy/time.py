@@ -59,7 +59,7 @@ class Time:
         """
         Get time separated into seconds and nanoseconds components.
 
-        :returns: 2-tuple seconds and nanoseconds
+        :return: 2-tuple seconds and nanoseconds
         """
         nanoseconds = self.nanoseconds
         return (nanoseconds // CONVERSION_CONSTANT, nanoseconds % CONVERSION_CONSTANT)
