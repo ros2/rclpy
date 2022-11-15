@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.node import Node
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.utilities import timeout_sec_to_nsec
+from rclpy.node import Node
 from rclpy.signals import SignalHandlerGuardCondition
+from rclpy.utilities import timeout_sec_to_nsec
 
 
 def wait_for_message(
