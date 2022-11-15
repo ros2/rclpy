@@ -10,6 +10,7 @@ API
    api/topics
    api/services
    api/actions
+   api/time
    api/timers
    api/parameters
    api/logging
