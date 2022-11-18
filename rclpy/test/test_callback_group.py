@@ -54,52 +54,52 @@ class TestCallbackGroup(unittest.TestCase):
         executor = MultiThreadedExecutor(context=self.context)
         executor.add_node(self.node)
         try:
-            # Setup flags for different scopes
+            # Setup flags for different scopes,
             # which indicate that the short callback has been called
             got_short_callback = False
-            recived_short_callback_in_long_callback = False
+            received_short_callback_in_long_callback = False
 
-            # Setup two future objects that controll the executor
+            # Setup two future objects that control the executor
             future_up = Future()
             future_down = Future()
 
-            # This callback is used to check if a callback can be recived while another
-            # long running callback is beeing executed
+            # This callback is used to check if a callback can be received while another
+            # long running callback is being executed
             def short_callback(msg):
                 nonlocal got_short_callback
-                # Set flag so signal that the callback has been recived
+                # Set flag so signal that the callback has been received
                 got_short_callback = True
 
             # This callback is as a long running callback
             # It will be check that the short callback can
             # run in parallel to this long running one
             def long_callback(msg):
-                nonlocal recived_short_callback_in_long_callback
+                nonlocal received_short_callback_in_long_callback
                 nonlocal future_up
                 nonlocal future_down
                 # The following future is used to delay the publishing of
                 # the message that triggers the short callback.
-                # This is done to enshure the long running callback is beeing executed while
-                # the short callback is called
+                # This is done to ensure the long running callback is being executed
+                # while the short callback is called
                 future_up.set_result(None)
                 # Wait for a maximum of 5 seconds
-                # The short callback needs to be called in this windows
+                # The short callback needs to be called in this time window
                 for i in range(50):
                     time.sleep(0.1)
                     # Check if the short callback was called
                     if got_short_callback:
                         # Set a flag to signal that the short callback
                         # was executed during the long one
-                        recived_short_callback_in_long_callback = True
+                        received_short_callback_in_long_callback = True
                         # Skip the rest of the waiting
                         break
                 # Stop the executor from running any longer as there is nothing left to do
                 future_down.set_result(None)
 
             # Create ReentrantCallbackGroup which is needed in combination with the
-            # MultiThreadedExecturor to run callbacks not mutially exclusive
+            # MultiThreadedExecutor to run callbacks not mutually exclusive
             group = ReentrantCallbackGroup()
-            # Create subscribtions to trigger the callbacks
+            # Create subscriptions to trigger the callbacks
             self.node.create_subscription(
                 Empty,
                 'trigger_long',
@@ -124,8 +124,8 @@ class TestCallbackGroup(unittest.TestCase):
             # Wait until the long running callback ends
             # (due to the signal from the short one or a timeout)
             executor.spin_until_future_complete(future_down)
-            # Check if we were able to recive the short callback during the long running one
-            self.assertTrue(recived_short_callback_in_long_callback)
+            # Check if we were able to receive the short callback during the long running one
+            self.assertTrue(received_short_callback_in_long_callback)
         finally:
             executor.shutdown()
 
