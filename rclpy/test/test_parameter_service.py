@@ -35,12 +35,12 @@ class TestParameterService(unittest.TestCase):
             context=self.context)
 
         self.get_parameter_client = self.test_node.create_client(
-            GetParameters, f'/rclpy/test_parameter_service/get_parameters',
+            GetParameters, '/rclpy/test_parameter_service/get_parameters',
             qos_profile=qos_profile_services_default
         )
 
         self.describe_parameters_client = self.test_node.create_client(
-            DescribeParameters, f'/rclpy/test_parameter_service/describe_parameters',
+            DescribeParameters, '/rclpy/test_parameter_service/describe_parameters',
             qos_profile=qos_profile_services_default
         )
 
@@ -74,8 +74,6 @@ class TestParameterService(unittest.TestCase):
         results = future.result()
         assert results is not None
         assert results.values == []
-
-        self.test_node.undeclare_parameter('uninitialized_parameter')
 
 
 if __name__ == '__main__':
