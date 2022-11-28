@@ -73,7 +73,7 @@ class TestPublisher(unittest.TestCase):
 
         """
         for topic, target_topic in test_topics:
-            publisher = node.create_publisher(BasicTypes, topic, 0)
+            publisher = node.create_publisher(BasicTypes, topic, 1)
             assert publisher.topic_name == target_topic
             publisher.destroy()
 
