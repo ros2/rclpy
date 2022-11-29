@@ -51,7 +51,7 @@ class TestCallbackGroup(unittest.TestCase):
     def test_reentrant_group_not_blocking(self):
         self.assertIsNotNone(self.node.handle)
         # Create multithreaded executor needed for parallel callback handling
-        executor = MultiThreadedExecutor(context=self.context)
+        executor = MultiThreadedExecutor(num_threads=2, context=self.context)
         executor.add_node(self.node)
         try:
             # Setup flags for different scopes,
