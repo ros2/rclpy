@@ -71,7 +71,7 @@ class TestCallbackGroup(unittest.TestCase):
                 got_short_callback = True
 
             # This callback is as a long running callback
-            # It will be check that the short callback can
+            # It will be checking that the short callback can
             # run in parallel to this long running one
             def long_callback(msg):
                 nonlocal received_short_callback_in_long_callback
