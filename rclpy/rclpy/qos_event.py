@@ -60,7 +60,7 @@ QoSOfferedIncompatibleQoSInfo = QoSRequestedIncompatibleQoSInfo
 UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
 
 
-class QoSEventHandler(Waitable):
+class EventHandler(Waitable):
     """Waitable type to handle QoS events."""
 
     def __init__(
@@ -126,6 +126,16 @@ class QoSEventHandler(Waitable):
         self.__event.destroy_when_not_in_use()
 
 
+class QoSEventHandler(EventHandler):
+    def __init_subclass__(cls, **kwargs):
+        warnings.warn('QoSEventHandler foo is deprecated, use EventHandler instead.', DeprecationWarning, stacklevel=2)
+        super().__init_subclass__(**kwargs)
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(f'QoSEventHandler is deprecated, use EventHandler instead.', DeprecationWarning, stacklevel=2)
+        super().__init__(*args, **kwargs)
+
+
 class SubscriptionEventCallbacks:
     """Container to provide middleware event callbacks for a Subscription."""
 
@@ -159,13 +169,13 @@ class SubscriptionEventCallbacks:
 
     def create_event_handlers(
         self, callback_group: CallbackGroup, subscription: _rclpy.Subscription, topic_name: str,
-    ) -> List[QoSEventHandler]:
+    ) -> List[EventHandler]:
         with subscription:
             logger = get_logger(subscription.get_logger_name())
 
         event_handlers = []
         if self.deadline:
-            event_handlers.append(QoSEventHandler(
+            event_handlers.append(EventHandler(
                 callback_group=callback_group,
                 callback=self.deadline,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED,
@@ -186,7 +196,7 @@ class SubscriptionEventCallbacks:
         try:
             if incompatible_qos_callback is not None:
                 event_type = QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS
-                event_handlers.append(QoSEventHandler(
+                event_handlers.append(EventHandler(
                     callback_group=callback_group,
                     callback=incompatible_qos_callback,
                     event_type=event_type,
@@ -195,14 +205,14 @@ class SubscriptionEventCallbacks:
             pass
 
         if self.liveliness:
-            event_handlers.append(QoSEventHandler(
+            event_handlers.append(EventHandler(
                 callback_group=callback_group,
                 callback=self.liveliness,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED,
                 parent_impl=subscription))
 
         if self.message_lost:
-            event_handlers.append(QoSEventHandler(
+            event_handlers.append(EventHandler(
                 callback_group=callback_group,
                 callback=self.message_lost,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_MESSAGE_LOST,
@@ -241,20 +251,20 @@ class PublisherEventCallbacks:
 
     def create_event_handlers(
         self, callback_group: CallbackGroup, publisher: _rclpy.Publisher, topic_name: str,
-    ) -> List[QoSEventHandler]:
+    ) -> List[EventHandler]:
         with publisher:
             logger = get_logger(publisher.get_logger_name())
 
         event_handlers = []
         if self.deadline:
-            event_handlers.append(QoSEventHandler(
+            event_handlers.append(EventHandler(
                 callback_group=callback_group,
                 callback=self.deadline,
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED,
                 parent_impl=publisher))
 
         if self.liveliness:
-            event_handlers.append(QoSEventHandler(
+            event_handlers.append(EventHandler(
                 callback_group=callback_group,
                 callback=self.liveliness,
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST,
@@ -274,7 +284,7 @@ class PublisherEventCallbacks:
             incompatible_qos_callback = _default_incompatible_qos_callback
         try:
             if incompatible_qos_callback is not None:
-                event_handlers.append(QoSEventHandler(
+                event_handlers.append(EventHandler(
                     callback_group=callback_group,
                     callback=incompatible_qos_callback,
                     event_type=QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS,
