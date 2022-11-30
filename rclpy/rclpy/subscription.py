@@ -18,10 +18,10 @@ from typing import Callable
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.event_handler import EventHandler
+from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.qos_event import EventHandler
-from rclpy.qos_event import SubscriptionEventCallbacks
 
 
 # For documentation only

@@ -16,10 +16,10 @@ from typing import TypeVar, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.duration import Duration
+from rclpy.event_handler import EventHandler
+from rclpy.event_handler import PublisherEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.qos_event import PublisherEventCallbacks
-from rclpy.qos_event import EventHandler
 
 MsgType = TypeVar('MsgType')
 
