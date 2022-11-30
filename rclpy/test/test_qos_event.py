@@ -60,7 +60,7 @@ class TestQoSEvent(unittest.TestCase):
         liveliness_callback = Mock()
         deadline_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 1
+        expected_num_event_handlers = 2
 
         # No arg
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
@@ -93,7 +93,7 @@ class TestQoSEvent(unittest.TestCase):
         callbacks.incompatible_qos = incompatible_qos_callback
         publisher = self.node.create_publisher(
             EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), 3)
+        self.assertEqual(len(publisher.event_handlers), 4)
         self.node.destroy_publisher(publisher)
 
     def test_subscription_constructor(self):
@@ -102,7 +102,7 @@ class TestQoSEvent(unittest.TestCase):
         deadline_callback = Mock()
         message_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 1
+        expected_num_event_handlers = 2
 
         # No arg
         subscription = self.node.create_subscription(
@@ -136,7 +136,7 @@ class TestQoSEvent(unittest.TestCase):
         callbacks.incompatible_qos = incompatible_qos_callback
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), 3)
+        self.assertEqual(len(subscription.event_handlers), 4)
         self.node.destroy_subscription(subscription)
 
     def test_default_incompatible_qos_callbacks(self):
