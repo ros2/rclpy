@@ -171,31 +171,28 @@ class SubscriptionEventCallbacks:
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED,
                 parent_impl=subscription))
 
+        incompatible_qos_callback = None
         if self.incompatible_qos:
-            event_handlers.append(QoSEventHandler(
-                callback_group=callback_group,
-                callback=self.incompatible_qos,
-                event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS,
-                parent_impl=subscription))
+            incompatible_qos_callback = self.incompatible_qos
         elif self.use_default_callbacks:
             # Register default callback when not specified
-            try:
-                def _default_incompatible_qos_callback(event):
-                    policy_name = qos_policy_name_from_kind(event.last_policy_kind)
-                    logger.warn(
-                        "New publisher discovered on topic '{}', offering incompatible QoS. "
-                        'No messages will be received from it. '
-                        'Last incompatible policy: {}'.format(topic_name, policy_name))
-
+            def _default_incompatible_qos_callback(event):
+                policy_name = qos_policy_name_from_kind(event.last_policy_kind)
+                logger.warn(
+                    "New publisher discovered on topic '{}', offering incompatible QoS. "
+                    'No messages will be received from it. '
+                    'Last incompatible policy: {}'.format(topic_name, policy_name))
+            incompatible_qos_callback = _default_incompatible_qos_callback
+        try:
+            if incompatible_qos_callback is not None:
                 event_type = QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS
                 event_handlers.append(QoSEventHandler(
                     callback_group=callback_group,
-                    callback=_default_incompatible_qos_callback,
+                    callback=incompatible_qos_callback,
                     event_type=event_type,
                     parent_impl=subscription))
-
-            except UnsupportedEventTypeError:
-                pass
+        except UnsupportedEventTypeError:
+            pass
 
         if self.liveliness:
             event_handlers.append(QoSEventHandler(
@@ -263,29 +260,27 @@ class PublisherEventCallbacks:
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST,
                 parent_impl=publisher))
 
+        incompatible_qos_callback = None
         if self.incompatible_qos:
-            event_handlers.append(QoSEventHandler(
-                callback_group=callback_group,
-                callback=self.incompatible_qos,
-                event_type=QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS,
-                parent_impl=publisher))
+            incompatible_qos_callback = self.incompatible_qos
         elif self.use_default_callbacks:
             # Register default callback when not specified
-            try:
-                def _default_incompatible_qos_callback(event):
-                    policy_name = qos_policy_name_from_kind(event.last_policy_kind)
-                    logger.warn(
-                        "New subscription discovered on topic '{}', requesting incompatible QoS. "
-                        'No messages will be sent to it. '
-                        'Last incompatible policy: {}'.format(topic_name, policy_name))
-
+            def _default_incompatible_qos_callback(event):
+                policy_name = qos_policy_name_from_kind(event.last_policy_kind)
+                logger.warn(
+                    "New subscription discovered on topic '{}', requesting incompatible QoS. "
+                    'No messages will be sent to it. '
+                    'Last incompatible policy: {}'.format(topic_name, policy_name))
+            incompatible_qos_callback = _default_incompatible_qos_callback
+        try:
+            if incompatible_qos_callback is not None:
                 event_handlers.append(QoSEventHandler(
                     callback_group=callback_group,
-                    callback=_default_incompatible_qos_callback,
+                    callback=incompatible_qos_callback,
                     event_type=QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS,
                     parent_impl=publisher))
 
-            except UnsupportedEventTypeError:
-                pass
+        except UnsupportedEventTypeError:
+            pass
 
         return event_handlers
