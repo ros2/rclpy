@@ -22,8 +22,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "event_handle.hpp"
 #include "exceptions.hpp"
-#include "qos_event.hpp"
 
 namespace rclpy
 {

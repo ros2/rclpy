@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RCLPY__QOS_EVENT_HPP_
-#define RCLPY__QOS_EVENT_HPP_
+#ifndef RCLPY__EVENT_HANDLE_HPP_
+#define RCLPY__EVENT_HANDLE_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -72,7 +72,7 @@ public:
    * Raises TypeError if arguments are not of the correct types
    * Raises RCLError if taking event data failed in rcl
    *
-   * \return Event data as an instance of a suitable rclpy.qos_event type, or None
+   * \return Event data as an instance of a suitable rclpy.event_handle type, or None
    *   if no event was taken.
    */
   py::object
@@ -103,4 +103,4 @@ void
 define_event_handle(py::module module);
 }  // namespace rclpy
 
-#endif  // RCLPY__QOS_EVENT_HPP_
+#endif  // RCLPY__EVENT_HANDLE_HPP_
