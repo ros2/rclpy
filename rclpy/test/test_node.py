@@ -83,7 +83,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(self.node.get_clock().clock_type, ClockType.ROS_TIME)
 
     def test_create_publisher(self):
-        self.node.create_publisher(BasicTypes, 'chatter', 0)
         self.node.create_publisher(BasicTypes, 'chatter', 1)
         self.node.create_publisher(BasicTypes, 'chatter', qos_profile_sensor_data)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
@@ -98,7 +97,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_publisher(BasicTypes, 'chatter', 'foo')
 
     def test_create_subscription(self):
-        self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 0)
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
         self.node.create_subscription(
             BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_sensor_data)
@@ -275,7 +273,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         # Add a subscription
         qos_profile2 = QoSProfile(
-            depth=0,
+            depth=1,
             history=QoSHistoryPolicy.KEEP_LAST,
             deadline=Duration(seconds=15, nanoseconds=1678),
             lifespan=Duration(seconds=29, nanoseconds=2345),

@@ -164,6 +164,12 @@ class QoSProfile:
     @depth.setter
     def depth(self, value):
         assert isinstance(value, int)
+
+        if self.history == QoSHistoryPolicy.KEEP_LAST and value == 0:
+            warnings.warn(
+                "A zero depth with KEEP_LAST doesn't make sense; no data could be stored. "
+                'This will be interpreted as SYSTEM_DEFAULT')
+
         self._depth = value
 
     @property
