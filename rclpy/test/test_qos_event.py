@@ -192,7 +192,7 @@ class TestQoSEvent(unittest.TestCase):
 
     def _create_event_handle(self, parent_entity, event_type):
         with parent_entity.handle:
-            event = _rclpy.QoSEvent(parent_entity.handle, event_type)
+            event = _rclpy.EventHandle(parent_entity.handle, event_type)
         self.assertIsNotNone(event)
         return event
 

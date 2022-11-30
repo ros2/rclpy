@@ -216,7 +216,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Deserialize a ROS message.");
 
   rclpy::define_node(m);
-  rclpy::define_qos_event(m);
+  rclpy::define_event_handle(m);
 
   m.def(
     "rclpy_get_rmw_implementation_identifier",

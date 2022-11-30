@@ -78,7 +78,7 @@ class EventHandler(Waitable):
         self.callback = callback
 
         with parent_impl:
-            self.__event = _rclpy.QoSEvent(parent_impl, event_type)
+            self.__event = _rclpy.EventHandle(parent_impl, event_type)
 
         self._ready_to_take_data = False
         self._event_index = None

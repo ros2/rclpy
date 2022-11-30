@@ -33,7 +33,7 @@ namespace rclpy
 /*
  * This class will create an event handle for the given subscription.
  */
-class QoSEvent : public Destroyable, public std::enable_shared_from_this<QoSEvent>
+class EventHandle : public Destroyable, public std::enable_shared_from_this<EventHandle>
 {
 public:
   /// Create a subscription event
@@ -46,7 +46,7 @@ public:
    * \param[in] subscription Subscription wrapping the underlying ``rcl_subscription_t`` object.
    * \param[in] event_type Type of event to create
    */
-  QoSEvent(rclpy::Subscription & subscriber, rcl_subscription_event_type_t event_type);
+  EventHandle(rclpy::Subscription & subscriber, rcl_subscription_event_type_t event_type);
 
   /// Create a publisher event
   /**
@@ -60,9 +60,9 @@ public:
    * \param[in] publisher Publisher wrapping the underlying ``rcl_publisher_t`` object.
    * \param[in] event_type Type of event to create
    */
-  QoSEvent(rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type);
+  EventHandle(rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type);
 
-  ~QoSEvent() = default;
+  ~EventHandle() = default;
 
   /// Get pending data from a ready QoS event.
   /**
@@ -95,12 +95,12 @@ private:
   std::shared_ptr<rcl_event_t> rcl_event_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::QoSEvent
+/// Define a pybind11 wrapper for an rclpy::EventHandle
 /**
  * \param[in] module a pybind11 module to add the definition to
  */
 void
-define_qos_event(py::module module);
+define_event_handle(py::module module);
 }  // namespace rclpy
 
 #endif  // RCLPY__QOS_EVENT_HPP_
