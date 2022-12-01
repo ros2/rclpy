@@ -35,7 +35,7 @@ struct QoSCheckCompatibleResult
 
   /// Reason for a (possible) incompatibility.
   /**
-   * Set if compatiblity is RMW_QOS_COMPATIBILITY_WARNING or RMW_QOS_COMPATIBILITY_ERROR.
+   * Set if compatibility is RMW_QOS_COMPATIBILITY_WARNING or RMW_QOS_COMPATIBILITY_ERROR.
    * Not set if the QoS profiles are compatible.
    */
   char reason[2048];
@@ -47,13 +47,13 @@ struct QoSCheckCompatibleResult
  * using the QoS policies can communicate with each other.
  *
  * If any policies have value "system default" or "unknown" then it is possible that
- * compatiblity cannot be determined.
+ * compatibility cannot be determined.
  * In this case, the value RMW_QOS_COMPATIBILITY_WARNING is set as part of
  * the returned structure.
  *
  * \param[in] publisher_qos_profile: The QoS profile for a publisher.
  * \param[in] subscription_qos_profile: The QoS profile for a subscription.
- * \return Struct with compatiblity set to RMW_QOS_COMPATIBILITY_OK if the QoS profiles are
+ * \return Struct with compatibility set to RMW_QOS_COMPATIBILITY_OK if the QoS profiles are
  *   compatible, or
  * \return Struct with compatibility set to RMW_QOS_COMPATIBILITY_WARNING if there is a chance
  *   the QoS profiles are not compatible, or
