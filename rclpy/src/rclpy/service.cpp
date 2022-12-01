@@ -59,7 +59,7 @@ Service::Service(
     new rcl_service_t,
     [node](rcl_service_t * service)
     {
-      // Intentionally capture node by copy so shared_ptr can be transfered to copies
+      // Intentionally capture node by copy so shared_ptr can be transferred to copies
       rcl_ret_t ret = rcl_service_fini(service, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame

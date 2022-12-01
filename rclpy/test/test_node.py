@@ -189,11 +189,11 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.node.get_service_names_and_types()
 
     def test_service_names_and_types_by_node(self):
-        # test that it doesnt raise
+        # test that it doesn't raise
         self.node.get_service_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
 
     def test_client_names_and_types_by_node(self):
-        # test that it doesnt raise
+        # test that it doesn't raise
         self.node.get_client_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
 
     def test_topic_names_and_types(self):
@@ -870,7 +870,7 @@ class TestNode(unittest.TestCase):
         # Verify that it doesn't exist.
         self.assertFalse(self.node.has_parameter('foo'))
 
-        # Declare parameter, verify existance, undeclare, and verify again.
+        # Declare parameter, verify existence, undeclare, and verify again.
         self.node.declare_parameter(
             'foo',
             'hello',
