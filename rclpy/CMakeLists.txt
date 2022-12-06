@@ -176,6 +176,7 @@ if(BUILD_TESTING)
       test/test_node.py
       test/test_parameter.py
       test/test_parameter_client.py
+      test/test_parameter_service.py
       test/test_publisher.py
       test/test_qos.py
       test/test_qos_event.py
