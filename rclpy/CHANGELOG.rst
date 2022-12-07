@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.9.3 (2022-12-06)
+------------------
+* remove feedback callback when the goal has been completed. (`#932 <https://github.com/ros2/rclpy/issues/932>`_)
+* Waitable should check callback_group if it can be executed. (`#1014 <https://github.com/ros2/rclpy/issues/1014>`_)
+* support wildcard matching for params file (`#1003 <https://github.com/ros2/rclpy/issues/1003>`_)
+* Contributors: Chen Lihui, Tomoya Fujita
+
 1.9.2 (2022-06-30)
 ------------------
 * Bugfix/duration to msg precision (`#876 <https://github.com/ros2/rclpy/issues/876>`_) (`#916 <https://github.com/ros2/rclpy/issues/916>`_)
