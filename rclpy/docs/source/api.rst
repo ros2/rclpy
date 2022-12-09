@@ -5,6 +5,7 @@ API
    :maxdepth: 2
    :caption: Contents:
 
+   api/clock
    api/init_shutdown
    api/node
    api/topics

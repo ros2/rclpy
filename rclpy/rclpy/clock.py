@@ -14,6 +14,7 @@
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+from .context import Context
 from .duration import Duration
 from .exceptions import NotInitializedException
 from .time import Time
@@ -30,14 +31,14 @@ class JumpThreshold:
         """
         Initialize an instance of JumpThreshold.
 
-        :param min_forward: Minimum jump forwards to be considered exceeded, or None.
-            The min_forward threshold is enabled only when given a positive Duration.
+        :param min_forward: Minimum jump forwards to be considered exceeded, or ``None``.
+            The ``min_forward`` threshold is enabled only when given a positive duration.
             The duration must be positive, and not zero.
         :param min_backward: Negative duration indicating minimum jump backwards to be considered
-                             exceeded, or None.
-            The min_backward threshold enabled only when given a negative Duration.
+            exceeded, or ``None``.
+            The ``min_backward`` threshold is enabled only when given a negative duration.
             The duration must be negative, and not zero.
-        :param on_clock_change: True to make a callback happen when ROS_TIME is activated
+        :param on_clock_change: True to make a callback happen when ROS time is activated
                                 or deactivated.
         """
         if min_forward is not None and min_forward.nanoseconds <= 0:
@@ -63,24 +64,26 @@ class TimeJump:
         self._delta = delta
 
     @property
-    def clock_change(self):
+    def clock_change(self) -> ClockChange:
         return self._clock_change
 
     @property
-    def delta(self):
+    def delta(self) -> Duration:
         return self._delta
 
 
 class JumpHandle:
 
-    def __init__(self, *, clock, threshold, pre_callback, post_callback):
+    def __init__(self, *, clock, threshold: JumpThreshold, pre_callback, post_callback):
         """
         Register a clock jump callback.
 
         :param clock: Clock that time jump callback is registered to
-        :param pre_callback: Callback to be called before new time is set.
-        :param post_callback: Callback to be called after new time is set, accepting a dictionary
-            with keys "clock_change" and "delta".
+        :param threshold: Criteria for activating time jump.
+        :param pre_callback: Callback to be called before new time is set. The callback
+            must take no arguments.
+        :param post_callback: Callback to be called after new time is set. The callback
+            must accept a single argument that is a ``TimeJump``.
         """
         if pre_callback is None and post_callback is None:
             raise ValueError('One of pre_callback or post_callback must be callable')
@@ -131,32 +134,42 @@ class Clock:
         return self
 
     @property
-    def clock_type(self):
+    def clock_type(self) -> ClockType:
         return self._clock_type
 
     @property
     def handle(self):
+        """
+        Return the internal instance of ``rclpy::Clock``.
+
+        This should not be used outside of ``rclpy``.
+        """
         return self.__clock
 
     def __repr__(self):
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
     def now(self) -> Time:
+        """Return the current time of this clock."""
         with self.handle:
             rcl_time = self.__clock.get_now()
         return Time(nanoseconds=rcl_time.nanoseconds, clock_type=self.clock_type)
 
-    def create_jump_callback(self, threshold, *, pre_callback=None, post_callback=None):
+    def create_jump_callback(
+            self, threshold: JumpThreshold, *,
+            pre_callback=None, post_callback=None) -> JumpHandle:
         """
         Create callback handler for clock time jumps.
 
-        The callbacks must remain valid as long as the returned JumpHandler is valid.
+        The callbacks must remain valid as long as the returned ``JumpHandler`` is valid.
         A callback should execute as quick as possible and must not block when called.
         If a callback raises then no time jump callbacks added after it will be called.
 
         :param threshold: Criteria for activating time jump.
-        :param pre_callback: Callback to be called before new time is set.
-        :param post_callback: Callback to be called after new time is set accepting
+        :param pre_callback: Callback to be called before new time is set. The callback
+            must take no arguments.
+        :param post_callback: Callback to be called after new time is set. The callback
+            must accept a single argument that is a ``TimeJump``.
         :rtype: :class:`rclpy.clock.JumpHandler`
         """
         if post_callback is not None and callable(post_callback):
@@ -174,21 +187,21 @@ class Clock:
             clock=self, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback)
 
-    def sleep_until(self, until: Time, context=None) -> bool:
+    def sleep_until(self, until: Time, context: Context = None) -> bool:
         """
-        Sleep until a Time on this Clock is reached.
+        Sleep until a specific time on this Clock is reached.
 
-        When using a ROSClock, this may sleep forever if the TimeSource is misconfigured and the
-        context is never shut down.
+        When using a ``ROSClock``, this may sleep forever if the ``TimeSource`` is misconfigured
+        and the context is never shut down.
         ROS time being activated or deactivated causes this function to cease sleeping and return
-        False.
+        ``False``.
 
         :param until: Time at which this function should stop sleeping.
-        :param context: Context which when shut down will cause this sleep to wake early.
-            If context is None, then the default context is used.
-        :return: True if until was reached, or False if it woke for another reason.
-        :raises ValueError: until is specified for a different type of clock than this one.
-        :raises NotInitializedException: context has not been initialized or is shutdown.
+        :param context: ``Context`` which when shut down will cause this sleep to wake early.
+            If context is ``None``, then the default context is used.
+        :return: ``True`` if ``until`` was reached, or ``False`` if it woke for another reason.
+        :raises ValueError: if ``until`` is specified for a different type of clock than this one.
+        :raises NotInitializedException: if ``context`` has not been initialized or is shutdown.
         """
         if context is None:
             context = get_default_context()
@@ -247,15 +260,16 @@ class Clock:
             clock.sleep_until(clock.now() + rel_time, context)
 
 
-        When using a ROSClock, this may sleep forever if the TimeSource is misconfigured and the
-        context is never shut down.
+        When using a ``ROSClock``, this may sleep forever if the ``TimeSource`` is misconfigured
+        and the context is never shut down.
         ROS time being activated or deactivated causes this function to cease sleeping and return
         False.
 
         :param rel_time: Duration of time to sleep for.
         :param context: Context which when shut down will cause this sleep to wake early.
-            If context is None, then the default context is used.
-        :return: True if the full duration was slept, or False if it woke for another reason.
+            If context is ``None``, then the default context is used.
+        :return: ``True`` if the full duration was slept, or ``False`` if it woke for another
+            reason.
         :raises NotInitializedException: context has not been initialized or is shutdown.
         """
         return self.sleep_until(self.now() + rel_time, context)
@@ -267,7 +281,8 @@ class ROSClock(Clock):
         return super().__new__(Clock, clock_type=ClockType.ROS_TIME)
 
     @property
-    def ros_time_is_active(self):
+    def ros_time_is_active(self) -> bool:
+        """Return ``True`` if ROS time is currently active."""
         with self.handle:
             return self.handle.get_ros_time_override_is_enabled()
 
@@ -277,6 +292,7 @@ class ROSClock(Clock):
             self.handle.set_ros_time_override_is_enabled(enabled)
 
     def set_ros_time_override(self, time: Time):
+        """Set the next time the ROS clock will report when ROS time is active."""
         if not isinstance(time, Time):
             raise TypeError(
                 'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
