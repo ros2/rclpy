@@ -2150,10 +2150,10 @@ class Node:
         with self.handle:
             return self._count_publishers_or_subscribers(
                 topic_name, self.handle.get_count_subscribers)
-    
+
     def _count_clients_or_servers(self, service_name, func):
         fq_service_name = expand_topic_name(service_name, self.get_name(), self.get_namespace())
-        validate_full_topic_name(fq_service_name,is_service=True)
+        validate_full_topic_name(fq_service_name, is_service=True)
         with self.handle:
             return func(fq_service_name)
 
@@ -2171,7 +2171,7 @@ class Node:
         with self.handle:
             return self._count_clients_or_servers(
                 service_name, self.handle.get_count_clients)
-    
+
     def count_services(self, service_name: str) -> int:
         """
         Return the number of servers on a given service.

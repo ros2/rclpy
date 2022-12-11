@@ -348,19 +348,19 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(0, self.node.count_clients(fq_service_name))
         self.assertEqual(0, self.node.count_services(fq_service_name))
 
-        short_srv_clients = self.node.create_client(GetParameters, short_service_name)
+        self.node.create_client(GetParameters, short_service_name)
         self.assertEqual(1, self.node.count_clients(short_service_name))
         self.assertEqual(1, self.node.count_clients(fq_service_name))
         self.assertEqual(0, self.node.count_services(short_service_name))
         self.assertEqual(0, self.node.count_services(fq_service_name))
-        
+
         self.node.create_service(GetParameters, short_service_name, lambda req: None)
         self.assertEqual(1, self.node.count_clients(short_service_name))
         self.assertEqual(1, self.node.count_clients(fq_service_name))
         self.assertEqual(1, self.node.count_services(short_service_name))
         self.assertEqual(1, self.node.count_services(fq_service_name))
 
-        short_srv_clients = self.node.create_client(GetParameters, short_service_name)
+        self.node.create_client(GetParameters, short_service_name)
         self.assertEqual(2, self.node.count_clients(short_service_name))
         self.assertEqual(2, self.node.count_clients(fq_service_name))
         self.assertEqual(1, self.node.count_services(short_service_name))
@@ -375,7 +375,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.count_clients('42')
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.count_services('42')
-        
 
     def test_node_logger(self):
         node_logger = self.node.get_logger()
