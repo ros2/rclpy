@@ -15,14 +15,21 @@
 import pytest
 
 import rclpy
+from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
+from rclpy.qos import QoSDurabilityPolicy
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSLivelinessPolicy
 from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
 from rclpy.qos_overriding_options import _declare_qos_parameters
+from rclpy.qos_overriding_options import _get_qos_policy_parameter
 from rclpy.qos_overriding_options import InvalidQosOverridesError
 from rclpy.qos_overriding_options import QosCallbackResult
 from rclpy.qos_overriding_options import QoSOverridingOptions
+from rclpy.qos_overriding_options import QoSPolicyKind
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +37,35 @@ def init_shutdown():
     rclpy.init()
     yield
     rclpy.shutdown()
+
+
+def test_get_qos_policy_parameter():
+    qos = QoSProfile(
+        history=QoSHistoryPolicy.KEEP_LAST,
+        depth=10,
+        reliability=QoSReliabilityPolicy.RELIABLE,
+        durability=QoSDurabilityPolicy.VOLATILE,
+        lifespan=Duration(nanoseconds=1e3),
+        deadline=Duration(nanoseconds=1e6),
+        liveliness=QoSLivelinessPolicy.SYSTEM_DEFAULT,
+        liveliness_lease_duration=Duration(nanoseconds=1e9)
+        )
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.HISTORY)
+    assert value == 'keep_last'
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.DEPTH)
+    assert value == qos.depth
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.RELIABILITY)
+    assert value == 'reliable'
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.DURABILITY)
+    assert value == 'volatile'
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.LIFESPAN)
+    assert value == qos.lifespan.nanoseconds
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.DEADLINE)
+    assert value == qos.deadline.nanoseconds
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.LIVELINESS)
+    assert value == 'system_default'
+    value = _get_qos_policy_parameter(qos, QoSPolicyKind.LIVELINESS_LEASE_DURATION)
+    assert value == qos.liveliness_lease_duration.nanoseconds
 
 
 def test_declare_qos_parameters():
