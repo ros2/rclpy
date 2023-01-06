@@ -366,6 +366,12 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(1, self.node.count_services(short_service_name))
         self.assertEqual(1, self.node.count_services(fq_service_name))
 
+        self.node.create_service(GetParameters, short_service_name, lambda req: None)
+        self.assertEqual(2, self.node.count_clients(short_service_name))
+        self.assertEqual(2, self.node.count_clients(fq_service_name))
+        self.assertEqual(2, self.node.count_services(short_service_name))
+        self.assertEqual(2, self.node.count_services(fq_service_name))
+
         # error cases
         with self.assertRaises(TypeError):
             self.node.count_clients(1)
