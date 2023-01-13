@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.7 (2023-01-13)
+------------------
+* Fix `test_publisher` linter for pydocstyle 6.2.2 (backport `#1063 <https://github.com/ros2/rclpy/issues/1063>`_) (`#1066 <https://github.com/ros2/rclpy/issues/1066>`_)
+* Contributors: mergify[bot]
+
 3.3.6 (2023-01-10)
 ------------------
 * decorator should not be callable. (`#1050 <https://github.com/ros2/rclpy/issues/1050>`_) (`#1051 <https://github.com/ros2/rclpy/issues/1051>`_)
