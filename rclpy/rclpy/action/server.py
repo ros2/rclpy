@@ -405,6 +405,7 @@ class ActionServer(Waitable):
     async def _execute_expire_goals(self, expired_goals):
         for goal in expired_goals:
             goal_uuid = bytes(goal.goal_id.uuid)
+            self._goal_handles[goal_uuid].destroy()
             del self._goal_handles[goal_uuid]
 
     def _send_result_response(self, request_header, future):
