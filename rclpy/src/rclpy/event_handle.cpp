@@ -113,7 +113,7 @@ typedef union event_callback_data {
   rmw_liveliness_lost_status_t liveliness_lost;
   rmw_offered_qos_incompatible_event_status_t offered_incompatible_qos;
 
-  rmw_inconsistent_topic_status_t inconsistent_topic;
+  rmw_incompatible_type_status_t incompatible_type;
 } event_callback_data_t;
 
 py::object
@@ -142,8 +142,8 @@ EventHandle::take_event()
         return py::cast(data.message_lost);
       case RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS:
         return py::cast(data.requested_incompatible_qos);
-      case RCL_SUBSCRIPTION_INCONSISTENT_TOPIC:
-        return py::cast(data.inconsistent_topic);
+      case RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE:
+        return py::cast(data.incompatible_type);
       default:
         // suggests a misalignment between C and Python interfaces
         throw py::value_error("event type for subscriptions not understood");
@@ -156,8 +156,8 @@ EventHandle::take_event()
         return py::cast(data.liveliness_lost);
       case RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS:
         return py::cast(data.offered_incompatible_qos);
-      case RCL_PUBLISHER_INCONSISTENT_TOPIC:
-        return py::cast(data.inconsistent_topic);
+      case RCL_PUBLISHER_INCOMPATIBLE_TYPE:
+        return py::cast(data.incompatible_type);
       default:
         // suggests a misalignment between C and Python interfaces
         throw py::value_error("event type for publishers not understood");
@@ -186,13 +186,13 @@ define_event_handle(py::module module)
   .value("RCL_SUBSCRIPTION_LIVELINESS_CHANGED", RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
   .value("RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS", RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
   .value("RCL_SUBSCRIPTION_MESSAGE_LOST", RCL_SUBSCRIPTION_MESSAGE_LOST)
-  .value("RCL_SUBSCRIPTION_INCONSISTENT_TOPIC", RCL_SUBSCRIPTION_INCONSISTENT_TOPIC);
+  .value("RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE", RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE);
 
   py::enum_<rcl_publisher_event_type_t>(module, "rcl_publisher_event_type_t")
   .value("RCL_PUBLISHER_OFFERED_DEADLINE_MISSED", RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
   .value("RCL_PUBLISHER_LIVELINESS_LOST", RCL_PUBLISHER_LIVELINESS_LOST)
   .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
-  .value("RCL_PUBLISHER_INCONSISTENT_TOPIC", RCL_PUBLISHER_INCONSISTENT_TOPIC);
+  .value("RCL_PUBLISHER_INCOMPATIBLE_TYPE", RCL_PUBLISHER_INCOMPATIBLE_TYPE);
 
   py::class_<rmw_requested_deadline_missed_status_t>(
     module, "rmw_requested_deadline_missed_status_t")
@@ -245,8 +245,8 @@ define_event_handle(py::module module)
     "RMW_QOS_POLICY_AVOID_ROS_NAMESPACE_CONVENTIONS",
     RMW_QOS_POLICY_AVOID_ROS_NAMESPACE_CONVENTIONS);
 
-  py::class_<rmw_inconsistent_topic_status_t>(module, "rmw_inconsistent_topic_status_t")
+  py::class_<rmw_incompatible_type_status_t>(module, "rmw_incompatible_type_status_t")
   .def(py::init<>())
-  .def_readonly("total_count_change", &rmw_inconsistent_topic_status_t::total_count_change);
+  .def_readonly("total_count_change", &rmw_incompatible_type_status_t::total_count_change);
 }
 }  // namespace rclpy

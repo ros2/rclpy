@@ -56,8 +56,8 @@ Mirrors rmw_offered_incompatible_qos_status_t from rmw/types.h
 """
 QoSOfferedIncompatibleQoSInfo = QoSRequestedIncompatibleQoSInfo
 
-# Payload type for Inconsistent Topic callback.
-InconsistentTopicInfo = _rclpy.rmw_inconsistent_topic_status_t
+# Payload type for Incompatible Type callback.
+IncompatibleTypeInfo = _rclpy.rmw_incompatible_type_status_t
 
 
 """Raised when registering a callback for an event type that is not supported."""
@@ -153,7 +153,7 @@ class SubscriptionEventCallbacks:
         incompatible_qos: Optional[Callable[[QoSRequestedIncompatibleQoSInfo], None]] = None,
         liveliness: Optional[Callable[[QoSLivelinessChangedInfo], None]] = None,
         message_lost: Optional[Callable[[QoSMessageLostInfo], None]] = None,
-        inconsistent_topic: Optional[Callable[[InconsistentTopicInfo], None]] = None,
+        incompatible_type: Optional[Callable[[IncompatibleTypeInfo], None]] = None,
         use_default_callbacks: bool = True,
     ) -> None:
         """
@@ -166,7 +166,7 @@ class SubscriptionEventCallbacks:
         :param liveliness: A user-defined callback that is called when the Liveliness of
             a Publisher on subscribed topic changes.
         :param message_lost: A user-defined callback that is called when a messages is lost.
-        :param inconsistent_topic: A user-defined callback that is called when a topic type
+        :param incompatible_type: A user-defined callback that is called when a topic type
             doesn't match.
         :param use_default_callbacks: Whether or not to use default callbacks when the user
             doesn't supply one
@@ -175,7 +175,7 @@ class SubscriptionEventCallbacks:
         self.incompatible_qos = incompatible_qos
         self.liveliness = liveliness
         self.message_lost = message_lost
-        self.inconsistent_topic = inconsistent_topic
+        self.incompatible_type = incompatible_type
         self.use_default_callbacks = use_default_callbacks
 
     def create_event_handlers(
@@ -229,22 +229,22 @@ class SubscriptionEventCallbacks:
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_MESSAGE_LOST,
                 parent_impl=subscription))
 
-        inconsistent_topic_callback = None
-        if self.inconsistent_topic:
-            inconsistent_topic_callback = self.inconsistent_topic
+        incompatible_type_callback = None
+        if self.incompatible_type:
+            incompatible_type_callback = self.incompatible_type
         elif self.use_default_callbacks:
             # Register default callback when not specified
-            def _default_inconsistent_topic_callback(event):
+            def _default_incompatible_type_callback(event):
                 logger.warn(
-                    "Inconsistent topic on topic '{}', no messages will be sent to it."
+                    "Incompatible type on topic '{}', no messages will be sent to it."
                     .format(topic_name))
-            inconsistent_topic_callback = _default_inconsistent_topic_callback
+            incompatible_type_callback = _default_incompatible_type_callback
         try:
-            if inconsistent_topic_callback is not None:
+            if incompatible_type_callback is not None:
                 event_handlers.append(EventHandler(
                     callback_group=callback_group,
-                    callback=inconsistent_topic_callback,
-                    event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_INCONSISTENT_TOPIC,
+                    callback=incompatible_type_callback,
+                    event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE,
                     parent_impl=subscription))
 
         except UnsupportedEventTypeError:
@@ -262,7 +262,7 @@ class PublisherEventCallbacks:
         deadline: Optional[Callable[[QoSOfferedDeadlineMissedInfo], None]] = None,
         liveliness: Optional[Callable[[QoSLivelinessLostInfo], None]] = None,
         incompatible_qos: Optional[Callable[[QoSRequestedIncompatibleQoSInfo], None]] = None,
-        inconsistent_topic: Optional[Callable[[InconsistentTopicInfo], None]] = None,
+        incompatible_type: Optional[Callable[[IncompatibleTypeInfo], None]] = None,
         use_default_callbacks: bool = True,
     ) -> None:
         """
@@ -274,7 +274,7 @@ class PublisherEventCallbacks:
             fails to signal its Liveliness and is reported as not-alive.
         :param incompatible_qos: A user-defined callback that is called when a Subscription
             with incompatible QoS policies is discovered on subscribed topic.
-        :param inconsistent_topic: A user-defined callback that is called when a topic type
+        :param incompatible_type: A user-defined callback that is called when a topic type
             doesn't match.
         :param use_default_callbacks: Whether or not to use default callbacks when the user
             doesn't supply one
@@ -282,7 +282,7 @@ class PublisherEventCallbacks:
         self.deadline = deadline
         self.liveliness = liveliness
         self.incompatible_qos = incompatible_qos
-        self.inconsistent_topic = inconsistent_topic
+        self.incompatible_type = incompatible_type
         self.use_default_callbacks = use_default_callbacks
 
     def create_event_handlers(
@@ -329,22 +329,22 @@ class PublisherEventCallbacks:
         except UnsupportedEventTypeError:
             pass
 
-        inconsistent_topic_callback = None
-        if self.inconsistent_topic:
-            inconsistent_topic_callback = self.inconsistent_topic
+        incompatible_type_callback = None
+        if self.incompatible_type:
+            incompatible_type_callback = self.incompatible_type
         elif self.use_default_callbacks:
             # Register default callback when not specified
-            def _default_inconsistent_topic_callback(event):
+            def _default_incompatible_type_callback(event):
                 logger.warn(
-                    "Inconsistent topic on topic '{}', no messages will be sent to it."
+                    "Incompatible type on topic '{}', no messages will be sent to it."
                     .format(topic_name))
-            inconsistent_topic_callback = _default_inconsistent_topic_callback
+            incompatible_type_callback = _default_incompatible_type_callback
         try:
-            if inconsistent_topic_callback is not None:
+            if incompatible_type_callback is not None:
                 event_handlers.append(EventHandler(
                     callback_group=callback_group,
-                    callback=inconsistent_topic_callback,
-                    event_type=QoSPublisherEventType.RCL_PUBLISHER_INCONSISTENT_TOPIC,
+                    callback=incompatible_type_callback,
+                    event_type=QoSPublisherEventType.RCL_PUBLISHER_INCOMPATIBLE_TYPE,
                     parent_impl=publisher))
 
         except UnsupportedEventTypeError:
