@@ -48,9 +48,11 @@
   <test_depend>test_msgs</test_depend>
 
   <doc_depend>python3-sphinx</doc_depend>
+  <doc_depend>python3-sphinx-autodoc-typehints</doc_depend>
   <doc_depend>python3-sphinx-rtd-theme</doc_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
+    <rosdoc2>docs/rosdoc2.yaml</rosdoc2>
   </export>
 </package>

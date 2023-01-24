@@ -88,6 +88,7 @@ exclude_patterns = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+breathe_projects = []
 
 # -- Options for HTML output -------------------------------------------------
 
