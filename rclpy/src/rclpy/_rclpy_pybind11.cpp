@@ -46,6 +46,7 @@
 #include "service_info.hpp"
 #include "signal_handler.hpp"
 #include "subscription.hpp"
+#include "subscription_options.hpp"
 #include "time_point.hpp"
 #include "timer.hpp"
 #include "utils.hpp"
@@ -144,6 +145,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_guard_condition(m);
   rclpy::define_timer(m);
   rclpy::define_subscription(m);
+  rclpy::define_subscription_options(m);
   rclpy::define_time_point(m);
   rclpy::define_clock(m);
   rclpy::define_waitset(m);
