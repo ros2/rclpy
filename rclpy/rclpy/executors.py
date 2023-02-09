@@ -777,13 +777,10 @@ class MultiThreadedExecutor(Executor):
         else:
             self._executor.submit(handler)
             self.futures.append(handler)
-            # check for any exceptions
-            for future in self.futures:
+            for future in self.futures:  # check for any exceptions
                 if future.done():
-                    if future._exception:
-                        self.futures.remove(future)
-                        raise future._exception
                     self.futures.remove(future)
+                    future.result()
 
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
