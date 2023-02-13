@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.8.0 (2023-02-13)
+------------------
 * Force C++17 support on. (`#1076 <https://github.com/ros2/rclpy/issues/1076>`_)
 * Use RCPPUTILS_SCOPE_EXIT to cleanup unparsed_indices_c. (`#1075 <https://github.com/ros2/rclpy/issues/1075>`_)
 * Explicitly link atomic when building with Clang (`#1065 <https://github.com/ros2/rclpy/issues/1065>`_)
