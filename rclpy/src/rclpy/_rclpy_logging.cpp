@@ -21,6 +21,7 @@ namespace py = pybind11;
 #include <rcutils/logging.h>
 
 #include <rcl_logging_interface/rcl_logging_interface.h>
+#include <rcl/logging_rosout.h>
 
 #include <stdexcept>
 #include <string>
@@ -172,6 +173,28 @@ rclpy_logging_get_logging_directory()
   return s_log_dir;
 }
 
+/// Add a subordinate logger based on a logger
+void
+rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublogger_name)
+{
+  rcl_ret_t rcl_ret = rcl_logging_rosout_add_sublogger(logger_name, sublogger_name);
+  if (RCL_RET_OK != rcl_ret && RCL_RET_SUBLOGGER_ALREADY_EXIST != rcl_ret) {
+    rcutils_reset_error();
+    throw std::runtime_error("failed to call rcl_logging_rosout_add_sublogger");
+  }
+}
+
+/// Remove a subordinate logger and cleans up allocated resources
+void
+rclpy_logging_rosout_remove_sublogger(const char * logger_name, const char * sublogger_name)
+{
+  rcl_ret_t rcl_ret = rcl_logging_rosout_remove_sublogger(logger_name, sublogger_name);
+
+  if (RCL_RET_OK != rcl_ret) {
+    rcutils_reset_error();
+  }
+}
+
 namespace rclpy
 {
 void
@@ -193,5 +216,7 @@ define_logging_api(py::module m)
   m.def("rclpy_logging_rcutils_log", &rclpy_logging_rcutils_log);
   m.def("rclpy_logging_severity_level_from_string", &rclpy_logging_severity_level_from_string);
   m.def("rclpy_logging_get_logging_directory", &rclpy_logging_get_logging_directory);
+  m.def("rclpy_logging_rosout_add_sublogger", &rclpy_logging_rosout_add_sublogger);
+  m.def("rclpy_logging_rosout_remove_sublogger", &rclpy_logging_rosout_remove_sublogger);
 }
 }  // namespace rclpy

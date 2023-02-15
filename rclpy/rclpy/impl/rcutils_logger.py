@@ -215,15 +215,30 @@ class RcutilsLogger:
 
     def __init__(self, name=''):
         self.name = name
+        self.logger_sublogger_namepair = None
         self.contexts = {}
+
+    def __del__(self):
+        if self.logger_sublogger_namepair:
+            _rclpy.rclpy_logging_rosout_remove_sublogger(
+                self.logger_sublogger_namepair[0], self.logger_sublogger_namepair[1])
+            self.logger_sublogger_namepair = None
 
     def get_child(self, name):
         if not name:
             raise ValueError('Child logger name must not be empty.')
+
         if self.name:
             # Prepend the name of this logger
-            name = self.name + '.' + name
-        return RcutilsLogger(name=name)
+            _rclpy.rclpy_logging_rosout_add_sublogger(self.name, name)
+            fullname = self.name + '.' + name
+        else:
+            fullname = name
+
+        logger = RcutilsLogger(name=fullname)
+        if self.name:
+            logger.logger_sublogger_namepair = (self.name, name)
+        return logger
 
     def set_level(self, level):
         level = LoggingSeverity(level)
