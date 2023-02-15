@@ -26,6 +26,7 @@ namespace py = pybind11;
 #include <stdexcept>
 #include <string>
 
+#include "logging.hpp"
 #include "logging_api.hpp"
 
 /// Initialize the logging system.
@@ -178,6 +179,7 @@ rclpy_logging_get_logging_directory()
 bool
 rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublogger_name)
 {
+  rclpy::LoggingGuard scoped_logging_guard;
   rcl_ret_t rcl_ret = rcl_logging_rosout_add_sublogger(logger_name, sublogger_name);
   if (RCL_RET_OK != rcl_ret && RCL_RET_SUBLOGGER_ALREADY_EXIST != rcl_ret) {
     rcutils_reset_error();
@@ -191,6 +193,7 @@ rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublog
 void
 rclpy_logging_rosout_remove_sublogger(const char * logger_name, const char * sublogger_name)
 {
+  rclpy::LoggingGuard scoped_logging_guard;
   rcl_ret_t rcl_ret = rcl_logging_rosout_remove_sublogger(logger_name, sublogger_name);
 
   if (RCL_RET_OK != rcl_ret) {
