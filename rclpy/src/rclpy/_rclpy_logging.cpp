@@ -174,7 +174,8 @@ rclpy_logging_get_logging_directory()
 }
 
 /// Add a subordinate logger based on a logger
-void
+/// \return True if add sublogger successfully.
+bool
 rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublogger_name)
 {
   rcl_ret_t rcl_ret = rcl_logging_rosout_add_sublogger(logger_name, sublogger_name);
@@ -182,6 +183,8 @@ rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublog
     rcutils_reset_error();
     throw std::runtime_error("failed to call rcl_logging_rosout_add_sublogger");
   }
+
+  return rcl_ret == RCL_RET_OK ? true : false;
 }
 
 /// Remove a subordinate logger and cleans up allocated resources

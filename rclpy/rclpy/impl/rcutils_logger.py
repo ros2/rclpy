@@ -228,15 +228,16 @@ class RcutilsLogger:
         if not name:
             raise ValueError('Child logger name must not be empty.')
 
+        add_sublogger_flag = False
         if self.name:
             # Prepend the name of this logger
-            _rclpy.rclpy_logging_rosout_add_sublogger(self.name, name)
+            add_sublogger_flag = _rclpy.rclpy_logging_rosout_add_sublogger(self.name, name)
             fullname = self.name + '.' + name
         else:
             fullname = name
 
         logger = RcutilsLogger(name=fullname)
-        if self.name:
+        if self.name and add_sublogger_flag:
             logger.logger_sublogger_namepair = (self.name, name)
         return logger
 
