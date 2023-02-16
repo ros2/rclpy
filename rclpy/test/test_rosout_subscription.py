@@ -88,6 +88,13 @@ class TestRosoutSubscription(unittest.TestCase):
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())
 
+    def test_node_logger_not_exist(self):
+        node = rclpy.create_node('test_extra_node', context=self.context)
+        logger = node.get_logger()
+        node = None
+        with self.assertRaises(RuntimeError):
+            logger.get_child('child')
+
 
 if __name__ == '__main__':
     unittest.main()
