@@ -16,8 +16,8 @@ import unittest
 
 from rcl_interfaces.msg import Log
 import rclpy
-from rclpy.task import Future
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.task import Future
 
 
 class TestRosoutSubscription(unittest.TestCase):
