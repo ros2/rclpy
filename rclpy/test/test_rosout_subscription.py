@@ -14,9 +14,8 @@
 
 import unittest
 
-import rclpy
-
 from rcl_interfaces.msg import Log
+import rclpy
 from rclpy.task import Future
 from rclpy.executors import SingleThreadedExecutor
 
@@ -84,6 +83,33 @@ class TestRosoutSubscription(unittest.TestCase):
     def test_child_hierarchy(self):
         self.rosout_msg_name = 'test_rosout_subscription.child.grandchild'
         logger = self.node.get_logger().get_child('child').get_child('grandchild')
+        logger.info('test')
+        self.executor.spin_until_future_complete(self.fut, 3)
+        self.assertTrue(self.fut.done())
+
+    def test_first_child_removed(self):
+        self.rosout_msg_name = 'test_rosout_subscription.child'
+        logger = self.node.get_logger().get_child('child')
+        logger2 = self.node.get_logger().get_child('child')
+        logger.info('test')
+        self.executor.spin_until_future_complete(self.fut, 3)
+        self.assertTrue(self.fut.done())
+        logger = None
+        logger2.info('test')
+        self.executor.spin_until_future_complete(self.fut, 3)
+        self.assertTrue(self.fut.done())
+
+    def test_logger_parameter(self):
+        self.rosout_msg_name = 'test_rosout_subscription.child'
+        logger = self.node.get_logger().get_child('child')
+
+        def call_logger(logger):
+            logger1 = logger
+            logger1.info('test')
+        call_logger(logger)
+        self.executor.spin_until_future_complete(self.fut, 3)
+        self.assertTrue(self.fut.done())
+
         logger.info('test')
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())

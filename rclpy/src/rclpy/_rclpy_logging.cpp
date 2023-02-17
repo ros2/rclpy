@@ -181,7 +181,7 @@ rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublog
 {
   rclpy::LoggingGuard scoped_logging_guard;
   rcl_ret_t rcl_ret = rcl_logging_rosout_add_sublogger(logger_name, sublogger_name);
-  if (RCL_RET_OK != rcl_ret && RCL_RET_SUBLOGGER_ALREADY_EXIST != rcl_ret) {
+  if (RCL_RET_OK != rcl_ret) {
     rcutils_reset_error();
     throw std::runtime_error("Failed to call rcl_logging_rosout_add_sublogger");
   }
