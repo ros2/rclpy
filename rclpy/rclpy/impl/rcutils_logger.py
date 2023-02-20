@@ -232,7 +232,7 @@ class RcutilsLogger:
         if self.name:
             # Prepend the name of this logger
             add_sublogger_flag = _rclpy.rclpy_logging_rosout_add_sublogger(self.name, name)
-            fullname = self.name + '.' + name
+            fullname = self.name + _rclpy.rclpy_logging_get_separator_string() + name
         else:
             fullname = name
 

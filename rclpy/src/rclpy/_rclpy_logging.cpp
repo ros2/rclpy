@@ -29,6 +29,8 @@ namespace py = pybind11;
 #include "logging.hpp"
 #include "logging_api.hpp"
 
+const char * RCLPY_LOGGING_SEPARATOR_STRING = RCUTILS_LOGGING_SEPARATOR_STRING;
+
 /// Initialize the logging system.
 /**
  * \return None
@@ -214,6 +216,7 @@ define_logging_api(py::module m)
   .value("RCUTILS_LOG_SEVERITY_ERROR", RCUTILS_LOG_SEVERITY_ERROR)
   .value("RCUTILS_LOG_SEVERITY_FATAL", RCUTILS_LOG_SEVERITY_FATAL);
 
+  m.def("rclpy_logging_get_separator_string", []() {return RCUTILS_LOGGING_SEPARATOR_STRING;});
   m.def("rclpy_logging_initialize", &rclpy_logging_initialize);
   m.def("rclpy_logging_shutdown", &rclpy_logging_shutdown);
   m.def("rclpy_logging_set_logger_level", &rclpy_logging_set_logger_level);
