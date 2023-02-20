@@ -29,8 +29,6 @@ namespace py = pybind11;
 #include "logging.hpp"
 #include "logging_api.hpp"
 
-const char * RCLPY_LOGGING_SEPARATOR_STRING = RCUTILS_LOGGING_SEPARATOR_STRING;
-
 /// Initialize the logging system.
 /**
  * \return None
