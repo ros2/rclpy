@@ -38,7 +38,7 @@ Service::destroy()
 }
 
 Service::Service(
-  Node & node, py::object pysrv_type, std::string service_name,
+  Node & node, py::object pysrv_type, const std::string & service_name,
   py::object pyqos_profile)
 : node_(node)
 {
@@ -75,8 +75,7 @@ Service::Service(
   *rcl_service_ = rcl_get_zero_initialized_service();
 
   rcl_ret_t ret = rcl_service_init(
-    rcl_service_.get(), node_.rcl_ptr(), srv_type,
-    service_name.c_str(), &service_ops);
+    rcl_service_.get(), node_.rcl_ptr(), srv_type, service_name.c_str(), &service_ops);
   if (RCL_RET_OK != ret) {
     if (ret == RCL_RET_SERVICE_NAME_INVALID) {
       std::string error_text{"failed to create service due to invalid topic name '"};
@@ -148,7 +147,7 @@ void
 define_service(py::object module)
 {
   py::class_<Service, Destroyable, std::shared_ptr<Service>>(module, "Service")
-  .def(py::init<Node &, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, const std::string &, py::object>())
   .def_property_readonly(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());

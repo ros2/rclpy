@@ -51,7 +51,7 @@ public:
    * \return capsule containing the rcl_service_t
    */
   Service(
-    Node & node, py::object pysrv_type, std::string service_name,
+    Node & node, py::object pysrv_type, const std::string & service_name,
     py::object pyqos_profile);
 
   Service(

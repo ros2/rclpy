@@ -20,6 +20,7 @@
 #include <rcl/client.h>
 
 #include <memory>
+#include <string>
 
 #include "destroyable.hpp"
 #include "node.hpp"
@@ -45,7 +46,7 @@ public:
    * \param[in] service_name The service name
    * \param[in] pyqos rmw_qos_profile_t object for this client
    */
-  Client(Node & node, py::object pysrv_type, const char * service_name, py::object pyqos);
+  Client(Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos);
 
   ~Client() = default;
 
