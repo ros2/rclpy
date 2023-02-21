@@ -18,7 +18,8 @@ import unittest
 
 import rclpy
 import rclpy.executors
-from rclpy.parameter import Parameter
+from rclpy.qos import qos_profile_system_default
+from rclpy.service_introspection import ServiceIntrospectionState
 from service_msgs.msg import ServiceEventInfo
 from test_msgs.srv import BasicTypes
 
@@ -32,7 +33,7 @@ class TestServiceEvents(unittest.TestCase):
 
     def setUp(self):
         self.node = rclpy.create_node(
-            'TestServiceIntrospection', context=self.context, enable_service_introspection=True)
+            'TestServiceIntrospection', context=self.context)
         self.executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
         self.executor.add_node(self.node)
         self.srv = self.node.create_service(BasicTypes, 'test_service', self.srv_callback)
@@ -61,9 +62,12 @@ class TestServiceEvents(unittest.TestCase):
         req.bool_value = False
         req.int64_value = 12345
 
-        self.node.set_parameters([
-            Parameter('publish_service_events', Parameter.Type.STRING, 'metadata'),
-            Parameter('publish_client_events', Parameter.Type.STRING, 'metadata')])
+        self.cli.configure_introspection(self.node.get_clock(),
+                                         qos_profile_system_default,
+                                         ServiceIntrospectionState.METADATA)
+        self.srv.configure_introspection(self.node.get_clock(),
+                                         qos_profile_system_default,
+                                         ServiceIntrospectionState.METADATA)
 
         future = self.cli.call_async(req)
         self.executor.spin_until_future_complete(future, timeout_sec=5.0)
@@ -104,9 +108,12 @@ class TestServiceEvents(unittest.TestCase):
         req.bool_value = False
         req.int64_value = 12345
 
-        self.node.set_parameters([
-            Parameter('publish_service_events', Parameter.Type.STRING, 'contents'),
-            Parameter('publish_client_events', Parameter.Type.STRING, 'contents')])
+        self.cli.configure_introspection(self.node.get_clock(),
+                                         qos_profile_system_default,
+                                         ServiceIntrospectionState.CONTENTS)
+        self.srv.configure_introspection(self.node.get_clock(),
+                                         qos_profile_system_default,
+                                         ServiceIntrospectionState.CONTENTS)
 
         future = self.cli.call_async(req)
         self.executor.spin_until_future_complete(future, timeout_sec=5.0)

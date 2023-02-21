@@ -66,7 +66,6 @@ from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
-from rclpy.qos import qos_profile_system_default
 from rclpy.qos import QoSProfile
 from rclpy.qos_event import PublisherEventCallbacks
 from rclpy.qos_event import SubscriptionEventCallbacks
@@ -127,8 +126,7 @@ class Node:
         start_parameter_services: bool = True,
         parameter_overrides: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_parameters_from_overrides: bool = False,
-        enable_service_introspection: bool = False,
+        automatically_declare_parameters_from_overrides: bool = False
     ) -> None:
         """
         Create a Node.
@@ -152,8 +150,6 @@ class Node:
             This flag affects the behavior of parameter-related operations.
         :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
             will be used to implicitly declare parameters on the node during creation.
-        :param enable_service_introspection: If True, the node will enable introspection of
-            services.
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
@@ -186,8 +182,7 @@ class Node:
                     self._context.handle,
                     cli_args,
                     use_global_arguments,
-                    enable_rosout,
-                    enable_service_introspection
+                    enable_rosout
                 )
             except ValueError:
                 # these will raise more specific errors if the name or namespace is bad
@@ -235,18 +230,6 @@ class Node:
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
-
-        if enable_service_introspection:
-            self.declare_parameters(
-                namespace='',
-                parameters=[
-                    (_rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_PARAMETER,  # noqa E501
-                     'off', ParameterDescriptor()),
-                    (_rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_SERVICE_PARAMETER,  # noqa E501
-                     'off', ParameterDescriptor()),
-                ])
-            self.add_on_set_parameters_callback(self._check_service_introspection_parameters)
-            self.add_post_set_parameters_callback(self._configure_service_introspection)
 
     @property
     def publishers(self) -> Iterator[Publisher]:
@@ -1593,89 +1576,13 @@ class Node:
 
         return subscription
 
-    def _check_service_introspection_parameters(
-        self, parameters: List[Parameter]
-    ) -> SetParametersResult:
-        result = SetParametersResult(successful=True)
-        for param in parameters:
-            if param.name not in (
-                    _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_PARAMETER,  # noqa: E501
-                    _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_SERVICE_PARAMETER):  # noqa: E501
-                continue
-
-            if param.type_ != Parameter.Type.STRING:
-                result.successful = False
-                result.reason = 'Parameter type must be string'
-                break
-
-            if param.value not in ('off', 'metadata', 'contents'):
-                result.successful = False
-                result.reason = "Value must be one of 'off', 'metadata', or 'contents'"
-                break
-
-        return result
-
-    def _configure_service_introspection(self, parameters: List[Parameter]):
-        for param in parameters:
-            if param.name == \
-                    _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_CLIENT_PARAMETER:  # noqa: E501
-
-                value = param.value
-
-                for cli in self.clients:
-                    should_enable_service_events = False
-                    should_enable_contents = False
-                    if value == 'off':
-                        should_enable_service_events = False
-                        should_enable_contents = False
-                    elif value == 'metadata':
-                        should_enable_service_events = True
-                        should_enable_contents = False
-                    elif value == 'contents':
-                        should_enable_service_events = True
-                        should_enable_contents = True
-
-                    _rclpy.service_introspection.configure_client_events(
-                        cli.handle.pointer,
-                        self.handle.pointer,
-                        should_enable_service_events)
-                    _rclpy.service_introspection.configure_client_message_payload(
-                        cli.handle.pointer,
-                        should_enable_contents)
-            elif param.name == \
-                    _rclpy.service_introspection.RCL_SERVICE_INTROSPECTION_PUBLISH_SERVICE_PARAMETER:  # noqa: E501
-
-                value = param.value
-
-                for srv in self.services:
-                    should_enable_service_events = False
-                    should_enable_contents = False
-                    if value == 'off':
-                        should_enable_service_events = False
-                        should_enable_contents = False
-                    elif value == 'metadata':
-                        should_enable_service_events = True
-                        should_enable_contents = False
-                    elif value == 'contents':
-                        should_enable_service_events = True
-                        should_enable_contents = True
-
-                    _rclpy.service_introspection.configure_service_events(
-                        srv.handle.pointer,
-                        self.handle.pointer,
-                        should_enable_service_events)
-                    _rclpy.service_introspection.configure_service_message_payload(
-                        srv.handle.pointer,
-                        should_enable_contents)
-
     def create_client(
         self,
         srv_type,
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
-        callback_group: CallbackGroup = None,
-        service_event_qos_profile: QoSProfile = qos_profile_system_default
+        callback_group: CallbackGroup = None
     ) -> Client:
         """
         Create a new service client.
@@ -1683,12 +1590,8 @@ class Node:
         :param srv_type: The service type.
         :param srv_name: The name of the service.
         :param qos_profile: The quality of service profile to apply the service client.
-        :param service_event_publisher_qos_profile: The quality of service
-            profile to apply the service event publisher.
         :param callback_group: The callback group for the service client. If ``None``, then the
             default callback group for the node is used.
-        :param service_event_qos_profile: The quality of service profile to apply to service
-            introspection (if enabled).
         """
         if callback_group is None:
             callback_group = self.default_callback_group
@@ -1700,9 +1603,7 @@ class Node:
                     self.handle,
                     srv_type,
                     srv_name,
-                    qos_profile.get_c_qos_profile(),
-                    service_event_qos_profile.get_c_qos_profile(),
-                    self._clock.handle)
+                    qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True
         if failed:
@@ -1724,8 +1625,7 @@ class Node:
         callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
-        callback_group: CallbackGroup = None,
-        service_event_qos_profile: QoSProfile = qos_profile_system_default
+        callback_group: CallbackGroup = None
     ) -> Service:
         """
         Create a new service server.
@@ -1735,12 +1635,8 @@ class Node:
         :param callback: A user-defined callback function that is called when a service request
             received by the server.
         :param qos_profile: The quality of service profile to apply the service server.
-        :param service_event_publisher_qos_profile: The quality of service
-            profile to apply the service event publisher.
         :param callback_group: The callback group for the service server. If ``None``, then the
             default callback group for the node is used.
-        :param service_event_qos_profile: The quality of service profile to apply to service
-            introspection (if enabled).
         """
         if callback_group is None:
             callback_group = self.default_callback_group
@@ -1752,9 +1648,7 @@ class Node:
                     self.handle,
                     srv_type,
                     srv_name,
-                    qos_profile.get_c_qos_profile(),
-                    service_event_qos_profile.get_c_qos_profile(),
-                    self._clock.handle)
+                    qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True
         if failed:

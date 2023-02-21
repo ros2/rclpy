@@ -18,6 +18,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/client.h>
+#include <rcl/service_introspection.h>
 #include <rmw/types.h>
 
 #include <memory>
@@ -47,12 +48,8 @@ public:
    * \param[in] pysrv_type Service module associated with the client
    * \param[in] service_name The service name
    * \param[in] pyqos QoSProfile python object for this client
-   * \param[in] pyqos_service_event_pub QoSProfile python object for the service event publisher
-   * \param[in] clock Clock to use for service event timestamps
    */
-  Client(
-    Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos,
-    py::object pyqos_service_event_pub, Clock & clock);
+  Client(Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos);
 
   ~Client() = default;
 
@@ -93,6 +90,17 @@ public:
     return rcl_client_.get();
   }
 
+  /// Configure introspection.
+  /**
+   * \param[in] clock clock to use for service event timestamps
+   * \param[in] pyqos_service_event_pub QoSProfile python object for the service event publisher
+   * \param[in] introspection_state which state to set introspection to
+   */
+  void
+  configure_introspection(
+    Clock & clock, py::object pyqos_service_event_pub,
+    rcl_service_introspection_state_t introspection_state);
+
   /// Force an early destruction of this object
   void
   destroy() override;
@@ -100,6 +108,7 @@ public:
 private:
   Node node_;
   std::shared_ptr<rcl_client_t> rcl_client_;
+  rosidl_service_type_support_t * srv_type_;
 };
 
 /// Define a pybind11 wrapper for an rclpy::Client

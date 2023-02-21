@@ -15,6 +15,7 @@
 #include <pybind11/pybind11.h>
 
 #include <rcl/domain_id.h>
+#include <rcl/service_introspection.h>
 #include <rcl/time.h>
 #include <rcl_action/types.h>
 
@@ -119,6 +120,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NotImplementedError", PyExc_NotImplementedError);
   py::register_exception<rclpy::InvalidHandle>(
     m, "InvalidHandle", PyExc_RuntimeError);
+
+  rclpy::define_service_introspection(m);
 
   rclpy::define_client(m);
 
@@ -241,5 +244,4 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_signal_handler_api(m);
   rclpy::define_clock_event(m);
   rclpy::define_lifecycle_api(m);
-  rclpy::define_service_introspection(m);
 }

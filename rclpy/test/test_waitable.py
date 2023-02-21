@@ -22,7 +22,6 @@ from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.qos import qos_profile_system_default
 from rclpy.qos import QoSProfile
 from rclpy.task import Future
 from rclpy.type_support import check_for_type_support
@@ -44,8 +43,7 @@ class ClientWaitable(Waitable):
 
         with node.handle:
             self.client = _rclpy.Client(
-                node.handle, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile(),
-                qos_profile_system_default.get_c_qos_profile(), node.get_clock().handle)
+                node.handle, EmptySrv, 'test_client', QoSProfile(depth=10).get_c_qos_profile())
         self.client_index = None
         self.client_is_ready = False
 
@@ -88,8 +86,7 @@ class ServerWaitable(Waitable):
 
         with node.handle:
             self.server = _rclpy.Service(
-                node.handle, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile(),
-                qos_profile_system_default.get_c_qos_profile(), node.get_clock().handle)
+                node.handle, EmptySrv, 'test_server', QoSProfile(depth=10).get_c_qos_profile())
         self.server_index = None
         self.server_is_ready = False
 
