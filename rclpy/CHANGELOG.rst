@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.9.0 (2023-02-24)
+------------------
 * to create a sublogger while getting child of Logger (`#1084 <https://github.com/ros2/rclpy/issues/1084>`_)
 * Fix `#983 <https://github.com/ros2/rclpy/issues/983>`_ by saving future and checking for + raising any exceptions (`#1073 <https://github.com/ros2/rclpy/issues/1073>`_)
 * Contributors: Achille Verheye, Chen Lihui
