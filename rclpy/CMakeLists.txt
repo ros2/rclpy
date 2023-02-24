@@ -188,6 +188,7 @@ if(BUILD_TESTING)
       test/test_qos_event.py
       test/test_qos_overriding_options.py
       test/test_rate.py
+      test/test_rosout_subscription.py
       test/test_serialization.py
       test/test_subscription.py
       test/test_task.py
