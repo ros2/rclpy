@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Service introspection (`#988 <https://github.com/ros2/rclpy/issues/988>`_)
+* Contributors: Brian
+
 3.9.0 (2023-02-24)
 ------------------
 * to create a sublogger while getting child of Logger (`#1084 <https://github.com/ros2/rclpy/issues/1084>`_)
