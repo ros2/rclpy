@@ -76,6 +76,11 @@ class Subscription:
         self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
             callback_group, subscription_impl, topic)
 
+    def get_publisher_count(self) -> int:
+        """Get the number of publishers that this subscription has."""
+        with self.handle:
+            return self.__subscription.get_publisher_count()
+
     @property
     def handle(self):
         return self.__subscription
