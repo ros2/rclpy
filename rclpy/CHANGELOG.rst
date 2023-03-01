@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.10.0 (2023-03-01)
+-------------------
 * Service introspection (`#988 <https://github.com/ros2/rclpy/issues/988>`_)
 * Contributors: Brian
 
