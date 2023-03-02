@@ -19,9 +19,9 @@ namespace rclpy
 {
 
 void
-define_service_introspection(py::module_ module)
+define_service_introspection(py::module module)
 {
-  py::module_ m2 = module.def_submodule(
+  py::module m2 = module.def_submodule(
     "service_introspection",
     "utilities for introspecting services");
 
