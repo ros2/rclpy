@@ -23,7 +23,7 @@ namespace rclpy
 {
 
 void
-define_service_introspection(py::module_ module);
+define_service_introspection(py::module module);
 
 }  // namespace rclpy
 
