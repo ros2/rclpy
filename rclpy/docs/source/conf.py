@@ -63,7 +63,12 @@ extensions = [
     'sphinx_rtd_theme',
 ]
 
-autodoc_mock_imports = ["action_msgs"]
+autodoc_mock_imports = [
+    "action_msgs",
+    "rcl_interfaces",
+    "rpyutils",
+    "rclpy._rclpy_pybind11", # ModuleNotFoundError: No module named 'rclpy._rclpy_pybind11'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
