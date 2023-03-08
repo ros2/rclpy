@@ -47,7 +47,7 @@ settings:
     # This setting, if True, will ensure exhale is part of the 'extensions',
     # and will set all of the exhale configurations, if not set, and override
     # settings as needed if they are set by this configuration.
-    enable_exhale: false    
+    enable_exhale: false
 
 builders:
     ## Each stanza represents a separate build step, performed by a specific 'builder'.

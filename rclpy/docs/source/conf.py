@@ -26,9 +26,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+dir = os.path.abspath('../')
+print(f"Adding to sys path: {dir}")
+sys.path.insert(0, os.path.abspath(dir))
 
 
 # -- Project information -----------------------------------------------------
@@ -60,6 +62,8 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx_rtd_theme',
 ]
+
+autodoc_mock_imports = ["action_msgs"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
