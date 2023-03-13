@@ -31,6 +31,7 @@
 #include "destroyable.hpp"
 #include "duration.hpp"
 #include "clock_event.hpp"
+#include "event_handle.hpp"
 #include "exceptions.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
@@ -41,7 +42,6 @@
 #include "node.hpp"
 #include "publisher.hpp"
 #include "qos.hpp"
-#include "qos_event.hpp"
 #include "serialization.hpp"
 #include "service.hpp"
 #include "service_info.hpp"
@@ -216,7 +216,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "Deserialize a ROS message.");
 
   rclpy::define_node(m);
-  rclpy::define_qos_event(m);
+  rclpy::define_event_handle(m);
 
   m.def(
     "rclpy_get_rmw_implementation_identifier",

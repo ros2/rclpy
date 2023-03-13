@@ -24,13 +24,13 @@ from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.srv import SetParametersAtomically
 from rclpy.callback_groups import CallbackGroup
+from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.node import Node
 from rclpy.parameter import Parameter as Parameter
 from rclpy.parameter import parameter_dict_from_yaml_file
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
-from rclpy.qos_event import SubscriptionEventCallbacks
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.subscription import Subscription
 from rclpy.task import Future

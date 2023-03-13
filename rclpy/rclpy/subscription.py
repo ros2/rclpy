@@ -18,10 +18,10 @@ from typing import Callable
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.event_handler import EventHandler
+from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.qos_event import QoSEventHandler
-from rclpy.qos_event import SubscriptionEventCallbacks
 
 
 # For documentation only
@@ -73,7 +73,7 @@ class Subscription:
         self.qos_profile = qos_profile
         self.raw = raw
 
-        self.event_handlers: QoSEventHandler = event_callbacks.create_event_handlers(
+        self.event_handlers: EventHandler = event_callbacks.create_event_handlers(
             callback_group, subscription_impl, topic)
 
     def get_publisher_count(self) -> int:
