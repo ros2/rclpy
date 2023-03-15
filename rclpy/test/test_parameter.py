@@ -21,10 +21,10 @@ import pytest
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
+from rclpy.parameter import get_parameter_value
 from rclpy.parameter import Parameter
 from rclpy.parameter import parameter_dict_from_yaml_file
 from rclpy.parameter import parameter_value_to_python
-from rclpy.parameter import get_parameter_value
 
 
 class TestParameter(unittest.TestCase):
@@ -207,7 +207,7 @@ class TestParameter(unittest.TestCase):
             try:
                 p = get_parameter_value(str(input_value))
             except Exception as e:
-                assert False, f"failed to get param_value, reason: {e}"
+                assert False, f'failed to get param_value, reason: {e}'
             self.assertEqual(p, expected_value)
 
     def test_parameter_value_to_python(self):
