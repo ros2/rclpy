@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.12 (2023-03-16)
+-------------------
 * Fix test_publisher linter for pydocstyle 6.2.2 (`#1063 <https://github.com/ros2/rclpy/issues/1063>`_) (`#1068 <https://github.com/ros2/rclpy/issues/1068>`_)
 * Waitable should check callback_group if it can be executed. (`#1001 <https://github.com/ros2/rclpy/issues/1001>`_) (`#1015 <https://github.com/ros2/rclpy/issues/1015>`_)
 * Contributors: mergify[bot], Cristóbal Arroyo, Tomoya Fujita
