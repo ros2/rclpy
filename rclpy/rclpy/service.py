@@ -43,11 +43,11 @@ class Service:
         .. warning:: Users should not create a service server with this constuctor, instead they
            should call :meth:`.Node.create_service`.
 
-        :param context: The context associated with the service server.
         :param service_impl: :class:`_rclpy.Service` wrapping the underlying ``rcl_service_t``
             object.
         :param srv_type: The service type.
         :param srv_name: The name of the service.
+        :param callback: The callback that should be called to handle the request.
         :param callback_group: The callback group for the service server. If ``None``, then the
             nodes default callback group is used.
         :param qos_profile: The quality of service profile to apply the service server.
