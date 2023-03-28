@@ -29,6 +29,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rcl REQUIRED)
 find_package(rcl_action REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(rcl_lifecycle REQUIRED)
 find_package(rcl_logging_interface REQUIRED)
 find_package(rcl_yaml_param_parser REQUIRED)
@@ -117,6 +118,7 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   lifecycle_msgs::lifecycle_msgs__rosidl_typesupport_c
   rcl::rcl
   rcl_action::rcl_action
+  ${rcl_interfaces_TARGETS}
   rcl_lifecycle::rcl_lifecycle
   rcl_logging_interface::rcl_logging_interface
   rcpputils::rcpputils
