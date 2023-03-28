@@ -106,7 +106,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT APPLE)
-  target_link_libraries(_rclpy_pybind11 PRIVATE atomic) 
+  target_link_libraries(_rclpy_pybind11 PRIVATE atomic)
 endif()
 
 target_include_directories(_rclpy_pybind11 PRIVATE
