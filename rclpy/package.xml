@@ -24,6 +24,7 @@
   <build_depend>rmw_implementation_cmake</build_depend>
 
   <depend>rcl</depend>
+  <depend>rcl_interfaces</depend>
   <depend>rcl_lifecycle</depend>
   <depend>rcl_logging_interface</depend>
   <depend>rcl_action</depend>
@@ -35,7 +36,6 @@
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>builtin_interfaces</exec_depend>
-  <exec_depend>rcl_interfaces</exec_depend>
   <exec_depend>rosgraph_msgs</exec_depend>
   <exec_depend>rpyutils</exec_depend>
 
