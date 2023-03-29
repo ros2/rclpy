@@ -110,14 +110,12 @@ class Time:
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds == other.nanoseconds
-        # Raise instead of returning NotImplemented to prevent comparison with invalid types,
-        # e.g. ints.
-        # Otherwise `Time(nanoseconds=5) == 5` will return False instead of raising, and this
-        # could lead to hard-to-find bugs.
-        raise TypeError("Can't compare time with object of type: ", type(other))
+        return NotImplemented
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        if isinstance(other, Time):
+            return not self.__eq__(other)
+        return NotImplemented
 
     def __lt__(self, other):
         if isinstance(other, Time):
