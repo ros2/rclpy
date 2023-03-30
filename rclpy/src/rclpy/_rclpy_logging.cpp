@@ -31,7 +31,7 @@ namespace py = pybind11;
 #include "logging.hpp"
 #include "logging_api.hpp"
 
-std::mutex g_logging_lock;
+static std::mutex g_logging_lock;
 
 /// Initialize the logging system.
 /**
