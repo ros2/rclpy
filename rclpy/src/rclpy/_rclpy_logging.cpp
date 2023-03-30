@@ -23,12 +23,15 @@ namespace py = pybind11;
 #include <rcl_logging_interface/rcl_logging_interface.h>
 #include <rcl/logging_rosout.h>
 
+#include <mutex>
 #include <stdexcept>
 #include <string>
 
 #include "exceptions.hpp"
 #include "logging.hpp"
 #include "logging_api.hpp"
+
+std::mutex g_logging_lock;
 
 /// Initialize the logging system.
 /**
@@ -70,6 +73,7 @@ rclpy_logging_shutdown()
 void
 rclpy_logging_set_logger_level(const char * name, int level, bool detailed_error = false)
 {
+  std::lock_guard<std::mutex> lock(g_logging_lock);
   rcutils_ret_t ret = rcutils_logging_set_logger_level(name, level);
   if (ret != RCUTILS_RET_OK) {
     if (detailed_error) {
@@ -93,6 +97,7 @@ rclpy_logging_set_logger_level(const char * name, int level, bool detailed_error
 int
 rclpy_logging_get_logger_effective_level(const char * name)
 {
+  std::lock_guard<std::mutex> lock(g_logging_lock);
   int logger_level = rcutils_logging_get_logger_effective_level(name);
 
   if (logger_level < 0) {
@@ -112,6 +117,7 @@ rclpy_logging_get_logger_effective_level(const char * name)
 int
 rclpy_logging_get_logger_level(const char * name)
 {
+  std::lock_guard<std::mutex> lock(g_logging_lock);
   int logger_level = rcutils_logging_get_logger_level(name);
 
   if (logger_level < 0) {
