@@ -9,7 +9,6 @@ rclpy provides the canonical Python API for interacting with ROS 2.
    about
    examples
    api
-   modules
 
 Indices and tables
 ==================
