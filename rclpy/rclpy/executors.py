@@ -755,6 +755,7 @@ class MultiThreadedExecutor(Executor):
             warnings.warn(
                 'MultiThreadedExecutor is used with a single thread.\n'
                 'Use the SingleThreadedExecutor instead.')
+        self._futures = []
         self._executor = ThreadPoolExecutor(num_threads)
 
     def _spin_once_impl(
@@ -775,6 +776,11 @@ class MultiThreadedExecutor(Executor):
             pass
         else:
             self._executor.submit(handler)
+            self._futures.append(handler)
+            for future in self._futures:  # check for any exceptions
+                if future.done():
+                    self._futures.remove(future)
+                    future.result()
 
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)

@@ -22,8 +22,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "event_handle.hpp"
 #include "exceptions.hpp"
-#include "qos_event.hpp"
 
 namespace rclpy
 {
@@ -52,13 +52,13 @@ create_zero_initialized_event()
 }
 
 void
-QoSEvent::destroy()
+EventHandle::destroy()
 {
   rcl_event_.reset();
   std::visit([](auto & t) {t.destroy();}, grandparent_);
 }
 
-QoSEvent::QoSEvent(
+EventHandle::EventHandle(
   rclpy::Subscription & subscription, rcl_subscription_event_type_t event_type)
 : event_type_(event_type), grandparent_(subscription)
 {
@@ -80,7 +80,7 @@ QoSEvent::QoSEvent(
   }
 }
 
-QoSEvent::QoSEvent(
+EventHandle::EventHandle(
   rclpy::Publisher & publisher, rcl_publisher_event_type_t event_type)
 : event_type_(event_type), grandparent_(publisher)
 {
@@ -102,22 +102,26 @@ QoSEvent::QoSEvent(
   }
 }
 
-typedef union qos_event_callback_data {
+typedef union event_callback_data {
   // Subscription events
   rmw_requested_deadline_missed_status_t requested_deadline_missed;
   rmw_liveliness_changed_status_t liveliness_changed;
   rmw_message_lost_status_t message_lost;
   rmw_requested_qos_incompatible_event_status_t requested_incompatible_qos;
+  rmw_matched_status_t subscription_matched;
   // Publisher events
   rmw_offered_deadline_missed_status_t offered_deadline_missed;
   rmw_liveliness_lost_status_t liveliness_lost;
   rmw_offered_qos_incompatible_event_status_t offered_incompatible_qos;
-} qos_event_callback_data_t;
+  rmw_matched_status_t publisher_matched;
+
+  rmw_incompatible_type_status_t incompatible_type;
+} event_callback_data_t;
 
 py::object
-QoSEvent::take_event()
+EventHandle::take_event()
 {
-  qos_event_callback_data_t data;
+  event_callback_data_t data;
   rcl_ret_t ret = rcl_take_event(rcl_event_.get(), &data);
   if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
@@ -140,6 +144,10 @@ QoSEvent::take_event()
         return py::cast(data.message_lost);
       case RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS:
         return py::cast(data.requested_incompatible_qos);
+      case RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE:
+        return py::cast(data.incompatible_type);
+      case RCL_SUBSCRIPTION_MATCHED:
+        return py::cast(data.subscription_matched);
       default:
         // suggests a misalignment between C and Python interfaces
         throw py::value_error("event type for subscriptions not understood");
@@ -152,6 +160,10 @@ QoSEvent::take_event()
         return py::cast(data.liveliness_lost);
       case RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS:
         return py::cast(data.offered_incompatible_qos);
+      case RCL_PUBLISHER_INCOMPATIBLE_TYPE:
+        return py::cast(data.incompatible_type);
+      case RCL_PUBLISHER_MATCHED:
+        return py::cast(data.publisher_matched);
       default:
         // suggests a misalignment between C and Python interfaces
         throw py::value_error("event type for publishers not understood");
@@ -161,30 +173,34 @@ QoSEvent::take_event()
 }
 
 void
-define_qos_event(py::module module)
+define_event_handle(py::module module)
 {
-  py::class_<QoSEvent, Destroyable, std::shared_ptr<QoSEvent>>(module, "QoSEvent")
+  py::class_<EventHandle, Destroyable, std::shared_ptr<EventHandle>>(module, "EventHandle")
   .def(py::init<rclpy::Subscription &, rcl_subscription_event_type_t>())
   .def(py::init<rclpy::Publisher &, rcl_publisher_event_type_t>())
   .def_property_readonly(
-    "pointer", [](const QoSEvent & event) {
+    "pointer", [](const EventHandle & event) {
       return reinterpret_cast<size_t>(event.rcl_ptr());
     },
     "Get the address of the entity as an integer")
   .def(
-    "take_event", &QoSEvent::take_event,
-    "Get pending data from a ready QoS event");
+    "take_event", &EventHandle::take_event,
+    "Get pending data from a ready event");
 
   py::enum_<rcl_subscription_event_type_t>(module, "rcl_subscription_event_type_t")
   .value("RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED", RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
   .value("RCL_SUBSCRIPTION_LIVELINESS_CHANGED", RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
   .value("RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS", RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
-  .value("RCL_SUBSCRIPTION_MESSAGE_LOST", RCL_SUBSCRIPTION_MESSAGE_LOST);
+  .value("RCL_SUBSCRIPTION_MESSAGE_LOST", RCL_SUBSCRIPTION_MESSAGE_LOST)
+  .value("RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE", RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE)
+  .value("RCL_SUBSCRIPTION_MATCHED", RCL_SUBSCRIPTION_MATCHED);
 
   py::enum_<rcl_publisher_event_type_t>(module, "rcl_publisher_event_type_t")
   .value("RCL_PUBLISHER_OFFERED_DEADLINE_MISSED", RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
   .value("RCL_PUBLISHER_LIVELINESS_LOST", RCL_PUBLISHER_LIVELINESS_LOST)
-  .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS);
+  .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
+  .value("RCL_PUBLISHER_INCOMPATIBLE_TYPE", RCL_PUBLISHER_INCOMPATIBLE_TYPE)
+  .value("RCL_PUBLISHER_MATCHED", RCL_PUBLISHER_MATCHED);
 
   py::class_<rmw_requested_deadline_missed_status_t>(
     module, "rmw_requested_deadline_missed_status_t")
@@ -223,6 +239,13 @@ define_qos_event(py::module module)
   .def_readonly("total_count", &rmw_liveliness_lost_status_t::total_count)
   .def_readonly("total_count_change", &rmw_liveliness_lost_status_t::total_count_change);
 
+  py::class_<rmw_matched_status_t>(module, "rmw_matched_status_t")
+  .def(py::init<>())
+  .def_readonly("total_count", &rmw_matched_status_t::total_count)
+  .def_readonly("total_count_change", &rmw_matched_status_t::total_count_change)
+  .def_readonly("current_count", &rmw_matched_status_t::current_count)
+  .def_readonly("current_count_change", &rmw_matched_status_t::current_count_change);
+
   py::enum_<rmw_qos_policy_kind_t>(module, "rmw_qos_policy_kind_t")
   .value("RMW_QOS_POLICY_INVALID", RMW_QOS_POLICY_INVALID)
   .value("RMW_QOS_POLICY_DURABILITY", RMW_QOS_POLICY_DURABILITY)
@@ -236,5 +259,9 @@ define_qos_event(py::module module)
   .value(
     "RMW_QOS_POLICY_AVOID_ROS_NAMESPACE_CONVENTIONS",
     RMW_QOS_POLICY_AVOID_ROS_NAMESPACE_CONVENTIONS);
+
+  py::class_<rmw_incompatible_type_status_t>(module, "rmw_incompatible_type_status_t")
+  .def(py::init<>())
+  .def_readonly("total_count_change", &rmw_incompatible_type_status_t::total_count_change);
 }
 }  // namespace rclpy

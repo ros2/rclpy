@@ -144,7 +144,7 @@ WaitSet::add_client(const Client & client)
 }
 
 size_t
-WaitSet::add_event(const QoSEvent & event)
+WaitSet::add_event(const EventHandle & event)
 {
   size_t index;
   rcl_ret_t ret = rcl_wait_set_add_event(rcl_wait_set_.get(), event.rcl_ptr(), &index);

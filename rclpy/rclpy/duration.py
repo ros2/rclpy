@@ -50,14 +50,12 @@ class Duration:
     def __eq__(self, other):
         if isinstance(other, Duration):
             return self.nanoseconds == other.nanoseconds
-        # Raise instead of returning NotImplemented to prevent comparison with invalid types,
-        # e.g. ints.
-        # Otherwise `Duration(nanoseconds=5) == 5` will return False instead of raising, and this
-        # could lead to hard-to-find bugs.
-        raise TypeError("Can't compare duration with object of type: ", type(other))
+        return NotImplemented
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        if isinstance(other, Duration):
+            return not self.__eq__(other)
+        return NotImplemented
 
     def __lt__(self, other):
         if isinstance(other, Duration):

@@ -16,8 +16,10 @@ from typing import Callable
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
+from rclpy.service_introspection import ServiceIntrospectionState
 
 # Used for documentation purposes only
 SrvType = TypeVar('SrvType')
@@ -41,11 +43,11 @@ class Service:
         .. warning:: Users should not create a service server with this constuctor, instead they
            should call :meth:`.Node.create_service`.
 
-        :param context: The context associated with the service server.
         :param service_impl: :class:`_rclpy.Service` wrapping the underlying ``rcl_service_t``
             object.
         :param srv_type: The service type.
         :param srv_name: The name of the service.
+        :param callback: The callback that should be called to handle the request.
         :param callback_group: The callback group for the service server. If ``None``, then the
             nodes default callback group is used.
         :param qos_profile: The quality of service profile to apply the service server.
@@ -78,6 +80,23 @@ class Service:
                 self.__service.service_send_response(response, header)
             else:
                 raise TypeError()
+
+    def configure_introspection(
+        self, clock: Clock,
+        service_event_qos_profile: QoSProfile,
+        introspection_state: ServiceIntrospectionState
+    ) -> None:
+        """
+        Configure service introspection.
+
+        :param clock: Clock to use for generating timestamps.
+        :param service_event_qos_profile: QoSProfile to use when creating service event publisher.
+        :param introspection_state: ServiceIntrospectionState to set introspection.
+        """
+        with self.handle:
+            self.__service.configure_introspection(clock.handle,
+                                                   service_event_qos_profile.get_c_qos_profile(),
+                                                   introspection_state)
 
     @property
     def handle(self):

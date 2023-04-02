@@ -148,7 +148,7 @@ Subscription::take_message(py::object pymsg_type, bool raw)
 }
 
 const char *
-Subscription::get_logger_name()
+Subscription::get_logger_name() const
 {
   const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
   if (!node_logger_name) {
@@ -159,7 +159,7 @@ Subscription::get_logger_name()
 }
 
 std::string
-Subscription::get_topic_name()
+Subscription::get_topic_name() const
 {
   const char * subscription_name = rcl_subscription_get_topic_name(rcl_subscription_.get());
   if (nullptr == subscription_name) {
@@ -168,6 +168,19 @@ Subscription::get_topic_name()
 
   return std::string(subscription_name);
 }
+
+size_t
+Subscription::get_publisher_count() const
+{
+  size_t count = 0;
+  rcl_ret_t ret = rcl_subscription_get_publisher_count(rcl_subscription_.get(), &count);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to get publisher count");
+  }
+
+  return count;
+}
+
 void
 define_subscription(py::object module)
 {
@@ -186,6 +199,9 @@ define_subscription(py::object module)
     "Get the name of the logger associated with the node of the subscription.")
   .def(
     "get_topic_name", &Subscription::get_topic_name,
-    "Return the resolved topic name of a subscription.");
+    "Return the resolved topic name of a subscription.")
+  .def(
+    "get_publisher_count", &Subscription::get_publisher_count,
+    "Count the publishers from a subscription.");
 }
 }  // namespace rclpy

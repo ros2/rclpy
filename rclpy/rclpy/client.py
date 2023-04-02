@@ -18,9 +18,11 @@ from typing import Dict
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.clock import Clock
 from rclpy.context import Context
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
+from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 
 # Used for documentation purposes only
@@ -179,6 +181,23 @@ class Client:
             timeout_sec -= sleep_time
 
         return self.service_is_ready()
+
+    def configure_introspection(
+        self, clock: Clock,
+        service_event_qos_profile: QoSProfile,
+        introspection_state: ServiceIntrospectionState
+    ) -> None:
+        """
+        Configure client introspection.
+
+        :param clock: Clock to use for generating timestamps.
+        :param service_event_qos_profile: QoSProfile to use when creating service event publisher.
+        :param introspection_state: ServiceIntrospectionState to set introspection.
+        """
+        with self.handle:
+            self.__client.configure_introspection(clock.handle,
+                                                  service_event_qos_profile.get_c_qos_profile(),
+                                                  introspection_state)
 
     @property
     def handle(self):

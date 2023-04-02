@@ -146,13 +146,10 @@ class TestTime(unittest.TestCase):
 
         # Invalid combinations
         time1 = Time(nanoseconds=1)
-        with self.assertRaises(TypeError):
-            time1 == 1
-        duration = Duration()
-        with self.assertRaises(TypeError):
-            time1 == duration
-        with self.assertRaises(TypeError):
-            time1 != duration
+        self.assertFalse(time1 == 1)
+        duration = Duration(nanoseconds=1)
+        self.assertFalse(time1 == duration)
+        self.assertTrue(time1 != duration)
         with self.assertRaises(TypeError):
             time1 > duration
         with self.assertRaises(TypeError):
@@ -178,13 +175,10 @@ class TestTime(unittest.TestCase):
 
         # Invalid combinations
         duration1 = Duration(nanoseconds=1)
-        with self.assertRaises(TypeError):
-            duration1 == 1
-        time = Time()
-        with self.assertRaises(TypeError):
-            duration1 == time
-        with self.assertRaises(TypeError):
-            duration1 != time
+        self.assertFalse(duration1 == 1)
+        time = Time(nanoseconds=1)
+        self.assertFalse(duration1 == time)
+        self.assertTrue(duration1 != time)
         with self.assertRaises(TypeError):
             duration1 > time
         with self.assertRaises(TypeError):

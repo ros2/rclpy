@@ -2,6 +2,40 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.10.0 (2023-03-01)
+-------------------
+* Service introspection (`#988 <https://github.com/ros2/rclpy/issues/988>`_)
+* Contributors: Brian
+
+3.9.0 (2023-02-24)
+------------------
+* to create a sublogger while getting child of Logger (`#1084 <https://github.com/ros2/rclpy/issues/1084>`_)
+* Fix `#983 <https://github.com/ros2/rclpy/issues/983>`_ by saving future and checking for + raising any exceptions (`#1073 <https://github.com/ros2/rclpy/issues/1073>`_)
+* Contributors: Achille Verheye, Chen Lihui
+
+3.8.0 (2023-02-13)
+------------------
+* Force C++17 support on. (`#1076 <https://github.com/ros2/rclpy/issues/1076>`_)
+* Use RCPPUTILS_SCOPE_EXIT to cleanup unparsed_indices_c. (`#1075 <https://github.com/ros2/rclpy/issues/1075>`_)
+* Explicitly link atomic when building with Clang (`#1065 <https://github.com/ros2/rclpy/issues/1065>`_)
+* Fix test_publisher linter for pydocstyle 6.2.2 (`#1063 <https://github.com/ros2/rclpy/issues/1063>`_)
+* Add default preset qos profile (`#1062 <https://github.com/ros2/rclpy/issues/1062>`_)
+* Add on_parameter_event method to the AsyncParameterClient. (`#1061 <https://github.com/ros2/rclpy/issues/1061>`_)
+* Add documentation page for rclpy.clock (`#1055 <https://github.com/ros2/rclpy/issues/1055>`_)
+* Rewrite test code without depending on parameter client (`#1045 <https://github.com/ros2/rclpy/issues/1045>`_)
+* Add parallel callback test (`#1044 <https://github.com/ros2/rclpy/issues/1044>`_)
+* decorator should not be callable. (`#1050 <https://github.com/ros2/rclpy/issues/1050>`_)
+* typo fix. (`#1049 <https://github.com/ros2/rclpy/issues/1049>`_)
+* Add in a warning for a depth of 0 with KEEP_LAST. (`#1048 <https://github.com/ros2/rclpy/issues/1048>`_)
+* Add feature of wait for message (`#953 <https://github.com/ros2/rclpy/issues/953>`_). (`#960 <https://github.com/ros2/rclpy/issues/960>`_)
+* Document rclpy.time.Time class (`#1040 <https://github.com/ros2/rclpy/issues/1040>`_)
+* Deal with ParameterUninitializedException for parameter service (`#1033 <https://github.com/ros2/rclpy/issues/1033>`_)
+* Improve documentation in rclpy.utilities (`#1038 <https://github.com/ros2/rclpy/issues/1038>`_)
+* Document rclpy.utilities.remove_ros_args (`#1036 <https://github.com/ros2/rclpy/issues/1036>`_)
+* Fix incorrect comparsion on whether parameter type is NOT_SET (`#1032 <https://github.com/ros2/rclpy/issues/1032>`_)
+* [rolling] Update maintainers (`#1035 <https://github.com/ros2/rclpy/issues/1035>`_)
+* Contributors: Audrow Nash, Barry Xu, Chris Lalancette, Cristóbal Arroyo, Florian Vahl, Ivan Santiago Paunovic, Lei Liu, Sebastian Freitag, Shane Loretz, Tomoya Fujita
+
 3.7.1 (2022-11-02)
 ------------------
 * Set the default number of threads of the MultiThreadedExecutor to 2 (`#1031 <https://github.com/ros2/rclpy/issues/1031>`_)

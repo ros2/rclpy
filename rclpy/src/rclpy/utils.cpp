@@ -263,9 +263,7 @@ throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
     throw RCLError("failed to get unparsed arguments");
   }
 
-  auto deallocator = [&](int ptr[]) {allocator.deallocate(ptr, allocator.state);};
-  auto unparsed_indices = std::unique_ptr<int[], decltype(deallocator)>(
-    unparsed_indices_c, deallocator);
+  RCPPUTILS_SCOPE_EXIT(allocator.deallocate(unparsed_indices_c, allocator.state));
 
   py::list unparsed_args;
   for (int i = 0; i < unparsed_ros_args_count; ++i) {
