@@ -30,8 +30,8 @@ def wait_for_message(
     :param msg_type: message type
     :param node: node to initialize the subscription on
     :param topic: topic name to wait for message
-    :time_to_wait: seconds to wait before returning
-    :return (True, msg) if a message was successfully received, (False, ()) if message
+    :param time_to_wait: seconds to wait before returning
+    :returns: (True, msg) if a message was successfully received, (False, None) if message
         could not be obtained or shutdown was triggered asynchronously on the context.
     """
     context = node.context

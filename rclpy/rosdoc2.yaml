@@ -49,6 +49,11 @@ settings:
     # settings as needed if they are set by this configuration.
     enable_exhale: false
 
+    # This setting, if provided, will override the build_type of this package
+    # for documentation purposes only. If not provided, documentation will be
+    # generated assuming the build_type in package.xml.
+    override_build_type: 'ament_python'
+
 builders:
     ## Each stanza represents a separate build step, performed by a specific 'builder'.
     ## The key of each stanza is the builder to use; this must be one of the
@@ -60,14 +65,15 @@ builders:
     ##                   relative to --output-directory
     ##  * 'name' - used when referencing the built docs from the index.
 
-    - doxygen: {
-        name: 'rclpy Public C/C++ API',
-        output_dir: 'generated/doxygen'
-    }
+    # - doxygen: {
+    #     name: 'rclpy Public C/C++ API',
+    #     output_dir: 'generated/doxygen'
+    # }
     - sphinx: {
         name: 'rclpy',
         ## This path is relative to output staging.
         # doxygen_xml_directory: 'generated/doxygen/xml',
-        sphinx_sourcedir: 'source/',
+        # todo: Provide user sphinx_sourcedir below after warnings have been addressed.
+        # sphinx_sourcedir: 'docs/source/',
         output_dir: ''
     }

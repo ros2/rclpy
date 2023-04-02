@@ -28,10 +28,7 @@
 #
 import os
 import sys
-dir = os.path.abspath('../')
-print(f"Adding to sys path: {dir}")
-sys.path.insert(0, os.path.abspath(dir))
-
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
@@ -63,13 +60,6 @@ extensions = [
     'sphinx_rtd_theme',
 ]
 
-autodoc_mock_imports = [
-    "action_msgs",
-    "rcl_interfaces",
-    "rpyutils",
-    "rclpy._rclpy_pybind11", # ModuleNotFoundError: No module named 'rclpy._rclpy_pybind11'
-]
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -97,7 +87,7 @@ exclude_patterns = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
-breathe_projects = []
+breathe_projects = {}
 
 # -- Options for HTML output -------------------------------------------------
 

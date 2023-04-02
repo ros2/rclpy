@@ -62,7 +62,6 @@ def get_logging_directory() -> Path:
     """
     Return the current logging directory being used.
 
-    For more details, see .. c:function::
-    rcl_logging_ret_t rcl_logging_get_logging_directory(rcutils_allocator_t, char **)
+    For more details, :func:`~rcl_logging_interface.rcl_logging_get_logging_directory`
     """
     return Path(_rclpy.rclpy_logging_get_logging_directory())
