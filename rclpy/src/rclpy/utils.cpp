@@ -306,6 +306,8 @@ _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpo
   py_endpoint_info_dict["node_name"] = py::str(topic_endpoint_info->node_name);
   py_endpoint_info_dict["node_namespace"] = py::str(topic_endpoint_info->node_namespace);
   py_endpoint_info_dict["topic_type"] = py::str(topic_endpoint_info->topic_type);
+  py_endpoint_info_dict["topic_type_hash"] =
+    convert_to_type_hash_dict(&topic_endpoint_info->topic_type_hash);
   py_endpoint_info_dict["endpoint_type"] =
     py::int_(static_cast<int>(topic_endpoint_info->endpoint_type));
   py_endpoint_info_dict["endpoint_gid"] = py_endpoint_gid;
@@ -362,5 +364,19 @@ convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
     py::bool_(qos_profile->avoid_ros_namespace_conventions);
 
   return pyqos_kwargs;
+}
+
+py::dict
+convert_to_type_hash_dict(const rosidl_type_hash_t * type_hash)
+{
+  // Create dictionary and populate arguments with type hash object
+  py::dict type_hash_kwargs;
+
+  type_hash_kwargs["version"] = py::int_(type_hash->version);
+  type_hash_kwargs["value"] = py::bytes(
+    reinterpret_cast<const char *>(type_hash->value),
+    ROSIDL_TYPE_HASH_SIZE);
+
+  return type_hash_kwargs;
 }
 }  // namespace rclpy
