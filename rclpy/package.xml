@@ -23,6 +23,7 @@
   <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
 
+  <depend>lifecycle_msgs</depend>
   <depend>rcl</depend>
   <depend>rcl_interfaces</depend>
   <depend>rcl_lifecycle</depend>
@@ -37,7 +38,6 @@
   <exec_depend>action_msgs</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>builtin_interfaces</exec_depend>
-  <exec_depend>lifecycle_msgs</exec_depend>
   <exec_depend>rosgraph_msgs</exec_depend>
   <exec_depend>rpyutils</exec_depend>
 
