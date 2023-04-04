@@ -50,7 +50,6 @@
   <test_depend>test_msgs</test_depend>
 
   <doc_depend>python3-sphinx</doc_depend>
-  <doc_depend>python3-sphinx-autodoc-typehints</doc_depend>
   <doc_depend>python3-sphinx-rtd-theme</doc_depend>
   <!-- We add these modules as doc_depends in order to include them into the
   autodoc_mock_imports list. This prevents TypeErrors from being thrown
