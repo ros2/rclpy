@@ -167,8 +167,8 @@ def create_node(
     :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides" will
         be used to implicitly declare parameters on the node during creation, default False.
     :param enable_logger_service: ``True`` if ROS2 services are created to allow external nodes
-        to get and set logger levels of this node. Otherwise, loggers are only configured locally.
-        That is, logger levels cannot be changed remotely.
+        to get and set logger levels of this node. Otherwise, logger levels are only managed
+        locally. That is, logger levels cannot be changed remotely.
     :return: An instance of the newly created node.
     """
     # imported locally to avoid loading extensions on module import
