@@ -579,8 +579,8 @@ class Node:
         Undeclare a previously declared parameter.
 
         This method will not cause a callback registered with any of the
-        :func:`add_pre_set_parameters_callback`, `add_pre_set_parameters_callback`
-        and `add_post_set_parameters_callback`to be called.
+        :func:`add_pre_set_parameters_callback`,
+        and :func:`add_post_set_parameters_callback` to be called.
 
         :param name: Fully-qualified name of the parameter, including its namespace.
         :raises: ParameterNotDeclaredException if parameter had not been declared before.
