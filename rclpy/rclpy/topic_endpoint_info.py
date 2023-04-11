@@ -167,6 +167,7 @@ class TopicEndpointInfo:
             f'Node name: {self.node_name}',
             f'Node namespace: {self.node_namespace}',
             f'Topic type: {self.topic_type}',
+            'Topic type hash: UNKNOWN',
             f'Endpoint type: {self.endpoint_type.name}',
             f'GID: {gid}',
             'QoS profile:',
