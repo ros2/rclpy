@@ -2,6 +2,21 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Stub type hash value line in TopicEndpointInfo string (`#1110 <https://github.com/ros2/rclpy/issues/1110>`_)
+* Support documentation generation using rosdoc2 (`#1103 <https://github.com/ros2/rclpy/issues/1103>`_)
+* Fix Time and Duration raising exception when compared to another type (`#1007 <https://github.com/ros2/rclpy/issues/1007>`_)
+* Make rcl_interfaces a build and exec dependency. (`#1100 <https://github.com/ros2/rclpy/issues/1100>`_)
+* Solving Atomic undefined on OSX with clang (`#1096 <https://github.com/ros2/rclpy/issues/1096>`_)
+* Implement matched event (`#1083 <https://github.com/ros2/rclpy/issues/1083>`_)
+* Update service.py documentation (`#1094 <https://github.com/ros2/rclpy/issues/1094>`_)
+* Allow space or empty strings when using ros2 param set (`#1093 <https://github.com/ros2/rclpy/issues/1093>`_)
+* Hook up the incompatible type event inside of rclpy (`#1058 <https://github.com/ros2/rclpy/issues/1058>`_)
+* Switch to using module instead of module\_ (`#1090 <https://github.com/ros2/rclpy/issues/1090>`_)
+* Add in subscription.get_publisher_count() (`#1089 <https://github.com/ros2/rclpy/issues/1089>`_)
+* Contributors: Barry Xu, Chris Lalancette, Emerson Knapp, Erki Suurjaak, Felix Divo, GuiHome, Lucas Wendland, Yadu
+
 3.10.0 (2023-03-01)
 -------------------
 * Service introspection (`#988 <https://github.com/ros2/rclpy/issues/988>`_)
