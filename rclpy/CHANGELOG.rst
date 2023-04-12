@@ -2,6 +2,17 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.7 (2023-01-13)
+------------------
+* Fix `test_publisher` linter for pydocstyle 6.2.2 (backport `#1063 <https://github.com/ros2/rclpy/issues/1063>`_) (`#1066 <https://github.com/ros2/rclpy/issues/1066>`_)
+* Contributors: mergify[bot]
+
+3.3.6 (2023-01-10)
+------------------
+* decorator should not be callable. (`#1050 <https://github.com/ros2/rclpy/issues/1050>`_) (`#1051 <https://github.com/ros2/rclpy/issues/1051>`_)
+* Add parallel callback test (`#1044 <https://github.com/ros2/rclpy/issues/1044>`_) (`#1052 <https://github.com/ros2/rclpy/issues/1052>`_)
+* Contributors: mergify[bot]
+
 3.3.5 (2022-11-07)
 ------------------
 * Waitable should check callback_group if it can be executed. (`#1001 <https://github.com/ros2/rclpy/issues/1001>`_) (`#1013 <https://github.com/ros2/rclpy/issues/1013>`_)

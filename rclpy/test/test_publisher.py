@@ -63,14 +63,11 @@ class TestPublisher(unittest.TestCase):
         The node will create publishers with topic in test_topics, and then test if
         the publisher's topic_name property is equal to the expected value.
 
-        Args:
-        ----
-            test_topics: A list of binary tuple in the form (topic, expected topic), the
+        :param test_topics: A list of binary tuple in the form (topic, expected topic), the
             former will be passed to node.create_publisher and the latter will be compared
             with publisher.topic_name
-            node: The node used to create the publisher. The node's namespace will have
+        :param node: The node used to create the publisher. The node's namespace will have
             an effect on the publisher's topic_name.
-
         """
         for topic, target_topic in test_topics:
             publisher = node.create_publisher(BasicTypes, topic, 0)
