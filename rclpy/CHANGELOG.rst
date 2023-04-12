@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.0.0 (2023-04-12)
+------------------
 * Stub type hash value line in TopicEndpointInfo string (`#1110 <https://github.com/ros2/rclpy/issues/1110>`_)
 * Support documentation generation using rosdoc2 (`#1103 <https://github.com/ros2/rclpy/issues/1103>`_)
 * Fix Time and Duration raising exception when compared to another type (`#1007 <https://github.com/ros2/rclpy/issues/1007>`_)
