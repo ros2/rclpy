@@ -146,7 +146,7 @@ class TestParameterClient(unittest.TestCase):
             result = future.result()
             assert result is not None
             assert len(result.results) == 2
-            assert all([i.successful for i in result.results])
+            assert all(i.successful for i in result.results)
         finally:
             if os.path.exists(f.name):
                 os.unlink(f.name)
