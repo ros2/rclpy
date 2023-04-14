@@ -65,6 +65,6 @@ builders:
         ## This path is relative to output staging.
         # doxygen_xml_directory: 'generated/doxygen/xml',
         # todo: Provide user sphinx_sourcedir below after warnings have been addressed.
-        # sphinx_sourcedir: 'docs/source/',
+        sphinx_sourcedir: 'docs/source/',
         output_dir: ''
     }
