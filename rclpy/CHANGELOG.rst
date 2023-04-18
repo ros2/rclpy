@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.1.0 (2023-04-18)
+------------------
 * Logging service support (`#1102 <https://github.com/ros2/rclpy/issues/1102>`_)
 * Use custom sourcedir for conf.py (`#1109 <https://github.com/ros2/rclpy/issues/1109>`_)
 * ServerGoalHandle should be destroyed before removing. (`#1113 <https://github.com/ros2/rclpy/issues/1113>`_)
