@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Logging service support (`#1102 <https://github.com/ros2/rclpy/issues/1102>`_)
+* Use custom sourcedir for conf.py (`#1109 <https://github.com/ros2/rclpy/issues/1109>`_)
+* ServerGoalHandle should be destroyed before removing. (`#1113 <https://github.com/ros2/rclpy/issues/1113>`_)
+* Fix unnecessary list comprehension flake8 (`#1112 <https://github.com/ros2/rclpy/issues/1112>`_)
+* Contributors: Barry Xu, Michael Carroll, Tomoya Fujita, Yadu
+
 4.0.0 (2023-04-12)
 ------------------
 * Stub type hash value line in TopicEndpointInfo string (`#1110 <https://github.com/ros2/rclpy/issues/1110>`_)
