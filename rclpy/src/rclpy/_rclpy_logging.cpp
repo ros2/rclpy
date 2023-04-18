@@ -23,11 +23,15 @@ namespace py = pybind11;
 #include <rcl_logging_interface/rcl_logging_interface.h>
 #include <rcl/logging_rosout.h>
 
+#include <mutex>
 #include <stdexcept>
 #include <string>
 
+#include "exceptions.hpp"
 #include "logging.hpp"
 #include "logging_api.hpp"
+
+static std::mutex g_logging_lock;
 
 /// Initialize the logging system.
 /**
@@ -63,15 +67,21 @@ rclpy_logging_shutdown()
  *
  * \param[in] name Fully-qualified name of logger.
  * \param[in] level to set
+ * \param[in] detailed_error True for reporting detailed rcutils error.
  * \return None
  */
 void
-rclpy_logging_set_logger_level(const char * name, int level)
+rclpy_logging_set_logger_level(const char * name, int level, bool detailed_error = false)
 {
+  std::lock_guard<std::mutex> lock(g_logging_lock);
   rcutils_ret_t ret = rcutils_logging_set_logger_level(name, level);
   if (ret != RCUTILS_RET_OK) {
-    rcutils_reset_error();
-    throw std::runtime_error("Failed to set level for logger");
+    if (detailed_error) {
+      throw std::runtime_error(rclpy::append_rcutils_error("Failed reason"));
+    } else {
+      rcutils_reset_error();
+      throw std::runtime_error("Failed to set level for logger");
+    }
   }
 }
 
@@ -87,11 +97,32 @@ rclpy_logging_set_logger_level(const char * name, int level)
 int
 rclpy_logging_get_logger_effective_level(const char * name)
 {
+  std::lock_guard<std::mutex> lock(g_logging_lock);
   int logger_level = rcutils_logging_get_logger_effective_level(name);
 
   if (logger_level < 0) {
     rcutils_reset_error();
     throw std::runtime_error("Failed to get effective level for logger");
+  }
+  return logger_level;
+}
+
+/// Get the level of a logger
+/**
+ * This considers the severity level of the specifed logger only.
+ *
+ * \param[in] name Fully-qualified name of logger.
+ * \return The level of the logger
+ */
+int
+rclpy_logging_get_logger_level(const char * name)
+{
+  std::lock_guard<std::mutex> lock(g_logging_lock);
+  int logger_level = rcutils_logging_get_logger_level(name);
+
+  if (logger_level < 0) {
+    rcutils_reset_error();
+    throw std::runtime_error("Failed to get level for logger");
   }
   return logger_level;
 }
@@ -214,7 +245,9 @@ define_logging_api(py::module m)
   m.def("rclpy_logging_get_separator_string", []() {return RCUTILS_LOGGING_SEPARATOR_STRING;});
   m.def("rclpy_logging_initialize", &rclpy_logging_initialize);
   m.def("rclpy_logging_shutdown", &rclpy_logging_shutdown);
-  m.def("rclpy_logging_set_logger_level", &rclpy_logging_set_logger_level);
+  m.def(
+    "rclpy_logging_set_logger_level", &rclpy_logging_set_logger_level,
+    py::arg("name"), py::arg("level"), py::arg("detailed_error") = false);
   m.def("rclpy_logging_get_logger_effective_level", &rclpy_logging_get_logger_effective_level);
   m.def("rclpy_logging_logger_is_enabled_for", &rclpy_logging_logger_is_enabled_for);
   m.def("rclpy_logging_rcutils_log", &rclpy_logging_rcutils_log);
@@ -222,5 +255,6 @@ define_logging_api(py::module m)
   m.def("rclpy_logging_get_logging_directory", &rclpy_logging_get_logging_directory);
   m.def("rclpy_logging_rosout_add_sublogger", &rclpy_logging_rosout_add_sublogger);
   m.def("rclpy_logging_rosout_remove_sublogger", &rclpy_logging_rosout_remove_sublogger);
+  m.def("rclpy_logging_get_logger_level", &rclpy_logging_get_logger_level);
 }
 }  // namespace rclpy

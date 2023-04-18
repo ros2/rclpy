@@ -63,6 +63,7 @@ from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
+from rclpy.logging_service import LoggingService
 from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
@@ -126,7 +127,8 @@ class Node:
         start_parameter_services: bool = True,
         parameter_overrides: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_parameters_from_overrides: bool = False
+        automatically_declare_parameters_from_overrides: bool = False,
+        enable_logger_service: bool = False
     ) -> None:
         """
         Create a Node.
@@ -150,6 +152,9 @@ class Node:
             This flag affects the behavior of parameter-related operations.
         :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
             will be used to implicitly declare parameters on the node during creation.
+        :param enable_logger_service: ``True`` if ROS2 services are created to allow external nodes
+            to get and set logger levels of this node. Otherwise, logger levels are only managed
+            locally. That is, logger levels cannot be changed remotely.
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
@@ -230,6 +235,9 @@ class Node:
 
         if start_parameter_services:
             self._parameter_service = ParameterService(self)
+
+        if enable_logger_service:
+            self._logger_service = LoggingService(self)
 
     @property
     def publishers(self) -> Iterator[Publisher]:
