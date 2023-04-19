@@ -125,7 +125,7 @@ class Node:
         use_global_arguments: bool = True,
         enable_rosout: bool = True,
         start_parameter_services: bool = True,
-        parameter_overrides: List[Parameter] = None,
+        parameter_overrides: Optional[List[Parameter]] = None,
         allow_undeclared_parameters: bool = False,
         automatically_declare_parameters_from_overrides: bool = False,
         enable_logger_service: bool = False
