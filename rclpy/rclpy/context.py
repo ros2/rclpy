@@ -15,7 +15,10 @@
 from inspect import ismethod
 import sys
 import threading
+from types import TracebackType
 from typing import Callable
+from typing import ContextManager
+from typing import Literal
 from typing import List
 from typing import Optional
 import weakref
@@ -25,7 +28,7 @@ g_logging_configure_lock = threading.Lock()
 g_logging_ref_count = 0
 
 
-class Context:
+class Context(ContextManager["Context"]):
     """
     Encapsulates the lifecycle of init and shutdown.
 
@@ -149,3 +152,18 @@ class Context:
             raise RuntimeError('Context must be initialized before it can have a domain id')
         with self.__context, self._lock:
             return self.__context.get_domain_id()
+
+    def __enter__(self) -> "Context":
+        # We do not accept parameters here. If one wants to customize the init() call,
+        # they would have to call it manaully and not use the ContextManager convenience
+        self.init()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> Literal[False]:
+        self.try_shutdown()
+        return False  # Reraise possible exceptions
