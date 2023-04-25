@@ -18,7 +18,6 @@ import threading
 from types import TracebackType
 from typing import Callable
 from typing import ContextManager
-from typing import Literal
 from typing import List
 from typing import Optional
 from typing import Type
