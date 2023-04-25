@@ -166,4 +166,3 @@ class Context(ContextManager["Context"]):
         exc_tb: TracebackType | None,
     ) -> Literal[False]:
         self.try_shutdown()
-        return False  # Reraise possible exceptions
