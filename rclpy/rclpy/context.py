@@ -21,6 +21,7 @@ from typing import ContextManager
 from typing import Literal
 from typing import List
 from typing import Optional
+from typing import Type
 import weakref
 
 
@@ -161,8 +162,8 @@ class Context(ContextManager["Context"]):
 
     def __exit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> Literal[False]:
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         self.try_shutdown()
