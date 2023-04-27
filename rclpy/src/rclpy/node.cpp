@@ -17,6 +17,8 @@
 #include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
+#include <rcl/logging.h>
+#include <rcl/logging_rosout.h>
 #include <rcl/types.h>
 #include <rcl_interfaces/msg/parameter_type.h>
 #include <rcl_yaml_param_parser/parser.h>
@@ -459,11 +461,8 @@ Node::Node(
   options.arguments = arguments;
   options.enable_rosout = enable_rosout;
 
-  {
-    rclpy::LoggingGuard scoped_logging_guard;
-    ret = rcl_node_init(
-      rcl_node_.get(), node_name, namespace_, context.rcl_ptr(), &options);
-  }
+  ret = rcl_node_init(
+    rcl_node_.get(), node_name, namespace_, context.rcl_ptr(), &options);
 
   if (RCL_RET_BAD_ALLOC == ret) {
     rcl_reset_error();
@@ -477,6 +476,21 @@ Node::Node(
   }
   if (RCL_RET_OK != ret) {
     throw RCLError("error creating node");
+  }
+
+  if (rcl_logging_rosout_enabled() && enable_rosout) {
+    rclpy::LoggingGuard scoped_logging_guard;
+    ret = rcl_logging_rosout_init_publisher_for_node(rcl_node_.get());
+    if (ret != RCL_RET_OK) {
+      if (rcl_logging_rosout_fini_publisher_for_node(rcl_node_.get()) != RCL_RET_OK) {
+        // Warning should use line number of the current stack frame
+        int stack_level = 1;
+        PyErr_WarnFormat(
+          PyExc_RuntimeWarning, stack_level, "Error in destruction of rosout publisher: %s",
+          rcl_get_error_string().str);
+      }
+      throw RCLError("failed to initialize rosout publisher");
+    }
   }
 }
 
