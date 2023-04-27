@@ -2,6 +2,9 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.0 (2023-04-27)
+------------------
+
 4.1.0 (2023-04-18)
 ------------------
 * Logging service support (`#1102 <https://github.com/ros2/rclpy/issues/1102>`_)
