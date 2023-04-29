@@ -135,7 +135,7 @@ class ConditionReachedException(Exception):
     pass
 
 
-class Executor(ContextManager["Executor"]):
+class Executor(ContextManager['Executor']):
     """
     The base class for an executor.
 
@@ -708,7 +708,7 @@ class Executor(ContextManager["Executor"]):
                 # Generator ran out of work
                 self._cb_iter = None
 
-    def __enter__(self) -> "Executor":
+    def __enter__(self) -> 'Executor':
         # Nothing to do here
         return self
 

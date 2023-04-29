@@ -513,9 +513,9 @@ class TestExecutor(unittest.TestCase):
             # Make sure the correct instance is returned
             assert the_executor is executor
 
-            assert not executor._is_shutdown, "the executor should not be shut down"
+            assert not executor._is_shutdown, 'the executor should not be shut down'
 
-        assert executor._is_shutdown, "the executor should now be shut down"
+        assert executor._is_shutdown, 'the executor should now be shut down'
 
         # Make sure it does not raise (smoke test)
         executor.shutdown()
