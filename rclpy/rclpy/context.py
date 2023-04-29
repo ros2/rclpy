@@ -34,6 +34,13 @@ class Context(ContextManager['Context']):
 
     Context objects should not be reused, and are finalized in their destructor.
     Wraps the `rcl_context_t` type.
+
+    :Example:
+        >>> from rclpy.context import Context
+        >>> with Context() as context:
+        >>>     context.ok()
+        True
+
     """
 
     def __init__(self):
