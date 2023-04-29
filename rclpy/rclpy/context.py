@@ -28,7 +28,7 @@ g_logging_configure_lock = threading.Lock()
 g_logging_ref_count = 0
 
 
-class Context(ContextManager["Context"]):
+class Context(ContextManager['Context']):
     """
     Encapsulates the lifecycle of init and shutdown.
 
@@ -153,7 +153,7 @@ class Context(ContextManager["Context"]):
         with self.__context, self._lock:
             return self.__context.get_domain_id()
 
-    def __enter__(self) -> "Context":
+    def __enter__(self) -> 'Context':
         # We do not accept parameters here. If one wants to customize the init() call,
         # they would have to call it manaully and not use the ContextManager convenience
         self.init()
