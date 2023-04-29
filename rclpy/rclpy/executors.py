@@ -147,6 +147,16 @@ class Executor(ContextManager['Executor']):
     If the executor has any cleanup then it should also define :meth:`shutdown`.
 
     :param context: The context to be associated with, or ``None`` for the default global context.
+
+    :Example:
+        >>> from rclpy.executor import Executor
+        >>> from rclpy.node import Node
+        >>> 
+        >>> with Executor() as executor:
+        >>>     executor.add_node(Node('example_node'))
+        >>>     executor.spin_once()
+        >>>     len(executor.get_nodes())
+        1
     """
 
     def __init__(self, *, context: Context = None) -> None:
