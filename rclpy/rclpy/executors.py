@@ -151,7 +151,7 @@ class Executor(ContextManager['Executor']):
     :Example:
         >>> from rclpy.executor import Executor
         >>> from rclpy.node import Node
-        >>> 
+        >>>
         >>> with Executor() as executor:
         >>>     executor.add_node(Node('example_node'))
         >>>     executor.spin_once()
