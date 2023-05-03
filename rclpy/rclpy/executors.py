@@ -20,14 +20,17 @@ from threading import Condition
 from threading import Lock
 from threading import RLock
 import time
+from types import TracebackType
 from typing import Any
 from typing import Callable
+from typing import ContextManager
 from typing import Coroutine
 from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
+from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
@@ -132,7 +135,7 @@ class ConditionReachedException(Exception):
     pass
 
 
-class Executor:
+class Executor(ContextManager['Executor']):
     """
     The base class for an executor.
 
@@ -144,6 +147,16 @@ class Executor:
     If the executor has any cleanup then it should also define :meth:`shutdown`.
 
     :param context: The context to be associated with, or ``None`` for the default global context.
+
+    :Example:
+        >>> from rclpy.executor import Executor
+        >>> from rclpy.node import Node
+        >>>
+        >>> with Executor() as executor:
+        >>>     executor.add_node(Node('example_node'))
+        >>>     executor.spin_once()
+        >>>     len(executor.get_nodes())
+        1
     """
 
     def __init__(self, *, context: Context = None) -> None:
@@ -704,6 +717,18 @@ class Executor:
             except StopIteration:
                 # Generator ran out of work
                 self._cb_iter = None
+
+    def __enter__(self) -> 'Executor':
+        # Nothing to do here
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.shutdown()
 
 
 class SingleThreadedExecutor(Executor):

@@ -20,6 +20,7 @@ import unittest
 import warnings
 
 import rclpy
+from rclpy.executors import Executor
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
 from rclpy.executors import SingleThreadedExecutor
@@ -502,6 +503,22 @@ class TestExecutor(unittest.TestCase):
         t.start()
         self.assertTrue(shutdown_event.wait(120))
         self.node.destroy_timer(tmr)
+
+    def test_context_manager(self):
+        self.assertIsNotNone(self.node.handle)
+
+        executor: Executor = SingleThreadedExecutor(context=self.context)
+
+        with executor as the_executor:
+            # Make sure the correct instance is returned
+            assert the_executor is executor
+
+            assert not executor._is_shutdown, 'the executor should not be shut down'
+
+        assert executor._is_shutdown, 'the executor should now be shut down'
+
+        # Make sure it does not raise (smoke test)
+        executor.shutdown()
 
 
 if __name__ == '__main__':
