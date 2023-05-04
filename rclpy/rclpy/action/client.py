@@ -436,22 +436,6 @@ class ActionClient(Waitable):
             raise TypeError()
 
         with self._local_data_condition:
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
-            print("SENDING GOAL")
             request = self._action_type.Impl.SendGoalService.Request()
             request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
             request.goal = goal
