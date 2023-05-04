@@ -160,6 +160,7 @@ class ActionClient(Waitable):
                 feedback_sub_qos_profile.get_c_qos_profile(),
                 status_sub_qos_profile.get_c_qos_profile()
             )
+        self._local_data_condition = threading.Condition()
 
         self._is_ready = False
 
@@ -283,73 +284,74 @@ class ActionClient(Waitable):
         This will set results for Future objects for any received service responses and
         call any user-defined callbacks (e.g. feedback).
         """
-        if 'goal' in taken_data:
-            sequence_number, goal_response = taken_data['goal']
-            if sequence_number in self._goal_sequence_number_to_goal_id:
-                goal_handle = ClientGoalHandle(
-                    self,
-                    self._goal_sequence_number_to_goal_id[sequence_number],
-                    goal_response)
+        with self._local_data_condition:
+            if 'goal' in taken_data:
+                sequence_number, goal_response = taken_data['goal']
+                if sequence_number in self._goal_sequence_number_to_goal_id:
+                    goal_handle = ClientGoalHandle(
+                        self,
+                        self._goal_sequence_number_to_goal_id[sequence_number],
+                        goal_response)
 
-                if goal_handle.accepted:
-                    goal_uuid = bytes(goal_handle.goal_id.uuid)
+                    if goal_handle.accepted:
+                        goal_uuid = bytes(goal_handle.goal_id.uuid)
+                        if goal_uuid in self._goal_handles:
+                            raise RuntimeError(
+                                'Two goals were accepted with the same ID ({})'.format(goal_handle))
+                        self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
+
+                    self._pending_goal_requests[sequence_number].set_result(goal_handle)
+                else:
+                    self._node.get_logger().warning(
+                        'Ignoring unexpected goal response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
+
+            if 'cancel' in taken_data:
+                sequence_number, cancel_response = taken_data['cancel']
+                if sequence_number in self._pending_cancel_requests:
+                    self._pending_cancel_requests[sequence_number].set_result(cancel_response)
+                else:
+                    self._node.get_logger().warning(
+                        'Ignoring unexpected cancel response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
+
+            if 'result' in taken_data:
+                sequence_number, result_response = taken_data['result']
+                if sequence_number in self._pending_result_requests:
+                    self._pending_result_requests[sequence_number].set_result(result_response)
+                else:
+                    self._logger.warning(
+                        'Ignoring unexpected result response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
+
+            if 'feedback' in taken_data:
+                feedback_msg = taken_data['feedback']
+                goal_uuid = bytes(feedback_msg.goal_id.uuid)
+                # Call a registered callback if there is one
+                if goal_uuid in self._feedback_callbacks:
+                    await await_or_execute(self._feedback_callbacks[goal_uuid], feedback_msg)
+
+            if 'status' in taken_data:
+                # Update the status of all goal handles maintained by this Action Client
+                for status_msg in taken_data['status'].status_list:
+                    goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
+                    status = status_msg.status
+
                     if goal_uuid in self._goal_handles:
-                        raise RuntimeError(
-                            'Two goals were accepted with the same ID ({})'.format(goal_handle))
-                    self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
-
-                self._pending_goal_requests[sequence_number].set_result(goal_handle)
-            else:
-                self._node.get_logger().warning(
-                    'Ignoring unexpected goal response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
-                )
-
-        if 'cancel' in taken_data:
-            sequence_number, cancel_response = taken_data['cancel']
-            if sequence_number in self._pending_cancel_requests:
-                self._pending_cancel_requests[sequence_number].set_result(cancel_response)
-            else:
-                self._node.get_logger().warning(
-                    'Ignoring unexpected cancel response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
-                )
-
-        if 'result' in taken_data:
-            sequence_number, result_response = taken_data['result']
-            if sequence_number in self._pending_result_requests:
-                self._pending_result_requests[sequence_number].set_result(result_response)
-            else:
-                self._node.get_logger().warning(
-                    'Ignoring unexpected result response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
-                )
-
-        if 'feedback' in taken_data:
-            feedback_msg = taken_data['feedback']
-            goal_uuid = bytes(feedback_msg.goal_id.uuid)
-            # Call a registered callback if there is one
-            if goal_uuid in self._feedback_callbacks:
-                await await_or_execute(self._feedback_callbacks[goal_uuid], feedback_msg)
-
-        if 'status' in taken_data:
-            # Update the status of all goal handles maintained by this Action Client
-            for status_msg in taken_data['status'].status_list:
-                goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
-                status = status_msg.status
-
-                if goal_uuid in self._goal_handles:
-                    goal_handle = self._goal_handles[goal_uuid]()
-                    if goal_handle is not None:
-                        goal_handle._status = status
-                        # Remove "done" goals from the list
-                        if (GoalStatus.STATUS_SUCCEEDED == status or
-                                GoalStatus.STATUS_CANCELED == status or
-                                GoalStatus.STATUS_ABORTED == status):
+                        goal_handle = self._goal_handles[goal_uuid]()
+                        if goal_handle is not None:
+                            goal_handle._status = status
+                            # Remove "done" goals from the list
+                            if (GoalStatus.STATUS_SUCCEEDED == status or
+                                    GoalStatus.STATUS_CANCELED == status or
+                                    GoalStatus.STATUS_ABORTED == status):
+                                del self._goal_handles[goal_uuid]
+                        else:
+                            # Weak reference is None
                             del self._goal_handles[goal_uuid]
-                    else:
-                        # Weak reference is None
-                        del self._goal_handles[goal_uuid]
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
@@ -433,25 +435,42 @@ class ActionClient(Waitable):
         if not isinstance(goal, self._action_type.Goal):
             raise TypeError()
 
-        request = self._action_type.Impl.SendGoalService.Request()
-        request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
-        request.goal = goal
-        sequence_number = self._client_handle.send_goal_request(request)
-        if sequence_number in self._pending_goal_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
+        with self._local_data_condition:
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            print("SENDING GOAL")
+            request = self._action_type.Impl.SendGoalService.Request()
+            request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
+            request.goal = goal
+            sequence_number = self._client_handle.send_goal_request(request)
+            if sequence_number in self._pending_goal_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
 
-        if feedback_callback is not None:
-            # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid = bytes(request.goal_id.uuid)
-            self._feedback_callbacks[goal_uuid] = feedback_callback
+            if feedback_callback is not None:
+                # TODO(jacobperron): Move conversion function to a general-use package
+                goal_uuid = bytes(request.goal_id.uuid)
+                self._feedback_callbacks[goal_uuid] = feedback_callback
 
-        future = Future()
-        self._pending_goal_requests[sequence_number] = future
-        self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
-        future.add_done_callback(self._remove_pending_goal_request)
-        # Add future so executor is aware
-        self.add_future(future)
+            future = Future()
+            self._pending_goal_requests[sequence_number] = future
+            self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
+            future.add_done_callback(self._remove_pending_goal_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
         return future
 
@@ -492,18 +511,19 @@ class ActionClient(Waitable):
             raise TypeError(
                 'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
 
-        cancel_request = CancelGoal.Request()
-        cancel_request.goal_info.goal_id = goal_handle.goal_id
-        sequence_number = self._client_handle.send_cancel_request(cancel_request)
-        if sequence_number in self._pending_cancel_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
+        with self._local_data_condition:
+            cancel_request = CancelGoal.Request()
+            cancel_request.goal_info.goal_id = goal_handle.goal_id
+            sequence_number = self._client_handle.send_cancel_request(cancel_request)
+            if sequence_number in self._pending_cancel_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
 
-        future = Future()
-        self._pending_cancel_requests[sequence_number] = future
-        future.add_done_callback(self._remove_pending_cancel_request)
-        # Add future so executor is aware
-        self.add_future(future)
+            future = Future()
+            self._pending_cancel_requests[sequence_number] = future
+            future.add_done_callback(self._remove_pending_cancel_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
         return future
 
@@ -544,19 +564,20 @@ class ActionClient(Waitable):
             raise TypeError(
                 'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
 
-        result_request = self._action_type.Impl.GetResultService.Request()
-        result_request.goal_id = goal_handle.goal_id
-        sequence_number = self._client_handle.send_result_request(result_request)
-        if sequence_number in self._pending_result_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending result request'.format(sequence_number))
+        with self._local_data_condition:
+            result_request = self._action_type.Impl.GetResultService.Request()
+            result_request.goal_id = goal_handle.goal_id
+            sequence_number = self._client_handle.send_result_request(result_request)
+            if sequence_number in self._pending_result_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending result request'.format(sequence_number))
 
-        future = Future()
-        self._pending_result_requests[sequence_number] = future
-        self._result_sequence_number_to_goal_id[sequence_number] = result_request.goal_id
-        future.add_done_callback(self._remove_pending_result_request)
-        # Add future so executor is aware
-        self.add_future(future)
+            future = Future()
+            self._pending_result_requests[sequence_number] = future
+            self._result_sequence_number_to_goal_id[sequence_number] = result_request.goal_id
+            future.add_done_callback(self._remove_pending_result_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
         return future
 
