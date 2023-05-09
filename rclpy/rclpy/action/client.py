@@ -322,7 +322,7 @@ class ActionClient(Waitable):
                 if sequence_number in self._pending_result_requests:
                     self._pending_result_requests[sequence_number].set_result(result_response)
                 else:
-                    self._logger.warning(
+                    self._node._logger.warning(
                         'Ignoring unexpected result response. There may be more than '
                         f"one action server for the action '{self._action_name}'"
                     )
