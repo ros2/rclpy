@@ -175,10 +175,9 @@ class ActionClient(Waitable):
         self._result_sequence_number_to_goal_id = {}
         # key: UUID in bytes, value: callback function
         self._feedback_callbacks = {}
-        # Thread-safe that synchronizes edit of local dictionaries
-        # Queue is populated when goal/cancel/request is made
-        # Queue is popped when response is received
-        self._request_queue = queue.Queue()
+        self._goal_event = threading.Event()
+        self._result_event = threading.Event()
+        self._cancel_event = threading.Event()
 
 
         callback_group.add_entity(self)
@@ -287,48 +286,60 @@ class ActionClient(Waitable):
         call any user-defined callbacks (e.g. feedback).
         """
         if 'goal' in taken_data:
-            self._request_queue.get()
-            sequence_number, goal_response = taken_data['goal']
-            if sequence_number in self._goal_sequence_number_to_goal_id:
-                goal_handle = ClientGoalHandle(
-                    self,
-                    self._goal_sequence_number_to_goal_id[sequence_number],
-                    goal_response)
+            if self._goal_event.wait(timeout=5.0):
+                sequence_number, goal_response = taken_data['goal']
+                if sequence_number in self._goal_sequence_number_to_goal_id:
+                    goal_handle = ClientGoalHandle(
+                        self,
+                        self._goal_sequence_number_to_goal_id[sequence_number],
+                        goal_response)
 
-                if goal_handle.accepted:
-                    goal_uuid = bytes(goal_handle.goal_id.uuid)
-                    if goal_uuid in self._goal_handles:
-                        raise RuntimeError(
-                            'Two goals were accepted with the same ID ({})'.format(goal_handle))
-                    self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
+                    if goal_handle.accepted:
+                        goal_uuid = bytes(goal_handle.goal_id.uuid)
+                        if goal_uuid in self._goal_handles:
+                            raise RuntimeError(
+                                'Two goals were accepted with the same ID ({})'.format(goal_handle))
+                        self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
 
-                self._pending_goal_requests[sequence_number].set_result(goal_handle)
+                    self._pending_goal_requests[sequence_number].set_result(goal_handle)
+                else:
+                    self._node.get_logger().warning(
+                        'Ignoring unexpected goal response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
             else:
                 self._node.get_logger().warning(
-                    'Ignoring unexpected goal response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
+                    'Timed out waiting for goal event to be set'
                 )
 
         if 'cancel' in taken_data:
-            self._request_queue.get()
-            sequence_number, cancel_response = taken_data['cancel']
-            if sequence_number in self._pending_cancel_requests:
-                self._pending_cancel_requests[sequence_number].set_result(cancel_response)
+            if self._cancel_event.wait(timeout=5.0):
+                sequence_number, cancel_response = taken_data['cancel']
+                if sequence_number in self._pending_cancel_requests:
+                    self._pending_cancel_requests[sequence_number].set_result(cancel_response)
+                else:
+                    self._node.get_logger().warning(
+                        'Ignoring unexpected cancel response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
             else:
                 self._node.get_logger().warning(
-                    'Ignoring unexpected cancel response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
+                    'Timed out waiting for cancel event to be set'
                 )
 
         if 'result' in taken_data:
-            self._request_queue.get()
-            sequence_number, result_response = taken_data['result']
-            if sequence_number in self._pending_result_requests:
-                self._pending_result_requests[sequence_number].set_result(result_response)
+            if self._result_event.wait(timeout=5.0):
+                sequence_number, result_response = taken_data['result']
+                if sequence_number in self._pending_result_requests:
+                    self._pending_result_requests[sequence_number].set_result(result_response)
+                else:
+                    self._node.get_logger().warning(
+                        'Ignoring unexpected result response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
             else:
                 self._node.get_logger().warning(
-                    'Ignoring unexpected result response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
+                    'Timed out waiting for result event to be set'
                 )
 
         if 'feedback' in taken_data:
@@ -458,7 +469,7 @@ class ActionClient(Waitable):
         future.add_done_callback(self._remove_pending_goal_request)
         # Add future so executor is aware
         self.add_future(future)
-        self._request_queue.put(None)
+        self._goal_event.set()
             
 
         return future
@@ -512,7 +523,7 @@ class ActionClient(Waitable):
         future.add_done_callback(self._remove_pending_cancel_request)
         # Add future so executor is aware
         self.add_future(future)
-        self._request_queue.put(None)
+        self._cancel_event.set()
 
         return future
 
@@ -566,7 +577,7 @@ class ActionClient(Waitable):
         future.add_done_callback(self._remove_pending_result_request)
         # Add future so executor is aware
         self.add_future(future)
-        self._request_queue.put(None)
+        self._result_event.set()
 
         return future
 
