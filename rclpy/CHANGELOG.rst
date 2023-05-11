@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.2.1 (2023-05-11)
+------------------
 * Fix action server crash when the client goes away. (`#1114 <https://github.com/ros2/rclpy/issues/1114>`_)
 * Turn Executor into a ContextManager (`#1118 <https://github.com/ros2/rclpy/issues/1118>`_)
 * Turn Context into a ContextManager (`#1117 <https://github.com/ros2/rclpy/issues/1117>`_)
