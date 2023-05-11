@@ -176,6 +176,7 @@ class ActionClient(Waitable):
         self._result_sequence_number_to_goal_id = {}
         # key: UUID in bytes, value: callback function
         self._feedback_callbacks = {}
+        self._data_lock = threading.Lock()
         self._goal_event = threading.Event()
         self._result_event = threading.Event()
         self._cancel_event = threading.Event()
@@ -286,9 +287,8 @@ class ActionClient(Waitable):
         This will set results for Future objects for any received service responses and
         call any user-defined callbacks (e.g. feedback).
         """
-        if 'goal' in taken_data:
-            if self._goal_event.wait(timeout=WAIT_TIMEOUT):
-                self._goal_event.clear()
+        with self._data_lock:
+            if 'goal' in taken_data:
                 sequence_number, goal_response = taken_data['goal']
                 if sequence_number in self._goal_sequence_number_to_goal_id:
                     goal_handle = ClientGoalHandle(
@@ -309,14 +309,8 @@ class ActionClient(Waitable):
                         'Ignoring unexpected goal response. There may be more than '
                         f"one action server for the action '{self._action_name}'"
                     )
-            else:
-                self._node.get_logger().warning(
-                    'Timed out waiting for goal event to be set'
-                )
 
-        if 'cancel' in taken_data:
-            if self._cancel_event.wait(timeout=WAIT_TIMEOUT):
-                self._cancel_event.clear()
+            if 'cancel' in taken_data:
                 sequence_number, cancel_response = taken_data['cancel']
                 if sequence_number in self._pending_cancel_requests:
                     self._pending_cancel_requests[sequence_number].set_result(cancel_response)
@@ -325,14 +319,8 @@ class ActionClient(Waitable):
                         'Ignoring unexpected cancel response. There may be more than '
                         f"one action server for the action '{self._action_name}'"
                     )
-            else:
-                self._node.get_logger().warning(
-                    'Timed out waiting for cancel event to be set'
-                )
 
-        if 'result' in taken_data:
-            if self._result_event.wait(timeout=WAIT_TIMEOUT):
-                self._result_event.clear()
+            if 'result' in taken_data:
                 sequence_number, result_response = taken_data['result']
                 if sequence_number in self._pending_result_requests:
                     self._pending_result_requests[sequence_number].set_result(result_response)
@@ -341,36 +329,32 @@ class ActionClient(Waitable):
                         'Ignoring unexpected result response. There may be more than '
                         f"one action server for the action '{self._action_name}'"
                     )
-            else:
-                self._node.get_logger().warning(
-                    'Timed out waiting for result event to be set'
-                )
 
-        if 'feedback' in taken_data:
-            feedback_msg = taken_data['feedback']
-            goal_uuid = bytes(feedback_msg.goal_id.uuid)
-            # Call a registered callback if there is one
-            if goal_uuid in self._feedback_callbacks:
-                await await_or_execute(self._feedback_callbacks[goal_uuid], feedback_msg)
+            if 'feedback' in taken_data:
+                feedback_msg = taken_data['feedback']
+                goal_uuid = bytes(feedback_msg.goal_id.uuid)
+                # Call a registered callback if there is one
+                if goal_uuid in self._feedback_callbacks:
+                    await await_or_execute(self._feedback_callbacks[goal_uuid], feedback_msg)
 
-        if 'status' in taken_data:
-            # Update the status of all goal handles maintained by this Action Client
-            for status_msg in taken_data['status'].status_list:
-                goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
-                status = status_msg.status
+            if 'status' in taken_data:
+                # Update the status of all goal handles maintained by this Action Client
+                for status_msg in taken_data['status'].status_list:
+                    goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
+                    status = status_msg.status
 
-                if goal_uuid in self._goal_handles:
-                    goal_handle = self._goal_handles[goal_uuid]()
-                    if goal_handle is not None:
-                        goal_handle._status = status
-                        # Remove "done" goals from the list
-                        if (GoalStatus.STATUS_SUCCEEDED == status or
-                                GoalStatus.STATUS_CANCELED == status or
-                                GoalStatus.STATUS_ABORTED == status):
+                    if goal_uuid in self._goal_handles:
+                        goal_handle = self._goal_handles[goal_uuid]()
+                        if goal_handle is not None:
+                            goal_handle._status = status
+                            # Remove "done" goals from the list
+                            if (GoalStatus.STATUS_SUCCEEDED == status or
+                                    GoalStatus.STATUS_CANCELED == status or
+                                    GoalStatus.STATUS_ABORTED == status):
+                                del self._goal_handles[goal_uuid]
+                        else:
+                            # Weak reference is None
                             del self._goal_handles[goal_uuid]
-                    else:
-                        # Weak reference is None
-                        del self._goal_handles[goal_uuid]
 
     def get_num_entities(self):
         """Return number of each type of entity used in the wait set."""
@@ -451,32 +435,31 @@ class ActionClient(Waitable):
           the Goal type of the provided action when the service was
           constructed.
         """
-        if not isinstance(goal, self._action_type.Goal):
-            raise TypeError()
+        with self._data_lock:
+            if not isinstance(goal, self._action_type.Goal):
+                raise TypeError()
 
-        request = self._action_type.Impl.SendGoalService.Request()
-        request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
-        request.goal = goal
-        sequence_number = self._client_handle.send_goal_request(request)
-        if sequence_number in self._pending_goal_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
+            request = self._action_type.Impl.SendGoalService.Request()
+            request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
+            request.goal = goal
+            sequence_number = self._client_handle.send_goal_request(request)
+            if sequence_number in self._pending_goal_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
 
-        if feedback_callback is not None:
-            # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid = bytes(request.goal_id.uuid)
-            self._feedback_callbacks[goal_uuid] = feedback_callback
+            if feedback_callback is not None:
+                # TODO(jacobperron): Move conversion function to a general-use package
+                goal_uuid = bytes(request.goal_id.uuid)
+                self._feedback_callbacks[goal_uuid] = feedback_callback
 
-        future = Future()
-        self._pending_goal_requests[sequence_number] = future
-        self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
-        future.add_done_callback(self._remove_pending_goal_request)
-        # Add future so executor is aware
-        self.add_future(future)
-        self._goal_event.set()
-            
+            future = Future()
+            self._pending_goal_requests[sequence_number] = future
+            self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
+            future.add_done_callback(self._remove_pending_goal_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
-        return future
+            return future
 
     def _cancel_goal(self, goal_handle):
         """
@@ -511,25 +494,25 @@ class ActionClient(Waitable):
         :return: a Future instance that completes when the cancel request has been processed.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        if not isinstance(goal_handle, ClientGoalHandle):
-            raise TypeError(
-                'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
+        with self._data_lock:
+            if not isinstance(goal_handle, ClientGoalHandle):
+                raise TypeError(
+                    'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
 
-        cancel_request = CancelGoal.Request()
-        cancel_request.goal_info.goal_id = goal_handle.goal_id
-        sequence_number = self._client_handle.send_cancel_request(cancel_request)
-        if sequence_number in self._pending_cancel_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
+            cancel_request = CancelGoal.Request()
+            cancel_request.goal_info.goal_id = goal_handle.goal_id
+            sequence_number = self._client_handle.send_cancel_request(cancel_request)
+            if sequence_number in self._pending_cancel_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
 
-        future = Future()
-        self._pending_cancel_requests[sequence_number] = future
-        future.add_done_callback(self._remove_pending_cancel_request)
-        # Add future so executor is aware
-        self.add_future(future)
-        self._cancel_event.set()
+            future = Future()
+            self._pending_cancel_requests[sequence_number] = future
+            future.add_done_callback(self._remove_pending_cancel_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
-        return future
+            return future
 
     def _get_result(self, goal_handle):
         """
@@ -564,26 +547,26 @@ class ActionClient(Waitable):
         :return: a Future instance that completes when the get result request has been processed.
         :rtype: :class:`rclpy.task.Future` instance
         """
-        if not isinstance(goal_handle, ClientGoalHandle):
-            raise TypeError(
-                'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
+        with self._data_lock:
+            if not isinstance(goal_handle, ClientGoalHandle):
+                raise TypeError(
+                    'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
 
-        result_request = self._action_type.Impl.GetResultService.Request()
-        result_request.goal_id = goal_handle.goal_id
-        sequence_number = self._client_handle.send_result_request(result_request)
-        if sequence_number in self._pending_result_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending result request'.format(sequence_number))
+            result_request = self._action_type.Impl.GetResultService.Request()
+            result_request.goal_id = goal_handle.goal_id
+            sequence_number = self._client_handle.send_result_request(result_request)
+            if sequence_number in self._pending_result_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending result request'.format(sequence_number))
 
-        future = Future()
-        self._pending_result_requests[sequence_number] = future
-        self._result_sequence_number_to_goal_id[sequence_number] = result_request.goal_id
-        future.add_done_callback(self._remove_pending_result_request)
-        # Add future so executor is aware
-        self.add_future(future)
-        self._result_event.set()
+            future = Future()
+            self._pending_result_requests[sequence_number] = future
+            self._result_sequence_number_to_goal_id[sequence_number] = result_request.goal_id
+            future.add_done_callback(self._remove_pending_result_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
-        return future
+            return future
 
     def server_is_ready(self):
         """
