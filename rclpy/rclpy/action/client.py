@@ -30,6 +30,7 @@ from rclpy.type_support import check_for_type_support
 from rclpy.waitable import NumberOfEntities, Waitable
 
 from unique_identifier_msgs.msg import UUID
+WAIT_TIMEOUT = 15.0
 
 class ClientGoalHandle():
     """Goal handle for working with Action Clients."""
@@ -286,7 +287,7 @@ class ActionClient(Waitable):
         call any user-defined callbacks (e.g. feedback).
         """
         if 'goal' in taken_data:
-            if self._goal_event.wait(timeout=5.0):
+            if self._goal_event.wait(timeout=WAIT_TIMEOUT):
                 self._goal_event.clear()
                 sequence_number, goal_response = taken_data['goal']
                 if sequence_number in self._goal_sequence_number_to_goal_id:
@@ -314,7 +315,7 @@ class ActionClient(Waitable):
                 )
 
         if 'cancel' in taken_data:
-            if self._cancel_event.wait(timeout=5.0):
+            if self._cancel_event.wait(timeout=WAIT_TIMEOUT):
                 self._cancel_event.clear()
                 sequence_number, cancel_response = taken_data['cancel']
                 if sequence_number in self._pending_cancel_requests:
@@ -330,7 +331,7 @@ class ActionClient(Waitable):
                 )
 
         if 'result' in taken_data:
-            if self._result_event.wait(timeout=5.0):
+            if self._result_event.wait(timeout=WAIT_TIMEOUT):
                 self._result_event.clear()
                 sequence_number, result_response = taken_data['result']
                 if sequence_number in self._pending_result_requests:
