@@ -287,6 +287,7 @@ class ActionClient(Waitable):
         """
         if 'goal' in taken_data:
             if self._goal_event.wait(timeout=5.0):
+                self._goal_event.clear()
                 sequence_number, goal_response = taken_data['goal']
                 if sequence_number in self._goal_sequence_number_to_goal_id:
                     goal_handle = ClientGoalHandle(
@@ -314,6 +315,7 @@ class ActionClient(Waitable):
 
         if 'cancel' in taken_data:
             if self._cancel_event.wait(timeout=5.0):
+                self._cancel_event.clear()
                 sequence_number, cancel_response = taken_data['cancel']
                 if sequence_number in self._pending_cancel_requests:
                     self._pending_cancel_requests[sequence_number].set_result(cancel_response)
@@ -329,6 +331,7 @@ class ActionClient(Waitable):
 
         if 'result' in taken_data:
             if self._result_event.wait(timeout=5.0):
+                self._result_event.clear()
                 sequence_number, result_response = taken_data['result']
                 if sequence_number in self._pending_result_requests:
                     self._pending_result_requests[sequence_number].set_result(result_response)
