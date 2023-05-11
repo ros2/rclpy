@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix type in Node init args (`#1115 <https://github.com/ros2/rclpy/issues/1115>`_) (`#1122 <https://github.com/ros2/rclpy/issues/1122>`_)
+* Contributors: mergify[bot]
+
 4.1.0 (2023-04-18)
 ------------------
 * Logging service support (`#1102 <https://github.com/ros2/rclpy/issues/1102>`_)
