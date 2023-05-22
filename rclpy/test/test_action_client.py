@@ -159,7 +159,7 @@ class TestActionClient(unittest.TestCase):
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
             future = ac.send_goal_async(Fibonacci.Goal())
-            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            rclpy.spin_until_complete(self.node, future, self.executor)
             self.assertTrue(future.done())
             goal_handle = future.result()
             self.assertTrue(goal_handle.accepted)
@@ -177,7 +177,7 @@ class TestActionClient(unittest.TestCase):
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
                 goal_uuid=goal_uuid)
-            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            rclpy.spin_until_complete(self.node, future, self.executor)
 
             # Publish feedback after goal has been accepted
             self.mock_action_server.publish_feedback(goal_uuid)
@@ -202,7 +202,7 @@ class TestActionClient(unittest.TestCase):
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
                 goal_uuid=goal_uuid)
-            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            rclpy.spin_until_complete(self.node, future, self.executor)
 
             # Check the feedback was not received
             self.assertEqual(self.feedback, None)
@@ -220,12 +220,12 @@ class TestActionClient(unittest.TestCase):
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
                 goal_uuid=goal_uuid)
-            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            rclpy.spin_until_complete(self.node, goal_future, self.executor)
             self.assertTrue(goal_future.done())
             # Then request result
             goal_handle = goal_future.result()
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(self.node, result_future, self.executor)
+            rclpy.spin_until_complete(self.node, result_future, self.executor)
             self.assertTrue(result_future.done())
 
             # Publish feedback after goal result is requested
@@ -246,14 +246,14 @@ class TestActionClient(unittest.TestCase):
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
                 goal_uuid=first_goal_uuid)
-            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            rclpy.spin_until_complete(self.node, future, self.executor)
 
             # Send another goal, but without a feedback callback
             second_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
             future = ac.send_goal_async(
                 Fibonacci.Goal(),
                 goal_uuid=second_goal_uuid)
-            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            rclpy.spin_until_complete(self.node, future, self.executor)
 
             # Publish feedback for the second goal
             self.mock_action_server.publish_feedback(second_goal_uuid)
@@ -277,7 +277,7 @@ class TestActionClient(unittest.TestCase):
                 Fibonacci.Goal(),
                 feedback_callback=self.feedback_callback,
                 goal_uuid=goal_uuid)
-            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            rclpy.spin_until_complete(self.node, future, self.executor)
 
             # Publish feedback for a non-existent goal ID
             self.mock_action_server.publish_feedback(UUID(uuid=list(uuid.uuid4().bytes)))
@@ -298,9 +298,9 @@ class TestActionClient(unittest.TestCase):
             future_0 = ac.send_goal_async(Fibonacci.Goal())
             future_1 = ac.send_goal_async(Fibonacci.Goal())
             future_2 = ac.send_goal_async(Fibonacci.Goal())
-            rclpy.spin_until_future_complete(self.node, future_0, executor)
-            rclpy.spin_until_future_complete(self.node, future_1, executor)
-            rclpy.spin_until_future_complete(self.node, future_2, executor)
+            rclpy.spin_until_complete(self.node, future_0, executor)
+            rclpy.spin_until_complete(self.node, future_1, executor)
+            rclpy.spin_until_complete(self.node, future_2, executor)
             self.assertTrue(future_0.done())
             self.assertTrue(future_1.done())
             self.assertTrue(future_2.done())
@@ -326,13 +326,13 @@ class TestActionClient(unittest.TestCase):
 
             # Send a goal
             goal_future = ac.send_goal_async(Fibonacci.Goal())
-            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            rclpy.spin_until_complete(self.node, goal_future, self.executor)
             self.assertTrue(goal_future.done())
             goal_handle = goal_future.result()
 
             # Cancel the goal
             cancel_future = goal_handle.cancel_goal_async()
-            rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
+            rclpy.spin_until_complete(self.node, cancel_future, self.executor)
             self.assertTrue(cancel_future.done())
             self.assertEqual(
                 cancel_future.result().goals_canceling[0].goal_id,
@@ -347,13 +347,13 @@ class TestActionClient(unittest.TestCase):
 
             # Send a goal
             goal_future = ac.send_goal_async(Fibonacci.Goal())
-            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            rclpy.spin_until_complete(self.node, goal_future, self.executor)
             self.assertTrue(goal_future.done())
             goal_handle = goal_future.result()
 
             # Get the goal result
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(self.node, result_future, self.executor)
+            rclpy.spin_until_complete(self.node, result_future, self.executor)
             self.assertTrue(result_future.done())
         finally:
             ac.destroy()

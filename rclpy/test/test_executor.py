@@ -377,36 +377,104 @@ class TestExecutor(unittest.TestCase):
         assert not executor.add_node(self.node)
         assert id(executor) == id(self.node.executor)
 
-    def test_executor_spin_until_future_complete_timeout(self):
+    def test_executor_spin_for(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         def timer_callback():
             pass
-        timer = self.node.create_timer(0.003, timer_callback)
+        timer = self.node.create_timer(1.0, timer_callback)
+
+        start = time.monotonic()
+        executor.spin_for(duration_sec=10.0)
+        end = time.monotonic()
+        self.assertGreaterEqual(end - start, 10.0)
+
+        timer.cancel()
+
+    def test_executor_spin_until_complete_timeout(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        def timer_callback():
+            pass
+        timer = self.node.create_timer(0.1, timer_callback)
 
         # Timeout
         future = Future()
         self.assertFalse(future.done())
         start = time.monotonic()
-        executor.spin_until_future_complete(future=future, timeout_sec=0.1)
+        executor.spin_until_complete(future, timeout_sec=1.0)
         end = time.monotonic()
         # Nothing is ever setting the future, so this should have waited
-        # at least 0.1 seconds.
-        self.assertGreaterEqual(end - start, 0.1)
+        # at least 1.0 seconds.
+        self.assertGreaterEqual(end - start, 1.0)
+        self.assertFalse(future.done())
+
+        start = time.monotonic()
+        executor.spin_until_complete(lambda: False, timeout_sec=1.0)
+        end = time.monotonic()
+        # condition is always false so this should have waited
+        # at least 1.0 seconds.
+        self.assertGreaterEqual(end - start, 1.0)
         self.assertFalse(future.done())
 
         timer.cancel()
 
-    def test_executor_spin_until_future_complete_future_done(self):
+    def test_executor_spin_until_complete_condition_done(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         def timer_callback():
             pass
-        timer = self.node.create_timer(0.003, timer_callback)
+        timer = self.node.create_timer(0.1, timer_callback)
+
+        condition_var = False
+
+        def set_condition():
+            nonlocal condition_var
+            condition_var = True
+
+        def condition():
+            nonlocal condition_var
+            return condition_var
+
+        # Condition complete timeout_sec > 0
+        self.assertFalse(condition())
+        t = threading.Thread(target=lambda: set_condition())
+        t.start()
+        executor.spin_until_complete(condition, timeout_sec=1.0)
+        self.assertTrue(condition())
+
+        # timeout_sec = None
+        condition_var = False
+        self.assertFalse(condition())
+        t = threading.Thread(target=lambda: set_condition())
+        t.start()
+        executor.spin_until_complete(condition, timeout_sec=None)
+        self.assertTrue(condition())
+
+        # Condition complete timeout < 0
+        condition_var = False
+        self.assertFalse(condition())
+        t = threading.Thread(target=lambda: set_condition())
+        t.start()
+        executor.spin_until_complete(condition, timeout_sec=-1)
+        self.assertTrue(condition())
+
+        timer.cancel()
+
+    def test_executor_spin_until_complete_future_done(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        def timer_callback():
+            pass
+        timer = self.node.create_timer(0.1, timer_callback)
 
         def set_future_result(future):
             future.set_result('finished')
@@ -416,7 +484,7 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(future.done())
         t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
-        executor.spin_until_future_complete(future=future, timeout_sec=0.2)
+        executor.spin_until_complete(future, timeout_sec=1.0)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
@@ -425,7 +493,7 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(future.done())
         t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
-        executor.spin_until_future_complete(future=future, timeout_sec=None)
+        executor.spin_until_complete(future, timeout_sec=None)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
@@ -434,26 +502,36 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(future.done())
         t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
-        executor.spin_until_future_complete(future=future, timeout_sec=-1)
+        executor.spin_until_complete(future, timeout_sec=-1)
         self.assertTrue(future.done())
         self.assertEqual(future.result(), 'finished')
 
         timer.cancel()
 
-    def test_executor_spin_until_future_complete_do_not_wait(self):
+    def test_executor_spin_until_complete_do_not_wait(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
         def timer_callback():
             pass
-        timer = self.node.create_timer(0.003, timer_callback)
+        timer = self.node.create_timer(0.1, timer_callback)
 
         # Do not wait timeout_sec = 0
         future = Future()
         self.assertFalse(future.done())
-        executor.spin_until_future_complete(future=future, timeout_sec=0)
+        executor.spin_until_complete(future, timeout_sec=0)
         self.assertFalse(future.done())
+
+        condition_var = False
+
+        def condition():
+            nonlocal condition_var
+            return condition_var
+
+        self.assertFalse(condition())
+        executor.spin_until_complete(condition, timeout_sec=0)
+        self.assertFalse(condition())
 
         timer.cancel()
 

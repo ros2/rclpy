@@ -177,7 +177,7 @@ class TestQoSEvent(unittest.TestCase):
             EmptyMsg, self.topic_name, message_callback, qos_profile_subscription)
 
         executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
-        rclpy.spin_until_future_complete(self.node, log_msgs_future, executor, 10.0)
+        rclpy.spin_until_complete(self.node, log_msgs_future, executor, 10.0)
 
         self.assertEqual(
             pub_log_msg,

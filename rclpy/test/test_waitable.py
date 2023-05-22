@@ -298,7 +298,7 @@ class TestWaitable(unittest.TestCase):
     def start_spin_thread(self, waitable):
         waitable.future = Future(executor=self.executor)
         self.thr = threading.Thread(
-            target=self.executor.spin_until_future_complete, args=(waitable.future,), daemon=True)
+            target=self.executor.spin_until_complete, args=(waitable.future,), daemon=True)
         self.thr.start()
         return self.thr
 
