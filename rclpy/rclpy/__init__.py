@@ -65,7 +65,7 @@ if TYPE_CHECKING:
 def init(
     *,
     args: Optional[List[str]] = None,
-    context: Context = None,
+    context: Optional[Context] = None,
     domain_id: Optional[int] = None,
     signal_handler_options: Optional[SignalHandlerOptions] = None,
 ) -> None:
@@ -110,7 +110,11 @@ def get_global_executor() -> 'Executor':
     return __executor
 
 
-def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = None) -> None:
+def shutdown(
+    *,
+    context: Optional[Context] = None,
+    uninstall_handlers: Optional[bool] = None
+) -> None:
     """
     Shutdown a previously initialized context.
 
@@ -135,13 +139,13 @@ def shutdown(*, context: Context = None, uninstall_handlers: Optional[bool] = No
 def create_node(
     node_name: str,
     *,
-    context: Context = None,
+    context: Optional[Context] = None,
     cli_args: List[str] = None,
-    namespace: str = None,
+    namespace: Optional[str] = None,
     use_global_arguments: bool = True,
     enable_rosout: bool = True,
     start_parameter_services: bool = True,
-    parameter_overrides: List[Parameter] = None,
+    parameter_overrides: Optional[List[Parameter]] = None,
     allow_undeclared_parameters: bool = False,
     automatically_declare_parameters_from_overrides: bool = False,
     enable_logger_service: bool = False
@@ -187,7 +191,12 @@ def create_node(
         )
 
 
-def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float = None) -> None:
+def spin_once(
+    node: 'Node',
+    *,
+    executor: Optional['Executor'] = None,
+    timeout_sec: Optional[float] = None
+) -> None:
     """
     Execute one item of work or wait until a timeout expires.
 
@@ -210,7 +219,7 @@ def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float =
         executor.remove_node(node)
 
 
-def spin(node: 'Node', executor: 'Executor' = None) -> None:
+def spin(node: 'Node', executor: Optional['Executor'] = None) -> None:
     """
     Execute work and block until the context associated with the executor is shutdown.
 
@@ -233,8 +242,8 @@ def spin(node: 'Node', executor: 'Executor' = None) -> None:
 def spin_until_future_complete(
     node: 'Node',
     future: Future,
-    executor: 'Executor' = None,
-    timeout_sec: float = None
+    executor: Optional['Executor'] = None,
+    timeout_sec: Optional[float] = None
 ) -> None:
     """
     Execute work until the future is complete.
