@@ -802,7 +802,6 @@ class MultiThreadedExecutor(Executor):
         else:
             self._executor.submit(handler)
             self._futures.append(handler)
-            self._futures.append(handler)
             # make a copy of the list that we iterate over while modifying it
             # (https://stackoverflow.com/q/1207406/3753684)
             for future in self._futures[:]:
