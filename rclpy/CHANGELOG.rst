@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix `#983 <https://github.com/ros2/rclpy/issues/983>`_ by saving future and checking for + raising any exceptions (`#1073 <https://github.com/ros2/rclpy/issues/1073>`_) (`#1116 <https://github.com/ros2/rclpy/issues/1116>`_)
+* Contributors: Achille Verheye, Tomoya Fujita
+
 1.0.12 (2023-03-16)
 -------------------
 * Fix test_publisher linter for pydocstyle 6.2.2 (`#1063 <https://github.com/ros2/rclpy/issues/1063>`_) (`#1068 <https://github.com/ros2/rclpy/issues/1068>`_)
