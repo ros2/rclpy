@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.13 (2023-05-27)
+-------------------
 * Fix `#983 <https://github.com/ros2/rclpy/issues/983>`_ by saving future and checking for + raising any exceptions (`#1073 <https://github.com/ros2/rclpy/issues/1073>`_) (`#1116 <https://github.com/ros2/rclpy/issues/1116>`_)
 * Contributors: Achille Verheye, Tomoya Fujita
 
