@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix iteration over modified list (`#1129 <https://github.com/ros2/rclpy/issues/1129>`_)
+* making optional things Optional (`#974 <https://github.com/ros2/rclpy/issues/974>`_)
+* Fix type signature of Client.wait_for_service (`#1128 <https://github.com/ros2/rclpy/issues/1128>`_)
+* Contributors: Brian, Felix Divo
+
 4.2.1 (2023-05-11)
 ------------------
 * Fix action server crash when the client goes away. (`#1114 <https://github.com/ros2/rclpy/issues/1114>`_)
