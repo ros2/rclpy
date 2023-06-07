@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.2.2 (2023-06-07)
+------------------
 * Fix iteration over modified list (`#1129 <https://github.com/ros2/rclpy/issues/1129>`_)
 * making optional things Optional (`#974 <https://github.com/ros2/rclpy/issues/974>`_)
 * Fix type signature of Client.wait_for_service (`#1128 <https://github.com/ros2/rclpy/issues/1128>`_)
