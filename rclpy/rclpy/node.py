@@ -453,13 +453,19 @@ class Node:
             # Get the values from the tuple, checking its types.
             # Use defaults if the tuple doesn't contain value and / or descriptor.
             name = parameter_tuple[0]
-            second_arg = parameter_tuple[1] if 1 < len(parameter_tuple) else None
-            descriptor = parameter_tuple[2] if 2 < len(parameter_tuple) else ParameterDescriptor()
-
             if not isinstance(name, str):
                 raise TypeError(
                         f'First element {name} at index {index} in parameters list '
                         'is not a str.')
+            if namespace:
+                name = f'{namespace}.{name}'
+
+            # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
+            validate_parameter_name(name)
+
+            second_arg = parameter_tuple[1] if 1 < len(parameter_tuple) else None
+            descriptor = parameter_tuple[2] if 2 < len(parameter_tuple) else ParameterDescriptor()
+
             if not isinstance(descriptor, ParameterDescriptor):
                 raise TypeError(
                     f'Third element {descriptor} at index {index} in parameters list '
@@ -502,12 +508,6 @@ class Node:
             # Get value from parameter overrides, of from tuple if it doesn't exist.
             if not ignore_override and name in self._parameter_overrides:
                 value = self._parameter_overrides[name].value
-
-            if namespace:
-                name = f'{namespace}.{name}'
-
-            # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
-            validate_parameter_name(name)
 
             parameter_list.append(Parameter(name, value=value))
             descriptors.update({name: descriptor})
