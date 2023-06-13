@@ -203,6 +203,7 @@ if(BUILD_TESTING)
       test/test_topic_or_service_is_hidden.py
       test/test_topic_endpoint_info.py
       test/test_type_support.py
+      test/test_type_hash.py
       test/test_utilities.py
       test/test_validate_full_topic_name.py
       test/test_validate_namespace.py
