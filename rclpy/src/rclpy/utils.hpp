@@ -149,6 +149,14 @@ convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * i
  */
 py::dict
 convert_to_qos_dict(const rmw_qos_profile_t * qos_profile);
+
+/// Convert a C rosidl_type_hash_t into a Python dictionary.
+/**
+ * \param[in] type_hash Pointer to a rosidl_type_hash_t to convert
+ * \return Python dictionary
+ */
+py::dict
+convert_to_type_hash_dict(const rosidl_type_hash_t * type_hash);
 }  // namespace rclpy
 
 #endif  // RCLPY__UTILS_HPP_
