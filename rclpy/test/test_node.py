@@ -565,6 +565,12 @@ class TestNode(unittest.TestCase):
                 Parameter('initial_baz', Parameter.Type.DOUBLE, 3.14),
                 Parameter('initial_decl_with_type', Parameter.Type.DOUBLE, 3.14),
                 Parameter('initial_decl_wrong_type', Parameter.Type.DOUBLE, 3.14),
+                Parameter('namespace.k_initial_foo', Parameter.Type.INTEGER, 4321),
+                Parameter('namespace.k_initial_bar', Parameter.Type.STRING, 'init_param'),
+                Parameter('namespace.k_initial_baz', Parameter.Type.DOUBLE, 3.14),
+                Parameter('namespace.k_initial_decl_with_type', Parameter.Type.DOUBLE, 3.14),
+                Parameter('namespace.k_initial_decl_wrong_type', Parameter.Type.DOUBLE, 3.14),
+                Parameter('namespace.k_initial_foo', Parameter.Type.INTEGER, 4321)
             ],
             cli_args=[
                 '--ros-args', '-p', 'initial_fizz:=buzz',
@@ -725,6 +731,14 @@ class TestNode(unittest.TestCase):
         self.assertIsNone(self.node.get_parameter('value_not_set').value)
         self.assertTrue(self.node.has_parameter('value_not_set'))
 
+        parameters = [
+            ('k_initial_foo', 0, ParameterDescriptor()),
+            ('k_foo', 42, ParameterDescriptor()),
+            ('k_bar', 'hello', ParameterDescriptor()),
+            ('k_baz', 2.41),
+            ('k_value_not_set',)
+        ]
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always', category=UserWarning)
             result = self.node.declare_parameters('namespace', parameters)
@@ -743,12 +757,12 @@ class TestNode(unittest.TestCase):
         self.assertEqual(result[2].value, 'hello')
         self.assertEqual(result[3].value, 2.41)
         self.assertIsNone(result[4].value)
-        self.assertEqual(self.node.get_parameter('namespace.initial_foo').value, 4321)
-        self.assertEqual(self.node.get_parameter('namespace.foo').value, 42)
-        self.assertEqual(self.node.get_parameter('namespace.bar').value, 'hello')
-        self.assertEqual(self.node.get_parameter('namespace.baz').value, 2.41)
-        self.assertIsNone(self.node.get_parameter('namespace.value_not_set').value)
-        self.assertTrue(self.node.has_parameter('namespace.value_not_set'))
+        self.assertEqual(self.node.get_parameter('namespace.k_initial_foo').value, 4321)
+        self.assertEqual(self.node.get_parameter('namespace.k_foo').value, 42)
+        self.assertEqual(self.node.get_parameter('namespace.k_bar').value, 'hello')
+        self.assertEqual(self.node.get_parameter('namespace.k_baz').value, 2.41)
+        self.assertIsNone(self.node.get_parameter('namespace.k_value_not_set').value)
+        self.assertTrue(self.node.has_parameter('namespace.k_value_not_set'))
 
         parameters = [
             ('initial_bar', 'ignoring_override', ParameterDescriptor()),
