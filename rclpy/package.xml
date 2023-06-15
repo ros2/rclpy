@@ -2,18 +2,18 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>rclpy</name>
-  <version>3.6.0</version>
+  <version>4.2.2</version>
   <description>Package containing the Python client.</description>
 
   <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
   <maintainer email="aditya.pande@openrobotics.org">Aditya Pande</maintainer>
-  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
 
   <license>Apache License 2.0</license>
 
   <author email="esteve@osrfoundation.org">Esteve Fernandez</author>
-  <author email="william@openrobotics.org">William Woodall</author>
   <author email="ivanpauno@ekumenlabs.com">Ivan Paunovic</author>
+  <author email="jacob@openrobotics.org">Jacob Perron</author>
+  <author email="william@openrobotics.org">William Woodall</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>python_cmake_module</buildtool_depend>
@@ -23,7 +23,9 @@
   <build_depend>rcutils</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
 
+  <depend>lifecycle_msgs</depend>
   <depend>rcl</depend>
+  <depend>rcl_interfaces</depend>
   <depend>rcl_lifecycle</depend>
   <depend>rcl_logging_interface</depend>
   <depend>rcl_action</depend>
@@ -33,9 +35,9 @@
   <depend>rosidl_runtime_c</depend>
   <depend>unique_identifier_msgs</depend>
 
+  <exec_depend>action_msgs</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>builtin_interfaces</exec_depend>
-  <exec_depend>rcl_interfaces</exec_depend>
   <exec_depend>rosgraph_msgs</exec_depend>
   <exec_depend>rpyutils</exec_depend>
 
@@ -49,8 +51,16 @@
 
   <doc_depend>python3-sphinx</doc_depend>
   <doc_depend>python3-sphinx-rtd-theme</doc_depend>
+  <!-- We add these modules as doc_depends in order to include them into the
+  autodoc_mock_imports list. This prevents TypeErrors from being thrown
+  when these modules import constants from rclpy C modules.
+  TODO: Remove these depends once a better solution is found.-->
+  <doc_depend>rclpy.duration</doc_depend>
+  <doc_depend>rclpy.qos</doc_depend>
+  <doc_depend>rclpy.clock</doc_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
+    <rosdoc2>rosdoc2.yaml</rosdoc2>
   </export>
 </package>

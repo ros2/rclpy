@@ -25,8 +25,8 @@
 #include "client.hpp"
 #include "context.hpp"
 #include "destroyable.hpp"
+#include "event_handle.hpp"
 #include "guard_condition.hpp"
-#include "qos_event.hpp"
 #include "service.hpp"
 #include "subscription.hpp"
 #include "timer.hpp"
@@ -123,11 +123,11 @@ public:
   /**
    * Raises RCLError if any lower level error occurs
    *
-   * \param[in] event A QoSEvent to add to the wait set
+   * \param[in] event An EventHandle to add to the wait set
    * \return Index in waitset entity was added at
    */
   size_t
-  add_event(const QoSEvent & event);
+  add_event(const EventHandle & event);
 
   /// Check if an entity in the wait set is ready by its index
   /**

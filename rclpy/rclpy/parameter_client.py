@@ -16,6 +16,7 @@ import time
 from typing import Callable, List, Optional, Sequence, Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
+from rcl_interfaces.msg import ParameterEvent
 from rcl_interfaces.srv import DescribeParameters
 from rcl_interfaces.srv import GetParameters
 from rcl_interfaces.srv import GetParameterTypes
@@ -23,11 +24,15 @@ from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.srv import SetParametersAtomically
 from rclpy.callback_groups import CallbackGroup
+from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.node import Node
 from rclpy.parameter import Parameter as Parameter
 from rclpy.parameter import parameter_dict_from_yaml_file
+from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
+from rclpy.qos_overriding_options import QoSOverridingOptions
+from rclpy.subscription import Subscription
 from rclpy.task import Future
 
 
@@ -43,7 +48,7 @@ class AsyncParameterClient:
 
         An AsyncParameterClient that uses services offered by a remote node
         to query and modify parameters in a streamlined way.
-        
+
         Usage example:
 
         .. code-block:: python
@@ -116,7 +121,7 @@ class AsyncParameterClient:
         Wait for all parameter services to be available.
 
         :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
-        :return: ``True`` if all services becomes avaliable, ``False`` otherwise.
+        :return: ``True`` if all services becomes available, ``False`` otherwise.
         """
         # TODO(ihasdapie) See: rclpy.Client.wait_for_service
         sleep_time = 0.25
@@ -329,3 +334,22 @@ class AsyncParameterClient:
         param_dict = parameter_dict_from_yaml_file(parameter_file, use_wildcard)
         future = self.set_parameters_atomically(list(param_dict.values()), callback=callback)
         return future
+
+    def on_parameter_event(
+        self, callback: Callable,
+        qos_profile: QoSProfile = qos_profile_parameter_events,
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: bool = False
+    ) -> Subscription:
+        return self.node.create_subscription(
+            ParameterEvent,
+            '/parameter_events',
+            callback,
+            qos_profile,
+            callback_group=callback_group,
+            event_callbacks=event_callbacks,
+            qos_overriding_options=qos_overriding_options,
+            raw=raw)

@@ -83,7 +83,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(self.node.get_clock().clock_type, ClockType.ROS_TIME)
 
     def test_create_publisher(self):
-        self.node.create_publisher(BasicTypes, 'chatter', 0)
         self.node.create_publisher(BasicTypes, 'chatter', 1)
         self.node.create_publisher(BasicTypes, 'chatter', qos_profile_sensor_data)
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
@@ -98,7 +97,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_publisher(BasicTypes, 'chatter', 'foo')
 
     def test_create_subscription(self):
-        self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 0)
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
         self.node.create_subscription(
             BasicTypes, 'chatter', lambda msg: print(msg), qos_profile_sensor_data)
@@ -191,11 +189,11 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.node.get_service_names_and_types()
 
     def test_service_names_and_types_by_node(self):
-        # test that it doesnt raise
+        # test that it doesn't raise
         self.node.get_service_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
 
     def test_client_names_and_types_by_node(self):
-        # test that it doesnt raise
+        # test that it doesn't raise
         self.node.get_client_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
 
     def test_topic_names_and_types(self):
@@ -275,7 +273,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         # Add a subscription
         qos_profile2 = QoSProfile(
-            depth=0,
+            depth=1,
             history=QoSHistoryPolicy.KEEP_LAST,
             deadline=Duration(seconds=15, nanoseconds=1678),
             lifespan=Duration(seconds=29, nanoseconds=2345),
@@ -832,6 +830,11 @@ class TestNode(unittest.TestCase):
                 )]
             )
 
+        # Declare a parameter with parameter type 'Not Set'
+        with self.assertRaises(ValueError):
+            self.node.declare_parameter(
+                'wrong_parameter_value_type_not_set', Parameter.Type.NOT_SET)
+
     def reject_parameter_callback(self, parameter_list):
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
@@ -867,7 +870,7 @@ class TestNode(unittest.TestCase):
         # Verify that it doesn't exist.
         self.assertFalse(self.node.has_parameter('foo'))
 
-        # Declare parameter, verify existance, undeclare, and verify again.
+        # Declare parameter, verify existence, undeclare, and verify again.
         self.node.declare_parameter(
             'foo',
             'hello',
@@ -2267,6 +2270,94 @@ def test_node_resolve_name():
     assert node.resolve_service_name('/abs') == '/abs'
     assert node.resolve_service_name('foo', only_expand=True) == '/my_ns/foo'
     rclpy.shutdown(context=context)
+
+
+class TestNodeParamsFile(unittest.TestCase):
+
+    @classmethod
+    def setUp(self):
+        rclpy.init()
+
+    @classmethod
+    def tearDown(self):
+        rclpy.shutdown()
+
+    def test_node_ns_params_file_with_wildcards(self):
+        node = rclpy.create_node(
+            'node2',
+            namespace='/ns',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'wildcards.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('full_wild', node.get_parameter('full_wild').value)
+        self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
+        self.assertEqual(
+          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+        self.assertEqual(
+          'namespace_wild_one_star', node.get_parameter('namespace_wild_one_star').value)
+        self.assertEqual('node_wild_in_ns', node.get_parameter('node_wild_in_ns').value)
+        self.assertEqual(
+          'node_wild_in_ns_another', node.get_parameter('node_wild_in_ns_another').value)
+        self.assertEqual('explicit_in_ns', node.get_parameter('explicit_in_ns').value)
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('node_wild_no_ns')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('explicit_no_ns')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('should_not_appear')
+
+    def test_node_params_file_with_wildcards(self):
+        node = rclpy.create_node(
+            'node2',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'wildcards.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('full_wild', node.get_parameter('full_wild').value)
+        self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
+        self.assertEqual(
+          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('namespace_wild_one_star')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('node_wild_in_ns')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('node_wild_in_ns_another')
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('explicit_in_ns')
+        self.assertEqual('node_wild_no_ns', node.get_parameter('node_wild_no_ns').value)
+        self.assertEqual('explicit_no_ns', node.get_parameter('explicit_no_ns').value)
+        with self.assertRaises(ParameterNotDeclaredException):
+            node.get_parameter('should_not_appear')
+
+    def test_node_ns_params_file_by_order(self):
+        node = rclpy.create_node(
+            'node2',
+            namespace='/ns',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'params_by_order.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('last_one_win', node.get_parameter('a_value').value)
+        self.assertEqual('foo', node.get_parameter('foo').value)
+        self.assertEqual('bar', node.get_parameter('bar').value)
+
+    def test_node_ns_params_file_with_complicated_wildcards(self):
+        # regex matched: /**/foo/*/bar
+        node = rclpy.create_node(
+            'node2',
+            namespace='/a/b/c/foo/d/bar',
+            cli_args=[
+                '--ros-args',
+                '--params-file', str(TEST_RESOURCES_DIR / 'complicated_wildcards.yaml')
+            ],
+            automatically_declare_parameters_from_overrides=True)
+        self.assertEqual('foo', node.get_parameter('foo').value)
+        self.assertEqual('bar', node.get_parameter('bar').value)
 
 
 if __name__ == '__main__':

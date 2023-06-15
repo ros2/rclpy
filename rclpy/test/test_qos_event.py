@@ -17,20 +17,22 @@ import unittest
 from unittest.mock import Mock
 
 import rclpy
+from rclpy.event_handler import PublisherEventCallbacks
+from rclpy.event_handler import QoSLivelinessChangedInfo
+from rclpy.event_handler import QoSLivelinessLostInfo
+from rclpy.event_handler import QoSOfferedDeadlineMissedInfo
+from rclpy.event_handler import QoSOfferedIncompatibleQoSInfo
+from rclpy.event_handler import QoSPublisherEventType
+from rclpy.event_handler import QoSPublisherMatchedInfo
+from rclpy.event_handler import QoSRequestedDeadlineMissedInfo
+from rclpy.event_handler import QoSRequestedIncompatibleQoSInfo
+from rclpy.event_handler import QoSSubscriptionEventType
+from rclpy.event_handler import QoSSubscriptionMatchedInfo
+from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
-from rclpy.qos_event import PublisherEventCallbacks
-from rclpy.qos_event import QoSLivelinessChangedInfo
-from rclpy.qos_event import QoSLivelinessLostInfo
-from rclpy.qos_event import QoSOfferedDeadlineMissedInfo
-from rclpy.qos_event import QoSOfferedIncompatibleQoSInfo
-from rclpy.qos_event import QoSPublisherEventType
-from rclpy.qos_event import QoSRequestedDeadlineMissedInfo
-from rclpy.qos_event import QoSRequestedIncompatibleQoSInfo
-from rclpy.qos_event import QoSSubscriptionEventType
-from rclpy.qos_event import SubscriptionEventCallbacks
 from rclpy.task import Future
 
 from test_msgs.msg import Empty as EmptyMsg
@@ -60,7 +62,7 @@ class TestQoSEvent(unittest.TestCase):
         liveliness_callback = Mock()
         deadline_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 1
+        expected_num_event_handlers = 2
 
         # No arg
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
@@ -93,7 +95,7 @@ class TestQoSEvent(unittest.TestCase):
         callbacks.incompatible_qos = incompatible_qos_callback
         publisher = self.node.create_publisher(
             EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), 3)
+        self.assertEqual(len(publisher.event_handlers), 4)
         self.node.destroy_publisher(publisher)
 
     def test_subscription_constructor(self):
@@ -102,7 +104,7 @@ class TestQoSEvent(unittest.TestCase):
         deadline_callback = Mock()
         message_callback = Mock()
         incompatible_qos_callback = Mock()
-        expected_num_event_handlers = 1
+        expected_num_event_handlers = 2
 
         # No arg
         subscription = self.node.create_subscription(
@@ -136,7 +138,7 @@ class TestQoSEvent(unittest.TestCase):
         callbacks.incompatible_qos = incompatible_qos_callback
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), 3)
+        self.assertEqual(len(subscription.event_handlers), 4)
         self.node.destroy_subscription(subscription)
 
     def test_default_incompatible_qos_callbacks(self):
@@ -192,7 +194,7 @@ class TestQoSEvent(unittest.TestCase):
 
     def _create_event_handle(self, parent_entity, event_type):
         with parent_entity.handle:
-            event = _rclpy.QoSEvent(parent_entity.handle, event_type)
+            event = _rclpy.EventHandle(parent_entity.handle, event_type)
         self.assertIsNotNone(event)
         return event
 
@@ -208,6 +210,8 @@ class TestQoSEvent(unittest.TestCase):
             publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
         self._do_create_destroy(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
+        self._do_create_destroy(
+            publisher, QoSPublisherEventType.RCL_PUBLISHER_MATCHED)
         self.node.destroy_publisher(publisher)
 
     def test_subscription_event_create_destroy(self):
@@ -220,6 +224,8 @@ class TestQoSEvent(unittest.TestCase):
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
         self._do_create_destroy(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
+        self._do_create_destroy(
+            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED)
         self.node.destroy_subscription(subscription)
 
     def test_call_publisher_rclpy_event_apis(self):
@@ -354,3 +360,99 @@ class TestQoSEvent(unittest.TestCase):
             pass
 
         self.node.destroy_subscription(subscription)
+
+    def test_call_publisher_rclpy_event_matched(self):
+        publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
+        with self.context.handle:
+            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 2, self.context.handle)
+
+        matched_event_handle = self._create_event_handle(
+            publisher, QoSPublisherEventType.RCL_PUBLISHER_MATCHED)
+        with matched_event_handle:
+            matched_event_index = wait_set.add_event(matched_event_handle)
+        self.assertIsNotNone(matched_event_index)
+
+        wait_set.wait(0)
+        self.assertFalse(wait_set.is_ready('event', matched_event_index))
+
+        wait_set.clear_entities()
+        with matched_event_handle:
+            matched_event_index = wait_set.add_event(matched_event_handle)
+        self.assertIsNotNone(matched_event_index)
+
+        subscription = self.node.create_subscription(EmptyMsg, self.topic_name, Mock(), 10)
+        # wait 500ms
+        wait_set.wait(500000000)
+        self.assertTrue(wait_set.is_ready('event', matched_event_index))
+
+        matched_status = matched_event_handle.take_event()
+        self.assertIsInstance(matched_status, QoSPublisherMatchedInfo)
+        self.assertEqual(matched_status.total_count, 1)
+        self.assertEqual(matched_status.total_count_change, 1)
+        self.assertEqual(matched_status.current_count, 1)
+        self.assertEqual(matched_status.current_count_change, 1)
+
+        wait_set.clear_entities()
+        with matched_event_handle:
+            matched_event_index = wait_set.add_event(matched_event_handle)
+        self.assertIsNotNone(matched_event_index)
+
+        subscription.destroy()
+        # wait 500ms
+        wait_set.wait(500000000)
+        self.assertTrue(wait_set.is_ready('event', matched_event_index))
+
+        matched_status = matched_event_handle.take_event()
+        self.assertEqual(matched_status.total_count, 1)
+        self.assertEqual(matched_status.total_count_change, 0)
+        self.assertEqual(matched_status.current_count, 0)
+        self.assertEqual(matched_status.current_count_change, -1)
+
+    def test_call_subscription_rclpy_event_matched_unmatched(self):
+        message_callback = Mock()
+        subscription = self.node.create_subscription(
+            EmptyMsg, self.topic_name, message_callback, 10)
+        with self.context.handle:
+            wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 2, self.context.handle)
+
+        matched_event_handle = self._create_event_handle(
+            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED)
+        with matched_event_handle:
+            matched_event_index = wait_set.add_event(matched_event_handle)
+        self.assertIsNotNone(matched_event_index)
+
+        wait_set.wait(0)
+        self.assertFalse(wait_set.is_ready('event', matched_event_index))
+
+        wait_set.clear_entities()
+        with matched_event_handle:
+            matched_event_index = wait_set.add_event(matched_event_handle)
+        self.assertIsNotNone(matched_event_index)
+
+        publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
+        # wait 500ms
+        wait_set.wait(500000000)
+        self.assertTrue(wait_set.is_ready('event', matched_event_index))
+
+        matched_status = matched_event_handle.take_event()
+        self.assertIsInstance(matched_status, QoSSubscriptionMatchedInfo)
+        self.assertEqual(matched_status.total_count, 1)
+        self.assertEqual(matched_status.total_count_change, 1)
+        self.assertEqual(matched_status.current_count, 1)
+        self.assertEqual(matched_status.current_count_change, 1)
+
+        wait_set.clear_entities()
+        with matched_event_handle:
+            matched_event_index = wait_set.add_event(matched_event_handle)
+        self.assertIsNotNone(matched_event_index)
+
+        publisher.destroy()
+        # wait 500ms
+        wait_set.wait(500000000)
+        self.assertTrue(wait_set.is_ready('event', matched_event_index))
+
+        matched_status = matched_event_handle.take_event()
+        self.assertEqual(matched_status.total_count, 1)
+        self.assertEqual(matched_status.total_count_change, 0)
+        self.assertEqual(matched_status.current_count, 0)
+        self.assertEqual(matched_status.current_count_change, -1)

@@ -162,7 +162,7 @@ def _get_qos_policy_parameter(qos: QoSProfile, policy: QoSPolicyKind) -> Union[s
     if policy in (
         QoSPolicyKind.LIFESPAN, QoSPolicyKind.DEADLINE, QoSPolicyKind.LIVELINESS_LEASE_DURATION
     ):
-        value = value.nanoseconds()
+        value = value.nanoseconds
     return value
 
 

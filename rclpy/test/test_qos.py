@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import unittest
+import warnings
 
 from rclpy.duration import Duration
 from rclpy.qos import InvalidQoSProfileException
@@ -125,6 +126,26 @@ class TestQosProfile(unittest.TestCase):
         assert (
             QoSPresetProfiles.SYSTEM_DEFAULT.value ==
             QoSPresetProfiles.get_from_short_key('system_default'))
+
+    def test_keep_last_zero_depth_constructor(self):
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter('always', category=UserWarning)
+            qos = QoSProfile(history=QoSHistoryPolicy.KEEP_LAST, depth=0)
+            assert len(caught_warnings) == 1
+            assert issubclass(caught_warnings[0].category, UserWarning)
+            assert("A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0]))
+        assert qos.history == QoSHistoryPolicy.KEEP_LAST
+
+    def test_keep_last_zero_depth_set(self):
+        qos = QoSProfile(history=QoSHistoryPolicy.KEEP_LAST, depth=1)
+        assert qos.depth == 1
+
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter('always', category=UserWarning)
+            qos.depth = 0
+            assert len(caught_warnings) == 1
+            assert issubclass(caught_warnings[0].category, UserWarning)
+            assert("A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0]))
 
 
 class TestCheckQosCompatibility(unittest.TestCase):

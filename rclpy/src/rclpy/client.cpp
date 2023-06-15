@@ -17,6 +17,7 @@
 #include <rcl/client.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
+#include <rcl/service_introspection.h>
 #include <rosidl_runtime_c/service_type_support_struct.h>
 #include <rmw/types.h>
 
@@ -24,6 +25,7 @@
 #include <string>
 
 #include "client.hpp"
+#include "clock.hpp"
 #include "exceptions.hpp"
 #include "node.hpp"
 #include "python_allocator.hpp"
@@ -40,12 +42,11 @@ Client::destroy()
 }
 
 Client::Client(
-  Node & node, py::object pysrv_type, const char * service_name, py::object pyqos_profile)
+  Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos_profile)
 : node_(node)
 {
-  auto srv_type = static_cast<rosidl_service_type_support_t *>(
-    common_get_type_support(pysrv_type));
-  if (!srv_type) {
+  srv_type_ = static_cast<rosidl_service_type_support_t *>(common_get_type_support(pysrv_type));
+  if (nullptr == srv_type_) {
     throw py::error_already_set();
   }
 
@@ -54,7 +55,6 @@ Client::Client(
   if (!pyqos_profile.is_none()) {
     client_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
-
 
   // Create a client
   rcl_client_ = std::shared_ptr<rcl_client_t>(
@@ -77,7 +77,7 @@ Client::Client(
   *rcl_client_ = rcl_get_zero_initialized_client();
 
   rcl_ret_t ret = rcl_client_init(
-    rcl_client_.get(), node_.rcl_ptr(), srv_type, service_name, &client_ops);
+    rcl_client_.get(), node_.rcl_ptr(), srv_type_, service_name.c_str(), &client_ops);
   if (RCL_RET_OK != ret) {
     if (RCL_RET_SERVICE_NAME_INVALID == ret) {
       std::string error_text{"failed to create client due to invalid service name '"};
@@ -147,10 +147,28 @@ Client::take_response(py::object pyresponse_type)
 }
 
 void
+Client::configure_introspection(
+  Clock & clock, py::object pyqos_service_event_pub,
+  rcl_service_introspection_state_t introspection_state)
+{
+  rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
+  pub_opts.qos =
+    pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
+    pyqos_service_event_pub.cast<rmw_qos_profile_t>();
+
+  rcl_ret_t ret = rcl_client_configure_service_introspection(
+    rcl_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state);
+
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to configure client introspection");
+  }
+}
+
+void
 define_client(py::object module)
 {
   py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
-  .def(py::init<Node &, py::object, const char *, py::object>())
+  .def(py::init<Node &, py::object, const std::string &, py::object>())
   .def_property_readonly(
     "pointer", [](const Client & client) {
       return reinterpret_cast<size_t>(client.rcl_ptr());
@@ -164,6 +182,9 @@ define_client(py::object module)
     "Return true if the service server is available")
   .def(
     "take_response", &Client::take_response,
-    "Take a received response from an earlier request");
+    "Take a received response from an earlier request")
+  .def(
+    "configure_introspection", &Client::configure_introspection,
+    "Configure whether introspection is enabled");
 }
 }  // namespace rclpy

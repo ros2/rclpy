@@ -169,7 +169,7 @@ class Future:
         The callback may be called immediately by this method if the future is already done.
         If this happens and the callback raises, the exception will be raised by this method.
 
-        :param callback: a callback taking the future as an agrument to be run when completed
+        :param callback: a callback taking the future as an argument to be run when completed
         """
         invoke = False
         with self._lock:

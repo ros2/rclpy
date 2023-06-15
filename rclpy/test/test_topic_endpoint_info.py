@@ -93,6 +93,7 @@ class TestQosProfile(unittest.TestCase):
         expected_info_str = 'Node name: \n' \
             'Node namespace: \n' \
             'Topic type: \n' \
+            'Topic type hash: INVALID\n' \
             'Endpoint type: INVALID\n' \
             'GID: \n' \
             'QoS profile:\n' \

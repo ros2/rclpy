@@ -164,6 +164,12 @@ class QoSProfile:
     @depth.setter
     def depth(self, value):
         assert isinstance(value, int)
+
+        if self.history == QoSHistoryPolicy.KEEP_LAST and value == 0:
+            warnings.warn(
+                "A zero depth with KEEP_LAST doesn't make sense; no data could be stored. "
+                'This will be interpreted as SYSTEM_DEFAULT')
+
         self._depth = value
 
     @property
@@ -437,6 +443,8 @@ LivelinessLeaseDurationeBestAvailable = Duration(
 #: Used for initialization. Should not be used as the actual QoS profile.
 qos_profile_unknown = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
     'qos_profile_unknown').to_dict())
+qos_profile_default = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_default').to_dict())
 #: Uses the default QoS settings defined in the DDS vendor tool
 qos_profile_system_default = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
     'qos_profile_system_default').to_dict())
@@ -474,6 +482,7 @@ qos_profile_action_status_default = QoSProfile(**_rclpy.rclpy_action_get_rmw_qos
 
 class QoSPresetProfiles(Enum):
     UNKNOWN = qos_profile_unknown
+    DEFAULT = qos_profile_default
     SYSTEM_DEFAULT = qos_profile_system_default
     SENSOR_DATA = qos_profile_sensor_data
     SERVICES_DEFAULT = qos_profile_services_default

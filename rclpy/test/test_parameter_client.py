@@ -146,7 +146,7 @@ class TestParameterClient(unittest.TestCase):
             result = future.result()
             assert result is not None
             assert len(result.results) == 2
-            assert all([i.successful for i in result.results])
+            assert all(i.successful for i in result.results)
         finally:
             if os.path.exists(f.name):
                 os.unlink(f.name)
@@ -170,3 +170,110 @@ class TestParameterClient(unittest.TestCase):
         finally:
             if os.path.exists(f.name):
                 os.unlink(f.name)
+
+    def test_get_uninitialized_parameter(self):
+        self.target_node.declare_parameter('uninitialized_parameter', Parameter.Type.STRING)
+
+        # The type in description should be STRING
+        future = self.client.describe_parameters(['uninitialized_parameter'])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.descriptors) == 1
+        assert results.descriptors[0].type == ParameterType.PARAMETER_STRING
+        assert results.descriptors[0].name == 'uninitialized_parameter'
+
+        # The value should be empty
+        future = self.client.get_parameters(['uninitialized_parameter'])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert results.values == []
+
+        self.target_node.undeclare_parameter('uninitialized_parameter')
+
+    def test_on_parameter_event_new(self):
+        def on_new_parameter_event(msg):
+            assert msg.node == '/rclpy/test_parameter_client_target'
+            assert len(msg.new_parameters) == 1
+            assert msg.new_parameters[0].name == 'int_param'
+            assert msg.new_parameters[0].value.integer_value == 88
+            assert len(msg.changed_parameters) == 0
+            assert len(msg.deleted_parameters) == 0
+
+        param_event_sub = self.client.on_parameter_event(on_new_parameter_event)
+
+        future = self.client.set_parameters([
+            Parameter('int_param', Parameter.Type.INTEGER, 88).to_parameter_msg(),
+        ])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.results) == 1
+        res = [i.successful for i in results.results]
+        assert all(res)
+
+        param_event_sub.destroy()
+
+    def test_on_parameter_event_changed(self):
+        future = self.client.set_parameters([
+            Parameter('int_param', Parameter.Type.INTEGER, 88).to_parameter_msg(),
+        ])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.results) == 1
+        res = [i.successful for i in results.results]
+        assert all(res)
+
+        def on_changed_parameter_event(msg):
+            assert msg.node == '/rclpy/test_parameter_client_target'
+            assert len(msg.new_parameters) == 0
+            assert len(msg.changed_parameters) == 1
+            assert msg.changed_parameters[0].name == 'int_param'
+            assert msg.changed_parameters[0].value.integer_value == 99
+            assert len(msg.deleted_parameters) == 0
+
+        param_event_sub = self.client.on_parameter_event(on_changed_parameter_event)
+
+        future = self.client.set_parameters([
+            Parameter('int_param', Parameter.Type.INTEGER, 99).to_parameter_msg(),
+        ])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.results) == 1
+        res = [i.successful for i in results.results]
+        assert all(res)
+
+        param_event_sub.destroy()
+
+    def test_on_parameter_event_deleted(self):
+        future = self.client.set_parameters([
+            Parameter('int_param', Parameter.Type.INTEGER, 88).to_parameter_msg(),
+        ])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.results) == 1
+        res = [i.successful for i in results.results]
+        assert all(res)
+
+        def on_deleted_parameter_event(msg):
+            assert msg.node == '/rclpy/test_parameter_client_target'
+            assert len(msg.new_parameters) == 0
+            assert len(msg.changed_parameters) == 0
+            assert len(msg.deleted_parameters) == 1
+            assert msg.deleted_parameters[0].name == 'int_param'
+
+        param_event_sub = self.client.on_parameter_event(on_deleted_parameter_event)
+
+        future = self.client.delete_parameters(['int_param'])
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert len(results.results) == 1
+        res = [i.successful for i in results.results]
+        assert all(res)
+
+        param_event_sub.destroy()
