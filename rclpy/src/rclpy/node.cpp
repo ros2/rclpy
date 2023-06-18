@@ -485,7 +485,8 @@ Node::Node(
       if (rcl_logging_rosout_fini_publisher_for_node(rcl_node_.get()) != RCL_RET_OK) {
         int stack_level = 1;
         PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "[rclpy| %s : %s ]: error in destruction of rosout publisher: %s",
+          PyExc_RuntimeWarning, stack_level,
+          "[rclpy| %s : %s ]: error in destruction of rosout publisher: %s",
           RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
       }
       throw RCLError("failed to initialize rosout publisher");
