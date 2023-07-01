@@ -14,6 +14,12 @@
 
 import threading
 
+from typing import Callable
+from typing import Optional
+
+from rclpy.callback_groups import CallbackGroup
+from rclpy.clock import Clock
+from rclpy.context import Context
 from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
@@ -21,12 +27,21 @@ from rclpy.utilities import get_default_context
 
 class Timer:
 
-    def __init__(self, callback, callback_group, timer_period_ns, clock, *, context=None):
+    def __init__(
+        self,
+        callback: Callable,
+        callback_group: CallbackGroup,
+        timer_period_ns: int,
+        clock: Clock,
+        *,
+        context: Optional[Context] = None,
+        autostart: Optional[bool] = True
+    ):
         self._context = get_default_context() if context is None else context
         self._clock = clock
         with self._clock.handle, self._context.handle:
             self.__timer = _rclpy.Timer(
-                self._clock.handle, self._context.handle, timer_period_ns)
+                self._clock.handle, self._context.handle, timer_period_ns, autostart)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group

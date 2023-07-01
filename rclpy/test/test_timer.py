@@ -180,3 +180,25 @@ def test_time_until_next_call():
         if node is not None:
             node.destroy_node()
         rclpy.shutdown(context=context)
+
+
+def test_timer_without_autostart():
+    node = None
+    timer = None
+    rclpy.init()
+    try:
+        node = rclpy.create_node('test_timer_without_autostart')
+        timer = node.create_timer(1, lambda: None, autostart=False)
+        assert timer.is_canceled()
+
+        timer.reset()
+        assert not timer.is_canceled()
+
+        timer.cancel()
+        assert timer.is_canceled()
+    finally:
+        if timer is not None:
+            node.destroy_timer(timer)
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown()

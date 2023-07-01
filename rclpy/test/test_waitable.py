@@ -131,7 +131,7 @@ class TimerWaitable(Waitable):
         period_nanoseconds = 10000
         with self._clock.handle, node.context.handle:
             self.timer = _rclpy.Timer(
-                self._clock.handle, node.context.handle, period_nanoseconds)
+                self._clock.handle, node.context.handle, period_nanoseconds, True)
         self.timer_index = None
         self.timer_is_ready = False
 

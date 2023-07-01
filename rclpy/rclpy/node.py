@@ -1676,6 +1676,7 @@ class Node:
         callback: Callable,
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
+        autostart: Optional[bool] = True,
     ) -> Timer:
         """
         Create a new timer.
@@ -1694,7 +1695,9 @@ class Node:
             callback_group = self.default_callback_group
         if clock is None:
             clock = self._clock
-        timer = Timer(callback, callback_group, timer_period_nsec, clock, context=self.context)
+        timer = Timer(
+            callback, callback_group, timer_period_nsec, clock, context=self.context,
+            autostart=autostart)
 
         callback_group.add_entity(timer)
         self._timers.append(timer)
