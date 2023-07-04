@@ -1676,7 +1676,7 @@ class Node:
         callback: Callable,
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
-        autostart: Optional[bool] = True,
+        autostart: bool = True,
     ) -> Timer:
         """
         Create a new timer.

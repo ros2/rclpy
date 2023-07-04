@@ -35,7 +35,7 @@ class Timer:
         clock: Clock,
         *,
         context: Optional[Context] = None,
-        autostart: Optional[bool] = True
+        autostart: bool = True
     ):
         self._context = get_default_context() if context is None else context
         self._clock = clock
