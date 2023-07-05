@@ -37,7 +37,8 @@ public:
 
   virtual ~TypeDescriptionService();
 
-  void handle_request(rmw_request_id_t * header, py::object pyrequest, py::object pyresponse);
+  Service get_impl();
+  py::object handle_request(py::object pyrequest, py::object pyresponse_type);
 
 private:
   Node node_;

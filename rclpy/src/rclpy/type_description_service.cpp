@@ -47,18 +47,26 @@ TypeDescriptionService::TypeDescriptionService(Node & node)
 TypeDescriptionService::~TypeDescriptionService()
 {}
 
-void TypeDescriptionService::handle_request(
-  rmw_request_id_t * header,
-  py::object pyrequest,
-  py::object pyresponse)
+Service TypeDescriptionService::get_impl()
 {
+  return *service_;
+}
+
+py::object TypeDescriptionService::handle_request(
+  py::object pyrequest,
+  py::object pyresponse_type)
+{
+  // Header not used by handler, just needed as part of signature.
+  rmw_request_id_t header;
+  type_description_interfaces__srv__GetTypeDescription_Response response;
   auto request = convert_from_py(pyrequest);
-  auto response = convert_from_py(pyresponse);
+  printf("rclpy layer!\n");
   rcl_node_type_description_service_handle_request(
     node_.rcl_ptr(),
-    header,
+    &header,
     static_cast<type_description_interfaces__srv__GetTypeDescription_Request *>(request.get()),
-    static_cast<type_description_interfaces__srv__GetTypeDescription_Response *>(response.get()));
+    &response);
+  return convert_to_py(&response, pyresponse_type);
 }
 
 void
@@ -68,6 +76,8 @@ define_type_description_service(py::object module)
     TypeDescriptionService, Destroyable, std::shared_ptr<TypeDescriptionService>
   >(module, "TypeDescriptionService")
   .def(py::init<Node &>())
+  .def_property_readonly(
+    "impl", &TypeDescriptionService::get_impl, "Get the rclpy service wrapper")
   .def(
     "handle_request", &TypeDescriptionService::handle_request,
     "Handle an incoming request by calling RCL implementation");

@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rcl_interfaces.msg import ParameterDescriptor
+from rcl_interfaces.msg import ParameterType
+
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_services_default
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
 from rclpy.service import Service
+from rclpy.type_support import check_is_valid_srv_type
+
 from type_description_interfaces.srv import GetTypeDescription
 
 START_TYPE_DESCRIPTION_SERVICE_PARAM = 'start_type_description_service'
@@ -58,7 +63,20 @@ class TypeDescriptionService:
             self.start_service(node)
 
     def start_service(self, node):
-        self._service_impl = _rclpy.TypeDescriptionService(node.handle)
+        print("Starting service")  # TODO
+        self._tdsrv = _rclpy.TypeDescriptionService(node.handle)
+        check_is_valid_srv_type(GetTypeDescription)
+        self._service = Service(
+            service_impl=self._tdsrv.impl,
+            srv_type=GetTypeDescription,
+            srv_name=self.service_name,
+            callback=self._service_callback,
+            callback_group=node.default_callback_group,
+            qos_profile=qos_profile_services_default)
+        node.default_callback_group.add_entity(self._service)
+        node._services.append(self._service)
+        node._wake_executor()
 
     def _service_callback(self, request, response):
-        self._service_impl.handle_request(request, response)
+        response = self._tdsrv.handle_request(request, GetTypeDescription.Response)
+        return response
