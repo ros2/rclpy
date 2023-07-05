@@ -1676,25 +1676,32 @@ class Node:
         callback: Callable,
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
+        autostart: bool = True,
     ) -> Timer:
         """
         Create a new timer.
 
-        The timer will be started and every ``timer_period_sec`` number of seconds the provided
-        callback function will be called.
+        If autostart is ``True`` (the default), the timer will be started and every
+        ``timer_period_sec`` number of seconds the provided callback function will be called.
+        If autostart is ``False``, the timer will be created but not started; it can then be
+        started by calling ``reset()`` on the timer object.
 
-        :param timer_period_sec: The period (s) of the timer.
+        :param timer_period_sec: The period (in seconds) of the timer.
         :param callback: A user-defined callback function that is called when the timer expires.
         :param callback_group: The callback group for the timer. If ``None``, then the
             default callback group for the node is used.
         :param clock: The clock which the timer gets time from.
+        :param autostart: Whether to automatically start the timer after creation; defaults to
+            ``True``.
         """
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
         if callback_group is None:
             callback_group = self.default_callback_group
         if clock is None:
             clock = self._clock
-        timer = Timer(callback, callback_group, timer_period_nsec, clock, context=self.context)
+        timer = Timer(
+            callback, callback_group, timer_period_nsec, clock, context=self.context,
+            autostart=autostart)
 
         callback_group.add_entity(timer)
         self._timers.append(timer)

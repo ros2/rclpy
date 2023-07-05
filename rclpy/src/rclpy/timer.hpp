@@ -46,9 +46,10 @@ public:
    * \param[in] clock pycapsule containing an rcl_clock_t
    * \param[in] context Capsule for an rcl_timer_t
    * \param[in] period_nsec The period of the timer in nanoseconds
+   * \param[in] autostart Whether to automatically start the timer
    * \return a timer capsule
    */
-  Timer(Clock & clock, Context & context, int64_t period_nsec);
+  Timer(Clock & clock, Context & context, int64_t period_nsec, bool autostart);
 
   ~Timer() = default;
 

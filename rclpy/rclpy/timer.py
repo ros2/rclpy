@@ -14,6 +14,12 @@
 
 import threading
 
+from typing import Callable
+from typing import Optional
+
+from rclpy.callback_groups import CallbackGroup
+from rclpy.clock import Clock
+from rclpy.context import Context
 from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
@@ -21,12 +27,38 @@ from rclpy.utilities import get_default_context
 
 class Timer:
 
-    def __init__(self, callback, callback_group, timer_period_ns, clock, *, context=None):
+    def __init__(
+        self,
+        callback: Callable,
+        callback_group: CallbackGroup,
+        timer_period_ns: int,
+        clock: Clock,
+        *,
+        context: Optional[Context] = None,
+        autostart: bool = True
+    ):
+        """
+        Create a Timer.
+
+        If autostart is ``True`` (the default), the timer will be started and every
+        ``timer_period_sec`` number of seconds the provided callback function will be called.
+        If autostart is ``False``, the timer will be created but not started; it can then be
+        started by calling ``reset()`` on the timer object.
+
+        :param callback: A user-defined callback function that is called when the timer expires.
+        :param callback_group: The callback group for the timer. If ``None``, then the
+            default callback group for the node is used.
+        :param timer_period_ns: The period (in nanoseconds) of the timer.
+        :param clock: The clock which the timer gets time from.
+        :param context: The context to be associated with.
+        :param autostart: Whether to automatically start the timer after creation; defaults to
+            ``True``.
+        """
         self._context = get_default_context() if context is None else context
         self._clock = clock
         with self._clock.handle, self._context.handle:
             self.__timer = _rclpy.Timer(
-                self._clock.handle, self._context.handle, timer_period_ns)
+                self._clock.handle, self._context.handle, timer_period_ns, autostart)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
         self.callback_group = callback_group

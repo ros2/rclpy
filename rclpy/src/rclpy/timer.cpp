@@ -36,7 +36,7 @@ Timer::destroy()
 }
 
 Timer::Timer(
-  Clock & clock, Context & context, int64_t period_nsec)
+  Clock & clock, Context & context, int64_t period_nsec, bool autostart)
 : context_(context), clock_(clock)
 {
   // Create a client
@@ -61,7 +61,7 @@ Timer::Timer(
 
   rcl_ret_t ret = rcl_timer_init2(
     rcl_timer_.get(), clock_.rcl_ptr(), context.rcl_ptr(),
-    period_nsec, NULL, allocator, true);
+    period_nsec, NULL, allocator, autostart);
 
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to create timer");
@@ -159,7 +159,7 @@ void
 define_timer(py::object module)
 {
   py::class_<Timer, Destroyable, std::shared_ptr<Timer>>(module, "Timer")
-  .def(py::init<Clock &, Context &, int64_t>())
+  .def(py::init<Clock &, Context &, int64_t, bool>())
   .def_property_readonly(
     "pointer", [](const Timer & timer) {
       return reinterpret_cast<size_t>(timer.rcl_ptr());
