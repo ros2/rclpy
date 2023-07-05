@@ -1,0 +1,75 @@
+// Copyright 2023 Open Source Robotics Foundation, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <pybind11/pybind11.h>
+
+#include "type_description_service.hpp"
+#include "utils.hpp"
+
+namespace rclpy
+{
+
+TypeDescriptionService::TypeDescriptionService(Node & node)
+: node_(node)
+{
+  rcl_ret_t ret = rcl_node_type_description_service_init(node.rcl_ptr());
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to initialize type description service");
+  }
+  rcl_service_t * srv_ptr = nullptr;
+  ret = rcl_node_get_type_description_service(node.rcl_ptr(), &srv_ptr);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to retrieve type description service implementation");
+  }
+  std::shared_ptr<rcl_service_t> srv_shared(
+    srv_ptr,
+    [this](rcl_service_t * srv) {
+      (void)srv;
+      rcl_ret_t ret = rcl_node_type_description_service_fini(node_.rcl_ptr());
+      if (RCL_RET_OK != ret) {
+        throw RCLError("Failed to finalize type description service");
+      }
+    });
+  service_ = std::make_shared<Service>(node, srv_shared);
+}
+
+TypeDescriptionService::~TypeDescriptionService()
+{}
+
+void TypeDescriptionService::handle_request(
+  rmw_request_id_t * header,
+  py::object pyrequest,
+  py::object pyresponse)
+{
+  auto request = convert_from_py(pyrequest);
+  auto response = convert_from_py(pyresponse);
+  rcl_node_type_description_service_handle_request(
+    node_.rcl_ptr(),
+    header,
+    static_cast<type_description_interfaces__srv__GetTypeDescription_Request *>(request.get()),
+    static_cast<type_description_interfaces__srv__GetTypeDescription_Response *>(response.get()));
+}
+
+void
+define_type_description_service(py::object module)
+{
+  py::class_<
+    TypeDescriptionService, Destroyable, std::shared_ptr<TypeDescriptionService>
+  >(module, "TypeDescriptionService")
+  .def(py::init<Node &>())
+  .def(
+    "handle_request", &TypeDescriptionService::handle_request,
+    "Handle an incoming request by calling RCL implementation");
+}
+}  // namespace rclpy
