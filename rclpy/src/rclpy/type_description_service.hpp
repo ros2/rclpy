@@ -30,10 +30,10 @@ namespace rclpy
 {
 
 class TypeDescriptionService
-: public Destroyable, public std::enable_shared_from_this<TypeDescriptionService>
+  : public Destroyable, public std::enable_shared_from_this<TypeDescriptionService>
 {
 public:
-  TypeDescriptionService(Node & node);
+  explicit TypeDescriptionService(Node & node);
 
   virtual ~TypeDescriptionService();
 

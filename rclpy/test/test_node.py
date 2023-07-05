@@ -50,6 +50,7 @@ from rclpy.qos import QoSLivelinessPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.time_source import USE_SIM_TIME_NAME
+from rclpy.type_description_service import START_TYPE_DESCRIPTION_SERVICE_PARAM
 from rclpy.utilities import get_rmw_implementation_identifier
 from test_msgs.msg import BasicTypes
 
@@ -997,7 +998,9 @@ class TestNode(unittest.TestCase):
                 'bar_prefix.foo': self.node.get_parameter('bar_prefix.foo'),
                 'bar_prefix.bar': self.node.get_parameter('bar_prefix.bar'),
                 'bar_prefix.baz': self.node.get_parameter('bar_prefix.baz'),
-                USE_SIM_TIME_NAME: self.node.get_parameter(USE_SIM_TIME_NAME)
+                USE_SIM_TIME_NAME: self.node.get_parameter(USE_SIM_TIME_NAME),
+                START_TYPE_DESCRIPTION_SERVICE_PARAM: self.node.get_parameter(
+                    START_TYPE_DESCRIPTION_SERVICE_PARAM),
             }
         )
 
