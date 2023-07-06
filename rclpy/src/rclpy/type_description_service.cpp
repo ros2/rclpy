@@ -21,7 +21,6 @@ namespace rclpy
 {
 
 TypeDescriptionService::TypeDescriptionService(Node & node)
-: node_(node)
 {
   rcl_ret_t ret = rcl_node_type_description_service_init(node.rcl_ptr());
   if (RCL_RET_OK != ret) {
@@ -34,18 +33,15 @@ TypeDescriptionService::TypeDescriptionService(Node & node)
   }
   std::shared_ptr<rcl_service_t> srv_shared(
     srv_ptr,
-    [this](rcl_service_t * srv) {
+    [node](rcl_service_t * srv) {
       (void)srv;
-      rcl_ret_t ret = rcl_node_type_description_service_fini(node_.rcl_ptr());
+      rcl_ret_t ret = rcl_node_type_description_service_fini(node.rcl_ptr());
       if (RCL_RET_OK != ret) {
         throw RCLError("Failed to finalize type description service");
       }
     });
   service_ = std::make_shared<Service>(node, srv_shared);
 }
-
-TypeDescriptionService::~TypeDescriptionService()
-{}
 
 Service TypeDescriptionService::get_impl()
 {
@@ -54,30 +50,34 @@ Service TypeDescriptionService::get_impl()
 
 py::object TypeDescriptionService::handle_request(
   py::object pyrequest,
-  py::object pyresponse_type)
+  py::object pyresponse_type,
+  Node & node)
 {
   // Header not used by handler, just needed as part of signature.
   rmw_request_id_t header;
   type_description_interfaces__srv__GetTypeDescription_Response response;
   auto request = convert_from_py(pyrequest);
-  printf("rclpy layer!\n");
   rcl_node_type_description_service_handle_request(
-    node_.rcl_ptr(),
+    node.rcl_ptr(),
     &header,
     static_cast<type_description_interfaces__srv__GetTypeDescription_Request *>(request.get()),
     &response);
   return convert_to_py(&response, pyresponse_type);
 }
 
+void TypeDescriptionService::destroy()
+{
+  service_.reset();
+}
+
 void
 define_type_description_service(py::object module)
 {
-  py::class_<
-    TypeDescriptionService, Destroyable, std::shared_ptr<TypeDescriptionService>
+  py::class_<TypeDescriptionService, Destroyable, std::shared_ptr<TypeDescriptionService>
   >(module, "TypeDescriptionService")
   .def(py::init<Node &>())
   .def_property_readonly(
-    "impl", &TypeDescriptionService::get_impl, "Get the rclpy service wrapper")
+    "impl", &TypeDescriptionService::get_impl, "Get the rcl service wrapper capsule.")
   .def(
     "handle_request", &TypeDescriptionService::handle_request,
     "Handle an incoming request by calling RCL implementation");

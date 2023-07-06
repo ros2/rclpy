@@ -33,15 +33,36 @@ class TypeDescriptionService
   : public Destroyable, public std::enable_shared_from_this<TypeDescriptionService>
 {
 public:
+  /// Initialize and contain the rcl implementation of ~/get_type_description
+  /**
+   * \param[in] node Node to add the service to
+   */
   explicit TypeDescriptionService(Node & node);
 
-  virtual ~TypeDescriptionService();
+  ~TypeDescriptionService() = default;
 
-  Service get_impl();
-  py::object handle_request(py::object pyrequest, py::object pyresponse_type);
+  /// Return the wrapped rcl service, so that it can be added to the node waitsets
+  /**
+   * \return The capsule containing the Service
+   */
+  Service
+  get_impl();
+
+  /// Handle an incoming request to the service
+  /**
+   * \param[in] pyrequest incoming request to handle
+   * \param[in] pyresponse_type Python type of the response object to wrap the C message in
+   * \param[in] node The node that this service belongs to
+   * \return response message to send
+   */
+  py::object
+  handle_request(py::object pyrequest, py::object pyresponse_type, Node & node);
+
+  /// Force early cleanup of object
+  void
+  destroy() override;
 
 private:
-  Node node_;
   std::shared_ptr<Service> service_;
 };
 

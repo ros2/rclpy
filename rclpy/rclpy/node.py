@@ -1890,6 +1890,7 @@ class Node:
             self.destroy_timer(self._timers[0])
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
+        self._type_description_service.destroy()
         self.__node.destroy_when_not_in_use()
         self._wake_executor()
 

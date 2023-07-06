@@ -29,11 +29,19 @@ START_TYPE_DESCRIPTION_SERVICE_PARAM = 'start_type_description_service'
 
 class TypeDescriptionService:
     """
+    Optionally initializes and contaiins the ~/get_type_description service.
+
+    The service is implemented in rcl, but should be enabled via parameter and have its
+    callbacks handled via end-client execution framework, such as callback groups and waitsets.
+
+    This is not intended for use by end users, rather it is a component to be used by Node.
     """
 
     def __init__(self, node):
+        """Initialize the service, if the parameter is set to true."""
         node_name = node.get_name()
         self.service_name = TOPIC_SEPARATOR_STRING.join((node_name, 'get_type_description'))
+        self._type_description_srv = None
 
         self.enabled = False
         if not node.has_parameter(START_TYPE_DESCRIPTION_SERVICE_PARAM):
@@ -60,13 +68,20 @@ class TypeDescriptionService:
                 .format(START_TYPE_DESCRIPTION_SERVICE_PARAM))
 
         if self.enabled:
-            self.start_service(node)
+            self._start_service(node)
 
-    def start_service(self, node):
-        self._tdsrv = _rclpy.TypeDescriptionService(node.handle)
+    def destroy(self):
+        if self._type_description_srv is not None:
+            self._type_description_srv.destroy_when_not_in_use()
+            self._type_description_srv = None
+
+    def _start_service(self, node):
+        self._type_description_srv = _rclpy.TypeDescriptionService(node.handle)
+        # Because we are creating our own service wrapper, must manually add the service
+        # to the appropriate parts of Node because we cannot call create_service.
         check_is_valid_srv_type(GetTypeDescription)
         service = Service(
-            service_impl=self._tdsrv.impl,
+            service_impl=self._type_description_srv.impl,
             srv_type=GetTypeDescription,
             srv_name=self.service_name,
             callback=self._service_callback,
@@ -77,5 +92,5 @@ class TypeDescriptionService:
         node._wake_executor()
 
     def _service_callback(self, request, response):
-        response = self._tdsrv.handle_request(request, GetTypeDescription.Response)
-        return response
+        return self._type_description_srv.handle_request(
+            request, GetTypeDescription.Response, self._node)
