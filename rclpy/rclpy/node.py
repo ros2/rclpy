@@ -78,6 +78,7 @@ from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
 from rclpy.topic_endpoint_info import TopicEndpointInfo
+from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.utilities import get_default_context
@@ -238,6 +239,8 @@ class Node:
 
         if enable_logger_service:
             self._logger_service = LoggingService(self)
+
+        self._type_description_service = TypeDescriptionService(self)
 
     @property
     def publishers(self) -> Iterator[Publisher]:
@@ -1887,6 +1890,7 @@ class Node:
             self.destroy_timer(self._timers[0])
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
+        self._type_description_service.destroy()
         self.__node.destroy_when_not_in_use()
         self._wake_executor()
 
