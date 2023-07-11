@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* get_type_description service (`#1139 <https://github.com/ros2/rclpy/issues/1139>`_)
+* Add in the ability to start timers paused. (`#1138 <https://github.com/ros2/rclpy/issues/1138>`_)
+* Modifies ros_timer_init for ros_timer_init2 (`#999 <https://github.com/ros2/rclpy/issues/999>`_)
+* Fix/param namespace association 894 (`#1132 <https://github.com/ros2/rclpy/issues/1132>`_)
+* Include type hash in topic endpoint info (`#1104 <https://github.com/ros2/rclpy/issues/1104>`_)
+* Contributors: Chris Lalancette, Eloy Briceno, Emerson Knapp, Hans-Joachim Krauch, M. Hofstätter
+
 4.2.2 (2023-06-07)
 ------------------
 * Fix iteration over modified list (`#1129 <https://github.com/ros2/rclpy/issues/1129>`_)
