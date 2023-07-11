@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+5.0.0 (2023-07-11)
+------------------
 * get_type_description service (`#1139 <https://github.com/ros2/rclpy/issues/1139>`_)
 * Add in the ability to start timers paused. (`#1138 <https://github.com/ros2/rclpy/issues/1138>`_)
 * Modifies ros_timer_init for ros_timer_init2 (`#999 <https://github.com/ros2/rclpy/issues/999>`_)
