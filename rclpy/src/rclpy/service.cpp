@@ -107,7 +107,7 @@ Service::service_send_response(py::object pyresponse, rmw_request_id_t * header)
 
   rcl_ret_t ret = rcl_send_response(rcl_service_.get(), header, raw_ros_response.get());
   if (RCL_RET_OK != ret) {
-    if (RCL_RET_TIMEOUT) {
+    if (RCL_RET_TIMEOUT == ret) {
       // Warning should use line number of the current stack frame
       int stack_level = 1;
       PyErr_WarnFormat(
