@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.1.2 (2023-07-14)
+------------------
 * Include type hash in topic endpoint info (`#1134 <https://github.com/ros2/rclpy/issues/1134>`_)
 * Contributors: Hans-Joachim Krauch
 
