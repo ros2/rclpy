@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Include type hash in topic endpoint info (`#1134 <https://github.com/ros2/rclpy/issues/1134>`_)
+* Contributors: Hans-Joachim Krauch
+
 4.1.1 (2023-05-11)
 ------------------
 * Fix type in Node init args (`#1115 <https://github.com/ros2/rclpy/issues/1115>`_) (`#1122 <https://github.com/ros2/rclpy/issues/1122>`_)
