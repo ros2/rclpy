@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.9 (2023-07-18)
+------------------
+* ServerGoalHandle should be destroyed before removing. (`#1113 <https://github.com/ros2/rclpy/issues/1113>`_) (`#1120 <https://github.com/ros2/rclpy/issues/1120>`_)
+* Contributors: mergify[bot]
+
 3.3.8 (2023-04-25)
 ------------------
 * Deal with ParameterUninitializedException for parameter service (backport `#1033 <https://github.com/ros2/rclpy/issues/1033>`_) (`#1041 <https://github.com/ros2/rclpy/issues/1041>`_)
