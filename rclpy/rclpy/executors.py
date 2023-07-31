@@ -772,7 +772,7 @@ class SingleThreadedExecutor(Executor):
             for future in self._futures[:]:
                 if future.done():
                     self._futures.remove(future)
-                    future.result()  # re-raise any exceptions
+                    future.result()  # raise any exceptions
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
@@ -844,7 +844,7 @@ class MultiThreadedExecutor(Executor):
             for future in self._futures[:]:
                 if future.done():
                     self._futures.remove(future)
-                    future.result()  # re-raise any exceptions
+                    future.result()  # raise any exceptions
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
