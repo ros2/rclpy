@@ -745,24 +745,37 @@ class SingleThreadedExecutor(Executor):
     def __init__(self, *, context: Optional[Context] = None) -> None:
         super().__init__(context=context)
 
-    def spin_once(self, timeout_sec: Optional[float] = None) -> None:
+    def _spin_once_impl(
+        self,
+        timeout_sec: Optional[float] = None,
+        wait_condition: Callable[[], bool] = lambda: False
+    ) -> None:
         try:
-            handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+            handler, entity, node = self.wait_for_ready_callbacks(
+                timeout_sec, None, wait_condition)
         except ShutdownException:
             pass
         except TimeoutException:
+            pass
+        except ConditionReachedException:
             pass
         else:
             handler()
             if handler.exception() is not None:
                 raise handler.exception()
 
+            handler.result()  # raise any exceptions
+
+    def spin_once(self, timeout_sec: Optional[float] = None) -> None:
+        self._spin_once_impl(timeout_sec)
+
     def spin_once_until_future_complete(
         self,
         future: Future,
         timeout_sec: Optional[float] = None
     ) -> None:
-        self.spin_once(timeout_sec)
+        future.add_done_callback(lambda x: self.wake())
+        self._spin_once_impl(timeout_sec, future.done)
 
 
 class MultiThreadedExecutor(Executor):
@@ -823,7 +836,7 @@ class MultiThreadedExecutor(Executor):
             for future in self._futures[:]:
                 if future.done():
                     self._futures.remove(future)
-                    future.result()  # re-raise any exceptions
+                    future.result()  # raise any exceptions
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
@@ -833,4 +846,5 @@ class MultiThreadedExecutor(Executor):
         future: Future,
         timeout_sec: Optional[float] = None
     ) -> None:
+        future.add_done_callback(lambda x: self.wake())
         self._spin_once_impl(timeout_sec, future.done)
