@@ -32,7 +32,7 @@ class TimeSource:
     def __init__(self, *, node=None):
         self._clock_sub = None
         self._node_weak_ref = None
-        self._associated_clocks = []
+        self._associated_clocks = set()
         # Zero time is a special value that means time is uninitialzied
         self._last_time_set = Time(clock_type=ClockType.ROS_TIME)
         self._ros_time_is_active = False
@@ -113,7 +113,7 @@ class TimeSource:
 
         clock.set_ros_time_override(self._last_time_set)
         clock._set_ros_time_is_active(self.ros_time_is_active)
-        self._associated_clocks.append(clock)
+        self._associated_clocks.add(clock)
 
     def clock_callback(self, msg):
         # Cache the last message in case a new clock is attached.
