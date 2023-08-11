@@ -347,21 +347,39 @@ class Executor(ContextManager['Executor']):
         raise NotImplementedError()
 
     def _take_timer(self, tmr):
-        with tmr.handle:
-            tmr.handle.call_timer()
-        return ()
+        try:
+            with tmr.handle:
+                tmr.handle.call_timer()
+                return (True,)
+        except InvalidHandle:
+            # Timer is a Destroyable, which means that on __enter__ it can throw an
+            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
+            # by just returning an empty argument, which means we will skip doing any real work
+            # in _execute_timer below
+            pass
 
-    async def _execute_timer(self, tmr):
-        await await_or_execute(tmr.callback)
+        return (False,)
+
+    async def _execute_timer(self, tmr, execute):
+        if execute:
+            await await_or_execute(tmr.callback)
 
     def _take_subscription(self, sub):
-        with sub.handle:
-            msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
-            if msg_info is not None:
-                if sub._callback_type is Subscription.CallbackType.MessageOnly:
-                    return (msg_info[0], )
-                else:
-                    return msg_info
+        try:
+            with sub.handle:
+                msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
+                if msg_info is not None:
+                    if sub._callback_type is Subscription.CallbackType.MessageOnly:
+                        return (msg_info[0], )
+                    else:
+                        return msg_info
+        except InvalidHandle:
+            # Subscription is a Destroyable, which means that on __enter__ it can throw an
+            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
+            # by just returning an empty argument, which means we will skip doing any real work
+            # in _execute_subscription below
+            pass
+
         return ()
 
     async def _execute_subscription(self, sub, *args):
@@ -369,34 +387,55 @@ class Executor(ContextManager['Executor']):
             await await_or_execute(sub.callback, *args)
 
     def _take_client(self, client):
-        with client.handle:
-            return (client.handle.take_response(client.srv_type.Response), )
+        header_and_response = (None, None)
+        try:
+            with client.handle:
+                header_and_response = client.handle.take_response(client.srv_type.Response)
+        except InvalidHandle:
+            # Client is a Destroyable, which means that on __enter__ it can throw an
+            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
+            # by just returning an empty argument, which means we will skip doing any real work
+            # in _execute_client below
+            pass
+
+        return (header_and_response,)
 
     async def _execute_client(self, client, seq_and_response):
         header, response = seq_and_response
-        if header is not None:
-            try:
-                sequence = header.request_id.sequence_number
-                future = client.get_pending_request(sequence)
-            except KeyError:
-                # The request was cancelled
-                pass
-            else:
-                future._set_executor(self)
-                future.set_result(response)
+        if header is None:
+            return
+
+        try:
+            sequence = header.request_id.sequence_number
+            future = client.get_pending_request(sequence)
+        except KeyError:
+            # The request was cancelled
+            pass
+        else:
+            future._set_executor(self)
+            future.set_result(response)
 
     def _take_service(self, srv):
-        with srv.handle:
-            request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
-        return (request_and_header, )
+        request_and_header = (None, None)
+        try:
+            with srv.handle:
+                request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
+        except InvalidHandle:
+            # Service is a Destroyable, which means that on __enter__ it can throw an
+            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
+            # by just returning an empty argument, which means we will skip doing any real work
+            # in _execute_service below
+            pass
+
+        return (request_and_header,)
 
     async def _execute_service(self, srv, request_and_header):
-        if request_and_header is None:
-            return
         (request, header) = request_and_header
-        if request:
-            response = await await_or_execute(srv.callback, request, srv.srv_type.Response())
-            srv.send_response(response, header)
+        if header is None:
+            return
+
+        response = await await_or_execute(srv.callback, request, srv.srv_type.Response())
+        srv.send_response(response, header)
 
     def _take_guard_condition(self, gc):
         gc._executor_triggered = False
