@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Avoid generating the exception when rcl_send_response times out. (`#1136 <https://github.com/ros2/rclpy/issues/1136>`_)
+* Store time source clocks in a set (`#1146 <https://github.com/ros2/rclpy/issues/1146>`_)
+* Fix spin_once_until_future_complete to quit when the future finishes. (`#1143 <https://github.com/ros2/rclpy/issues/1143>`_)
+* Contributors: Chris Lalancette, Luca Della Vedova, Tomoya Fujita
+
 5.0.0 (2023-07-11)
 ------------------
 * get_type_description service (`#1139 <https://github.com/ros2/rclpy/issues/1139>`_)
