@@ -66,14 +66,18 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def setUpClass(cls):
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
-        cls.node = rclpy.create_node(
-            TEST_NODE, namespace=TEST_NAMESPACE, context=cls.context,
-            allow_undeclared_parameters=True)
 
     @classmethod
     def tearDownClass(cls):
-        cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
+
+    def setUp(self):
+        self.node = rclpy.create_node(
+            TEST_NODE, namespace=TEST_NAMESPACE, context=self.context,
+            allow_undeclared_parameters=True)
+
+    def tearDown(self):
+        self.node.destroy_node()
 
     def test_accessors(self):
         self.assertIsNotNone(self.node.handle)
@@ -343,52 +347,6 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         node_logger.set_level(rclpy.logging.LoggingSeverity.INFO)
         node_logger.debug('test')
 
-    def test_initially_no_executor(self):
-        node = rclpy.create_node('my_node', context=self.context)
-        try:
-            assert node.executor is None
-        finally:
-            node.destroy_node()
-
-    def test_set_executor_adds_node_to_it(self):
-        node = rclpy.create_node('my_node', context=self.context)
-        executor = Mock()
-        executor.add_node.return_value = True
-        try:
-            node.executor = executor
-            assert id(executor) == id(node.executor)
-        finally:
-            node.destroy_node()
-        executor.add_node.assert_called_once_with(node)
-
-    def test_set_executor_removes_node_from_old_executor(self):
-        node = rclpy.create_node('my_node', context=self.context)
-        old_executor = Mock()
-        old_executor.add_node.return_value = True
-        new_executor = Mock()
-        new_executor.add_node.return_value = True
-        try:
-            node.executor = old_executor
-            assert id(old_executor) == id(node.executor)
-            node.executor = new_executor
-            assert id(new_executor) == id(node.executor)
-        finally:
-            node.destroy_node()
-        old_executor.remove_node.assert_called_once_with(node)
-        new_executor.remove_node.assert_not_called()
-
-    def test_set_executor_clear_executor(self):
-        node = rclpy.create_node('my_node', context=self.context)
-        executor = Mock()
-        executor.add_node.return_value = True
-        try:
-            node.executor = executor
-            assert id(executor) == id(node.executor)
-            node.executor = None
-            assert node.executor is None
-        finally:
-            node.destroy_node()
-
     def modify_parameter_callback(self, parameters_list: List[Parameter]):
         modified_list = parameters_list.copy()
         for param in parameters_list:
@@ -550,12 +508,66 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         )
 
 
+class TestExecutor(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
+
+    @classmethod
+    def tearDownClass(cls):
+        rclpy.shutdown(context=cls.context)
+
+    def setUp(self):
+        self.node = rclpy.create_node(TEST_NODE, context=self.context)
+
+    def tearDown(self):
+        self.node.destroy_node()
+
+    def test_initially_no_executor(self):
+        assert self.node.executor is None
+
+    def test_set_executor_adds_node_to_it(self):
+        executor = Mock()
+        executor.add_node.return_value = True
+        self.node.executor = executor
+        assert id(executor) == id(self.node.executor)
+        executor.add_node.assert_called_once_with(self.node)
+
+    def test_set_executor_removes_node_from_old_executor(self):
+        old_executor = Mock()
+        old_executor.add_node.return_value = True
+        new_executor = Mock()
+        new_executor.add_node.return_value = True
+        self.node.executor = old_executor
+        assert id(old_executor) == id(self.node.executor)
+        self.node.executor = new_executor
+        assert id(new_executor) == id(self.node.executor)
+        old_executor.remove_node.assert_called_once_with(self.node)
+        new_executor.remove_node.assert_not_called()
+
+    def test_set_executor_clear_executor(self):
+        executor = Mock()
+        executor.add_node.return_value = True
+        self.node.executor = executor
+        assert id(executor) == id(self.node.executor)
+        self.node.executor = None
+        assert self.node.executor is None
+
+
 class TestNode(unittest.TestCase):
 
     @classmethod
+    def setUpClass(cls):
+        cls.context = rclpy.context.Context()
+        rclpy.init(context=cls.context)
+
+    @classmethod
+    def tearDownClass(cls):
+        rclpy.shutdown(context=cls.context)
+
     def setUp(self):
-        self.context = rclpy.context.Context()
-        rclpy.init(context=self.context)
         self.node = rclpy.create_node(
             TEST_NODE,
             namespace=TEST_NAMESPACE,
@@ -581,10 +593,8 @@ class TestNode(unittest.TestCase):
             automatically_declare_parameters_from_overrides=False
         )
 
-    @classmethod
     def tearDown(self):
         self.node.destroy_node()
-        rclpy.shutdown(context=self.context)
 
     def test_declare_parameter(self):
         with pytest.raises(ValueError):
@@ -858,24 +868,6 @@ class TestNode(unittest.TestCase):
         rejected_parameters = (
             param for param in parameter_list if 'refuse' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
-
-    def test_use_sim_time(self):
-        self.assertTrue(self.node.has_parameter(USE_SIM_TIME_NAME))
-        self.assertFalse(self.node.get_parameter(USE_SIM_TIME_NAME).value)
-
-        temp_node = rclpy.create_node(
-            TEST_NODE + '2',
-            namespace=TEST_NAMESPACE,
-            context=self.context,
-            parameter_overrides=[
-                Parameter(USE_SIM_TIME_NAME, value=True),
-            ],
-            automatically_declare_parameters_from_overrides=False
-        )
-        # use_sim_time is declared automatically anyways; in this case using override value.
-        self.assertTrue(temp_node.has_parameter(USE_SIM_TIME_NAME))
-        self.assertTrue(temp_node.get_parameter(USE_SIM_TIME_NAME).value)
-        temp_node.destroy_node()
 
     def test_node_undeclare_parameter_has_parameter(self):
         # Undeclare unexisting parameter.
@@ -2126,10 +2118,9 @@ class TestNode(unittest.TestCase):
         self.assertFalse(self.node.has_parameter('dynamic_param'))
 
     def test_wait_for_node(self):
+        node = rclpy.create_node(
+            'waiting_for_this_node', namespace=TEST_NAMESPACE, context=self.context)
         try:
-            node = rclpy.create_node(
-                'waiting_for_this_node', namespace='/my_ns', context=self.context
-            )
             self.assertTrue(self.node.wait_for_node('/my_ns/waiting_for_this_node', 3.0))
         finally:
             node.destroy_node()
@@ -2148,13 +2139,21 @@ class TestCreateNode(unittest.TestCase):
         )
         try:
             node1 = rclpy.create_node(
-                'my_node', namespace='/my_ns', use_global_arguments=True, context=context)
-            node2 = rclpy.create_node(
-                'my_node', namespace='/my_ns', use_global_arguments=False, context=context)
-            self.assertEqual('global_node_name', node1.get_name())
-            self.assertEqual('my_node', node2.get_name())
-            node1.destroy_node()
-            node2.destroy_node()
+                TEST_NODE, namespace=TEST_NAMESPACE, use_global_arguments=True, context=context)
+            try:
+                node2 = rclpy.create_node(
+                    TEST_NODE,
+                    namespace=TEST_NAMESPACE,
+                    use_global_arguments=False,
+                    context=context
+                )
+                try:
+                    self.assertEqual('global_node_name', node1.get_name())
+                    self.assertEqual(TEST_NODE, node2.get_name())
+                finally:
+                    node2.destroy_node()
+            finally:
+                node1.destroy_node()
         finally:
             rclpy.shutdown(context=context)
 
@@ -2163,13 +2162,15 @@ class TestCreateNode(unittest.TestCase):
         rclpy.init(context=context)
         try:
             node = rclpy.create_node(
-                'my_node',
-                namespace='/my_ns',
+                TEST_NODE,
+                namespace=TEST_NAMESPACE,
                 cli_args=['--ros-args', '-r', '__ns:=/foo/bar'],
                 context=context
             )
-            self.assertEqual('/foo/bar', node.get_namespace())
-            node.destroy_node()
+            try:
+                self.assertEqual('/foo/bar', node.get_namespace())
+            finally:
+                node.destroy_node()
         finally:
             rclpy.shutdown(context=context)
 
@@ -2177,100 +2178,155 @@ class TestCreateNode(unittest.TestCase):
         context = rclpy.context.Context()
         rclpy.init(context=context)
 
-        from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+        try:
+            from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
-        invalid_ros_args_error_pattern = r'Failed to parse ROS arguments:.*not-a-remap.*'
-        with self.assertRaisesRegex(_rclpy.RCLInvalidROSArgsError, invalid_ros_args_error_pattern):
-            rclpy.create_node(
-                'my_node',
-                namespace='/my_ns',
-                cli_args=['--ros-args', '-r', 'not-a-remap'],
-                context=context)
+            invalid_ros_args_pattern = r'Failed to parse ROS arguments:.*not-a-remap.*'
+            with self.assertRaisesRegex(_rclpy.RCLInvalidROSArgsError, invalid_ros_args_pattern):
+                rclpy.create_node(
+                    TEST_NODE,
+                    namespace=TEST_NAMESPACE,
+                    cli_args=['--ros-args', '-r', 'not-a-remap'],
+                    context=context)
 
-        unknown_ros_args_error_pattern = r'\[\'--my-custom-flag\'\]'
-        with self.assertRaisesRegex(_rclpy.UnknownROSArgsError, unknown_ros_args_error_pattern):
-            rclpy.create_node(
-                'my_node',
-                namespace='/my_ns',
-                cli_args=['--ros-args', '--my-custom-flag'],
-                context=context)
-
-        rclpy.shutdown(context=context)
+            unknown_ros_args_pattern = r'\[\'--my-custom-flag\'\]'
+            with self.assertRaisesRegex(_rclpy.UnknownROSArgsError, unknown_ros_args_pattern):
+                rclpy.create_node(
+                    TEST_NODE,
+                    namespace=TEST_NAMESPACE,
+                    cli_args=['--ros-args', '--my-custom-flag'],
+                    context=context)
+        finally:
+            rclpy.shutdown(context=context)
 
     def test_node_get_fully_qualified_name(self):
         context = rclpy.context.Context()
         rclpy.init(context=context)
 
-        ns = '/my_ns'
-        name = 'my_node'
-        node = rclpy.create_node(name, namespace=ns, context=context)
-        assert node.get_fully_qualified_name() == '{}/{}'.format(ns, name)
-        node.destroy_node()
+        try:
+            node = rclpy.create_node(TEST_NODE, namespace=TEST_NAMESPACE, context=context)
+            try:
+                assert node.get_fully_qualified_name() == '{}/{}'.format(TEST_NAMESPACE, TEST_NODE)
+            finally:
+                node.destroy_node()
 
-        # When ns is not specified, a leading / should be added
-        node_without_ns = rclpy.create_node(name, context=context)
-        assert node_without_ns.get_fully_qualified_name() == '/' + name
-        node_without_ns.destroy_node()
+            # When ns is not specified, a leading / should be added
+            node_without_ns = rclpy.create_node(TEST_NODE, context=context)
+            try:
+                assert node_without_ns.get_fully_qualified_name() == '/' + TEST_NODE
+            finally:
+                node_without_ns.destroy_node()
 
-        remapped_ns = '/another_ns'
-        remapped_name = 'another_node'
-        node_with_remapped_ns = rclpy.create_node(
-            name,
-            namespace=ns,
-            context=context,
-            cli_args=['--ros-args', '-r', '__ns:=' + remapped_ns]
-        )
-        expected_name = '{}/{}'.format(remapped_ns, name)
-        assert node_with_remapped_ns.get_fully_qualified_name() == expected_name
-        node_with_remapped_ns.destroy_node()
+            remapped_ns = '/another_ns'
+            remapped_name = 'another_node'
+            node_with_remapped_ns = rclpy.create_node(
+                TEST_NODE,
+                namespace=TEST_NAMESPACE,
+                context=context,
+                cli_args=['--ros-args', '-r', '__ns:=' + remapped_ns]
+            )
+            try:
+                expected_name = '{}/{}'.format(remapped_ns, TEST_NODE)
+                assert node_with_remapped_ns.get_fully_qualified_name() == expected_name
+            finally:
+                node_with_remapped_ns.destroy_node()
 
-        node_with_remapped_name = rclpy.create_node(
-            name,
-            namespace=ns,
-            context=context,
-            cli_args=['--ros-args', '-r', '__node:=' + remapped_name]
-        )
-        expected_name = '{}/{}'.format(ns, remapped_name)
-        assert node_with_remapped_name.get_fully_qualified_name() == expected_name
-        node_with_remapped_name.destroy_node()
+            node_with_remapped_name = rclpy.create_node(
+                TEST_NODE,
+                namespace=TEST_NAMESPACE,
+                context=context,
+                cli_args=['--ros-args', '-r', '__node:=' + remapped_name]
+            )
+            try:
+                expected_name = '{}/{}'.format(TEST_NAMESPACE, remapped_name)
+                assert node_with_remapped_name.get_fully_qualified_name() == expected_name
+            finally:
+                node_with_remapped_name.destroy_node()
 
-        node_with_remapped_ns_name = rclpy.create_node(
-            name,
-            namespace=ns,
-            context=context,
-            cli_args=['--ros-args', '-r', '__node:=' + remapped_name, '-r', '__ns:=' + remapped_ns]
-        )
-        expected_name = '{}/{}'.format(remapped_ns, remapped_name)
-        assert node_with_remapped_ns_name.get_fully_qualified_name() == expected_name
-        node_with_remapped_ns_name.destroy_node()
+            node_with_remapped_ns_name = rclpy.create_node(
+                TEST_NODE,
+                namespace=TEST_NAMESPACE,
+                context=context,
+                cli_args=[
+                    '--ros-args', '-r', '__node:=' + remapped_name, '-r', '__ns:=' + remapped_ns]
+            )
+            try:
+                expected_name = '{}/{}'.format(remapped_ns, remapped_name)
+                assert node_with_remapped_ns_name.get_fully_qualified_name() == expected_name
+            finally:
+                node_with_remapped_ns_name.destroy_node()
+        finally:
+            rclpy.shutdown(context=context)
 
-        rclpy.shutdown(context=context)
-
+    def test_node_get_fully_qualified_name_global_remap(self):
         g_context = rclpy.context.Context()
         global_remap_name = 'global_node_name'
         rclpy.init(
             args=['--ros-args', '-r', '__node:=' + global_remap_name],
             context=g_context,
         )
-        node_with_global_arguments = rclpy.create_node(
-            name,
-            namespace=ns,
-            context=g_context,
-        )
-        expected_name = '{}/{}'.format(ns, global_remap_name)
-        assert node_with_global_arguments.get_fully_qualified_name() == expected_name
-        node_with_global_arguments.destroy_node()
+        try:
+            node_with_global_arguments = rclpy.create_node(
+                TEST_NODE,
+                namespace=TEST_NAMESPACE,
+                context=g_context,
+            )
+            try:
+                expected_name = '{}/{}'.format(TEST_NAMESPACE, global_remap_name)
+                assert node_with_global_arguments.get_fully_qualified_name() == expected_name
+            finally:
+                node_with_global_arguments.destroy_node()
 
-        node_skip_global_params = rclpy.create_node(
-            name,
-            namespace=ns,
-            context=g_context,
-            use_global_arguments=False
-        )
-        assert node_skip_global_params.get_fully_qualified_name() == '{}/{}'.format(ns, name)
-        node_skip_global_params.destroy_node()
+            node_skip_global_params = rclpy.create_node(
+                TEST_NODE,
+                namespace=TEST_NAMESPACE,
+                context=g_context,
+                use_global_arguments=False
+            )
+            try:
+                expected_name = '{}/{}'.format(TEST_NAMESPACE, TEST_NODE)
+                assert node_skip_global_params.get_fully_qualified_name() == expected_name
+            finally:
+                node_skip_global_params.destroy_node()
+        finally:
+            rclpy.shutdown(context=g_context)
 
-        rclpy.shutdown(context=g_context)
+    def test_no_use_sim_time(self):
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
+
+        try:
+            no_sim_node = rclpy.create_node('test_node_no_sim', context=context)
+            try:
+                self.assertTrue(no_sim_node.has_parameter(USE_SIM_TIME_NAME))
+                self.assertFalse(no_sim_node.get_parameter(USE_SIM_TIME_NAME).value)
+            finally:
+                no_sim_node.destroy_node()
+        finally:
+            rclpy.shutdown(context=context)
+
+    def test_use_sim_time(self):
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
+
+        try:
+            sim_time_node = rclpy.create_node(
+                'test_node_sim',
+                namespace=TEST_NAMESPACE,
+                context=context,
+                parameter_overrides=[
+                    Parameter(USE_SIM_TIME_NAME, value=True),
+                ],
+                automatically_declare_parameters_from_overrides=False
+            )
+            try:
+                # use_sim_time is declared automatically; in this case using override value.
+                self.assertTrue(sim_time_node.has_parameter(USE_SIM_TIME_NAME))
+                self.assertTrue(sim_time_node.get_parameter(USE_SIM_TIME_NAME).value)
+            finally:
+                sim_time_node.destroy_node()
+        finally:
+            rclpy.shutdown(context=context)
 
 
 def test_node_resolve_name():
@@ -2279,24 +2335,33 @@ def test_node_resolve_name():
         args=['--ros-args', '-r', 'foo:=bar'],
         context=context,
     )
-    node = rclpy.create_node('test_rclpy_node_resolve_name', namespace='/my_ns', context=context)
-    assert node.resolve_topic_name('foo') == '/my_ns/bar'
-    assert node.resolve_topic_name('/abs') == '/abs'
-    assert node.resolve_topic_name('foo', only_expand=True) == '/my_ns/foo'
-    assert node.resolve_service_name('foo') == '/my_ns/bar'
-    assert node.resolve_service_name('/abs') == '/abs'
-    assert node.resolve_service_name('foo', only_expand=True) == '/my_ns/foo'
-    rclpy.shutdown(context=context)
+    try:
+        node = rclpy.create_node(
+            'test_rclpy_node_resolve_name',
+            namespace=TEST_NAMESPACE,
+            context=context
+        )
+        try:
+            assert node.resolve_topic_name('foo') == '/my_ns/bar'
+            assert node.resolve_topic_name('/abs') == '/abs'
+            assert node.resolve_topic_name('foo', only_expand=True) == '/my_ns/foo'
+            assert node.resolve_service_name('foo') == '/my_ns/bar'
+            assert node.resolve_service_name('/abs') == '/abs'
+            assert node.resolve_service_name('foo', only_expand=True) == '/my_ns/foo'
+        finally:
+            node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)
 
 
 class TestNodeParamsFile(unittest.TestCase):
 
     @classmethod
-    def setUp(self):
+    def setUpClass(cls):
         rclpy.init()
 
     @classmethod
-    def tearDown(self):
+    def tearDownClass(cls):
         rclpy.shutdown()
 
     def test_node_ns_params_file_with_wildcards(self):
@@ -2308,22 +2373,25 @@ class TestNodeParamsFile(unittest.TestCase):
                 '--params-file', str(TEST_RESOURCES_DIR / 'wildcards.yaml')
             ],
             automatically_declare_parameters_from_overrides=True)
-        self.assertEqual('full_wild', node.get_parameter('full_wild').value)
-        self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
-        self.assertEqual(
-          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
-        self.assertEqual(
-          'namespace_wild_one_star', node.get_parameter('namespace_wild_one_star').value)
-        self.assertEqual('node_wild_in_ns', node.get_parameter('node_wild_in_ns').value)
-        self.assertEqual(
-          'node_wild_in_ns_another', node.get_parameter('node_wild_in_ns_another').value)
-        self.assertEqual('explicit_in_ns', node.get_parameter('explicit_in_ns').value)
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('node_wild_no_ns')
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('explicit_no_ns')
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('should_not_appear')
+        try:
+            self.assertEqual('full_wild', node.get_parameter('full_wild').value)
+            self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
+            self.assertEqual(
+              'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+            self.assertEqual(
+              'namespace_wild_one_star', node.get_parameter('namespace_wild_one_star').value)
+            self.assertEqual('node_wild_in_ns', node.get_parameter('node_wild_in_ns').value)
+            self.assertEqual(
+              'node_wild_in_ns_another', node.get_parameter('node_wild_in_ns_another').value)
+            self.assertEqual('explicit_in_ns', node.get_parameter('explicit_in_ns').value)
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('node_wild_no_ns')
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('explicit_no_ns')
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('should_not_appear')
+        finally:
+            node.destroy_node()
 
     def test_node_params_file_with_wildcards(self):
         node = rclpy.create_node(
@@ -2333,22 +2401,25 @@ class TestNodeParamsFile(unittest.TestCase):
                 '--params-file', str(TEST_RESOURCES_DIR / 'wildcards.yaml')
             ],
             automatically_declare_parameters_from_overrides=True)
-        self.assertEqual('full_wild', node.get_parameter('full_wild').value)
-        self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
-        self.assertEqual(
-          'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('namespace_wild_one_star')
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('node_wild_in_ns')
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('node_wild_in_ns_another')
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('explicit_in_ns')
-        self.assertEqual('node_wild_no_ns', node.get_parameter('node_wild_no_ns').value)
-        self.assertEqual('explicit_no_ns', node.get_parameter('explicit_no_ns').value)
-        with self.assertRaises(ParameterNotDeclaredException):
-            node.get_parameter('should_not_appear')
+        try:
+            self.assertEqual('full_wild', node.get_parameter('full_wild').value)
+            self.assertEqual('namespace_wild', node.get_parameter('namespace_wild').value)
+            self.assertEqual(
+              'namespace_wild_another', node.get_parameter('namespace_wild_another').value)
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('namespace_wild_one_star')
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('node_wild_in_ns')
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('node_wild_in_ns_another')
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('explicit_in_ns')
+            self.assertEqual('node_wild_no_ns', node.get_parameter('node_wild_no_ns').value)
+            self.assertEqual('explicit_no_ns', node.get_parameter('explicit_no_ns').value)
+            with self.assertRaises(ParameterNotDeclaredException):
+                node.get_parameter('should_not_appear')
+        finally:
+            node.destroy_node()
 
     def test_node_ns_params_file_by_order(self):
         node = rclpy.create_node(
@@ -2359,9 +2430,12 @@ class TestNodeParamsFile(unittest.TestCase):
                 '--params-file', str(TEST_RESOURCES_DIR / 'params_by_order.yaml')
             ],
             automatically_declare_parameters_from_overrides=True)
-        self.assertEqual('last_one_win', node.get_parameter('a_value').value)
-        self.assertEqual('foo', node.get_parameter('foo').value)
-        self.assertEqual('bar', node.get_parameter('bar').value)
+        try:
+            self.assertEqual('last_one_win', node.get_parameter('a_value').value)
+            self.assertEqual('foo', node.get_parameter('foo').value)
+            self.assertEqual('bar', node.get_parameter('bar').value)
+        finally:
+            node.destroy_node()
 
     def test_node_ns_params_file_with_complicated_wildcards(self):
         # regex matched: /**/foo/*/bar
@@ -2373,8 +2447,11 @@ class TestNodeParamsFile(unittest.TestCase):
                 '--params-file', str(TEST_RESOURCES_DIR / 'complicated_wildcards.yaml')
             ],
             automatically_declare_parameters_from_overrides=True)
-        self.assertEqual('foo', node.get_parameter('foo').value)
-        self.assertEqual('bar', node.get_parameter('bar').value)
+        try:
+            self.assertEqual('foo', node.get_parameter('foo').value)
+            self.assertEqual('bar', node.get_parameter('bar').value)
+        finally:
+            node.destroy_node()
 
 
 if __name__ == '__main__':
