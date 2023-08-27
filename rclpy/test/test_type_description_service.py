@@ -51,11 +51,11 @@ class TestTypeDescriptionService(unittest.TestCase):
     def test_get_type_description(self):
         pub_infos = self.test_node.get_publishers_info_by_topic(self.test_topic)
         assert len(pub_infos)
-        hash = pub_infos[0].topic_type_hash
+        type_hash = pub_infos[0].topic_type_hash
 
         request = GetTypeDescription.Request(
             type_name='test_msgs/msg/BasicTypes',
-            type_hash=hash,
+            type_hash=type_hash,
             include_type_sources=True)
         future = self.get_type_description_client.call_async(request)
         self.executor.spin_until_future_complete(future)
