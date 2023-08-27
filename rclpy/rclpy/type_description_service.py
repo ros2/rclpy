@@ -40,6 +40,7 @@ class TypeDescriptionService:
     def __init__(self, node):
         """Initialize the service, if the parameter is set to true."""
         node_name = node.get_name()
+        self._node = node
         self.service_name = TOPIC_SEPARATOR_STRING.join((node_name, 'get_type_description'))
         self._type_description_srv = None
 
@@ -93,4 +94,4 @@ class TypeDescriptionService:
 
     def _service_callback(self, request, response):
         return self._type_description_srv.handle_request(
-            request, GetTypeDescription.Response, self._node)
+            request, GetTypeDescription.Response, self._node.handle)
