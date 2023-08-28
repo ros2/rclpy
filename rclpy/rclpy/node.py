@@ -1622,7 +1622,7 @@ class Node:
 
         client = Client(
             self.context,
-            client_impl, srv_type, srv_name, qos_profile,
+            client_impl, srv_type, client_impl.service_name, qos_profile,
             callback_group)
         callback_group.add_entity(client)
         self._clients.append(client)
@@ -1667,7 +1667,7 @@ class Node:
 
         service = Service(
             service_impl,
-            srv_type, srv_name, callback, callback_group, qos_profile)
+            srv_type, service_impl.name, callback, callback_group, qos_profile)
         callback_group.add_entity(service)
         self._services.append(service)
         self._wake_executor()
