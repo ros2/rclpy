@@ -39,45 +39,45 @@ class TypeDescriptionService:
 
     def __init__(self, node):
         """Initialize the service, if the parameter is set to true."""
-        node_name = node.get_name()
         self._node = node
+        node_name = self._node.get_name()
         self.service_name = TOPIC_SEPARATOR_STRING.join((node_name, 'get_type_description'))
         self._type_description_srv = None
 
         self.enabled = False
-        if not node.has_parameter(START_TYPE_DESCRIPTION_SERVICE_PARAM):
+        if not self._node.has_parameter(START_TYPE_DESCRIPTION_SERVICE_PARAM):
             descriptor = ParameterDescriptor(
                 name=START_TYPE_DESCRIPTION_SERVICE_PARAM,
                 type=ParameterType.PARAMETER_BOOL,
                 description='If enabled, start the ~/get_type_description service.',
                 read_only=True)
-            node.declare_parameter(
+            self._node.declare_parameter(
                 START_TYPE_DESCRIPTION_SERVICE_PARAM,
                 True,
                 descriptor)
-        param = node.get_parameter(START_TYPE_DESCRIPTION_SERVICE_PARAM)
+        param = self._node.get_parameter(START_TYPE_DESCRIPTION_SERVICE_PARAM)
         if param.type_ != Parameter.Type.NOT_SET:
             if param.type_ == Parameter.Type.BOOL:
                 self.enabled = param.value
             else:
-                node.get_logger().error(
+                self._node.get_logger().error(
                     "Invalid type for parameter '{}' {!r} should be bool"
                     .format(START_TYPE_DESCRIPTION_SERVICE_PARAM, param.type_))
         else:
-            node.get_logger().debug(
+            self._node.get_logger().debug(
                 'Parameter {} not set, defaulting to true.'
                 .format(START_TYPE_DESCRIPTION_SERVICE_PARAM))
 
         if self.enabled:
-            self._start_service(node)
+            self._start_service()
 
     def destroy(self):
         if self._type_description_srv is not None:
             self._type_description_srv.destroy_when_not_in_use()
             self._type_description_srv = None
 
-    def _start_service(self, node):
-        self._type_description_srv = _rclpy.TypeDescriptionService(node.handle)
+    def _start_service(self):
+        self._type_description_srv = _rclpy.TypeDescriptionService(self._node.handle)
         # Because we are creating our own service wrapper, must manually add the service
         # to the appropriate parts of Node because we cannot call create_service.
         check_is_valid_srv_type(GetTypeDescription)
@@ -86,11 +86,11 @@ class TypeDescriptionService:
             srv_type=GetTypeDescription,
             srv_name=self.service_name,
             callback=self._service_callback,
-            callback_group=node.default_callback_group,
+            callback_group=self._node.default_callback_group,
             qos_profile=qos_profile_services_default)
-        node.default_callback_group.add_entity(service)
-        node._services.append(service)
-        node._wake_executor()
+        self._node.default_callback_group.add_entity(service)
+        self._node._services.append(service)
+        self._node._wake_executor()
 
     def _service_callback(self, request, response):
         return self._type_description_srv.handle_request(
