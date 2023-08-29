@@ -31,7 +31,7 @@ START_TYPE_DESCRIPTION_SERVICE_PARAM = 'start_type_description_service'
 
 class TypeDescriptionService:
     """
-    Optionally initializes and contaiins the ~/get_type_description service.
+    Optionally initializes and contains the ~/get_type_description service.
 
     The service is implemented in rcl, but should be enabled via parameter and have its
     callbacks handled via end-client execution framework, such as callback groups and waitsets.

@@ -45,7 +45,7 @@ class Client:
         """
         Create a container for a ROS service client.
 
-        .. warning:: Users should not create a service client with this constuctor, instead they
+        .. warning:: Users should not create a service client with this constructor, instead they
            should call :meth:`.Node.create_client`.
 
         :param context: The context associated with the service client.
