@@ -48,7 +48,7 @@ def test_get_service_name(service_name, namespace, expected):
         callback=lambda _: None
     )
 
-    assert srv.srv_name == expected
+    assert srv.service_name == expected
 
     srv.destroy()
     node.destroy_node()
@@ -74,7 +74,7 @@ def test_get_service_name_after_remapping(service_name, namespace, cli_args, exp
         callback=lambda _: None
     )
 
-    assert srv.srv_name == expected
+    assert srv.service_name == expected
 
     srv.destroy()
     node.destroy_node()

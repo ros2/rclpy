@@ -52,7 +52,7 @@ class TestClient(unittest.TestCase):
                 srv_type=Empty,
                 srv_name=service_name
             )
-            assert client.srv_name == target_service_name
+            assert client.service_name == target_service_name
             client.destroy()
             node.destroy_node()
 

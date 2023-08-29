@@ -204,5 +204,10 @@ class Client:
     def handle(self):
         return self.__client
 
+    @property
+    def service_name(self) -> str:
+        with self.__client:
+            return self.__client.service_name
+
     def destroy(self):
         self.__client.destroy_when_not_in_use()
