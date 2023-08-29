@@ -104,7 +104,7 @@ class Service:
 
     @property
     def service_name(self) -> str:
-        with self.__service:
+        with self.handle:
             return self.__service.name
 
     def destroy(self):

@@ -206,7 +206,7 @@ class Client:
 
     @property
     def service_name(self) -> str:
-        with self.__client:
+        with self.handle:
             return self.__client.service_name
 
     def destroy(self):
