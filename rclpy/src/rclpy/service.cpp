@@ -107,7 +107,16 @@ Service::service_send_response(py::object pyresponse, rmw_request_id_t * header)
 
   rcl_ret_t ret = rcl_send_response(rcl_service_.get(), header, raw_ros_response.get());
   if (RCL_RET_OK != ret) {
-    throw RCLError("failed to send response");
+    if (RCL_RET_TIMEOUT == ret) {
+      // Warning should use line number of the current stack frame
+      int stack_level = 1;
+      PyErr_WarnFormat(
+        PyExc_RuntimeWarning, stack_level, "failed to send response (timeout): %s",
+        rcl_get_error_string().str);
+      rcl_reset_error();
+    } else {
+      throw RCLError("failed to send response");
+    }
   }
 }
 
