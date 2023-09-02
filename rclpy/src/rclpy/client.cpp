@@ -164,11 +164,20 @@ Client::configure_introspection(
   }
 }
 
+const char *
+Client::get_service_name()
+{
+  return rcl_client_get_service_name(rcl_client_.get());
+}
+
 void
 define_client(py::object module)
 {
   py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
   .def(py::init<Node &, py::object, const std::string &, py::object>())
+  .def_property_readonly(
+    "service_name", &Client::get_service_name,
+    "Get the name of the service")
   .def_property_readonly(
     "pointer", [](const Client & client) {
       return reinterpret_cast<size_t>(client.rcl_ptr());

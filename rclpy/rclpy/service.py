@@ -102,5 +102,10 @@ class Service:
     def handle(self):
         return self.__service
 
+    @property
+    def service_name(self) -> str:
+        with self.handle:
+            return self.__service.name
+
     def destroy(self):
         self.__service.destroy_when_not_in_use()

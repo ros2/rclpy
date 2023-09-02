@@ -195,6 +195,7 @@ if(BUILD_TESTING)
       test/test_rate.py
       test/test_rosout_subscription.py
       test/test_serialization.py
+      test/test_service.py
       test/test_service_introspection.py
       test/test_subscription.py
       test/test_task.py
