@@ -971,8 +971,8 @@ class Node:
             If empty, all parameter names are returned.
         :param depth: The depth of nested parameter names to include.
         :return: The list of parameter names and their prefixes.
-        :raises: TypeError if the type of the passed argument is not expected types.
-        :raises: ValueError if depth is negative integer.
+        :raises: TypeError if the type of any of the passed arguments is not an expected type.
+        :raises: ValueError if depth is a negative integer.
         """
         if not isinstance(prefixes, list):
             raise TypeError('The prefixes argument must be a list')
