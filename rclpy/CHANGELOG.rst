@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Support to get remapped service name (`#1156 <https://github.com/ros2/rclpy/issues/1156>`_)
+* a couple of typo fixes. (`#1158 <https://github.com/ros2/rclpy/issues/1158>`_)
+* Fix get_type_description service bug and add a unit test (`#1155 <https://github.com/ros2/rclpy/issues/1155>`_)
+* Fix an inherent race in execution vs. destruction. (`#1150 <https://github.com/ros2/rclpy/issues/1150>`_)
+* Cleanup of test_node.py. (`#1153 <https://github.com/ros2/rclpy/issues/1153>`_)
+* Contributors: Barry Xu, Chris Lalancette, Emerson Knapp, Tomoya Fujita
+
 5.0.1 (2023-08-21)
 ------------------
 * Avoid generating the exception when rcl_send_response times out. (`#1136 <https://github.com/ros2/rclpy/issues/1136>`_)
