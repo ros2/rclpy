@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+5.1.0 (2023-09-07)
+------------------
 * Support to get remapped service name (`#1156 <https://github.com/ros2/rclpy/issues/1156>`_)
 * a couple of typo fixes. (`#1158 <https://github.com/ros2/rclpy/issues/1158>`_)
 * Fix get_type_description service bug and add a unit test (`#1155 <https://github.com/ros2/rclpy/issues/1155>`_)
