@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+5.2.0 (2023-09-08)
+------------------
 * add list_parameters & test (`#1124 <https://github.com/ros2/rclpy/issues/1124>`_)
 * Contributors: Minju, Lee
 
