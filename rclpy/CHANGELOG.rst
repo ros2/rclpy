@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.1.3 (2023-09-08)
+------------------
 * Fix get_type_description service bug and add a unit test (`#1157 <https://github.com/ros2/rclpy/issues/1157>`_)
 * Avoid generating the exception when rcl_send_response times out. (`#1151 <https://github.com/ros2/rclpy/issues/1151>`_)
 * get_type_description service (`#1140 <https://github.com/ros2/rclpy/issues/1140>`_)
