@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add list_parameters & test (`#1124 <https://github.com/ros2/rclpy/issues/1124>`_)
+* Contributors: Minju, Lee
+
 5.1.0 (2023-09-07)
 ------------------
 * Support to get remapped service name (`#1156 <https://github.com/ros2/rclpy/issues/1156>`_)
