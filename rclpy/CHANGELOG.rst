@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix get_type_description service bug and add a unit test (`#1157 <https://github.com/ros2/rclpy/issues/1157>`_)
+* Avoid generating the exception when rcl_send_response times out. (`#1151 <https://github.com/ros2/rclpy/issues/1151>`_)
+* get_type_description service (`#1140 <https://github.com/ros2/rclpy/issues/1140>`_)
+* Contributors: Emerson Knapp, Tomoya Fujita
+
 4.1.2 (2023-07-14)
 ------------------
 * Include type hash in topic endpoint info (`#1134 <https://github.com/ros2/rclpy/issues/1134>`_)
