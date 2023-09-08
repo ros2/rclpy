@@ -24,6 +24,7 @@ import pytest
 
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
+from rcl_interfaces.msg import ListParametersResult
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
@@ -1154,6 +1155,154 @@ class TestNode(unittest.TestCase):
         self.assertTrue(result[1].successful)
         self.assertIsInstance(result[2], SetParametersResult)
         self.assertTrue(result[2].successful)
+
+    def test_node_list_parameters(self):
+        parameters = [
+            ('foo_prefix.foo', 43),
+            ('foo_prefix.bar', 'hello'),
+            ('foo_prefix.baz', 2.41),
+            ('bar_prefix.foo', 1),
+            ('bar_prefix.bar', 12.3),
+            ('bar_prefix.baz', 'world'),
+        ]
+        self.node.declare_parameters('', parameters)
+
+        param_result = self.node.list_parameters([], 0)
+        self.assertIsInstance(param_result, ListParametersResult)
+        # Currently the default parameters are 'use_sim_time' and 'start_type_description_service'.
+        # Those may change. e.g) QoS override parameters
+        self.assertEqual(len(param_result.names), len(parameters)+2)
+        self.assertCountEqual(
+            param_result.names,
+            [
+                'foo_prefix.foo',
+                'foo_prefix.bar',
+                'foo_prefix.baz',
+                'bar_prefix.foo',
+                'bar_prefix.bar',
+                'bar_prefix.baz',
+                USE_SIM_TIME_NAME,
+                START_TYPE_DESCRIPTION_SERVICE_PARAM
+            ]
+        )
+        self.assertEqual(len(param_result.prefixes), 2)
+        self.assertCountEqual(
+            param_result.prefixes,
+            [
+                'foo_prefix',
+                'bar_prefix',
+            ]
+        )
+
+        param_result = self.node.list_parameters(
+            prefixes=['foo_prefix', 'bar_prefix'], depth=0)
+        self.assertIsInstance(param_result, ListParametersResult)
+        self.assertEqual(len(param_result.names), len(parameters))
+        self.assertCountEqual(
+            param_result.names,
+            [
+                'foo_prefix.foo',
+                'foo_prefix.bar',
+                'foo_prefix.baz',
+                'bar_prefix.foo',
+                'bar_prefix.bar',
+                'bar_prefix.baz'
+            ]
+        )
+        self.assertEqual(len(param_result.prefixes), 2)
+        self.assertCountEqual(
+            param_result.prefixes,
+            [
+                'foo_prefix',
+                'bar_prefix',
+            ]
+        )
+
+        param_result = self.node.list_parameters(
+            prefixes=['foo_prefix'], depth=0)
+        self.assertIsInstance(param_result, ListParametersResult)
+        self.assertEqual(len(param_result.names), 3)
+        self.assertCountEqual(
+            param_result.names,
+            [
+                'foo_prefix.foo',
+                'foo_prefix.bar',
+                'foo_prefix.baz'
+            ]
+        )
+        self.assertEqual(len(param_result.prefixes), 1)
+        self.assertCountEqual(
+            param_result.prefixes,
+            [
+                'foo_prefix'
+            ]
+        )
+
+        param_result = self.node.list_parameters(prefixes=[], depth=1)
+        self.assertIsInstance(param_result, ListParametersResult)
+        self.assertEqual(len(param_result.names), 2)
+        self.assertCountEqual(
+            param_result.names, [USE_SIM_TIME_NAME, START_TYPE_DESCRIPTION_SERVICE_PARAM]
+        )
+        self.assertEqual(len(param_result.prefixes), 0)
+        self.assertCountEqual(param_result.prefixes, [])
+
+        param_result = self.node.list_parameters(prefixes=[], depth=2)
+        self.assertIsInstance(param_result, ListParametersResult)
+        self.assertEqual(len(param_result.names), len(parameters)+2)
+        self.assertCountEqual(
+            param_result.names,
+            [
+                'foo_prefix.foo',
+                'foo_prefix.bar',
+                'foo_prefix.baz',
+                'bar_prefix.foo',
+                'bar_prefix.bar',
+                'bar_prefix.baz',
+                USE_SIM_TIME_NAME,
+                START_TYPE_DESCRIPTION_SERVICE_PARAM
+            ]
+        )
+        self.assertEqual(len(param_result.prefixes), 2)
+        self.assertCountEqual(
+            param_result.prefixes,
+            [
+                'foo_prefix',
+                'bar_prefix',
+            ]
+        )
+
+        param_result = self.node.list_parameters(prefixes=['foo_prefix', 'bar_prefix'], depth=1)
+        self.assertIsInstance(param_result, ListParametersResult)
+        self.assertEqual(len(param_result.names), len(parameters))
+        self.assertCountEqual(
+            param_result.names,
+            [
+                'foo_prefix.foo',
+                'foo_prefix.bar',
+                'foo_prefix.baz',
+                'bar_prefix.foo',
+                'bar_prefix.bar',
+                'bar_prefix.baz',
+            ]
+        )
+        self.assertEqual(len(param_result.prefixes), 2)
+        self.assertCountEqual(
+            param_result.prefixes,
+            [
+                'foo_prefix',
+                'bar_prefix',
+            ]
+        )
+
+        with self.assertRaises(TypeError):
+            self.node.list_parameters(prefixes='foo', depth=0)
+
+        with self.assertRaises(ValueError):
+            self.node.list_parameters(prefixes=[], depth=-1)
+
+        with self.assertRaises(TypeError):
+            self.node.list_parameters(prefixes=[], depth=1.5)
 
     def modify_parameter_callback(self, parameter_list: List[Parameter]):
         modified_list = parameter_list.copy()

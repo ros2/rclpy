@@ -32,12 +32,14 @@ import weakref
 
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
+from rcl_interfaces.msg import ListParametersResult
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterEvent
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
+from rcl_interfaces.srv import ListParameters
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
@@ -953,6 +955,66 @@ class Node:
 
             # call post set parameter registered callbacks
             self._call_post_set_parameters_callback(parameter_list)
+
+        return result
+
+    def list_parameters(
+        self,
+        prefixes: List[str],
+        depth: int
+    ) -> ListParametersResult:
+        """
+        Get a list of parameter names and their prefixes.
+
+        :param prefixes: A list of prefixes to filter the parameter names.
+            Only the parameter names that start with any of the prefixes are returned.
+            If empty, all parameter names are returned.
+        :param depth: The depth of nested parameter names to include.
+        :return: The list of parameter names and their prefixes.
+        :raises: TypeError if the type of any of the passed arguments is not an expected type.
+        :raises: ValueError if depth is a negative integer.
+        """
+        if not isinstance(prefixes, list):
+            raise TypeError('The prefixes argument must be a list')
+        if not all(isinstance(prefix, str) for prefix in prefixes):
+            raise TypeError('All prefixes must be instances of type str')
+        if not isinstance(depth, int):
+            raise TypeError('The depth must be instance of type int')
+        if depth < 0:
+            raise ValueError('The depth must be greater than or equal to zero')
+
+        result = ListParametersResult()
+
+        separator_less_than_depth: Callable[[str], bool] = \
+            lambda str: str.count(PARAMETER_SEPARATOR_STRING) < depth
+
+        recursive: bool = \
+            (len(prefixes) == 0) and (depth == ListParameters.Request.DEPTH_RECURSIVE)
+
+        for param_name in self._parameters.keys():
+            if not recursive:
+                get_all: bool = (len(prefixes) == 0) and (separator_less_than_depth(param_name))
+                if not get_all:
+                    prefix_matches = any(
+                        param_name == prefix or
+                        (
+                            param_name.startswith(prefix+PARAMETER_SEPARATOR_STRING) and
+                            (
+                                depth == ListParameters.Request.DEPTH_RECURSIVE or
+                                separator_less_than_depth(param_name[len(prefix)+1:])
+                            )
+                        )
+                        for prefix in prefixes
+                    )
+                    if not prefix_matches:
+                        continue
+
+            result.names.append(param_name)
+            last_separator = param_name.rfind(PARAMETER_SEPARATOR_STRING)
+            if last_separator != -1:
+                prefix = param_name[:last_separator]
+                if prefix not in result.prefixes:
+                    result.prefixes.append(prefix)
 
         return result
 
