@@ -443,7 +443,22 @@ Node::Node(
     new rcl_node_t,
     [](rcl_node_t * node)
     {
-      rcl_ret_t ret = rcl_node_fini(node);
+      rcl_ret_t ret;
+      {
+        rclpy::LoggingGuard scoped_logging_guard;
+        if (rcl_logging_rosout_enabled()) {
+          ret = rcl_logging_rosout_fini_publisher_for_node(node);
+          if (ret != RCL_RET_OK) {
+            // Warning should use line number of the current stack frame
+            int stack_level = 1;
+            PyErr_WarnFormat(
+              PyExc_RuntimeWarning, stack_level, "Failed to fini rosout publisher: %s",
+              rcl_get_error_string().str);
+            rcl_reset_error();
+          }
+        }
+      }
+      ret = rcl_node_fini(node);
       if (RCL_RET_OK != ret) {
         // Warning should use line number of the current stack frame
         int stack_level = 1;
