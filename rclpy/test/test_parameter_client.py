@@ -83,6 +83,14 @@ class TestParameterClient(unittest.TestCase):
         assert 'int_arr_param' in results.result.names
         assert 'float.param..' in results.result.names
 
+        future = self.client.list_parameters(['float.param.'], 1)
+        self.executor.spin_until_future_complete(future)
+        results = future.result()
+        assert results is not None
+        assert 'int_arr_param' not in results.result.names
+        assert 'float.param..' in results.result.names
+        assert 'float.param.' in results.result.prefixes
+
     def test_describe_parameters(self):
         future = self.client.describe_parameters(['int_arr_param'])
         self.executor.spin_until_future_complete(future)
