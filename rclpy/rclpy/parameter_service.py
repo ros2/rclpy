@@ -14,11 +14,12 @@
 
 import weakref
 
+from rcl_interfaces.msg import ListParametersResult
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import DescribeParameters, GetParameters, GetParameterTypes
 from rcl_interfaces.srv import ListParameters, SetParameters, SetParametersAtomically
 from rclpy.exceptions import ParameterNotDeclaredException, ParameterUninitializedException
-from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
+from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_parameters
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
 
@@ -98,45 +99,11 @@ class ParameterService:
         return response
 
     def _list_parameters_callback(self, request, response):
-        names_with_prefixes = []
         node = self._get_node()
-        for name in node._parameters.keys():
-            if PARAMETER_SEPARATOR_STRING in name:
-                names_with_prefixes.append(name)
-                continue
-            elif request.prefixes:
-                for prefix in request.prefixes:
-                    if name.startswith(prefix):
-                        response.result.names.append(name)
-                continue
-            else:
-                response.result.names.append(name)
-        if 1 == request.depth:
-            return response
-
-        if not request.DEPTH_RECURSIVE == request.depth:
-            names_with_prefixes = filter(
-                lambda name:
-                    name.count(PARAMETER_SEPARATOR_STRING) < request.depth, names_with_prefixes
-            )
-        for name in names_with_prefixes:
-            if request.prefixes:
-                for prefix in request.prefixes:
-                    if name.startswith(prefix + PARAMETER_SEPARATOR_STRING):
-                        response.result.names.append(name)
-                        full_prefix = PARAMETER_SEPARATOR_STRING.join(
-                            name.split(PARAMETER_SEPARATOR_STRING)[0:-1])
-                        if full_prefix not in response.result.prefixes:
-                            response.result.prefixes.append(full_prefix)
-                        if prefix not in response.result.prefixes:
-                            response.result.prefixes.append(prefix)
-            else:
-                prefix = PARAMETER_SEPARATOR_STRING.join(
-                    name.split(PARAMETER_SEPARATOR_STRING)[0:-1])
-                if prefix not in response.result.prefixes:
-                    response.result.prefixes.append(prefix)
-                response.result.names.append(name)
-
+        try:
+            response.result = node.list_parameters(request.prefixes, request.depth)
+        except (TypeError, ValueError):
+            response.result = ListParametersResult()
         return response
 
     def _set_parameters_callback(self, request, response):
