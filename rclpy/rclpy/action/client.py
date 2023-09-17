@@ -400,7 +400,8 @@ class ActionClient(Waitable):
         send_goal_future = self.send_goal_async(goal, **kwargs)
         send_goal_future.add_done_callback(unblock)
 
-        event.wait()
+        if not send_goal_future.done():
+            event.wait()
         if send_goal_future.exception() is not None:
             raise send_goal_future.exception()
 
@@ -475,7 +476,8 @@ class ActionClient(Waitable):
         future = self._cancel_goal_async(goal_handle)
         future.add_done_callback(unblock)
 
-        event.wait()
+        if not future.done():
+            event.wait()
         if future.exception() is not None:
             raise future.exception()
         return future.result()
@@ -527,7 +529,8 @@ class ActionClient(Waitable):
         future = self._get_result_async(goal_handle)
         future.add_done_callback(unblock)
 
-        event.wait()
+        if not future.done():
+            event.wait()
         if future.exception() is not None:
             raise future.exception()
         return future.result()
