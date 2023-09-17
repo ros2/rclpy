@@ -182,6 +182,8 @@ class ActionClient(Waitable):
         self._node.add_waitable(self)
         self._logger = self._node.get_logger().get_child('action_client')
 
+        self._lock = threading.Lock()
+
     def _generate_random_uuid(self):
         return UUID(uuid=list(uuid.uuid4().bytes))
 
@@ -198,15 +200,16 @@ class ActionClient(Waitable):
         :return: The sequence number associated with the removed future, or
             None if the future was not found in the list.
         """
-        for seq, req_future in list(pending_requests.items()):
-            if future == req_future:
-                try:
-                    del pending_requests[seq]
-                except KeyError:
-                    pass
-                else:
-                    self.remove_future(future)
-                    return seq
+        with self._lock:
+            for seq, req_future in list(pending_requests.items()):
+                if future == req_future:
+                    try:
+                        del pending_requests[seq]
+                    except KeyError:
+                        pass
+                    else:
+                        self.remove_future(future)
+                        return seq
         return None
 
     def _remove_pending_goal_request(self, future):
@@ -286,45 +289,48 @@ class ActionClient(Waitable):
         """
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
-            if sequence_number in self._goal_sequence_number_to_goal_id:
-                goal_handle = ClientGoalHandle(
-                    self,
-                    self._goal_sequence_number_to_goal_id[sequence_number],
-                    goal_response)
+            with self._lock:
+                if sequence_number in self._goal_sequence_number_to_goal_id:
+                    goal_handle = ClientGoalHandle(
+                        self,
+                        self._goal_sequence_number_to_goal_id[sequence_number],
+                        goal_response)
 
-                if goal_handle.accepted:
-                    goal_uuid = bytes(goal_handle.goal_id.uuid)
-                    if goal_uuid in self._goal_handles:
-                        raise RuntimeError(
-                            'Two goals were accepted with the same ID ({})'.format(goal_handle))
-                    self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
+                    if goal_handle.accepted:
+                        goal_uuid = bytes(goal_handle.goal_id.uuid)
+                        if goal_uuid in self._goal_handles:
+                            raise RuntimeError(
+                                f'Two goals were accepted with the same ID ({goal_handle})')
+                        self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
 
-                self._pending_goal_requests[sequence_number].set_result(goal_handle)
-            else:
-                self._logger.warning(
-                    'Ignoring unexpected goal response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
-                )
+                    self._pending_goal_requests[sequence_number].set_result(goal_handle)
+                else:
+                    self._logger.warning(
+                        'Ignoring unexpected goal response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
 
         if 'cancel' in taken_data:
             sequence_number, cancel_response = taken_data['cancel']
-            if sequence_number in self._pending_cancel_requests:
-                self._pending_cancel_requests[sequence_number].set_result(cancel_response)
-            else:
-                self._logger.warning(
-                    'Ignoring unexpected cancel response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
-                )
+            with self._lock:
+                if sequence_number in self._pending_cancel_requests:
+                    self._pending_cancel_requests[sequence_number].set_result(cancel_response)
+                else:
+                    self._logger.warning(
+                        'Ignoring unexpected cancel response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
 
         if 'result' in taken_data:
             sequence_number, result_response = taken_data['result']
-            if sequence_number in self._pending_result_requests:
-                self._pending_result_requests[sequence_number].set_result(result_response)
-            else:
-                self._logger.warning(
-                    'Ignoring unexpected result response. There may be more than '
-                    f"one action server for the action '{self._action_name}'"
-                )
+            with self._lock:
+                if sequence_number in self._pending_result_requests:
+                    self._pending_result_requests[sequence_number].set_result(result_response)
+                else:
+                    self._logger.warning(
+                        'Ignoring unexpected result response. There may be more than '
+                        f"one action server for the action '{self._action_name}'"
+                    )
 
         if 'feedback' in taken_data:
             feedback_msg = taken_data['feedback']
@@ -438,22 +444,24 @@ class ActionClient(Waitable):
         request = self._action_type.Impl.SendGoalService.Request()
         request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         request.goal = goal
-        sequence_number = self._client_handle.send_goal_request(request)
-        if sequence_number in self._pending_goal_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
 
-        if feedback_callback is not None:
-            # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid = bytes(request.goal_id.uuid)
-            self._feedback_callbacks[goal_uuid] = feedback_callback
+        with self._lock:
+            sequence_number = self._client_handle.send_goal_request(request)
+            if sequence_number in self._pending_goal_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending goal request'.format(sequence_number))
 
-        future = Future()
-        self._pending_goal_requests[sequence_number] = future
-        self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
-        future.add_done_callback(self._remove_pending_goal_request)
-        # Add future so executor is aware
-        self.add_future(future)
+            if feedback_callback is not None:
+                # TODO(jacobperron): Move conversion function to a general-use package
+                goal_uuid = bytes(request.goal_id.uuid)
+                self._feedback_callbacks[goal_uuid] = feedback_callback
+
+            future = Future()
+            self._pending_goal_requests[sequence_number] = future
+            self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
+            future.add_done_callback(self._remove_pending_goal_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
         return future
 
@@ -497,16 +505,18 @@ class ActionClient(Waitable):
 
         cancel_request = CancelGoal.Request()
         cancel_request.goal_info.goal_id = goal_handle.goal_id
-        sequence_number = self._client_handle.send_cancel_request(cancel_request)
-        if sequence_number in self._pending_cancel_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
 
-        future = Future()
-        self._pending_cancel_requests[sequence_number] = future
-        future.add_done_callback(self._remove_pending_cancel_request)
-        # Add future so executor is aware
-        self.add_future(future)
+        with self._lock:
+            sequence_number = self._client_handle.send_cancel_request(cancel_request)
+            if sequence_number in self._pending_cancel_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending cancel request'.format(sequence_number))
+
+            future = Future()
+            self._pending_cancel_requests[sequence_number] = future
+            future.add_done_callback(self._remove_pending_cancel_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
         return future
 
@@ -550,17 +560,19 @@ class ActionClient(Waitable):
 
         result_request = self._action_type.Impl.GetResultService.Request()
         result_request.goal_id = goal_handle.goal_id
-        sequence_number = self._client_handle.send_result_request(result_request)
-        if sequence_number in self._pending_result_requests:
-            raise RuntimeError(
-                'Sequence ({}) conflicts with pending result request'.format(sequence_number))
 
-        future = Future()
-        self._pending_result_requests[sequence_number] = future
-        self._result_sequence_number_to_goal_id[sequence_number] = result_request.goal_id
-        future.add_done_callback(self._remove_pending_result_request)
-        # Add future so executor is aware
-        self.add_future(future)
+        with self._lock:
+            sequence_number = self._client_handle.send_result_request(result_request)
+            if sequence_number in self._pending_result_requests:
+                raise RuntimeError(
+                    'Sequence ({}) conflicts with pending result request'.format(sequence_number))
+
+            future = Future()
+            self._pending_result_requests[sequence_number] = future
+            self._result_sequence_number_to_goal_id[sequence_number] = result_request.goal_id
+            future.add_done_callback(self._remove_pending_result_request)
+            # Add future so executor is aware
+            self.add_future(future)
 
         return future
 
