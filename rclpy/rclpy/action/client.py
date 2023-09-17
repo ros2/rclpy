@@ -289,48 +289,52 @@ class ActionClient(Waitable):
         """
         if 'goal' in taken_data:
             sequence_number, goal_response = taken_data['goal']
-            with self._lock:
-                if sequence_number in self._goal_sequence_number_to_goal_id:
-                    goal_handle = ClientGoalHandle(
-                        self,
-                        self._goal_sequence_number_to_goal_id[sequence_number],
-                        goal_response)
 
-                    if goal_handle.accepted:
-                        goal_uuid = bytes(goal_handle.goal_id.uuid)
-                        if goal_uuid in self._goal_handles:
-                            raise RuntimeError(
-                                f'Two goals were accepted with the same ID ({goal_handle})')
-                        self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
+            try:
+                with self._lock:
+                    goal_id = self._goal_sequence_number_to_goal_id[sequence_number]
+                    pending_goal_request = self._pending_goal_requests[sequence_number]
+            except KeyError:
+                self._logger.warning(
+                    'Ignoring unexpected goal response. There may be more than '
+                    f"one action server for the action '{self._action_name}'"
+                )
+            else:
+                goal_handle = ClientGoalHandle(self, goal_id, goal_response)
+                if goal_handle.accepted:
+                    goal_uuid = bytes(goal_handle.goal_id.uuid)
+                    if goal_uuid in self._goal_handles:
+                        raise RuntimeError(
+                            f'Two goals were accepted with the same ID ({goal_handle})')
+                    self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
 
-                    self._pending_goal_requests[sequence_number].set_result(goal_handle)
-                else:
-                    self._logger.warning(
-                        'Ignoring unexpected goal response. There may be more than '
-                        f"one action server for the action '{self._action_name}'"
-                    )
+                pending_goal_request.set_result(goal_handle)
 
         if 'cancel' in taken_data:
             sequence_number, cancel_response = taken_data['cancel']
-            with self._lock:
-                if sequence_number in self._pending_cancel_requests:
-                    self._pending_cancel_requests[sequence_number].set_result(cancel_response)
-                else:
-                    self._logger.warning(
-                        'Ignoring unexpected cancel response. There may be more than '
-                        f"one action server for the action '{self._action_name}'"
-                    )
+            try:
+                with self._lock:
+                    pending_cancel_request = self._pending_cancel_requests[sequence_number]
+            except KeyError:
+                self._logger.warning(
+                    'Ignoring unexpected cancel response. There may be more than '
+                    f"one action server for the action '{self._action_name}'"
+                )
+            else:
+                pending_cancel_request.set_result(cancel_response)
 
         if 'result' in taken_data:
             sequence_number, result_response = taken_data['result']
-            with self._lock:
-                if sequence_number in self._pending_result_requests:
-                    self._pending_result_requests[sequence_number].set_result(result_response)
-                else:
-                    self._logger.warning(
-                        'Ignoring unexpected result response. There may be more than '
-                        f"one action server for the action '{self._action_name}'"
-                    )
+            try:
+                with self._lock:
+                    pending_result_request = self._pending_result_requests[sequence_number]
+            except KeyError:
+                self._logger.warning(
+                    'Ignoring unexpected result response. There may be more than '
+                    f"one action server for the action '{self._action_name}'"
+                )
+            else:
+                pending_result_request.set_result(result_response)
 
         if 'feedback' in taken_data:
             feedback_msg = taken_data['feedback']
