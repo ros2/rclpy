@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.10 (2023-09-19)
+-------------------
+* Avoid generating the exception when rcl_send_response times out. (`#1136 <https://github.com/ros2/rclpy/issues/1136>`_) (`#1152 <https://github.com/ros2/rclpy/issues/1152>`_)
+* Contributors: mergify[bot]
+
 3.3.9 (2023-07-18)
 ------------------
 * ServerGoalHandle should be destroyed before removing. (`#1113 <https://github.com/ros2/rclpy/issues/1113>`_) (`#1120 <https://github.com/ros2/rclpy/issues/1120>`_)
