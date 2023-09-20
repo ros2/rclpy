@@ -607,7 +607,6 @@ class TestExecutor(unittest.TestCase):
         future = Future(executor=executor)
         executor.spin_until_future_complete(future, 4)
 
-        print(count)
         assert count == 2
 
         executor.shutdown()
