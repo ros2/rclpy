@@ -441,12 +441,12 @@ Node::Node(
 
   rcl_node_ = std::shared_ptr<rcl_node_t>(
     new rcl_node_t,
-    [](rcl_node_t * node)
+    [enable_rosout](rcl_node_t * node)
     {
       rcl_ret_t ret;
       {
         rclpy::LoggingGuard scoped_logging_guard;
-        if (rcl_logging_rosout_enabled()) {
+        if (rcl_logging_rosout_enabled() && enable_rosout) {
           ret = rcl_logging_rosout_fini_publisher_for_node(node);
           if (ret != RCL_RET_OK) {
             // Warning should use line number of the current stack frame
@@ -497,13 +497,6 @@ Node::Node(
     rclpy::LoggingGuard scoped_logging_guard;
     ret = rcl_logging_rosout_init_publisher_for_node(rcl_node_.get());
     if (ret != RCL_RET_OK) {
-      if (rcl_logging_rosout_fini_publisher_for_node(rcl_node_.get()) != RCL_RET_OK) {
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level,
-          "[rclpy| %s : %s ]: error in destruction of rosout publisher: %s",
-          RCUTILS_STRINGIFY(__FILE__), RCUTILS_STRINGIFY(__LINE__), rcl_get_error_string().str);
-      }
       throw RCLError("failed to initialize rosout publisher");
     }
   }
