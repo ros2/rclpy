@@ -580,8 +580,6 @@ class TestExecutor(unittest.TestCase):
         executor.shutdown()
 
     def test_not_lose_callback(self):
-        # This test is from issue https://github.com/ros2/rclpy/issues/1159
-
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
 
