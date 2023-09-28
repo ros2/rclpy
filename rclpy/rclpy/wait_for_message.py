@@ -56,6 +56,7 @@ def wait_for_message(
     if subs_ready:
         if sub.handle.pointer in subs_ready:
             msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
-            return (True, msg_info[0])
+            if msg_info is not None:
+                return (True, msg_info[0])
 
     return (False, None)
