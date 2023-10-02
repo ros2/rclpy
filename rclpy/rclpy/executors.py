@@ -239,7 +239,7 @@ class Executor(ContextManager['Executor']):
         return True
 
     def __del__(self):
-        if self._sigint_gc is not None:
+        if hasattr(self, '_sigint_gc') and self._sigint_gc is not None:
             self._sigint_gc.destroy()
 
     def add_node(self, node: 'Node') -> bool:
