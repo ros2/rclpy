@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+5.3.0 (2023-10-04)
+------------------
 * 1105 parameter event handler (`#1135 <https://github.com/ros2/rclpy/issues/1135>`_)
 * unregister_sigterm_signal_handler should be called. (`#1170 <https://github.com/ros2/rclpy/issues/1170>`_)
 * Handle take failure in wait_for_message (`#1172 <https://github.com/ros2/rclpy/issues/1172>`_)
