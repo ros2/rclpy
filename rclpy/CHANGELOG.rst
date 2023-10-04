@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* 1105 parameter event handler (`#1135 <https://github.com/ros2/rclpy/issues/1135>`_)
+* unregister_sigterm_signal_handler should be called. (`#1170 <https://github.com/ros2/rclpy/issues/1170>`_)
+* Handle take failure in wait_for_message (`#1172 <https://github.com/ros2/rclpy/issues/1172>`_)
+* Decouple rosout publisher init from node init. (`#1121 <https://github.com/ros2/rclpy/issues/1121>`_)
+* Fix _list_parameters_callback & test (`#1161 <https://github.com/ros2/rclpy/issues/1161>`_)
+* Contributors: EsipovPA, Minju, Lee, Tomoya Fujita, mhidalgo-bdai
+
 5.2.0 (2023-09-08)
 ------------------
 * add list_parameters & test (`#1124 <https://github.com/ros2/rclpy/issues/1124>`_)
