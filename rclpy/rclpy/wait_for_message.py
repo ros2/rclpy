@@ -59,7 +59,7 @@ def wait_for_message(
                 msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
                 if msg_info is not None:
                     return True, msg_info[0]
-
-        return False, None
     finally:
         node.destroy_subscription(sub)
+
+    return False, None
