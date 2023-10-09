@@ -39,23 +39,27 @@ def wait_for_message(
     wait_set.clear_entities()
 
     sub = node.create_subscription(msg_type, topic, lambda _: None, 1)
-    wait_set.add_subscription(sub.handle)
-    sigint_gc = SignalHandlerGuardCondition(context=context)
-    wait_set.add_guard_condition(sigint_gc.handle)
+    try:
+        wait_set.add_subscription(sub.handle)
+        sigint_gc = SignalHandlerGuardCondition(context=context)
+        wait_set.add_guard_condition(sigint_gc.handle)
 
-    timeout_nsec = timeout_sec_to_nsec(time_to_wait)
-    wait_set.wait(timeout_nsec)
+        timeout_nsec = timeout_sec_to_nsec(time_to_wait)
+        wait_set.wait(timeout_nsec)
 
-    subs_ready = wait_set.get_ready_entities('subscription')
-    guards_ready = wait_set.get_ready_entities('guard_condition')
+        subs_ready = wait_set.get_ready_entities('subscription')
+        guards_ready = wait_set.get_ready_entities('guard_condition')
 
-    if guards_ready:
-        if sigint_gc.handle.pointer in guards_ready:
-            return (False, None)
+        if guards_ready:
+            if sigint_gc.handle.pointer in guards_ready:
+                return False, None
 
-    if subs_ready:
-        if sub.handle.pointer in subs_ready:
-            msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
-            return (True, msg_info[0])
+        if subs_ready:
+            if sub.handle.pointer in subs_ready:
+                msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
+                if msg_info is not None:
+                    return True, msg_info[0]
+    finally:
+        node.destroy_subscription(sub)
 
-    return (False, None)
+    return False, None
