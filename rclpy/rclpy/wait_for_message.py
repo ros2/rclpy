@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import typing
-
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 from rclpy.signals import SignalHandlerGuardCondition
@@ -25,7 +23,7 @@ def wait_for_message(
     node: 'Node',
     topic: str,
     time_to_wait=-1
-) -> tuple[bool, typing.Any]:
+):
     """
     Wait for the next incoming message.
 
