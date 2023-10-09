@@ -341,6 +341,47 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.count_publishers('42')
 
+    def test_count_clients_services(self):
+        short_service_name = 'add_two_ints'
+        fq_service_name = '%s/%s' % (TEST_NAMESPACE, short_service_name)
+
+        self.assertEqual(0, self.node.count_clients(fq_service_name))
+        self.assertEqual(0, self.node.count_services(fq_service_name))
+
+        self.node.create_client(GetParameters, short_service_name)
+        self.assertEqual(1, self.node.count_clients(short_service_name))
+        self.assertEqual(1, self.node.count_clients(fq_service_name))
+        self.assertEqual(0, self.node.count_services(short_service_name))
+        self.assertEqual(0, self.node.count_services(fq_service_name))
+
+        self.node.create_service(GetParameters, short_service_name, lambda req: None)
+        self.assertEqual(1, self.node.count_clients(short_service_name))
+        self.assertEqual(1, self.node.count_clients(fq_service_name))
+        self.assertEqual(1, self.node.count_services(short_service_name))
+        self.assertEqual(1, self.node.count_services(fq_service_name))
+
+        self.node.create_client(GetParameters, short_service_name)
+        self.assertEqual(2, self.node.count_clients(short_service_name))
+        self.assertEqual(2, self.node.count_clients(fq_service_name))
+        self.assertEqual(1, self.node.count_services(short_service_name))
+        self.assertEqual(1, self.node.count_services(fq_service_name))
+
+        self.node.create_service(GetParameters, short_service_name, lambda req: None)
+        self.assertEqual(2, self.node.count_clients(short_service_name))
+        self.assertEqual(2, self.node.count_clients(fq_service_name))
+        self.assertEqual(2, self.node.count_services(short_service_name))
+        self.assertEqual(2, self.node.count_services(fq_service_name))
+
+        # error cases
+        with self.assertRaises(TypeError):
+            self.node.count_clients(1)
+        with self.assertRaises(TypeError):
+            self.node.count_services(1)
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.count_clients('42')
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.count_services('42')
+
     def test_node_logger(self):
         node_logger = self.node.get_logger()
         expected_name = '%s.%s' % (TEST_NAMESPACE.replace('/', '.')[1:], TEST_NODE)

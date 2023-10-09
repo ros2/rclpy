@@ -110,6 +110,26 @@ public:
   size_t
   get_count_subscribers(const char * topic_name);
 
+  /// Returns the count of all the clients known for that service in the entire ROS graph
+  /**
+   * Raises RCLError if an error occurs in rcl
+   *
+   * \param[in] service_name Name of the service to count the number of clients
+   * \return the count of all the clients known for that service in the entire ROS graph
+   */
+  size_t
+  get_count_clients(const char * service_name);
+
+  /// Returns the count of all the servers known for that service in the entire ROS graph
+  /**
+   * Raises RCLError if an error occurs in rcl
+   *
+   * \param[in] service_name Name of the service to count the number of servers
+   * \return the count of all the servers known for that service in the entire ROS graph
+   */
+  size_t
+  get_count_services(const char * service_name);
+
   /// Get the list of nodes discovered by the provided node
   /**
    * Raises RCLError if the names are unavailable.
