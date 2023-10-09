@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix to issue https://github.com/ros2/rclpy/issues/1179 (`#1180 <https://github.com/ros2/rclpy/issues/1180>`_)
+* Add count services, clients & test (`#1024 <https://github.com/ros2/rclpy/issues/1024>`_)
+* Contributors: KKSTB, Minju, Lee
+
 5.3.0 (2023-10-04)
 ------------------
 * 1105 parameter event handler (`#1135 <https://github.com/ros2/rclpy/issues/1135>`_)
