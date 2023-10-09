@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
+
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 from rclpy.signals import SignalHandlerGuardCondition
@@ -23,7 +25,7 @@ def wait_for_message(
     node: 'Node',
     topic: str,
     time_to_wait=-1
-):
+) -> tuple[bool, typing.Any]:
     """
     Wait for the next incoming message.
 
@@ -43,23 +45,23 @@ def wait_for_message(
         wait_set.add_subscription(sub.handle)
         sigint_gc = SignalHandlerGuardCondition(context=context)
         wait_set.add_guard_condition(sigint_gc.handle)
-    
+
         timeout_nsec = timeout_sec_to_nsec(time_to_wait)
         wait_set.wait(timeout_nsec)
-    
+
         subs_ready = wait_set.get_ready_entities('subscription')
         guards_ready = wait_set.get_ready_entities('guard_condition')
-    
+
         if guards_ready:
             if sigint_gc.handle.pointer in guards_ready:
-                return (False, None)
-    
+                return False, None
+
         if subs_ready:
             if sub.handle.pointer in subs_ready:
                 msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
                 if msg_info is not None:
-                    return (True, msg_info[0])
-    
-        return (False, None)
+                    return True, msg_info[0]
+
+        return False, None
     finally:
         node.destroy_subscription(sub)
