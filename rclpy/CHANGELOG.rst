@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+5.4.0 (2023-10-09)
+------------------
 * Fix to issue https://github.com/ros2/rclpy/issues/1179 (`#1180 <https://github.com/ros2/rclpy/issues/1180>`_)
 * Add count services, clients & test (`#1024 <https://github.com/ros2/rclpy/issues/1024>`_)
 * Contributors: KKSTB, Minju, Lee
