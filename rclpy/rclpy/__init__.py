@@ -140,7 +140,7 @@ def create_node(
     node_name: str,
     *,
     context: Optional[Context] = None,
-    cli_args: List[str] = None,
+    cli_args: Optional[List[str]] = None,
     namespace: Optional[str] = None,
     use_global_arguments: bool = True,
     enable_rosout: bool = True,

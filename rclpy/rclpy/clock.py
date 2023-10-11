@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional
+
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .context import Context
@@ -187,7 +189,7 @@ class Clock:
             clock=self, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback)
 
-    def sleep_until(self, until: Time, context: Context = None) -> bool:
+    def sleep_until(self, until: Time, context: Optional[Context] = None) -> bool:
         """
         Sleep until a specific time on this Clock is reached.
 
