@@ -207,7 +207,8 @@ def spin_once(
     It is possible the work done is for a node other than the one provided if the global executor
     has a partially completed coroutine.
 
-    This method should not be called from multiple threads.
+    This method should not be called from multiple threads with the same node or executor
+    argument.
 
     :param node: A node to add to the executor to check for work.
     :param executor: The executor to use, or the global executor if ``None``.
