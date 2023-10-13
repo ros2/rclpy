@@ -324,7 +324,7 @@ DEFINE_SIGNAL_HANDLER(rclpy_sigterm_handler)
     // one when we last tried to unregister ourselves.
 
     // Try to unregister again.
-    unregister_sigint_signal_handler();
+    unregister_sigterm_signal_handler();
   } else {
     notify_signal_handler();
   }
