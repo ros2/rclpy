@@ -98,6 +98,7 @@ class Client:
         # resulting in the event never being set.
         if not future.done():
             if not event.wait(timeout_sec):
+                # Timed out. remove_pending_request() to free resources
                 self.remove_pending_request(future)
         if future.exception() is not None:
             raise future.exception()
