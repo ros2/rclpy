@@ -69,7 +69,11 @@ class Client:
 
         self._lock = threading.Lock()
 
-    def call(self, request: SrvTypeRequest, timeout_sec: Optional[float] = None) -> SrvTypeResponse:
+    def call(
+        self,
+        request: SrvTypeRequest,
+        timeout_sec: Optional[float] = None
+    ) -> Optional[SrvTypeResponse]:
         """
         Make a service request and wait for the result.
 
