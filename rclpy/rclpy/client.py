@@ -76,6 +76,7 @@ class Client:
         .. warning:: Do not call this method in a callback, or a deadlock or timeout may occur.
 
         :param request: The service request.
+        :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
         :return: The service response, or None if timed out.
         :raises: TypeError if the type of the passed request isn't an instance
           of the Request type of the provided service when the client was
