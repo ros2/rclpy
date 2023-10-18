@@ -19,7 +19,6 @@ import multiprocessing
 from threading import Condition
 from threading import Lock
 from threading import RLock
-import time
 from typing import Any
 from typing import Callable
 from typing import Coroutine
@@ -169,6 +168,8 @@ class Executor:
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         self._sigint_gc = SignalHandlerGuardCondition(context)
         self._context.on_shutdown(self.wake)
+        self._spin_until_future_complete_timer: Optional[Timer] = None
+        self._spin_until_future_complete_timeout = False
 
     @property
     def context(self) -> Context:
@@ -287,18 +288,16 @@ class Executor:
             while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once_until_future_complete(future, timeout_sec)
         else:
-            start = time.monotonic()
-            end = start + timeout_sec
-            timeout_left = timeout_sec
-
-            while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once_until_future_complete(future, timeout_left)
-                now = time.monotonic()
-
-                if now >= end:
-                    return
-
-                timeout_left = end - now
+            if self._spin_until_future_complete_timer is not None:
+                # this should not happen
+                raise RuntimeError('Executor already spinning')
+            self._spin_until_future_complete_timer = Timer(
+                None, None, timeout_sec_to_nsec(timeout_sec),
+                self._clock, context=self._context)
+            self._spin_until_future_complete_timeout = False
+            while not future.done() and not self._spin_until_future_complete_timeout:
+                self.spin_once()
+            self._spin_until_future_complete_timeout = None
 
     def spin_once(self, timeout_sec: float = None) -> None:
         """
@@ -502,6 +501,8 @@ class Executor:
                     guards.append(gc)
             if timeout_timer is not None:
                 timers.append(timeout_timer)
+            if self._spin_until_future_complete_timer is not None:
+                timers.append(self._spin_until_future_complete_timer)
 
             guards.append(self._guard)
             guards.append(self._sigint_gc)
@@ -664,6 +665,12 @@ class Executor:
                 timeout_nsec == 0 or
                 (timeout_timer is not None and timeout_timer.handle.pointer in timers_ready)
             ):
+                raise TimeoutException()
+            if (
+                self._spin_until_future_complete_timer is not None and
+                self._spin_until_future_complete_timer.handle.pointer in timers_ready
+            ):
+                self._spin_until_future_complete_timeout = True
                 raise TimeoutException()
         if self._is_shutdown:
             raise ShutdownException()
