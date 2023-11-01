@@ -259,14 +259,59 @@ class TestParameter(unittest.TestCase):
             parameter_value_to_python(parameter_value)
 
     def test_parameter_dict_from_yaml_file(self):
-        yaml_string = """/param_test_target:
-            ros__parameters:
-                param_1: 1
-                param_str: string
+        yaml_string = """
+            /param_test_target:
+                ros__parameters:
+                    abs-nodename: true
+            param_test_target:
+                ros__parameters:
+                    base-nodename: true
+            /foo/param_test_target:
+                ros__parameters:
+                    abs-ns-nodename: true
+            /foo:
+                param_test_target:
+                    ros__parameters:
+                        abs-ns-base-nodename: true
+            /bar/param_test_target:
+                ros__parameters:
+                    abs-ns-nodename: false
+            /bar:
+                param_test_target:
+                    ros__parameters:
+                        abs-ns-base-nodename: false
+            /**:
+                ros__parameters:
+                    wildcard: true
             """
-        expected = {
-            'param_1': Parameter('param_1', Parameter.Type.INTEGER, 1).to_parameter_msg(),
-            'param_str': Parameter('param_str', Parameter.Type.STRING, 'string').to_parameter_msg()
+
+        # target nodes is specified, so it should only parse wildcard
+        expected_no_target_node = {
+            'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
+        }
+        # target nodes is specified with wildcard enabled
+        expected_target_node_wildcard = {
+            'wildcard': Parameter(
+                'wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-nodename': Parameter(
+                'abs-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'base-nodename': Parameter(
+                'base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+        }
+        # target nodes is specified with wildcard disabled
+        expected_target_node = {
+            'abs-nodename': Parameter(
+                'abs-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'base-nodename': Parameter(
+                'base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+        }
+        # target nodes is specified with wildcard and namespace
+        expected_target_node_ns = {
+            'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-ns-nodename': Parameter(
+                'abs-ns-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-ns-base-nodename': Parameter(
+                'abs-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
 
         try:
@@ -274,8 +319,17 @@ class TestParameter(unittest.TestCase):
                 f.write(yaml_string)
                 f.flush()
                 f.close()
-                parameter_dict = parameter_dict_from_yaml_file(f.name)
-            assert parameter_dict == expected
+                parameter_dict = parameter_dict_from_yaml_file(f.name, True)
+                assert parameter_dict == expected_no_target_node
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, True, target_nodes=['param_test_target'])
+                assert parameter_dict == expected_target_node_wildcard
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, False, target_nodes=['/param_test_target'])
+                assert parameter_dict == expected_target_node
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, True, target_nodes=['/foo/param_test_target'])
+                assert parameter_dict == expected_target_node_ns
         finally:
             if os.path.exists(f.name):
                 os.unlink(f.name)

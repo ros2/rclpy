@@ -309,7 +309,9 @@ class AsyncParameterClient:
         :param use_wildcard: Whether to use wildcard expansion.
         :return: Future with the result from the set_parameters call.
         """
-        param_dict = parameter_dict_from_yaml_file(parameter_file, use_wildcard)
+        print(self.remote_node_name)
+        param_dict = parameter_dict_from_yaml_file(
+            parameter_file, use_wildcard, target_nodes=[self.remote_node_name])
         future = self.set_parameters(list(param_dict.values()), callback=callback)
         return future
 
@@ -331,7 +333,8 @@ class AsyncParameterClient:
         :param use_wildcard: Whether to use wildcard expansion.
         :return: Future with the result from the set_parameters_atomically call.
         """
-        param_dict = parameter_dict_from_yaml_file(parameter_file, use_wildcard)
+        param_dict = parameter_dict_from_yaml_file(
+            parameter_file, use_wildcard, target_nodes=[self.remote_node_name])
         future = self.set_parameters_atomically(list(param_dict.values()), callback=callback)
         return future
 
