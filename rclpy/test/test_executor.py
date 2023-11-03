@@ -18,10 +18,12 @@ import time
 import unittest
 
 import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.task import Future
+from test_msgs.srv import Empty
 
 
 class TestExecutor(unittest.TestCase):
@@ -455,6 +457,39 @@ class TestExecutor(unittest.TestCase):
         finally:
             executor.shutdown()
             self.node.destroy_timer(tmr)
+
+    def test_not_lose_callback(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+
+        callback_group = ReentrantCallbackGroup()
+
+        cli = self.node.create_client(
+            srv_type=Empty, srv_name='test_service', callback_group=callback_group)
+
+        async def timer1_callback():
+            timer1.cancel()
+            await cli.call_async(Empty.Request())
+
+        timer1 = self.node.create_timer(0.5, timer1_callback, callback_group)
+
+        count = 0
+
+        def timer2_callback():
+            nonlocal count
+            count += 1
+        timer2 = self.node.create_timer(1.5, timer2_callback, callback_group)
+
+        executor.add_node(self.node)
+        future = Future(executor=executor)
+        executor.spin_until_future_complete(future, 4)
+
+        assert count == 2
+
+        executor.shutdown(1)
+        timer2.destroy()
+        timer1.destroy()
+        cli.destroy()
 
 
 if __name__ == '__main__':
