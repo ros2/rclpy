@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+6.0.0 (2023-11-06)
+------------------
 * Adjust python usage of the type_description service API (`#1192 <https://github.com/ros2/rclpy/issues/1192>`_)
 * Document that spin_once() should not be called from multiple threads (`#1079 <https://github.com/ros2/rclpy/issues/1079>`_)
 * making optional things Optional (`#1182 <https://github.com/ros2/rclpy/issues/1182>`_)
