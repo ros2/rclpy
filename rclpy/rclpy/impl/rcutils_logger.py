@@ -230,13 +230,12 @@ class RcutilsLogger:
 
         if self.name:
             # Prepend the name of this logger
-            _rclpy.rclpy_logging_rosout_add_sublogger(self.name, name)
             fullname = self.name + _rclpy.rclpy_logging_get_separator_string() + name
         else:
             fullname = name
 
         logger = RcutilsLogger(name=fullname)
-        if self.name:
+        if self.name and _rclpy.rclpy_logging_rosout_add_sublogger(self.name, name):
             logger.logger_sublogger_namepair = (self.name, name)
         return logger
 
