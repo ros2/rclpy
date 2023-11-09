@@ -214,10 +214,10 @@ rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublog
   if (RCL_RET_OK == rcl_ret) {
     return true;
   } else if (RCL_RET_NOT_FOUND == rcl_ret) {
+    rcl_reset_error();
     return false;
   } else {
-    rcutils_reset_error();
-    throw std::runtime_error("Failed to call rcl_logging_rosout_add_sublogger");
+    throw rclpy::append_rcl_error("Failed to call rcl_logging_rosout_add_sublogger");
   }
 }
 
@@ -228,10 +228,8 @@ rclpy_logging_rosout_remove_sublogger(const char * logger_name, const char * sub
   rclpy::LoggingGuard scoped_logging_guard;
   rcl_ret_t rcl_ret = rcl_logging_rosout_remove_sublogger(logger_name, sublogger_name);
 
-  if (RCL_RET_OK != rcl_ret &&
-    RCL_RET_NOT_FOUND != rcl_ret)
-  {
-    rcutils_reset_error();
+  if (RCL_RET_OK != rcl_ret) {
+    rcl_reset_error();
   }
 }
 
