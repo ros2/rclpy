@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.11 (2023-11-13)
+-------------------
+* Use timeout object to avoid callback losing in wait_for_ready_callbacks (backport `#1165 <https://github.com/ros2/rclpy/issues/1165>`_) (`#1185 <https://github.com/ros2/rclpy/issues/1185>`_)
+* unregister_sigterm_signal_handler should be called. (`#1170 <https://github.com/ros2/rclpy/issues/1170>`_) (`#1176 <https://github.com/ros2/rclpy/issues/1176>`_)
+* Contributors: mergify[bot]
+
 3.3.10 (2023-09-19)
 -------------------
 * Avoid generating the exception when rcl_send_response times out. (`#1136 <https://github.com/ros2/rclpy/issues/1136>`_) (`#1152 <https://github.com/ros2/rclpy/issues/1152>`_)
