@@ -18,6 +18,7 @@ from rclpy.context import Context
 def test_on_shutdown_method():
     context = Context()
     context.init()
+    assert context.ok()
 
     callback_called = False
 
@@ -31,6 +32,7 @@ def test_on_shutdown_method():
     context.on_shutdown(instance.on_shutdown)
 
     context.shutdown()
+    assert not context.ok()
 
     assert callback_called
 
@@ -38,6 +40,7 @@ def test_on_shutdown_method():
 def test_on_shutdown_function():
     context = Context()
     context.init()
+    assert context.ok()
 
     callback_called = False
 
@@ -48,6 +51,7 @@ def test_on_shutdown_function():
     context.on_shutdown(on_shutdown)
 
     context.shutdown()
+    assert not context.ok()
 
     assert callback_called
 

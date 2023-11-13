@@ -22,7 +22,7 @@ A typical ROS program consists of the following operations:
 #. Process node callbacks
 #. Shutdown
 
-Inititalization is done by calling :func:`init` for a particular :class:`.Context`.
+Initialization is done by calling :func:`init` for a particular :class:`.Context`.
 This must be done before any ROS nodes can be created.
 
 Creating a ROS node is done by calling :func:`create_node` or by instantiating a
