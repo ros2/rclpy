@@ -114,6 +114,14 @@ class TestRosoutSubscription(unittest.TestCase):
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())
 
+    def test_logger_rosout_disabled_without_exception(self):
+        node = rclpy.create_node("mynode", context=self.context, enable_rosout=False)
+        try:
+            logger = node.get_logger().get_child('child')
+            logger.info('test')
+        except Exception as e:
+            self.fail(f"Not expected failure: {e}")
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -217,7 +217,8 @@ rclpy_logging_rosout_add_sublogger(const char * logger_name, const char * sublog
     rcl_reset_error();
     return false;
   } else {
-    throw rclpy::append_rcl_error("Failed to call rcl_logging_rosout_add_sublogger");
+    throw std::runtime_error(
+            rclpy::append_rcl_error("Failed to call rcl_logging_rosout_add_sublogger"));
   }
 }
 
