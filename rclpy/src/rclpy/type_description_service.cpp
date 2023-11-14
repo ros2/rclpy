@@ -22,25 +22,12 @@ namespace rclpy
 
 TypeDescriptionService::TypeDescriptionService(Node & node)
 {
-  rcl_ret_t ret = rcl_node_type_description_service_init(node.rcl_ptr());
+  auto srv_ptr = std::make_shared<rcl_service_t>();
+  rcl_ret_t ret = rcl_node_type_description_service_init(srv_ptr.get(), node.rcl_ptr());
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to initialize type description service");
   }
-  rcl_service_t * srv_ptr = nullptr;
-  ret = rcl_node_get_type_description_service(node.rcl_ptr(), &srv_ptr);
-  if (RCL_RET_OK != ret) {
-    throw RCLError("Failed to retrieve type description service implementation");
-  }
-  std::shared_ptr<rcl_service_t> srv_shared(
-    srv_ptr,
-    [node](rcl_service_t * srv) {
-      (void)srv;
-      rcl_ret_t ret = rcl_node_type_description_service_fini(node.rcl_ptr());
-      if (RCL_RET_OK != ret) {
-        throw RCLError("Failed to finalize type description service");
-      }
-    });
-  service_ = std::make_shared<Service>(node, srv_shared);
+  service_ = std::make_shared<Service>(node, srv_ptr);
 }
 
 Service TypeDescriptionService::get_impl()

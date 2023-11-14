@@ -339,6 +339,8 @@ class Executor(ContextManager['Executor']):
 
         A custom executor should use :meth:`wait_for_ready_callbacks` to get work.
 
+        This method should not be called from multiple threads.
+
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """

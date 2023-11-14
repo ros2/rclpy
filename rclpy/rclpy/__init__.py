@@ -22,7 +22,7 @@ A typical ROS program consists of the following operations:
 #. Process node callbacks
 #. Shutdown
 
-Inititalization is done by calling :func:`init` for a particular :class:`.Context`.
+Initialization is done by calling :func:`init` for a particular :class:`.Context`.
 This must be done before any ROS nodes can be created.
 
 Creating a ROS node is done by calling :func:`create_node` or by instantiating a
@@ -206,6 +206,9 @@ def spin_once(
     If no executor is provided (ie. ``None``), then the global executor is used.
     It is possible the work done is for a node other than the one provided if the global executor
     has a partially completed coroutine.
+
+    This method should not be called from multiple threads with the same node or executor
+    argument.
 
     :param node: A node to add to the executor to check for work.
     :param executor: The executor to use, or the global executor if ``None``.

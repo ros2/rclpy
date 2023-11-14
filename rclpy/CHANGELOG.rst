@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+6.0.0 (2023-11-06)
+------------------
+* Adjust python usage of the type_description service API (`#1192 <https://github.com/ros2/rclpy/issues/1192>`_)
+* Document that spin_once() should not be called from multiple threads (`#1079 <https://github.com/ros2/rclpy/issues/1079>`_)
+* making optional things Optional (`#1182 <https://github.com/ros2/rclpy/issues/1182>`_)
+* Use timeout object to avoid callback losing in wait_for_ready_callbacks (`#1165 <https://github.com/ros2/rclpy/issues/1165>`_)
+* Contributors: AndyZe, Anton Kesy, Barry Xu, Michael Carroll
+
 5.4.0 (2023-10-09)
 ------------------
 * Fix to issue https://github.com/ros2/rclpy/issues/1179 (`#1180 <https://github.com/ros2/rclpy/issues/1180>`_)
