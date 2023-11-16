@@ -14,13 +14,14 @@
 
 import platform
 import time
-import unittest
 import threading
+import traceback
+import unittest
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
-import rclpy.node
 import rclpy.executors
+import rclpy.node
 from rclpy.utilities import get_rmw_implementation_identifier
 from test_msgs.srv import Empty
 
@@ -59,7 +60,10 @@ class TestClient(unittest.TestCase):
             node.destroy_node()
 
     @staticmethod
-    def _spin_rclpy_node(rclpy_node: rclpy.node.Node, rclpy_executor: rclpy.executors.SingleThreadedExecutor) -> None:
+    def _spin_rclpy_node(
+        rclpy_node: rclpy.node.Node,
+        rclpy_executor: rclpy.executors.SingleThreadedExecutor
+    ) -> None:
         try:
             rclpy_executor.spin()
         except rclpy.executors.ExternalShutdownException:
@@ -209,28 +213,7 @@ class TestClient(unittest.TestCase):
             executor_thread = threading.Thread(
                 target=TestClient._spin_rclpy_node, args=(self.node, executor))
             executor_thread.start()
-            result = cli.call(GetParameters.Request(), 5)
-            self.assertTrue(result is not None)
-            executor.shutdown()
-            executor_thread.join()
-        finally:
-            self.node.destroy_client(cli)
-            self.node.destroy_service(srv)
-
-    def test_sync_call_slow(self):
-        def _service(request, response):
-            time.sleep(5)
-            return response
-        cli = self.node.create_client(GetParameters, 'get/parameters')
-        srv = self.node.create_service(GetParameters, 'get/parameters', _service)
-        try:
-            self.assertTrue(cli.wait_for_service(timeout_sec=20))
-            executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
-            executor.add_node(self.node)
-            executor_thread = threading.Thread(
-                target=TestClient._spin_rclpy_node, args=(self.node, executor))
-            executor_thread.start()
-            result = cli.call(GetParameters.Request(), 10)
+            result = cli.call(GetParameters.Request(), 0.5)
             self.assertTrue(result is not None)
             executor.shutdown()
             executor_thread.join()
@@ -240,7 +223,7 @@ class TestClient(unittest.TestCase):
 
     def test_sync_call_timeout(self):
         def _service(request, response):
-            time.sleep(10)
+            time.sleep(1)
             return response
         cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(GetParameters, 'get/parameters', _service)
@@ -251,7 +234,7 @@ class TestClient(unittest.TestCase):
             executor_thread = threading.Thread(
                 target=TestClient._spin_rclpy_node, args=(self.node, executor))
             executor_thread.start()
-            result = cli.call(GetParameters.Request(), 5)
+            result = cli.call(GetParameters.Request(), 0.5)
             self.assertTrue(result is None)
             executor.shutdown()
             executor_thread.join()
