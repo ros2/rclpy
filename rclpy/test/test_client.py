@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import platform
-import time
 import threading
+import time
 import traceback
 import unittest
 
