@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Use timeout object to avoid callback losing in wait_for_ready_callbacks (`#1184 <https://github.com/ros2/rclpy/issues/1184>`_)
+* Unregister_sigterm_signal_handler should be called. (`#1175 <https://github.com/ros2/rclpy/issues/1175>`_)
+* Fix wait_for_message accumulating CPU load after repeated calls (`#1183 <https://github.com/ros2/rclpy/issues/1183>`_)
+* Handle take failure in wait_for_message (`#1174 <https://github.com/ros2/rclpy/issues/1174>`_)
+* Contributors: KKSTB, mhidalgo-bdai, Tomoya Fujita
+
 4.1.3 (2023-09-08)
 ------------------
 * Fix get_type_description service bug and add a unit test (`#1157 <https://github.com/ros2/rclpy/issues/1157>`_)
