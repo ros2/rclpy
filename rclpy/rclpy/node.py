@@ -64,6 +64,7 @@ from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.logging import get_logger
 from rclpy.logging_service import LoggingService
 from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
@@ -90,7 +91,6 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_parameter_name import validate_parameter_name
 from rclpy.validate_topic_name import validate_topic_name
 from rclpy.waitable import Waitable
-from rclpy.impl.rcutils_logger import RcutilsLogger
 
 HIDDEN_NODE_PREFIX = '_'
 
