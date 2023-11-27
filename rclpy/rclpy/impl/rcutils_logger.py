@@ -334,19 +334,19 @@ class RcutilsLogger:
             caller_id.function_name, caller_id.file_path, caller_id.line_number)
         return True
 
-    def debug(self, message, **kwargs):
+    def debug(self, message, **kwargs) -> bool:
         """Log a message with `DEBUG` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.DEBUG, **kwargs)
 
-    def info(self, message, **kwargs):
+    def info(self, message, **kwargs) -> bool:
         """Log a message with `INFO` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.INFO, **kwargs)
 
-    def warning(self, message, **kwargs):
+    def warning(self, message, **kwargs) -> bool:
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.WARN, **kwargs)
 
-    def warn(self, message, **kwargs):
+    def warn(self, message, **kwargs) -> bool:
         """
         Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.
 
@@ -354,10 +354,10 @@ class RcutilsLogger:
         """
         return self.warning(message, **kwargs)
 
-    def error(self, message, **kwargs):
+    def error(self, message, **kwargs) -> bool:
         """Log a message with `ERROR` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.ERROR, **kwargs)
 
-    def fatal(self, message, **kwargs):
+    def fatal(self, message, **kwargs) -> bool:
         """Log a message with `FATAL` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.FATAL, **kwargs)
