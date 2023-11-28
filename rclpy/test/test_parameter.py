@@ -322,6 +322,9 @@ class TestParameter(unittest.TestCase):
                 parameter_dict = parameter_dict_from_yaml_file(f.name, True)
                 assert parameter_dict == expected_no_target_node
                 parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, True, target_nodes=[''])
+                assert parameter_dict == expected_no_target_node
+                parameter_dict = parameter_dict_from_yaml_file(
                     f.name, True, target_nodes=['param_test_target'])
                 assert parameter_dict == expected_target_node_wildcard
                 parameter_dict = parameter_dict_from_yaml_file(
