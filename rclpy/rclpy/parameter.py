@@ -300,7 +300,8 @@ def parameter_dict_from_yaml_file(
         if target_nodes:
             for n in target_nodes:
                 abs_name = _get_absolute_node_name(n)
-                ns, node_basename = abs_name.rsplit('/', 1)
+                if abs_name is None:
+                    continue
                 if abs_name in param_file.keys():
                     # found absolute node name w or w/o namespace
                     value = param_file[abs_name]
@@ -308,7 +309,8 @@ def parameter_dict_from_yaml_file(
                         raise RuntimeError(
                             f'YAML file is not a valid ROS parameter file for node {abs_name}')
                     param_dict.update(value['ros__parameters'])
-                if ns == '' and node_basename in param_file.keys():
+                ns, node_basename = abs_name.rsplit('/', 1)
+                if not ns and node_basename in param_file.keys():
                     # found non-absolute node name without namespace
                     value = param_file[node_basename]
                     if type(value) != dict and 'ros__parameters' not in value:
@@ -330,7 +332,7 @@ def parameter_dict_from_yaml_file(
         return _unpack_parameter_dict(namespace, param_dict)
 
 
-def _get_absolute_node_name(node_name):
+def _get_absolute_node_name(node_name: str) -> Optional[str]:
     if not node_name:
         return None
     if node_name[0] != '/':
