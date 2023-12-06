@@ -38,7 +38,7 @@ class Publisher:
         """
         Create a container for a ROS publisher.
 
-        .. warning:: Users should not create a publisher with this constuctor, instead they should
+        .. warning:: Users should not create a publisher with this constructor, instead they should
            call :meth:`.Node.create_publisher`.
 
         A publisher is used as a primary means of communication in a ROS system by publishing

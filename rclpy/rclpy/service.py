@@ -40,7 +40,7 @@ class Service:
         """
         Create a container for a ROS service server.
 
-        .. warning:: Users should not create a service server with this constuctor, instead they
+        .. warning:: Users should not create a service server with this constructor, instead they
            should call :meth:`.Node.create_service`.
 
         :param service_impl: :class:`_rclpy.Service` wrapping the underlying ``rcl_service_t``
@@ -108,4 +108,10 @@ class Service:
             return self.__service.name
 
     def destroy(self):
+        """
+        Destroy a container for a ROS service server.
+
+        .. warning:: Users should not destroy a service server with this destructor, instead they
+           should call :meth:`.Node.destroy_service`.
+        """
         self.__service.destroy_when_not_in_use()
