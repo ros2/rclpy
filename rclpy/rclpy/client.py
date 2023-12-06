@@ -217,4 +217,10 @@ class Client:
             return self.__client.service_name
 
     def destroy(self):
+        """
+        Destroy a container for a ROS service client.
+
+        .. warning:: Users should not destroy a service client with this destructor, instead they
+           should call :meth:`.Node.destroy_client`.
+        """
         self.__client.destroy_when_not_in_use()
