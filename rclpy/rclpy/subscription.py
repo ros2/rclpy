@@ -86,6 +86,12 @@ class Subscription:
         return self.__subscription
 
     def destroy(self):
+        """
+        Destroy a container for a ROS subscription.
+
+        .. warning:: Users should not destroy a subscription with this method, instead they
+           should call :meth:`.Node.destroy_subscription`.
+        """
         for handler in self.event_handlers:
             handler.destroy()
         self.handle.destroy_when_not_in_use()
