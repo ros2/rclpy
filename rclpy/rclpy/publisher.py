@@ -88,6 +88,12 @@ class Publisher:
         return self.__publisher
 
     def destroy(self):
+        """
+        Destroy a container for a ROS publisher.
+
+        .. warning:: Users should not destroy a publisher with this method, instead they should
+           call :meth:`.Node.destroy_publisher`.
+        """
         for handler in self.event_handlers:
             handler.destroy()
         self.__publisher.destroy_when_not_in_use()
