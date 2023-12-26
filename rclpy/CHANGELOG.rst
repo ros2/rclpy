@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add doc-string warnings for destroy methods for services. (`#1205 <https://github.com/ros2/rclpy/issues/1205>`_)
+* Add doc-string warnings for destroy() methods (`#1204 <https://github.com/ros2/rclpy/issues/1204>`_)
+* Add an optional timeout_sec input to Client.call() to fix issue https://github.com/ros2/rclpy/issues/1181 (`#1188 <https://github.com/ros2/rclpy/issues/1188>`_)
+* aligh with rcl that a rosout publisher of a node might not exist (`#1196 <https://github.com/ros2/rclpy/issues/1196>`_)
+* call ok() to see if rclpy and context is initialized. (`#1198 <https://github.com/ros2/rclpy/issues/1198>`_)
+* Contributors: Chen Lihui, KKSTB, Steve Peters, Tomoya Fujita
+
 6.0.0 (2023-11-06)
 ------------------
 * Adjust python usage of the type_description service API (`#1192 <https://github.com/ros2/rclpy/issues/1192>`_)
