@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.0.0 (2023-12-26)
+------------------
 * Add doc-string warnings for destroy methods for services. (`#1205 <https://github.com/ros2/rclpy/issues/1205>`_)
 * Add doc-string warnings for destroy() methods (`#1204 <https://github.com/ros2/rclpy/issues/1204>`_)
 * Add an optional timeout_sec input to Client.call() to fix issue https://github.com/ros2/rclpy/issues/1181 (`#1188 <https://github.com/ros2/rclpy/issues/1188>`_)
