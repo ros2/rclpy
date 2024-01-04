@@ -71,3 +71,13 @@ def test_set_float32():
     msg_serialized = serialize_message(msg)
     msg_deserialized = deserialize_message(msg_serialized, BasicTypes)
     assert msg.float32_value == round(msg_deserialized.float32_value, 2)
+
+def test_set_char():
+    """Test message serialization/deserialization of char type."""
+    # Note: This test cannot be backported beyond Jazzy.
+    # See: https://github.com/ros2/rosidl/issues/775
+    msg = BasicTypes()
+    msg.char_value = "a"
+    msg_serialized = serialize_message(msg)
+    msg_deserialized = deserialize_message(msg_serialized, BasicTypes)
+    assert msg.char_value == msg_deserialized.char_value
