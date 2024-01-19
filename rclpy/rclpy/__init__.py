@@ -203,23 +203,25 @@ def spin_once(
     One callback will be executed by the provided executor as long as that callback is ready
     before the timeout expires.
 
-    If no executor is provided (ie. ``None``), then the global executor is used.
-    It is possible the work done is for a node other than the one provided if the global executor
+    If no executor is provided (ie. ``None``), then the node's current executor is used. If the
+    node does not have an executor yet, the global executor is used.
+    It is possible the work done is for a node other than the one provided if the used executor
     has a partially completed coroutine.
 
     This method should not be called from multiple threads with the same node or executor
     argument.
 
     :param node: A node to add to the executor to check for work.
-    :param executor: The executor to use, or the global executor if ``None``.
+    :param executor: The executor to use, or the node's current or the global executor if ``None``.
     :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative. Don't wait if 0.
     """
-    executor = get_global_executor() if executor is None else executor
+    executor = executor or node.executor or get_global_executor()
     try:
-        executor.add_node(node)
+        node_added = executor.add_node(node)
         executor.spin_once(timeout_sec=timeout_sec)
     finally:
-        executor.remove_node(node)
+        if node_added:
+            executor.remove_node(node)
 
 
 def spin(node: 'Node', executor: Optional['Executor'] = None) -> None:
@@ -231,15 +233,17 @@ def spin(node: 'Node', executor: Optional['Executor'] = None) -> None:
     This function blocks.
 
     :param node: A node to add to the executor to check for work.
-    :param executor: The executor to use, or the global executor if ``None``.
+    :param executor: The executor to use, or the node's current or the global executor if ``None``.
     """
-    executor = get_global_executor() if executor is None else executor
+    executor = executor or node.executor or get_global_executor()
+    node_added = False
     try:
-        executor.add_node(node)
+        node_added = executor.add_node(node)
         while executor.context.ok():
             executor.spin_once()
     finally:
-        executor.remove_node(node)
+        if node_added:
+            executor.remove_node(node)
 
 
 def spin_until_future_complete(
@@ -256,13 +260,15 @@ def spin_until_future_complete(
 
     :param node: A node to add to the executor to check for work.
     :param future: The future object to wait on.
-    :param executor: The executor to use, or the global executor if ``None``.
+    :param executor: The executor to use, or the node's current or the global executor if ``None``.
     :param timeout_sec: Seconds to wait. Block until the future is complete
         if ``None`` or negative. Don't wait if 0.
     """
-    executor = get_global_executor() if executor is None else executor
+    executor = executor or node.executor or get_global_executor()
+    node_added = False
     try:
-        executor.add_node(node)
+        node_added = executor.add_node(node)
         executor.spin_until_future_complete(future, timeout_sec)
     finally:
-        executor.remove_node(node)
+        if node_added:
+            executor.remove_node(node)
