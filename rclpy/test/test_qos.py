@@ -133,7 +133,7 @@ class TestQosProfile(unittest.TestCase):
             qos = QoSProfile(history=QoSHistoryPolicy.KEEP_LAST, depth=0)
             assert len(caught_warnings) == 1
             assert issubclass(caught_warnings[0].category, UserWarning)
-            assert("A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0]))
+            assert "A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0])
         assert qos.history == QoSHistoryPolicy.KEEP_LAST
 
     def test_keep_last_zero_depth_set(self):
@@ -145,7 +145,7 @@ class TestQosProfile(unittest.TestCase):
             qos.depth = 0
             assert len(caught_warnings) == 1
             assert issubclass(caught_warnings[0].category, UserWarning)
-            assert("A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0]))
+            assert "A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0])
 
 
 class TestCheckQosCompatibility(unittest.TestCase):
