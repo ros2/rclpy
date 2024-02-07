@@ -499,16 +499,16 @@ class Node:
                 descriptor.type = second_arg.value
             else:
                 value = second_arg
-                if not descriptor.dynamic_typing and value is not None:
+                if not descriptor.dynamic_typing:
                     # infer type from default value
-                    if not isinstance(value, ParameterValue):
-                        descriptor.type = Parameter.Type.from_parameter_value(value).value
-                    else:
-                        if value.type == ParameterType.PARAMETER_NOT_SET:
-                            raise ValueError(
-                                'Cannot declare a statically typed parameter with default value '
-                                'of type PARAMETER_NOT_SET')
+                    if isinstance(value, ParameterValue):
                         descriptor.type = value.type
+                    else:
+                        descriptor.type = Parameter.Type.from_parameter_value(value).value
+                    if descriptor.type == ParameterType.PARAMETER_NOT_SET:
+                        raise ValueError(
+                            'Cannot declare a statically typed parameter with default value '
+                            'of type PARAMETER_NOT_SET')
 
             # Get value from parameter overrides, of from tuple if it doesn't exist.
             if not ignore_override and name in self._parameter_overrides:
