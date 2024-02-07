@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.0.1 (2024-02-07)
+------------------
 * Remove parentheses from assert statements. (`#1213 <https://github.com/ros2/rclpy/issues/1213>`_)
 * Contributors: Chris Lalancette
 
