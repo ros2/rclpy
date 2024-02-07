@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove parentheses from assert statements. (`#1213 <https://github.com/ros2/rclpy/issues/1213>`_)
+* Contributors: Chris Lalancette
+
 7.0.0 (2023-12-26)
 ------------------
 * Add doc-string warnings for destroy methods for services. (`#1205 <https://github.com/ros2/rclpy/issues/1205>`_)
