@@ -734,6 +734,16 @@ class TestNode(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.node.declare_parameter(
+                'static_typing_wo_default_value',
+                descriptor=ParameterDescriptor(type=ParameterType.PARAMETER_NOT_SET))
+
+        with self.assertRaises(ValueError):
+            self.node.declare_parameter(
+                'static_typing_wo_default_value',
+                descriptor=ParameterDescriptor(type=ParameterType.PARAMETER_STRING))
+
+        with self.assertRaises(ValueError):
+            self.node.declare_parameter(
                 'dynamic_typing_and_static_type',
                 Parameter.Type.DOUBLE,
                 descriptor=ParameterDescriptor(dynamic_typing=True))
