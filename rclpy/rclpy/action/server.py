@@ -191,8 +191,20 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
             # Publish
             self._action_server._handle.publish_feedback(feedback_message)
 
-    def succeed(self) -> None:
+    def executing(self) -> None:
+        self._update_state(_rclpy.GoalEvent.EXECUTE)
+
+    def succeed(self, response: Optional[ResultT] = None) -> None:
         self._update_state(_rclpy.GoalEvent.SUCCEED)
+
+        # Set result
+        result_response = self._action_server._action_type.Impl.GetResultService.Response()
+        result_response.status = self.status
+        if response is not None:
+            result_response.result = response
+        else:
+            result_response.result = self._action_server._action_type.Result()
+        self._action_server._result_futures[bytes(self.goal_id.uuid)].set_result(result_response)
 
     def abort(self) -> None:
         self._update_state(_rclpy.GoalEvent.ABORT)
@@ -233,7 +245,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         node: 'Node',
         action_type: Type[Action],
         action_name: str,
-        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
+        execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]],
+                                            ResultT]] = None,
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
         goal_callback: Callable[[CancelGoal.Request], GoalResponse] = default_goal_callback,
@@ -283,7 +296,10 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         self.register_handle_accepted_callback(handle_accepted_callback)
         self.register_goal_callback(goal_callback)
         self.register_cancel_callback(cancel_callback)
-        self.register_execute_callback(execute_callback)
+        if execute_callback:
+            self.register_execute_callback(execute_callback)
+        elif handle_accepted_callback is default_handle_accepted_callback:
+            self._logger.warning("Not handling nor executing the goal, this server will do nothing")
 
         # Import the typesupport for the action module if not already done
         check_for_type_support(action_type)
