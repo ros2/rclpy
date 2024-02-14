@@ -125,7 +125,7 @@ class ServerGoalHandle:
         # In this case we want to avoid the illegal state transition to EXECUTING
         # but still call the users execute callback to let them handle canceling the goal.
         if not self.is_cancel_requested:
-            self._update_state(_rclpy.GoalEvent.EXECUTE)
+            self.executing()
         self._action_server.notify_execute(self, execute_callback)
 
     def publish_feedback(self, feedback):
@@ -248,7 +248,8 @@ class ActionServer(Waitable):
         if execute_callback:
             self.register_execute_callback(execute_callback)
         elif handle_accepted_callback is default_handle_accepted_callback:
-            self._logger.warning("Not handling nor executing the goal, this server will do nothing")
+            self._logger.warning(
+                "Not handling nor executing the goal, this server will do nothing")
 
         # Import the typesupport for the action module if not already done
         check_for_type_support(action_type)
