@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.12 (2024-02-16)
+-------------------
+* Don't crash the action server if the client goes away. (`#1114 <https://github.com/ros2/rclpy/issues/1114>`_) (`#1218 <https://github.com/ros2/rclpy/issues/1218>`_)
+* Contributors: mergify[bot]
+
 3.3.11 (2023-11-13)
 -------------------
 * Use timeout object to avoid callback losing in wait_for_ready_callbacks (backport `#1165 <https://github.com/ros2/rclpy/issues/1165>`_) (`#1185 <https://github.com/ros2/rclpy/issues/1185>`_)
