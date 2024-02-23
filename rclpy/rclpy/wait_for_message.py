@@ -22,6 +22,7 @@ def wait_for_message(
     msg_type,
     node: 'Node',
     topic: str,
+    qos_profile = 1,
     time_to_wait=-1
 ):
     """
@@ -30,6 +31,7 @@ def wait_for_message(
     :param msg_type: message type
     :param node: node to initialize the subscription on
     :param topic: topic name to wait for message
+    :param qos_profile: QoS profile to use for the subscription
     :param time_to_wait: seconds to wait before returning
     :returns: (True, msg) if a message was successfully received, (False, None) if message
         could not be obtained or shutdown was triggered asynchronously on the context.
@@ -38,7 +40,7 @@ def wait_for_message(
     wait_set = _rclpy.WaitSet(1, 1, 0, 0, 0, 0, context.handle)
     wait_set.clear_entities()
 
-    sub = node.create_subscription(msg_type, topic, lambda _: None, 1)
+    sub = node.create_subscription(msg_type, topic, lambda _: None, qos_profile=qos_profile)
     try:
         wait_set.add_subscription(sub.handle)
         sigint_gc = SignalHandlerGuardCondition(context=context)
