@@ -43,7 +43,7 @@ def clear_config():
     initialize()
 
 
-def set_logger_level(name: str, level: LoggingSeverity, detailed_error: bool = False):
+def set_logger_level(name: str, level: int | LoggingSeverity, detailed_error: bool = False):
     level = LoggingSeverity(level)
     return _rclpy.rclpy_logging_set_logger_level(name, level, detailed_error)
 
