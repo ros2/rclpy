@@ -14,6 +14,7 @@
 
 
 from pathlib import Path
+from typing import Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
@@ -43,7 +44,7 @@ def clear_config():
     initialize()
 
 
-def set_logger_level(name: str, level: int | LoggingSeverity, detailed_error: bool = False):
+def set_logger_level(name: str, level: Union[int, LoggingSeverity], detailed_error: bool = False):
     level = LoggingSeverity(level)
     return _rclpy.rclpy_logging_set_logger_level(name, level, detailed_error)
 
