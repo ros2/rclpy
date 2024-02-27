@@ -12,17 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+from typing import Union, TYPE_CHECKING
+
 from rcl_interfaces.msg import LoggerLevel, SetLoggerLevelsResult
 from rcl_interfaces.srv import GetLoggerLevels
 from rcl_interfaces.srv import SetLoggerLevels
 import rclpy
+from rclpy.impl.logging_severity import LoggingSeverity
 from rclpy.qos import qos_profile_services_default
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
+
+if TYPE_CHECKING:
+    from rclpy.node import Node
 
 
 class LoggingService:
 
-    def __init__(self, node):
+    def __init__(self, node: Node):
         node_name = node.get_name()
 
         get_logger_name_service_name = \
@@ -39,19 +46,21 @@ class LoggingService:
             self._set_logger_levels, qos_profile=qos_profile_services_default
         )
 
-    def _get_logger_levels(self, request, response):
+    def _get_logger_levels(self, request: GetLoggerLevels.Request,
+                           response: GetLoggerLevels.Response) -> GetLoggerLevels.Response:
         for name in request.names:
             logger_level = LoggerLevel()
             logger_level.name = name
             try:
-                ret_level = rclpy.logging.get_logger_level(name)
+                ret_level: Union[int, LoggingSeverity] = rclpy.logging.get_logger_level(name)
             except RuntimeError:
                 ret_level = 0
             logger_level.level = ret_level
             response.levels.append(logger_level)
         return response
 
-    def _set_logger_levels(self, request, response):
+    def _set_logger_levels(self, request: SetLoggerLevels.Request,
+                           response: SetLoggerLevels.Response) -> SetLoggerLevels.Response:
         for level in request.levels:
             result = SetLoggerLevelsResult()
             result.successful = False
