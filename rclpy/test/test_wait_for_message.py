@@ -57,7 +57,7 @@ class TestWaitForMessage(unittest.TestCase):
         t.join()
 
     def test_wait_for_message_timeout(self):
-        ret, _ = wait_for_message(BasicTypes, self.node, TOPIC_NAME, 1)
+        ret, _ = wait_for_message(BasicTypes, self.node, TOPIC_NAME, time_to_wait=1)
         self.assertFalse(ret)
 
 

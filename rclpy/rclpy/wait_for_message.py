@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Union
+
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile
 from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.utilities import timeout_sec_to_nsec
 
@@ -22,7 +25,8 @@ def wait_for_message(
     msg_type,
     node: 'Node',
     topic: str,
-    qos_profile = 1,
+    *,
+    qos_profile: Union[QoSProfile, int] = 1,
     time_to_wait=-1
 ):
     """
