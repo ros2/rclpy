@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from rcl_interfaces.msg import LoggerLevel, SetLoggerLevelsResult
@@ -30,7 +28,7 @@ if TYPE_CHECKING:
 
 class LoggingService:
 
-    def __init__(self, node: Node):
+    def __init__(self, node: 'Node'):
         node_name = node.get_name()
 
         get_logger_name_service_name = \
