@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
+
 from rclpy.exceptions import InvalidParameterException
 
 
-def validate_parameter_name(name: str) -> bool:
+def validate_parameter_name(name: str) -> Literal[True]:
     """
     Validate a given parameter name, and raise an exception if invalid.
 

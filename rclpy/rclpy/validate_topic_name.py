@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
+
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -19,7 +21,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 TOPIC_SEPARATOR_STRING = '/'
 
 
-def validate_topic_name(name, *, is_service=False):
+def validate_topic_name(name: str, *, is_service: bool = False) -> Literal[True]:
     """
     Validate a given topic or service name, and raise an exception if invalid.
 
