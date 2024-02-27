@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Union
 
 from rcl_interfaces.msg import LoggerLevel, SetLoggerLevelsResult
 from rcl_interfaces.srv import GetLoggerLevels
 from rcl_interfaces.srv import SetLoggerLevels
 import rclpy
-from rclpy.impl.logging_severity import LoggingSeverity
 from rclpy.qos import qos_profile_services_default
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
 
 if TYPE_CHECKING:
+    from rclpy.impl.logging_severity import LoggingSeverity
     from rclpy.node import Node
 
 
@@ -53,7 +51,7 @@ class LoggingService:
             logger_level = LoggerLevel()
             logger_level.name = name
             try:
-                ret_level: Union[int, LoggingSeverity] = rclpy.logging.get_logger_level(name)
+                ret_level: Union[LoggingSeverity] = rclpy.logging.get_logger_level(name)
             except RuntimeError:
                 ret_level = 0
             logger_level.level = ret_level
