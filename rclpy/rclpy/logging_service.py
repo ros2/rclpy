@@ -68,7 +68,7 @@ class LoggingService:
                 rclpy.logging.set_logger_level(level.name, level.level, detailed_error=True)
                 result.successful = True
             except ValueError:
-                result.reason = 'Failed reason: Invaild logger level.'
+                result.reason = 'Failed reason: Invalid logger level.'
             except RuntimeError as e:
                 result.reason = str(e)
             response.results.append(result)
