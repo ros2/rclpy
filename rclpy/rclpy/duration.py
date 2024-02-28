@@ -20,10 +20,12 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 RCLDuration = _rclpy.rcl_duration_t
 
+
 class RCLDurationType:
     """Object Alias of _rclpy.rcl_duration_t."""
 
     nanoseconds: int
+
 
 class Duration:
     """A period between two time points, with nanosecond precision."""
