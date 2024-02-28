@@ -15,7 +15,7 @@
 HIDDEN_TOPIC_PREFIX = '_'
 
 
-def topic_or_service_is_hidden(name):
+def topic_or_service_is_hidden(name: str) -> bool:
     """
     Return True if a given topic or service name is hidden, otherwise False.
 
