@@ -65,7 +65,7 @@ class JumpThreshold:
 class TimeJump:
 
     def __init__(self, clock_change: ClockChange, delta):
-        if not isinstance(clock_change, ClockChange):
+        if not isinstance(clock_change, (ClockChange, _rclpy.ClockChange)):
             raise TypeError('clock_change must be an instance of rclpy.clock.ClockChange')
         self._clock_change = clock_change
         self._delta = delta
@@ -130,7 +130,7 @@ class JumpHandle:
 class Clock:
 
     def __new__(cls, *, clock_type: ClockType = ClockType.SYSTEM_TIME):
-        if not isinstance(clock_type, ClockType):
+        if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if clock_type is ClockType.ROS_TIME:
             self = super().__new__(ROSClock)

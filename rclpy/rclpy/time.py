@@ -37,7 +37,7 @@ class Time:
             self, *,
             seconds=0, nanoseconds=0,
             clock_type: ClockType = ClockType.SYSTEM_TIME):
-        if not isinstance(clock_type, ClockType):
+        if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if seconds < 0:
             raise ValueError('Seconds value must not be negative')
