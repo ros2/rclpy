@@ -27,7 +27,7 @@ using pybind11::literals::operator""_a;
 
 namespace rclpy
 {
-Clock::Clock(rcl_clock_type_t clock_type)
+Clock::Clock(int clock_type)
 {
   // Create a client
   rcl_clock_ = std::shared_ptr<rcl_clock_t>(
@@ -175,7 +175,7 @@ void Clock::remove_clock_callback(py::object pyjump_handle)
 void define_clock(py::object module)
 {
   py::class_<Clock, Destroyable, std::shared_ptr<Clock>>(module, "Clock")
-  .def(py::init<rcl_clock_type_t>())
+  .def(py::init<int>())
   .def_property_readonly(
     "pointer", [](const Clock & clock) {
       return reinterpret_cast<size_t>(clock.rcl_ptr());

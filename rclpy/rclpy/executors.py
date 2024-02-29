@@ -39,7 +39,7 @@ import warnings
 
 from rclpy.client import Client
 from rclpy.clock import Clock
-from rclpy.clock import ClockType
+from rclpy.clock_type import ClockType
 from rclpy.context import Context
 from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition

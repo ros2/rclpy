@@ -17,7 +17,7 @@ from typing import Tuple
 import builtin_interfaces.msg
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
+from .clock_type import ClockType
 
 CONVERSION_CONSTANT = 10 ** 9
 
@@ -35,8 +35,8 @@ class Time:
     def __init__(
             self, *,
             seconds=0, nanoseconds=0,
-            clock_type: _rclpy.ClockType = _rclpy.ClockType.SYSTEM_TIME):
-        if not isinstance(clock_type, _rclpy.ClockType):
+            clock_type: ClockType = ClockType.SYSTEM_TIME):
+        if not isinstance(clock_type, ClockType):
             raise TypeError('Clock type must be a ClockType enum')
         if seconds < 0:
             raise ValueError('Seconds value must not be negative')
@@ -65,7 +65,7 @@ class Time:
         return (nanoseconds // CONVERSION_CONSTANT, nanoseconds % CONVERSION_CONSTANT)
 
     @property
-    def clock_type(self) -> _rclpy.ClockType:
+    def clock_type(self) -> ClockType:
         """:return: the type of clock that produced this instance."""
         return self._time_handle.clock_type
 
@@ -157,7 +157,7 @@ class Time:
     @classmethod
     def from_msg(
         cls, msg: builtin_interfaces.msg.Time,
-        clock_type: _rclpy.ClockType = _rclpy.ClockType.ROS_TIME
+        clock_type: ClockType = ClockType.ROS_TIME
     ) -> 'Time':
         """
         Create a ``Time`` instance from a ROS message.
