@@ -17,6 +17,7 @@ from typing import Tuple
 import builtin_interfaces.msg
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
 from .clock_type import ClockType
 
 CONVERSION_CONSTANT = 10 ** 9
