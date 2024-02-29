@@ -38,7 +38,7 @@ class Time:
             seconds=0, nanoseconds=0,
             clock_type: ClockType = ClockType.SYSTEM_TIME):
         if not isinstance(clock_type, ClockType):
-            raise TypeError('Clock type must be a ClockType enum')
+            raise TypeError(f'Clock type must be a ClockType enum debug: {type(clock_type)} {type(ClockType)} {clock_type} {str(clock_type)}')
         if seconds < 0:
             raise ValueError('Seconds value must not be negative')
         if nanoseconds < 0:
