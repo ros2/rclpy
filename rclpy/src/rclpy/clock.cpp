@@ -46,8 +46,9 @@ Clock::Clock(int clock_type)
       delete clock;
     });
 
+  rcl_clock_type_t rcl_clock_type = rcl_clock_type_t(clock_type);
   rcl_allocator_t allocator = rcl_get_default_allocator();
-  rcl_ret_t ret = rcl_clock_init(clock_type, rcl_clock_.get(), &allocator);
+  rcl_ret_t ret = rcl_clock_init(rcl_clock_type, rcl_clock_.get(), &allocator);
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to initialize clock");
   }
