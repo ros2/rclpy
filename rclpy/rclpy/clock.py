@@ -25,7 +25,6 @@ from .time import Time
 from .utilities import get_default_context
 
 
-
 class ClockChange(IntEnum):
     ROS_TIME_NO_CHANGE = _rclpy.ClockChange.ROS_TIME_NO_CHANGE
     ROS_TIME_ACTIVATED = _rclpy.ClockChange.ROS_TIME_ACTIVATED
