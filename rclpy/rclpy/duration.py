@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Protocol
+from typing import Protocol, Union
 
 import builtin_interfaces.msg
 from rclpy.constants import S_TO_NS
