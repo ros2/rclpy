@@ -19,10 +19,6 @@ from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 3538803 (update type alias name)
 class DurationType:
     """Type alias of _rclpy.rcl_duration_t."""
 
