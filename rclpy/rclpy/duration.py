@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union
+from typing import Union, Protocol
 
 import builtin_interfaces.msg
 from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-class DurationType:
+class DurationType(Protocol):
     """Type alias of _rclpy.rcl_duration_t."""
 
     nanoseconds: int
