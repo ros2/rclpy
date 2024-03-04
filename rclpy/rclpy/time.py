@@ -21,8 +21,10 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .clock_type import ClockType
 
+
 class TimeType(Protocol):
     """Type alias of _rclpy.rcl_time_point_t."""
+
     nanoseconds: int
     clock_type: ClockType
 
