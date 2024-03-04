@@ -22,11 +22,11 @@ namespace rclpy
 {
 /// Create a time point
 rcl_time_point_t
-create_time_point(int64_t nanoseconds, rcl_clock_type_t clock_type)
+create_time_point(int64_t nanoseconds, int clock_type)
 {
   rcl_time_point_t time_point;
   time_point.nanoseconds = nanoseconds;
-  time_point.clock_type = clock_type;
+  time_point.clock_type = rcl_clock_type_t(clock_type);
   return time_point;
 }
 

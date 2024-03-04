@@ -39,7 +39,7 @@ public:
    * \param[in] clock_type enum of type ClockType
    * This constructor creates a Clock object
    */
-  explicit Clock(rcl_clock_type_t clock_type);
+  explicit Clock(int clock_type);
 
   /// Returns the current value of the clock
   /**
