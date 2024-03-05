@@ -13,34 +13,22 @@
 # limitations under the License.
 
 from abc import abstractmethod
+from inspect import ismethod
 import sys
 import threading
-from inspect import ismethod
 from types import MethodType, TracebackType
 from typing import Callable
 from typing import ContextManager
 from typing import List
 from typing import Optional
-from typing import Protocol
 from typing import Type
 from typing import Union
-
 from weakref import WeakMethod
 
-
-class DestroyableType(Protocol):
-    def __enter__(self) -> None:
-        ...
-
-    def __exit__(self, exc_type: Optional[Type[BaseException]],
-                 exc_val: Optional[BaseException], exctb: Optional[TracebackType]) -> None:
-        ...
-
-    def destroy_when_not_in_use(self) -> None:
-        ...
+from rclpy.destroyable import DestroyableType
 
 
-class ContextType(DestroyableType):
+class ContextHandle(DestroyableType):
     @abstractmethod
     def ok(self) -> bool:
         ...
@@ -76,16 +64,15 @@ class Context(ContextManager['Context']):
         self._lock = threading.Lock()
         self._callbacks: List[Union[WeakMethod[MethodType], Callable[[], None]]] = []
         self._logging_initialized = False
-        self.__context: Optional[ContextType] = None
+        self.__context: Optional[ContextHandle] = None
 
     @property
-    def handle(self) -> Optional[ContextType]:
+    def handle(self) -> Optional[ContextHandle]:
         return self.__context
 
     def destroy(self) -> None:
-        if self.__context is None:
-            raise RuntimeError('Context must be initialized before it can be shutdown')
-        self.__context.destroy_when_not_in_use()
+        if self.__context:
+            self.__context.destroy_when_not_in_use()
 
     def init(self,
              args: Optional[List[str]] = None,
