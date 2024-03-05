@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from abc import abstractmethod
 import sys
 import threading
-from abc import abstractmethod
 from inspect import ismethod
 from types import MethodType, TracebackType
 from typing import Callable
