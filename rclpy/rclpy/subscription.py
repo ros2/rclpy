@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import inspect
+
 from enum import Enum
+import inspect
 from typing import Callable, Generic, List, Type
 
 from rclpy.callback_groups import CallbackGroup
