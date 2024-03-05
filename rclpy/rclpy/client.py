@@ -14,7 +14,7 @@
 
 import threading
 import time
-from typing import Dict, Generic, Optional, Type
+from typing import Dict, Generic, Optional, Type, TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
@@ -24,6 +24,11 @@ from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.type_support import Srv, SrvType
+
+
+# Left to support Legacy TypeVars.
+SrvTypeResponse = TypeVar('SrvTypeResponse')
+SrvTypeRequest = TypeVar('SrvTypeRequest')
 
 
 class Client(Generic[SrvType]):

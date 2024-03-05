@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Generic, Type
+from typing import Callable, Generic, Type, TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
@@ -20,6 +20,11 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.type_support import Srv, SrvType
+
+
+# Left to support Legacy TypeVars.
+SrvTypeResponse = TypeVar('SrvTypeResponse')
+SrvTypeRequest = TypeVar('SrvTypeRequest')
 
 
 class Service(Generic[SrvType]):
