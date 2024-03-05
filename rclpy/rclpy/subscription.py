@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
 import inspect
-from typing import Callable
-from typing import Generic
-from typing import Type
-from typing import List
+from enum import Enum
+from typing import Callable, Generic, List, Type
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.event_handler import EventHandler
-from rclpy.event_handler import SubscriptionEventCallbacks
+from rclpy.event_handler import EventHandler, SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.type_support import Msg
+from rclpy.type_support import MsgType
 
 
-class Subscription(Generic[Msg]):
+class Subscription(Generic[MsgType]):
 
     class CallbackType(Enum):
         MessageOnly = 0
@@ -36,9 +32,9 @@ class Subscription(Generic[Msg]):
     def __init__(
          self,
          subscription_impl: _rclpy.Subscription,
-         msg_type: Type[Msg],
+         msg_type: Type[MsgType],
          topic: str,
-         callback: Callable[[Msg], None],
+         callback: Callable[[MsgType], None],
          callback_group: CallbackGroup,
          qos_profile: QoSProfile,
          raw: bool,
@@ -101,11 +97,11 @@ class Subscription(Generic[Msg]):
             return self.__subscription.get_topic_name()
 
     @property
-    def callback(self) -> Callable[[Msg], None]:
+    def callback(self) -> Callable[[MsgType], None]:
         return self._callback
 
     @callback.setter
-    def callback(self, value: Callable[[Msg], None]) -> None:
+    def callback(self, value: Callable[[MsgType], None]) -> None:
         self._callback = value
         self._callback_type = Subscription.CallbackType.MessageOnly
         try:

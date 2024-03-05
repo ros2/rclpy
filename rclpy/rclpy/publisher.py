@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Generic, Union, List
+from typing import Generic, List, Type, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.duration import Duration
-from rclpy.event_handler import EventHandler
-from rclpy.event_handler import PublisherEventCallbacks
+from rclpy.event_handler import EventHandler, PublisherEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.type_support import Msg
+from rclpy.type_support import MsgType
 
 
-class Publisher(Generic[Msg]):
+class Publisher(Generic[MsgType]):
 
     def __init__(
         self,
@@ -56,7 +55,7 @@ class Publisher(Generic[Msg]):
         self.event_handlers: List[EventHandler] = event_callbacks.create_event_handlers(
             callback_group, publisher_impl, topic)
 
-    def publish(self, msg: Union[Msg, bytes]) -> None:
+    def publish(self, msg: Union[MsgType, bytes]) -> None:
         """
         Send a message to the topic for the publisher.
 

@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
-from typing import Type
-from typing import Generic
+from typing import Callable, Generic, Type
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
-from rclpy.type_support import Srv
+from rclpy.type_support import Srv, SrvType
 
 
-class Service(Generic[Srv]):
+class Service(Generic[SrvType]):
     def __init__(
         self,
         service_impl: _rclpy.Service,
