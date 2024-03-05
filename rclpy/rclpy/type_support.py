@@ -18,7 +18,7 @@ from rclpy.exceptions import NoTypeSupportImportedException
 
 
 class CommonMsgSrv(Protocol):
-    "Shared attributes between messages and services."
+    """Shared attributes between messages and services."""
 
     _TYPE_SUPPORT: Any
 
