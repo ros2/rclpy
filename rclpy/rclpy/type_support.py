@@ -18,6 +18,8 @@ from rclpy.exceptions import NoTypeSupportImportedException
 
 
 class CommonMsgSrv(Protocol):
+    "Shared attributes between messages and services."
+
     _TYPE_SUPPORT: Any
 
     @classmethod
@@ -26,6 +28,8 @@ class CommonMsgSrv(Protocol):
 
 
 class Msg(CommonMsgSrv):
+    """Generic Message Type Alias."""
+
     _CREATE_ROS_MESSAGE: Any
     _CONVERT_FROM_PY: Any
     _CONVERT_TO_PY: Any
@@ -33,6 +37,8 @@ class Msg(CommonMsgSrv):
 
 
 class Srv(CommonMsgSrv):
+    """Generic Service Type Alias."""
+
     Request: ClassVar = Msg
     Response: ClassVar = Msg
     Event: ClassVar = Msg
