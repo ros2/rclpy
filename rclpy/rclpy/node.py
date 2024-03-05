@@ -83,6 +83,9 @@ from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
+from rclpy.type_support import MsgType
+from rclpy.type_support import Srv
+from rclpy.type_support import SrvType
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
@@ -93,9 +96,7 @@ from rclpy.waitable import Waitable
 
 HIDDEN_NODE_PREFIX = '_'
 
-# Used for documentation purposes only
-MsgType = TypeVar('MsgType')
-SrvType = TypeVar('SrvType')
+# Left to support Legacy TypeVars.
 SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
 
@@ -1499,7 +1500,7 @@ class Node:
 
     def create_publisher(
         self,
-        msg_type,
+        msg_type: Type[MsgType],
         topic: str,
         qos_profile: Union[QoSProfile, int],
         *,
@@ -1573,7 +1574,7 @@ class Node:
 
     def create_subscription(
         self,
-        msg_type,
+        msg_type: Type[MsgType],
         topic: str,
         callback: Callable[[MsgType], None],
         qos_profile: Union[QoSProfile, int],
@@ -1651,7 +1652,7 @@ class Node:
 
     def create_client(
         self,
-        srv_type,
+        srv_type: Type[SrvType],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
@@ -1693,9 +1694,9 @@ class Node:
 
     def create_service(
         self,
-        srv_type,
+        srv_type: Type[SrvType],
         srv_name: str,
-        callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
+        callback: Callable[[Srv.Request, Srv.Response], Srv.Response],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
