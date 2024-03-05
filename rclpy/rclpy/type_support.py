@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Type, Protocol, Union
+from typing import Any, ClassVar, Protocol, Type, TypeVar, Union
+
 from rclpy.exceptions import NoTypeSupportImportedException
 
 
@@ -32,8 +33,13 @@ class Msg(CommonMsgSrv):
 
 
 class Srv(CommonMsgSrv):
-    Request: Msg
-    Response: Msg
+    Request: ClassVar = Msg
+    Response: ClassVar = Msg
+    Event: ClassVar = Msg
+
+
+MsgType = TypeVar('MsgType', bound=Msg)
+SrvType = TypeVar('SrvType', bound=Srv)
 
 
 def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv]]) -> None:
