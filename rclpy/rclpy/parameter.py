@@ -17,8 +17,8 @@ from enum import Enum
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
                                     List[int], Tuple[int, ...], array.array[int],
                                     List[float], Tuple[float, ...], array.array[float],
                                     List[str], Tuple[str, ...], array.array[str]]
+
 
 class Parameter:
 

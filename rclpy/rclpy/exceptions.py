@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import TYPE_CHECKING, List, Union
+from typing import List, TYPE_CHECKING, Union, Optional
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
@@ -19,8 +19,11 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class NotInitializedException(Exception):
     """Raised when the rclpy implementation is accessed before rclpy.init()."""
 
-    def __init__(self) -> None:
-        Exception.__init__(self, 'rclpy.init() has not been called')
+    def __init__(self, message: Optional[str]) -> None:
+        if message:
+            Exception.__init__(self, f'rclpy.init() has not been called. msg:{message}')
+        else:
+            Exception.__init__(self, 'rclpy.init() has not been called.')
 
 
 class NoTypeSupportImportedException(Exception):
@@ -105,6 +108,7 @@ class InvalidParameterTypeException(ParameterException):
     """Raised when a parameter is rejected for having an invalid type."""
 
     from rclpy.parameter import Parameter
+
     def __init__(self, desired_parameter: Parameter, expected_type: Parameter.Type) -> None:
         from rclpy.parameter import Parameter
         ParameterException.__init__(
@@ -132,7 +136,8 @@ class ParameterImmutableException(ParameterException):
     """Raised when a read-only parameter is modified."""
 
     def __init__(self, parameter_name: str):
-        ParameterException.__init__(self, 'Attempted to modify read-only parameter', parameter_name)
+        ParameterException.__init__(self, 'Attempted to modify read-only parameter',
+                                    parameter_name)
 
 
 class ParameterUninitializedException(ParameterException):
