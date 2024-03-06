@@ -17,6 +17,9 @@ from enum import Enum
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
+from typing import Tuple
+from typing import Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterType
@@ -25,6 +28,13 @@ import yaml
 
 PARAMETER_SEPARATOR_STRING = '.'
 
+if TYPE_CHECKING:
+    AllowableParameterValue = Union[None, bool, int, float, str,
+                                    List[bytes], Tuple[bytes, ...],
+                                    List[bool], Tuple[bool, ...],
+                                    List[int], Tuple[int, ...], array.array[int],
+                                    List[float], Tuple[float, ...], array.array[float],
+                                    List[str], Tuple[str, ...], array.array[str]]
 
 class Parameter:
 
