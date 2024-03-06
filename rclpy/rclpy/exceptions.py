@@ -19,7 +19,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class NotInitializedException(Exception):
     """Raised when the rclpy implementation is accessed before rclpy.init()."""
 
-    def __init__(self, message: Optional[str]) -> None:
+    def __init__(self, message: Optional[str] = None) -> None:
         if message:
             Exception.__init__(self, f'rclpy.init() has not been called. msg:{message}')
         else:
