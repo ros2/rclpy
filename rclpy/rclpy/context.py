@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import abstractmethod
 from inspect import ismethod
 import sys
 import threading
@@ -21,6 +20,7 @@ from typing import Callable
 from typing import ContextManager
 from typing import List
 from typing import Optional
+from typing import Protocol
 from typing import Type
 from typing import Union
 from weakref import WeakMethod
@@ -28,12 +28,11 @@ from weakref import WeakMethod
 from rclpy.destroyable import DestroyableType
 
 
-class ContextHandle(DestroyableType):
-    @abstractmethod
+class ContextHandle(DestroyableType, Protocol):
+
     def ok(self) -> bool:
         ...
 
-    @abstractmethod
     def get_domain_id(self) -> int:
         ...
 
