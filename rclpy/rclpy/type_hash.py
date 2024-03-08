@@ -18,56 +18,44 @@ class TypeHash:
 
     _TYPE_HASH_SIZE = 32
 
-    __slots__ = [
-        '_version',
-        '_value',
-    ]
-
-    def __init__(self, **kwargs):
-        assert all('_' + key in self.__slots__ for key in kwargs.keys()), \
-            'Invalid arguments passed to constructor: %r' % kwargs.keys()
-
-        self.version = kwargs.get('version', -1)
-        self.value = kwargs.get('value', bytes(self._TYPE_HASH_SIZE))
+    def __init__(self, version: int = -1, value: bytes = bytes(_TYPE_HASH_SIZE)):
+        self.version = version
+        self.value = value
 
     @property
-    def version(self):
+    def version(self) -> int:
         """
         Get field 'version'.
 
         :returns: version attribute
-        :rtype: int
         """
         return self._version
 
     @version.setter
-    def version(self, value):
+    def version(self, value: int) -> None:
         assert isinstance(value, int)
         self._version = value
 
     @property
-    def value(self):
+    def value(self) -> bytes:
         """
         Get field 'value'.
 
         :returns: value attribute
-        :rtype: bytes
         """
         return self._value
 
     @value.setter
-    def value(self, value):
+    def value(self, value: bytes) -> None:
         assert isinstance(value, bytes)
         self._value = value
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, TypeHash):
             return False
-        return all(
-            self.__getattribute__(slot) == other.__getattribute__(slot)
-            for slot in self.__slots__)
+        return self.__dict__ == other.__dict__
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self._version <= 0 or len(self._value) != self._TYPE_HASH_SIZE:
             return 'INVALID'
 
