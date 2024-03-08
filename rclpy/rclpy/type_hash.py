@@ -28,7 +28,6 @@ class TypeHash:
         Get field 'version'.
 
         :returns: version attribute
-        :rtype: int
         """
         return self._version
 
@@ -43,7 +42,6 @@ class TypeHash:
         Get field 'value'.
 
         :returns: value attribute
-        :rtype: bytes
         """
         return self._value
 
