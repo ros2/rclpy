@@ -147,11 +147,13 @@ class Context(ContextManager['Context']):
         """Add a callback to be called on shutdown."""
         if not callable(callback):
             raise TypeError('callback should be a callable, got {}', type(callback))
+
         if self.__context is None:
-            if ismethod(callback):
-                self._callbacks.append(WeakMethod(callback, self._remove_callback))
-            else:
-                self._callbacks.append(callback)
+            with self._lock:
+                if ismethod(callback):
+                    self._callbacks.append(WeakMethod(callback, self._remove_callback))
+                else:
+                    self._callbacks.append(callback)
             return
 
         with self.__context, self._lock:
