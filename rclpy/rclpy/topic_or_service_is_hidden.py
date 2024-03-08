@@ -25,7 +25,7 @@ def topic_or_service_is_hidden(name: str) -> bool:
 
     http://design.ros2.org/articles/topic_and_service_names.html#hidden-topic-or-service-names
 
-    :param name str: topic or service name to test
+    :param name: topic or service name to test
     :returns: True if name is hidden, otherwise False
     """
     return any(token for token in name.split('/') if token.startswith(HIDDEN_TOPIC_PREFIX))
