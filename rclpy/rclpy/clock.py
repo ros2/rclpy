@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import IntEnum
 from typing import Optional
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+from .clock_type import ClockType
 from .context import Context
 from .duration import Duration
 from .exceptions import NotInitializedException
@@ -23,8 +25,11 @@ from .time import Time
 from .utilities import get_default_context
 
 
-ClockType = _rclpy.ClockType
-ClockChange = _rclpy.ClockChange
+class ClockChange(IntEnum):
+    ROS_TIME_NO_CHANGE = _rclpy.ClockChange.ROS_TIME_NO_CHANGE
+    ROS_TIME_ACTIVATED = _rclpy.ClockChange.ROS_TIME_ACTIVATED
+    ROS_TIME_DEACTIVATED = _rclpy.ClockChange.ROS_TIME_DEACTIVATED
+    SYSTEM_TIME_NO_CHANGE = _rclpy.ClockChange.SYSTEM_TIME_NO_CHANGE
 
 
 class JumpThreshold:
@@ -59,8 +64,8 @@ class JumpThreshold:
 
 class TimeJump:
 
-    def __init__(self, clock_change, delta):
-        if not isinstance(clock_change, ClockChange):
+    def __init__(self, clock_change: ClockChange, delta):
+        if not isinstance(clock_change, (ClockChange, _rclpy.ClockChange)):
             raise TypeError('clock_change must be an instance of rclpy.clock.ClockChange')
         self._clock_change = clock_change
         self._delta = delta
@@ -124,8 +129,8 @@ class JumpHandle:
 
 class Clock:
 
-    def __new__(cls, *, clock_type=ClockType.SYSTEM_TIME):
-        if not isinstance(clock_type, ClockType):
+    def __new__(cls, *, clock_type: ClockType = ClockType.SYSTEM_TIME):
+        if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if clock_type is ClockType.ROS_TIME:
             self = super().__new__(ROSClock)

@@ -19,7 +19,7 @@ import unittest
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.clock import Clock
-from rclpy.clock import ClockType
+from rclpy.clock_type import ClockType
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
