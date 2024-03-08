@@ -20,10 +20,10 @@ from unittest.mock import Mock
 import pytest
 import rclpy
 from rclpy.clock import Clock
-from rclpy.clock import ClockType
 from rclpy.clock import JumpHandle
 from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
+from rclpy.clock_type import ClockType
 from rclpy.context import Context
 from rclpy.duration import Duration
 from rclpy.exceptions import NotInitializedException
