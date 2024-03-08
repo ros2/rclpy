@@ -26,7 +26,7 @@ def validate_parameter_name(name: str) -> Literal[True]:
     If the name is invalid then rclpy.exceptions.InvalidParameterException
     will be raised.
 
-    :param name str: parameter name to be validated.
+    :param name: parameter name to be validated.
     :raises: InvalidParameterException: when the name is invalid.
     """
     # TODO(jubeira): add parameter name check to be implemented at RCL level.

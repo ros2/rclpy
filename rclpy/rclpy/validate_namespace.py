@@ -29,7 +29,7 @@ def validate_namespace(namespace: str) -> Literal[True]:
     If the namespace is invalid then rclpy.exceptions.InvalidNamespaceException
     will be raised.
 
-    :param namespace str: namespace to be validated
+    :param namespace: namespace to be validated
     :returns: True when it is valid
     :raises: InvalidNamespaceException: when the namespace is invalid
     """

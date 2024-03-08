@@ -28,8 +28,8 @@ def validate_full_topic_name(name: str, *, is_service: bool = False) -> Literal[
     If the name is invalid then rclpy.exceptions.InvalidTopicNameException
     will be raised.
 
-    :param name str: topic or service name to be validated
-    :param is_service bool: if true, InvalidServiceNameException is raised
+    :param name: topic or service name to be validated
+    :param is_service: if true, InvalidServiceNameException is raised
     :returns: True when it is valid
     :raises: InvalidTopicNameException: when the name is invalid
     """

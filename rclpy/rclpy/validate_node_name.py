@@ -25,7 +25,7 @@ def validate_node_name(node_name: str) -> Literal[True]:
     If the node_name is invalid then rclpy.exceptions.InvalidNodeNameException
     will be raised.
 
-    :param node_name str: node_name to be validated
+    :param node_name: node_name to be validated
     :returns: True when it is valid
     :raises: InvalidNodeNameException: when the node_name is invalid
     """
