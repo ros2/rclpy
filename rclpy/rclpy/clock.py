@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from enum import IntEnum
-from typing import Optional
+from typing import Callable, Optional, Type
+from types import TracebackType
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
@@ -34,7 +35,8 @@ class ClockChange(IntEnum):
 
 class JumpThreshold:
 
-    def __init__(self, *, min_forward: Duration, min_backward: Duration, on_clock_change=True):
+    def __init__(self, *, min_forward: Optional[Duration], min_backward: Optional[Duration],
+                 on_clock_change: bool = True):
         """
         Initialize an instance of JumpThreshold.
 
@@ -64,7 +66,7 @@ class JumpThreshold:
 
 class TimeJump:
 
-    def __init__(self, clock_change: ClockChange, delta):
+    def __init__(self, clock_change: ClockChange, delta: Duration):
         if not isinstance(clock_change, (ClockChange, _rclpy.ClockChange)):
             raise TypeError('clock_change must be an instance of rclpy.clock.ClockChange')
         self._clock_change = clock_change
@@ -81,7 +83,9 @@ class TimeJump:
 
 class JumpHandle:
 
-    def __init__(self, *, clock, threshold: JumpThreshold, pre_callback, post_callback):
+    def __init__(self, *, clock, threshold: JumpThreshold,
+                 pre_callback: Callable[[None], Any],
+                 post_callback: Callable[[TimeJump], Any]) -> None:
         """
         Register a clock jump callback.
 
@@ -113,17 +117,19 @@ class JumpHandle:
             self._clock.handle.add_clock_callback(
                  self, threshold.on_clock_change, min_forward, min_backward)
 
-    def unregister(self):
+    def unregister(self) -> None:
         """Remove a jump callback from the clock."""
         if self._clock is not None:
             with self._clock.handle:
                 self._clock.handle.remove_clock_callback(self)
             self._clock = None
 
-    def __enter__(self):
+    def __enter__(self) -> 'JumpHandle':
         return self
 
-    def __exit__(self, t, v, tb):
+    def __exit__(self, t: Optional[Type[BaseException]],
+                 v: Optional[BaseException],
+                 tb: Optional[TracebackType]) -> None:
         self.unregister()
 
 
@@ -153,7 +159,7 @@ class Clock:
         """
         return self.__clock
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Clock(clock_type={0})'.format(self.clock_type.name)
 
     def now(self) -> Time:
@@ -256,7 +262,7 @@ class Clock:
 
         return self.now() >= until
 
-    def sleep_for(self, rel_time: Duration, context=None) -> bool:
+    def sleep_for(self, rel_time: Duration, context: Optional[Context] = None) -> bool:
         """
         Sleep for a specified duration.
 
@@ -284,7 +290,7 @@ class Clock:
 
 class ROSClock(Clock):
 
-    def __new__(cls):
+    def __new__(cls) -> 'ROSClock':
         return super().__new__(Clock, clock_type=ClockType.ROS_TIME)
 
     @property
@@ -293,7 +299,7 @@ class ROSClock(Clock):
         with self.handle:
             return self.handle.get_ros_time_override_is_enabled()
 
-    def _set_ros_time_is_active(self, enabled):
+    def _set_ros_time_is_active(self, enabled: bool) -> None:
         # This is not public because it is only to be called by a TimeSource managing the Clock
         with self.handle:
             self.handle.set_ros_time_override_is_enabled(enabled)
