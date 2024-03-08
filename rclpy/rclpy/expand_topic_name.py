@@ -15,7 +15,7 @@
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-def expand_topic_name(topic_name, node_name, node_namespace):
+def expand_topic_name(topic_name: str, node_name: str, node_namespace: str) -> str:
     """
     Expand a given topic name using given node name and namespace as well.
 

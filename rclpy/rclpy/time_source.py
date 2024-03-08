@@ -15,8 +15,8 @@
 import weakref
 
 from rcl_interfaces.msg import SetParametersResult
-from rclpy.clock import ClockType
 from rclpy.clock import ROSClock
+from rclpy.clock_type import ClockType
 from rclpy.parameter import Parameter
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy

@@ -196,9 +196,9 @@ class TestLoggingService(unittest.TestCase):
         response = future.result()
         self.assertEqual(len(response.results), 2)
         self.assertFalse(response.results[0].successful)
-        self.assertEqual(response.results[0].reason, 'Failed reason: Invaild logger level.')
+        self.assertEqual(response.results[0].reason, 'Failed reason: Invalid logger level.')
         self.assertFalse(response.results[1].successful)
-        self.assertEqual(response.results[1].reason, 'Failed reason: Invaild logger level.')
+        self.assertEqual(response.results[1].reason, 'Failed reason: Invalid logger level.')
         self.test_node.destroy_client(set_client)
 
     def test_set_logging_level_with_partial_invalid_param(self):
@@ -228,7 +228,7 @@ class TestLoggingService(unittest.TestCase):
         self.assertTrue(response.results[0].successful)
         self.assertEqual(response.results[0].reason, '')
         self.assertFalse(response.results[1].successful)
-        self.assertEqual(response.results[1].reason, 'Failed reason: Invaild logger level.')
+        self.assertEqual(response.results[1].reason, 'Failed reason: Invalid logger level.')
         self.assertTrue(response.results[2].successful)
         self.assertEqual(response.results[2].reason, '')
         self.test_node.destroy_client(set_client)
