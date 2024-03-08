@@ -13,16 +13,17 @@
 # limitations under the License.
 
 from enum import IntEnum
-from typing import Callable, Optional, Type
 from types import TracebackType
+from typing import Callable, Optional, Protocol, TYPE_CHECKING, Type, TypedDict, TypeAlias, Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .clock_type import ClockType
 from .context import Context
 from .duration import Duration
+from .destroyable import DestroyableType
 from .exceptions import NotInitializedException
-from .time import Time
+from .time import Time, TimeHandle
 from .utilities import get_default_context
 
 
@@ -81,11 +82,21 @@ class TimeJump:
         return self._delta
 
 
+class TimeJumpDictionary(TypedDict):
+    clock_change: ClockChange
+    delta: int
+
+
+JumpHandlePreCallbackType: TypeAlias = Callable[[None], None]
+JumpHandlePostCallbackType: TypeAlias = Union[Callable[[TimeJump], None],
+                                              Callable[[TimeJumpDictionary], None]]
+
+
 class JumpHandle:
 
-    def __init__(self, *, clock, threshold: JumpThreshold,
-                 pre_callback: Callable[[None], Any],
-                 post_callback: Callable[[TimeJump], Any]) -> None:
+    def __init__(self, *, clock: 'Clock', threshold: JumpThreshold,
+                 pre_callback: Optional[JumpHandlePreCallbackType],
+                 post_callback: Optional[JumpHandlePostCallbackType]) -> None:
         """
         Register a clock jump callback.
 
@@ -102,7 +113,7 @@ class JumpHandle:
             raise ValueError('pre_callback must be callable if given')
         if post_callback is not None and not callable(post_callback):
             raise ValueError('post_callback must be callable if given')
-        self._clock = clock
+        self._clock: Optional[Clock] = clock
         self._pre_callback = pre_callback
         self._post_callback = post_callback
 
@@ -133,13 +144,39 @@ class JumpHandle:
         self.unregister()
 
 
+class ClockHandle(DestroyableType, Protocol):
+    def get_now(self) -> TimeHandle:
+        ...
+
+    def get_ros_time_override_is_enabled(self) -> bool:
+        ...
+
+    def set_ros_time_override_is_enabled(self, enabled: bool) -> None:
+        ...
+
+    def set_ros_time_override(self, time_point: TimeHandle) -> None:
+        ...
+
+    def add_clock_callback(self, pyjump_handle: JumpHandle,
+                           on_clock_change: bool, min_forward: int, min_backward: int) -> None:
+        ...
+
+    def remove_clock_callback(self, pyjump_handle: JumpHandle) -> None:
+        ...
+
+
 class Clock:
 
-    def __new__(cls, *, clock_type: ClockType = ClockType.SYSTEM_TIME):
+    if TYPE_CHECKING:
+        __clock: ClockHandle
+        _clock_type: ClockType
+
+    def __new__(cls: Type['Clock'], *,
+                clock_type: ClockType = ClockType.SYSTEM_TIME) -> 'Clock':
         if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if clock_type is ClockType.ROS_TIME:
-            self = super().__new__(ROSClock)
+            self: 'Clock' = super().__new__(ROSClock)
         else:
             self = super().__new__(cls)
         self.__clock = _rclpy.Clock(clock_type)
@@ -151,7 +188,7 @@ class Clock:
         return self._clock_type
 
     @property
-    def handle(self):
+    def handle(self) -> ClockHandle:
         """
         Return the internal instance of ``rclpy::Clock``.
 
@@ -170,7 +207,8 @@ class Clock:
 
     def create_jump_callback(
             self, threshold: JumpThreshold, *,
-            pre_callback=None, post_callback=None) -> JumpHandle:
+            pre_callback: Optional[JumpHandlePreCallbackType] = None,
+            post_callback: Optional[JumpHandlePostCallbackType] = None) -> JumpHandle:
         """
         Create callback handler for clock time jumps.
 
@@ -183,12 +221,11 @@ class Clock:
             must take no arguments.
         :param post_callback: Callback to be called after new time is set. The callback
             must accept a single argument that is a ``TimeJump``.
-        :rtype: :class:`rclpy.clock.JumpHandler`
         """
         if post_callback is not None and callable(post_callback):
             original_callback = post_callback
 
-            def callback_shim(jump_dict):
+            def callback_shim(jump_dict: TimeJumpDictionary) -> None:
                 nonlocal original_callback
                 clock_change = jump_dict['clock_change']
                 duration = Duration(nanoseconds=jump_dict['delta'])
@@ -228,7 +265,7 @@ class Clock:
         event = _rclpy.ClockEvent()
         time_source_changed = False
 
-        def on_time_jump(time_jump: TimeJump):
+        def on_time_jump(time_jump: TimeJump) -> None:
             """Wake when time jumps and is past target time."""
             nonlocal time_source_changed
 
@@ -290,7 +327,7 @@ class Clock:
 
 class ROSClock(Clock):
 
-    def __new__(cls) -> 'ROSClock':
+    def __new__(cls: Type['ROSClock']) -> 'ROSClock':
         return super().__new__(Clock, clock_type=ClockType.ROS_TIME)
 
     @property
@@ -304,7 +341,7 @@ class ROSClock(Clock):
         with self.handle:
             self.handle.set_ros_time_override_is_enabled(enabled)
 
-    def set_ros_time_override(self, time: Time):
+    def set_ros_time_override(self, time: Time) -> None:
         """Set the next time the ROS clock will report when ROS time is active."""
         if not isinstance(time, Time):
             raise TypeError(
