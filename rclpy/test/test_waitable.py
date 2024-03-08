@@ -175,7 +175,12 @@ class SubscriptionWaitable(Waitable):
 
         with node.handle:
             self.subscription = _rclpy.Subscription(
-                node.handle, EmptyMsg, 'test_topic', QoSProfile(depth=10).get_c_qos_profile())
+                node.handle,
+                EmptyMsg,
+                'test_topic',
+                QoSProfile(depth=10).get_c_qos_profile(),
+                None
+            )
         self.subscription_index = None
         self.subscription_is_ready = False
 
