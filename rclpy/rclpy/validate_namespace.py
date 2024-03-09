@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
+
 from rclpy.exceptions import InvalidNamespaceException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-def validate_namespace(namespace):
+def validate_namespace(namespace: str) -> Literal[True]:
     """
     Validate a given namespace, and raise an exception if it is invalid.
 
@@ -27,7 +29,7 @@ def validate_namespace(namespace):
     If the namespace is invalid then rclpy.exceptions.InvalidNamespaceException
     will be raised.
 
-    :param namespace str: namespace to be validated
+    :param namespace: namespace to be validated
     :returns: True when it is valid
     :raises: InvalidNamespaceException: when the namespace is invalid
     """

@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
+
 from rclpy.exceptions import InvalidNodeNameException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-def validate_node_name(node_name):
+def validate_node_name(node_name: str) -> Literal[True]:
     """
     Validate a given node_name, and raise an exception if it is invalid.
 
     If the node_name is invalid then rclpy.exceptions.InvalidNodeNameException
     will be raised.
 
-    :param node_name str: node_name to be validated
+    :param node_name: node_name to be validated
     :returns: True when it is valid
     :raises: InvalidNodeNameException: when the node_name is invalid
     """
