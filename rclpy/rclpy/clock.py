@@ -14,14 +14,14 @@
 
 from enum import IntEnum
 from types import TracebackType
-from typing import Callable, Optional, Protocol, TYPE_CHECKING, Type, TypedDict, TypeAlias, Union
+from typing import Callable, Optional, Protocol, Type, TYPE_CHECKING, TypeAlias, TypedDict
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .clock_type import ClockType
 from .context import Context
-from .duration import Duration
 from .destroyable import DestroyableType
+from .duration import Duration
 from .exceptions import NotInitializedException
 from .time import Time, TimeHandle
 from .utilities import get_default_context
@@ -88,15 +88,13 @@ class TimeJumpDictionary(TypedDict):
 
 
 JumpHandlePreCallbackType: TypeAlias = Callable[[None], None]
-JumpHandlePostCallbackType: TypeAlias = Union[Callable[[TimeJump], None],
-                                              Callable[[TimeJumpDictionary], None]]
 
 
 class JumpHandle:
 
     def __init__(self, *, clock: 'Clock', threshold: JumpThreshold,
                  pre_callback: Optional[JumpHandlePreCallbackType],
-                 post_callback: Optional[JumpHandlePostCallbackType]) -> None:
+                 post_callback: Optional[Callable[[TimeJumpDictionary], None]]) -> None:
         """
         Register a clock jump callback.
 
@@ -171,7 +169,7 @@ class Clock:
         __clock: ClockHandle
         _clock_type: ClockType
 
-    def __new__(cls: Type['Clock'], *,
+    def __new__(cls, *,
                 clock_type: ClockType = ClockType.SYSTEM_TIME) -> 'Clock':
         if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
@@ -208,7 +206,7 @@ class Clock:
     def create_jump_callback(
             self, threshold: JumpThreshold, *,
             pre_callback: Optional[JumpHandlePreCallbackType] = None,
-            post_callback: Optional[JumpHandlePostCallbackType] = None) -> JumpHandle:
+            post_callback: Optional[Callable[[TimeJump], None]] = None) -> JumpHandle:
         """
         Create callback handler for clock time jumps.
 
@@ -231,11 +229,11 @@ class Clock:
                 duration = Duration(nanoseconds=jump_dict['delta'])
                 original_callback(TimeJump(clock_change, duration))
 
-            post_callback = callback_shim
+            new_post_callback = callback_shim
 
         return JumpHandle(
             clock=self, threshold=threshold, pre_callback=pre_callback,
-            post_callback=post_callback)
+            post_callback=new_post_callback)
 
     def sleep_until(self, until: Time, context: Optional[Context] = None) -> bool:
         """
@@ -327,8 +325,10 @@ class Clock:
 
 class ROSClock(Clock):
 
-    def __new__(cls: Type['ROSClock']) -> 'ROSClock':
-        return super().__new__(Clock, clock_type=ClockType.ROS_TIME)
+    def __new__(cls) -> 'ROSClock':
+        self = super().__new__(Clock, clock_type=ClockType.ROS_TIME)
+        assert isinstance(self, ROSClock)
+        return self
 
     @property
     def ros_time_is_active(self) -> bool:
