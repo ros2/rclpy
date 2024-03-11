@@ -67,9 +67,9 @@ Empty: TypeAlias = Tuple[None, None]
 
 
 class GoalResponseDictionary(TypedDict):
-    goal: Union[SendGoalService.Response, Empty]
-    cancel: Union[CancelGoalService.Response, Empty]
-    result: Union[GetResultService.Response, Empty]
+    goal: Union[Tuple[int, SendGoalService.Response], Empty]
+    cancel: Union[Tuple[int, CancelGoalService.Response], Empty]
+    result: Union[Tuple[int, GetResultService.Response], Empty]
     feedback: Union[FeedbackMessage, None]
     status: Union[GoalStatusMessage, None]
 
