@@ -18,10 +18,10 @@ class TypeHash:
 
     _TYPE_HASH_SIZE = 32
 
-    __slots__ = (
+    __slots__ = [
         '_version',
         '_value',
-    )
+    ]
 
     def __init__(self, version: int = -1, value: bytes = bytes(_TYPE_HASH_SIZE)):
         self.version = version
