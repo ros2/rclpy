@@ -512,7 +512,7 @@ class ActionServer(Waitable):
             self._handle.add_to_waitset(wait_set)
 
     def __enter__(self):
-        return self._handle.__enter__()
+        self._handle.__enter__()
 
     def __exit__(self, t, v, tb):
         self._handle.__exit__(t, v, tb)

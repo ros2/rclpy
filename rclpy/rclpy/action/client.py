@@ -362,7 +362,7 @@ class ActionClient(Waitable):
         self._client_handle.add_to_waitset(wait_set)
 
     def __enter__(self):
-        return self._client_handle.__enter__()
+        self._client_handle.__enter__()
 
     def __exit__(self, t, v, tb):
         self._client_handle.__exit__(t, v, tb)
