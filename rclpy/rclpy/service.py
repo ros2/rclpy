@@ -12,28 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
-from typing import TypeVar
+from typing import Callable, Generic, Type, TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
+from rclpy.type_support import Srv, SrvType
 
-# Used for documentation purposes only
-SrvType = TypeVar('SrvType')
-SrvTypeRequest = TypeVar('SrvTypeRequest')
+
+# Left to support Legacy TypeVars.
 SrvTypeResponse = TypeVar('SrvTypeResponse')
+SrvTypeRequest = TypeVar('SrvTypeRequest')
 
 
-class Service:
+class Service(Generic[SrvType]):
     def __init__(
         self,
         service_impl: _rclpy.Service,
-        srv_type: SrvType,
+        srv_type: Type[SrvType],
         srv_name: str,
-        callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
+        callback: Callable[[Srv.Request, Srv.Response], Srv.Response],
         callback_group: CallbackGroup,
         qos_profile: QoSProfile
     ) -> None:
@@ -61,7 +61,7 @@ class Service:
         self._executor_event = False
         self.qos_profile = qos_profile
 
-    def send_response(self, response: SrvTypeResponse, header) -> None:
+    def send_response(self, response: Srv.Response, header) -> None:
         """
         Send a service response.
 

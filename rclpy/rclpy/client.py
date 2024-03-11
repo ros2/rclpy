@@ -14,9 +14,7 @@
 
 import threading
 import time
-from typing import Dict
-from typing import Optional
-from typing import TypeVar
+from typing import Dict, Generic, Optional, Type, TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
@@ -25,19 +23,20 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
+from rclpy.type_support import Srv, SrvType
 
-# Used for documentation purposes only
-SrvType = TypeVar('SrvType')
-SrvTypeRequest = TypeVar('SrvTypeRequest')
+
+# Left to support Legacy TypeVars.
 SrvTypeResponse = TypeVar('SrvTypeResponse')
+SrvTypeRequest = TypeVar('SrvTypeRequest')
 
 
-class Client:
+class Client(Generic[SrvType]):
     def __init__(
         self,
         context: Context,
         client_impl: _rclpy.Client,
-        srv_type: SrvType,
+        srv_type: Type[SrvType],
         srv_name: str,
         qos_profile: QoSProfile,
         callback_group: CallbackGroup
@@ -71,9 +70,9 @@ class Client:
 
     def call(
         self,
-        request: SrvTypeRequest,
+        request: Srv.Request,
         timeout_sec: Optional[float] = None
-    ) -> Optional[SrvTypeResponse]:
+    ) -> Optional[Srv.Response]:
         """
         Make a service request and wait for the result.
 
@@ -109,7 +108,7 @@ class Client:
             raise future.exception()
         return future.result()
 
-    def call_async(self, request: SrvTypeRequest) -> Future:
+    def call_async(self, request: Srv.Request) -> Future:
         """
         Make a service request and asynchronously get the result.
 
