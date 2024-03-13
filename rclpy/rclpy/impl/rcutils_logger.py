@@ -116,19 +116,6 @@ class SkipFirstContext(RcutilsLoggerContext):
     first_has_been_skipped: bool
 
 
-class OnceArgs(TypedDict):
-    once: bool
-
-
-class ThrottleArgs(TypedDict):
-    throttle_duration_sec: float
-    throttle_time_source_type: Clock
-
-
-class SkipFirstArgs(TypedDict):
-    skip_first: bool
-
-
 class LoggingFilterArgs(TypedDict, total=False):
     once: bool
     throttle_duration_sec: float
