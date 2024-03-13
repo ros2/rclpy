@@ -14,7 +14,7 @@
 
 import unittest
 
-from rclpy.clock import ClockType
+from rclpy.clock_type import ClockType
 from rclpy.duration import Duration
 from rclpy.duration import Infinite
 from rclpy.time import Time
