@@ -15,17 +15,33 @@
 from inspect import ismethod
 import sys
 import threading
-from types import TracebackType
+from types import MethodType, TracebackType
 from typing import Callable
 from typing import ContextManager
 from typing import List
 from typing import Optional
+from typing import Protocol
 from typing import Type
-import weakref
+from typing import Union
+from weakref import WeakMethod
+
+from rclpy.destroyable import DestroyableType
+
+
+class ContextHandle(DestroyableType, Protocol):
+
+    def ok(self) -> bool:
+        ...
+
+    def get_domain_id(self) -> int:
+        ...
+
+    def shutdown(self) -> None:
+        ...
 
 
 g_logging_configure_lock = threading.Lock()
-g_logging_ref_count = 0
+g_logging_ref_count: int = 0
 
 
 class Context(ContextManager['Context']):
@@ -43,24 +59,25 @@ class Context(ContextManager['Context']):
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._callbacks = []
+        self._callbacks: List[Union[WeakMethod[MethodType], Callable[[], None]]] = []
         self._logging_initialized = False
-        self.__context = None
+        self.__context: Optional[ContextHandle] = None
 
     @property
-    def handle(self):
+    def handle(self) -> Optional[ContextHandle]:
         return self.__context
 
-    def destroy(self):
-        self.__context.destroy_when_not_in_use()
+    def destroy(self) -> None:
+        if self.__context:
+            self.__context.destroy_when_not_in_use()
 
     def init(self,
              args: Optional[List[str]] = None,
              *,
              initialize_logging: bool = True,
-             domain_id: Optional[int] = None):
+             domain_id: Optional[int] = None) -> None:
         """
         Initialize ROS communications for a given context.
 
@@ -89,7 +106,7 @@ class Context(ContextManager['Context']):
                         _rclpy.rclpy_logging_configure(self.__context)
                 self._logging_initialized = True
 
-    def ok(self):
+    def ok(self) -> bool:
         """Check if context hasn't been shut down."""
         with self._lock:
             if self.__context is None:
@@ -97,14 +114,14 @@ class Context(ContextManager['Context']):
             with self.__context:
                 return self.__context.ok()
 
-    def _call_on_shutdown_callbacks(self):
+    def _call_on_shutdown_callbacks(self) -> None:
         for weak_method in self._callbacks:
             callback = weak_method()
             if callback is not None:
                 callback()
         self._callbacks = []
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown this context."""
         if self.__context is None:
             raise RuntimeError('Context must be initialized before it can be shutdown')
@@ -113,7 +130,7 @@ class Context(ContextManager['Context']):
             self._call_on_shutdown_callbacks()
             self._logging_fini()
 
-    def try_shutdown(self):
+    def try_shutdown(self) -> None:
         """Shutdown this context, if not already shutdown."""
         if self.__context is None:
             return
@@ -123,23 +140,32 @@ class Context(ContextManager['Context']):
                 self._call_on_shutdown_callbacks()
                 self._logging_fini()
 
-    def _remove_callback(self, weak_method):
+    def _remove_callback(self, weak_method: WeakMethod[MethodType]) -> None:
         self._callbacks.remove(weak_method)
 
-    def on_shutdown(self, callback: Callable[[], None]):
+    def on_shutdown(self, callback: Callable[[], None]) -> None:
         """Add a callback to be called on shutdown."""
         if not callable(callback):
             raise TypeError('callback should be a callable, got {}', type(callback))
+
+        if self.__context is None:
+            with self._lock:
+                if ismethod(callback):
+                    self._callbacks.append(WeakMethod(callback, self._remove_callback))
+                else:
+                    self._callbacks.append(callback)
+            return
+
         with self.__context, self._lock:
             if not self.__context.ok():
                 callback()
             else:
                 if ismethod(callback):
-                    self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
+                    self._callbacks.append(WeakMethod(callback, self._remove_callback))
                 else:
                     self._callbacks.append(callback)
 
-    def _logging_fini(self):
+    def _logging_fini(self) -> None:
         # This function must be called with self._lock held.
         from rclpy.impl.implementation_singleton import rclpy_implementation
         global g_logging_ref_count
@@ -153,7 +179,7 @@ class Context(ContextManager['Context']):
                         'Unexpected error: logger ref count should never be lower that zero')
             self._logging_initialized = False
 
-    def get_domain_id(self):
+    def get_domain_id(self) -> int:
         """Get domain id of context."""
         if self.__context is None:
             raise RuntimeError('Context must be initialized before it can have a domain id')
@@ -162,7 +188,7 @@ class Context(ContextManager['Context']):
 
     def __enter__(self) -> 'Context':
         # We do not accept parameters here. If one wants to customize the init() call,
-        # they would have to call it manaully and not use the ContextManager convenience
+        # they would have to call it manually and not use the ContextManager convenience
         self.init()
         return self
 
