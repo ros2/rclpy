@@ -142,7 +142,7 @@ class LoggingFilter:
 
     A default value of None makes a parameter required.
     """
-    params: LoggingFilterParams
+    params: LoggingFilterParams = {}
 
     """
     Initialize the context of a logging call, e.g. declare variables needed for
