@@ -17,7 +17,6 @@ from typing import Optional, Protocol, Type
 
 
 class DestroyableType(Protocol):
-
     def __enter__(self) -> None:
         ...
 
