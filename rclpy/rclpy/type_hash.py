@@ -18,6 +18,13 @@ class TypeHash:
 
     _TYPE_HASH_SIZE = 32
 
+    # ros2cli needs __slots__ to avoid API break from https://github.com/ros2/rclpy/pull/1243.
+    # __slots__ is also used improve performance of Python objects.
+    __slots__ = [
+        '_version',
+        '_value',
+    ]
+
     def __init__(self, version: int = -1, value: bytes = bytes(_TYPE_HASH_SIZE)):
         self.version = version
         self.value = value
@@ -53,7 +60,9 @@ class TypeHash:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TypeHash):
             return False
-        return self.__dict__ == other.__dict__
+        return all(
+            self.__getattribute__(slot) == other.__getattribute__(slot)
+            for slot in self.__slots__)
 
     def __str__(self) -> str:
         if self._version <= 0 or len(self._value) != self._TYPE_HASH_SIZE:

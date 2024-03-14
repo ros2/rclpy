@@ -61,7 +61,7 @@ class Context(ContextManager['Context']):
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._callbacks: List[Union[WeakMethod[MethodType], Callable[[], None]]] = []
+        self._callbacks: List[Union['WeakMethod[MethodType]', Callable[[], None]]] = []
         self._logging_initialized = False
         self.__context: Optional[ContextHandle] = None
 
@@ -140,15 +140,22 @@ class Context(ContextManager['Context']):
                 self._call_on_shutdown_callbacks()
                 self._logging_fini()
 
-    def _remove_callback(self, weak_method: WeakMethod[MethodType]) -> None:
+    def _remove_callback(self, weak_method: 'WeakMethod[MethodType]') -> None:
         self._callbacks.remove(weak_method)
 
     def on_shutdown(self, callback: Callable[[], None]) -> None:
         """Add a callback to be called on shutdown."""
         if not callable(callback):
             raise TypeError('callback should be a callable, got {}', type(callback))
+
         if self.__context is None:
-            raise RuntimeError('Context must be initialized before it can be shutdown')
+            with self._lock:
+                if ismethod(callback):
+                    self._callbacks.append(WeakMethod(callback, self._remove_callback))
+                else:
+                    self._callbacks.append(callback)
+            return
+
         with self.__context, self._lock:
             if not self.__context.ok():
                 callback()
@@ -181,7 +188,7 @@ class Context(ContextManager['Context']):
 
     def __enter__(self) -> 'Context':
         # We do not accept parameters here. If one wants to customize the init() call,
-        # they would have to call it manaully and not use the ContextManager convenience
+        # they would have to call it manually and not use the ContextManager convenience
         self.init()
         return self
 
