@@ -84,7 +84,7 @@ class QoSProfile:
         '_avoid_ros_namespace_conventions',
     ]
 
-    def __init__(self, history: Optional['QoSHistoryPolicy'], depth: Optional[int] = None,
+    def __init__(self, history: Optional['QoSHistoryPolicy'] = None, depth: Optional[int] = None,
                  reliability: Optional['QoSReliabilityPolicy'] = None,
                  durability: Optional['QoSDurabilityPolicy'] = None,
                  lifespan: Optional[Duration] = None, deadline: Optional[Duration] = None,
