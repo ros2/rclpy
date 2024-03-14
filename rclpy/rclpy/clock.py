@@ -14,7 +14,7 @@
 
 from enum import IntEnum
 from types import TracebackType
-from typing import Callable, Optional, Protocol, Type, TYPE_CHECKING, TypeAlias, TypedDict
+from typing import Callable, Optional, Protocol, Type, TYPE_CHECKING, TypedDict
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
@@ -25,6 +25,10 @@ from .duration import Duration
 from .exceptions import NotInitializedException
 from .time import Time, TimeHandle
 from .utilities import get_default_context
+
+
+if TYPE_CHECKING:
+    from typing import TypeAlias
 
 
 class ClockChange(IntEnum):
@@ -87,7 +91,7 @@ class TimeJumpDictionary(TypedDict):
     delta: int
 
 
-JumpHandlePreCallbackType: TypeAlias = Callable[[None], None]
+JumpHandlePreCallbackType: 'TypeAlias' = Callable[[], None]
 
 
 class JumpHandle:
