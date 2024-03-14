@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Literal
+
 from rclpy.exceptions import InvalidServiceNameException
 from rclpy.exceptions import InvalidTopicNameException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-def validate_full_topic_name(name, *, is_service=False):
+def validate_full_topic_name(name: str, *, is_service: bool = False) -> Literal[True]:
     """
     Validate a given topic or service name, and raise an exception if invalid.
 
@@ -26,8 +28,8 @@ def validate_full_topic_name(name, *, is_service=False):
     If the name is invalid then rclpy.exceptions.InvalidTopicNameException
     will be raised.
 
-    :param name str: topic or service name to be validated
-    :param is_service bool: if true, InvalidServiceNameException is raised
+    :param name: topic or service name to be validated
+    :param is_service: if true, InvalidServiceNameException is raised
     :returns: True when it is valid
     :raises: InvalidTopicNameException: when the name is invalid
     """

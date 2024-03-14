@@ -61,7 +61,7 @@ class Context(ContextManager['Context']):
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._callbacks: List[Union[WeakMethod[MethodType], Callable[[], None]]] = []
+        self._callbacks: List[Union['WeakMethod[MethodType]', Callable[[], None]]] = []
         self._logging_initialized = False
         self.__context: Optional[ContextHandle] = None
 
@@ -140,7 +140,7 @@ class Context(ContextManager['Context']):
                 self._call_on_shutdown_callbacks()
                 self._logging_fini()
 
-    def _remove_callback(self, weak_method: WeakMethod[MethodType]) -> None:
+    def _remove_callback(self, weak_method: 'WeakMethod[MethodType]') -> None:
         self._callbacks.remove(weak_method)
 
     def on_shutdown(self, callback: Callable[[], None]) -> None:

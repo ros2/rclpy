@@ -24,9 +24,9 @@ def expand_topic_name(topic_name: str, node_name: str, node_namespace: str) -> s
     The :py:func:validate_full_topic_name(): should be used on the expanded
     topic name to ensure it is valid after expansion.
 
-    :param topic_name str: topic name to be expanded
-    :param node_name str: name of the node that this topic is associated with
-    :param namespace str: namespace that the topic is within
+    :param topic_name: topic name to be expanded
+    :param node_name: name of the node that this topic is associated with
+    :param namespace: namespace that the topic is within
     :returns: expanded topic name which is fully qualified
     :raises: ValueError if the topic name, node name or namespace are invalid
     """
