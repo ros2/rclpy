@@ -14,12 +14,14 @@
 
 from enum import Enum, IntEnum
 from typing import (Callable, Iterable, List, Optional, Protocol, Tuple, Type,
-                    TypeAlias, TypeVar, Union)
+                    TypeVar, TYPE_CHECKING, Union)
 import warnings
 
 from rclpy.duration import Duration, DurationHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+if TYPE_CHECKING:
+    from typing import TypeAlias
 
 class QoSPolicyKind(IntEnum):
     """
@@ -542,7 +544,7 @@ class QoSPresetProfiles(Enum):
         return cls[name.upper()].value
 
 
-QoSCompatibility: TypeAlias = _rclpy.QoSCompatibility
+QoSCompatibility: 'TypeAlias' = _rclpy.QoSCompatibility
 
 
 def qos_check_compatible(publisher_qos: QoSProfile,
