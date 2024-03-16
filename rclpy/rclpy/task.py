@@ -96,10 +96,18 @@ class Future(Generic[T]):
 
         :return: The result set by the task, or None if no result was set.
         """
-        if self._exception:
-            self._exception_fetched = True
-            raise self._exception
+        exception = self.exception()
+        if exception:
+            raise exception
         return self._result
+
+    def exception(self) -> Optional[Exception]:
+        """
+        Get an exception raised by a done task.
+        :return: The exception raised by the task
+        """
+        self._exception_fetched = True
+        return self._exception
 
     def set_result(self, result: T) -> None:
         """
@@ -173,7 +181,7 @@ class Future(Generic[T]):
         invoke = False
         with self._lock:
             if self._done:
-                assert self._executor is not None
+                # assert self._executor is not None
                 executor = self._executor()
                 if executor is not None:
                     executor.create_task(callback, self)
