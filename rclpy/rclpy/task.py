@@ -182,7 +182,7 @@ class Future(Generic[T]):
         invoke = False
         with self._lock:
             if self._done:
-                # assert self._executor is not None
+                assert self._executor is not None
                 executor = self._executor()
                 if executor is not None:
                     executor.create_task(callback, self)
