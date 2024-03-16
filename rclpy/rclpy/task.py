@@ -104,6 +104,7 @@ class Future(Generic[T]):
     def exception(self) -> Optional[Exception]:
         """
         Get an exception raised by a done task.
+
         :return: The exception raised by the task
         """
         self._exception_fetched = True
