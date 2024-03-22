@@ -12,36 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, ClassVar, Protocol, Type, TypeVar, Union
+from typing import Optional, ClassVar, Protocol, Type, TypeVar, Union
 
 from rclpy.exceptions import NoTypeSupportImportedException
 
+class PyCapsule(Protocol):
+    """Alias for PyCapsule Pybind object"""
+
+    pass
 
 class CommonMsgSrv(Protocol):
     """Shared attributes between messages and services."""
 
-    _TYPE_SUPPORT: Any
+    _TYPE_SUPPORT: Optional[PyCapsule]
 
     @classmethod
     def __import_type_support__(cls) -> None:
         ...
 
 
-class Msg(CommonMsgSrv):
+class Msg(CommonMsgSrv, Protocol):
     """Generic Message Type Alias."""
 
-    _CREATE_ROS_MESSAGE: Any
-    _CONVERT_FROM_PY: Any
-    _CONVERT_TO_PY: Any
-    _DESTROY_ROS_MESSAGE: Any
+    _CREATE_ROS_MESSAGE:  Optional[PyCapsule]
+    _CONVERT_FROM_PY:  Optional[PyCapsule]
+    _CONVERT_TO_PY:  Optional[PyCapsule]
+    _DESTROY_ROS_MESSAGE:  Optional[PyCapsule]
 
 
-class Srv(CommonMsgSrv):
+class Srv(CommonMsgSrv, Protocol):
     """Generic Service Type Alias."""
 
-    Request: ClassVar = Msg
-    Response: ClassVar = Msg
-    Event: ClassVar = Msg
+    Request: Msg
+    Response: Msg
+    Event: Msg
 
 
 MsgType = TypeVar('MsgType', bound=Msg)
