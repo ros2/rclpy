@@ -15,7 +15,7 @@
 from typing import Union
 
 from rclpy.publisher import Publisher
-from rclpy.type_support import MsgType
+from rclpy.type_support import MsgT
 
 from .managed_entity import SimpleManagedEntity
 
@@ -28,7 +28,7 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher):
         Publisher.__init__(self, *args, **kwargs)
 
     @SimpleManagedEntity.when_enabled
-    def publish(self, msg: Union[MsgType, bytes]) -> None:
+    def publish(self, msg: Union[MsgT, bytes]) -> None:
         """
         Publish a message if the lifecycle publisher is enabled.
 

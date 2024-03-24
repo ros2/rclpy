@@ -12,40 +12,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, ClassVar, Protocol, Type, TypeVar, Union
+from typing import Optional, Protocol, Type, TypeVar, Union
 
 from rclpy.exceptions import NoTypeSupportImportedException
 
 
-class CommonMsgSrv(Protocol):
+class PyCapsule(Protocol):
+    """Alias for PyCapsule Pybind object"""
+
+    pass
+
+
+# Done because metaclasses need to inherit from type
+ProtocolType: Type = type(Protocol)
+
+
+class CommonMsgSrvMetaClass(ProtocolType):
     """Shared attributes between messages and services."""
 
-    _TYPE_SUPPORT: Any
+    _TYPE_SUPPORT: Optional[PyCapsule]
 
     @classmethod
     def __import_type_support__(cls) -> None:
         ...
 
 
-class Msg(CommonMsgSrv):
+class MsgMetaClass(CommonMsgSrvMetaClass):
+    """Generic Message Metaclass Alias."""
+
+    _CREATE_ROS_MESSAGE:  Optional[PyCapsule]
+    _CONVERT_FROM_PY:  Optional[PyCapsule]
+    _CONVERT_TO_PY:  Optional[PyCapsule]
+    _DESTROY_ROS_MESSAGE:  Optional[PyCapsule]
+
+
+class Msg(Protocol, metaclass=MsgMetaClass):
     """Generic Message Type Alias."""
-
-    _CREATE_ROS_MESSAGE: Any
-    _CONVERT_FROM_PY: Any
-    _CONVERT_TO_PY: Any
-    _DESTROY_ROS_MESSAGE: Any
+    pass
 
 
-class Srv(CommonMsgSrv):
+# Could likely be improved if generic accros Request, Response, Event
+class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
 
-    Request: ClassVar = Msg
-    Response: ClassVar = Msg
-    Event: ClassVar = Msg
+    pass
 
 
-MsgType = TypeVar('MsgType', bound=Msg)
-SrvType = TypeVar('SrvType', bound=Srv)
+MsgT = TypeVar('MsgT', bound=Msg)
+SrvT = TypeVar('SrvT', bound=Srv)
+
+SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
+SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
+SrvEventT = TypeVar('SrvEventT', bound=Msg)
 
 
 def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv]]) -> None:
