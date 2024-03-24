@@ -18,7 +18,7 @@ from rclpy.exceptions import NoTypeSupportImportedException
 
 
 class PyCapsule(Protocol):
-    """Alias for PyCapsule Pybind object"""
+    """Alias for PyCapsule Pybind object."""
 
     pass
 
@@ -48,6 +48,7 @@ class MsgMetaClass(CommonMsgSrvMetaClass):
 
 class Msg(Protocol, metaclass=MsgMetaClass):
     """Generic Message Type Alias."""
+
     pass
 
 
