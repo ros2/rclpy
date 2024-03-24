@@ -83,6 +83,7 @@ from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
+from rclpy.type_support import MsgT
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
@@ -93,8 +94,9 @@ from rclpy.waitable import Waitable
 
 HIDDEN_NODE_PREFIX = '_'
 
-# Used for documentation purposes only
+# Left to support Legacy TypeVar.
 MsgType = TypeVar('MsgType')
+
 SrvType = TypeVar('SrvType')
 SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
@@ -1499,7 +1501,7 @@ class Node:
 
     def create_publisher(
         self,
-        msg_type,
+        msg_type: Type[MsgT],
         topic: str,
         qos_profile: Union[QoSProfile, int],
         *,
@@ -1507,7 +1509,7 @@ class Node:
         event_callbacks: Optional[PublisherEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         publisher_class: Type[Publisher] = Publisher,
-    ) -> Publisher:
+    ) -> Publisher[MsgT]:
         """
         Create a new publisher.
 
@@ -1573,16 +1575,16 @@ class Node:
 
     def create_subscription(
         self,
-        msg_type,
+        msg_type: Type[MsgT],
         topic: str,
-        callback: Callable[[MsgType], None],
+        callback: Callable[[MsgT], None],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False
-    ) -> Subscription:
+    ) -> Subscription[MsgT]:
         """
         Create a new subscription.
 
