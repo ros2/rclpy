@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Protocol, Type, TypeVar, Union
+from typing import Optional, Protocol, Type, TypeVar, Union, Final
 
 from rclpy.exceptions import NoTypeSupportImportedException
 
@@ -36,7 +36,6 @@ class CommonMsgSrvMetaClass(ProtocolType):
     def __import_type_support__(cls) -> None:
         ...
 
-
 class MsgMetaClass(CommonMsgSrvMetaClass):
     """Generic Message Metaclass Alias."""
 
@@ -52,19 +51,25 @@ class Msg(Protocol, metaclass=MsgMetaClass):
     pass
 
 
-# Could likely be improved if generic accros Request, Response, Event
-class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
-    """Generic Service Type Alias."""
-
-    pass
-
-
 MsgT = TypeVar('MsgT', bound=Msg)
-SrvT = TypeVar('SrvT', bound=Srv)
+
 
 SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
 SrvEventT = TypeVar('SrvEventT', bound=Msg)
+
+from typing import runtime_checkable
+@runtime_checkable
+class Srv(Protocol[SrvRequestT, SrvResponseT, SrvEventT],
+          metaclass=CommonMsgSrvMetaClass):
+    """Generic Service Type Alias."""
+
+    Request: SrvRequestT
+    Response: SrvResponseT
+    Event: SrvEventT
+
+
+SrvT = TypeVar('SrvT', bound=Srv)
 
 
 def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv]]) -> None:
