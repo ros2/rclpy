@@ -36,6 +36,7 @@ class CommonMsgSrvMetaClass(ProtocolType):
     def __import_type_support__(cls) -> None:
         ...
 
+
 class MsgMetaClass(CommonMsgSrvMetaClass):
     """Generic Message Metaclass Alias."""
 
@@ -58,15 +59,11 @@ SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
 SrvEventT = TypeVar('SrvEventT', bound=Msg)
 
-from typing import runtime_checkable
-@runtime_checkable
-class Srv(Protocol[SrvRequestT, SrvResponseT, SrvEventT],
-          metaclass=CommonMsgSrvMetaClass):
+
+class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
 
-    Request: SrvRequestT
-    Response: SrvResponseT
-    Event: SrvEventT
+    pass
 
 
 SrvT = TypeVar('SrvT', bound=Srv)

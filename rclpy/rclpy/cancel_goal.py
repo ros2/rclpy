@@ -580,7 +580,7 @@ class Metaclass_CancelGoal(type):
                 _cancel_goal.Metaclass_CancelGoal_Event.__import_type_support__()
 
 
-from typing import Type, ClassVar
+from typing import Type, ClassVar, Final
 
 
 class CancelGoal(metaclass=Metaclass_CancelGoal):
@@ -588,9 +588,14 @@ class CancelGoal(metaclass=Metaclass_CancelGoal):
     # from action_msgs.srv._cancel_goal import CancelGoal_Response
     # from action_msgs.srv._cancel_goal import CancelGoal_Event
 
-    Request: ClassVar[Type[CancelGoal_Request]] = CancelGoal_Request
-    Response: ClassVar[Type[CancelGoal_Response]] = CancelGoal_Response
-    Event: ClassVar[Type[CancelGoal_Event]] = CancelGoal_Event
+    # Self: Type[Metaclass_CancelGoal]] = Metaclass_CancelGoal
+    # Request: ClassVar[Type[CancelGoal_Request]] = CancelGoal_Request
+    # Response: ClassVar[Type[CancelGoal_Response]] = CancelGoal_Response
+    # Event: ClassVar[Type[CancelGoal_Event]] = CancelGoal_Event
+
+    Request: Type[CancelGoal_Request] = CancelGoal_Request
+    Response: Type[CancelGoal_Response] = CancelGoal_Response
+    Event: Type[CancelGoal_Event] = CancelGoal_Event
 
     def __init__(self):
         raise NotImplementedError('Service classes can not be instantiated')

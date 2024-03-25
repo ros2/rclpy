@@ -34,7 +34,7 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 class Service(Generic[SrvT]):
     def __init__(
-        self: 'Service[Srv[SrvRequestT, Type[SrvResponseT], Type[SrvEventT]]]',
+        self,
         service_impl: _rclpy.Service,
         srv_type: Type[SrvT],
         srv_name: str,
@@ -122,7 +122,7 @@ class Service(Generic[SrvT]):
         self.__service.destroy_when_not_in_use()
 
 from .type_support import Srv
-from .cancel_goal import CancelGoal, CancelGoal_Request, CancelGoal_Response, CancelGoal_Event
+from .cancel_goal import CancelGoal, CancelGoal_Request, CancelGoal_Response, CancelGoal_Event, Metaclass_CancelGoal
 
 
 reveal_type(CancelGoal_Request)
@@ -130,18 +130,21 @@ reveal_type(CancelGoal_Request)
 a = CancelGoal
 
 reveal_type(a)
+# reveal_type(a.Self)
 reveal_type(a.Request)
 
 
 a_srv: Srv = CancelGoal
 reveal_type(a_srv)
+# reveal_type(a_srv.Self)
 reveal_type(a_srv.Request)
 
-a_srv_typed: Srv[Type[CancelGoal_Request],
-                 Type[CancelGoal_Response],
-                 Type[CancelGoal_Event]] = CancelGoal
-reveal_type(a_srv_typed)
-reveal_type(a_srv_typed.Request)
+# a_srv_typed: Srv[CancelGoal_Request,
+#                  CancelGoal_Response,
+#                  CancelGoal_Event] = CancelGoal
+# reveal_type(a_srv_typed)
+# # reveal_type(a_srv_typed.Self)
+# reveal_type(a_srv_typed.Request)
 
 
 def test_callback(req: CancelGoal_Request,
@@ -153,23 +156,31 @@ def bad_callback(foo, bar) -> None:
     pass
 
 
+s_cancel_goal = Service("hi", CancelGoal, "test", test_callback, CallbackGroup(), QoSProfile())
+
+reveal_type(s_cancel_goal)
+reveal_type(s_cancel_goal.srv_type)
+reveal_type(s_cancel_goal.callback)
+# s
+
+# s_cancel_goal.__d
+
 s = Service("hi", a, "test", test_callback, CallbackGroup(), QoSProfile())
 
 reveal_type(s)
 reveal_type(s.srv_type)
 reveal_type(s.callback)
 
+# s_srv = Service("hi", a_srv, "test", test_callback, CallbackGroup(), QoSProfile())
+# # s_srv: Service[CancelGoal] = Service("hi", a_srv, "test", test_callback, CallbackGroup(), QoSProfile())
 
-s_srv: Service[Srv] = Service("hi", a_srv, "test", test_callback, CallbackGroup(), QoSProfile())
 
-reveal_type(s_srv)
-reveal_type(s_srv.srv_type)
-reveal_type(s_srv.callback)
+# reveal_type(s_srv)
+# reveal_type(s_srv.srv_type)
+# reveal_type(s_srv.callback)
 
-s_typed: Service[Srv[Type[CancelGoal_Request],
-                 Type[CancelGoal_Response],
-                 Type[CancelGoal_Event]]] = Service("hi", a_srv_typed, "test", test_callback, CallbackGroup(), QoSProfile())
+# s_typed: Service[CancelGoal] = Service("hi", a_srv_typed, "test", test_callback, CallbackGroup(), QoSProfile())
 
-reveal_type(s_typed)
-reveal_type(s_typed.srv_type)
-reveal_type(s_typed.callback)
+# reveal_type(s_typed)
+# reveal_type(s_typed.srv_type)
+# reveal_type(s_typed.callback)
