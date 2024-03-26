@@ -149,15 +149,17 @@ Client::take_response(py::object pyresponse_type)
 void
 Client::configure_introspection(
   Clock & clock, py::object pyqos_service_event_pub,
-  rcl_service_introspection_state_t introspection_state)
+  int introspection_state)
 {
   rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
   pub_opts.qos =
     pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
     pyqos_service_event_pub.cast<rmw_qos_profile_t>();
 
+  auto introspection_state_enum = rcl_service_introspection_state_t(introspection_state);
+
   rcl_ret_t ret = rcl_client_configure_service_introspection(
-    rcl_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state);
+    rcl_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state_enum);
 
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to configure client introspection");

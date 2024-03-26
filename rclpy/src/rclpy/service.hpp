@@ -108,7 +108,7 @@ public:
   void
   configure_introspection(
     Clock & clock, py::object pyqos_service_event_pub,
-    rcl_service_introspection_state_t introspection_state);
+    int introspection_state);
 
   /// Force an early destruction of this object
   void
