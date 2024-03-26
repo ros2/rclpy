@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import IntEnum
+
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
-ServiceIntrospectionState = _rclpy.service_introspection.ServiceIntrospectionState
+
+class ServiceIntrospectionState(IntEnum):
+    OFF = _rclpy.service_introspection.ServiceIntrospectionState.OFF
+    METADATA = _rclpy.service_introspection.ServiceIntrospectionState.METADATA
+    CONTENTS = _rclpy.service_introspection.ServiceIntrospectionState.CONTENTS
