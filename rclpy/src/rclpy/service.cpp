@@ -168,7 +168,8 @@ Service::configure_introspection(
   auto introspection_state_enum = rcl_service_introspection_state_t(introspection_state);
 
   rcl_ret_t ret = rcl_service_configure_service_introspection(
-    rcl_service_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state_enum);
+    rcl_service_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts,
+    introspection_state_enum);
 
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to configure service introspection");
