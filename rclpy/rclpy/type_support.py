@@ -60,13 +60,17 @@ SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
 SrvEventT = TypeVar('SrvEventT', bound=Msg)
 
 
+from typing import NoReturn
+
+
 class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
 
-    pass
+    def __init__(self) -> NoReturn:
+        ...
 
 
-SrvT = TypeVar('SrvT', bound=Srv)
+SrvT = TypeVar('SrvT', bound=Type[Srv])
 
 
 def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv]]) -> None:

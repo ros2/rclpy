@@ -32,11 +32,11 @@ SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
-class Service(Generic[SrvT]):
+class Service(Generic[SrvT, SrvRequestT, SrvResponseT]):
     def __init__(
         self,
         service_impl: _rclpy.Service,
-        srv_type: Type[SrvT],
+        srv_type: SrvT,
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         callback_group: CallbackGroup,
@@ -170,6 +170,12 @@ s = Service("hi", a, "test", test_callback, CallbackGroup(), QoSProfile())
 reveal_type(s)
 reveal_type(s.srv_type)
 reveal_type(s.callback)
+reveal_type(s.send_response)
+
+
+s_bad = Service("hi", CancelGoal_Request, "test", test_callback, CallbackGroup(), QoSProfile())
+
+reveal_type(s_bad)
 
 # s_srv = Service("hi", a_srv, "test", test_callback, CallbackGroup(), QoSProfile())
 # # s_srv: Service[CancelGoal] = Service("hi", a_srv, "test", test_callback, CallbackGroup(), QoSProfile())

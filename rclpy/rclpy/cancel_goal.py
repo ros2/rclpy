@@ -80,7 +80,7 @@ class CancelGoal_Request(metaclass=Metaclass_CancelGoal_Request):
         rosidl_parser.definition.NamespacedType(['action_msgs', 'msg'], 'GoalInfo'),  # noqa: E501
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         if 'check_fields' in kwargs:
             self._check_fields = kwargs['check_fields']
         else:
@@ -580,7 +580,9 @@ class Metaclass_CancelGoal(type):
                 _cancel_goal.Metaclass_CancelGoal_Event.__import_type_support__()
 
 
-from typing import Type, ClassVar, Final
+from typing import Type, ClassVar, Final, NoReturn
+
+from typing_extensions import Never
 
 
 class CancelGoal(metaclass=Metaclass_CancelGoal):
@@ -597,5 +599,5 @@ class CancelGoal(metaclass=Metaclass_CancelGoal):
     Response: Type[CancelGoal_Response] = CancelGoal_Response
     Event: Type[CancelGoal_Event] = CancelGoal_Event
 
-    def __init__(self):
+    def __init__(self) -> NoReturn:
         raise NotImplementedError('Service classes can not be instantiated')
