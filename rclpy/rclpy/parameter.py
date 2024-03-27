@@ -36,7 +36,12 @@ AllowableParameterValue = Union[None, bool, int, float, str,
                                 List[float], Tuple[float, ...], 'array.array[float]',
                                 List[str], Tuple[str, ...], 'array.array[str]']
 
-AllowableParameterValueT = TypeVar('AllowableParameterValueT', AllowableParameterValue, None)
+
+AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float, str,
+                                   List[bytes], Tuple[bytes, ...], List[bool], Tuple[bool, ...],
+                                   List[int], Tuple[int, ...], 'array.array[int]',
+                                   List[float], Tuple[float, ...], 'array.array[float]',
+                                   List[str], Tuple[str, ...], 'array.array[str]')
 
 
 class Parameter(Generic[AllowableParameterValueT]):
@@ -55,7 +60,8 @@ class Parameter(Generic[AllowableParameterValueT]):
 
         @classmethod
         def from_parameter_value(cls,
-                                 parameter_value: AllowableParameterValue) -> 'Parameter.Type':
+                                 parameter_value: AllowableParameterValueT
+                                 ) -> 'Parameter.Type':
             """
             Get a Parameter.Type from a given variable.
 
@@ -91,7 +97,7 @@ class Parameter(Generic[AllowableParameterValueT]):
                 raise TypeError(
                     f"The given value is not one of the allowed types '{parameter_value}'.")
 
-        def check(self, parameter_value: AllowableParameterValue) -> bool:
+        def check(self, parameter_value: AllowableParameterValueT) -> bool:
             if Parameter.Type.NOT_SET == self:
                 return parameter_value is None
             if Parameter.Type.BOOL == self:
@@ -143,9 +149,11 @@ class Parameter(Generic[AllowableParameterValueT]):
             value = param_msg.value.string_array_value
         return cls(param_msg.name, type_, value)
 
+    # value: AllowableParameterValueT = None Needs a type: ignore due to TypeVars not inferring
+    # types of defaults yet https://github.com/python/mypy/issues/3737#
     def __init__(self, name: str,
                  type_: Optional['Parameter.Type'] = None,
-                 value: AllowableParameterValueT = None) -> None:
+                 value: AllowableParameterValueT = None) -> None:  # type: ignore[assignment]
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
@@ -158,7 +166,7 @@ class Parameter(Generic[AllowableParameterValueT]):
 
         self._type_ = type_
         self._name = name
-        self._value = value
+        self._value: AllowableParameterValueT = value
 
     @property
     def name(self) -> str:
