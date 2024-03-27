@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List, Optional, Set, TYPE_CHECKING
 import weakref
-from typing import Optional, TYPE_CHECKING, List, Set
 
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.clock import ROSClock
