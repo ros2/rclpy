@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import array
-from enum import Enum
+from enum import IntEnum
 from typing import Dict
+from typing import Generic
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import TYPE_CHECKING
+from typing import TypeVar
 from typing import Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
@@ -28,18 +29,24 @@ import yaml
 
 PARAMETER_SEPARATOR_STRING = '.'
 
-if TYPE_CHECKING:
-    AllowableParameterValue = Union[None, bool, int, float, str,
-                                    List[bytes], Tuple[bytes, ...],
-                                    List[bool], Tuple[bool, ...],
-                                    List[int], Tuple[int, ...], array.array[int],
-                                    List[float], Tuple[float, ...], array.array[float],
-                                    List[str], Tuple[str, ...], array.array[str]]
+AllowableParameterValue = Union[None, bool, int, float, str,
+                                List[bytes], Tuple[bytes, ...],
+                                List[bool], Tuple[bool, ...],
+                                List[int], Tuple[int, ...], 'array.array[int]',
+                                List[float], Tuple[float, ...], 'array.array[float]',
+                                List[str], Tuple[str, ...], 'array.array[str]']
 
 
-class Parameter:
+AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float, str,
+                                   List[bytes], Tuple[bytes, ...], List[bool], Tuple[bool, ...],
+                                   List[int], Tuple[int, ...], 'array.array[int]',
+                                   List[float], Tuple[float, ...], 'array.array[float]',
+                                   List[str], Tuple[str, ...], 'array.array[str]')
 
-    class Type(Enum):
+
+class Parameter(Generic[AllowableParameterValueT]):
+
+    class Type(IntEnum):
         NOT_SET = ParameterType.PARAMETER_NOT_SET
         BOOL = ParameterType.PARAMETER_BOOL
         INTEGER = ParameterType.PARAMETER_INTEGER
@@ -52,7 +59,9 @@ class Parameter:
         STRING_ARRAY = ParameterType.PARAMETER_STRING_ARRAY
 
         @classmethod
-        def from_parameter_value(cls, parameter_value):
+        def from_parameter_value(cls,
+                                 parameter_value: AllowableParameterValueT
+                                 ) -> 'Parameter.Type':
             """
             Get a Parameter.Type from a given variable.
 
@@ -88,7 +97,7 @@ class Parameter:
                 raise TypeError(
                     f"The given value is not one of the allowed types '{parameter_value}'.")
 
-        def check(self, parameter_value):
+        def check(self, parameter_value: AllowableParameterValueT) -> bool:
             if Parameter.Type.NOT_SET == self:
                 return parameter_value is None
             if Parameter.Type.BOOL == self:
@@ -117,7 +126,7 @@ class Parameter:
             return False
 
     @classmethod
-    def from_parameter_msg(cls, param_msg):
+    def from_parameter_msg(cls, param_msg: ParameterMsg) -> 'Parameter[AllowableParameterValueT]':
         value = None
         type_ = Parameter.Type(value=param_msg.value.type)
         if Parameter.Type.BOOL == type_:
@@ -140,7 +149,11 @@ class Parameter:
             value = param_msg.value.string_array_value
         return cls(param_msg.name, type_, value)
 
-    def __init__(self, name, type_=None, value=None):
+    # value: AllowableParameterValueT = None Needs a type: ignore due to TypeVars not inferring
+    # types of defaults yet https://github.com/python/mypy/issues/3737#
+    def __init__(self, name: str,
+                 type_: Optional['Parameter.Type'] = None,
+                 value: AllowableParameterValueT = None) -> None:  # type: ignore[assignment]
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
@@ -153,21 +166,21 @@ class Parameter:
 
         self._type_ = type_
         self._name = name
-        self._value = value
+        self._value: AllowableParameterValueT = value
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def type_(self):
+    def type_(self) -> 'Parameter.Type':
         return self._type_
 
     @property
-    def value(self):
+    def value(self) -> AllowableParameterValueT:
         return self._value
 
-    def get_parameter_value(self):
+    def get_parameter_value(self) -> ParameterValue:
         parameter_value = ParameterValue(type=self.type_.value)
         if Parameter.Type.BOOL == self.type_:
             parameter_value.bool_value = self.value
@@ -189,7 +202,7 @@ class Parameter:
             parameter_value.string_array_value = self.value
         return parameter_value
 
-    def to_parameter_msg(self):
+    def to_parameter_msg(self) -> ParameterMsg:
         return ParameterMsg(name=self.name, value=self.get_parameter_value())
 
 
@@ -237,7 +250,7 @@ def get_parameter_value(string_value: str) -> ParameterValue:
     return value
 
 
-def parameter_value_to_python(parameter_value: ParameterValue):
+def parameter_value_to_python(parameter_value: ParameterValue) -> AllowableParameterValue:
     """
     Get the value for the Python builtin type from a rcl_interfaces/msg/ParameterValue object.
 
@@ -295,7 +308,7 @@ def parameter_dict_from_yaml_file(
     """
     with open(parameter_file, 'r') as f:
         param_file = yaml.safe_load(f)
-        param_keys = []
+        param_keys: List[str] = []
         param_dict = {}
 
         if use_wildcard and '/**' in param_file:
@@ -325,7 +338,8 @@ def parameter_dict_from_yaml_file(
         return _unpack_parameter_dict(namespace, param_dict)
 
 
-def _unpack_parameter_dict(namespace, parameter_dict):
+def _unpack_parameter_dict(namespace: str,
+                           parameter_dict: Dict[str, ParameterMsg]) -> Dict[str, ParameterMsg]:
     """
     Flatten a parameter dictionary recursively.
 
