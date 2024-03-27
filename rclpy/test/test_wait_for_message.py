@@ -17,8 +17,8 @@ import time
 import unittest
 
 import rclpy
-from rclpy.wait_for_message import wait_for_message
 from rclpy.qos import QoSProfile
+from rclpy.wait_for_message import wait_for_message
 from test_msgs.msg import BasicTypes
 
 MSG_DATA = 100
