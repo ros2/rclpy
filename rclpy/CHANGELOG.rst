@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.1.0 (2024-03-28)
+------------------
 * Allow specifying qos (`#1225 <https://github.com/ros2/rclpy/issues/1225>`_)
 * update RCL_RET_TIMEOUT error handling with action service response. (`#1258 <https://github.com/ros2/rclpy/issues/1258>`_)
 * Add types to time_source.py (`#1259 <https://github.com/ros2/rclpy/issues/1259>`_)
