@@ -14,7 +14,7 @@
 
 from enum import Enum
 from enum import IntEnum
-from typing import Union
+from typing import TypedDict, Union
 
 import warnings
 
@@ -52,6 +52,18 @@ class InvalidQoSProfileException(Exception):
 
     def __init__(self, *args):
         Exception.__init__(self, 'Invalid QoSProfile', *args)
+
+
+class QoSProfileDictionary(TypedDict):
+    history: 'QoSHistoryPolicy'
+    depth: int
+    reliability: 'QoSReliabilityPolicy'
+    durability: 'QoSDurabilityPolicy'
+    lifespan: Duration
+    deadline: Duration
+    liveliness: 'QoSLivelinessPolicy'
+    liveliness_lease_duration: Duration
+    avoid_ros_namespace_conventions: bool
 
 
 class QoSProfile:
