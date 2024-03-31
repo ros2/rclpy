@@ -24,7 +24,7 @@ setup(
             'component_container_mt = rclpy_components.component_container_mt:main',
         ],
         'rclpy_components': [
-            'rclpy_components::FooNode = rclpy_components.test.test_foo:FooNode',
+            'rclpy_components::FooNode = rclpy_components.test.foo_node:FooNode',
         ]
     },
 )
