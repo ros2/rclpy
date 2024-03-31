@@ -12,187 +12,216 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import rclpy
-from multiprocessing import Process
-from rclpy.client import Client
-from rclpy.executors import SingleThreadedExecutor, MultiThreadedExecutor
-from rclpy.node import Node
+import threading
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
 from composition_interfaces.srv import ListNodes, LoadNode, UnloadNode
+import pytest
+import rclpy
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy_components.component_manager import ComponentManager
 
-TEST_COMPOSITION = 'test_composition'
-TEST_COMPOSITION_FOO = 'test_composition::TestFoo'
-TEST_COMPOSITION_NODE_NAME = '/testfoo'
+
+class FakeEntryPoint:
+    name: str
+    value: str
+    group: str
+    mock_class: MagicMock
+
+    def __init__(self, name: str, value: str, group: str = 'rclpy_components'):
+        self.name = name
+        self.value = value
+        self.group = group
+        self.mock_class = MagicMock()
+
+    def load(self):
+        return self.mock_class
 
 
-def run_container(container_name, multi_thread):
+class FakeEntryPointFailsToLoad(FakeEntryPoint):
+
+    def load(self):
+        raise ValueError('Oops I failed to load')
+
+
+EXECUTORS = (SingleThreadedExecutor, MultiThreadedExecutor)
+
+
+@pytest.fixture(params=EXECUTORS)
+def component_manager(request):
     rclpy.init()
-    if multi_thread:
-        executor = MultiThreadedExecutor()
-    else:
-        executor = SingleThreadedExecutor()
-
-    component_manager = ComponentManager(executor, container_name)
+    executor = request.param()
+    component_manager = ComponentManager(executor, 'ut_container')
     executor.add_node(component_manager)
-    try:
-        executor.spin()
-    except Exception as e:
-        print(e)
-        pass
+    t = threading.Thread(target=executor.spin, daemon=True)
+    t.start()
 
+    yield component_manager
+
+    executor.remove_node(component_manager)
     component_manager.destroy_node()
+    executor.shutdown()
+    t.join()
     rclpy.shutdown()
 
 
-class TestComponentManager(unittest.TestCase):
-    helper_node: Node = None
-    container_process: Process = None
+@pytest.fixture()
+def node_and_context():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    node = rclpy.create_node('test_node', namespace='test_component_manager', context=context)
+    executor = SingleThreadedExecutor()
+    executor.add_node(node)
+    t = threading.Thread(target=executor.spin, daemon=True)
+    t.start()
 
-    container_name = 'TestComponentManager'
-    # service names & clients will be generated with container_name
-    load_node_svc_name = ""
-    unload_node_svc_name = ""
-    list_node_svc_name = ""
-    load_cli: Client = None
-    unload_cli: Client = None
-    list_cli: Client = None
+    yield (node, context)
 
-    use_multi_threaded_executor = False
-
-    @classmethod
-    def setUpClass(cls):
-        cls.load_node_svc_name = f'{cls.container_name}/_container/load_node'
-        cls.unload_node_svc_name = f'{cls.container_name}/_container/unload_node'
-        cls.list_node_svc_name = f'{cls.container_name}/_container/list_nodes'
-
-        # Start the test component manager in the background
-        cls.container_process = Process(target=run_container,
-                                        args=(cls.container_name, cls.use_multi_threaded_executor))
-        cls.container_process.start()
-
-        # Setup the helper_node, which will help create client and test the services
-        rclpy.init()
-        cls.helper_node = rclpy.create_node('helper_node')
-        cls.load_cli = cls.helper_node.create_client(LoadNode, cls.load_node_svc_name)
-        cls.unload_cli = cls.helper_node.create_client(UnloadNode, cls.unload_node_svc_name)
-        cls.list_cli = cls.helper_node.create_client(ListNodes, cls.list_node_svc_name)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.container_process.terminate()
-        cls.load_cli.destroy()
-        cls.unload_cli.destroy()
-        cls.list_cli.destroy()
-        cls.helper_node.destroy_node()
-        rclpy.shutdown()
-
-    @classmethod
-    def load_node(cls, package_name, plugin_name, node_name="", node_namespace=""):
-        if not cls.load_cli.wait_for_service(timeout_sec=5.0):
-            raise RuntimeError(f'No load service found in /{cls.container_name}')
-
-        load_req = LoadNode.Request()
-        load_req.package_name = package_name
-        load_req.plugin_name = plugin_name
-
-        if node_name != "":
-            load_req.node_name = node_name
-        if node_namespace != "":
-            load_req.node_namespace = node_namespace
-
-        future = cls.load_cli.call_async(load_req)
-        rclpy.spin_until_future_complete(cls.helper_node, future)
-        return future.result()
-
-    @classmethod
-    def unload_node(cls, unique_id):
-        if not cls.unload_cli.wait_for_service(timeout_sec=5.0):
-            raise RuntimeError(f'No unload service found in /{cls.container_name}')
-
-        unload_req = UnloadNode.Request()
-        unload_req.unique_id = unique_id
-
-        future = cls.unload_cli.call_async(unload_req)
-        rclpy.spin_until_future_complete(cls.helper_node, future)
-        return future.result()
-
-    @classmethod
-    def list_nodes(cls):
-        if not cls.list_cli.wait_for_service(timeout_sec=5.0):
-            raise RuntimeError(f'No list service found in {cls.container_name}')
-        list_req = ListNodes.Request()
-        future = cls.list_cli.call_async(list_req)
-        rclpy.spin_until_future_complete(cls.helper_node, future)
-        return future.result()
-
-    def load_node_test(self):
-        load_res = self.__class__.load_node(TEST_COMPOSITION, TEST_COMPOSITION_FOO)
-        assert load_res.success is True
-        assert load_res.error_message == ""
-        assert load_res.unique_id == 1
-        assert load_res.full_node_name == TEST_COMPOSITION_NODE_NAME
-
-        node_name = "renamed_node"
-        node_ns = 'testing_ns'
-        remap_load_res = self.__class__.load_node(
-            TEST_COMPOSITION, TEST_COMPOSITION_FOO, node_name=node_name,
-            node_namespace=node_ns)
-        assert remap_load_res.success is True
-        assert remap_load_res.error_message == ""
-        assert remap_load_res.unique_id == 2
-        assert remap_load_res.full_node_name == f'/{node_ns}/{node_name}'
-
-        list_res: ListNodes.Response = self.__class__.list_nodes()
-        assert len(list_res.unique_ids) == len(list_res.full_node_names) == 2
-
-    def unload_node_test(self):
-        if not self.__class__.unload_cli.wait_for_service(timeout_sec=5.0):
-            raise RuntimeError(f'no unload service found in {self.__class__.container_name}')
-
-        unload_res: UnloadNode.Response = self.__class__.unload_node(1)
-        assert unload_res.success is True
-        assert unload_res.error_message == ""
-
-        # Should be only 1 node left
-        list_res: ListNodes.Response = self.__class__.list_nodes()
-        assert len(list_res.full_node_names) == len(list_res.unique_ids) == 1
-
-        # The index definitely won't exist
-        unload_res: UnloadNode.Response = self.__class__.unload_node(1000)
-        assert unload_res.error_message != ""
-        assert unload_res.success is False
-        list_res: ListNodes.Response = self.__class__.list_nodes()
-        assert len(list_res.full_node_names) == len(list_res.unique_ids) == 1
-
-        # Unload the last node
-        unload_req = UnloadNode.Request()
-        unload_req.unique_id = 2
-        future = self.__class__.unload_cli.call_async(unload_req)
-        rclpy.spin_until_future_complete(self.__class__.helper_node, future)
-        unload_res: UnloadNode.Response = future.result()
-        assert unload_res.success is True
-        assert unload_res.error_message == ""
-
-        # Won't be any node in the container
-        list_res: ListNodes.Response = self.__class__.list_nodes()
-        assert len(list_res.full_node_names) == len(list_res.unique_ids) == 0
-
-    def list_nodes_test(self):
-        container_name = self.__class__.container_name
-        print(f'{container_name}: list_nodes tested within test_load_node and test_unload_node')
-
-    def test_composition_api(self):
-        # Control the order of test
-        self.load_node_test()
-        self.unload_node_test()
-        self.list_nodes_test()
+    node.destroy_node()
+    executor.shutdown()
+    t.join()
+    rclpy.shutdown(context=context)
 
 
-class TestComponentManagerMT(TestComponentManager):
-    use_multi_threaded_executor = True
-    container_name = 'TestComponentManagerMT'
+def test_list_nodes_no_nodes(component_manager):
+    res = ListNodes.Response()
+    req = ListNodes.Request()
+    component_manager.on_list_node(req, res)
+    assert len(res.full_node_names) == 0
+    assert len(res.unique_ids) == 0
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_load_node_no_such_node(component_manager):
+    res = LoadNode.Response()
+    req = LoadNode.Request()
+    req.package_name = 'fake_package'
+    req.plugin_name = 'FakePluginName'
+
+    component_manager.on_load_node(req, res)
+
+    assert 'not found' in res.error_message
+    assert res.success is False
+
+
+def test_load_then_unload_node(component_manager):
+    # Load
+    load_res = LoadNode.Response()
+    load_req = LoadNode.Request()
+    load_req.package_name = 'rclpy_components'
+    load_req.plugin_name = 'FooNode'
+
+    component_manager.on_load_node(load_req, load_res)
+
+    assert load_res.success is True
+
+    # List
+    list_res = ListNodes.Response()
+    list_req = ListNodes.Request()
+
+    component_manager.on_list_node(list_req, list_res)
+
+    assert len(list_res.full_node_names) == 1
+    assert len(list_res.unique_ids) == 1
+    assert load_res.unique_id in list_res.unique_ids
+
+    # Unload
+    unload_res = UnloadNode.Response()
+    unload_req = UnloadNode.Request()
+    unload_req.unique_id = load_res.unique_id
+
+    component_manager.on_unload_node(unload_req, unload_res)
+
+    assert unload_res.success is True
+
+    # List
+    list_res = ListNodes.Response()
+    list_req = ListNodes.Request()
+
+    component_manager.on_list_node(list_req, list_res)
+
+    assert len(list_res.full_node_names) == 0
+    assert len(list_res.unique_ids) == 0
+
+
+def test_unload_non_existant_node(component_manager):
+    unload_res = UnloadNode.Response()
+    unload_req = UnloadNode.Request()
+    unload_req.unique_id = 42
+
+    component_manager.on_unload_node(unload_req, unload_res)
+
+    assert unload_res.success is False
+    assert '42' in unload_res.error_message
+
+
+def test_load_fails(component_manager):
+    load_res = LoadNode.Response()
+    load_req = LoadNode.Request()
+    load_req.package_name = 'fake_package'
+    load_req.plugin_name = 'FakePlugin'
+
+    with patch('rclpy_components.component_manager.entry_points') as m:
+        m.return_value.select.return_value = [
+            FakeEntryPointFailsToLoad(
+                f'{load_req.package_name}::{load_req.plugin_name}', 'not.used:here'),
+        ]
+        component_manager.on_load_node(load_req, load_res)
+
+    assert load_res.success is False
+    assert 'Oops I failed to load' in load_res.error_message
+
+
+def test_load_node_wont_init(component_manager):
+    load_res = LoadNode.Response()
+    load_req = LoadNode.Request()
+    load_req.package_name = 'fake_package'
+    load_req.plugin_name = 'FakePlugin'
+
+    with patch('rclpy_components.component_manager.entry_points') as m:
+        fake_ep = FakeEntryPoint(
+            f'{load_req.package_name}::{load_req.plugin_name}', 'not.used:here')
+        fake_ep.mock_class.side_effect = ValueError('Oops I failed to construct')
+        m.return_value.select.return_value = [fake_ep]
+        component_manager.on_load_node(load_req, load_res)
+
+    assert load_res.success is False
+    assert 'Oops I failed to construct' in load_res.error_message
+
+
+def test_load_list_unload_via_services(component_manager, node_and_context):
+    node, context = node_and_context
+    manager_fqn = component_manager.get_fully_qualified_name()
+
+    load_node_service = f'{manager_fqn}/_container/load_node'
+    unload_node_service = f'{manager_fqn}/_container/unload_node'
+    list_node_service = f'{manager_fqn}/_container/list_nodes'
+
+    load_cli = node.create_client(LoadNode, load_node_service)
+    unload_cli = node.create_client(UnloadNode, unload_node_service)
+    list_cli = node.create_client(ListNodes, list_node_service)
+
+    assert load_cli.wait_for_service(timeout_sec=5.0)
+    assert unload_cli.wait_for_service(timeout_sec=5.0)
+    assert list_cli.wait_for_service(timeout_sec=5.0)
+
+    # Load one node
+    load_req = LoadNode.Request()
+    load_req.package_name = 'rclpy_components'
+    load_req.plugin_name = 'FooNode'
+
+    load_res = load_cli.call(load_req)
+    assert load_res.success is True
+
+    # List the node
+    list_res = list_cli.call(ListNodes.Request())
+    assert len(list_res.full_node_names) == 1
+    assert len(list_res.unique_ids) == 1
+    assert load_res.unique_id in list_res.unique_ids
+
+    # Unload it
+
+    unload_req = UnloadNode.Request()
+    unload_req.unique_id = load_res.unique_id
+    unload_res = unload_cli.call(unload_req)
+    assert unload_res.success is True
