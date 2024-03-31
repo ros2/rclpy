@@ -14,6 +14,7 @@
 
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
+
 from .component_manager import ComponentManager
 
 
@@ -21,14 +22,13 @@ def main():
     rclpy.init()
 
     executor = SingleThreadedExecutor()
-    component_manager = ComponentManager(executor, "PyComponentManager")
+    component_manager = ComponentManager(executor, 'PyComponentManager')
 
     executor.add_node(component_manager)
     try:
         executor.spin()
     except KeyboardInterrupt:
         print('KeyboardInterrupt received, exit')
-        pass
 
     component_manager.destroy_node()
     rclpy.shutdown()
