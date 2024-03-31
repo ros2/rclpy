@@ -10,8 +10,6 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/ament_index/resource_index/packages',
-         ['resource/' + 'test_composition'])
     ],
     install_requires=['setuptools'],
     zip_safe=True,
