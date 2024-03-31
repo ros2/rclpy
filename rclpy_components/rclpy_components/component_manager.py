@@ -12,64 +12,83 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.node import Node
-from rclpy.executors import Executor
-from rclpy.exceptions import InvalidNodeNameException, InvalidNamespaceException
+from importlib.metadata import entry_points
+
 from composition_interfaces.srv import ListNodes, LoadNode, UnloadNode
-try:
-    from importlib.metadata import entry_points
-except ImportError:
-    from importlib_metadata import entry_points
+from rclpy.executors import Executor
+from rclpy.node import Node
 
 
 class ComponentManager(Node):
 
-    def __init__(self, executor: Executor, name="py_component_manager", **kwargs):
+    def __init__(self, executor: Executor, name='py_component_manager', **kwargs):
         super().__init__(name, **kwargs)
         self.executor = executor
         # Implement the 3 services described in
         # http://design.ros2.org/articles/roslaunch.html#command-line-arguments
         self._list_node_srv = self.create_service(
-            ListNodes, "~/_container/list_nodes", self.on_list_node)
+            ListNodes, '~/_container/list_nodes', self.on_list_node)
         self._load_node_srv = self.create_service(
-            LoadNode, "~/_container/load_node", self.on_load_node)
+            LoadNode, '~/_container/load_node', self.on_load_node)
         self._unload_node_srv = self.create_service(
-            UnloadNode, "~/_container/unload_node", self.on_unload_node)
+            UnloadNode, '~/_container/unload_node', self.on_unload_node)
 
-        self.components = {}  # key: unique_id, value: full node name and component instance
-        self.unique_id_index = 0
+        self._components = {}  # key: unique_id, value: full node name and component instance
+        self._unique_id_index = 0
 
-    def gen_unique_id(self):
-        self.unique_id_index += 1
-        return self.unique_id_index
+    def _next_id(self):
+        self._unique_id_index += 1
+        return self._unique_id_index
+
+    def _does_name_exist(self, fully_qualified_name: str) -> bool:
+        """Return true iff there is already a node with the given fully qualified name."""
+        if fully_qualified_name == self.get_fully_qualified_name():
+            return True
+        for name, instance in self._components.values():
+            if fully_qualified_name == name:
+                return True
+        return False
 
     def on_list_node(self, req: ListNodes.Request, res: ListNodes.Response):
-        res.unique_ids = [int(key) for key in self.components.keys()]
-        res.full_node_names = [v[0] for v in self.components.values()]
+        for key, name_instance in self._components.items():
+            res.unique_ids.append(key)
+            res.full_node_names.append(name_instance[0])
 
         return res
 
     def on_load_node(self, req: LoadNode.Request, res: LoadNode.Response):
-        component_entry_points = entry_points().get('rclpy_components', None)
+        component_entry_points = entry_points().select(group='rclpy_components')
         if not component_entry_points:
             res.success = False
             res.error_message = 'No rclpy components registered'
             return res
 
+        request_ep_name = f'{req.package_name}::{req.plugin_name}'
         component_entry_point = None
         for ep in component_entry_points:
-            if ep.name == req.plugin_name:
+            if ep.name == request_ep_name:
                 component_entry_point = ep
                 break
 
         if not component_entry_point:
             res.success = False
-            res.error_message = f'No rclpy component found by {req.plugin_name}'
+            res.error_message = f'Rclpy component not found: {request_ep_name}'
             return res
 
-        component_class = component_entry_point.load()
-        node_name = req.node_name if req.node_name else \
-            str.lower(str.split(component_entry_point.value, ':')[1])
+        try:
+            component_class = component_entry_point.load()
+        except Exception as e:
+            error_message = str(e)
+            self.get_logger().error(f'Failed to load entry point: {error_message}')
+            res.success = False
+            res.error_message = error_message
+            return res
+
+        if req.node_name:
+            node_name = req.node_name
+        else:
+            # TODO(sloretz) use remap rule like rclcpp_components
+            node_name = str.lower(str.split(component_entry_point.value, ':')[1])
 
         params_dict = {'use_global_arguments': False, 'context': self.context}
         if req.parameters:
@@ -83,31 +102,40 @@ class ComponentManager(Node):
             for rule in req.remap_rules:
                 params_dict['cli_args'].extend(['-r', rule])
 
-        try:
-            self.get_logger().info(
+        self.get_logger().info(
                 f'Instantiating {component_entry_point.value} with {node_name}, {params_dict}')
+        try:
             component = component_class(node_name, **params_dict)
-            res.unique_id = self.gen_unique_id()
-            res.full_node_name = component.get_fully_qualified_name()
-            res.success = True
-            self.components[res.unique_id] = (res.full_node_name, component)
-            self.executor.add_node(component)
-            return res
-        except (InvalidNodeNameException, InvalidNamespaceException, TypeError) as e:
+        except Exception as e:
             error_message = str(e)
-            self.get_logger().error(f'Failed to load node: {error_message}')
+            self.get_logger().error(f'Failed to instantiate node: {error_message}')
             res.success = False
             res.error_message = error_message
             return res
 
-    def on_unload_node(self, req: UnloadNode.Request, res: UnloadNode.Response):
-        uid = req.unique_id
-        if uid not in self.components:
+        res.full_node_name = component.get_fully_qualified_name()
+        if self._does_name_exist(res.full_node_name):
+            error_message = f'Node with name {res.full_node_name} already exists in this process.'
+            self.get_logger().error(f'Failed to load node: {error_message}')
             res.success = False
-            res.error_message = f'No node found with unique_id: {uid}'
+            res.error_message = error_message
+            component.destroy_node()
             return res
 
-        _, component_instance = self.components.pop(uid)
+        res.unique_id = self._next_id()
+        res.success = True
+        self._components[res.unique_id] = (res.full_node_name, component)
+        self.executor.add_node(component)
+        return res
+
+    def on_unload_node(self, req: UnloadNode.Request, res: UnloadNode.Response):
+        uid = req.unique_id
+        if uid not in self._components:
+            res.success = False
+            res.error_message = f'No node found with id: {uid}'
+            return res
+
+        _, component_instance = self._components.pop(uid)
         self.executor.remove_node(component_instance)
         res.success = True
         return res
