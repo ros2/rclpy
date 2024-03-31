@@ -26,7 +26,7 @@ setup(
             'component_container_mt = rclpy_components.component_container_mt:main',
         ],
         'rclpy_components': [
-            'test_composition::TestFoo = rclpy_components_test:TestFoo',
+            'rclpy_components::TestFoo = rclpy_components.test.test_foo:TestFoo',
         ]
     },
 )
