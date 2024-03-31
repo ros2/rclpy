@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 package_name = 'rclpy_components'
 
@@ -24,7 +24,7 @@ setup(
             'component_container_mt = rclpy_components.component_container_mt:main',
         ],
         'rclpy_components': [
-            'rclpy_components::TestFoo = rclpy_components.test.test_foo:TestFoo',
+            'rclpy_components::FooNode = rclpy_components.test.test_foo:FooNode',
         ]
     },
 )
