@@ -225,3 +225,26 @@ def test_load_list_unload_via_services(component_manager, node_and_context):
     unload_req.unique_id = load_res.unique_id
     unload_res = unload_cli.call(unload_req)
     assert unload_res.success is True
+
+
+def test_load_new_name_and_namespace(component_manager):
+    # Load
+    load_res = LoadNode.Response()
+    load_req = LoadNode.Request()
+    load_req.package_name = 'rclpy_components'
+    load_req.plugin_name = 'FooNode'
+    load_req.node_name = 'kitty'
+    load_req.node_namespace = '/hello'
+
+    component_manager.on_load_node(load_req, load_res)
+
+    assert load_res.success is True
+
+    # List
+    list_res = ListNodes.Response()
+    list_req = ListNodes.Request()
+
+    component_manager.on_list_node(list_req, list_res)
+
+    assert len(list_res.full_node_names) == 1
+    assert '/hello/kitty' in list_res.full_node_names

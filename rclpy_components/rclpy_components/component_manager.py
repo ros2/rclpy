@@ -90,22 +90,31 @@ class ComponentManager(Node):
             # TODO(sloretz) use remap rule like rclcpp_components
             node_name = str.lower(str.split(component_entry_point.value, ':')[1])
 
-        params_dict = {'use_global_arguments': False, 'context': self.context}
+        params_dict = {
+            'use_global_arguments': False,
+            'context': self.context,
+            'cli_args': ['--ros-args'],
+        }
+
         if req.parameters:
             params_dict['parameter_overrides'] = req.parameters
 
         if req.node_namespace:
-            params_dict['namespace'] = req.node_namespace
+            params_dict['cli_args'].append('-r')
+            params_dict['cli_args'].append(f'__ns:={req.node_namespace}')
+
+        if req.node_name:
+            params_dict['cli_args'].append('-r')
+            params_dict['cli_args'].append(f'__node:={req.node_name}')
 
         if req.remap_rules:
-            params_dict['cli_args'] = ['--ros-args']
             for rule in req.remap_rules:
                 params_dict['cli_args'].extend(['-r', rule])
 
         self.get_logger().info(
                 f'Instantiating {component_entry_point.value} with {node_name}, {params_dict}')
         try:
-            component = component_class(node_name, **params_dict)
+            component = component_class(**params_dict)
         except Exception as e:
             error_message = str(e)
             self.get_logger().error(f'Failed to instantiate node: {error_message}')

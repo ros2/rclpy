@@ -17,5 +17,5 @@ from rclpy.node import Node
 
 class FooNode(Node):
 
-    def __init__(self, node_name='test_foo', **kwargs):
-        super().__init__(node_name, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__('test_foo', **kwargs)
