@@ -4,7 +4,9 @@
   <name>rclpy_components</name>
   <version>1.1.0</version>
   <description>The dynamic node management package</description>
-  <maintainer email="juzhen@huawei.com">Zhen Ju</maintainer>
+  <author email="juzhen@huawei.com">Zhen Ju</author>
+  <maintainer email="aditya.pande@openrobotics.org">Aditya Pande</maintainer>
+  <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
   <license>Apache License 2.0</license>
 
   <depend>rclpy</depend>
