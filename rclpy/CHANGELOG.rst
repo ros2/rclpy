@@ -2,6 +2,30 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.1.0 (2024-03-28)
+------------------
+* Allow specifying qos (`#1225 <https://github.com/ros2/rclpy/issues/1225>`_)
+* update RCL_RET_TIMEOUT error handling with action service response. (`#1258 <https://github.com/ros2/rclpy/issues/1258>`_)
+* Add types to time_source.py (`#1259 <https://github.com/ros2/rclpy/issues/1259>`_)
+* Small fixes for modern flake8. (`#1264 <https://github.com/ros2/rclpy/issues/1264>`_)
+* Add types to qos_overriding_options.py (`#1248 <https://github.com/ros2/rclpy/issues/1248>`_)
+* Add types to context.py (`#1240 <https://github.com/ros2/rclpy/issues/1240>`_)
+* Add back Type hash __slots_\_ and add test cases. (`#1245 <https://github.com/ros2/rclpy/issues/1245>`_)
+* Revert "Add types to TypeHash and moved away from __slots_\_ usage (`#1232 <https://github.com/ros2/rclpy/issues/1232>`_)" (`#1243 <https://github.com/ros2/rclpy/issues/1243>`_)
+* Time.py Types (`#1237 <https://github.com/ros2/rclpy/issues/1237>`_)
+* Add types to TypeHash and moved away from __slots_\_ usage (`#1232 <https://github.com/ros2/rclpy/issues/1232>`_)
+* Add Static Typing to Validate files (`#1230 <https://github.com/ros2/rclpy/issues/1230>`_)
+* Add types to duration.py (`#1233 <https://github.com/ros2/rclpy/issues/1233>`_)
+* added python3-yaml (`#1242 <https://github.com/ros2/rclpy/issues/1242>`_)
+* Add types to exceptions.py (`#1241 <https://github.com/ros2/rclpy/issues/1241>`_)
+* Add types (`#1231 <https://github.com/ros2/rclpy/issues/1231>`_)
+* Creates Enum wrapper for ClockType and ClockChange (`#1235 <https://github.com/ros2/rclpy/issues/1235>`_)
+* Add types to expand_topic_name (`#1238 <https://github.com/ros2/rclpy/issues/1238>`_)
+* Add types to logging_service.py (`#1227 <https://github.com/ros2/rclpy/issues/1227>`_)
+* Add types to logging.py (`#1226 <https://github.com/ros2/rclpy/issues/1226>`_)
+* forbid parameter to be declared statically without initialization. (`#1216 <https://github.com/ros2/rclpy/issues/1216>`_)
+* Contributors: Chris Lalancette, Michael Carlstrom, SnIcK, Tim Clephas, Tomoya Fujita
+
 7.0.1 (2024-02-07)
 ------------------
 * Remove parentheses from assert statements. (`#1213 <https://github.com/ros2/rclpy/issues/1213>`_)
