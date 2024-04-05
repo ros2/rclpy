@@ -28,6 +28,7 @@ from rclpy.utilities import get_default_context
 
 
 class TimerHandle(DestroyableType, Protocol):
+    """Type alias of _rclpy.Timer."""
 
     def reset_timer(self) -> None:
         ...
