@@ -147,23 +147,31 @@ class JumpHandle:
 
 
 class ClockHandle(DestroyableType, Protocol):
+    """Generic alias of _rclpy.Clock."""
+
     def get_now(self) -> TimeHandle:
+        """Value of the clock."""
         ...
 
     def get_ros_time_override_is_enabled(self) -> bool:
+        """Return if a clock using ROS time has the ROS time override enabled."""
         ...
 
     def set_ros_time_override_is_enabled(self, enabled: bool) -> None:
+        """Set if a clock using ROS time has the ROS time override enabled."""
         ...
 
     def set_ros_time_override(self, time_point: TimeHandle) -> None:
+        """Set the ROS time override for a clock using ROS time."""
         ...
 
     def add_clock_callback(self, pyjump_handle: JumpHandle,
                            on_clock_change: bool, min_forward: int, min_backward: int) -> None:
+        """Add a time jump callback to a clock."""
         ...
 
     def remove_clock_callback(self, pyjump_handle: JumpHandle) -> None:
+        """Remove a time jump callback from a clock."""
         ...
 
 
@@ -233,11 +241,13 @@ class Clock:
                 duration = Duration(nanoseconds=jump_dict['delta'])
                 original_callback(TimeJump(clock_change, duration))
 
-            new_post_callback = callback_shim
+            post_callback_time_jump_dictionary = callback_shim
+        else:
+            post_callback_time_jump_dictionary = None
 
         return JumpHandle(
             clock=self, threshold=threshold, pre_callback=pre_callback,
-            post_callback=new_post_callback)
+            post_callback=post_callback_time_jump_dictionary)
 
     def sleep_until(self, until: Time, context: Optional[Context] = None) -> bool:
         """
