@@ -52,7 +52,7 @@ class Msg(Protocol, metaclass=MsgMetaClass):
     pass
 
 
-# Could likely be improved if generic accros Request, Response, Event
+# Could likely be improved if generic across Request, Response, Event
 class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
 
