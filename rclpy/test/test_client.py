@@ -234,11 +234,11 @@ class TestClient(unittest.TestCase):
             executor_thread = threading.Thread(
                 target=TestClient._spin_rclpy_node, args=(self.node, executor))
             executor_thread.start()
-            result = cli.call(GetParameters.Request(), 0.5)
-            self.assertTrue(result is None)
+            with self.assertRaises(TimeoutError):
+                cli.call(GetParameters.Request(), 0.5)
+        finally:
             executor.shutdown()
             executor_thread.join()
-        finally:
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
