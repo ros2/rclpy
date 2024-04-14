@@ -253,7 +253,7 @@ class ActionServer(Waitable):
             self.register_execute_callback(execute_callback)
         elif handle_accepted_callback is default_handle_accepted_callback:
             self._logger.warning(
-                "Not handling nor executing the goal, this server will do nothing")
+                'Not handling nor executing the goal, this server will do nothing')
 
         # Import the typesupport for the action module if not already done
         check_for_type_support(action_type)
