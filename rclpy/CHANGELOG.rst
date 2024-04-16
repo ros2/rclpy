@@ -2,6 +2,29 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.1.1 (2024-04-16)
+------------------
+* Clock.py types. (`#1244 <https://github.com/ros2/rclpy/issues/1244>`_)
+  * Start typing time.py
+  * Testing out Enum wrapper for ClockType
+  * convert to rcl_clock_type_t
+  * Update create_time_point
+  * add types to logging_service
+  * Add types to duration.py
+  * Add newlines for class definintions
+  * update type alias name
+  * Update to use Protocols
+  * Add types to time.py
+  * Add types
+  * Fix import order
+  * Started typing clock.py
+  * Move typealias import
+* pybind11 definition doc typo fixes. (`#1270 <https://github.com/ros2/rclpy/issues/1270>`_)
+* Fix small flake8 error in rclpy. (`#1267 <https://github.com/ros2/rclpy/issues/1267>`_)
+  Newer versions of flake8 complain that using 'str' as a
+  variable shadows a builtin.  Just make it 's'.
+* Contributors: Chris Lalancette, Michael Carlstrom, Tomoya Fujita
+
 7.1.0 (2024-03-28)
 ------------------
 * Allow specifying qos (`#1225 <https://github.com/ros2/rclpy/issues/1225>`_)
