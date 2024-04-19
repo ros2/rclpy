@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix an inherent race in execution vs. destruction. (`#1256 <https://github.com/ros2/rclpy/issues/1256>`_)
+* Don't crash the action server if the client goes away. (`#1217 <https://github.com/ros2/rclpy/issues/1217>`_)
+* Contributors: Chris Lalancette, Tim Clephas
+
 4.1.4 (2023-11-17)
 ------------------
 * Use timeout object to avoid callback losing in wait_for_ready_callbacks (`#1184 <https://github.com/ros2/rclpy/issues/1184>`_)
