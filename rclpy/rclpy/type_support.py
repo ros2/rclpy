@@ -52,6 +52,13 @@ class Msg(Protocol, metaclass=MsgMetaClass):
     pass
 
 
+# Could likely be improved if generic across Request, Response, Event
+class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
+    """Generic Service Type Alias."""
+
+    pass
+
+
 MsgT = TypeVar('MsgT', bound=Msg)
 
 
