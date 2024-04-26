@@ -20,6 +20,7 @@
 #include <rcl/types.h>
 #include <rosidl_runtime_c/message_type_support_struct.h>
 #include <rmw/types.h>
+#include <rmw/subscription_options.h>
 
 #include <memory>
 #include <stdexcept>
@@ -37,7 +38,7 @@ namespace rclpy
 {
 Subscription::Subscription(
   Node & node, py::object pymsg_type, std::string topic,
-  py::object pyqos_profile)
+  py::object pyqos_profile, py::object pysubscription_options)
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
@@ -50,6 +51,11 @@ Subscription::Subscription(
 
   if (!pyqos_profile.is_none()) {
     subscription_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
+  }
+
+  if (!pysubscription_options.is_none()) {
+    subscription_ops.rmw_subscription_options =
+      pysubscription_options.cast<rmw_subscription_options_t>();
   }
 
   rcl_subscription_ = std::shared_ptr<rcl_subscription_t>(
@@ -185,7 +191,7 @@ void
 define_subscription(py::object module)
 {
   py::class_<Subscription, Destroyable, std::shared_ptr<Subscription>>(module, "Subscription")
-  .def(py::init<Node &, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, std::string, py::object, py::object>())
   .def_property_readonly(
     "pointer", [](const Subscription & subscription) {
       return reinterpret_cast<size_t>(subscription.rcl_ptr());

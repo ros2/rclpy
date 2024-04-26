@@ -100,6 +100,7 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/service_introspection.cpp
   src/rclpy/signal_handler.cpp
   src/rclpy/subscription.cpp
+  src/rclpy/subscription_options.cpp
   src/rclpy/time_point.cpp
   src/rclpy/timer.cpp
   src/rclpy/type_description_service.cpp

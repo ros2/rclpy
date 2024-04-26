@@ -76,6 +76,7 @@ from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import Subscription
+from rclpy.subscription_options import SubscriptionOptions
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
@@ -1581,7 +1582,8 @@ class Node:
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
-        raw: bool = False
+        raw: bool = False,
+        subscription_options: Optional[SubscriptionOptions] = None,
     ) -> Subscription:
         """
         Create a new subscription.
@@ -1626,7 +1628,12 @@ class Node:
         try:
             with self.handle:
                 subscription_object = _rclpy.Subscription(
-                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+                    self.handle,
+                    msg_type,
+                    topic,
+                    qos_profile.get_c_qos_profile(),
+                    subscription_options,
+                )
         except ValueError:
             failed = True
         if failed:
