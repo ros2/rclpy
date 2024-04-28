@@ -15,16 +15,13 @@
 from typing import Callable
 from typing import TypeVar
 from typing import Generic
-from typing import Type
-
-# from typing_extensions import Self
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
-from .type_support import Srv, SrvT, SrvRequestT, SrvResponseT, SrvEventT
+from type_support import Srv, SrvRequestT, SrvResponseT, SrvEventT
 
 # Used for documentation purposes only
 SrvType = TypeVar('SrvType')
@@ -32,11 +29,11 @@ SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
-class Service(Generic[SrvT, SrvRequestT, SrvResponseT]):
+class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
     def __init__(
         self,
         service_impl: _rclpy.Service,
-        srv_type: SrvT,
+        srv_type: Srv[SrvRequestT, SrvResponseT, SrvEventT],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         callback_group: CallbackGroup,
@@ -120,73 +117,3 @@ class Service(Generic[SrvT, SrvRequestT, SrvResponseT]):
            should call :meth:`.Node.destroy_service`.
         """
         self.__service.destroy_when_not_in_use()
-
-from .type_support import Srv
-from .cancel_goal import CancelGoal, CancelGoal_Request, CancelGoal_Response, CancelGoal_Event, Metaclass_CancelGoal
-
-
-reveal_type(CancelGoal_Request)
-
-a = CancelGoal
-
-reveal_type(a)
-# reveal_type(a.Self)
-reveal_type(a.Request)
-
-
-a_srv: Srv = CancelGoal
-reveal_type(a_srv)
-# reveal_type(a_srv.Self)
-reveal_type(a_srv.Request)
-
-# a_srv_typed: Srv[CancelGoal_Request,
-#                  CancelGoal_Response,
-#                  CancelGoal_Event] = CancelGoal
-# reveal_type(a_srv_typed)
-# # reveal_type(a_srv_typed.Self)
-# reveal_type(a_srv_typed.Request)
-
-
-def test_callback(req: CancelGoal_Request,
-                  res: CancelGoal_Response) -> CancelGoal_Response:
-    return res
-
-
-def bad_callback(foo, bar) -> None:
-    pass
-
-
-s_cancel_goal = Service("hi", CancelGoal, "test", test_callback, CallbackGroup(), QoSProfile())
-
-reveal_type(s_cancel_goal)
-reveal_type(s_cancel_goal.srv_type)
-reveal_type(s_cancel_goal.callback)
-# s
-
-# s_cancel_goal.__d
-
-s = Service("hi", a, "test", test_callback, CallbackGroup(), QoSProfile())
-
-reveal_type(s)
-reveal_type(s.srv_type)
-reveal_type(s.callback)
-reveal_type(s.send_response)
-
-
-s_bad = Service("hi", CancelGoal_Request, "test", test_callback, CallbackGroup(), QoSProfile())
-
-reveal_type(s_bad)
-
-# s_srv = Service("hi", a_srv, "test", test_callback, CallbackGroup(), QoSProfile())
-# # s_srv: Service[CancelGoal] = Service("hi", a_srv, "test", test_callback, CallbackGroup(), QoSProfile())
-
-
-# reveal_type(s_srv)
-# reveal_type(s_srv.srv_type)
-# reveal_type(s_srv.callback)
-
-# s_typed: Service[CancelGoal] = Service("hi", a_srv_typed, "test", test_callback, CallbackGroup(), QoSProfile())
-
-# reveal_type(s_typed)
-# reveal_type(s_typed.srv_type)
-# reveal_type(s_typed.callback)

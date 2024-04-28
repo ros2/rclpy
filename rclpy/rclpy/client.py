@@ -18,7 +18,6 @@ from typing import Dict
 from typing import Optional
 from typing import TypeVar
 from typing import Generic
-from typing import Type
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
@@ -27,7 +26,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
-from .type_support import SrvT, SrvRequestT, SrvResponseT
+from rclpy.type_support import Srv, SrvRequestT, SrvResponseT, SrvEventT
 
 # Left To Support Legacy TypeVars
 SrvType = TypeVar('SrvType')
@@ -35,12 +34,12 @@ SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
-class Client(Generic[SrvT, SrvRequestT, SrvResponseT]):
+class Client(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
     def __init__(
         self,
         context: Context,
         client_impl: _rclpy.Client,
-        srv_type: Type[SrvT],
+        srv_type: Srv[SrvRequestT, SrvResponseT, SrvEventT],
         srv_name: str,
         qos_profile: QoSProfile,
         callback_group: CallbackGroup

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Protocol, Type, TypeVar, Union, Final
+from typing import Optional, Protocol, Type, TypeVar, Union, NoReturn
 
 from rclpy.exceptions import NoTypeSupportImportedException
 
@@ -47,14 +47,7 @@ class MsgMetaClass(CommonMsgSrvMetaClass):
 
 
 class Msg(Protocol, metaclass=MsgMetaClass):
-    """Generic Message Type Alias."""
-
-    pass
-
-
-# Could likely be improved if generic across Request, Response, Event
-class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
-    """Generic Service Type Alias."""
+    """Generic Message Alias."""
 
     pass
 
@@ -67,16 +60,18 @@ SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
 SrvEventT = TypeVar('SrvEventT', bound=Msg)
 
 
-from typing import NoReturn
-
-
-class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
+class Srv(Protocol[SrvRequestT, SrvResponseT, SrvEventT], metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
+
+    Request: Type[SrvRequestT]
+    Response: Type[SrvResponseT]
+    Event: Type[SrvEventT]
 
     def __init__(self) -> NoReturn:
         ...
 
 
+# Can be used if https://github.com/python/typing/issues/548 ever gets approved.
 SrvT = TypeVar('SrvT', bound=Type[Srv])
 
 
