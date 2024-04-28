@@ -21,7 +21,7 @@ from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
-from type_support import Srv, SrvRequestT, SrvResponseT, SrvEventT
+from rclpy.type_support import Srv, SrvRequestT, SrvResponseT, SrvEventT
 
 # Used for documentation purposes only
 SrvType = TypeVar('SrvType')
