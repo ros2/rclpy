@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Protocol, Type, TypeVar, Union, NoReturn
+from typing import NoReturn, Optional, Protocol, Type, TypeVar, Union
 
 from rclpy.exceptions import NoTypeSupportImportedException
 

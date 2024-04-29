@@ -13,15 +13,15 @@
 # limitations under the License.
 
 from typing import Callable
-from typing import TypeVar
 from typing import Generic
+from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
-from rclpy.type_support import Srv, SrvRequestT, SrvResponseT, SrvEventT
+from rclpy.type_support import Srv, SrvEventT, SrvRequestT, SrvResponseT
 
 # Used for documentation purposes only
 SrvType = TypeVar('SrvType')
