@@ -1705,7 +1705,7 @@ class Node:
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
-    ) -> Service[[SrvRequestT, SrvResponseT, SrvEventT]]:
+    ) -> Service[SrvRequestT, SrvResponseT, SrvEventT]:
         """
         Create a new service server.
 
