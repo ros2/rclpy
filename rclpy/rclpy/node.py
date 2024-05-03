@@ -992,7 +992,7 @@ class Node:
         result = ListParametersResult()
 
         separator_less_than_depth: Callable[[str], bool] = \
-            lambda str: str.count(PARAMETER_SEPARATOR_STRING) < depth
+            lambda s: s.count(PARAMETER_SEPARATOR_STRING) < depth
 
         recursive: bool = \
             (len(prefixes) == 0) and (depth == ListParameters.Request.DEPTH_RECURSIVE)

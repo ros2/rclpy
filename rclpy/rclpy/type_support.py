@@ -54,7 +54,6 @@ class Msg(Protocol, metaclass=MsgMetaClass):
 
 MsgT = TypeVar('MsgT', bound=Msg)
 
-
 SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
 SrvEventT = TypeVar('SrvEventT', bound=Msg)
