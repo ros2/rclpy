@@ -68,7 +68,7 @@ private:
   }
 };
 
-/// Define a pybind11 wrapper for an rclpy::Service
+/// Define a pybind11 wrapper for an rclpy::GuardCondition
 void define_guard_condition(py::object module);
 }  // namespace rclpy
 

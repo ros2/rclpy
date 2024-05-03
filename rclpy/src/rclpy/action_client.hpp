@@ -230,7 +230,7 @@ private:
   Node node_;
   std::shared_ptr<rcl_action_client_t> rcl_action_client_;
 };
-/// Define a pybind11 wrapper for an rcl_time_point_t
+/// Define a pybind11 wrapper for an rclpy::ActionClient
 /**
  * \param[in] module a pybind11 module to add the definition to
  */

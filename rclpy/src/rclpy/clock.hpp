@@ -116,7 +116,7 @@ private:
   std::shared_ptr<rcl_clock_t> rcl_clock_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::Service
+/// Define a pybind11 wrapper for an rclpy::Clock
 void define_clock(py::object module);
 }  // namespace rclpy
 
