@@ -15,13 +15,44 @@
 
 from enum import Enum
 import inspect
-from typing import Callable, Generic, List, Type, TypeVar
+from typing import Callable, Generic, Protocol, Type, TypeVar, TypedDict, Union, Tuple, Optional
 
+from rclpy.destroyable import DestroyableType
 from rclpy.callback_groups import CallbackGroup
-from rclpy.event_handler import EventHandler, SubscriptionEventCallbacks
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
+
+
+class MessageInfo(TypedDict):
+    source_timestamp: Optional[int]
+    received_timestamp: Optional[int]
+    publication_sequence_number: Optional[int]
+    reception_sequence_number: Optional[int]
+
+
+class SubscriptionHandle(DestroyableType, Protocol[MsgT]):
+
+    @property
+    def pointer(self) -> int:
+        "Get the address of the entity as an integer"
+        ...
+
+    def take_message(self, pymsg_type: Type[MsgT], raw: bool) -> Tuple[MsgT, MessageInfo]:
+        "Take a message and its metadata from a subscription."
+        ...
+
+    def get_logger_name(self) -> str:
+        "Get the name of the logger associated with the node of the subscription."
+        ...
+
+    def get_topic_name(self) -> str:
+        "Return the resolved topic name of a subscription."
+        ...
+
+    def get_publisher_count(self) -> int:
+        "Count the publishers from a subscription."
+        ...
 
 
 # Left to support Legacy TypeVars.
@@ -36,10 +67,10 @@ class Subscription(Generic[MsgT]):
 
     def __init__(
          self,
-         subscription_impl: _rclpy.Subscription,
+         subscription_impl: SubscriptionHandle[MsgT],
          msg_type: Type[MsgT],
          topic: str,
-         callback: Callable[[MsgT], None],
+         callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
          callback_group: CallbackGroup,
          qos_profile: QoSProfile,
          raw: bool,
@@ -73,7 +104,7 @@ class Subscription(Generic[MsgT]):
         self.qos_profile = qos_profile
         self.raw = raw
 
-        self.event_handlers: List[EventHandler] = event_callbacks.create_event_handlers(
+        self.event_handlers = event_callbacks.create_event_handlers(
             callback_group, subscription_impl, topic)
 
     def get_publisher_count(self) -> int:
@@ -82,10 +113,10 @@ class Subscription(Generic[MsgT]):
             return self.__subscription.get_publisher_count()
 
     @property
-    def handle(self):
+    def handle(self) -> SubscriptionHandle[MsgT]:
         return self.__subscription
 
-    def destroy(self):
+    def destroy(self) -> None:
         """
         Destroy a container for a ROS subscription.
 
@@ -97,16 +128,17 @@ class Subscription(Generic[MsgT]):
         self.handle.destroy_when_not_in_use()
 
     @property
-    def topic_name(self):
+    def topic_name(self) -> str:
         with self.handle:
             return self.__subscription.get_topic_name()
 
     @property
-    def callback(self) -> Callable[[MsgT], None]:
+    def callback(self) -> Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]]:
         return self._callback
 
     @callback.setter
-    def callback(self, value: Callable[[MsgT], None]) -> None:
+    def callback(self, value: Union[Callable[[MsgT], None],
+                                    Callable[[MsgT, MessageInfo], None]]) -> None:
         self._callback = value
         self._callback_type = Subscription.CallbackType.MessageOnly
         try:
