@@ -35,23 +35,23 @@ class SubscriptionHandle(DestroyableType, Protocol[MsgT]):
 
     @property
     def pointer(self) -> int:
-        "Get the address of the entity as an integer"
+        """Get the address of the entity as an integer."""
         ...
 
     def take_message(self, pymsg_type: Type[MsgT], raw: bool) -> Tuple[MsgT, MessageInfo]:
-        "Take a message and its metadata from a subscription."
+        """Take a message and its metadata from a subscription."""
         ...
 
     def get_logger_name(self) -> str:
-        "Get the name of the logger associated with the node of the subscription."
+        """Get the name of the logger associated with the node of the subscription."""
         ...
 
     def get_topic_name(self) -> str:
-        "Return the resolved topic name of a subscription."
+        """Return the resolved topic name of a subscription."""
         ...
 
     def get_publisher_count(self) -> int:
-        "Count the publishers from a subscription."
+        """Count the publishers from a subscription."""
         ...
 
 
