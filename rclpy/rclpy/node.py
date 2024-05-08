@@ -76,8 +76,8 @@ from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import Subscription
-from rclpy.subscription import SubscriptionHandle
 from rclpy.subscription import MessageInfo
+from rclpy.subscription import SubscriptionHandle
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer

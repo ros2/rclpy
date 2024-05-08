@@ -15,10 +15,10 @@
 
 from enum import Enum
 import inspect
-from typing import Callable, Generic, Protocol, Type, TypeVar, TypedDict, Union, Tuple, Optional
+from typing import Callable, Generic, Optional, Protocol, Tuple, Type, TypedDict, TypeVar, Union
 
-from rclpy.destroyable import DestroyableType
 from rclpy.callback_groups import CallbackGroup
+from rclpy.destroyable import DestroyableType
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
