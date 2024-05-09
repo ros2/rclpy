@@ -25,8 +25,8 @@ from rclpy.type_support import MsgT
 
 
 class MessageInfo(TypedDict):
-    source_timestamp: Optional[int]
-    received_timestamp: Optional[int]
+    source_timestamp: int
+    received_timestamp: int
     publication_sequence_number: Optional[int]
     reception_sequence_number: Optional[int]
 
