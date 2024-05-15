@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.13 (2024-05-15)
+-------------------
+* update RCL_RET_TIMEOUT error handling with action service response. (`#1258 <https://github.com/ros2/rclpy/issues/1258>`_) (`#1276 <https://github.com/ros2/rclpy/issues/1276>`_)
+* Contributors: mergify[bot]
+
 3.3.12 (2024-02-16)
 -------------------
 * Don't crash the action server if the client goes away. (`#1114 <https://github.com/ros2/rclpy/issues/1114>`_) (`#1218 <https://github.com/ros2/rclpy/issues/1218>`_)
