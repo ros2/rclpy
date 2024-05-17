@@ -187,9 +187,11 @@ class Context(ContextManager['Context']):
             return self.__context.get_domain_id()
 
     def __enter__(self) -> 'Context':
-        # We do not accept parameters here. If one wants to customize the init() call,
-        # they would have to call it manually and not use the ContextManager convenience
-        self.init()
+        if self.__context is None:
+            # This object hasn't been initialized yet, so we can't use a context manager
+            raise RuntimeError(
+                'init() must be called on this Context before using it with a context manager')
+
         return self
 
     def __exit__(
