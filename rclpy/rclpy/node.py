@@ -1780,7 +1780,10 @@ class Node:
         callback: Callable,
         callback_group: Optional[CallbackGroup] = None
     ) -> GuardCondition:
-        """Create a new guard condition."""
+        """Create a new guard condition.
+
+        .. warning:: Users should call :meth:`.Node.destroy_guard_condition` to destroy the GuardCondition object.
+        """
         if callback_group is None:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
