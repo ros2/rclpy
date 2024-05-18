@@ -1798,6 +1798,8 @@ class Node:
         """
         Create a Rate object.
 
+        .. warning:: Users should call :meth:`.Node.destroy_rate` to destroy the Rate object.
+
         :param frequency: The frequency the Rate runs at (Hz).
         :param clock: The clock the Rate gets time from.
         """

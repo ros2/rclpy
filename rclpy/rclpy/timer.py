@@ -126,6 +126,10 @@ class Rate:
     """A utility for sleeping at a fixed rate."""
 
     def __init__(self, timer: Timer, *, context):
+        """
+        .. warning:: Users should not create a rate with this constructor, instead they
+           should call :meth:`.Node.create_rate`.
+        """
         # Rate is a wrapper around a timer
         self._timer = timer
         self._is_shutdown = False
@@ -147,6 +151,10 @@ class Rate:
         self.destroy()
 
     def destroy(self):
+        """
+        .. warning:: Users should not destroy a rate with this method, instead they should
+           call :meth:`.Node.destroy_rate`.
+        """
         self._is_destroyed = True
         self._event.set()
 
