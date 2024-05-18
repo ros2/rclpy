@@ -45,6 +45,9 @@ class Timer:
         If autostart is ``False``, the timer will be created but not started; it can then be
         started by calling ``reset()`` on the timer object.
 
+        .. warning:: Users should not create a timer with this constructor, instead they
+           should call :meth:`.Node.create_timer`.
+
         :param callback: A user-defined callback function that is called when the timer expires.
         :param callback_group: The callback group for the timer. If ``None``, then the
             default callback group for the node is used.
@@ -70,6 +73,10 @@ class Timer:
         return self.__timer
 
     def destroy(self):
+        """
+        .. warning:: Users should not destroy a timer with this method, instead they should
+           call :meth:`.Node.destroy_timer`.
+        """
         self.__timer.destroy_when_not_in_use()
 
     @property
