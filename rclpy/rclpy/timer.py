@@ -74,6 +74,8 @@ class Timer:
 
     def destroy(self):
         """
+        Destroy a container for a ROS timer.
+
         .. warning:: Users should not destroy a timer with this method, instead they should
            call :meth:`.Node.destroy_timer`.
         """
@@ -127,6 +129,8 @@ class Rate:
 
     def __init__(self, timer: Timer, *, context):
         """
+        Create a Rate.
+
         .. warning:: Users should not create a rate with this constructor, instead they
            should call :meth:`.Node.create_rate`.
         """
@@ -152,6 +156,8 @@ class Rate:
 
     def destroy(self):
         """
+        Destroy a container for a ROS rate.
+
         .. warning:: Users should not destroy a rate with this method, instead they should
            call :meth:`.Node.destroy_rate`.
         """
