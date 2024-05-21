@@ -1784,7 +1784,7 @@ class Node:
         Create a new guard condition.
 
         .. warning:: Users should call :meth:`.Node.destroy_guard_condition` to destroy
-        the GuardCondition object.
+           the GuardCondition object.
         """
         if callback_group is None:
             callback_group = self.default_callback_group
