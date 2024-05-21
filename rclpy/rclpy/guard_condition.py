@@ -48,6 +48,6 @@ class GuardCondition:
         Destroy a container for a ROS guard condition.
 
         .. warning:: Users should not destroy a guard condition with this method, instead
-        they should call :meth:`.Node.destroy_guard_condition`.
+           they should call :meth:`.Node.destroy_guard_condition`.
         """
         self.handle.destroy_when_not_in_use()
