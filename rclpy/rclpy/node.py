@@ -179,7 +179,7 @@ class Node:
         self._post_set_parameters_callbacks: List[Callable[[List[Parameter]], None]] = []
         self._rate_group = ReentrantCallbackGroup()
         self._allow_undeclared_parameters = allow_undeclared_parameters
-        self._parameter_overrides = {}
+        self._parameter_overrides: Dict[str, Parameter] = {}
         self._descriptors = {}
 
         namespace = namespace or ''
@@ -458,8 +458,8 @@ class Node:
         :raises: InvalidParameterValueException if the registered callback rejects any parameter.
         :raises: TypeError if any tuple in **parameters** does not match the annotated type.
         """
-        parameter_list = []
-        descriptors = {}
+        parameter_list: List[Parameter] = []
+        descriptors: Dict[str, ParameterDescriptor] = {}
         for index, parameter_tuple in enumerate(parameters):
             if len(parameter_tuple) < 1 or len(parameter_tuple) > 3:
                 raise TypeError(
