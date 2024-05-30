@@ -18,6 +18,7 @@ from typing import Dict
 from typing import Generic
 from typing import List
 from typing import Optional
+from typing import overload
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
@@ -149,11 +150,14 @@ class Parameter(Generic[AllowableParameterValueT]):
             value = param_msg.value.string_array_value
         return cls(param_msg.name, type_, value)
 
-    # value: AllowableParameterValueT = None Needs a type: ignore due to TypeVars not inferring
-    # types of defaults yet https://github.com/python/mypy/issues/3737#
-    def __init__(self, name: str,
-                 type_: Optional['Parameter.Type'] = None,
-                 value: AllowableParameterValueT = None) -> None:  # type: ignore[assignment]
+    @overload
+    def __init__(self, name: str, type_: Optional['Parameter.Type'] = None) -> None: ...
+
+    @overload
+    def __init__(self, name: str, type_: Optional['Parameter.Type'],
+                 value: AllowableParameterValueT) -> None: ...
+
+    def __init__(self, name, type_=None, value=None):
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
@@ -166,7 +170,7 @@ class Parameter(Generic[AllowableParameterValueT]):
 
         self._type_ = type_
         self._name = name
-        self._value: AllowableParameterValueT = value
+        self._value = value
 
     @property
     def name(self) -> str:
