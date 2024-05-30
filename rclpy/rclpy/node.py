@@ -66,7 +66,7 @@ from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.logging_service import LoggingService
-from parameter import Parameter, PARAMETER_SEPARATOR_STRING, AllowableParameterValueT, AllowableParameterValue
+from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING, AllowableParameterValueT, AllowableParameterValue
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
