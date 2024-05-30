@@ -15,11 +15,11 @@
 import math
 import time
 
-from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import overload
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
@@ -66,7 +66,7 @@ from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.logging_service import LoggingService
-from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
+from parameter import Parameter, PARAMETER_SEPARATOR_STRING, AllowableParameterValueT, AllowableParameterValue
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
@@ -355,10 +355,21 @@ class Node:
         """Get the nodes logger."""
         return self._logger
 
+    @overload
+    def declare_parameter(self, name: str, value: None = None,
+                          descriptor: Optional[ParameterDescriptor] = None,
+                          ignore_override: bool = False) -> Parameter[None]: ...
+
+    @overload
+    def declare_parameter(self, name: str, value: AllowableParameterValueT,
+                          descriptor: Optional[ParameterDescriptor] = None,
+                          ignore_override: bool = False
+                          ) -> Parameter[AllowableParameterValueT]: ...
+
     def declare_parameter(
         self,
         name: str,
-        value: Any = None,
+        value: AllowableParameterValue = None,
         descriptor: Optional[ParameterDescriptor] = None,
         ignore_override: bool = False
     ) -> Parameter:
@@ -383,7 +394,8 @@ class Node:
         """
         if value is None and descriptor is None:
             # Temporal patch so we get deprecation warning if only a name is provided.
-            args = (name, )
+            args: Union[Tuple[str], Tuple[str, AllowableParameterValue,
+                                          ParameterDescriptor]] = (name, )
         else:
             descriptor = ParameterDescriptor() if descriptor is None else descriptor
             args = (name, value, descriptor)
@@ -395,7 +407,7 @@ class Node:
         parameters: List[Union[
             Tuple[str],
             Tuple[str, Parameter.Type],
-            Tuple[str, Any, ParameterDescriptor],
+            Tuple[str, AllowableParameterValue, ParameterDescriptor],
         ]],
         ignore_override: bool = False
     ) -> List[Parameter]:
