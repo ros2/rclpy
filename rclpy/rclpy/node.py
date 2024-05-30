@@ -19,8 +19,8 @@ from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
-from typing import overload
 from typing import Optional
+from typing import overload
 from typing import Sequence
 from typing import Tuple
 from typing import Type
@@ -66,7 +66,8 @@ from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.logging_service import LoggingService
-from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING, AllowableParameterValueT, AllowableParameterValue
+from rclpy.parameter import (AllowableParameterValue, AllowableParameterValueT, Parameter,
+                             PARAMETER_SEPARATOR_STRING)
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
