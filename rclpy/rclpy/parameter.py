@@ -65,6 +65,8 @@ if TYPE_CHECKING:
                                            'array.array[float]', List[str], Tuple[str, ...],
                                            'array.array[str]', default=AllowableParameterValue)
 else:
+    # Done to prevent runtime errors of undefined values.
+    # after python3.13 is minimum support this could be removed.
     AllowableParameterValue = Any
     AllowableParameterValueT = TypeVar('AllowableParameterValueT')
 
