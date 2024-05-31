@@ -174,7 +174,7 @@ class Parameter(Generic[AllowableParameterValueT]):
     def __init__(self, name: str, type_: Optional['Parameter.Type'],
                  value: AllowableParameterValueT) -> None: ...
 
-    def __init__(self, name, type_=None, value=None):
+    def __init__(self, name: str, type_: Optional['Parameter.Type'] = None, value=None) -> None:
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
