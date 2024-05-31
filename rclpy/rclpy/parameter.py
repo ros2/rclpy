@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import array
+import sys
 from enum import IntEnum
 from typing import Dict
 from typing import Generic
@@ -41,7 +41,8 @@ if sys.version_info > (3, 9):
                                     list[float], Tuple[float, ...], array.array[float],
                                     list[str], Tuple[str, ...], array.array[str]]
     AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float, str,
-                                       list[bytes], Tuple[bytes, ...], List[bool], Tuple[bool, ...],
+                                       list[bytes], Tuple[bytes, ...], list[bool],
+                                       Tuple[bool, ...],
                                        list[int], Tuple[int, ...], array.array[int],
                                        list[float], Tuple[float, ...], array.array[float],
                                        list[str], Tuple[str, ...], array.array[str])
@@ -54,10 +55,11 @@ else:
                                     List[str], Tuple[str, ...], 'array.array[str]']
 
     AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float, str,
-                                       List[bytes], Tuple[bytes, ...], List[bool], Tuple[bool, ...],
-                                       List[int], Tuple[int, ...], 'array.array[int]',
-                                       List[float], Tuple[float, ...], 'array.array[float]',
-                                       List[str], Tuple[str, ...], 'array.array[str]')
+                                       List[bytes], Tuple[bytes, ...], List[bool],
+                                       Tuple[bool, ...], List[int], Tuple[int, ...],
+                                       'array.array[int]', List[float], Tuple[float, ...],
+                                       'array.array[float]', List[str], Tuple[str, ...],
+                                       'array.array[str]')
 
 
 class Parameter(Generic[AllowableParameterValueT]):
