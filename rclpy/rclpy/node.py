@@ -178,7 +178,7 @@ class Node:
         self._post_set_parameters_callbacks: List[Callable[[List[Parameter]], None]] = []
         self._rate_group = ReentrantCallbackGroup()
         self._allow_undeclared_parameters = allow_undeclared_parameters
-        self._parameter_overrides: Dict[str, Parameter[AllowableParameterValue]] = {}
+        self._parameter_overrides: Dict[str, Parameter] = {}
         self._descriptors: Dict[str, ParameterDescriptor] = {}
 
         namespace = namespace or ''
@@ -356,17 +356,17 @@ class Node:
         return self._logger
 
     @overload
-    def declare_parameter(self, name: str,
-                          value: Union[None, Parameter.Type, ParameterValue] = None,
-                          descriptor: Optional[ParameterDescriptor] = None,
-                          ignore_override: bool = False) -> Parameter[None]: ...
-
-    @overload
     def declare_parameter(self, name: str, value: Union[AllowableParameterValueT,
                                                         Parameter.Type, ParameterValue],
                           descriptor: Optional[ParameterDescriptor] = None,
                           ignore_override: bool = False
                           ) -> Parameter[AllowableParameterValueT]: ...
+
+    @overload
+    def declare_parameter(self, name: str,
+                          value: Union[None, Parameter.Type, ParameterValue] = None,
+                          descriptor: Optional[ParameterDescriptor] = None,
+                          ignore_override: bool = False) -> Parameter[None]: ...
 
     def declare_parameter(
         self,

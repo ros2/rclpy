@@ -15,13 +15,14 @@
 import array
 from enum import IntEnum
 import sys
+from typing import Any
 from typing import Dict
 from typing import Generic
 from typing import List
 from typing import Optional
 from typing import overload
 from typing import Tuple
-from typing import TypeVar
+from typing import TYPE_CHECKING
 from typing import Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
@@ -31,35 +32,41 @@ import yaml
 
 PARAMETER_SEPARATOR_STRING = '.'
 
-# Mypy does not handle string literals of array.array[int/str/float] very well
-# So if user has newer version of python can use proper array types.
-if sys.version_info > (3, 9):
-    AllowableParameterValue = Union[None, bool, int, float, str,
-                                    list[bytes], Tuple[bytes, ...],
-                                    list[bool], Tuple[bool, ...],
-                                    list[int], Tuple[int, ...], array.array[int],
-                                    list[float], Tuple[float, ...], array.array[float],
-                                    list[str], Tuple[str, ...], array.array[str]]
-    AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float, str,
-                                       list[bytes], Tuple[bytes, ...], list[bool],
-                                       Tuple[bool, ...],
-                                       list[int], Tuple[int, ...], array.array[int],
-                                       list[float], Tuple[float, ...], array.array[float],
-                                       list[str], Tuple[str, ...], array.array[str])
-else:
-    AllowableParameterValue = Union[None, bool, int, float, str,
-                                    List[bytes], Tuple[bytes, ...],
-                                    List[bool], Tuple[bool, ...],
-                                    List[int], Tuple[int, ...], 'array.array[int]',
-                                    List[float], Tuple[float, ...], 'array.array[float]',
-                                    List[str], Tuple[str, ...], 'array.array[str]']
+if TYPE_CHECKING:
+    from typing_extensions import TypeVar
+    # Mypy does not handle string literals of array.array[int/str/float] very well
+    # So if user has newer version of python can use proper array types.
+    if sys.version_info > (3, 9):
+        AllowableParameterValue = Union[None, bool, int, float, str,
+                                        list[bytes], Tuple[bytes, ...],
+                                        list[bool], Tuple[bool, ...],
+                                        list[int], Tuple[int, ...], array.array[int],
+                                        list[float], Tuple[float, ...], array.array[float],
+                                        list[str], Tuple[str, ...], array.array[str]]
+        AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float,
+                                           str, list[bytes], Tuple[bytes, ...], list[bool],
+                                           Tuple[bool, ...],
+                                           list[int], Tuple[int, ...], array.array[int],
+                                           list[float], Tuple[float, ...], array.array[float],
+                                           list[str], Tuple[str, ...], array.array[str],
+                                           default=AllowableParameterValue)
+    else:
+        AllowableParameterValue = Union[None, bool, int, float, str,
+                                        List[bytes], Tuple[bytes, ...],
+                                        List[bool], Tuple[bool, ...],
+                                        List[int], Tuple[int, ...], 'array.array[int]',
+                                        List[float], Tuple[float, ...], 'array.array[float]',
+                                        List[str], Tuple[str, ...], 'array.array[str]']
 
-    AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float, str,
-                                       List[bytes], Tuple[bytes, ...], List[bool],
-                                       Tuple[bool, ...], List[int], Tuple[int, ...],
-                                       'array.array[int]', List[float], Tuple[float, ...],
-                                       'array.array[float]', List[str], Tuple[str, ...],
-                                       'array.array[str]')
+        AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float,
+                                           str, List[bytes], Tuple[bytes, ...], List[bool],
+                                           Tuple[bool, ...], List[int], Tuple[int, ...],
+                                           'array.array[int]', List[float], Tuple[float, ...],
+                                           'array.array[float]', List[str], Tuple[str, ...],
+                                           'array.array[str]', default=AllowableParameterValue)
+else:
+    AllowableParameterValue = Any
+    AllowableParameterValueT = TypeVar('AllowableParameterValueT')
 
 
 class Parameter(Generic[AllowableParameterValueT]):
