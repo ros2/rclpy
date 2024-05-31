@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import array
-import sys
 from enum import IntEnum
+import sys
 from typing import Dict
 from typing import Generic
 from typing import List
@@ -32,7 +32,7 @@ import yaml
 PARAMETER_SEPARATOR_STRING = '.'
 
 # Mypy does not handle string literals of array.array[int/str/float] very well
-# So if user has newer version of python can use proper arrays.
+# So if user has newer version of python can use proper array types.
 if sys.version_info > (3, 9):
     AllowableParameterValue = Union[None, bool, int, float, str,
                                     list[bytes], Tuple[bytes, ...],
