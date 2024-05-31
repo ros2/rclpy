@@ -532,8 +532,9 @@ class Node:
                 value = self._parameter_overrides[name].value
 
             if isinstance(value, ParameterValue):
-                raise ValueError('Cannot declare a Parameter from a ParameterValue without it'
-                                 'being included _parameter_overrides, and ignore_override=False')
+                raise ValueError('Cannot declare a Parameter from a ParameterValue without it '
+                                 'being included in self._parameter_overrides, and ',
+                                 'ignore_override=False')
 
             parameter_list.append(Parameter(name, value=value))
             descriptors.update({name: descriptor})
