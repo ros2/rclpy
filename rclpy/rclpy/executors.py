@@ -49,7 +49,7 @@ from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.timer import Timer
+from rclpy.timer import Timer, TimerInfo
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
@@ -369,7 +369,19 @@ class Executor(ContextManager['Executor']):
     def _take_timer(self, tmr):
         try:
             with tmr.handle:
-                tmr.handle.call_timer()
+                info = tmr.handle.call_timer_with_info()
+                timer_info = TimerInfo(
+                    expected_call_time=info['expected_call_time'],
+                    actual_call_time=info['actual_call_time'],
+                    clock_type=tmr.clock.clock_type)
+                try:
+                    inspect.signature(tmr.callback).bind(object())
+
+                    async def _execute():
+                        await await_or_execute(tmr.callback, timer_info)
+                    return _execute
+                except TypeError:
+                    pass
 
                 async def _execute():
                     await await_or_execute(tmr.callback)
