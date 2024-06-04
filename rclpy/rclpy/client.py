@@ -14,8 +14,10 @@
 
 import threading
 import time
+from types import TracebackType
 from typing import Dict
 from typing import Optional
+from typing import Type
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
@@ -224,3 +226,14 @@ class Client:
            should call :meth:`.Node.destroy_client`.
         """
         self.__client.destroy_when_not_in_use()
+
+    def __enter__(self) -> 'Client':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
