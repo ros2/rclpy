@@ -14,8 +14,10 @@
 
 import threading
 
+from types import TracebackType
 from typing import Callable
 from typing import Optional
+from typing import Type
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
@@ -113,6 +115,17 @@ class Timer:
     def time_until_next_call(self):
         with self.__timer:
             return self.__timer.time_until_next_call()
+
+    def __enter__(self) -> 'Timer':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
 
 
 class Rate:
