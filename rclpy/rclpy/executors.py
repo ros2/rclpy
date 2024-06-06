@@ -307,31 +307,41 @@ class Executor(ContextManager['Executor']):
         while self._context.ok() and not self._is_shutdown:
             self.spin_once()
 
-    def spin_until_future_complete(
-        self,
-        future: Future,
-        timeout_sec: Optional[float] = None
-    ) -> None:
-        """Execute callbacks until a given future is done or a timeout occurs."""
-        # Make sure the future wakes this executor when it is done
-        future.add_done_callback(lambda x: self.wake())
+    def spin_for(self, duration_sec: Optional[float] = None) -> None:
+        """Execute callbacks until shutdown or timeout."""
+        self.spin_until_complete(lambda: False, duration_sec)
 
+    def spin_until_complete(
+        self,
+        condition: Callable[[], bool],
+        timeout_sec: Optional[float] = None,
+    ) -> None:
+        """Execute callbacks until a given condition is complete or a timeout occurs."""
         if timeout_sec is None or timeout_sec < 0:
-            while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once_until_future_complete(future, timeout_sec)
+            while self._context.ok() and not condition() and not self._is_shutdown:
+                self.spin_once_until_complete(condition, timeout_sec)
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = TimeoutObject(timeout_sec)
 
-            while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once_until_future_complete(future, timeout_left)
+            while self._context.ok() and not condition() and not self._is_shutdown:
+                self.spin_once_until_complete(condition, timeout_left)
                 now = time.monotonic()
 
                 if now >= end:
                     return
 
                 timeout_left.timeout = end - now
+
+    def spin_until_future_complete(
+        self,
+        future: Future,
+        timeout_sec: Optional[float] = None,
+    ) -> None:
+        """Execute callbacks until a given future is done or a timeout occurs."""
+        future.add_done_callback(lambda x: self.wake())
+        self.spin_until_complete(future.done, timeout_sec)
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         """
@@ -342,6 +352,23 @@ class Executor(ContextManager['Executor']):
         This method should not be called from multiple threads.
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        """
+        raise NotImplementedError()
+
+    def spin_once_until_complete(
+        self,
+        condition: Callable[[], bool],
+        timeout_sec: Optional[Union[float, TimeoutObject]] = None,
+    ) -> None:
+        """
+        Wait for and execute a single callback.
+
+        This should behave in the same way as :meth:`spin_once`.
+        If needed by the implementation, it should awake other threads waiting.
+
+        :param condition: The callable condition to wait on.
+        :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
         raise NotImplementedError()
@@ -826,6 +853,13 @@ class SingleThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
 
+    def spin_once_until_complete(
+        self,
+        condition: Callable[[], bool],
+        timeout_sec: Optional[Union[float, TimeoutObject]] = None,
+    ) -> None:
+        self._spin_once_impl(timeout_sec, condition)
+
     def spin_once_until_future_complete(
         self,
         future: Future,
@@ -897,6 +931,13 @@ class MultiThreadedExecutor(Executor):
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
+
+    def spin_once_until_complete(
+        self,
+        condition: Callable[[], bool],
+        timeout_sec: float = None,
+    ) -> None:
+        self._spin_once_impl(timeout_sec, condition)
 
     def spin_once_until_future_complete(
         self,

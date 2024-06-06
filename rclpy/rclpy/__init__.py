@@ -40,6 +40,7 @@ all ROS nodes associated with the context), the :func:`shutdown` function should
 This will invalidate all entities derived from the context.
 """
 
+from typing import Callable
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -238,6 +239,52 @@ def spin(node: 'Node', executor: Optional['Executor'] = None) -> None:
         executor.add_node(node)
         while executor.context.ok():
             executor.spin_once()
+    finally:
+        executor.remove_node(node)
+
+
+def spin_for(node: 'Node', executor: 'Executor' = None, duration_sec: float = None) -> None:
+    """
+    Execute work for some time.
+
+    Callbacks will be executed by the provided executor until the context associated with the
+    executor is shut down or the given time duration passes.
+
+    :param node: A node to add to the executor to check for work.
+    :param executor: The executor to use, or the global executor if ``None``.
+    :param timeout_sec: Seconds to wait (blocking).
+    """
+    executor = get_global_executor() if executor is None else executor
+    try:
+        executor.add_node(node)
+        executor.spin_for(duration_sec)
+    finally:
+        executor.remove_node(node)
+
+
+def spin_until_complete(
+    node: 'Node',
+    condition: Callable[[], bool],
+    executor: Optional['Executor'] = None,
+    timeout_sec: Optional[float] = None,
+) -> None:
+    """
+    Execute work until the condition is complete.
+
+    Callbacks and other work will be executed by the provided executor until ``condition()``
+    returns ``True`` or the context associated with the executor is shutdown.
+
+    :param node: A node to add to the executor to check for work.
+    :param condition: The callable condition to wait on. If this condition is not related to what
+        the executor is waiting on and the timeout is infinite, this could block forever.
+    :param executor: The executor to use, or the global executor if ``None``.
+    :param timeout_sec: Seconds to wait. Block until the condition is complete
+        if ``None`` or negative. Don't wait if 0.
+    """
+    executor = get_global_executor() if executor is None else executor
+    try:
+        executor.add_node(node)
+        executor.spin_until_complete(condition, timeout_sec)
     finally:
         executor.remove_node(node)
 
