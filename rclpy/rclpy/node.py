@@ -15,6 +15,7 @@
 import math
 import time
 
+from types import TracebackType
 from typing import Callable
 from typing import Dict
 from typing import Iterator
@@ -2312,3 +2313,14 @@ class Node:
             flag = fully_qualified_node_name in fully_qualified_node_names
             time.sleep(0.1)
         return flag
+
+    def __enter__(self) -> 'Node':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy_node()
