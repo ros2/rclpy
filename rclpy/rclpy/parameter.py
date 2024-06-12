@@ -43,13 +43,6 @@ if TYPE_CHECKING:
                                         list[int], Tuple[int, ...], array.array[int],
                                         list[float], Tuple[float, ...], array.array[float],
                                         list[str], Tuple[str, ...], array.array[str]]
-        AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float,
-                                           str, list[bytes], Tuple[bytes, ...], list[bool],
-                                           Tuple[bool, ...],
-                                           list[int], Tuple[int, ...], array.array[int],
-                                           list[float], Tuple[float, ...], array.array[float],
-                                           list[str], Tuple[str, ...], array.array[str],
-                                           default=AllowableParameterValue)
     else:
         AllowableParameterValue = Union[None, bool, int, float, str,
                                         List[bytes], Tuple[bytes, ...],
@@ -58,12 +51,9 @@ if TYPE_CHECKING:
                                         List[float], Tuple[float, ...], 'array.array[float]',
                                         List[str], Tuple[str, ...], 'array.array[str]']
 
-        AllowableParameterValueT = TypeVar('AllowableParameterValueT', None, bool, int, float,
-                                           str, List[bytes], Tuple[bytes, ...], List[bool],
-                                           Tuple[bool, ...], List[int], Tuple[int, ...],
-                                           'array.array[int]', List[float], Tuple[float, ...],
-                                           'array.array[float]', List[str], Tuple[str, ...],
-                                           'array.array[str]', default=AllowableParameterValue)
+    AllowableParameterValueT = TypeVar('AllowableParameterValueT',
+                                       bound=AllowableParameterValue,
+                                       default=AllowableParameterValue)
 else:
     from typing import TypeVar
     # Done to prevent runtime errors of undefined values.
