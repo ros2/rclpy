@@ -112,6 +112,6 @@ def test_init_with_invalid_domain_id():
 
 
 def test_managed_init():
-    with rclpy.managed_init(domain_id=123) as context:
+    with rclpy.init(domain_id=123) as context:
         assert context.get_domain_id() == 123
         assert context.ok()

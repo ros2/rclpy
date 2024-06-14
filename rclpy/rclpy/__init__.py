@@ -40,8 +40,6 @@ all ROS nodes associated with the context), the :func:`shutdown` function should
 This will invalidate all entities derived from the context.
 """
 
-import contextlib
-
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -89,34 +87,7 @@ def init(
             signal_handler_options = SignalHandlerOptions.NO
     install_signal_handlers(signal_handler_options)
     context.init(args, domain_id=domain_id)
-
-
-@contextlib.contextmanager
-def managed_init(
-    *,
-    args: Optional[List[str]] = None,
-    context: Optional[Context] = None,
-    domain_id: Optional[int] = None,
-    signal_handler_options: Optional[SignalHandlerOptions] = None,
-) -> None:
-    """
-    Initialize ROS communications for a given context, in a Python context-manager aware way.
-
-    :param args: List of command line arguments.
-    :param context: The context to initialize. If ``None``, then the default context is used
-        (see :func:`.get_default_context`).
-    :param domain_id: ROS domain id.
-    :param signal_handler_options: Indicate which signal handlers to install.
-        If `None`, SIGINT and SIGTERM will be installed when initializing the default context.
-    """
-    init(args=args, context=context, domain_id=domain_id,
-         signal_handler_options=signal_handler_options)
-
-    context = get_default_context() if context is None else context
-    try:
-        yield context
-    finally:
-        context.try_shutdown()
+    return context
 
 
 # The global spin functions need an executor to do the work
