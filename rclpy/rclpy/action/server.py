@@ -311,7 +311,7 @@ class ActionServer(Waitable):
             # Catch the exception here and go on so we don't crash.
             self._handle.send_goal_response(request_header, response_msg)
         except RCLError:
-            self._logger.warn('Failed to send goal response (the client may have gone away)')
+            self._node.get_logger().warn('Failed to send goal response (the client may have gone away)')
             return
 
         if not accepted:
@@ -391,7 +391,7 @@ class ActionServer(Waitable):
             # Catch the exception here and go on so we don't crash.
             self._handle.send_cancel_response(request_header, cancel_response)
         except RCLError:
-            self._logger.warn('Failed to send cancel response (the client may have gone away)')
+            self._node.get_logger().warn('Failed to send cancel response (the client may have gone away)')
 
     async def _execute_get_result_request(self, request_header_and_message):
         request_header, result_request = request_header_and_message
@@ -428,7 +428,7 @@ class ActionServer(Waitable):
             # Catch the exception here and go on so we don't crash.
             self._handle.send_result_response(request_header, future.result())
         except RCLError:
-            self._logger.warn('Failed to send result response (the client may have gone away)')
+            self._node.get_logger().warn('Failed to send result response (the client may have gone away)')
 
     @property
     def action_type(self):
