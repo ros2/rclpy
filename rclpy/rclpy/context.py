@@ -22,10 +22,14 @@ from typing import List
 from typing import Optional
 from typing import Protocol
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import Union
-from weakref import WeakMethod
+import weakref
 
 from rclpy.destroyable import DestroyableType
+
+if TYPE_CHECKING:
+    from rclpy.node import Node
 
 
 class ContextHandle(DestroyableType, Protocol):
@@ -61,9 +65,10 @@ class Context(ContextManager['Context']):
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._callbacks: List[Union['WeakMethod[MethodType]', Callable[[], None]]] = []
+        self._callbacks: List[Union['weakref.WeakMethod[MethodType]', Callable[[], None]]] = []
         self._logging_initialized = False
         self.__context: Optional[ContextHandle] = None
+        self.__node_weak_ref_list: List[weakref.ReferenceType['Node']] = []
 
     @property
     def handle(self) -> Optional[ContextHandle]:
@@ -82,6 +87,10 @@ class Context(ContextManager['Context']):
         Initialize ROS communications for a given context.
 
         :param args: List of command line arguments.
+        :param initialize_logging: Whether to initialize logging for this context.
+            The default is to initialize logging.
+        :param domain_id: Which domain ID to use for this context.
+            If None (the default), domain ID 0 is used.
         """
         # imported locally to avoid loading extensions on module import
         from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -106,6 +115,35 @@ class Context(ContextManager['Context']):
                         _rclpy.rclpy_logging_configure(self.__context)
                 self._logging_initialized = True
 
+    def track_node(self, node: 'Node') -> None:
+        """
+        Track a Node associated with this Context.
+
+        During destruction, this list of weak Node references will be used to destroy resources
+        associated with this Context.
+
+        :param node: The node to take a weak reference to.
+        """
+        self.__node_weak_ref_list.append(weakref.ref(node))
+
+    def untrack_node(self, node: 'Node') -> None:
+        """
+        Stop tracking a Node associated with this Context.
+
+        If a Node is destroyed before the context, we no longer need to track it for destruction of
+        the Context, so remove it here.
+        """
+        for index, weak_node in enumerate(self.__node_weak_ref_list):
+            node_in_list = weak_node()
+            if node_in_list is node:
+                found_index = index
+                break
+        else:
+            # Odd that we didn't find the node in the list, but just get out
+            return
+
+        del self.__node_weak_ref_list[found_index]
+
     def ok(self) -> bool:
         """Check if context hasn't been shut down."""
         with self._lock:
@@ -121,14 +159,22 @@ class Context(ContextManager['Context']):
                 callback()
         self._callbacks = []
 
+    def _cleanup(self) -> None:
+        for weak_node in self.__node_weak_ref_list:
+            node = weak_node()
+            if node is not None:
+                node.destroy_node()
+
+        self.__context.shutdown()
+        self._call_on_shutdown_callbacks()
+        self._logging_fini()
+
     def shutdown(self) -> None:
         """Shutdown this context."""
         if self.__context is None:
             raise RuntimeError('Context must be initialized before it can be shutdown')
         with self.__context, self._lock:
-            self.__context.shutdown()
-            self._call_on_shutdown_callbacks()
-            self._logging_fini()
+            self._cleanup()
 
     def try_shutdown(self) -> None:
         """Shutdown this context, if not already shutdown."""
@@ -136,11 +182,9 @@ class Context(ContextManager['Context']):
             return
         with self.__context, self._lock:
             if self.__context.ok():
-                self.__context.shutdown()
-                self._call_on_shutdown_callbacks()
-                self._logging_fini()
+                self._cleanup()
 
-    def _remove_callback(self, weak_method: 'WeakMethod[MethodType]') -> None:
+    def _remove_callback(self, weak_method: 'weakref.WeakMethod[MethodType]') -> None:
         self._callbacks.remove(weak_method)
 
     def on_shutdown(self, callback: Callable[[], None]) -> None:
@@ -151,7 +195,7 @@ class Context(ContextManager['Context']):
         if self.__context is None:
             with self._lock:
                 if ismethod(callback):
-                    self._callbacks.append(WeakMethod(callback, self._remove_callback))
+                    self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
                 else:
                     self._callbacks.append(callback)
             return
@@ -161,7 +205,7 @@ class Context(ContextManager['Context']):
                 callback()
             else:
                 if ismethod(callback):
-                    self._callbacks.append(WeakMethod(callback, self._remove_callback))
+                    self._callbacks.append(weakref.WeakMethod(callback, self._remove_callback))
                 else:
                     self._callbacks.append(callback)
 

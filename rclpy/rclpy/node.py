@@ -247,6 +247,8 @@ class Node:
 
         self._type_description_service = TypeDescriptionService(self)
 
+        self._context.track_node(self)
+
     @property
     def publishers(self) -> Iterator[Publisher]:
         """Get publishers that have been created on this node."""
@@ -1937,6 +1939,8 @@ class Node:
         * :func:`create_guard_condition`
 
         """
+        self._context.untrack_node(self)
+
         # Drop extra reference to parameter event publisher.
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
