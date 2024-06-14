@@ -24,6 +24,7 @@ from typing import Protocol
 from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
+import warnings
 import weakref
 
 from rclpy.destroyable import DestroyableType
@@ -232,9 +233,10 @@ class Context(ContextManager['Context']):
 
     def __enter__(self) -> 'Context':
         if self.__context is None:
-            # This object hasn't been initialized yet, so we can't use a context manager
-            raise RuntimeError(
-                'init() must be called on this Context before using it with a context manager')
+            # init() hasn't been called yet; for backwards compatibility, initialize and warn
+            warnings.warn('init() must be called on a Context before using it in a Python context '
+                          'manager. Calling init() with no arguments, this usage is deprecated')
+            self.init()
 
         return self
 
