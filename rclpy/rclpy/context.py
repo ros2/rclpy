@@ -65,7 +65,7 @@ class Context(ContextManager['Context']):
     """
 
     def __init__(self) -> None:
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._callbacks: List[Union['weakref.WeakMethod[MethodType]', Callable[[], None]]] = []
         self._logging_initialized = False
         self.__context: Optional[ContextHandle] = None
@@ -124,7 +124,8 @@ class Context(ContextManager['Context']):
 
         :param node: The node to take a weak reference to.
         """
-        self.__node_weak_ref_list.append(weakref.ref(node))
+        with self._lock:
+            self.__node_weak_ref_list.append(weakref.ref(node))
 
     def untrack_node(self, node: 'Node') -> None:
         """
@@ -133,16 +134,17 @@ class Context(ContextManager['Context']):
         If a Node is destroyed before the context, we no longer need to track it for destruction of
         the Context, so remove it here.
         """
-        for index, weak_node in enumerate(self.__node_weak_ref_list):
-            node_in_list = weak_node()
-            if node_in_list is node:
-                found_index = index
-                break
-        else:
-            # Odd that we didn't find the node in the list, but just get out
-            return
+        with self._lock:
+            for index, weak_node in enumerate(self.__node_weak_ref_list):
+                node_in_list = weak_node()
+                if node_in_list is node:
+                    found_index = index
+                    break
+            else:
+                # Odd that we didn't find the node in the list, but just get out
+                return
 
-        del self.__node_weak_ref_list[found_index]
+            del self.__node_weak_ref_list[found_index]
 
     def ok(self) -> bool:
         """Check if context hasn't been shut down."""
