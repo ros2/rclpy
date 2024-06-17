@@ -120,8 +120,7 @@ class Context(ContextManager['Context']):
         """
         Track a Node associated with this Context.
 
-        During destruction, this list of weak Node references will be used to destroy resources
-        associated with this Context.
+        When the Context is destroyed, it will destroy every Node it tracks.
 
         :param node: The node to take a weak reference to.
         """
