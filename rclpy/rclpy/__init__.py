@@ -40,8 +40,10 @@ all ROS nodes associated with the context), the :func:`shutdown` function should
 This will invalidate all entities derived from the context.
 """
 
+from types import TracebackType
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import TYPE_CHECKING
 
 from rclpy.context import Context
@@ -62,13 +64,52 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
 
 
+class InitContextManager:
+    """
+    A proxy object for initialization.
+
+    One of these is returned when calling `rclpy.init`, and can be used with context managers to
+    properly cleanup after initialization.
+    """
+
+    def __init__(self,
+                 args: Optional[List[str]],
+                 context: Optional[Context],
+                 domain_id: Optional[int],
+                 signal_handler_options: Optional[SignalHandlerOptions]) -> None:
+        self.context = get_default_context() if context is None else context
+        if signal_handler_options is None:
+            if context is None or context is get_default_context():
+                signal_handler_options = SignalHandlerOptions.ALL
+            else:
+                signal_handler_options = SignalHandlerOptions.NO
+
+        if signal_handler_options == SignalHandlerOptions.NO:
+            self.installed_signal_handlers = False
+        else:
+            self.installed_signal_handlers = True
+        install_signal_handlers(signal_handler_options)
+        self.context.init(args, domain_id=domain_id)
+
+    def __enter__(self) -> 'InitContextManager':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        shutdown(context=self.context, uninstall_handlers=self.installed_signal_handlers)
+
+
 def init(
     *,
     args: Optional[List[str]] = None,
     context: Optional[Context] = None,
     domain_id: Optional[int] = None,
     signal_handler_options: Optional[SignalHandlerOptions] = None,
-) -> None:
+) -> InitContextManager:
     """
     Initialize ROS communications for a given context.
 
@@ -78,15 +119,9 @@ def init(
     :param domain_id: ROS domain id.
     :param signal_handler_options: Indicate which signal handlers to install.
         If `None`, SIGINT and SIGTERM will be installed when initializing the default context.
+    :return: an InitContextManager that can be used with Python context managers to cleanup.
     """
-    context = get_default_context() if context is None else context
-    if signal_handler_options is None:
-        if context is None or context is get_default_context():
-            signal_handler_options = SignalHandlerOptions.ALL
-        else:
-            signal_handler_options = SignalHandlerOptions.NO
-    install_signal_handlers(signal_handler_options)
-    return context.init(args, domain_id=domain_id)
+    return InitContextManager(args, context, domain_id, signal_handler_options)
 
 
 # The global spin functions need an executor to do the work
@@ -125,7 +160,7 @@ def shutdown(
     :param uninstall_handlers:
         If `None`, signal handlers will be uninstalled when shutting down the default context.
         If `True`, signal handlers will be uninstalled.
-        If not, signal handlers won't be uninstalled.
+        If `False`, signal handlers won't be uninstalled.
     """
     _shutdown(context=context)
     if (
