@@ -88,7 +88,7 @@ class Context(ContextManager['Context']):
         Initialize ROS communications for a given context.
 
         :param args: List of command line arguments.
-        :param initialize_logging: Whether to initialize logging for this context.
+        :param initialize_logging: Whether to initialize logging for the whole process.
             The default is to initialize logging.
         :param domain_id: Which domain ID to use for this context.
             If None (the default), domain ID 0 is used.
