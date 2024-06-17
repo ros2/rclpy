@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.3.0 (2024-06-17)
+------------------
 * Docstring specifying proper destruction and creation of Rate, Timer and GuardCondition (`#1286 <https://github.com/ros2/rclpy/issues/1286>`_)
 * Make timers context-aware. (`#1296 <https://github.com/ros2/rclpy/issues/1296>`_)
 * Make service lients context-aware. (`#1295 <https://github.com/ros2/rclpy/issues/1295>`_)
