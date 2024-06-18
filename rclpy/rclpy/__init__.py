@@ -56,7 +56,7 @@ from rclpy.utilities import get_default_context
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa: F401
 from rclpy.utilities import ok  # noqa: F401 forwarding to this module
 from rclpy.utilities import shutdown as _shutdown
-from rclpy.utilities import try_shutdown  # noqa: F401
+from rclpy.utilities import try_shutdown as _try_shutdown
 
 # Avoid loading extensions on module import
 if TYPE_CHECKING:
@@ -100,7 +100,7 @@ class InitContextManager:
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
-        shutdown(context=self.context, uninstall_handlers=self.installed_signal_handlers)
+        try_shutdown(context=self.context, uninstall_handlers=self.installed_signal_handlers)
 
 
 def init(
@@ -163,6 +163,32 @@ def shutdown(
         If `False`, signal handlers won't be uninstalled.
     """
     _shutdown(context=context)
+    if (
+        uninstall_handlers or (
+            uninstall_handlers is None and (
+                context is None or context is get_default_context()))
+    ):
+        uninstall_signal_handlers()
+
+
+def try_shutdown(
+    *,
+    context: Optional[Context] = None,
+    uninstall_handlers: Optional[bool] = None
+) -> None:
+    """
+    Shutdown a previously initialized context if not already shutdown.
+
+    This will also shutdown the global executor.
+
+    :param context: The context to invalidate. If ``None``, then the default context is used
+        (see :func:`.get_default_context`).
+    :param uninstall_handlers:
+        If `None`, signal handlers will be uninstalled when shutting down the default context.
+        If `True`, signal handlers will be uninstalled.
+        If `False`, signal handlers won't be uninstalled.
+    """
+    _try_shutdown(context=context)
     if (
         uninstall_handlers or (
             uninstall_handlers is None and (
