@@ -208,6 +208,8 @@ class Executor(ContextManager['Executor']):
         """
         Add a callback or coroutine to be executed during :meth:`spin` and return a Future.
 
+        Created task is queued in the executor in FIFO order.
+
         Arguments to this function are passed to the callback.
 
         :param callback: A callback to be run in the executor.
@@ -569,7 +571,7 @@ class Executor(ContextManager['Executor']):
             with self._tasks_lock:
                 tasks = list(self._tasks)
             if tasks:
-                for task, entity, node in reversed(tasks):
+                for task, entity, node in tasks:
                     if (not task.executing() and not task.done() and
                             (node is None or node in nodes_to_use)):
                         yielded_work = True
