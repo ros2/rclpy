@@ -12,25 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import IntEnum
+from typing import Optional
+
+from rclpy.context import Context
 from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
 # re-export SignalHandlerOptions enum
-SignalHandlerOptions = _rclpy.SignalHandlerOptions
+class SignalHandlerOptions(IntEnum):
+    NO = _rclpy.SignalHandlerOptions.NO
+    SIGINT = _rclpy.SignalHandlerOptions.SIGINT
+    SIGTERM = _rclpy.SignalHandlerOptions.SIGTERM
+    ALL = _rclpy.SignalHandlerOptions.ALL
 
 
-def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.ALL):
+def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.ALL) -> None:
     """
     Install rclpy signal handlers.
 
     :param options: Indicate if to install sigint, sigterm, both or no signal handler.
     """
-    return _rclpy.install_signal_handlers(options)
+    _rclpy.install_signal_handlers(options)
 
 
-def get_current_signal_handlers_options():
+def get_current_signal_handlers_options() -> SignalHandlerOptions:
     """
     Get current signal handler options.
 
@@ -39,19 +47,19 @@ def get_current_signal_handlers_options():
     return _rclpy.get_current_signal_handlers_options()
 
 
-def uninstall_signal_handlers():
+def uninstall_signal_handlers() -> None:
     """Uninstall the rclpy signal handlers."""
     _rclpy.uninstall_signal_handlers()
 
 
 class SignalHandlerGuardCondition(GuardCondition):
 
-    def __init__(self, context=None):
+    def __init__(self, context: Optional[Context] = None):
         super().__init__(callback=None, callback_group=None, context=context)
         with self.handle:
             _rclpy.register_sigint_guard_condition(self.handle)
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             self.destroy()
         except InvalidHandle:
@@ -61,7 +69,7 @@ class SignalHandlerGuardCondition(GuardCondition):
             # Guard condition was not registered
             pass
 
-    def destroy(self):
+    def destroy(self) -> None:
         with self.handle:
             _rclpy.unregister_sigint_guard_condition(self.handle)
         super().destroy()
