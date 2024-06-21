@@ -14,6 +14,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
+from functools import partial
 import inspect
 import os
 from threading import Condition
@@ -374,18 +375,30 @@ class Executor(ContextManager['Executor']):
                     expected_call_time=info['expected_call_time'],
                     actual_call_time=info['actual_call_time'],
                     clock_type=tmr.clock.clock_type)
-                try:
-                    inspect.signature(tmr.callback).bind(object())
 
+                # This needs to be done somewhere else since this is certain overhead to call timer
+                # for every iteration. at this moment stays here for review purpose.
+                # Besides, probably we can make this generic utility function
+                def check_argument_type(callback_func, target_type):
+                    sig = inspect.signature(callback_func)
+                    for param in sig.parameters.values():
+                        print(param)
+                        if param.annotation == target_type:
+                            # return 1st one immediately
+                            return param.name
+                    # We could not find the target type in the signature
+                    return None
+
+                arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
+                prefilled_arg = {arg_name: timer_info}
+                if arg_name is not None:
                     async def _execute():
-                        await await_or_execute(tmr.callback, timer_info)
+                        await await_or_execute(partial(tmr.callback, **prefilled_arg))
                     return _execute
-                except TypeError:
-                    pass
-
-                async def _execute():
-                    await await_or_execute(tmr.callback)
-                return _execute
+                else:
+                    async def _execute():
+                        await await_or_execute(tmr.callback)
+                    return _execute
         except InvalidHandle:
             # Timer is a Destroyable, which means that on __enter__ it can throw an
             # InvalidHandle exception if the entity has already been destroyed.  Handle that here
