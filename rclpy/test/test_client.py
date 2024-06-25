@@ -213,6 +213,8 @@ class TestClient(unittest.TestCase):
             executor_thread = threading.Thread(
                 target=TestClient._spin_rclpy_node, args=(self.node, executor))
             executor_thread.start()
+            # make sure thread has started to avoid exception via join()
+            self.assertTrue(executor_thread.is_alive())
             result = cli.call(GetParameters.Request(), 0.5)
             self.assertTrue(result is not None)
             executor.shutdown()
@@ -234,6 +236,8 @@ class TestClient(unittest.TestCase):
             executor_thread = threading.Thread(
                 target=TestClient._spin_rclpy_node, args=(self.node, executor))
             executor_thread.start()
+            # make sure thread has started to avoid exception via join()
+            self.assertTrue(executor_thread.is_alive())
             with self.assertRaises(TimeoutError):
                 cli.call(GetParameters.Request(), 0.5)
         finally:
@@ -253,6 +257,8 @@ class TestClient(unittest.TestCase):
                 executor_thread = threading.Thread(
                     target=TestClient._spin_rclpy_node, args=(self.node, executor))
                 executor_thread.start()
+                # make sure thread has started to avoid exception via join()
+                self.assertTrue(executor_thread.is_alive())
                 result = cli.call(GetParameters.Request(), 0.5)
                 self.assertTrue(result is not None)
                 executor.shutdown()
