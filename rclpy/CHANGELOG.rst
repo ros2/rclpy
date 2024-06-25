@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.4.0 (2024-06-25)
+------------------
 * Add top-level try_shutdown method. (`#1302 <https://github.com/ros2/rclpy/issues/1302>`_)
 * Make rclpy initialization context-manager aware. (`#1298 <https://github.com/ros2/rclpy/issues/1298>`_)
 * Contributors: Chris Lalancette
