@@ -208,9 +208,10 @@ class Executor(ContextManager['Executor']):
         """
         Add a callback or coroutine to be executed during :meth:`spin` and return a Future.
 
-        Created task is queued in the executor in FIFO order.
-
         Arguments to this function are passed to the callback.
+
+        .. warning:: Created task is queued in the executor in FIFO order,
+           but users should not rely on the task execution order.
 
         :param callback: A callback to be run in the executor.
         """
