@@ -2280,6 +2280,66 @@ class Node:
             no_mangle,
             _rclpy.rclpy_get_subscriptions_info_by_topic)
 
+    def get_clients_info_by_service(
+        self,
+        service_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
+        """
+        Return a list of clients on a given service.
+
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
+        the node name, node namespace, service type, service endpoint's GID, and its QoS profile.
+
+        When the ``no_mangle`` parameter is ``True``, the provided ``service_name`` should be a
+        valid service name for the middleware (useful when combining ROS with native middleware
+        (e.g. DDS) apps).  When the ``no_mangle`` parameter is ``False``,the provided
+        ``service_name`` should follow ROS service name conventions.
+
+        ``service_name`` may be a relative, private, or fully qualified service name.
+        A relative or private service will be expanded using this node's namespace and name.
+        The queried ``service_name`` is not remapped.
+
+        :param service_name: The service_name on which to find the clients.
+        :param no_mangle: If ``True``, `service_name` needs to be a valid middleware service
+            name, otherwise it should be a valid ROS service name. Defaults to ``False``.
+        :return: A list of TopicEndpointInfo for all the clients on this service.
+        """
+        return self._get_info_by_topic(
+            service_name,
+            no_mangle,
+            _rclpy.rclpy_get_clients_info_by_service)
+
+    def get_servers_info_by_service(
+        self,
+        service_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
+        """
+        Return a list of servers on a given service.
+
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
+        the node name, node namespace, service type, service endpoint's GID, and its QoS profile.
+
+        When the ``no_mangle`` parameter is ``True``, the provided ``service_name`` should be a
+        valid service name for the middleware (useful when combining ROS with native middleware
+        (e.g. DDS) apps).  When the ``no_mangle`` parameter is ``False``,the provided
+        ``service_name`` should follow ROS service name conventions.
+
+        ``service_name`` may be a relative, private, or fully qualified service name.
+        A relative or private service will be expanded using this node's namespace and name.
+        The queried ``service_name`` is not remapped.
+
+        :param service_name: The service_name on which to find the servers.
+        :param no_mangle: If ``True``, `service_name` needs to be a valid middleware service
+            name, otherwise it should be a valid ROS service name. Defaults to ``False``.
+        :return: A list of TopicEndpointInfo for all the servers on this service.
+        """
+        return self._get_info_by_topic(
+            service_name,
+            no_mangle,
+            _rclpy.rclpy_get_servers_info_by_service)
+
     def wait_for_node(
         self,
         fully_qualified_node_name: str,

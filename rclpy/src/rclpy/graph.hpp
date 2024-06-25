@@ -164,6 +164,42 @@ py::list
 graph_get_subscriptions_info_by_topic(
   Node & node, const char * topic_name, bool no_mangle);
 
+/// Return a list of clients on a given service.
+/**
+ * The returned clients information includes node name, node namespace, service type, gid,
+ * and qos profile.
+ *
+ * Raises NotImplementedError if the call is not supported by RMW
+ * Raises RCLError if there is an rcl error
+ *
+ * \param[in] node node to get service clients info
+ * \param[in] service_name the service name to get the clients for.
+ * \param[in] no_mangle if `true`, `service_name` needs to be a valid middleware service name,
+ *     otherwise it should be a valid ROS service name.
+ * \return list of clients.
+ */
+py::list
+graph_get_clients_info_by_service(
+  Node & node, const char * service_name, bool no_mangle);
+
+/// Return a list of servers on a given service.
+/**
+ * The returned servers information includes node name, node namespace, service type, gid,
+ * and qos profile.
+ *
+ * Raises NotImplementedError if the call is not supported by RMW
+ * Raises RCLError if there is an rcl error
+ *
+ * \param[in] node node to get service servers info
+ * \param[in] service_name the service name to get the servers for.
+ * \param[in] no_mangle if `true`, `service_name` needs to be a valid middleware service name,
+ *     otherwise it should be a valid ROS service name.
+ * \return list of servers.
+ */
+py::list
+graph_get_servers_info_by_service(
+  Node & node, const char * service_name, bool no_mangle);
+
 }  // namespace rclpy
 
 #endif  // RCLPY__GRAPH_HPP_

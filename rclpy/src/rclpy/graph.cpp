@@ -277,4 +277,22 @@ graph_get_subscriptions_info_by_topic(
     rcl_get_subscriptions_info_by_topic);
 }
 
+py::list
+graph_get_clients_info_by_service(
+  Node & node, const char * service_name, bool no_mangle)
+{
+  return _get_info_by_topic(
+    node, service_name, no_mangle, "clients",
+    rcl_get_clients_info_by_service);
+}
+
+py::list
+graph_get_servers_info_by_service(
+  Node & node, const char * service_name, bool no_mangle)
+{
+  return _get_info_by_topic(
+    node, service_name, no_mangle, "servers",
+    rcl_get_servers_info_by_service);
+}
+
 }  // namespace rclpy
