@@ -18,8 +18,10 @@ import time
 
 import pytest
 import rclpy
+from rclpy.clock import ClockType
 from rclpy.constants import S_TO_NS
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.timer import TimerInfo
 
 
 TEST_PERIODS = (
@@ -218,3 +220,63 @@ def test_timer_context_manager():
                 assert timer.is_canceled()
     finally:
         rclpy.shutdown()
+
+
+def test_timer_info_construction():
+    timer_info = TimerInfo()
+    assert timer_info.expected_call_time.nanoseconds == 0
+    assert timer_info.actual_call_time.nanoseconds == 0
+    assert timer_info.expected_call_time.clock_type == ClockType.SYSTEM_TIME
+    assert timer_info.actual_call_time.clock_type == ClockType.SYSTEM_TIME
+
+    timer_info = TimerInfo(
+        expected_call_time=123456789,
+        actual_call_time=987654321,
+        clock_type=ClockType.STEADY_TIME
+    )
+    assert timer_info.expected_call_time.nanoseconds == 123456789
+    assert timer_info.actual_call_time.nanoseconds == 987654321
+    assert timer_info.expected_call_time.clock_type == ClockType.STEADY_TIME
+    assert timer_info.actual_call_time.clock_type == ClockType.STEADY_TIME
+
+    timer_info_copy = timer_info
+    assert timer_info_copy.expected_call_time.nanoseconds == 123456789
+    assert timer_info_copy.actual_call_time.nanoseconds == 987654321
+    assert timer_info_copy.expected_call_time.clock_type == ClockType.STEADY_TIME
+    assert timer_info_copy.actual_call_time.clock_type == ClockType.STEADY_TIME
+
+
+def test_timer_with_info():
+    node = None
+    executor = None
+    timer = None
+    timer_info: TimerInfo = None
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    try:
+        node = rclpy.create_node('test_timer_with_info', context=context)
+        executor = SingleThreadedExecutor(context=context)
+        executor.add_node(node)
+        executor.spin_once(timeout_sec=0)
+
+        def timer_callback(info: TimerInfo):
+            nonlocal timer_info
+            timer_info = info
+        timer = node.create_timer(1, timer_callback)
+        assert not timer.is_canceled()
+        executor.spin_once(3)
+        timer.cancel()
+        assert timer.is_canceled()
+        assert timer_info is not None
+        assert timer_info.actual_call_time.clock_type == timer.clock.clock_type
+        assert timer_info.expected_call_time.clock_type == timer.clock.clock_type
+        assert timer_info.actual_call_time.nanoseconds > 0
+        assert timer_info.expected_call_time.nanoseconds > 0
+    finally:
+        if timer is not None:
+            node.destroy_timer(timer)
+        if executor is not None:
+            executor.shutdown()
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown(context=context)
