@@ -197,7 +197,7 @@ class ActionServer(Waitable):
         cancel_service_qos_profile=qos_profile_services_default,
         feedback_pub_qos_profile=QoSProfile(depth=10),
         status_pub_qos_profile=qos_profile_action_status_default,
-        result_timeout=900
+        result_timeout=10
     ):
         """
         Create an ActionServer.
