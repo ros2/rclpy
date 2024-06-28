@@ -226,7 +226,7 @@ class Executor(ContextManager['Executor']):
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
-            timeot expires before all outstanding work is done.
+            timeout expires before all outstanding work is done.
         """
         with self._shutdown_lock:
             if not self._is_shutdown:
@@ -905,3 +905,21 @@ class MultiThreadedExecutor(Executor):
     ) -> None:
         future.add_done_callback(lambda x: self.wake())
         self._spin_once_impl(timeout_sec, future.done)
+
+    def shutdown(
+        self,
+        timeout_sec: float = None,
+        wait_for_threads: bool = True
+    ) -> bool:
+        """
+        Stop executing callbacks and wait for their completion.
+        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        :param wait_for_threads: If true, this function will block until all executor threads
+            have joined.
+        :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
+            timeout expires before all outstanding work is done.
+        """
+        success: bool = super().shutdown(timeout_sec)
+        self._executor.shutdown(wait=wait_for_threads)
+        return success

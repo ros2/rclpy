@@ -168,6 +168,24 @@ class TestExecutor(unittest.TestCase):
         finally:
             executor.shutdown()
 
+    def test_multi_threaded_executor_closes_threads(self):
+        self.assertIsNotNone(self.node.handle)
+
+        def get_threads():
+            return {t.name for t in threading.enumerate()}
+
+        main_thread_name = get_threads()
+        # Explicitly specify 2_threads for single thread system failure
+        executor = MultiThreadedExecutor(context=self.context, num_threads=2)
+
+        try:
+            # Give the executor a callback so at least one thread gets spun up
+            self.assertTrue(self.func_execution(executor))
+        finally:
+            self.assertTrue(main_thread_name != get_threads())
+            executor.shutdown(wait_for_threads=True)
+            self.assertTrue(main_thread_name == get_threads())
+
     def test_add_node_to_executor(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
