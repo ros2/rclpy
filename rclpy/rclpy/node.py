@@ -107,6 +107,10 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
 
 
+class NodeHandle:
+    pass
+
+
 class Node:
     """
     A Node in the ROS graph.

@@ -132,7 +132,7 @@ class EventHandler(Waitable):
         """Mark event as not-in-use to allow destruction after waiting on it."""
         self.__event.__exit__(t, v, tb)
 
-    def destroy(self):
+    def destroy(self) -> None:
         self.__event.destroy_when_not_in_use()
 
 

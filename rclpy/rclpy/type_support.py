@@ -59,7 +59,7 @@ class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
     pass
 
 
-MsgT = TypeVar('MsgT', bound=Msg)
+MsgT = TypeVar('MsgT', bound=Msg, contravariant=True)
 SrvT = TypeVar('SrvT', bound=Srv)
 
 SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
