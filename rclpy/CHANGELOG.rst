@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.1.6 (2024-07-10)
+------------------
 * update RCL_RET_TIMEOUT error handling with action service response. (`#1277 <https://github.com/ros2/rclpy/issues/1277>`_)
 * Contributors: Tomoya Fujita
 
