@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update RCL_RET_TIMEOUT error handling with action service response. (`#1277 <https://github.com/ros2/rclpy/issues/1277>`_)
+* Contributors: Tomoya Fujita
+
 4.1.5 (2024-04-19)
 ------------------
 * Fix an inherent race in execution vs. destruction. (`#1256 <https://github.com/ros2/rclpy/issues/1256>`_)
