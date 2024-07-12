@@ -100,7 +100,12 @@ class InitContextManager:
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
-        try_shutdown(context=self.context, uninstall_handlers=self.installed_signal_handlers)
+        # The Context class can only be initialized once.  Thus when using the default context,
+        # we have to destroy it every time we are done using it and create a new one.
+        # utilities.try_shutdown will only replace the default context if we pass 'None', so make
+        # sure to do that for the default context.
+        shutdown_context = None if self.context is get_default_context() else self.context
+        try_shutdown(context=shutdown_context, uninstall_handlers=self.installed_signal_handlers)
 
 
 def init(
