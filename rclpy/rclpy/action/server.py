@@ -365,7 +365,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         try:
             # If the client goes away anytime before this, sending the goal response may fail.
             # Catch the exception here and go on so we don't crash.
-            self._handle.send_goal_response(request_header, response_msg)
+            with self._lock:
+                self._handle.send_goal_response(request_header, response_msg)
         except RCLError:
             self._logger.warn('Failed to send goal response (the client may have gone away)')
             return
@@ -455,7 +456,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         try:
             # If the client goes away anytime before this, sending the goal response may fail.
             # Catch the exception here and go on so we don't crash.
-            self._handle.send_cancel_response(request_header, cancel_response)
+            with self._lock:
+                self._handle.send_cancel_response(request_header, cancel_response)
         except RCLError:
             self._logger.warn('Failed to send cancel response (the client may have gone away)')
 
@@ -476,7 +478,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
                 'Sending result response for unknown or expired goal ID: {0}'.format(goal_uuid))
             result_response = self._action_type.Impl.GetResultService.Response()
             result_response.status = GoalStatus.STATUS_UNKNOWN
-            self._handle.send_result_response(request_header, result_response)
+            with self._lock:
+                self._handle.send_result_response(request_header, result_response)
             return
 
         # There is an accepted goal matching the goal ID, register a callback to send the
@@ -502,7 +505,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             # Catch the exception here and go on so we don't crash.
             result = future.result()
             if result:
-                self._handle.send_result_response(request_header, result)
+                with self._lock:
+                    self._handle.send_result_response(request_header, result)
         except RCLError:
             self._logger.warning('Failed to send result response (the client may have gone away)')
 
@@ -578,7 +582,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
 
     def get_num_entities(self) -> NumberOfEntities:
         """Return number of each type of entity used in the wait set."""
-        num_entities = self._handle.get_num_entities()
+        with self._lock:
+            num_entities = self._handle.get_num_entities()
         return NumberOfEntities(
             num_entities[0],
             num_entities[1],
