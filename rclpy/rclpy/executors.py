@@ -909,10 +909,12 @@ class MultiThreadedExecutor(Executor):
     def shutdown(
         self,
         timeout_sec: float = None,
+        *,
         wait_for_threads: bool = True
     ) -> bool:
         """
         Stop executing callbacks and wait for their completion.
+
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         :param wait_for_threads: If true, this function will block until all executor threads
