@@ -350,6 +350,12 @@ class LifecycleNodeMixin(ManagedEntity):
     ):
         self.__check_is_initialized()
         transition_id = req.transition.id
+        
+        available_transition_ids = [t[0] for t in self._state_machine.available_transitions]
+        if transition_id not in available_transition_ids:
+              resp.success = False
+              return resp
+        
         if req.transition.label:
             try:
                 transition_id = self._state_machine.get_transition_by_label(req.transition.label)
