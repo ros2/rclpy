@@ -182,7 +182,7 @@ public:
   {
     std::vector<std::tuple<uint8_t, std::string>> ret;
     ret.reserve(state_machine_->transition_map.states_size);
-    for (size_t i = 0; i <= state_machine_->transition_map.states_size; ++i) {
+    for (size_t i = 0; i < state_machine_->transition_map.states_size; ++i) {
       ret.emplace_back(
         std::make_tuple(
           state_machine_->transition_map.states[i].id,
