@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.14 (2024-07-26)
+-------------------
+* Fix a bad bug in fetching the lifecycle transitions. (`#1321 <https://github.com/ros2/rclpy/issues/1321>`_) (`#1324 <https://github.com/ros2/rclpy/issues/1324>`_)
+* add missing Optionals to function declarations (`#1306 <https://github.com/ros2/rclpy/issues/1306>`_)
+* Support wait for message backport humble (`#1272 <https://github.com/ros2/rclpy/issues/1272>`_)
+* [Humble] Fix AttributeError _logger in Action Server (`#1299 <https://github.com/ros2/rclpy/issues/1299>`_)
+* Fix incorrect comparsion on whether parameter type is NOT_SET (`#1032 <https://github.com/ros2/rclpy/issues/1032>`_) (`#1283 <https://github.com/ros2/rclpy/issues/1283>`_)
+* Contributors: Shane Loretz, Tomoya Fujita, alberthli, mergify[bot], xueying
+
 3.3.13 (2024-05-15)
 -------------------
 * update RCL_RET_TIMEOUT error handling with action service response. (`#1258 <https://github.com/ros2/rclpy/issues/1258>`_) (`#1276 <https://github.com/ros2/rclpy/issues/1276>`_)
