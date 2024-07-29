@@ -23,23 +23,14 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import Union
 
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
+from typing_extensions import deprecated, Unpack
 
-if TYPE_CHECKING:
-    import sys
-    if sys.version_info >= (3, 11):
-        from typing import Unpack
-    else:
-        try:
-            from typing_extensions import Unpack
-        except ImportError:
-            pass
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
 _internal_callers: List[str] = []
@@ -158,7 +149,7 @@ class LoggingFilter:
                 raise TypeError(
                     'Required parameter "{0}" was not specified for logging filter "{1}"'
                     .format(param_name, cls.__name__))
-            context[param_name] = kwargs_value  # type: ignore
+            context[param_name] = kwargs_value  # type: ignore[literal-required]
 
     """
     Decide if it's appropriate to log given a context, and update the context accordingly.
@@ -332,7 +323,7 @@ class RcutilsLogger:
         result: bool = _rclpy.rclpy_logging_logger_is_enabled_for(self.name, severity)
         return result
 
-    def log(self, message: str, severity: LoggingSeverity,
+    def log(self, message: str, severity: Union[int, LoggingSeverity],
             name: Optional[str] = None, **kwargs: 'Unpack[LoggingFilterArgs]') -> bool:
         r"""
         Log a message with the specified severity.
@@ -428,6 +419,7 @@ class RcutilsLogger:
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.WARN, **kwargs)
 
+    @deprecated('Deprecated in favor of :py:classmethod:RcutilsLogger.warning:.')
     def warn(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
         """
         Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.
