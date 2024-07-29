@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add types to task.py (`#1254 <https://github.com/ros2/rclpy/issues/1254>`_)
+* Fix a bad bug in fetching the lifecycle transitions. (`#1321 <https://github.com/ros2/rclpy/issues/1321>`_)
+* Fix a bug when using multiple rclpy.init context managers. (`#1314 <https://github.com/ros2/rclpy/issues/1314>`_)
+* Executor executes the tasks in FIFO order. (`#1304 <https://github.com/ros2/rclpy/issues/1304>`_)
+* Contributors: Chris Lalancette, Michael Carlstrom, Tomoya Fujita
+
 7.4.0 (2024-06-25)
 ------------------
 * Add top-level try_shutdown method. (`#1302 <https://github.com/ros2/rclpy/issues/1302>`_)
