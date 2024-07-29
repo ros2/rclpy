@@ -13,8 +13,10 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from contextlib import suppress
 import inspect
 import os
+import sys
 from types import FrameType
 from typing import cast
 from typing import Dict
@@ -29,7 +31,12 @@ from typing import Union
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
-from typing_extensions import deprecated, Unpack
+
+if sys.version_info >= (3, 12):
+    from typing import Unpack
+else:
+    with suppress(AttributeError):
+        from typing_extensions import Unpack
 
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
@@ -419,7 +426,6 @@ class RcutilsLogger:
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.WARN, **kwargs)
 
-    @deprecated('Deprecated in favor of :py:classmethod:RcutilsLogger.warning:.')
     def warn(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
         """
         Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.
