@@ -242,6 +242,22 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
+    def test_sync_call_context_manager(self):
+        def _service(request, response):
+            return response
+        with self.node.create_client(GetParameters, 'get/parameters') as cli:
+            with self.node.create_service(GetParameters, 'get/parameters', _service):
+                self.assertTrue(cli.wait_for_service(timeout_sec=20))
+                executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+                executor.add_node(self.node)
+                executor_thread = threading.Thread(
+                    target=TestClient._spin_rclpy_node, args=(self.node, executor))
+                executor_thread.start()
+                result = cli.call(GetParameters.Request(), 0.5)
+                self.assertTrue(result is not None)
+                executor.shutdown()
+                executor_thread.join()
+
 
 if __name__ == '__main__':
     unittest.main()
