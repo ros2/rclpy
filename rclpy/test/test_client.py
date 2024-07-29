@@ -102,8 +102,7 @@ class TestClient(unittest.TestCase):
         try:
             self.assertTrue(cli.wait_for_service(timeout_sec=20))
             cli.call_async(GetParameters.Request())
-            cycle_count = 0
-            while cycle_count < 5:
+            for i in range(5):
                 with srv.handle:
                     result = srv.handle.service_take_request(srv.srv_type.Request)
                 if result is not None:
@@ -112,7 +111,7 @@ class TestClient(unittest.TestCase):
                     self.assertNotEqual(0, header.source_timestamp)
                     return
                 else:
-                    time.sleep(0.1)
+                    time.sleep(0.2)
             self.fail('Did not get a request in time')
         finally:
             self.node.destroy_client(cli)
