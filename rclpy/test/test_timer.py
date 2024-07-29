@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import os
 import platform
 import time
@@ -267,6 +268,47 @@ def test_timer_with_info():
         executor.spin_once(3)
         timer.cancel()
         assert timer.is_canceled()
+        assert timer_info is not None
+        assert timer_info.actual_call_time.clock_type == timer.clock.clock_type
+        assert timer_info.expected_call_time.clock_type == timer.clock.clock_type
+        assert timer_info.actual_call_time.nanoseconds > 0
+        assert timer_info.expected_call_time.nanoseconds > 0
+    finally:
+        if timer is not None:
+            node.destroy_timer(timer)
+        if executor is not None:
+            executor.shutdown()
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown(context=context)
+
+
+def test_timer_info_with_partial():
+    node = None
+    executor = None
+    timer = None
+    timer_info: TimerInfo = None
+    timer_called = False
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    try:
+        node = rclpy.create_node('test_timer_with_partial', context=context)
+        executor = SingleThreadedExecutor(context=context)
+        executor.add_node(node)
+        executor.spin_once(timeout_sec=0)
+
+        def timer_callback(info: TimerInfo):
+            nonlocal timer_info
+            timer_info = info
+            nonlocal timer_called
+            if timer_called is False:
+                timer_called = True
+        timer = node.create_timer(1, functools.partial(timer_callback))
+        assert not timer.is_canceled()
+        executor.spin_once(3)
+        timer.cancel()
+        assert timer.is_canceled()
+        assert timer_called is True
         assert timer_info is not None
         assert timer_info.actual_call_time.clock_type == timer.clock.clock_type
         assert timer_info.expected_call_time.clock_type == timer.clock.clock_type
