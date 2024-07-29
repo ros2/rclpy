@@ -376,19 +376,17 @@ class Executor(ContextManager['Executor']):
                     actual_call_time=info['actual_call_time'],
                     clock_type=tmr.clock.clock_type)
 
-                # This needs to be done somewhere else since this is certain overhead to call timer
-                # for every iteration. at this moment stays here for review purpose.
-                # Besides, probably we can make this generic utility function
                 def check_argument_type(callback_func, target_type):
                     sig = inspect.signature(callback_func)
                     for param in sig.parameters.values():
-                        print(param)
                         if param.annotation == target_type:
                             # return 1st one immediately
                             return param.name
                     # We could not find the target type in the signature
                     return None
 
+                # User might change the Timer.callback function signature at runtime,
+                # so it needs to check the signature every time.
                 arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
                 prefilled_arg = {arg_name: timer_info}
                 if arg_name is not None:
