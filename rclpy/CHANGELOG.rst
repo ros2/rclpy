@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.5.0 (2024-07-29)
+------------------
 * Add types to task.py (`#1254 <https://github.com/ros2/rclpy/issues/1254>`_)
 * Fix a bad bug in fetching the lifecycle transitions. (`#1321 <https://github.com/ros2/rclpy/issues/1321>`_)
 * Fix a bug when using multiple rclpy.init context managers. (`#1314 <https://github.com/ros2/rclpy/issues/1314>`_)
