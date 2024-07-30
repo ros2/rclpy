@@ -202,3 +202,19 @@ def test_timer_without_autostart():
         if node is not None:
             node.destroy_node()
         rclpy.shutdown()
+
+
+def test_timer_context_manager():
+    rclpy.init()
+    try:
+        with rclpy.create_node('test_timer_without_autostart') as node:
+            with node.create_timer(1, lambda: None, autostart=False) as timer:
+                assert timer.is_canceled()
+
+                timer.reset()
+                assert not timer.is_canceled()
+
+                timer.cancel()
+                assert timer.is_canceled()
+    finally:
+        rclpy.shutdown()
