@@ -79,7 +79,7 @@ from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
-from rclpy.timer import Timer
+from rclpy.timer import Timer, TimerInfo
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
@@ -1743,7 +1743,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Callable,
+        callback: Callable[[TimerInfo], None],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
