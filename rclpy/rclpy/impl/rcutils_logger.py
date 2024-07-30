@@ -27,7 +27,6 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import TypeAlias
 from typing import TypedDict
 from typing import Union
 
@@ -42,7 +41,7 @@ else:
         from typing_extensions import Unpack
 
 
-SupportedFiltersKeys: TypeAlias = Literal['throttle', 'skip_first', 'once']
+SupportedFiltersKeys = Literal['throttle', 'skip_first', 'once']
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
 _internal_callers: List[str] = []
