@@ -26,7 +26,19 @@ For example, you might use it like this:
         # ...
 """
 
+
+from typing import List, Protocol, Sequence
+
 from rpyutils import import_c_library
 package = 'rclpy'
 
-rclpy_implementation = import_c_library('._rclpy_pybind11', package)
+rclpy_implementation: 'rclpyHandle' = import_c_library('._rclpy_pybind11', package)
+
+
+class rclpyHandle(Protocol):
+
+    def rclpy_remove_ros_args(self, pycli_args: Sequence[str]) -> List[str]:
+        ...
+
+    def rclpy_get_rmw_implementation_identifier(self) -> str:
+        ...

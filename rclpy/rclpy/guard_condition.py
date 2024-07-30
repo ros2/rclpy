@@ -32,6 +32,12 @@ class GuardCondition:
     def __init__(self, callback: Optional[Callable],
                  callback_group: Optional[CallbackGroup],
                  context: Optional[Context] = None) -> None:
+        """
+        Create a GuardCondition.
+
+        .. warning:: Users should not create a guard condition with this constructor, instead they
+           should call :meth:`.Node.create_guard_condition`.
+        """
         self._context = get_default_context() if context is None else context
 
         if self._context.handle is None:
@@ -55,4 +61,10 @@ class GuardCondition:
         return self.__gc
 
     def destroy(self) -> None:
+        """
+        Destroy a container for a ROS guard condition.
+
+        .. warning:: Users should not destroy a guard condition with this method, instead
+           they should call :meth:`.Node.destroy_guard_condition`.
+        """
         self.handle.destroy_when_not_in_use()
