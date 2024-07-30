@@ -19,6 +19,12 @@ from rclpy.utilities import get_default_context
 class GuardCondition:
 
     def __init__(self, callback, callback_group, context=None):
+        """
+        Create a GuardCondition.
+
+        .. warning:: Users should not create a guard condition with this constructor, instead they
+           should call :meth:`.Node.create_guard_condition`.
+        """
         self._context = get_default_context() if context is None else context
         with self._context.handle:
             self.__gc = _rclpy.GuardCondition(self._context.handle)
@@ -38,4 +44,10 @@ class GuardCondition:
         return self.__gc
 
     def destroy(self):
+        """
+        Destroy a container for a ROS guard condition.
+
+        .. warning:: Users should not destroy a guard condition with this method, instead
+           they should call :meth:`.Node.destroy_guard_condition`.
+        """
         self.handle.destroy_when_not_in_use()
