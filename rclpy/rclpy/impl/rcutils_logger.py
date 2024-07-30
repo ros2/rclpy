@@ -37,7 +37,7 @@ from rclpy.impl.logging_severity import LoggingSeverity
 if sys.version_info >= (3, 12):
     from typing import Unpack
 else:
-    with suppress(AttributeError):
+    with suppress(ImportError):
         from typing_extensions import Unpack
 
 
