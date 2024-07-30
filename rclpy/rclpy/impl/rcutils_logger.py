@@ -19,12 +19,15 @@ import os
 import sys
 from types import FrameType
 from typing import cast
+from typing import ClassVar
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 from typing import Type
+from typing import TypeAlias
 from typing import TypedDict
 from typing import Union
 
@@ -38,6 +41,8 @@ else:
     with suppress(AttributeError):
         from typing_extensions import Unpack
 
+
+SupportedFiltersKeys: TypeAlias = Literal['throttle', 'skip_first', 'once']
 
 # Known filenames from which logging methods can be called (will be ignored in `_find_caller`).
 _internal_callers: List[str] = []
@@ -97,7 +102,7 @@ class CallerId(
 class RcutilsLoggerContext(TypedDict):
     name: str
     severity: LoggingSeverity
-    filters: List[str]
+    filters: List[SupportedFiltersKeys]
 
 
 class OnceContext(RcutilsLoggerContext):
@@ -140,7 +145,7 @@ class LoggingFilter:
 
     A default value of None makes a parameter required.
     """
-    params: LoggingFilterParams = {}
+    params: ClassVar[LoggingFilterParams] = {}
 
     """
     Initialize the context of a logging call, e.g. declare variables needed for
@@ -169,7 +174,7 @@ class LoggingFilter:
 class Once(LoggingFilter):
     """Ignore all log calls except the first one."""
 
-    params: LoggingFilterParams = {
+    params: ClassVar[LoggingFilterParams] = {
         'once': None,
     }
 
@@ -193,7 +198,7 @@ class Once(LoggingFilter):
 class Throttle(LoggingFilter):
     """Ignore log calls if the last call is not longer ago than the specified duration."""
 
-    params: LoggingFilterParams = {
+    params: ClassVar[LoggingFilterParams] = {
         'throttle_duration_sec': None,
         'throttle_time_source_type': Clock(),
     }
@@ -225,7 +230,7 @@ class Throttle(LoggingFilter):
 class SkipFirst(LoggingFilter):
     """Ignore the first log call but process all subsequent calls."""
 
-    params: LoggingFilterParams = {
+    params: ClassVar[LoggingFilterParams] = {
         'skip_first': None,
     }
 
@@ -247,19 +252,19 @@ class SkipFirst(LoggingFilter):
 
 
 # The ordering of this dictionary defines the order in which filters will be processed.
-supported_filters: OrderedDict[str, Type[LoggingFilter]] = OrderedDict()
+supported_filters: OrderedDict[SupportedFiltersKeys, Type[LoggingFilter]] = OrderedDict()
 supported_filters['throttle'] = Throttle
 supported_filters['skip_first'] = SkipFirst
 supported_filters['once'] = Once
 
 
-def get_filters_from_kwargs(**kwargs: 'Unpack[LoggingFilterArgs]') -> List[str]:
+def get_filters_from_kwargs(**kwargs: 'Unpack[LoggingFilterArgs]') -> List[SupportedFiltersKeys]:
     """
     Determine which filters have had parameters specified in the given keyword arguments.
 
     Returns the list of filters using the order specified by `supported_filters`.
     """
-    detected_filters: List[str] = []
+    detected_filters: List[SupportedFiltersKeys] = []
     all_supported_params: List[str] = []
     for supported_filter, filter_class in supported_filters.items():
         filter_params = filter_class.params.keys()
