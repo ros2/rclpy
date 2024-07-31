@@ -2528,6 +2528,17 @@ class TestCreateNode(unittest.TestCase):
         finally:
             rclpy.shutdown(context=context)
 
+    def test_node_context_manager(self):
+        context = rclpy.context.Context()
+        rclpy.init(context=context)
+
+        try:
+            with rclpy.create_node('test_node_no_sim', context=context) as node:
+                self.assertTrue(node.has_parameter(USE_SIM_TIME_NAME))
+                self.assertFalse(node.get_parameter(USE_SIM_TIME_NAME).value)
+        finally:
+            rclpy.shutdown(context=context)
+
 
 def test_node_resolve_name():
     context = rclpy.Context()

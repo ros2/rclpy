@@ -148,7 +148,7 @@ class TimerWaitable(Waitable):
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self.timer_is_ready:
             self.timer_is_ready = False
-            self.timer.call_timer()
+            self.timer.call_timer_with_info()
             return 'timer'
         return None
 

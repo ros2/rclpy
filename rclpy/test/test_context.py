@@ -61,6 +61,8 @@ def test_context_manager():
 
     assert not context.ok(), 'the context should not be ok() before init() is called'
 
+    context.init()
+
     with context as the_context:
         # Make sure the correct instance is returned
         assert the_context is context
