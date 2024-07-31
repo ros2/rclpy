@@ -2,6 +2,59 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.5.0 (2024-07-29)
+------------------
+* Add types to task.py (`#1254 <https://github.com/ros2/rclpy/issues/1254>`_)
+* Fix a bad bug in fetching the lifecycle transitions. (`#1321 <https://github.com/ros2/rclpy/issues/1321>`_)
+* Fix a bug when using multiple rclpy.init context managers. (`#1314 <https://github.com/ros2/rclpy/issues/1314>`_)
+* Executor executes the tasks in FIFO order. (`#1304 <https://github.com/ros2/rclpy/issues/1304>`_)
+* Contributors: Chris Lalancette, Michael Carlstrom, Tomoya Fujita
+
+7.4.0 (2024-06-25)
+------------------
+* Add top-level try_shutdown method. (`#1302 <https://github.com/ros2/rclpy/issues/1302>`_)
+* Make rclpy initialization context-manager aware. (`#1298 <https://github.com/ros2/rclpy/issues/1298>`_)
+* Contributors: Chris Lalancette
+
+7.3.0 (2024-06-17)
+------------------
+* Docstring specifying proper destruction and creation of Rate, Timer and GuardCondition (`#1286 <https://github.com/ros2/rclpy/issues/1286>`_)
+* Make timers context-aware. (`#1296 <https://github.com/ros2/rclpy/issues/1296>`_)
+* Make service lients context-aware. (`#1295 <https://github.com/ros2/rclpy/issues/1295>`_)
+* Make service servers context-manager aware. (`#1294 <https://github.com/ros2/rclpy/issues/1294>`_)
+* Make nodes context-manager aware. (`#1293 <https://github.com/ros2/rclpy/issues/1293>`_)
+* Make subscriptions context-manager aware. (`#1291 <https://github.com/ros2/rclpy/issues/1291>`_)
+* Make publishers context-manager aware. (`#1289 <https://github.com/ros2/rclpy/issues/1289>`_)
+* (NumberOfEntities) improve performance (`#1285 <https://github.com/ros2/rclpy/issues/1285>`_)
+* Using Generics for messages (`#1239 <https://github.com/ros2/rclpy/issues/1239>`_)
+* Contributors: Chris Lalancette, Elian NEPPEL, Matthijs van der Burgh, Michael Carlstrom
+
+7.2.0 (2024-04-26)
+------------------
+
+7.1.1 (2024-04-16)
+------------------
+* Clock.py types. (`#1244 <https://github.com/ros2/rclpy/issues/1244>`_)
+  * Start typing time.py
+  * Testing out Enum wrapper for ClockType
+  * convert to rcl_clock_type_t
+  * Update create_time_point
+  * add types to logging_service
+  * Add types to duration.py
+  * Add newlines for class definintions
+  * update type alias name
+  * Update to use Protocols
+  * Add types to time.py
+  * Add types
+  * Fix import order
+  * Started typing clock.py
+  * Move typealias import
+* pybind11 definition doc typo fixes. (`#1270 <https://github.com/ros2/rclpy/issues/1270>`_)
+* Fix small flake8 error in rclpy. (`#1267 <https://github.com/ros2/rclpy/issues/1267>`_)
+  Newer versions of flake8 complain that using 'str' as a
+  variable shadows a builtin.  Just make it 's'.
+* Contributors: Chris Lalancette, Michael Carlstrom, Tomoya Fujita
+
 7.1.0 (2024-03-28)
 ------------------
 * Allow specifying qos (`#1225 <https://github.com/ros2/rclpy/issues/1225>`_)

@@ -256,7 +256,7 @@ private:
   Node node_;
   std::shared_ptr<rcl_action_server_t> rcl_action_server_;
 };
-/// Define a pybind11 wrapper for an rcl_time_point_t
+/// Define a pybind11 wrapper for an rclpy::ActionServer
 /**
  * \param[in] module a pybind11 module to add the definition to
  */

@@ -74,6 +74,15 @@ public:
    */
   void call_timer();
 
+  /// Same as call_timer() except that it also retrieves the actual and expected call time.
+  /**
+   * Raises RCLError if there is an rcl error
+   *
+   * \return the actual and expected call time.
+   */
+  py::object
+  call_timer_with_info();
+
   /// Update the timer period
   /**
    * The change in period will take effect after the next timer call

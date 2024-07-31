@@ -177,7 +177,7 @@ private:
   std::shared_ptr<rcl_wait_set_t> rcl_wait_set_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::Service
+/// Define a pybind11 wrapper for an rclpy::WaitSet
 void define_waitset(py::object module);
 }  // namespace rclpy
 
