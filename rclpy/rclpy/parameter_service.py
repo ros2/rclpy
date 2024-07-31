@@ -115,7 +115,6 @@ class ParameterService:
             response.types.append(value)
         return response
 
-
     def _list_parameters_callback(
             self,
             request: ListParameters.Response,
