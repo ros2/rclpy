@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from enum import Enum, IntEnum
-from typing import (Callable, Iterable, List, Optional, Protocol, Tuple, Type,
-                    TypeVar, TYPE_CHECKING, Union)
+from typing import (Callable, Iterable, List, Optional, Protocol, Tuple, Type, TYPE_CHECKING,
+                    TypeVar, Union)
 import warnings
 
 from rclpy.duration import Duration, DurationHandle
@@ -22,6 +22,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 if TYPE_CHECKING:
     from typing import TypeAlias
+
 
 class QoSPolicyKind(IntEnum):
     """
@@ -106,47 +107,23 @@ class QoSProfile:
         ):
             raise InvalidQoSProfileException('History set to KEEP_LAST without a depth setting.')
 
-        if depth is None:
-            self.depth = QoSProfile.__qos_profile_default_dict['depth']
-        else:
-            self.depth = depth
+        self.depth = depth or QoSProfile.__qos_profile_default_dict['depth']
 
-        if reliability is None:
-            self.reliability = QoSProfile.__qos_profile_default_dict['reliability']
-        else:
-            self.reliability = reliability
+        self.reliability = reliability or QoSProfile.__qos_profile_default_dict['reliability']
 
-        if durability is None:
-            self.durability = QoSProfile.__qos_profile_default_dict['durability']
-        else:
-            self.durability = durability
+        self.durability = durability or QoSProfile.__qos_profile_default_dict['durability']
 
-        if lifespan is None:
-            self.lifespan = QoSProfile.__qos_profile_default_dict['lifespan']
-        else:
-            self.lifespan = lifespan
+        self.lifespan = lifespan or QoSProfile.__qos_profile_default_dict['lifespan']
 
-        if deadline is None:
-            self.deadline = QoSProfile.__qos_profile_default_dict['deadline']
-        else:
-            self.deadline = deadline
+        self.deadline = deadline or QoSProfile.__qos_profile_default_dict['deadline']
 
-        if liveliness is None:
-            self.liveliness = QoSProfile.__qos_profile_default_dict['liveliness']
-        else:
-            self.liveliness = liveliness
+        self.liveliness = liveliness or QoSProfile.__qos_profile_default_dict['liveliness']
 
-        if liveliness_lease_duration is None:
-            self.liveliness_lease_duration = \
-                QoSProfile.__qos_profile_default_dict['liveliness_lease_duration']
-        else:
-            self.liveliness_lease_duration = liveliness_lease_duration
+        self.liveliness_lease_duration = liveliness_lease_duration or \
+            QoSProfile.__qos_profile_default_dict['liveliness_lease_duration']
 
-        if avoid_ros_namespace_conventions is None:
-            self.avoid_ros_namespace_conventions = \
-                QoSProfile.__qos_profile_default_dict['avoid_ros_namespace_conventions']
-        else:
-            self.avoid_ros_namespace_conventions = avoid_ros_namespace_conventions
+        self.avoid_ros_namespace_conventions = avoid_ros_namespace_conventions or \
+            QoSProfile.__qos_profile_default_dict['avoid_ros_namespace_conventions']
 
     @property
     def history(self) -> 'QoSHistoryPolicy':
