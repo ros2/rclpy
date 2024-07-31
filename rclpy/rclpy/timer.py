@@ -19,9 +19,11 @@ from typing import Callable
 from typing import Optional
 from typing import Protocol
 from typing import Type
+from typing import Union
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.clock import Clock, ClockType
+from rclpy.clock import Clock
+from rclpy.clock_type import ClockType
 from rclpy.context import Context
 from rclpy.destroyable import DestroyableType
 from rclpy.exceptions import InvalidHandle, ROSInterruptException
@@ -60,6 +62,7 @@ class TimerHandle(DestroyableType, Protocol):
     def is_timer_canceled(self) -> bool:
         ...
 
+
 class TimerInfo:
     """
     Represents a timer call information.
@@ -96,7 +99,7 @@ class Timer:
 
     def __init__(
         self,
-        callback: Optional[Callable[[], None]],
+        callback: Union[Callable[[], None], Callable[[TimerInfo], None], None],
         callback_group: CallbackGroup,
         timer_period_ns: int,
         clock: Clock,
