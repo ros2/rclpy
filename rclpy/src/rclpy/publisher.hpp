@@ -131,7 +131,7 @@ private:
   Node node_;
   std::shared_ptr<rcl_publisher_t> rcl_publisher_;
 };
-/// Define a pybind11 wrapper for an rclpy::Service
+/// Define a pybind11 wrapper for an rclpy::Publisher
 void define_publisher(py::object module);
 }  // namespace rclpy
 

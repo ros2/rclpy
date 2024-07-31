@@ -126,5 +126,16 @@ class TestPublisher(unittest.TestCase):
         sub.destroy()
 
 
+def test_publisher_context_manager():
+    rclpy.init()
+    try:
+        with rclpy.create_node('pub_node', namespace='/pub_node_ns') as node:
+            with node.create_publisher(BasicTypes, 'chatter', 1) as pub:
+                assert pub.get_subscription_count() == 0
+
+    finally:
+        rclpy.shutdown()
+
+
 if __name__ == '__main__':
     unittest.main()
