@@ -70,6 +70,7 @@ def ok(*, context: Optional[Context] = None) -> bool:
     return context.ok()
 
 
+
 def shutdown(*, context: Optional[Context] = None) -> None:
     """
     Shutdown the given ``Context``.
