@@ -53,7 +53,7 @@ class InvalidQoSProfileException(Exception):
     """Raised when constructing a QoSProfile with invalid arguments."""
 
     def __init__(self, message: str) -> None:
-        Exception.__init__(self, f'Invalid QoSProfile: {message}')
+        Exception(self, f'Invalid QoSProfile: {message}')
 
 
 class QoSProfileHandle(Protocol):
