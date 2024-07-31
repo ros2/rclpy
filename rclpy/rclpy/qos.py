@@ -103,7 +103,7 @@ class QoSProfile:
         self.history = history
 
         if (
-            QoSHistoryPolicy.KEEP_LAST == self.history and depth == 0
+            QoSHistoryPolicy.KEEP_LAST == self.history and depth is None
         ):
             raise InvalidQoSProfileException('History set to KEEP_LAST without a depth setting.')
 
