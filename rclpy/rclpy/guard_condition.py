@@ -15,7 +15,7 @@
 from typing import Callable, Optional, Protocol
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.context import Context
+from rclpy.context import Context, ContextHandle
 from rclpy.destroyable import DestroyableType
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
@@ -23,8 +23,14 @@ from rclpy.utilities import get_default_context
 
 class GuardConditionHandle(DestroyableType, Protocol):
 
-    def trigger_guard_condition(self) -> None:
-        ...
+    def __init__(self, context: ContextHandle) -> None: ...
+
+    @property
+    def pointer(self) -> int: ...
+    """Get the address of the entity as an integer"""
+
+    def trigger_guard_condition(self) -> None: ...
+    """Trigger a general purpose guard condition"""
 
 
 class GuardCondition:

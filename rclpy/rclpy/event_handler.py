@@ -16,6 +16,7 @@ from enum import IntEnum
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import Protocol
 import warnings
 
 import rclpy
@@ -68,6 +69,10 @@ IncompatibleTypeInfo = _rclpy.rmw_incompatible_type_status_t
 
 """Raised when registering a callback for an event type that is not supported."""
 UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
+
+
+class EventHandle(Protocol):
+    pass
 
 
 class EventHandler(Waitable):

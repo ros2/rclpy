@@ -16,7 +16,7 @@
 from enum import Enum
 import inspect
 from types import TracebackType
-from typing import Callable, Generic, List, Optional, Type, TypeVar
+from typing import Callable, Generic, List, Optional, Protocol, Type, TypeVar
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import EventHandler, SubscriptionEventCallbacks
@@ -27,6 +27,10 @@ from rclpy.type_support import MsgT
 
 # Left to support Legacy TypeVars.
 MsgType = TypeVar('MsgType')
+
+
+class SubscriptionHandle(Protocol):
+    pass
 
 
 class Subscription(Generic[MsgT]):
