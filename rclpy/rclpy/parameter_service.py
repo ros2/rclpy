@@ -71,10 +71,10 @@ class ParameterService:
         )
 
     def _describe_parameters_callback(
-            self,
-            request: DescribeParameters.Request,
-            response: DescribeParameters.Response
-            ) -> DescribeParameters.Response:
+        self,
+        request: DescribeParameters.Request,
+        response: DescribeParameters.Response
+    ) -> DescribeParameters.Response:
         node = self._get_node()
         for name in request.names:
             try:
@@ -86,10 +86,10 @@ class ParameterService:
         return response
 
     def _get_parameters_callback(
-            self,
-            request: GetParameters.Request,
-            response: GetParameters.Response
-            ) -> GetParameters.Response:
+        self,
+        request: GetParameters.Request,
+        response: GetParameters.Response
+    ) -> GetParameters.Response:
         node = self._get_node()
         for name in request.names:
             try:
@@ -101,10 +101,10 @@ class ParameterService:
         return response
 
     def _get_parameter_types_callback(
-            self,
-            request: GetParameterTypes.Request,
-            response: GetParameterTypes.Response
-            ) -> GetParameterTypes.Response:
+        self,
+        request: GetParameterTypes.Request,
+        response: GetParameterTypes.Response
+    ) -> GetParameterTypes.Response:
         node = self._get_node()
         for name in request.names:
             try:
@@ -116,10 +116,10 @@ class ParameterService:
         return response
 
     def _list_parameters_callback(
-            self,
-            request: ListParameters.Response,
-            response: ListParameters.Response
-            ) -> ListParameters.Response:
+        self,
+        request: ListParameters.Response,
+        response: ListParameters.Response
+    ) -> ListParameters.Response:
         node = self._get_node()
         try:
             response.result = node.list_parameters(request.prefixes, request.depth)
