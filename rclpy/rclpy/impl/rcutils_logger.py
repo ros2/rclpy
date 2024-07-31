@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
 from contextlib import suppress
 import inspect
 import os
@@ -25,6 +24,7 @@ from typing import List
 from typing import Literal
 from typing import NamedTuple
 from typing import Optional
+from typing import OrderedDict
 from typing import Tuple
 from typing import Type
 from typing import TypedDict
