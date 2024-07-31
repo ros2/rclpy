@@ -107,10 +107,10 @@ class QoSProfile:
         ):
             raise InvalidQoSProfileException('History set to KEEP_LAST without a depth setting.')
 
-        if depth:
-            self.depth = depth
-        else: 
+        if depth is None:
             self.depth = QoSProfile.__qos_profile_default_dict['depth']
+        else:
+            self.depth = depth
 
         self.reliability = reliability or QoSProfile.__qos_profile_default_dict['reliability']
 
