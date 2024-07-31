@@ -27,18 +27,36 @@ For example, you might use it like this:
 """
 
 
-from typing import List, Protocol, Sequence
+from typing import List, Protocol, Sequence, Type, TYPE_CHECKING
 
 from rpyutils import import_c_library
+
+if TYPE_CHECKING:
+    from rclpy.client import ClientHandle
+    from rclpy.context import ContextHandle
+    from rclpy.event_handler import EventHandle
+    from rclpy.guard_condition import GuardConditionHandle
+    from rclpy.service import ServiceHandle
+    from rclpy.subscription import SubscriptionHandle
+    from rclpy.timer import TimerHandle
+    from rclpy.wait_set import WaitSetHandle
+
+    class rclpyHandle(Protocol):
+
+        def rclpy_remove_ros_args(self, pycli_args: Sequence[str]) -> List[str]: ...
+
+        def rclpy_get_rmw_implementation_identifier(self) -> str: ...
+
+        Client: Type[ClientHandle]
+        Context: Type[ContextHandle]
+        EventHandle: Type[EventHandle]
+        GuardCondition: Type[GuardConditionHandle]
+        Service: Type[ServiceHandle]
+        Subscription: Type[SubscriptionHandle]
+        Timer: Type[TimerHandle]
+        WaitSet: Type[WaitSetHandle]
+
+
 package = 'rclpy'
 
 rclpy_implementation: 'rclpyHandle' = import_c_library('._rclpy_pybind11', package)
-
-
-class rclpyHandle(Protocol):
-
-    def rclpy_remove_ros_args(self, pycli_args: Sequence[str]) -> List[str]:
-        ...
-
-    def rclpy_get_rmw_implementation_identifier(self) -> str:
-        ...

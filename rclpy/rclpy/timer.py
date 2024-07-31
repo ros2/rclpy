@@ -17,6 +17,7 @@ import threading
 from types import TracebackType
 from typing import Callable
 from typing import Optional
+from typing import Protocol
 from typing import Type
 
 from rclpy.callback_groups import CallbackGroup
@@ -58,6 +59,10 @@ class TimerInfo:
     def actual_call_time(self) -> Time:
         """:return: the actual_call_time."""
         return self._actual_call_time
+
+
+class TimerHandle(Protocol):
+    pass
 
 
 class Timer:

@@ -15,6 +15,7 @@
 from types import TracebackType
 from typing import Callable
 from typing import Optional
+from typing import Protocol
 from typing import Type
 from typing import TypeVar
 
@@ -28,6 +29,10 @@ from rclpy.service_introspection import ServiceIntrospectionState
 SrvType = TypeVar('SrvType')
 SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
+
+
+class ServiceHandle(Protocol):
+    pass
 
 
 class Service:

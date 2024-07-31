@@ -17,6 +17,7 @@ import time
 from types import TracebackType
 from typing import Dict
 from typing import Optional
+from typing import Protocol
 from typing import Type
 from typing import TypeVar
 
@@ -32,6 +33,10 @@ from rclpy.task import Future
 SrvType = TypeVar('SrvType')
 SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
+
+
+class ClientHandle(Protocol):
+    pass
 
 
 class Client:
