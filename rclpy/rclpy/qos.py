@@ -87,7 +87,7 @@ class QoSProfile:
         '_avoid_ros_namespace_conventions',
     ]
 
-    def __init__(self, history: Optional['QoSHistoryPolicy'] = None, depth: int = 0,
+    def __init__(self, history: Optional['QoSHistoryPolicy'] = None, depth: Optional[int] = None,
                  reliability: Optional['QoSReliabilityPolicy'] = None,
                  durability: Optional['QoSDurabilityPolicy'] = None,
                  lifespan: Optional[Duration] = None, deadline: Optional[Duration] = None,
@@ -96,14 +96,14 @@ class QoSProfile:
                  avoid_ros_namespace_conventions: Optional[bool] = None) -> None:
 
         if history is None:
-            if depth == 0:
+            if depth is None:
                 raise InvalidQoSProfileException('History and/or depth settings are required.')
             history = QoSHistoryPolicy.KEEP_LAST
 
         self.history = history
 
         if (
-            QoSHistoryPolicy.KEEP_LAST == self.history and depth is None
+            QoSHistoryPolicy.KEEP_LAST == self.history and depth == 0
         ):
             raise InvalidQoSProfileException('History set to KEEP_LAST without a depth setting.')
 
