@@ -140,7 +140,15 @@ ActionServer::take_result_request(py::object pymsg_type)
   rcl_ret_t ret = rcl_action_send_ ## Type ## _response( \
     rcl_action_server_.get(), header, ros_response.get()); \
   if (RCL_RET_OK != ret) { \
-    throw rclpy::RCLError("Failed to send " #Type " response"); \
+    if (RCL_RET_TIMEOUT == ret) { \
+      int stack_level = 1; \
+      PyErr_WarnFormat( \
+        PyExc_RuntimeWarning, stack_level, "failed to send response (timeout): %s", \
+        rcl_get_error_string().str); \
+      rcl_reset_error(); \
+    } else { \
+      throw rclpy::RCLError("Failed to send " #Type " response"); \
+    } \
   }
 
 void

@@ -197,7 +197,7 @@ class ActionServer(Waitable):
         cancel_service_qos_profile=qos_profile_services_default,
         feedback_pub_qos_profile=QoSProfile(depth=10),
         status_pub_qos_profile=qos_profile_action_status_default,
-        result_timeout=900
+        result_timeout=10
     ):
         """
         Create an ActionServer.
@@ -387,7 +387,12 @@ class ActionServer(Waitable):
                 # Remove from response
                 cancel_response.goals_canceling.remove(goal_info)
 
-        self._handle.send_cancel_response(request_header, cancel_response)
+        try:
+            # If the client goes away anytime before this, sending the goal response may fail.
+            # Catch the exception here and go on so we don't crash.
+            self._handle.send_cancel_response(request_header, cancel_response)
+        except RCLError:
+            self._logger.warn('Failed to send cancel response (the client may have gone away)')
 
     async def _execute_get_result_request(self, request_header_and_message):
         request_header, result_request = request_header_and_message
