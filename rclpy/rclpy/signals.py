@@ -30,6 +30,7 @@ def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions
     return _rclpy.install_signal_handlers(options)
 
 
+
 def get_current_signal_handlers_options():
     """
     Get current signal handler options.
