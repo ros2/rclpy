@@ -44,7 +44,7 @@ def get_current_signal_handlers_options() -> SignalHandlerOptions:
 
     :return: rclpy.signals.SignalHandlerOptions instance.
     """
-    return _rclpy.get_current_signal_handlers_options()
+    return SignalHandlerOptions(_rclpy.get_current_signal_handlers_options())
 
 
 def uninstall_signal_handlers() -> None:
