@@ -571,10 +571,11 @@ enum class SignalHandlerOptions : int
  * \param options rclpy.signals.SignalHandlerOptions integer value.
  */
 void
-install_signal_handlers(SignalHandlerOptions options)
+install_signal_handlers(int options)
 {
+  auto signalHandlerOptions = SignalHandlerOptions(options);
   setup_deferred_signal_handler();
-  switch (options) {
+  switch (signalHandlerOptions) {
     case SignalHandlerOptions::No:
       return;
     case SignalHandlerOptions::SigInt:
