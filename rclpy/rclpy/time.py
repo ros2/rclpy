@@ -23,7 +23,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from .clock_type import ClockType
 
 
-class TimeType(Protocol):
+class TimeHandle(Protocol):
     """Type alias of _rclpy.rcl_time_point_t."""
 
     nanoseconds: int
@@ -56,7 +56,7 @@ class Time:
             # pybind11 would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C time point.')
-        self._time_handle: TimeType = _rclpy.rcl_time_point_t(total_nanoseconds, clock_type)
+        self._time_handle: TimeHandle = _rclpy.rcl_time_point_t(total_nanoseconds, clock_type)
 
     @property
     def nanoseconds(self) -> int:

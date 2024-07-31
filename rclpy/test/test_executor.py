@@ -270,7 +270,7 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
 
-    def test_create_task_dependent_coroutines(self):
+    def test_create_task_fifo_order(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -281,24 +281,50 @@ class TestExecutor(unittest.TestCase):
         future1 = executor.create_task(coro1)
 
         async def coro2():
-            nonlocal future1
-            await future1
             return 'Sentinel Result 2'
 
         future2 = executor.create_task(coro2)
 
-        # Coro2 is newest task, so it gets to await future1 in this spin
-        executor.spin_once(timeout_sec=0)
-        # Coro1 execs in this spin
+        # Coro1 is the 1st task, so it gets executed in this spin
         executor.spin_once(timeout_sec=0)
         self.assertTrue(future1.done())
         self.assertEqual('Sentinel Result 1', future1.result())
         self.assertFalse(future2.done())
 
-        # Coro2 passes the await step here (timeout change forces new generator)
-        executor.spin_once(timeout_sec=1)
+        # Coro2 is the next in the queue, so it gets executed in this spin
+        executor.spin_once(timeout_sec=0)
         self.assertTrue(future2.done())
         self.assertEqual('Sentinel Result 2', future2.result())
+
+    def test_create_task_dependent_coroutines(self):
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        async def coro1():
+            nonlocal future2
+            await future2
+            return 'Sentinel Result 1'
+
+        future1 = executor.create_task(coro1)
+
+        async def coro2():
+            return 'Sentinel Result 2'
+
+        future2 = executor.create_task(coro2)
+
+        # Coro1 is the 1st task, so it gets to await future2 in this spin
+        executor.spin_once(timeout_sec=0)
+        # Coro2 execs in this spin
+        executor.spin_once(timeout_sec=0)
+        self.assertFalse(future1.done())
+        self.assertTrue(future2.done())
+        self.assertEqual('Sentinel Result 2', future2.result())
+
+        # Coro1 passes the await step here (timeout change forces new generator)
+        executor.spin_once(timeout_sec=1)
+        self.assertTrue(future1.done())
+        self.assertEqual('Sentinel Result 1', future1.result())
 
     def test_create_task_during_spin(self):
         self.assertIsNotNone(self.node.handle)

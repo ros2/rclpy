@@ -15,6 +15,7 @@
 import math
 import time
 
+from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -78,11 +79,12 @@ from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
-from rclpy.timer import Timer
+from rclpy.timer import Timer, TimerInfo
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
+from rclpy.type_support import MsgT
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
@@ -93,8 +95,9 @@ from rclpy.waitable import Waitable
 
 HIDDEN_NODE_PREFIX = '_'
 
-# Used for documentation purposes only
+# Left to support Legacy TypeVar.
 MsgType = TypeVar('MsgType')
+
 SrvType = TypeVar('SrvType')
 SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
@@ -243,6 +246,8 @@ class Node:
             self._logger_service = LoggingService(self)
 
         self._type_description_service = TypeDescriptionService(self)
+
+        self._context.track_node(self)
 
     @property
     def publishers(self) -> Iterator[Publisher]:
@@ -986,7 +991,7 @@ class Node:
         result = ListParametersResult()
 
         separator_less_than_depth: Callable[[str], bool] = \
-            lambda str: str.count(PARAMETER_SEPARATOR_STRING) < depth
+            lambda s: s.count(PARAMETER_SEPARATOR_STRING) < depth
 
         recursive: bool = \
             (len(prefixes) == 0) and (depth == ListParameters.Request.DEPTH_RECURSIVE)
@@ -1499,7 +1504,7 @@ class Node:
 
     def create_publisher(
         self,
-        msg_type,
+        msg_type: Type[MsgT],
         topic: str,
         qos_profile: Union[QoSProfile, int],
         *,
@@ -1507,7 +1512,7 @@ class Node:
         event_callbacks: Optional[PublisherEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         publisher_class: Type[Publisher] = Publisher,
-    ) -> Publisher:
+    ) -> Publisher[MsgT]:
         """
         Create a new publisher.
 
@@ -1573,16 +1578,16 @@ class Node:
 
     def create_subscription(
         self,
-        msg_type,
+        msg_type: Type[MsgT],
         topic: str,
-        callback: Callable[[MsgType], None],
+        callback: Callable[[MsgT], None],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False
-    ) -> Subscription:
+    ) -> Subscription[MsgT]:
         """
         Create a new subscription.
 
@@ -1738,7 +1743,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Callable,
+        callback: Callable[[TimerInfo], None],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
@@ -1778,7 +1783,12 @@ class Node:
         callback: Callable,
         callback_group: Optional[CallbackGroup] = None
     ) -> GuardCondition:
-        """Create a new guard condition."""
+        """
+        Create a new guard condition.
+
+        .. warning:: Users should call :meth:`.Node.destroy_guard_condition` to destroy
+           the GuardCondition object.
+        """
         if callback_group is None:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
@@ -1795,6 +1805,8 @@ class Node:
     ) -> Rate:
         """
         Create a Rate object.
+
+        .. warning:: Users should call :meth:`.Node.destroy_rate` to destroy the Rate object.
 
         :param frequency: The frequency the Rate runs at (Hz).
         :param clock: The clock the Rate gets time from.
@@ -1934,6 +1946,8 @@ class Node:
         * :func:`create_guard_condition`
 
         """
+        self._context.untrack_node(self)
+
         # Drop extra reference to parameter event publisher.
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
@@ -2293,3 +2307,14 @@ class Node:
             flag = fully_qualified_node_name in fully_qualified_node_names
             time.sleep(0.1)
         return flag
+
+    def __enter__(self) -> 'Node':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy_node()
