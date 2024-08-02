@@ -14,6 +14,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
+from functools import partial
 import inspect
 import os
 from threading import Condition
@@ -49,7 +50,7 @@ from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.timer import Timer
+from rclpy.timer import Timer, TimerInfo
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
@@ -369,11 +370,33 @@ class Executor(ContextManager['Executor']):
     def _take_timer(self, tmr):
         try:
             with tmr.handle:
-                tmr.handle.call_timer()
+                info = tmr.handle.call_timer_with_info()
+                timer_info = TimerInfo(
+                    expected_call_time=info['expected_call_time'],
+                    actual_call_time=info['actual_call_time'],
+                    clock_type=tmr.clock.clock_type)
 
-                async def _execute():
-                    await await_or_execute(tmr.callback)
-                return _execute
+                def check_argument_type(callback_func, target_type):
+                    sig = inspect.signature(callback_func)
+                    for param in sig.parameters.values():
+                        if param.annotation == target_type:
+                            # return 1st one immediately
+                            return param.name
+                    # We could not find the target type in the signature
+                    return None
+
+                # User might change the Timer.callback function signature at runtime,
+                # so it needs to check the signature every time.
+                arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
+                prefilled_arg = {arg_name: timer_info}
+                if arg_name is not None:
+                    async def _execute():
+                        await await_or_execute(partial(tmr.callback, **prefilled_arg))
+                    return _execute
+                else:
+                    async def _execute():
+                        await await_or_execute(tmr.callback)
+                    return _execute
         except InvalidHandle:
             # Timer is a Destroyable, which means that on __enter__ it can throw an
             # InvalidHandle exception if the entity has already been destroyed.  Handle that here

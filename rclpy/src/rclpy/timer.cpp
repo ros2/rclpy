@@ -94,6 +94,22 @@ void Timer::call_timer()
   }
 }
 
+py::object
+Timer::call_timer_with_info()
+{
+  py::dict timer_info;
+  rcl_timer_call_info_t call_info;
+  rcl_ret_t ret = rcl_timer_call_with_info(rcl_timer_.get(), &call_info);
+  if (ret != RCL_RET_OK) {
+    throw RCLError("failed to call timer");
+  }
+
+  timer_info["expected_call_time"] = call_info.expected_call_time;
+  timer_info["actual_call_time"] = call_info.actual_call_time;
+
+  return timer_info;
+}
+
 void Timer::change_timer_period(int64_t period_nsec)
 {
   int64_t old_period;
@@ -172,6 +188,9 @@ define_timer(py::object module)
   .def(
     "call_timer", &Timer::call_timer,
     "Call a timer and starts counting again.")
+  .def(
+    "call_timer_with_info", &Timer::call_timer_with_info,
+    "Call a timer and starts counting again, retrieves actual and expected call time.")
   .def(
     "change_timer_period", &Timer::change_timer_period,
     "Set the period of a timer.")
