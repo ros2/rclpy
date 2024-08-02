@@ -29,7 +29,7 @@ g_default_context = None
 g_context_lock = threading.Lock()
 
 
-def get_default_context(*, shutting_down=False) -> Context:
+def get_default_context(*, shutting_down: bool = False) -> Context:
     """Return the global default context singleton."""
     global g_context_lock
     with g_context_lock:
@@ -70,7 +70,7 @@ def ok(*, context: Optional[Context] = None) -> bool:
     return context.ok()
 
 
-def shutdown(*, context=None) -> None:
+def shutdown(*, context: Optional[Context] = None) -> None:
     """
     Shutdown the given ``Context``.
 
@@ -82,7 +82,7 @@ def shutdown(*, context=None) -> None:
     context.shutdown()
 
 
-def try_shutdown(*, context=None) -> None:
+def try_shutdown(*, context: Optional[Context] = None) -> None:
     """
     Shutdown the given ``Context`` if not already shutdown.
 
@@ -131,8 +131,8 @@ def get_available_rmw_implementations() -> Set[str]:
     # filter by implementations in environment variable if provided
     rmw_implementations = os.environ.get('RMW_IMPLEMENTATIONS')
     if rmw_implementations:
-        rmw_implementations = rmw_implementations.split(os.pathsep)
-        missing_rmw_implementations = set(rmw_implementations) - \
+        rmw_implementations_array = rmw_implementations.split(os.pathsep)
+        missing_rmw_implementations = set(rmw_implementations_array) - \
             available_rmw_implementations
         if missing_rmw_implementations:
             # TODO(sloretz) function name suggets to me it would return available ones even

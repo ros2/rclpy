@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from types import TracebackType
 from typing import Callable
 from typing import Generic
+from typing import Optional
+from typing import Type
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
@@ -117,3 +120,14 @@ class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
            should call :meth:`.Node.destroy_service`.
         """
         self.__service.destroy_when_not_in_use()
+
+    def __enter__(self) -> 'Service':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
