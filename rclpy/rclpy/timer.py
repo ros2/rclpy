@@ -20,11 +20,44 @@ from typing import Optional
 from typing import Type
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.clock import Clock
+from rclpy.clock import Clock, ClockType
 from rclpy.context import Context
 from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.time import Time
 from rclpy.utilities import get_default_context
+
+
+class TimerInfo:
+    """
+    Represents a timer call information.
+
+    A ``TimerInfo`` object encapsulate the timer information when called.
+    """
+
+    def __init__(
+            self, *,
+            expected_call_time: int = 0,
+            actual_call_time: int = 0,
+            clock_type: ClockType = ClockType.SYSTEM_TIME):
+        if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
+            raise TypeError('Clock type must be a ClockType enum')
+        if expected_call_time < 0 or actual_call_time < 0:
+            raise ValueError('call time values must not be negative')
+        self._expected_call_time: Time = Time(
+            nanoseconds=expected_call_time, clock_type=clock_type)
+        self._actual_call_time: Time = Time(
+            nanoseconds=actual_call_time, clock_type=clock_type)
+
+    @property
+    def expected_call_time(self) -> Time:
+        """:return: the expected_call_time."""
+        return self._expected_call_time
+
+    @property
+    def actual_call_time(self) -> Time:
+        """:return: the actual_call_time."""
+        return self._actual_call_time
 
 
 class Timer:
@@ -46,6 +79,9 @@ class Timer:
         ``timer_period_sec`` number of seconds the provided callback function will be called.
         If autostart is ``False``, the timer will be created but not started; it can then be
         started by calling ``reset()`` on the timer object.
+
+        .. warning:: Users should not create a timer with this constructor, instead they
+           should call :meth:`.Node.create_timer`.
 
         :param callback: A user-defined callback function that is called when the timer expires.
         :param callback_group: The callback group for the timer. If ``None``, then the
@@ -72,6 +108,12 @@ class Timer:
         return self.__timer
 
     def destroy(self):
+        """
+        Destroy a container for a ROS timer.
+
+        .. warning:: Users should not destroy a timer with this method, instead they should
+           call :meth:`.Node.destroy_timer`.
+        """
         self.__timer.destroy_when_not_in_use()
 
     @property
@@ -132,6 +174,12 @@ class Rate:
     """A utility for sleeping at a fixed rate."""
 
     def __init__(self, timer: Timer, *, context):
+        """
+        Create a Rate.
+
+        .. warning:: Users should not create a rate with this constructor, instead they
+           should call :meth:`.Node.create_rate`.
+        """
         # Rate is a wrapper around a timer
         self._timer = timer
         self._is_shutdown = False
@@ -153,6 +201,12 @@ class Rate:
         self.destroy()
 
     def destroy(self):
+        """
+        Destroy a container for a ROS rate.
+
+        .. warning:: Users should not destroy a rate with this method, instead they should
+           call :meth:`.Node.destroy_rate`.
+        """
         self._is_destroyed = True
         self._event.set()
 

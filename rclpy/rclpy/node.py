@@ -79,7 +79,7 @@ from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
-from rclpy.timer import Timer
+from rclpy.timer import Timer, TimerInfo
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
@@ -246,6 +246,8 @@ class Node:
             self._logger_service = LoggingService(self)
 
         self._type_description_service = TypeDescriptionService(self)
+
+        self._context.track_node(self)
 
     @property
     def publishers(self) -> Iterator[Publisher]:
@@ -1758,7 +1760,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Callable,
+        callback: Callable[[TimerInfo], None],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
@@ -1798,7 +1800,12 @@ class Node:
         callback: Callable,
         callback_group: Optional[CallbackGroup] = None
     ) -> GuardCondition:
-        """Create a new guard condition."""
+        """
+        Create a new guard condition.
+
+        .. warning:: Users should call :meth:`.Node.destroy_guard_condition` to destroy
+           the GuardCondition object.
+        """
         if callback_group is None:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
@@ -1815,6 +1822,8 @@ class Node:
     ) -> Rate:
         """
         Create a Rate object.
+
+        .. warning:: Users should call :meth:`.Node.destroy_rate` to destroy the Rate object.
 
         :param frequency: The frequency the Rate runs at (Hz).
         :param clock: The clock the Rate gets time from.
@@ -1954,6 +1963,8 @@ class Node:
         * :func:`create_guard_condition`
 
         """
+        self._context.untrack_node(self)
+
         # Drop extra reference to parameter event publisher.
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
