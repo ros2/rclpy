@@ -107,26 +107,30 @@ class QoSProfile:
         ):
             raise InvalidQoSProfileException('History set to KEEP_LAST without a depth setting.')
 
-        if depth is None:
-            self.depth = QoSProfile.__qos_profile_default_dict['depth']
-        else:
-            self.depth = depth
+        self.depth = QoSProfile.__qos_profile_default_dict['depth'] if depth is None else depth
 
-        self.reliability = reliability or QoSProfile.__qos_profile_default_dict['reliability']
+        self.reliability = QoSProfile.__qos_profile_default_dict['reliability'] \
+            if reliability is None else reliability
 
-        self.durability = durability or QoSProfile.__qos_profile_default_dict['durability']
+        self.durability = QoSProfile.__qos_profile_default_dict['durability'] \
+            if durability is None else durability
 
-        self.lifespan = lifespan or QoSProfile.__qos_profile_default_dict['lifespan']
+        self.lifespan = QoSProfile.__qos_profile_default_dict['lifespan'] \
+            if lifespan is None else lifespan
 
-        self.deadline = deadline or QoSProfile.__qos_profile_default_dict['deadline']
+        self.deadline = QoSProfile.__qos_profile_default_dict['deadline'] \
+            if deadline is None else deadline
 
-        self.liveliness = liveliness or QoSProfile.__qos_profile_default_dict['liveliness']
+        self.liveliness = QoSProfile.__qos_profile_default_dict['liveliness'] \
+            if liveliness is None else liveliness
 
-        self.liveliness_lease_duration = liveliness_lease_duration or \
-            QoSProfile.__qos_profile_default_dict['liveliness_lease_duration']
+        self.liveliness_lease_duration =  \
+            QoSProfile.__qos_profile_default_dict['liveliness_lease_duration'] \
+            if liveliness_lease_duration is None else liveliness_lease_duration
 
-        self.avoid_ros_namespace_conventions = avoid_ros_namespace_conventions or \
-            QoSProfile.__qos_profile_default_dict['avoid_ros_namespace_conventions']
+        self.avoid_ros_namespace_conventions = \
+            QoSProfile.__qos_profile_default_dict['avoid_ros_namespace_conventions'] \
+            if avoid_ros_namespace_conventions is None else avoid_ros_namespace_conventions
 
     @property
     def history(self) -> 'QoSHistoryPolicy':
