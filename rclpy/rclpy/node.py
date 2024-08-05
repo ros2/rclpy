@@ -1760,7 +1760,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Callable[[TimerInfo], None],
+        callback: Union[Callable[[], None], Callable[[TimerInfo], None], None],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
