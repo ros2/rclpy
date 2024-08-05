@@ -17,6 +17,8 @@ import functools
 import threading
 import traceback
 
+from typing import Any, TypedDict, TYPE_CHECKING
+
 from action_msgs.msg import GoalInfo, GoalStatus
 
 from rclpy.executors import await_or_execute
@@ -47,6 +49,15 @@ class CancelResponse(Enum):
 
 
 GoalEvent = _rclpy.GoalEvent
+
+
+if TYPE_CHECKING:
+    from typing_extensions import NotRequired
+    class ServerGoalHandleDict(TypedDict):
+        goal: NotRequired[Any]
+        cancel: NotRequired[Any]
+        result: NotRequired[Any]
+        expired: NotRequired[Any]
 
 
 class ServerGoalHandle:
@@ -178,7 +189,7 @@ def default_cancel_callback(cancel_request):
     return CancelResponse.REJECT
 
 
-class ActionServer(Waitable):
+class ActionServer(Waitable[ServerGoalHandleDict]):
     """ROS Action server."""
 
     def __init__(
@@ -446,9 +457,9 @@ class ActionServer(Waitable):
         self._is_goal_expired = ready_entities[3]
         return any(ready_entities)
 
-    def take_data(self):
+    def take_data(self) -> ServerGoalHandleDict:
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
-        data = {}
+        data: ServerGoalHandleDict = {}
         if self._is_goal_request_ready:
             with self._lock:
                 taken_data = self._handle.take_goal_request(
@@ -482,7 +493,7 @@ class ActionServer(Waitable):
 
         return data
 
-    async def execute(self, taken_data):
+    async def execute(self, taken_data: ServerGoalHandleDict) -> None:
         """
         Execute work after data has been taken from a ready wait set.
 
