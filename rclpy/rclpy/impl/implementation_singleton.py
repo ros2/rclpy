@@ -32,7 +32,7 @@ from typing import List, Protocol, Sequence
 from rpyutils import import_c_library
 package = 'rclpy'
 
-rclpy_implementation = import_c_library('._rclpy_pybind11', package)
+rclpy_implementation: 'rclpyHandle' = import_c_library('._rclpy_pybind11', package)
 
 
 class rclpyHandle(Protocol):
