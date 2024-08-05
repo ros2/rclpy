@@ -102,10 +102,10 @@ class Waitable(Generic[T]):
         """Implement to mark entities as not-in-use to allow destruction after waiting on them."""
         raise NotImplementedError('Must be implemented by subclass')
 
-    def add_future(self, future: Future[Any]) -> None:
+    def add_future(self, future: 'Future[Any]') -> None:
         self._futures.append(future)
 
-    def remove_future(self, future: Future[Any]) -> None:
+    def remove_future(self, future: 'Future[Any]') -> None:
         self._futures.remove(future)
 
     def is_ready(self, wait_set: _rclpy.WaitSet) -> bool:
