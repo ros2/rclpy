@@ -109,7 +109,7 @@ class TypeDescriptionService:
         return self._type_description_srv.handle_request(
             request, GetTypeDescription.Response, self._get_node().handle)
 
-    def _get_node(self) -> Node:
+    def _get_node(self) -> 'Node':
         node = self._node_weak_ref()
         if node is None:
             raise ReferenceError('Expected valid node weak reference')
