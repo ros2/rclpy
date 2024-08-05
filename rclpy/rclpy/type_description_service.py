@@ -114,3 +114,4 @@ class TypeDescriptionService:
         if node is None:
             raise ReferenceError('Expected valid node weak reference')
         return node
+
