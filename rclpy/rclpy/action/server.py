@@ -51,7 +51,7 @@ class CancelResponse(Enum):
 GoalEvent = _rclpy.GoalEvent
 
 
-class ServerGoalHandleDict(TypedDict):
+class ServerGoalHandleDict(TypedDict, total=False):
     goal: Any
     cancel: Any
     result: Any
