@@ -17,7 +17,7 @@ import functools
 import threading
 import traceback
 
-from typing import Any, TYPE_CHECKING, TypedDict
+from typing import Any, TypedDict
 
 from action_msgs.msg import GoalInfo, GoalStatus
 
@@ -51,14 +51,11 @@ class CancelResponse(Enum):
 GoalEvent = _rclpy.GoalEvent
 
 
-if TYPE_CHECKING:
-    from typing_extensions import NotRequired
-
-    class ServerGoalHandleDict(TypedDict):
-        goal: NotRequired[Any]
-        cancel: NotRequired[Any]
-        result: NotRequired[Any]
-        expired: NotRequired[Any]
+class ServerGoalHandleDict(TypedDict):
+    goal: Any
+    cancel: Any
+    result: Any
+    expired: Any
 
 
 class ServerGoalHandle:

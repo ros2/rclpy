@@ -15,7 +15,6 @@
 import threading
 import time
 from typing import Any
-from typing import TYPE_CHECKING
 from typing import TypedDict
 import uuid
 import weakref
@@ -35,15 +34,12 @@ from rclpy.waitable import NumberOfEntities, Waitable
 from unique_identifier_msgs.msg import UUID
 
 
-if TYPE_CHECKING:
-    from typing_extensions import NotRequired
-
-    class ClientGoalHandleDict(TypedDict):
-        goal: NotRequired[Any]
-        cancel: NotRequired[Any]
-        result: NotRequired[Any]
-        feedback: NotRequired[Any]
-        status: NotRequired[Any]
+class ClientGoalHandleDict(TypedDict, total=False):
+    goal: Any
+    cancel: Any
+    result: Any
+    feedback: Any
+    status: Any
 
 
 class ClientGoalHandle():
