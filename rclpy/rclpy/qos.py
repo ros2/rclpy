@@ -14,7 +14,7 @@
 
 from enum import Enum, IntEnum
 from typing import (Callable, Iterable, List, Optional, Protocol, Tuple, Type, TYPE_CHECKING,
-                    TypeVar, Union)
+                    TypedDict, TypeVar, Union)
 import warnings
 
 from rclpy.duration import Duration, DurationHandle
@@ -65,6 +65,18 @@ class QoSProfileHandle(Protocol):
     pyqos_deadline: DurationHandle
     qos_liveliness: Union['QoSLivelinessPolicy', int]
     pyqos_liveliness_lease_duration: DurationHandle
+    avoid_ros_namespace_conventions: bool
+
+
+class QoSProfileDictionary(TypedDict):
+    history: 'QoSHistoryPolicy'
+    depth: int
+    reliability: 'QoSReliabilityPolicy'
+    durability: 'QoSDurabilityPolicy'
+    lifespan: Duration
+    deadline: Duration
+    liveliness: 'QoSLivelinessPolicy'
+    liveliness_lease_duration: Duration
     avoid_ros_namespace_conventions: bool
 
 
