@@ -80,7 +80,7 @@ class Waitable(Generic[T]):
     This class wraps a collection of entities which can be added to a wait set.
     """
 
-    def __init__(self, callback_group: CallbackGroup):
+    def __init__(self, callback_group: 'CallbackGroup'):
         # A callback group to control when this entity can execute (used by Executor)
         self.callback_group = callback_group
         self.callback_group.add_entity(self)
