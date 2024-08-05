@@ -75,7 +75,7 @@ IncompatibleTypeInfo = _rclpy.rmw_incompatible_type_status_t
 UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
 
 
-EventHandlerData: 'TypeAlias' =  Optional[Any]
+EventHandlerData: 'TypeAlias' = Optional[Any]
 
 
 class EventHandler(Waitable[EventHandlerData]):

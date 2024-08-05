@@ -13,7 +13,10 @@
 # limitations under the License.
 
 from types import TracebackType
-from typing import Any, Generic, List, Optional, TypeVar, Type, TYPE_CHECKING
+from typing import Any, Generic, List, Optional, Type, TYPE_CHECKING, TypeVar
+
+
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 T = TypeVar('T')
 
@@ -22,7 +25,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from rclpy.callback_groups import CallbackGroup
-    from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
     from rclpy.task import Future
 
 

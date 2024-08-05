@@ -14,12 +14,11 @@
 
 import threading
 import time
+from typing import Any
+from typing import TYPE_CHECKING
+from typing import TypedDict
 import uuid
 import weakref
-
-from typing import Any
-from typing import TypedDict
-from typing import TYPE_CHECKING
 
 from action_msgs.msg import GoalStatus
 from action_msgs.srv import CancelGoal
