@@ -14,6 +14,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
+from functools import partial
 import inspect
 import os
 from threading import Condition
@@ -49,7 +50,7 @@ from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.timer import Timer
+from rclpy.timer import Timer, TimerInfo
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
@@ -210,6 +211,9 @@ class Executor(ContextManager['Executor']):
 
         Arguments to this function are passed to the callback.
 
+        .. warning:: Created task is queued in the executor in FIFO order,
+           but users should not rely on the task execution order.
+
         :param callback: A callback to be run in the executor.
         """
         task = Task(callback, args, kwargs, executor=self)
@@ -226,7 +230,7 @@ class Executor(ContextManager['Executor']):
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
-            timeot expires before all outstanding work is done.
+            timeout expires before all outstanding work is done.
         """
         with self._shutdown_lock:
             if not self._is_shutdown:
@@ -366,11 +370,33 @@ class Executor(ContextManager['Executor']):
     def _take_timer(self, tmr):
         try:
             with tmr.handle:
-                tmr.handle.call_timer()
+                info = tmr.handle.call_timer_with_info()
+                timer_info = TimerInfo(
+                    expected_call_time=info['expected_call_time'],
+                    actual_call_time=info['actual_call_time'],
+                    clock_type=tmr.clock.clock_type)
 
-                async def _execute():
-                    await await_or_execute(tmr.callback)
-                return _execute
+                def check_argument_type(callback_func, target_type):
+                    sig = inspect.signature(callback_func)
+                    for param in sig.parameters.values():
+                        if param.annotation == target_type:
+                            # return 1st one immediately
+                            return param.name
+                    # We could not find the target type in the signature
+                    return None
+
+                # User might change the Timer.callback function signature at runtime,
+                # so it needs to check the signature every time.
+                arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
+                prefilled_arg = {arg_name: timer_info}
+                if arg_name is not None:
+                    async def _execute():
+                        await await_or_execute(partial(tmr.callback, **prefilled_arg))
+                    return _execute
+                else:
+                    async def _execute():
+                        await await_or_execute(tmr.callback)
+                    return _execute
         except InvalidHandle:
             # Timer is a Destroyable, which means that on __enter__ it can throw an
             # InvalidHandle exception if the entity has already been destroyed.  Handle that here
@@ -569,7 +595,7 @@ class Executor(ContextManager['Executor']):
             with self._tasks_lock:
                 tasks = list(self._tasks)
             if tasks:
-                for task, entity, node in reversed(tasks):
+                for task, entity, node in tasks:
                     if (not task.executing() and not task.done() and
                             (node is None or node in nodes_to_use)):
                         yielded_work = True
@@ -905,3 +931,23 @@ class MultiThreadedExecutor(Executor):
     ) -> None:
         future.add_done_callback(lambda x: self.wake())
         self._spin_once_impl(timeout_sec, future.done)
+
+    def shutdown(
+        self,
+        timeout_sec: float = None,
+        *,
+        wait_for_threads: bool = True
+    ) -> bool:
+        """
+        Stop executing callbacks and wait for their completion.
+
+        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        :param wait_for_threads: If true, this function will block until all executor threads
+            have joined.
+        :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
+            timeout expires before all outstanding work is done.
+        """
+        success: bool = super().shutdown(timeout_sec)
+        self._executor.shutdown(wait=wait_for_threads)
+        return success

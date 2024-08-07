@@ -15,6 +15,7 @@
 
 from enum import Enum
 import inspect
+from types import TracebackType
 from typing import Callable, Generic, Optional, Protocol, Tuple, Type, TypedDict, TypeVar, Union
 
 from rclpy.callback_groups import CallbackGroup
@@ -155,3 +156,14 @@ class Subscription(Generic[MsgT]):
         raise RuntimeError(
             'Subscription.__init__(): callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
+
+    def __enter__(self) -> 'Subscription':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()

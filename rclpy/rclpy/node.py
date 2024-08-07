@@ -15,13 +15,13 @@
 import math
 import time
 
-from typing import Any
+from types import TracebackType
 from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
-from typing import Sequence
+from typing import overload
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
@@ -66,7 +66,8 @@ from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.logging_service import LoggingService
-from rclpy.parameter import Parameter, PARAMETER_SEPARATOR_STRING
+from rclpy.parameter import (AllowableParameterValue, AllowableParameterValueT, Parameter,
+                             PARAMETER_SEPARATOR_STRING)
 from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
@@ -80,12 +81,16 @@ from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionHandle
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
-from rclpy.timer import Timer
+from rclpy.timer import Timer, TimerInfo
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.type_support import MsgT
+from rclpy.type_support import Srv
+from rclpy.type_support import SrvEventT
+from rclpy.type_support import SrvRequestT
+from rclpy.type_support import SrvResponseT
 from rclpy.utilities import get_default_context
 from rclpy.validate_full_topic_name import validate_full_topic_name
 from rclpy.validate_namespace import validate_namespace
@@ -165,7 +170,7 @@ class Node:
         """
         self.__handle = None
         self._context = get_default_context() if context is None else context
-        self._parameters: dict = {}
+        self._parameters: Dict[str, Parameter] = {}
         self._publishers: List[Publisher] = []
         self._subscriptions: List[Subscription] = []
         self._clients: List[Client] = []
@@ -180,8 +185,8 @@ class Node:
         self._post_set_parameters_callbacks: List[Callable[[List[Parameter]], None]] = []
         self._rate_group = ReentrantCallbackGroup()
         self._allow_undeclared_parameters = allow_undeclared_parameters
-        self._parameter_overrides = {}
-        self._descriptors = {}
+        self._parameter_overrides: Dict[str, Parameter] = {}
+        self._descriptors: Dict[str, ParameterDescriptor] = {}
 
         namespace = namespace or ''
         if not self._context.ok():
@@ -247,6 +252,8 @@ class Node:
             self._logger_service = LoggingService(self)
 
         self._type_description_service = TypeDescriptionService(self)
+
+        self._context.track_node(self)
 
     @property
     def publishers(self) -> Iterator[Publisher]:
@@ -357,10 +364,23 @@ class Node:
         """Get the nodes logger."""
         return self._logger
 
+    @overload
+    def declare_parameter(self, name: str, value: Union[AllowableParameterValueT,
+                                                        Parameter.Type, ParameterValue],
+                          descriptor: Optional[ParameterDescriptor] = None,
+                          ignore_override: bool = False
+                          ) -> Parameter[AllowableParameterValueT]: ...
+
+    @overload
+    def declare_parameter(self, name: str,
+                          value: Union[None, Parameter.Type, ParameterValue] = None,
+                          descriptor: Optional[ParameterDescriptor] = None,
+                          ignore_override: bool = False) -> Parameter[None]: ...
+
     def declare_parameter(
         self,
         name: str,
-        value: Any = None,
+        value: Union[AllowableParameterValue, Parameter.Type, ParameterValue] = None,
         descriptor: Optional[ParameterDescriptor] = None,
         ignore_override: bool = False
     ) -> Parameter:
@@ -385,7 +405,9 @@ class Node:
         """
         if value is None and descriptor is None:
             # Temporal patch so we get deprecation warning if only a name is provided.
-            args = (name, )
+            args: Union[Tuple[str], Tuple[str, Union[AllowableParameterValue,
+                                                     Parameter.Type, ParameterValue],
+                                          ParameterDescriptor]] = (name, )
         else:
             descriptor = ParameterDescriptor() if descriptor is None else descriptor
             args = (name, value, descriptor)
@@ -397,7 +419,8 @@ class Node:
         parameters: List[Union[
             Tuple[str],
             Tuple[str, Parameter.Type],
-            Tuple[str, Any, ParameterDescriptor],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
+                  ParameterDescriptor],
         ]],
         ignore_override: bool = False
     ) -> List[Parameter]:
@@ -447,8 +470,8 @@ class Node:
         :raises: InvalidParameterValueException if the registered callback rejects any parameter.
         :raises: TypeError if any tuple in **parameters** does not match the annotated type.
         """
-        parameter_list = []
-        descriptors = {}
+        parameter_list: List[Parameter] = []
+        descriptors: Dict[str, ParameterDescriptor] = {}
         for index, parameter_tuple in enumerate(parameters):
             if len(parameter_tuple) < 1 or len(parameter_tuple) > 3:
                 raise TypeError(
@@ -472,9 +495,8 @@ class Node:
             # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
             validate_parameter_name(name)
 
-            second_arg = parameter_tuple[1] if 1 < len(parameter_tuple) else None
-            descriptor = parameter_tuple[2] if 2 < len(parameter_tuple) else ParameterDescriptor()
-
+            second_arg = parameter_tuple[1] if len(parameter_tuple) > 1 else None
+            descriptor = parameter_tuple[2] if len(parameter_tuple) > 2 else ParameterDescriptor()
             if not isinstance(descriptor, ParameterDescriptor):
                 raise TypeError(
                     f'Third element {descriptor} at index {index} in parameters list '
@@ -517,6 +539,11 @@ class Node:
             # Get value from parameter overrides, of from tuple if it doesn't exist.
             if not ignore_override and name in self._parameter_overrides:
                 value = self._parameter_overrides[name].value
+
+            if isinstance(value, ParameterValue):
+                raise ValueError('Cannot declare a Parameter from a ParameterValue without it '
+                                 'being included in self._parameter_overrides, and ',
+                                 'ignore_override=False')
 
             parameter_list.append(Parameter(name, value=value))
             descriptors.update({name: descriptor})
@@ -718,10 +745,7 @@ class Node:
 
         return self._parameters[name]
 
-    def get_parameters_by_prefix(self, prefix: str) -> Dict[str, Optional[Union[
-        bool, int, float, str, bytes,
-        Sequence[bool], Sequence[int], Sequence[float], Sequence[str]
-    ]]]:
+    def get_parameters_by_prefix(self, prefix: str) -> Dict[str, Parameter]:
         """
         Get parameters that have a given prefix in their names as a dictionary.
 
@@ -1038,7 +1062,7 @@ class Node:
         if not self._allow_undeclared_parameters and any(undeclared_parameters):
             raise ParameterNotDeclaredException(list(undeclared_parameters))
 
-    def _call_pre_set_parameters_callback(self, parameter_list: [List[Parameter]]):
+    def _call_pre_set_parameters_callback(self, parameter_list: List[Parameter]):
         if self._pre_set_parameters_callbacks:
             modified_parameter_list = []
             for callback in self._pre_set_parameters_callbacks:
@@ -1048,7 +1072,7 @@ class Node:
         else:
             return None
 
-    def _call_post_set_parameters_callback(self, parameter_list: [List[Parameter]]):
+    def _call_post_set_parameters_callback(self, parameter_list: List[Parameter]):
         if self._post_set_parameters_callbacks:
             for callback in self._post_set_parameters_callbacks:
                 callback(parameter_list)
@@ -1655,12 +1679,12 @@ class Node:
 
     def create_client(
         self,
-        srv_type,
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
-    ) -> Client:
+    ) -> Client[SrvRequestT, SrvResponseT, SrvEventT]:
         """
         Create a new service client.
 
@@ -1697,13 +1721,13 @@ class Node:
 
     def create_service(
         self,
-        srv_type,
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
-        callback: Callable[[SrvTypeRequest, SrvTypeResponse], SrvTypeResponse],
+        callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
-    ) -> Service:
+    ) -> Service[SrvRequestT, SrvResponseT, SrvEventT]:
         """
         Create a new service server.
 
@@ -1742,7 +1766,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Callable,
+        callback: Union[Callable[[], None], Callable[[TimerInfo], None], None],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
@@ -1782,7 +1806,12 @@ class Node:
         callback: Callable,
         callback_group: Optional[CallbackGroup] = None
     ) -> GuardCondition:
-        """Create a new guard condition."""
+        """
+        Create a new guard condition.
+
+        .. warning:: Users should call :meth:`.Node.destroy_guard_condition` to destroy
+           the GuardCondition object.
+        """
         if callback_group is None:
             callback_group = self.default_callback_group
         guard = GuardCondition(callback, callback_group, context=self.context)
@@ -1799,6 +1828,8 @@ class Node:
     ) -> Rate:
         """
         Create a Rate object.
+
+        .. warning:: Users should call :meth:`.Node.destroy_rate` to destroy the Rate object.
 
         :param frequency: The frequency the Rate runs at (Hz).
         :param clock: The clock the Rate gets time from.
@@ -1938,6 +1969,8 @@ class Node:
         * :func:`create_guard_condition`
 
         """
+        self._context.untrack_node(self)
+
         # Drop extra reference to parameter event publisher.
         # It will be destroyed with other publishers below.
         self._parameter_event_publisher = None
@@ -2297,3 +2330,14 @@ class Node:
             flag = fully_qualified_node_name in fully_qualified_node_names
             time.sleep(0.1)
         return flag
+
+    def __enter__(self) -> 'Node':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy_node()

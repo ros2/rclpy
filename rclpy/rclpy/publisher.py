@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Generic, List, Type, TypeVar, Union
+from types import TracebackType
+from typing import Generic, List, Optional, Type, TypeVar, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.duration import Duration
@@ -128,3 +129,14 @@ class Publisher(Generic[MsgT]):
         """
         with self.handle:
             return self.__publisher.wait_for_all_acked(timeout._duration_handle)
+
+    def __enter__(self) -> 'Publisher':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
