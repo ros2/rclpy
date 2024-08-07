@@ -1677,7 +1677,7 @@ class Node:
 
     def create_client(
         self,
-        srv_type: Srv[SrvRequestT, SrvResponseT, SrvEventT],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
@@ -1719,7 +1719,7 @@ class Node:
 
     def create_service(
         self,
-        srv_type: Srv[SrvRequestT, SrvResponseT, SrvEventT],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,

@@ -36,7 +36,7 @@ class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
     def __init__(
         self,
         service_impl: _rclpy.Service,
-        srv_type: Srv[SrvRequestT, SrvResponseT, SrvEventT],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         callback_group: CallbackGroup,
@@ -112,7 +112,7 @@ class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
         with self.handle:
             return self.__service.name
 
-    def destroy(self):
+    def destroy(self) -> None:
         """
         Destroy a container for a ROS service server.
 
@@ -121,7 +121,7 @@ class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
         """
         self.__service.destroy_when_not_in_use()
 
-    def __enter__(self) -> 'Service':
+    def __enter__(self) -> 'Service[SrvRequestT, SrvResponseT, SrvEventT]':
         return self
 
     def __exit__(
