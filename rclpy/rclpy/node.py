@@ -113,6 +113,10 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
 
 
+class NodeHandle:
+    pass
+
+
 class Node:
     """
     A Node in the ROS graph.
@@ -1534,7 +1538,7 @@ class Node:
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
-        publisher_class: Type[Publisher] = Publisher,
+        publisher_class: Type[Publisher[MsgT]] = Publisher[MsgT],
     ) -> Publisher[MsgT]:
         """
         Create a new publisher.
