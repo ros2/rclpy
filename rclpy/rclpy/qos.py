@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
-from enum import IntEnum
-from typing import TypedDict, Union
-
+from enum import Enum, IntEnum
+from typing import (Callable, Iterable, List, Optional, Protocol, Tuple, Type, TYPE_CHECKING,
+                    TypedDict, TypeVar, Union)
 import warnings
 
-from rclpy.duration import Duration
+from rclpy.duration import Duration, DurationHandle
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+
+if TYPE_CHECKING:
+    from typing import TypeAlias
 
 
 class QoSPolicyKind(IntEnum):
@@ -42,7 +44,7 @@ class QoSPolicyKind(IntEnum):
     AVOID_ROS_NAMESPACE_CONVENTIONS = 1 << 9,
 
 
-def qos_policy_name_from_kind(policy_kind: Union[QoSPolicyKind, int]):
+def qos_policy_name_from_kind(policy_kind: Union[QoSPolicyKind, int]) -> str:
     """Get QoS policy name from QoSPolicyKind enum."""
     return QoSPolicyKind(policy_kind).name
 
@@ -50,8 +52,20 @@ def qos_policy_name_from_kind(policy_kind: Union[QoSPolicyKind, int]):
 class InvalidQoSProfileException(Exception):
     """Raised when constructing a QoSProfile with invalid arguments."""
 
-    def __init__(self, *args):
-        Exception.__init__(self, 'Invalid QoSProfile', *args)
+    def __init__(self, message: str) -> None:
+        Exception(self, f'Invalid QoSProfile: {message}')
+
+
+class QoSProfileHandle(Protocol):
+    qos_history: Union['QoSHistoryPolicy', int]
+    qos_depth: int
+    qos_reliability: Union['QoSReliabilityPolicy', int]
+    qos_durability: Union['QoSDurabilityPolicy', int]
+    pyqos_lifespan: DurationHandle
+    pyqos_deadline: DurationHandle
+    qos_liveliness: Union['QoSLivelinessPolicy', int]
+    pyqos_liveliness_lease_duration: DurationHandle
+    avoid_ros_namespace_conventions: bool
 
 
 class QoSProfileDictionary(TypedDict):
@@ -85,96 +99,104 @@ class QoSProfile:
         '_avoid_ros_namespace_conventions',
     ]
 
-    def __init__(self, **kwargs):
-        assert all('_' + key in self.__slots__ for key in kwargs.keys()), \
-            'Invalid arguments passed to constructor: %r' % kwargs.keys()
+    def __init__(self, history: Optional['QoSHistoryPolicy'] = None, depth: Optional[int] = None,
+                 reliability: Optional['QoSReliabilityPolicy'] = None,
+                 durability: Optional['QoSDurabilityPolicy'] = None,
+                 lifespan: Optional[Duration] = None, deadline: Optional[Duration] = None,
+                 liveliness: Optional['QoSLivelinessPolicy'] = None,
+                 liveliness_lease_duration: Optional[Duration] = None,
+                 avoid_ros_namespace_conventions: Optional[bool] = None) -> None:
 
-        if 'history' not in kwargs:
-            if 'depth' not in kwargs:
+        if history is None:
+            if depth is None:
                 raise InvalidQoSProfileException('History and/or depth settings are required.')
-            kwargs['history'] = QoSHistoryPolicy.KEEP_LAST
+            history = QoSHistoryPolicy.KEEP_LAST
 
-        self.history = kwargs.get('history')
+        self.history = history
 
         if (
-            QoSHistoryPolicy.KEEP_LAST == self.history and
-            'depth' not in kwargs
+            QoSHistoryPolicy.KEEP_LAST == self.history and depth is None
         ):
             raise InvalidQoSProfileException('History set to KEEP_LAST without a depth setting.')
 
-        self.depth = kwargs.get('depth', QoSProfile.__qos_profile_default_dict['depth'])
-        self.reliability = kwargs.get(
-            'reliability', QoSProfile.__qos_profile_default_dict['reliability'])
-        self.durability = kwargs.get(
-            'durability', QoSProfile.__qos_profile_default_dict['durability'])
-        self.lifespan = kwargs.get('lifespan', QoSProfile.__qos_profile_default_dict['lifespan'])
-        self.deadline = kwargs.get('deadline', QoSProfile.__qos_profile_default_dict['deadline'])
-        self.liveliness = kwargs.get(
-            'liveliness', QoSProfile.__qos_profile_default_dict['liveliness'])
-        self.liveliness_lease_duration = kwargs.get(
-            'liveliness_lease_duration',
-            QoSProfile.__qos_profile_default_dict['liveliness_lease_duration'])
-        self.avoid_ros_namespace_conventions = kwargs.get(
-            'avoid_ros_namespace_conventions',
-            QoSProfile.__qos_profile_default_dict['avoid_ros_namespace_conventions'])
+        self.depth = QoSProfile.__qos_profile_default_dict['depth'] if depth is None else depth
+
+        self.reliability = QoSProfile.__qos_profile_default_dict['reliability'] \
+            if reliability is None else reliability
+
+        self.durability = QoSProfile.__qos_profile_default_dict['durability'] \
+            if durability is None else durability
+
+        self.lifespan = QoSProfile.__qos_profile_default_dict['lifespan'] \
+            if lifespan is None else lifespan
+
+        self.deadline = QoSProfile.__qos_profile_default_dict['deadline'] \
+            if deadline is None else deadline
+
+        self.liveliness = QoSProfile.__qos_profile_default_dict['liveliness'] \
+            if liveliness is None else liveliness
+
+        self.liveliness_lease_duration =  \
+            QoSProfile.__qos_profile_default_dict['liveliness_lease_duration'] \
+            if liveliness_lease_duration is None else liveliness_lease_duration
+
+        self.avoid_ros_namespace_conventions = \
+            QoSProfile.__qos_profile_default_dict['avoid_ros_namespace_conventions'] \
+            if avoid_ros_namespace_conventions is None else avoid_ros_namespace_conventions
 
     @property
-    def history(self):
+    def history(self) -> 'QoSHistoryPolicy':
         """
         Get field 'history'.
 
         :returns: history attribute
-        :rtype: QoSHistoryPolicy
         """
         return self._history
 
     @history.setter
-    def history(self, value):
+    def history(self, value: Union['QoSHistoryPolicy', int]) -> None:
         assert isinstance(value, QoSHistoryPolicy) or isinstance(value, int)
         self._history = QoSHistoryPolicy(value)
 
     @property
-    def reliability(self):
+    def reliability(self) -> 'QoSReliabilityPolicy':
         """
         Get field 'reliability'.
 
         :returns: reliability attribute
-        :rtype: QoSReliabilityPolicy
         """
         return self._reliability
 
     @reliability.setter
-    def reliability(self, value):
+    def reliability(self, value: Union['QoSReliabilityPolicy', int]) -> None:
         assert isinstance(value, QoSReliabilityPolicy) or isinstance(value, int)
         self._reliability = QoSReliabilityPolicy(value)
 
     @property
-    def durability(self):
+    def durability(self) -> 'QoSDurabilityPolicy':
         """
         Get field 'durability'.
 
         :returns: durability attribute
-        :rtype: QoSDurabilityPolicy
         """
         return self._durability
 
     @durability.setter
-    def durability(self, value):
+    def durability(self, value: Union['QoSDurabilityPolicy', int]) -> None:
         assert isinstance(value, QoSDurabilityPolicy) or isinstance(value, int)
         self._durability = QoSDurabilityPolicy(value)
 
     @property
-    def depth(self):
+    def depth(self) -> int:
         """
         Get field 'depth'.
 
         :returns: depth attribute
-        :rtype: int
         """
         return self._depth
 
     @depth.setter
-    def depth(self, value):
+    def depth(self, value: int) -> None:
         assert isinstance(value, int)
 
         if self.history == QoSHistoryPolicy.KEEP_LAST and value == 0:
@@ -185,81 +207,76 @@ class QoSProfile:
         self._depth = value
 
     @property
-    def lifespan(self):
+    def lifespan(self) -> Duration:
         """
         Get field 'lifespan'.
 
         :returns: lifespan attribute
-        :rtype: Duration
         """
         return self._lifespan
 
     @lifespan.setter
-    def lifespan(self, value):
+    def lifespan(self, value: Duration) -> None:
         assert isinstance(value, Duration)
         self._lifespan = value
 
     @property
-    def deadline(self):
+    def deadline(self) -> Duration:
         """
         Get field 'deadline'.
 
         :returns: deadline attribute.
-        :rtype: Duration
         """
         return self._deadline
 
     @deadline.setter
-    def deadline(self, value):
+    def deadline(self, value: Duration) -> None:
         assert isinstance(value, Duration)
         self._deadline = value
 
     @property
-    def liveliness(self):
+    def liveliness(self) -> 'QoSLivelinessPolicy':
         """
         Get field 'liveliness'.
 
         :returns: liveliness attribute
-        :rtype: QoSLivelinessPolicy
         """
         return self._liveliness
 
     @liveliness.setter
-    def liveliness(self, value):
+    def liveliness(self, value: Union['QoSLivelinessPolicy', int]) -> None:
         assert isinstance(value, (QoSLivelinessPolicy, int))
         self._liveliness = QoSLivelinessPolicy(value)
 
     @property
-    def liveliness_lease_duration(self):
+    def liveliness_lease_duration(self) -> Duration:
         """
         Get field 'liveliness_lease_duration'.
 
         :returns: liveliness_lease_duration attribute.
-        :rtype: Duration
         """
         return self._liveliness_lease_duration
 
     @liveliness_lease_duration.setter
-    def liveliness_lease_duration(self, value):
+    def liveliness_lease_duration(self, value: Duration) -> None:
         assert isinstance(value, Duration)
         self._liveliness_lease_duration = value
 
     @property
-    def avoid_ros_namespace_conventions(self):
+    def avoid_ros_namespace_conventions(self) -> bool:
         """
         Get field 'avoid_ros_namespace_conventions'.
 
         :returns: avoid_ros_namespace_conventions attribute
-        :rtype: bool
         """
         return self._avoid_ros_namespace_conventions
 
     @avoid_ros_namespace_conventions.setter
-    def avoid_ros_namespace_conventions(self, value):
+    def avoid_ros_namespace_conventions(self, value: bool) -> None:
         assert isinstance(value, bool)
         self._avoid_ros_namespace_conventions = value
 
-    def get_c_qos_profile(self):
+    def get_c_qos_profile(self) -> QoSProfileHandle:
         return _rclpy.rmw_qos_profile_t(
             self.history,
             self.depth,
@@ -272,14 +289,14 @@ class QoSProfile:
             self.avoid_ros_namespace_conventions,
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, QoSProfile):
             return False
         return all(
             self.__getattribute__(slot) == other.__getattribute__(slot)
             for slot in self.__slots__)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{type(self).__name__}(%s)' % (
             ', '.join(f'{slot[1:]}=%s' % getattr(self, slot) for slot in self.__slots__)
         )
@@ -293,17 +310,17 @@ class QoSPolicyEnum(IntEnum):
     """
 
     @classmethod
-    def short_keys(cls):
+    def short_keys(cls) -> List[str]:
         """Return a list of shortened typing-friendly enum values."""
         return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
 
     @classmethod
-    def get_from_short_key(cls, name):
+    def get_from_short_key(cls, name: str) -> int:
         """Retrieve a policy type from a short name, case-insensitive."""
         return cls[name.upper()].value
 
     @property
-    def short_key(self):
+    def short_key(self) -> str:
         for k, v in self.__class__.__members__.items():
             if k.startswith('RMW'):
                 continue
@@ -314,14 +331,18 @@ class QoSPolicyEnum(IntEnum):
             (self.value, self.__class__.__name__))
 
 
+_T = TypeVar('_T', bound=QoSPolicyEnum)
+
+
 class _DeprecatedPolicyValueAlias:
     """Helper to deprecate a policy value."""
 
-    def __init__(self, replacement_name, deprecated_name):
+    def __init__(self, replacement_name: str, deprecated_name: str) -> None:
         self.replacement_name = replacement_name
         self.deprecated_name = deprecated_name
 
-    def __get__(self, obj, policy_cls):
+    def __get__(self, obj: object,
+                policy_cls: Type[_T]) -> _T:
         warnings.warn(
             f'{policy_cls.__name__}.{self.deprecated_name} is deprecated. '
             f'Use {policy_cls.__name__}.{self.replacement_name} instead.'
@@ -329,8 +350,9 @@ class _DeprecatedPolicyValueAlias:
         return policy_cls[self.replacement_name]
 
 
-def _deprecated_policy_value_aliases(pairs):
-    def decorator(policy_cls):
+def _deprecated_policy_value_aliases(pairs: Iterable[Tuple[str, str]]) \
+                                     -> Callable[[Type[_T]], Type[_T]]:
+    def decorator(policy_cls: Type[_T]) -> Type[_T]:
         for deprecated_name, replacement_name in pairs:
             setattr(
                 policy_cls,
@@ -508,20 +530,21 @@ class QoSPresetProfiles(Enum):
     Our supported version of Python3 (3.5) doesn't have a fix that allows mixins on Enum.
     """
     @classmethod
-    def short_keys(cls):
+    def short_keys(cls) -> List[str]:
         """Return a list of shortened typing-friendly enum values."""
         return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
 
     @classmethod
-    def get_from_short_key(cls, name):
+    def get_from_short_key(cls, name: str) -> QoSProfile:
         """Retrieve a policy type from a short name, case-insensitive."""
         return cls[name.upper()].value
 
 
-QoSCompatibility = _rclpy.QoSCompatibility
+QoSCompatibility: 'TypeAlias' = _rclpy.QoSCompatibility
 
 
-def qos_check_compatible(publisher_qos: QoSProfile, subscription_qos: QoSProfile):
+def qos_check_compatible(publisher_qos: QoSProfile,
+                         subscription_qos: QoSProfile) -> Tuple[QoSCompatibility, str]:
     """
     Check if two QoS profiles are compatible.
 
