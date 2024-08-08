@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Protocol, Tuple, Union
+from typing import overload, Protocol, Tuple, Union
 
 import builtin_interfaces.msg
 
@@ -94,6 +94,12 @@ class Time:
 
     def __radd__(self, other: Duration) -> 'Time':
         return self.__add__(other)
+
+    @overload
+    def __sub__(self, other: 'Time') -> Duration: ...
+
+    @overload
+    def __sub__(self, other: Duration) -> 'Time': ...
 
     def __sub__(self, other: Union['Time', Duration]) -> Union['Time', Duration]:
         if isinstance(other, Time):
