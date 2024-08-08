@@ -17,7 +17,7 @@ from typing import Generic, List, Optional, Protocol, Type, TYPE_CHECKING, TypeV
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.destroyable import DestroyableType
-from rclpy.duration import Duration, DurationType
+from rclpy.duration import Duration, DurationHandle
 from rclpy.event_handler import EventHandler, PublisherEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
@@ -54,7 +54,7 @@ class PublisherHandle(DestroyableType, Protocol[MsgT]):
     def publish_raw(self, arg0: bytes) -> None:
         """Publish a serialized message."""
 
-    def wait_for_all_acked(self, arg0: DurationType) -> bool:
+    def wait_for_all_acked(self, arg0: DurationHandle) -> bool:
         """Wait until all published message data is acknowledged."""
 
 
