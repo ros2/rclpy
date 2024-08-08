@@ -19,7 +19,7 @@ from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 
-class DurationType(Protocol):
+class DurationHandle(Protocol):
     """Type alias of _rclpy.rcl_duration_t."""
 
     nanoseconds: int
@@ -41,7 +41,7 @@ class Duration:
             # pybind11 would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C duration.')
-        self._duration_handle: DurationType = _rclpy.rcl_duration_t(total_nanoseconds)
+        self._duration_handle: DurationHandle = _rclpy.rcl_duration_t(total_nanoseconds)
 
     @property
     def nanoseconds(self) -> int:
@@ -106,7 +106,7 @@ class Duration:
             raise TypeError('Must pass a builtin_interfaces.msg.Duration object')
         return cls(seconds=msg.sec, nanoseconds=msg.nanosec)
 
-    def get_c_duration(self) -> DurationType:
+    def get_c_duration(self) -> DurationHandle:
         return self._duration_handle
 
 

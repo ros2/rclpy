@@ -176,7 +176,7 @@ def test_lifecycle_services(request):
     states_labels = {state.label for state in resp.available_states}
     assert states_labels == {
         'unknown', 'unconfigured', 'inactive', 'active', 'finalized', 'configuring', 'cleaningup',
-        'shuttingdown', 'activating', 'deactivating', 'errorprocessing', ''
+        'shuttingdown', 'activating', 'deactivating', 'errorprocessing'
     }
     req = lifecycle_msgs.srv.GetAvailableTransitions.Request()
     resp = get_available_transitions_cli.call(req)
