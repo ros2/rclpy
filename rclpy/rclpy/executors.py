@@ -610,7 +610,7 @@ class Executor(ContextManager['Executor']):
             timers: List[Timer] = []
             clients: List[Client] = []
             services: List[Service] = []
-            waitables: List[Waitable] = []
+            waitables: List[Waitable[Any]] = []
             for node in nodes_to_use:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
                 timers.extend(filter(self.can_execute, node.timers))

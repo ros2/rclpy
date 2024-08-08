@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from threading import Lock
-from typing import Literal, Optional, TYPE_CHECKING, Union
+from typing import Any, Literal, Optional, TYPE_CHECKING, Union
 import weakref
 
 
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from rclpy.client import Client
     from rclpy.service import Service
     from rclpy.waitable import Waitable
-    Entity = Union[Subscription, Timer, Client, Service, Waitable]
+    Entity = Union[Subscription, Timer, Client, Service, Waitable[Any]]
 
 
 class CallbackGroup:
