@@ -26,9 +26,6 @@ For example, you might use it like this:
         # ...
 """
 
-
-from typing import List, Protocol, Sequence, Type, TYPE_CHECKING
-
 from rpyutils import import_c_library
 
 if TYPE_CHECKING:
@@ -59,4 +56,4 @@ if TYPE_CHECKING:
 
 package = 'rclpy'
 
-rclpy_implementation: 'rclpyHandle' = import_c_library('._rclpy_pybind11', package)
+rclpy_implementation = import_c_library('._rclpy_pybind11', package)

@@ -13,10 +13,11 @@
 # limitations under the License.
 
 from types import TracebackType
-from typing import Generic, List, Optional, Type, TypeVar, Union
+from typing import Generic, List, Optional, Protocol, Type, TYPE_CHECKING, TypeVar, Union
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.duration import Duration
+from rclpy.destroyable import DestroyableType
+from rclpy.duration import Duration, DurationHandle
 from rclpy.event_handler import EventHandler, PublisherEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
@@ -25,12 +26,43 @@ from rclpy.type_support import MsgT
 # Left to support Legacy TypeVars.
 MsgType = TypeVar('MsgType')
 
+if TYPE_CHECKING:
+    from rclpy.node import NodeHandle
+
+
+class PublisherHandle(DestroyableType, Protocol[MsgT]):
+
+    def __init__(self, arg0: 'NodeHandle', arg1: Type[MsgT], arg2: str, arg3: object) -> None:
+        """Create PublisherHandle."""
+
+    @property
+    def pointer(self) -> int:
+        """Get the address of the entity as an integer."""
+
+    def get_logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the publisher."""
+
+    def get_subscription_count(self) -> int:
+        """Count subscribers from a publisher."""
+
+    def get_topic_name(self) -> str:
+        """Retrieve the topic name from a Publisher."""
+
+    def publish(self, arg0: MsgT) -> None:
+        """Publish a message."""
+
+    def publish_raw(self, arg0: bytes) -> None:
+        """Publish a serialized message."""
+
+    def wait_for_all_acked(self, arg0: DurationHandle) -> bool:
+        """Wait until all published message data is acknowledged."""
+
 
 class Publisher(Generic[MsgT]):
 
     def __init__(
         self,
-        publisher_impl: _rclpy.Publisher,
+        publisher_impl: PublisherHandle[MsgT],
         msg_type: Type[MsgT],
         topic: str,
         qos_profile: QoSProfile,
@@ -86,10 +118,10 @@ class Publisher(Generic[MsgT]):
             return self.__publisher.get_topic_name()
 
     @property
-    def handle(self):
+    def handle(self) -> PublisherHandle[MsgT]:
         return self.__publisher
 
-    def destroy(self):
+    def destroy(self) -> None:
         """
         Destroy a container for a ROS publisher.
 
@@ -130,7 +162,7 @@ class Publisher(Generic[MsgT]):
         with self.handle:
             return self.__publisher.wait_for_all_acked(timeout._duration_handle)
 
-    def __enter__(self) -> 'Publisher':
+    def __enter__(self) -> 'Publisher[MsgT]':
         return self
 
     def __exit__(
