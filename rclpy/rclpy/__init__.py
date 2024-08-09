@@ -81,12 +81,16 @@ def init(
     """
     context = get_default_context() if context is None else context
     if signal_handler_options is None:
-        if context is None or context is get_default_context():
+        if context is get_default_context():
             signal_handler_options = SignalHandlerOptions.ALL
         else:
             signal_handler_options = SignalHandlerOptions.NO
+    context.init(args, domain_id=domain_id)
+    # Install signal handlers after initializing the context because the rclpy signal
+    # handler only does something if there is at least one initialized context.
+    # It is desirable for sigint or sigterm to be able to terminate the process if rcl_init
+    # takes a long time, and the default signal handlers work well for that purpose.
     install_signal_handlers(signal_handler_options)
-    return context.init(args, domain_id=domain_id)
 
 
 # The global spin functions need an executor to do the work
