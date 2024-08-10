@@ -100,8 +100,12 @@ class rcl_duration_t:
     nanoseconds: int
 
 
-class EventHandle:
-    pass
+class EventHandle(Destroyable):
+
+    @property
+    def pointer(self) -> int:
+        """Get the address of the entity as an integer."""
+
 
 
 class GuardCondition(Destroyable):
@@ -121,6 +125,9 @@ class Service:
 
 
 class Subscription(Destroyable, Generic[MsgT]):
+
+    def __init__(self, Node: Node, pymsg_type: type[MsgT], topic: str,
+                 pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -145,7 +152,7 @@ class Node:
 
 class Publisher(Destroyable, Generic[MsgT]):
 
-    def __init__(self, arg0: Node, arg1: type[MsgT], arg2: str, arg3: object) -> None:
+    def __init__(self, arg0: Node, arg1: type[MsgT], arg2: str, arg3: rmw_qos_profile_t) -> None:
         """Create _rclpy.Publisher."""
 
     @property
