@@ -78,7 +78,6 @@ from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
-from rclpy.subscription import SubscriptionHandle
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer, TimerInfo
@@ -111,10 +110,6 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 # Re-export exception defined in _rclpy C extension.
 # `Node.get_*_names_and_types_by_node` methods may raise this error.
 NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
-
-
-class NodeHandle:
-    pass
 
 
 class Node:
@@ -1657,7 +1652,7 @@ class Node:
         check_is_valid_msg_type(msg_type)
         try:
             with self.handle:
-                subscription_object: SubscriptionHandle[MsgT] = _rclpy.Subscription(
+                subscription_object = _rclpy.Subscription(
                     self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True

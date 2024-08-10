@@ -18,7 +18,6 @@ from types import TracebackType
 from typing import Dict
 from typing import Generic
 from typing import Optional
-from typing import Protocol
 from typing import Type
 from typing import TypeVar
 

@@ -16,11 +16,11 @@
 from enum import Enum
 import inspect
 from types import TracebackType
-from typing import Callable, Generic, Optional, Protocol, Tuple, Type, TypedDict, TypeVar, Union
+from typing import Callable, Generic, Optional, Type, TypedDict, TypeVar, Union
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.destroyable import DestroyableType
 from rclpy.event_handler import SubscriptionEventCallbacks
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
 
@@ -32,36 +32,8 @@ class MessageInfo(TypedDict):
     reception_sequence_number: Optional[int]
 
 
-class SubscriptionHandle(DestroyableType, Protocol[MsgT]):
-
-    @property
-    def pointer(self) -> int:
-        """Get the address of the entity as an integer."""
-        ...
-
-    def take_message(self, pymsg_type: Type[MsgT], raw: bool) -> Tuple[MsgT, MessageInfo]:
-        """Take a message and its metadata from a subscription."""
-        ...
-
-    def get_logger_name(self) -> str:
-        """Get the name of the logger associated with the node of the subscription."""
-        ...
-
-    def get_topic_name(self) -> str:
-        """Return the resolved topic name of a subscription."""
-        ...
-
-    def get_publisher_count(self) -> int:
-        """Count the publishers from a subscription."""
-        ...
-
-
 # Left to support Legacy TypeVars.
 MsgType = TypeVar('MsgType')
-
-
-class SubscriptionHandle(Protocol):
-    pass
 
 
 class Subscription(Generic[MsgT]):
@@ -72,7 +44,7 @@ class Subscription(Generic[MsgT]):
 
     def __init__(
          self,
-         subscription_impl: SubscriptionHandle[MsgT],
+         subscription_impl: _rclpy.Subscription[MsgT],
          msg_type: Type[MsgT],
          topic: str,
          callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
@@ -118,7 +90,7 @@ class Subscription(Generic[MsgT]):
             return self.__subscription.get_publisher_count()
 
     @property
-    def handle(self) -> SubscriptionHandle[MsgT]:
+    def handle(self) -> _rclpy.Subscription[MsgT]:
         return self.__subscription
 
     def destroy(self) -> None:
@@ -161,7 +133,7 @@ class Subscription(Generic[MsgT]):
             'Subscription.__init__(): callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
 
-    def __enter__(self) -> 'Subscription':
+    def __enter__(self) -> 'Subscription[MsgT]':
         return self
 
     def __exit__(

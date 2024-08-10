@@ -12,25 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Optional, Protocol
+from typing import Callable, Optional
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.context import Context, ContextHandle
-from rclpy.destroyable import DestroyableType
+from rclpy.context import Context
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
-
-
-class GuardConditionHandle(DestroyableType, Protocol):
-
-    def __init__(self, context: ContextHandle) -> None: ...
-
-    @property
-    def pointer(self) -> int: ...
-    """Get the address of the entity as an integer"""
-
-    def trigger_guard_condition(self) -> None: ...
-    """Trigger a general purpose guard condition"""
 
 
 class GuardCondition:
@@ -50,7 +37,7 @@ class GuardCondition:
             raise RuntimeError('Context must be initialized a GuardCondition can be created')
 
         with self._context.handle:
-            self.__gc: GuardConditionHandle = _rclpy.GuardCondition(self._context.handle)
+            self.__gc = _rclpy.GuardCondition(self._context.handle)
         self.callback = callback
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
@@ -63,7 +50,7 @@ class GuardCondition:
             self.__gc.trigger_guard_condition()
 
     @property
-    def handle(self) -> GuardConditionHandle:
+    def handle(self) -> _rclpy.GuardCondition:
         return self.__gc
 
     def destroy(self) -> None:

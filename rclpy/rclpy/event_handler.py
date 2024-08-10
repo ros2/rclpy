@@ -16,8 +16,6 @@ from enum import IntEnum
 from typing import Callable
 from typing import List
 from typing import Optional
-from typing import Protocol
-from typing import TYPE_CHECKING
 import warnings
 
 import rclpy
@@ -27,10 +25,6 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
-
-
-if TYPE_CHECKING:
-    from rclpy.subscription import SubscriptionHandle
 
 
 QoSPublisherEventType = _rclpy.rcl_publisher_event_type_t
@@ -74,10 +68,6 @@ IncompatibleTypeInfo = _rclpy.rmw_incompatible_type_status_t
 
 """Raised when registering a callback for an event type that is not supported."""
 UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
-
-
-class EventHandle(Protocol):
-    pass
 
 
 class EventHandler(Waitable):
@@ -199,7 +189,7 @@ class SubscriptionEventCallbacks:
         self.use_default_callbacks = use_default_callbacks
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, subscription: 'SubscriptionHandle',
+        self, callback_group: CallbackGroup, subscription: '_rclpy.Subscription',
             topic_name: str) -> List[EventHandler]:
         with subscription:
             logger = get_logger(subscription.get_logger_name())
