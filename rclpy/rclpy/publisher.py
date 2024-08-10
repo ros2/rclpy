@@ -30,7 +30,7 @@ class Publisher(Generic[MsgT]):
 
     def __init__(
         self,
-        publisher_impl: _rclpy.Publisher[MsgT],
+        publisher_impl: '_rclpy.Publisher[MsgT]',
         msg_type: Type[MsgT],
         topic: str,
         qos_profile: QoSProfile,
@@ -86,7 +86,7 @@ class Publisher(Generic[MsgT]):
             return self.__publisher.get_topic_name()
 
     @property
-    def handle(self) -> _rclpy.Publisher[MsgT]:
+    def handle(self) -> '_rclpy.Publisher[MsgT]':
         return self.__publisher
 
     def destroy(self) -> None:
