@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
+from enum import IntEnum
 from types import TracebackType
-from typing import Any, Generic, Literal, Sequence, TypedDict
+from typing import Any, Generic, Literal, overload, Sequence, TypedDict
 
 from rclpy.clock import JumpHandle
 from rclpy.clock_type import ClockType
@@ -100,11 +101,38 @@ class rcl_duration_t:
     nanoseconds: int
 
 
+class rcl_subscription_event_type_t(IntEnum):
+    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED: int
+    RCL_SUBSCRIPTION_LIVELINESS_CHANGED: int
+    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS: int
+    RCL_SUBSCRIPTION_MESSAGE_LOST: int
+    RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE: int
+    RCL_SUBSCRIPTION_MATCHED: int
+
+
+class rcl_publisher_event_type_t(IntEnum):
+    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED: int
+    RCL_PUBLISHER_LIVELINESS_LOST: int
+    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS: int
+    RCL_PUBLISHER_INCOMPATIBLE_TYPE: int
+    RCL_PUBLISHER_MATCHED: int
+
+
 class EventHandle(Destroyable):
+
+    @overload
+    def __init__(self, subcription: Subscription,
+                 event_type: rcl_subscription_event_type_t) -> None: ...
+
+    @overload
+    def __init__(self, publisher: Publisher, event_type: rcl_publisher_event_type_t) -> None: ...
 
     @property
     def pointer(self) -> int:
         """Get the address of the entity as an integer."""
+
+    def take_event(self) -> Any | None:
+        """Get pending data from a ready event."""
 
 
 class GuardCondition(Destroyable):
