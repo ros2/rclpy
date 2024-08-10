@@ -20,9 +20,9 @@ from typing import Callable, Generic, Optional, Type, TypedDict, TypeVar, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.type_support import MsgT
+from .type_support import MsgT
 
 
 class MessageInfo(TypedDict):
@@ -44,7 +44,7 @@ class Subscription(Generic[MsgT]):
 
     def __init__(
          self,
-         subscription_impl: _rclpy.Subscription[MsgT],
+         subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
          callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
@@ -90,7 +90,7 @@ class Subscription(Generic[MsgT]):
             return self.__subscription.get_publisher_count()
 
     @property
-    def handle(self) -> _rclpy.Subscription[MsgT]:
+    def handle(self) -> '_rclpy.Subscription[MsgT]':
         return self.__subscription
 
     def destroy(self) -> None:
