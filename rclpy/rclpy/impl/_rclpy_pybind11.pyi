@@ -107,7 +107,6 @@ class EventHandle(Destroyable):
         """Get the address of the entity as an integer."""
 
 
-
 class GuardCondition(Destroyable):
 
     def __init__(self, context: Context) -> None: ...
