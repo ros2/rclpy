@@ -125,7 +125,7 @@ class Service:
 
 class Subscription(Destroyable, Generic[MsgT]):
 
-    def __init__(self, Node: Node, pymsg_type: type[MsgT], topic: str,
+    def __init__(self, node: Node, pymsg_type: type[MsgT], topic: str,
                  pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
