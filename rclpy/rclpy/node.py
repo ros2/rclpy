@@ -77,7 +77,9 @@ from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
+from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
+from rclpy.subscription import SubscriptionHandle
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer, TimerInfo
@@ -110,6 +112,10 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 # Re-export exception defined in _rclpy C extension.
 # `Node.get_*_names_and_types_by_node` methods may raise this error.
 NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
+
+
+class NodeHandle:
+    pass
 
 
 class Node:
@@ -1533,7 +1539,7 @@ class Node:
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
-        publisher_class: Type[Publisher] = Publisher,
+        publisher_class: Type[Publisher[MsgT]] = Publisher[MsgT],
     ) -> Publisher[MsgT]:
         """
         Create a new publisher.
@@ -1602,7 +1608,7 @@ class Node:
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: Callable[[MsgT], None],
+        callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
@@ -1652,7 +1658,7 @@ class Node:
         check_is_valid_msg_type(msg_type)
         try:
             with self.handle:
-                subscription_object = _rclpy.Subscription(
+                subscription_object: SubscriptionHandle[MsgT] = _rclpy.Subscription(
                     self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True
@@ -1678,7 +1684,7 @@ class Node:
 
     def create_client(
         self,
-        srv_type: Srv[SrvRequestT, SrvResponseT, SrvEventT],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
@@ -1720,7 +1726,7 @@ class Node:
 
     def create_service(
         self,
-        srv_type: Srv[SrvRequestT, SrvResponseT, SrvEventT],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,

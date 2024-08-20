@@ -32,6 +32,10 @@ if TYPE_CHECKING:
     from typing import TypeAlias
 
 
+if TYPE_CHECKING:
+    from rclpy.subscription import SubscriptionHandle
+
+
 QoSPublisherEventType = _rclpy.rcl_publisher_event_type_t
 QoSSubscriptionEventType = _rclpy.rcl_subscription_event_type_t
 
@@ -140,7 +144,7 @@ class EventHandler(Waitable[EventHandlerData]):
         """Mark event as not-in-use to allow destruction after waiting on it."""
         self.__event.__exit__(t, v, tb)
 
-    def destroy(self):
+    def destroy(self) -> None:
         self.__event.destroy_when_not_in_use()
 
 
@@ -197,8 +201,8 @@ class SubscriptionEventCallbacks:
         self.use_default_callbacks = use_default_callbacks
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, subscription: _rclpy.Subscription, topic_name: str,
-    ) -> List[EventHandler]:
+        self, callback_group: CallbackGroup, subscription: 'SubscriptionHandle',
+            topic_name: str) -> List[EventHandler]:
         with subscription:
             logger = get_logger(subscription.get_logger_name())
 
