@@ -50,6 +50,12 @@ class ClientWaitable(Waitable):
         self.node = node
         self.future = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pass
+
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
         if wait_set.is_ready('client', self.client_index):
@@ -92,6 +98,12 @@ class ServerWaitable(Waitable):
 
         self.node = node
         self.future = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pass
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
@@ -138,6 +150,12 @@ class TimerWaitable(Waitable):
         self.node = node
         self.future = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pass
+
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
         if wait_set.is_ready('timer', self.timer_index):
@@ -181,6 +199,12 @@ class SubscriptionWaitable(Waitable):
 
         self.node = node
         self.future = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pass
 
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
@@ -227,6 +251,12 @@ class GuardConditionWaitable(Waitable):
         self.node = node
         self.future = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pass
+
     def is_ready(self, wait_set):
         """Return True if entities are ready in the wait set."""
         if wait_set.is_ready('guard_condition', self.guard_condition_index):
@@ -260,6 +290,12 @@ class MutuallyExclusiveWaitable(Waitable):
 
     def __init__(self):
         super().__init__(MutuallyExclusiveCallbackGroup())
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pass
 
     def is_ready(self, wait_set):
         return False
