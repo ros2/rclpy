@@ -44,7 +44,7 @@ def wait_for_message(
     context = node.context
 
     if context.handle is None:
-        raise Exception('Cannot create Waitset without a context.handle')
+        raise RuntimeError('Cannot create Waitset without a context.handle')
 
     wait_set = _rclpy.WaitSet(1, 1, 0, 0, 0, 0, context.handle)
     wait_set.clear_entities()
