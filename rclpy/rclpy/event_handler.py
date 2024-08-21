@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from enum import IntEnum
+from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -26,6 +27,9 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
+
+if TYPE_CHECKING:
+    from typing import TypeAlias
 
 
 if TYPE_CHECKING:
@@ -75,7 +79,10 @@ IncompatibleTypeInfo = _rclpy.rmw_incompatible_type_status_t
 UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
 
 
-class EventHandler(Waitable):
+EventHandlerData: 'TypeAlias' = Optional[Any]
+
+
+class EventHandler(Waitable[EventHandlerData]):
     """Waitable type to handle QoS events."""
 
     def __init__(
@@ -106,7 +113,7 @@ class EventHandler(Waitable):
             self._ready_to_take_data = True
         return self._ready_to_take_data
 
-    def take_data(self):
+    def take_data(self) -> EventHandlerData:
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self._ready_to_take_data:
             self._ready_to_take_data = False
@@ -114,7 +121,7 @@ class EventHandler(Waitable):
                 return self.__event.take_event()
         return None
 
-    async def execute(self, taken_data):
+    async def execute(self, taken_data: EventHandlerData) -> None:
         """Execute work after data has been taken from a ready wait set."""
         if not taken_data:
             return
