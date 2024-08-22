@@ -24,6 +24,7 @@ from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import Union
+
 import lifecycle_msgs.msg
 import lifecycle_msgs.srv
 

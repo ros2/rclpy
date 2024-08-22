@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Type, TYPE_CHECKING, TypedDict, Union, Generic
+from typing import Generic, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.publisher import Publisher
 from rclpy.type_support import MsgT
