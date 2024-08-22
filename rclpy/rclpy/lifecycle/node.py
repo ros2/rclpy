@@ -59,6 +59,12 @@ class LifecycleState(NamedTuple):
     state_id: int
 
 
+class CreateLifecyclePublisherArgs(TypedDict):
+    callback_group: Optional[CallbackGroup]
+    event_callbacks: 'Optional[PublisherEventCallbacks]'
+    qos_overriding_options: 'Optional[QoSOverridingOptions]'
+
+
 class LifecycleNodeMixin(ManagedEntity):
     """
     Mixin class to share as most code as possible between `Node` and `LifecycleNode`.
@@ -317,10 +323,8 @@ class LifecycleNodeMixin(ManagedEntity):
         topic: str,
         qos_profile: Union[QoSProfile, int],
         *,
-        callback_group: Optional[CallbackGroup] = None,
-        event_callbacks: 'Optional[PublisherEventCallbacks]' = None,
-        qos_overriding_options: 'Optional[QoSOverridingOptions]' = None,
-        publisher_class: None = None
+        publisher_class: None = None,
+        **kwargs: 'Unpack[CreateLifecyclePublisherArgs]'
     ) -> LifecyclePublisher[MsgT]:
         # TODO(ivanpauno): Should we override lifecycle publisher?
         # There is an issue with python using the overridden method
@@ -336,10 +340,8 @@ class LifecycleNodeMixin(ManagedEntity):
             raise TypeError(
                 "create_publisher() got an unexpected keyword argument 'publisher_class'")
         pub = Node.create_publisher(self, msg_type, topic, qos_profile,
-                                    callback_group=callback_group,
-                                    event_callbacks=event_callbacks,
-                                    qos_overriding_options=qos_overriding_options,
-                                    publisher_class=LifecyclePublisher)
+                                    publisher_class=LifecyclePublisher,
+                                    **kwargs)
 
         if not isinstance(pub, LifecyclePublisher):
             raise Exception('Node failed to create LifecyclePublisher.')
