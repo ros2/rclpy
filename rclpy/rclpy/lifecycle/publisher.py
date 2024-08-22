@@ -20,7 +20,7 @@ from rclpy.type_support import MsgT
 from .managed_entity import SimpleManagedEntity
 
 
-class LifecyclePublisher(SimpleManagedEntity, Publisher):
+class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
     """Managed publisher entity."""
 
     def __init__(self, *args, **kwargs):

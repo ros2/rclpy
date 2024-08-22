@@ -17,12 +17,13 @@ from typing import Dict
 from typing import NamedTuple
 from typing import Optional
 from typing import Set
+from typing import TYPE_CHECKING
 
 import lifecycle_msgs.msg
 import lifecycle_msgs.srv
 
 from rclpy.callback_groups import CallbackGroup
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.service import Service
@@ -31,8 +32,10 @@ from rclpy.type_support import check_is_valid_srv_type
 from .managed_entity import ManagedEntity
 from .publisher import LifecyclePublisher
 
+if TYPE_CHECKING:
+    from typing import TypeAlias
 
-TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
+TransitionCallbackReturn: 'TypeAlias' = _rclpy.TransitionCallbackReturnType
 
 
 class LifecycleState(NamedTuple):
@@ -273,7 +276,7 @@ class LifecycleNodeMixin(ManagedEntity):
         """
         return self.__transition_callback_impl('on_error', state)
 
-    def create_lifecycle_publisher(self, *args, **kwargs):
+    def create_lifecycle_publisher(self, *args, **kwargs) -> LifecyclePublisher:
         # TODO(ivanpauno): Should we override lifecycle publisher?
         # There is an issue with python using the overridden method
         # when creating publishers for builitin publishers (like parameters events).
@@ -337,7 +340,7 @@ class LifecycleNodeMixin(ManagedEntity):
             self._state_machine.trigger_transition_by_label(error_cb_ret_code.to_label(), True)
         return cb_return_code
 
-    def __check_is_initialized(self):
+    def __check_is_initialized(self) -> None:
         if not self._state_machine.initialized:
             raise RuntimeError(
                 'Internal error: got service request while lifecycle state machine '
@@ -347,7 +350,7 @@ class LifecycleNodeMixin(ManagedEntity):
         self,
         req: lifecycle_msgs.srv.ChangeState.Request,
         resp: lifecycle_msgs.srv.ChangeState.Response
-    ):
+    ) -> lifecycle_msgs.srv.ChangeState.Response:
         self.__check_is_initialized()
         transition_id = req.transition.id
         if req.transition.label:
@@ -364,7 +367,7 @@ class LifecycleNodeMixin(ManagedEntity):
         self,
         req: lifecycle_msgs.srv.GetState.Request,
         resp: lifecycle_msgs.srv.GetState.Response
-    ):
+    ) -> lifecycle_msgs.srv.GetState.Response:
         self.__check_is_initialized()
         resp.current_state.id, resp.current_state.label = self._state_machine.current_state
         return resp
@@ -373,7 +376,7 @@ class LifecycleNodeMixin(ManagedEntity):
         self,
         req: lifecycle_msgs.srv.GetAvailableStates.Request,
         resp: lifecycle_msgs.srv.GetAvailableStates.Response
-    ):
+    ) -> lifecycle_msgs.srv.GetAvailableStates.Response:
         self.__check_is_initialized()
         for state_id, label in self._state_machine.available_states:
             resp.available_states.append(lifecycle_msgs.msg.State(id=state_id, label=label))
@@ -383,7 +386,7 @@ class LifecycleNodeMixin(ManagedEntity):
         self,
         req: lifecycle_msgs.srv.GetAvailableTransitions.Request,
         resp: lifecycle_msgs.srv.GetAvailableTransitions.Response
-    ):
+    ) -> lifecycle_msgs.srv.GetAvailableTransitions.Response:
         self.__check_is_initialized()
         for transition_description in self._state_machine.available_transitions:
             transition_id, transition_label, start_id, start_label, goal_id, goal_label = \
@@ -402,7 +405,7 @@ class LifecycleNodeMixin(ManagedEntity):
         self,
         req: lifecycle_msgs.srv.GetAvailableTransitions.Request,
         resp: lifecycle_msgs.srv.GetAvailableTransitions.Response
-    ):
+    ) -> lifecycle_msgs.srv.GetAvailableTransitions.Response:
         self.__check_is_initialized()
         for transition_description in self._state_machine.transition_graph:
             transition_id, transition_label, start_id, start_label, goal_id, goal_label = \
@@ -426,7 +429,7 @@ class LifecycleNode(LifecycleNodeMixin, Node):
     Methods in LifecycleNodeMixin override the ones in Node.
     """
 
-    def __init__(self, node_name, *, enable_communication_interface: bool = True, **kwargs):
+    def __init__(self, node_name: str, *, enable_communication_interface: bool = True, **kwargs):
         """
         Create a lifecycle node.
 
