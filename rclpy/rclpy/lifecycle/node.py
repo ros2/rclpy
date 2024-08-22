@@ -12,30 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
+from typing import Literal
 from typing import NamedTuple
 from typing import Optional
 from typing import Set
+from typing import Type
 from typing import TYPE_CHECKING
+from typing import Union
 
 import lifecycle_msgs.msg
 import lifecycle_msgs.srv
 
 from rclpy.callback_groups import CallbackGroup
-from impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.service import Service
-from rclpy.type_support import check_is_valid_srv_type
+from rclpy.type_support import check_is_valid_srv_type, MsgT
 
 from .managed_entity import ManagedEntity
 from .publisher import LifecyclePublisher
 
 if TYPE_CHECKING:
     from typing import TypeAlias
+    from rclpy.context import Context
+    from rclpy.parameter import Parameter
+    from rclpy.qos_overriding_options import QoSOverridingOptions
+    from rclpy.event_handler import PublisherEventCallbacks
 
 TransitionCallbackReturn: 'TypeAlias' = _rclpy.TransitionCallbackReturnType
+
+
+CallbackNames = Literal['on_configure', 'on_cleanup', 'on_shutdown', 'on_activate',
+                        'on_deactivate', 'on_error']
 
 
 class LifecycleState(NamedTuple):
@@ -65,6 +78,10 @@ class LifecycleNodeMixin(ManagedEntity):
         :param callback_group: Callback group that will be used by all the lifecycle
             node services.
         """
+        if not isinstance(self, Node):
+            raise RuntimeError('LifecycleNodeMixin uses Node fields so Node needs to be'
+                               'in the inheritance tree.')
+
         self._callbacks: Dict[int, Callable[[LifecycleState], TransitionCallbackReturn]] = {}
         # register all state machine transition callbacks
         self.__register_callback(
@@ -150,13 +167,13 @@ class LifecycleNodeMixin(ManagedEntity):
             # Extend base class list of services, so they are added to the executor when spinning.
             self._services.extend(lifecycle_services)
 
-    def trigger_configure(self):
+    def trigger_configure(self) -> TransitionCallbackReturn:
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE)
 
-    def trigger_cleanup(self):
+    def trigger_cleanup(self) -> TransitionCallbackReturn:
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_CLEANUP)
 
-    def trigger_shutdown(self):
+    def trigger_shutdown(self) -> TransitionCallbackReturn:
         current_state = self._state_machine.current_state[1]
         if current_state == 'unconfigured':
             return self.__change_state(
@@ -168,22 +185,37 @@ class LifecycleNodeMixin(ManagedEntity):
             return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_ACTIVE_SHUTDOWN)
         raise _rclpy.RCLError('Shutdown transtion not possible')
 
-    def trigger_activate(self):
+    def trigger_activate(self) -> TransitionCallbackReturn:
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE)
 
-    def trigger_deactivate(self):
+    def trigger_deactivate(self) -> TransitionCallbackReturn:
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_DEACTIVATE)
 
-    def add_managed_entity(self, entity: ManagedEntity):
+    def add_managed_entity(self, entity: ManagedEntity) -> None:
         if not isinstance(entity, ManagedEntity):
             raise TypeError('Expected a rclpy.lifecycle.ManagedEntity instance.')
         self._managed_entities.add(entity)
 
-    def __transition_callback_impl(self, callback_name: str, state: LifecycleState):
+    def __transition_callback_impl(self, callback_name: CallbackNames,
+                                   state: LifecycleState) -> TransitionCallbackReturn:
         for entity in self._managed_entities:
-            cb = getattr(entity, callback_name)
+            if callback_name == 'on_activate':
+                cb = entity.on_activate
+            elif callback_name == 'on_cleanup':
+                cb = entity.on_cleanup
+            elif callback_name == 'on_configure':
+                cb = entity.on_configure
+            elif callback_name == 'on_deactivate':
+                cb = entity.on_deactivate
+            elif callback_name == 'on_error':
+                cb = entity.on_error
+            elif callback_name == 'on_shutdown':
+                cb = entity.on_shutdown
+            else:
+                raise ValueError(f'Not valid callback name "{callback_name}" given.')
+
             ret = cb(state)
-            if not isinstance(ret, TransitionCallbackReturn):
+            if not isinstance(ret, _rclpy.TransitionCallbackReturnType):
                 raise TypeError(
                     f'{callback_name}() return value of class {type(entity)} should be'
                     ' `TransitionCallbackReturn`.\n'
@@ -276,30 +308,56 @@ class LifecycleNodeMixin(ManagedEntity):
         """
         return self.__transition_callback_impl('on_error', state)
 
-    def create_lifecycle_publisher(self, *args, **kwargs) -> LifecyclePublisher:
+    def create_lifecycle_publisher(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        qos_profile: Union[QoSProfile, int],
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[PublisherEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        publisher_class: None = None
+    ) -> LifecyclePublisher[MsgT]:
         # TODO(ivanpauno): Should we override lifecycle publisher?
         # There is an issue with python using the overridden method
         # when creating publishers for builitin publishers (like parameters events).
         # We could override them after init, similar to what we do to override publish()
         # in LifecycleNode.
         # Having both options seem fine.
-        if 'publisher_class' in kwargs:
+        if not isinstance(self, Node):
+            raise RuntimeError('LifecycleNodeMixin uses Node fields so Node needs to be'
+                               'in the inheritance tree.')
+
+        if publisher_class:
             raise TypeError(
                 "create_publisher() got an unexpected keyword argument 'publisher_class'")
-        pub = Node.create_publisher(self, *args, **kwargs, publisher_class=LifecyclePublisher)
+        pub = Node.create_publisher(self, msg_type, topic, qos_profile,
+                                    callback_group=callback_group,
+                                    event_callbacks=event_callbacks,
+                                    qos_overriding_options=qos_overriding_options,
+                                    publisher_class=LifecyclePublisher)
+
+        if not isinstance(pub, LifecyclePublisher):
+            raise Exception('Node failed to create LifecyclePublisher.')
+
         self._managed_entities.add(pub)
         return pub
 
-    def destroy_lifecycle_publisher(self, publisher: LifecyclePublisher):
+    def destroy_lifecycle_publisher(self, publisher: LifecyclePublisher[Any]) -> bool:
+        if not isinstance(self, Node):
+            raise RuntimeError('LifecycleNodeMixin uses Node fields so Node needs to be'
+                               'in the inheritance tree.')
+
         try:
             self._managed_entities.remove(publisher)
         except KeyError:
             pass
-        return Node.destroy_publisher(self, publisher)
+        return self.destroy_publisher(publisher)
 
     def __register_callback(
         self, state_id: int, callback: Callable[[LifecycleState], TransitionCallbackReturn]
-    ) -> bool:
+    ) -> Literal[True]:
         """
         Register a callback that will be triggered when transitioning to state_id.
 
@@ -429,14 +487,43 @@ class LifecycleNode(LifecycleNodeMixin, Node):
     Methods in LifecycleNodeMixin override the ones in Node.
     """
 
-    def __init__(self, node_name: str, *, enable_communication_interface: bool = True, **kwargs):
+    def __init__(
+        self,
+        node_name: str,
+        *,
+        context: Optional[Context],
+        cli_args: Optional[List[str]],
+        namespace: Optional[str],
+        use_global_arguments: bool,
+        enable_rosout: bool,
+        start_parameter_services: bool,
+        parameter_overrides: Optional[List[Parameter]],
+        allow_undeclared_parameters: bool,
+        automatically_declare_parameters_from_overrides: bool,
+        enable_logger_service: bool,
+        enable_communication_interface: bool = True,
+    ) -> None:
         """
         Create a lifecycle node.
 
         See rclpy.lifecycle.LifecycleNodeMixin.__init__() and rclpy.node.Node()
         for the documentation of each parameter.
         """
-        Node.__init__(self, node_name, **kwargs)
+        Node.__init__(
+            self,
+            node_name,
+            context=context,
+            cli_args=cli_args,
+            namespace=namespace,
+            use_global_arguments=use_global_arguments,
+            enable_rosout=enable_rosout,
+            start_parameter_services=start_parameter_services,
+            parameter_overrides=parameter_overrides,
+            allow_undeclared_parameters=allow_undeclared_parameters,
+            automatically_declare_parameters_from_overrides=(
+                automatically_declare_parameters_from_overrides
+            ),
+            enable_logger_service=enable_logger_service)
         LifecycleNodeMixin.__init__(
             self,
             enable_communication_interface=enable_communication_interface)

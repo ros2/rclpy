@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 from types import TracebackType
-from typing import Any, Generic, Literal, overload, Sequence, TypedDict
+from typing import Any, Generic, Literal, overload, Sequence, TypeAlias, TypedDict
 
 from rclpy.clock import JumpHandle
 from rclpy.clock_type import ClockType
@@ -133,6 +133,72 @@ class EventHandle(Destroyable):
 
     def take_event(self) -> Any | None:
         """Get pending data from a ready event."""
+
+
+LifecycleStateMachineState: TypeAlias = tuple[int, str]
+
+
+class LifecycleStateMachine(Destroyable):
+
+    def __init__(self, node: Node, enable_com_interface: bool) -> None: ...
+
+    @property
+    def initialized(self) -> bool:
+        """Check if state machine is initialized."""
+
+    @property
+    def current_state(self) -> LifecycleStateMachineState:
+        """Get the current state machine state."""
+
+    @property
+    def available_states(self) -> list[LifecycleStateMachineState]:
+        """Get the available states."""
+
+    @property
+    def available_transitions(self) -> list[tuple[int, str, int, str, int, str]]:
+        """Get the available transitions."""
+
+    @property
+    def transition_graph(self) -> list[tuple[int, str, int, str, int, str]]:
+        """Get the transition graph."""
+
+    def get_transition_by_label(self, label: str) -> int:
+        """Get the transition id from a transition label."""
+
+    def trigger_transition_by_id(self, transition_id: int, publish_update: bool) -> None:
+        """Trigger a transition by transition id."""
+
+    def trigger_transition_by_label(self, label: str, publish_update: bool) -> None:
+        """Trigger a transition by label."""
+
+    @property
+    def service_change_state(self) -> Service:
+        """Get the change state service."""
+
+    @property
+    def service_get_state(self) -> Service:
+        """Get the get state service."""
+
+    @property
+    def service_get_available_states(self) -> Service:
+        """Get the get available states service."""
+
+    @property
+    def service_get_available_transitions(self) -> Service:
+        """Get the get available transitions service."""
+
+    @property
+    def service_get_transition_graph(self) -> Service:
+        """Get the get transition graph service."""
+
+
+class TransitionCallbackReturnType(IntEnum):
+    SUCCESS: int
+    FAILURE: int
+    ERROR: int
+
+    def to_label(self) -> str:
+        """Convert the transition callback return code to a transition label."""
 
 
 class GuardCondition(Destroyable):

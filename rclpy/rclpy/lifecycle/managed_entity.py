@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING
 from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, overload, TYPE_CHECKING, Union
 
 from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 
@@ -71,10 +71,27 @@ class SimpleManagedEntity(ManagedEntity):
         return self._enabled
 
     @staticmethod
-    def when_enabled(wrapped=None, *, when_not_enabled=None):
-        def decorator(wrapped):
+    @overload
+    def when_enabled(wrapped: None, *,
+                     when_not_enabled: Optional[Callable[..., None]] = None
+                     ) -> Callable[[Callable[..., None]], Callable[..., None]]: ...
+
+    @staticmethod
+    @overload
+    def when_enabled(wrapped: Callable[..., None], *,
+                     when_not_enabled: Optional[Callable[..., None]] = None
+                     ) -> Callable[..., None]: ...
+
+    @staticmethod
+    def when_enabled(wrapped: Optional[Callable[..., None]] = None, *,
+                     when_not_enabled: Optional[Callable[..., None]] = None) -> Union[
+                         Callable[..., None],
+                         Callable[[Callable[..., None]], Callable[..., None]]
+                        ]:
+        def decorator(wrapped: Callable[..., None]) -> Callable[..., None]:
             @wraps(wrapped)
-            def only_when_enabled_wrapper(self: SimpleManagedEntity, *args, **kwargs):
+            def only_when_enabled_wrapper(self: SimpleManagedEntity, *args: List[Any],
+                                          **kwargs: Dict[str, Any]) -> None:
                 if not self._enabled:
                     if when_not_enabled is not None:
                         when_not_enabled()
