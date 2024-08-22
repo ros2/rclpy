@@ -35,9 +35,9 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
         publisher_impl: '_rclpy.Publisher[MsgT]',
         msg_type: Type[MsgT],
         topic: str,
-        qos_profile: QoSProfile,
-        event_callbacks: PublisherEventCallbacks,
-        callback_group: CallbackGroup
+        qos_profile: 'QoSProfile',
+        event_callbacks: 'PublisherEventCallbacks',
+        callback_group: 'CallbackGroup'
     ) -> None:
         SimpleManagedEntity.__init__(self)
         Publisher.__init__(self, publisher_impl, msg_type, topic, qos_profile, event_callbacks,

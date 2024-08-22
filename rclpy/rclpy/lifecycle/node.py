@@ -315,8 +315,8 @@ class LifecycleNodeMixin(ManagedEntity):
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
-        event_callbacks: Optional[PublisherEventCallbacks] = None,
-        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        event_callbacks: 'Optional[PublisherEventCallbacks]' = None,
+        qos_overriding_options: 'Optional[QoSOverridingOptions]' = None,
         publisher_class: None = None
     ) -> LifecyclePublisher[MsgT]:
         # TODO(ivanpauno): Should we override lifecycle publisher?
@@ -491,13 +491,13 @@ class LifecycleNode(LifecycleNodeMixin, Node):
         self,
         node_name: str,
         *,
-        context: Optional[Context],
+        context: 'Optional[Context]',
         cli_args: Optional[List[str]],
         namespace: Optional[str],
         use_global_arguments: bool,
         enable_rosout: bool,
         start_parameter_services: bool,
-        parameter_overrides: Optional[List[Parameter]],
+        parameter_overrides: 'Optional[List[Parameter]]',
         allow_undeclared_parameters: bool,
         automatically_declare_parameters_from_overrides: bool,
         enable_logger_service: bool,
