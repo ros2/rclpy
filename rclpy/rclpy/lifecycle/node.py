@@ -22,8 +22,8 @@ from typing import Optional
 from typing import Set
 from typing import Type
 from typing import TYPE_CHECKING
+from typing import TypedDict
 from typing import Union
-
 import lifecycle_msgs.msg
 import lifecycle_msgs.srv
 
@@ -39,6 +39,8 @@ from .publisher import LifecyclePublisher
 
 if TYPE_CHECKING:
     from typing import TypeAlias
+    from typing import Unpack
+
     from rclpy.context import Context
     from rclpy.parameter import Parameter
     from rclpy.qos_overriding_options import QoSOverridingOptions
@@ -479,6 +481,19 @@ class LifecycleNodeMixin(ManagedEntity):
         return resp
 
 
+class LifecycleNodeArgs(TypedDict):
+    context: Optional[Context]
+    cli_args: Optional[List[str]]
+    namespace: Optional[str]
+    use_global_arguments: bool
+    enable_rosout: bool
+    start_parameter_services: bool
+    parameter_overrides: 'Optional[List[Parameter]]'
+    allow_undeclared_parameters: bool
+    automatically_declare_parameters_from_overrides: bool
+    enable_logger_service: bool
+
+
 class LifecycleNode(LifecycleNodeMixin, Node):
     """
     A ROS 2 managed node.
@@ -491,17 +506,8 @@ class LifecycleNode(LifecycleNodeMixin, Node):
         self,
         node_name: str,
         *,
-        context: 'Optional[Context]',
-        cli_args: Optional[List[str]],
-        namespace: Optional[str],
-        use_global_arguments: bool,
-        enable_rosout: bool,
-        start_parameter_services: bool,
-        parameter_overrides: 'Optional[List[Parameter]]',
-        allow_undeclared_parameters: bool,
-        automatically_declare_parameters_from_overrides: bool,
-        enable_logger_service: bool,
         enable_communication_interface: bool = True,
+        **kwargs: 'Unpack[LifecycleNodeArgs]',
     ) -> None:
         """
         Create a lifecycle node.
@@ -512,18 +518,7 @@ class LifecycleNode(LifecycleNodeMixin, Node):
         Node.__init__(
             self,
             node_name,
-            context=context,
-            cli_args=cli_args,
-            namespace=namespace,
-            use_global_arguments=use_global_arguments,
-            enable_rosout=enable_rosout,
-            start_parameter_services=start_parameter_services,
-            parameter_overrides=parameter_overrides,
-            allow_undeclared_parameters=allow_undeclared_parameters,
-            automatically_declare_parameters_from_overrides=(
-                automatically_declare_parameters_from_overrides
-            ),
-            enable_logger_service=enable_logger_service)
+            **kwargs)
         LifecycleNodeMixin.__init__(
             self,
             enable_communication_interface=enable_communication_interface)
