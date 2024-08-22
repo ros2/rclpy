@@ -483,7 +483,7 @@ class LifecycleNodeMixin(ManagedEntity):
 
 
 class LifecycleNodeArgs(TypedDict):
-    context: Optional[Context]
+    context: 'Optional[Context]'
     cli_args: Optional[List[str]]
     namespace: Optional[str]
     use_global_arguments: bool
