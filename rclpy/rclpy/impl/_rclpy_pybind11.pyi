@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from enum import IntEnum
+from enum import Enum
 from types import TracebackType
 from typing import Any, Generic, Literal, overload, Sequence, TypeAlias, TypedDict
 
@@ -101,21 +101,23 @@ class rcl_duration_t:
     nanoseconds: int
 
 
-class rcl_subscription_event_type_t(IntEnum):
-    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED: int
-    RCL_SUBSCRIPTION_LIVELINESS_CHANGED: int
-    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS: int
-    RCL_SUBSCRIPTION_MESSAGE_LOST: int
-    RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE: int
-    RCL_SUBSCRIPTION_MATCHED: int
+class rcl_subscription_event_type_t(Enum):
+    _value_: int
+    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED = ...
+    RCL_SUBSCRIPTION_LIVELINESS_CHANGED = ...
+    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = ...
+    RCL_SUBSCRIPTION_MESSAGE_LOST = ...
+    RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE = ...
+    RCL_SUBSCRIPTION_MATCHED = ...
 
 
-class rcl_publisher_event_type_t(IntEnum):
-    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED: int
-    RCL_PUBLISHER_LIVELINESS_LOST: int
-    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS: int
-    RCL_PUBLISHER_INCOMPATIBLE_TYPE: int
-    RCL_PUBLISHER_MATCHED: int
+class rcl_publisher_event_type_t(Enum):
+    _value_: int
+    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED = ...
+    RCL_PUBLISHER_LIVELINESS_LOST = ...
+    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS = ...
+    RCL_PUBLISHER_INCOMPATIBLE_TYPE = ...
+    RCL_PUBLISHER_MATCHED = ...
 
 
 class EventHandle(Destroyable):
@@ -192,10 +194,11 @@ class LifecycleStateMachine(Destroyable):
         """Get the get transition graph service."""
 
 
-class TransitionCallbackReturnType(IntEnum):
-    SUCCESS: int
-    FAILURE: int
-    ERROR: int
+class TransitionCallbackReturnType(Enum):
+    _value_: int
+    SUCCESS = ...
+    FAILURE = ...
+    ERROR = ...
 
     def to_label(self) -> str:
         """Convert the transition callback return code to a transition label."""
