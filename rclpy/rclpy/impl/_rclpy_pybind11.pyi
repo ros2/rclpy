@@ -14,9 +14,9 @@
 
 from __future__ import annotations
 
-from enum import IntEnum
+from enum import Enum
 from types import TracebackType
-from typing import Any, Generic, Literal, overload, Sequence, TypedDict
+from typing import Any, Generic, Literal, overload, Sequence, TypedDict, TypeVar
 
 from rclpy.clock import JumpHandle
 from rclpy.clock_type import ClockType
@@ -24,6 +24,9 @@ from rclpy.qos import (QoSDurabilityPolicy, QoSHistoryPolicy, QoSLivelinessPolic
                        QoSReliabilityPolicy)
 from rclpy.subscription import MessageInfo
 from rclpy.type_support import MsgT
+
+
+T = TypeVar('T')
 
 
 def rclpy_remove_ros_args(pycli_args: Sequence[str]) -> list[str]:
@@ -101,37 +104,138 @@ class rcl_duration_t:
     nanoseconds: int
 
 
-class rcl_subscription_event_type_t(IntEnum):
-    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED: int
-    RCL_SUBSCRIPTION_LIVELINESS_CHANGED: int
-    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS: int
-    RCL_SUBSCRIPTION_MESSAGE_LOST: int
-    RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE: int
-    RCL_SUBSCRIPTION_MATCHED: int
+class rcl_subscription_event_type_t(Enum):
+    _value_: int
+    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED = ...
+    RCL_SUBSCRIPTION_LIVELINESS_CHANGED = ...
+    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = ...
+    RCL_SUBSCRIPTION_MESSAGE_LOST = ...
+    RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE = ...
+    RCL_SUBSCRIPTION_MATCHED = ...
 
 
-class rcl_publisher_event_type_t(IntEnum):
-    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED: int
-    RCL_PUBLISHER_LIVELINESS_LOST: int
-    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS: int
-    RCL_PUBLISHER_INCOMPATIBLE_TYPE: int
-    RCL_PUBLISHER_MATCHED: int
+class rcl_publisher_event_type_t(Enum):
+    _value_: int
+    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED = ...
+    RCL_PUBLISHER_LIVELINESS_LOST = ...
+    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS = ...
+    RCL_PUBLISHER_INCOMPATIBLE_TYPE = ...
+    RCL_PUBLISHER_MATCHED = ...
 
 
-class EventHandle(Destroyable):
+class rmw_requested_deadline_missed_status_t:
+    total_count: int
+    total_count_change: int
+
+
+class rmw_liveliness_changed_status_t:
+    alive_count: int
+    not_alive_count: int
+    alive_count_change: int
+    not_alive_count_change: int
+
+
+class rmw_message_lost_status_t:
+    total_count: int
+    total_count_change: int
+
+
+class rmw_qos_policy_kind_e(Enum):
+    _value_: int
+    RMW_QOS_POLICY_INVALID = ...
+    RMW_QOS_POLICY_DURABILITY = ...
+    RMW_QOS_POLICY_DEADLINE = ...
+    RMW_QOS_POLICY_LIVELINESS = ...
+    RMW_QOS_POLICY_RELIABILITY = ...
+    RMW_QOS_POLICY_HISTORY = ...
+    RMW_QOS_POLICY_LIFESPAN = ...
+    RMW_QOS_POLICY_DEPTH = ...
+    RMW_QOS_POLICY_LIVELINESS_LEASE_DURATION = ...
+    RMW_QOS_POLICY_AVOID_ROS_NAMESPACE_CONVENTIONS = ...
+
+
+rmw_qos_policy_kind_t = rmw_qos_policy_kind_e
+
+
+class rmw_requested_qos_incompatible_event_status_t:
+    total_count: int
+    total_count_change: int
+    last_policy_kind: rmw_qos_policy_kind_t
+
+
+class rmw_matched_status_s:
+    total_count: int
+    total_count_change: int
+    current_count: int
+    current_count_change: int
+
+
+rmw_matched_status_t = rmw_matched_status_s
+
+
+class rmw_offered_deadline_missed_status_s:
+    total_count: int
+    total_count_change: int
+
+
+rmw_offered_deadline_missed_status_t = rmw_offered_deadline_missed_status_s
+
+
+class rmw_liveliness_lost_status_s:
+    total_count: int
+    total_count_change: int
+
+
+rmw_liveliness_lost_status_t = rmw_liveliness_lost_status_s
+
+
+class rmw_incompatible_type_status_s:
+    total_count: int
+    total_count_change: int
+
+
+rmw_incompatible_type_status_t = rmw_incompatible_type_status_s
+
+
+class rmw_qos_incompatible_event_status_s:
+    total_count: int
+    total_count_change: int
+    last_policy_kind: rmw_qos_policy_kind_t
+
+
+rmw_qos_incompatible_event_status_t = rmw_qos_incompatible_event_status_s
+rmw_offered_qos_incompatible_event_status_t = rmw_qos_incompatible_event_status_t
+
+
+class RCLError(BaseException):
+    def __init__(self, error_text: str) -> None: ...
+
+
+class UnsupportedEventTypeError(RCLError):
+    pass
+
+
+class EventHandle(Destroyable, Generic[T]):
 
     @overload
-    def __init__(self, subcription: Subscription,
-                 event_type: rcl_subscription_event_type_t) -> None: ...
+    def __init__(
+        self,
+        subcription: Subscription[Any],
+        event_type: rcl_subscription_event_type_t
+    ) -> None: ...
 
     @overload
-    def __init__(self, publisher: Publisher, event_type: rcl_publisher_event_type_t) -> None: ...
+    def __init__(
+        self,
+        subcription: Publisher[Any],
+        event_type: rcl_publisher_event_type_t
+    ) -> None: ...
 
     @property
     def pointer(self) -> int:
         """Get the address of the entity as an integer."""
 
-    def take_event(self) -> Any | None:
+    def take_event(self) -> T | None:
         """Get pending data from a ready event."""
 
 
@@ -322,7 +426,7 @@ class WaitSet(Destroyable):
     def add_timer(self, timer: Timer) -> int:
         """Add a timer to the wait set structure."""
 
-    def add_event(self, event: EventHandle) -> int:
+    def add_event(self, event: EventHandle[Any]) -> int:
         """Add an event to the wait set structure."""
 
     def is_ready(self, entity_type: IsReadyValues, index: int) -> bool:

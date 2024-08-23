@@ -525,8 +525,8 @@ class ActionServer(Waitable[ServerGoalHandleDict]):
         with self._lock:
             self._handle.add_to_waitset(wait_set)
 
-    def __enter__(self):
-        return self._handle.__enter__()
+    def __enter__(self) -> None:
+        self._handle.__enter__()
 
     def __exit__(self, t, v, tb):
         self._handle.__exit__(t, v, tb)
