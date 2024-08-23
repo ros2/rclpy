@@ -15,16 +15,20 @@
 import inspect
 import sys
 import threading
-from typing import (Callable, cast, Coroutine, Dict, Generator, Generic, List,
+from typing import (cast, Callable, Coroutine, Dict, Generator, Generic, List,
                     Optional, TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     from rclpy.executors import Executor
 
 T = TypeVar('T')
 
+FunctionOrCoroutineFunction: TypeAlias = Union[Callable[[], T],
+                                               Callable[..., Coroutine[None, None, T]]]
 
 def _fake_weakref() -> None:
     """Return None when called to simulate a weak reference that has been garbage collected."""
@@ -207,13 +211,11 @@ class Task(Future[T]):
     """
 
     def __init__(self,
-                 handler: Union[Callable[[], T], Coroutine[None, None, T], None],
+                 handler: FunctionOrCoroutineFunction[T],
                  args: Optional[List[object]] = None,
                  kwargs: Optional[Dict[str, object]] = None,
                  executor: Optional['Executor'] = None) -> None:
         super().__init__(executor=executor)
-        # _handler is either a normal function or a coroutine
-        self._handler = handler
         # Arguments passed into the function
         if args is None:
             args = []
@@ -221,10 +223,19 @@ class Task(Future[T]):
         if kwargs is None:
             kwargs = {}
         self._kwargs: Optional[Dict[str, object]] = kwargs
+    
+        # _handler is either a normal function or a coroutine
         if inspect.iscoroutinefunction(handler):
-            self._handler = handler(*args, **kwargs)
+            self._handler: Union[
+                Coroutine[None, None, T],
+                Callable[[], T],
+                None
+             ] = handler(*args, **kwargs)
             self._args = None
             self._kwargs = None
+        else:
+            handler = cast(Callable[[], T], handler)
+            self._handler = handler
         # True while the task is being executed
         self._executing = False
         # Lock acquired to prevent task from executing in parallel with itself
@@ -248,7 +259,7 @@ class Task(Future[T]):
 
             if inspect.iscoroutine(self._handler):
                 # Execute a coroutine
-                handler = cast(Coroutine[None, None, T], self._handler)
+                handler = self._handler
                 try:
                     handler.send(None)
                 except StopIteration as e:
