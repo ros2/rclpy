@@ -13,11 +13,11 @@
 # limitations under the License.
 
 from enum import Enum, IntEnum
-from typing import (Callable, Iterable, List, Optional, Protocol, Tuple, Type, TYPE_CHECKING,
+from typing import (Callable, Iterable, List, Optional, Tuple, Type, TYPE_CHECKING,
                     TypedDict, TypeVar, Union)
 import warnings
 
-from rclpy.duration import Duration, DurationHandle
+from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 if TYPE_CHECKING:
@@ -54,18 +54,6 @@ class InvalidQoSProfileException(Exception):
 
     def __init__(self, message: str) -> None:
         Exception(self, f'Invalid QoSProfile: {message}')
-
-
-class QoSProfileHandle(Protocol):
-    qos_history: Union['QoSHistoryPolicy', int]
-    qos_depth: int
-    qos_reliability: Union['QoSReliabilityPolicy', int]
-    qos_durability: Union['QoSDurabilityPolicy', int]
-    pyqos_lifespan: DurationHandle
-    pyqos_deadline: DurationHandle
-    qos_liveliness: Union['QoSLivelinessPolicy', int]
-    pyqos_liveliness_lease_duration: DurationHandle
-    avoid_ros_namespace_conventions: bool
 
 
 class QoSProfileDictionary(TypedDict):
@@ -276,7 +264,7 @@ class QoSProfile:
         assert isinstance(value, bool)
         self._avoid_ros_namespace_conventions = value
 
-    def get_c_qos_profile(self) -> QoSProfileHandle:
+    def get_c_qos_profile(self) -> _rclpy.rmw_qos_profile_t:
         return _rclpy.rmw_qos_profile_t(
             self.history,
             self.depth,

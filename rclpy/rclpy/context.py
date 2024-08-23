@@ -20,30 +20,16 @@ from typing import Callable
 from typing import ContextManager
 from typing import List
 from typing import Optional
-from typing import Protocol
 from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
 import warnings
 import weakref
 
-from rclpy.destroyable import DestroyableType
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 if TYPE_CHECKING:
     from rclpy.node import Node
-
-
-class ContextHandle(DestroyableType, Protocol):
-
-    def ok(self) -> bool:
-        ...
-
-    def get_domain_id(self) -> int:
-        ...
-
-    def shutdown(self) -> None:
-        ...
-
 
 g_logging_configure_lock = threading.Lock()
 g_logging_ref_count: int = 0
@@ -68,11 +54,11 @@ class Context(ContextManager['Context']):
         self._lock = threading.RLock()
         self._callbacks: List[Union['weakref.WeakMethod[MethodType]', Callable[[], None]]] = []
         self._logging_initialized = False
-        self.__context: Optional[ContextHandle] = None
+        self.__context: Optional[_rclpy.Context] = None
         self.__node_weak_ref_list: List[weakref.ReferenceType['Node']] = []
 
     @property
-    def handle(self) -> Optional[ContextHandle]:
+    def handle(self) -> Optional[_rclpy.Context]:
         return self.__context
 
     def destroy(self) -> None:

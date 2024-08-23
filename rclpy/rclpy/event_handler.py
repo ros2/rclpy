@@ -32,10 +32,6 @@ if TYPE_CHECKING:
     from typing import TypeAlias
 
 
-if TYPE_CHECKING:
-    from rclpy.subscription import SubscriptionHandle
-
-
 QoSPublisherEventType = _rclpy.rcl_publisher_event_type_t
 QoSSubscriptionEventType = _rclpy.rcl_subscription_event_type_t
 
@@ -201,7 +197,7 @@ class SubscriptionEventCallbacks:
         self.use_default_callbacks = use_default_callbacks
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, subscription: 'SubscriptionHandle',
+        self, callback_group: CallbackGroup, subscription: '_rclpy.Subscription',
             topic_name: str) -> List[EventHandler]:
         with subscription:
             logger = get_logger(subscription.get_logger_name())
