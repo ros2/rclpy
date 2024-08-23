@@ -88,7 +88,7 @@ EventHandlerData: 'TypeAlias' = Optional[Union[
                 QoSSubscriptionMatchedInfo,
                 QoSOfferedDeadlineMissedInfo,
                 QoSLivelinessLostInfo,
-                _rclpy.rmw_offered_qos_incompatible_event_status_t,
+                '_rclpy.rmw_offered_qos_incompatible_event_status_t',
                 IncompatibleTypeInfo,
                 QoSPublisherMatchedInfo
             ]]
