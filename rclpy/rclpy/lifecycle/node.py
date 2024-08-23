@@ -344,7 +344,7 @@ class LifecycleNodeMixin(ManagedEntity):
                                     **kwargs)
 
         if not isinstance(pub, LifecyclePublisher):
-            raise Exception('Node failed to create LifecyclePublisher.')
+            raise RuntimeError('Node failed to create LifecyclePublisher.')
 
         self._managed_entities.add(pub)
         return pub
