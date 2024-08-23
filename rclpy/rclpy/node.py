@@ -16,6 +16,7 @@ import math
 import time
 
 from types import TracebackType
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Iterator
@@ -78,7 +79,6 @@ from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
-from rclpy.subscription import SubscriptionHandle
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer, TimerInfo
@@ -111,10 +111,6 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 # Re-export exception defined in _rclpy C extension.
 # `Node.get_*_names_and_types_by_node` methods may raise this error.
 NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
-
-
-class NodeHandle:
-    pass
 
 
 class Node:
@@ -181,7 +177,7 @@ class Node:
         self._services: List[Service] = []
         self._timers: List[Timer] = []
         self._guards: List[GuardCondition] = []
-        self.__waitables: List[Waitable] = []
+        self.__waitables: List[Waitable[Any]] = []
         self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._pre_set_parameters_callbacks: List[Callable[[List[Parameter]], List[Parameter]]] = []
         self._on_set_parameters_callbacks: \
@@ -290,7 +286,7 @@ class Node:
         yield from self._guards
 
     @property
-    def waitables(self) -> Iterator[Waitable]:
+    def waitables(self) -> Iterator[Waitable[Any]]:
         """Get waitables that have been created on this node."""
         yield from self.__waitables
 
@@ -1485,7 +1481,7 @@ class Node:
             raise TypeError(
                 'Expected QoSProfile or int, but received {!r}'.format(type(qos_or_depth)))
 
-    def add_waitable(self, waitable: Waitable) -> None:
+    def add_waitable(self, waitable: Waitable[Any]) -> None:
         """
         Add a class that is capable of adding things to the wait set.
 
@@ -1494,7 +1490,7 @@ class Node:
         self.__waitables.append(waitable)
         self._wake_executor()
 
-    def remove_waitable(self, waitable: Waitable) -> None:
+    def remove_waitable(self, waitable: Waitable[Any]) -> None:
         """
         Remove a Waitable that was previously added to the node.
 
@@ -1657,7 +1653,7 @@ class Node:
         check_is_valid_msg_type(msg_type)
         try:
             with self.handle:
-                subscription_object: SubscriptionHandle[MsgT] = _rclpy.Subscription(
+                subscription_object = _rclpy.Subscription(
                     self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
         except ValueError:
             failed = True

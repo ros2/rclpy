@@ -17,7 +17,6 @@ import threading
 from types import TracebackType
 from typing import Callable
 from typing import Optional
-from typing import Protocol
 from typing import Type
 from typing import Union
 
@@ -25,42 +24,10 @@ from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
-from rclpy.destroyable import DestroyableType
 from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.time import Time
 from rclpy.utilities import get_default_context
-
-
-class TimerHandle(DestroyableType, Protocol):
-    """Type alias of _rclpy.Timer."""
-
-    def reset_timer(self) -> None:
-        ...
-
-    def is_timer_ready(self) -> bool:
-        ...
-
-    def call_timer(self) -> None:
-        ...
-
-    def change_timer_period(self, period_nsec: int) -> None:
-        ...
-
-    def time_until_next_call(self) -> Optional[int]:
-        ...
-
-    def time_since_last_call(self) -> int:
-        ...
-
-    def get_timer_period(self) -> int:
-        ...
-
-    def cancel_timer(self) -> None:
-        ...
-
-    def is_timer_canceled(self) -> bool:
-        ...
 
 
 class TimerInfo:
@@ -130,9 +97,9 @@ class Timer:
         self._context = get_default_context() if context is None else context
         self._clock = clock
         if self._context.handle is None:
-            raise RuntimeError('Context must be initialized before create a TimerHandle.')
+            raise RuntimeError('Context must be initialized before create a _rclpy.Timer.')
         with self._clock.handle, self._context.handle:
-            self.__timer: TimerHandle = _rclpy.Timer(
+            self.__timer = _rclpy.Timer(
                 self._clock.handle, self._context.handle, timer_period_ns, autostart)
         self.timer_period_ns = timer_period_ns
         self.callback = callback
@@ -141,7 +108,7 @@ class Timer:
         self._executor_event = False
 
     @property
-    def handle(self) -> TimerHandle:
+    def handle(self) -> _rclpy.Timer:
         return self.__timer
 
     def destroy(self) -> None:
