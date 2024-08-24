@@ -592,7 +592,7 @@ class Executor(ContextManager['Executor']):
             self._tasks.append((task, entity, node))
         return task
 
-    def can_execute(self, entity: Entity) -> bool:
+    def can_execute(self, entity: 'Entity') -> bool:
         """
         Determine if a callback for an entity can be executed.
 
