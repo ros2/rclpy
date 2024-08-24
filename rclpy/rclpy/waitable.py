@@ -16,7 +16,7 @@ from types import TracebackType
 from typing import Any, Generic, List, Optional, Type, TYPE_CHECKING, TypeVar
 
 
-from impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 T = TypeVar('T')
 
