@@ -839,7 +839,7 @@ class Executor(ContextManager['Executor']):
             raise ConditionReachedException()
 
     def wait_for_ready_callbacks(self, *args: Any, **kwargs: Any) -> Tuple[Task[Any],
-                                                                           Optional[Entity],
+                                                                           'Optional[Entity]',
                                                                            'Optional[Node]']:
         """
         Return callbacks that are ready to be executed.
