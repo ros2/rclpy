@@ -18,12 +18,12 @@ import weakref
 
 
 if TYPE_CHECKING:
-    from rclpy.subscription import Subscription
-    from rclpy.timer import Timer
-    from rclpy.client import Client
-    from rclpy.service import Service
-    from rclpy.guard_condition import GuardCondition
-    from rclpy.waitable import Waitable
+    from .subscription import Subscription
+    from .timer import Timer
+    from .client import Client
+    from .service import Service
+    from .guard_condition import GuardCondition
+    from .waitable import Waitable
     Entity = Union[Subscription, Timer, Client, Service, GuardCondition, Waitable[Any]]
 
 

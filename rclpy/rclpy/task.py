@@ -15,7 +15,7 @@
 import inspect
 import sys
 import threading
-from typing import (cast, Callable, Coroutine, Dict, Generator, Generic, List,
+from typing import (cast, Callable, Coroutine, Dict, Generator, Generic, List, Iterable,
                     Optional, TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
@@ -212,7 +212,7 @@ class Task(Future[T]):
 
     def __init__(self,
                  handler: FunctionOrCoroutineFunction[T],
-                 args: Optional[List[object]] = None,
+                 args: Optional[Iterable[object]] = None,
                  kwargs: Optional[Dict[str, object]] = None,
                  executor: Optional['Executor'] = None) -> None:
         super().__init__(executor=executor)

@@ -46,13 +46,13 @@ from rclpy.clock_type import ClockType
 from rclpy.context import Context
 from rclpy.exceptions import InvalidHandle
 from .guard_condition import GuardCondition
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from .impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
 from rclpy.signals import SignalHandlerGuardCondition
-from rclpy.subscription import Subscription
+from .subscription import Subscription
 from .task import Future
 from .task import Task
-from rclpy.timer import Timer, TimerInfo
+from .timer import Timer, TimerInfo
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
@@ -155,7 +155,7 @@ class ConditionReachedException(Exception):
 class TimeoutObject:
     """Use timeout object to save timeout."""
 
-    def __init__(self, timeout: float):
+    def __init__(self, timeout: float) -> None:
         self._timeout = timeout
 
     @property
@@ -197,7 +197,7 @@ class Executor(ContextManager['Executor']):
         self._nodes: Set[Node] = set()
         self._nodes_lock = RLock()
         # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
-        self._tasks: List[Tuple[Task[Any], Optional[Waitable[Any]], Optional[Node]]] = []
+        self._tasks: List[Tuple[Task[Any], 'Optional[Entity]', Optional[Node]]] = []
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         self._guard = GuardCondition(
@@ -518,7 +518,7 @@ class Executor(ContextManager['Executor']):
         self,
         entity: 'Entity',
         node: 'Node',
-        take_from_wait_list: Callable,
+        take_from_wait_list: Callable[['Entity'], Callable[..., Coroutine]],
     ) -> Task[Any]:
         """
         Make a handler that performs work on an entity.
@@ -530,7 +530,7 @@ class Executor(ContextManager['Executor']):
         # Mark this so it doesn't get added back to the wait list
         entity._executor_event = True
 
-        async def handler(entity, gc, is_shutdown, work_tracker):
+        async def handler(entity: 'Entity', gc: GuardCondition, is_shutdown: bool, work_tracker: _WorkTracker):
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
