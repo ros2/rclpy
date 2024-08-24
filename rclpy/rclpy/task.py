@@ -15,7 +15,7 @@
 import inspect
 import sys
 import threading
-from typing import (cast, Callable, Coroutine, Dict, Generator, Generic, List, Iterable,
+from typing import (Callable, cast, Coroutine, Dict, Generator, Generic, Iterable, List,
                     Optional, TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
@@ -29,6 +29,7 @@ T = TypeVar('T')
 
 FunctionOrCoroutineFunction: TypeAlias = Union[Callable[[], T],
                                                Callable[..., Coroutine[None, None, T]]]
+
 
 def _fake_weakref() -> None:
     """Return None when called to simulate a weak reference that has been garbage collected."""
@@ -223,7 +224,7 @@ class Task(Future[T]):
         if kwargs is None:
             kwargs = {}
         self._kwargs: Optional[Dict[str, object]] = kwargs
-    
+
         # _handler is either a normal function or a coroutine
         if inspect.iscoroutinefunction(handler):
             self._handler: Union[
