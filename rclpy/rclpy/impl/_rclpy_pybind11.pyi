@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from enum import IntEnum, Enum
+from enum import Enum, IntEnum
 from types import TracebackType
 from typing import Any, Generic, Literal, overload, Sequence, TypedDict
 
@@ -335,8 +335,6 @@ class WaitSet(Destroyable):
         """Wait until timeout is reached or event happened."""
 
 
-
-# signal_handler
 class SignalHandlerOptions(Enum):
     _value_: int
     NO = ...
@@ -348,15 +346,18 @@ class SignalHandlerOptions(Enum):
 def register_sigint_guard_condition(guard_condition: GuardCondition) -> None:
     """Register a guard condition to be called on SIGINT."""
 
+
 def unregister_sigint_guard_condition(guard_condition: GuardCondition) -> None:
     """Stop triggering a guard condition when SIGINT occurs."""
+
 
 def install_signal_handlers(options: SignalHandlerOptions) -> None:
     """Install rclpy signal handlers."""
 
+
 def get_current_signal_handlers_options() -> SignalHandlerOptions:
     """Get currently installed signal handler options."""
 
+
 def uninstall_signal_handlers() -> None:
     """Uninstall rclpy signal handlers."""
-# signal_handler
