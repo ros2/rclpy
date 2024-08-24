@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 
 T = TypeVar('T')
 
-FunctionOrCoroutineFunction: TypeAlias = Union[Callable[[], T],
-                                               Callable[..., Coroutine[None, None, T]]]
+FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[[], T],
+                                                 Callable[..., Coroutine[None, None, T]]]
 
 
 def _fake_weakref() -> None:
