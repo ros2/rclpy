@@ -55,12 +55,11 @@ from .task import Task
 from .timer import Timer, TimerInfo
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
-from rclpy.waitable import NumberOfEntities
-from rclpy.waitable import Waitable
+from .waitable import NumberOfEntities
+from .waitable import Waitable
 
 # For documentation purposes
 # TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
-# WaitableEntityType = TypeVar('WaitableEntityType')
 
 T = TypeVar('T')
 
@@ -200,7 +199,7 @@ class Executor(ContextManager['Executor']):
         self._tasks: List[Tuple[Task[Any], 'Optional[Entity]', Optional[Node]]] = []
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
-        self._guard = GuardCondition(
+        self._guard: Optional[GuardCondition] = GuardCondition(
             callback=None, callback_group=None, context=self._context)
         # True if shutdown has been called
         self._is_shutdown = False
@@ -213,7 +212,7 @@ class Executor(ContextManager['Executor']):
         self._last_kwargs: Optional[Dict[str, object]] = None
         # Executor cannot use ROS clock because that requires a node
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
-        self._sigint_gc = SignalHandlerGuardCondition(context)
+        self._sigint_gc: Optional[SignalHandlerGuardCondition] = SignalHandlerGuardCondition(context)
         self._context.on_shutdown(self.wake)
 
     @property
@@ -235,7 +234,8 @@ class Executor(ContextManager['Executor']):
         task = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
             self._tasks.append((task, None, None))
-            self._guard.trigger()
+            if self._guard:
+                self._guard.trigger()
         # Task inherits from Future
         return task
 
@@ -252,7 +252,8 @@ class Executor(ContextManager['Executor']):
             if not self._is_shutdown:
                 self._is_shutdown = True
                 # Tell executor it's been shut down
-                self._guard.trigger()
+                if self._guard:
+                    self._guard.trigger()
         if not self._is_shutdown:
             if not self._work_tracker.wait(timeout_sec):
                 return False
@@ -289,7 +290,8 @@ class Executor(ContextManager['Executor']):
                 self._nodes.add(node)
                 node.executor = self
                 # Rebuild the wait set so it includes this new node
-                self._guard.trigger()
+                if self._guard:
+                    self._guard.trigger()
                 return True
             return False
 
@@ -306,7 +308,8 @@ class Executor(ContextManager['Executor']):
                 pass
             else:
                 # Rebuild the wait set so it doesn't include this node
-                self._guard.trigger()
+                if self._guard:
+                    self._guard.trigger()
 
     def wake(self) -> None:
         """
@@ -383,7 +386,7 @@ class Executor(ContextManager['Executor']):
         """
         raise NotImplementedError()
 
-    def _take_timer(self, tmr: Timer):
+    def _take_timer(self, tmr: Timer) -> Optional[Callable[[], Coroutine[None, None, None]]]:
         try:
             with tmr.handle:
                 info = tmr.handle.call_timer_with_info()
@@ -392,7 +395,8 @@ class Executor(ContextManager['Executor']):
                     actual_call_time=info['actual_call_time'],
                     clock_type=tmr.clock.clock_type)
 
-                def check_argument_type(callback_func, target_type) -> Optional[str]:
+                def check_argument_type(callback_func: Union[Callable[[], None],
+                                                             Callable[[TimerInfo], None]], target_type: Type[TimerInfo]) -> Optional[str]:
                     sig = inspect.signature(callback_func)
                     for param in sig.parameters.values():
                         if param.annotation == target_type:
@@ -403,15 +407,18 @@ class Executor(ContextManager['Executor']):
 
                 # User might change the Timer.callback function signature at runtime,
                 # so it needs to check the signature every time.
-                arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
-                prefilled_arg = {arg_name: timer_info}
+                if tmr.callback:
+                    arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
                 if arg_name is not None:
-                    async def _execute():
-                        await await_or_execute(partial(tmr.callback, **prefilled_arg))
+                    prefilled_arg = {arg_name: timer_info}
+                    async def _execute() -> None:
+                        if tmr.callback:
+                            await await_or_execute(partial(tmr.callback, **prefilled_arg))
                     return _execute
                 else:
-                    async def _execute():
-                        await await_or_execute(tmr.callback)
+                    async def _execute() -> None:
+                        if tmr.callback:
+                            await await_or_execute(tmr.callback)
                     return _execute
         except InvalidHandle:
             # Timer is a Destroyable, which means that on __enter__ it can throw an
@@ -422,7 +429,7 @@ class Executor(ContextManager['Executor']):
 
         return None
 
-    def _take_subscription(self, sub: Subscription):
+    def _take_subscription(self, sub: Subscription[Any]) -> Optional[Callable[[], Coroutine[None, None, None]]]:
         try:
             with sub.handle:
                 msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
@@ -434,7 +441,7 @@ class Executor(ContextManager['Executor']):
                 else:
                     msg_tuple = msg_info
 
-                async def _execute():
+                async def _execute() -> None:
                     await await_or_execute(sub.callback, *msg_tuple)
 
                 return _execute
@@ -447,12 +454,12 @@ class Executor(ContextManager['Executor']):
 
         return None
 
-    def _take_client(self, client: Client):
+    def _take_client(self, client: Client[Any, Any, Any]) -> Optional[Callable[[], Coroutine[None, None, None]]]:
         try:
             with client.handle:
                 header_and_response = client.handle.take_response(client.srv_type.Response)
 
-            async def _execute():
+            async def _execute() -> None:
                 header, response = header_and_response
                 if header is None:
                     return
@@ -476,12 +483,12 @@ class Executor(ContextManager['Executor']):
 
         return None
 
-    def _take_service(self, srv: Service):
+    def _take_service(self, srv: Service[Any, Any, Any])  -> Optional[Callable[[], Coroutine[None, None, None]]]:
         try:
             with srv.handle:
                 request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
 
-            async def _execute():
+            async def _execute() -> None:
                 (request, header) = request_and_header
                 if header is None:
                     return
@@ -498,17 +505,18 @@ class Executor(ContextManager['Executor']):
 
         return None
 
-    def _take_guard_condition(self, gc: GuardCondition):
+    def _take_guard_condition(self, gc: GuardCondition)  -> Callable[[], Coroutine[None, None, None]]:
         gc._executor_triggered = False
 
-        async def _execute():
-            await await_or_execute(gc.callback)
+        async def _execute() -> None:
+            if gc.callback:
+                await await_or_execute(gc.callback)
         return _execute
 
-    def _take_waitable(self, waitable: Waitable[Any]) -> Callable[[], Coroutine]:
+    def _take_waitable(self, waitable: Waitable[Any]) -> Callable[[], Coroutine[None, None, None]]:
         data = waitable.take_data()
 
-        async def _execute():
+        async def _execute() -> None:
             for future in waitable._futures:
                 future._set_executor(self)
             await waitable.execute(data)
@@ -518,7 +526,7 @@ class Executor(ContextManager['Executor']):
         self,
         entity: 'Entity',
         node: 'Node',
-        take_from_wait_list: Callable[['Entity'], Callable[..., Coroutine]],
+        take_from_wait_list: Callable[['Entity'], Optional[Callable[[], Coroutine[None, None, None]]]],
     ) -> Task[Any]:
         """
         Make a handler that performs work on an entity.
@@ -530,8 +538,8 @@ class Executor(ContextManager['Executor']):
         # Mark this so it doesn't get added back to the wait list
         entity._executor_event = True
 
-        async def handler(entity: 'Entity', gc: GuardCondition, is_shutdown: bool, work_tracker: _WorkTracker):
-            if is_shutdown or not entity.callback_group.beginning_execution(entity):
+        async def handler(entity: 'GuardCondition', gc: GuardCondition, is_shutdown: bool, work_tracker: _WorkTracker) -> None:
+            if is_shutdown or entity.callback_group is not None and not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
                 gc.trigger()
@@ -549,7 +557,8 @@ class Executor(ContextManager['Executor']):
                     if call_coroutine is not None:
                         await call_coroutine()
                 finally:
-                    entity.callback_group.ending_execution(entity)
+                    if entity.callback_group:
+                        entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
 
@@ -573,7 +582,7 @@ class Executor(ContextManager['Executor']):
         :param entity: Subscription, Timer, Guard condition, etc
         :returns: ``True`` if the entity callback can be executed, ``False`` otherwise.
         """
-        return not entity._executor_event and entity.callback_group.can_execute(entity)
+        return not entity._executor_event and entity.callback_group is not None and entity.callback_group.can_execute(entity)
 
     def _wait_for_ready_callbacks(
         self,
@@ -643,8 +652,10 @@ class Executor(ContextManager['Executor']):
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
-            guards.append(self._guard)
-            guards.append(self._sigint_gc)
+            if self._guard:
+                guards.append(self._guard)
+            if self._sigint_gc:
+                guards.append(self._sigint_gc)
 
             entity_count = NumberOfEntities(
                 len(subscriptions), len(guards), len(timers), len(clients), len(services))
@@ -764,10 +775,11 @@ class Executor(ContextManager['Executor']):
                         if tmr.handle.pointer in timers_ready:
                             # Check timer is ready to workaround rcl issue with cancelled timers
                             if tmr.handle.is_timer_ready():
-                                if tmr.callback_group.can_execute(tmr):
-                                    handler = self._make_handler(tmr, node, self._take_timer)
-                                    yielded_work = True
-                                    yield handler, tmr, node
+                                if tmr.callback_group:
+                                    if tmr.callback_group.can_execute(tmr):
+                                        handler = self._make_handler(tmr, node, self._take_timer)
+                                        yielded_work = True
+                                        yield handler, tmr, node
 
                     for sub in node.subscriptions:
                         if sub.handle.pointer in subs_ready:

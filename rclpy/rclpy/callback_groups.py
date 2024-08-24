@@ -24,7 +24,8 @@ if TYPE_CHECKING:
     from .service import Service
     from .guard_condition import GuardCondition
     from .waitable import Waitable
-    Entity = Union[Subscription, Timer, Client, Service, GuardCondition, Waitable[Any]]
+    Entity = Union[Subscription[Any], Timer, Client[Any, Any, Any], Service[Any, Any, Any],
+                   GuardCondition, Waitable[Any]]
 
 
 class CallbackGroup:
