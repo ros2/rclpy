@@ -2238,7 +2238,7 @@ class Node:
         self,
         topic_name: str,
         no_mangle: bool,
-        func: Callable[[_rclpy.Node, str, bool], List[_rclpy.TopicEndpointInfoDict]]
+        func: Callable[[_rclpy.Node, str, bool], List['_rclpy.TopicEndpointInfoDict']]
     ) -> List[TopicEndpointInfo]:
         with self.handle:
             if no_mangle:
