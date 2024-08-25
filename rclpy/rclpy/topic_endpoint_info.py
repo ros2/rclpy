@@ -15,7 +15,8 @@
 from enum import IntEnum
 from typing import List, Union
 
-from rclpy.qos import QoSHistoryPolicy, QoSPresetProfiles, QoSProfile, QoSProfileDictionary
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.qos import QoSHistoryPolicy, QoSPresetProfiles, QoSProfile
 from rclpy.type_hash import TypeHash, TypeHashDictionary
 
 
@@ -159,7 +160,7 @@ class TopicEndpointInfo:
         return self._qos_profile
 
     @qos_profile.setter
-    def qos_profile(self, value: Union[QoSProfile, QoSProfileDictionary]) -> None:
+    def qos_profile(self, value: Union[QoSProfile, _rclpy.rmw_qos_profile_dict]) -> None:
         if isinstance(value, QoSProfile):
             self._qos_profile = value
         elif isinstance(value, dict):
