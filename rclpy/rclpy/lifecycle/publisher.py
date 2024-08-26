@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 
-from typing import Generic, Tuple, Type, TypedDict, Union, Unpack
+from typing import Generic, Tuple, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import PublisherEventCallbacks
@@ -25,6 +25,11 @@ from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
 
 from .managed_entity import SimpleManagedEntity
+
+if TYPE_CHECKING:
+    from typing import TypeAlias, Unpack
+    LifecyclePublisherArgs: TypeAlias = Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile,
+                                              PublisherEventCallbacks, CallbackGroup]
 
 
 class LifecyclePublisherKWArgs(TypedDict, Generic[MsgT]):
@@ -41,9 +46,8 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
 
     def __init__(
         self,
-        *args: Unpack[Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile,
-                            PublisherEventCallbacks, CallbackGroup]],
-        **kwargs: Unpack[LifecyclePublisherKWArgs[MsgT]]
+        *args: 'Unpack[LifecyclePublisherArgs]',
+        **kwargs: 'Unpack[LifecyclePublisherKWArgs[MsgT]]'
     ) -> None:
         SimpleManagedEntity.__init__(self)
         Publisher.__init__(self, *args, **kwargs)
