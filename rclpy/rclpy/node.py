@@ -191,11 +191,8 @@ class Node:
 
         namespace = namespace or ''
 
-        if not self._context.ok():
+        if self._context.handle is None or not self._context.ok():
             raise NotInitializedException('cannot create node')
-
-        if self._context.handle is None:
-            raise RuntimeError('Context must be initialized before a node can be created')
 
         with self._context.handle:
             try:
