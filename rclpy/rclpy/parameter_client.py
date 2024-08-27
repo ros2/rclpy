@@ -137,7 +137,7 @@ class AsyncParameterClient:
         self,
         prefixes: Optional[List[str]] = None,
         depth: Optional[int] = None,
-        callback: Optional[Callable[[Future[ListParameters.Response]], None]] = None
+        callback: Optional[Callable[[ListParameters.Response], None]] = None
     ) -> Future[ListParameters.Response]:
         """
         List all parameters with given prefixes.
