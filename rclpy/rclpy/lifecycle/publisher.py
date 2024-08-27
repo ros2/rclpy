@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-
+import sys
 from typing import Generic, Tuple, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.callback_groups import CallbackGroup
@@ -32,13 +32,13 @@ if TYPE_CHECKING:
                                               PublisherEventCallbacks, CallbackGroup]
 
 
-class LifecyclePublisherKWArgs(TypedDict, Generic[MsgT]):
-    publisher_impl: _rclpy.Publisher[MsgT]
-    msg_type: Type[MsgT]
-    topic: str
-    qos_profile: QoSProfile
-    event_callbacks: PublisherEventCallbacks
-    callback_group: CallbackGroup
+    class LifecyclePublisherKWArgs(TypedDict, Generic[MsgT]):
+        publisher_impl: _rclpy.Publisher[MsgT]
+        msg_type: Type[MsgT]
+        topic: str
+        qos_profile: QoSProfile
+        event_callbacks: PublisherEventCallbacks
+        callback_group: CallbackGroup
 
 
 class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
