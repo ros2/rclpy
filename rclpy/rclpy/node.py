@@ -190,30 +190,34 @@ class Node:
         self._descriptors: Dict[str, ParameterDescriptor] = {}
 
         namespace = namespace or ''
+
+        if not self._context.handle:
+            raise RuntimeError('Context must be initialized before a node can be created')
         if not self._context.ok():
             raise NotInitializedException('cannot create node')
-        if self._context.handle:
-            with self._context.handle:
-                try:
-                    self.__node = _rclpy.Node(
-                        node_name,
-                        namespace,
-                        self._context.handle,
-                        cli_args,
-                        use_global_arguments,
-                        enable_rosout
-                    )
-                except ValueError:
-                    # these will raise more specific errors if the name or namespace is bad
-                    validate_node_name(node_name)
-                    # emulate what rcl_node_init() does to accept '' and relative namespaces
-                    if not namespace:
-                        namespace = '/'
-                    if not namespace.startswith('/'):
-                        namespace = '/' + namespace
-                    validate_namespace(namespace)
-                    # Should not get to this point
-                    raise RuntimeError('rclpy_create_node failed for unknown reason')
+
+
+        with self._context.handle:
+            try:
+                self.__node = _rclpy.Node(
+                    node_name,
+                    namespace,
+                    self._context.handle,
+                    cli_args,
+                    use_global_arguments,
+                    enable_rosout
+                )
+            except ValueError:
+                # these will raise more specific errors if the name or namespace is bad
+                validate_node_name(node_name)
+                # emulate what rcl_node_init() does to accept '' and relative namespaces
+                if not namespace:
+                    namespace = '/'
+                if not namespace.startswith('/'):
+                    namespace = '/' + namespace
+                validate_namespace(namespace)
+                # Should not get to this point
+                raise RuntimeError('rclpy_create_node failed for unknown reason')
         with self.handle:
             self._logger = get_logger(self.__node.logger_name())
 
