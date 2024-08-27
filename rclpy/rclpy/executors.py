@@ -78,7 +78,7 @@ FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[..., T],
                                                  Callable[..., Coroutine[None, None, T]]]
 
 
-YieldedCallback: 'TypeAlias' = Generator[Tuple[Task[Any],
+YieldedCallback: 'TypeAlias' = Generator[Tuple[Task[None],
                                                'Optional[Entity]',
                                                'Optional[Node]'], None, None]
 
@@ -542,7 +542,7 @@ class Executor(ContextManager['Executor']):
         node: 'Node',
         take_from_wait_list: Callable[['EntityT'],
                                       Optional[Callable[[], Coroutine[None, None, None]]]],
-    ) -> Task[Any]:
+    ) -> Task[None]:
         """
         Make a handler that performs work on an entity.
 
@@ -838,7 +838,7 @@ class Executor(ContextManager['Executor']):
         if condition():
             raise ConditionReachedException()
 
-    def wait_for_ready_callbacks(self, *args: Any, **kwargs: Any) -> Tuple[Task[Any],
+    def wait_for_ready_callbacks(self, *args: Any, **kwargs: Any) -> Tuple[Task[None],
                                                                            'Optional[Entity]',
                                                                            'Optional[Node]']:
         """
