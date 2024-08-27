@@ -196,7 +196,6 @@ class Node:
         if not self._context.ok():
             raise NotInitializedException('cannot create node')
 
-
         with self._context.handle:
             try:
                 self.__node = _rclpy.Node(
