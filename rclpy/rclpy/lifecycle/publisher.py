@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import sys
 from typing import Generic, Tuple, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.callback_groups import CallbackGroup
@@ -30,7 +29,6 @@ if TYPE_CHECKING:
     from typing import TypeAlias, Unpack
     LifecyclePublisherArgs: TypeAlias = Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile,
                                               PublisherEventCallbacks, CallbackGroup]
-
 
     class LifecyclePublisherKWArgs(TypedDict, Generic[MsgT]):
         publisher_impl: _rclpy.Publisher[MsgT]
