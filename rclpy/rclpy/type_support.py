@@ -64,7 +64,7 @@ SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
 
 
-class EventMessage(Protocol[SrvRequestT, SrvResponseT], Msg):
+class EventMessage(Msg, Protocol[SrvRequestT, SrvResponseT]):
     info: ServiceEventInfo
     request: Iterable[SrvRequestT]
     response: Iterable[SrvResponseT]
@@ -83,12 +83,12 @@ ResultT = TypeVar('ResultT', bound=Msg)
 FeedbackT = TypeVar('FeedbackT', bound=Msg)
 
 
-class SendGoalServiceRequest(Protocol[GoalT], Msg):
+class SendGoalServiceRequest(Msg, Protocol[GoalT]):
     goal_id: UUID
     goal: GoalT
 
 
-class SendGoalServiceResponse(Protocol, Msg):
+class SendGoalServiceResponse(Msg, Protocol):
     accepted: bool
     stamp: Time
 
@@ -96,11 +96,11 @@ class SendGoalServiceResponse(Protocol, Msg):
 SendGoalService: 'TypeAlias' = Srv[SendGoalServiceRequest[GoalT], SendGoalServiceResponse]
 
 
-class GetResultServiceRequest(Protocol, Msg):
+class GetResultServiceRequest(Msg, Protocol):
     goal_id: UUID
 
 
-class GetResultServiceResponse(Protocol[ResultT], Msg):
+class GetResultServiceResponse(Msg, Protocol[ResultT]):
     status: int
     result: ResultT
 
@@ -108,7 +108,7 @@ class GetResultServiceResponse(Protocol[ResultT], Msg):
 GetResultService: 'TypeAlias' = Srv[GetResultServiceRequest, GetResultServiceResponse[ResultT]]
 
 
-class FeedbackMessage(Protocol[FeedbackT], Msg):
+class FeedbackMessage(Msg, Protocol[FeedbackT]):
     goal_id: UUID
     feedback: FeedbackT
 
