@@ -18,8 +18,9 @@ import threading
 import traceback
 
 from types import TracebackType
-from typing import (Any, Callable, Dict, Generic, Literal, Optional, Tuple, Type, TYPE_CHECKING,
-                    TypedDict)
+from typing import (Any, Callable, Dict, Generic, Literal, Optional, Tuple, Type, TypeVar,
+                    TYPE_CHECKING, TypedDict)
+
 
 from action_msgs.msg import GoalInfo, GoalStatus
 from action_msgs.srv._cancel_goal import CancelGoal
@@ -40,8 +41,6 @@ if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup
     from rclpy.node import Node
 
-    from typing_extensions import TypeAlias
-
     class ServerGoalHandleDict(TypedDict,
                                Generic[GoalT],
                                total=False):
@@ -51,6 +50,7 @@ if TYPE_CHECKING:
         expired: Tuple[GoalInfo, ...]
 else:
     ServerGoalHandleDict: 'TypeAlias' = Dict[str, object]
+
 
 # Re-export exception defined in _rclpy C extension.
 RCLError = _rclpy.RCLError
@@ -217,7 +217,7 @@ def default_cancel_callback(cancel_request: CancelGoal.Request) -> Literal[Cance
     return CancelResponse.REJECT
 
 
-class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable[ServerGoalHandleDict[GoalT]]):
+class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandleDict[GoalT]']):
     """ROS Action server."""
 
     def __init__(
@@ -506,9 +506,9 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable[ServerGoalHandle
         self._is_goal_expired = ready_entities[3]
         return any(ready_entities)
 
-    def take_data(self) -> ServerGoalHandleDict[GoalT]:
+    def take_data(self) -> 'ServerGoalHandleDict[GoalT]':
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
-        data: ServerGoalHandleDict[GoalT] = {}
+        data: 'ServerGoalHandleDict[GoalT]' = {}
         if self._is_goal_request_ready:
             with self._lock:
                 taken_data = self._handle.take_goal_request(
