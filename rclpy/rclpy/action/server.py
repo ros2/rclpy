@@ -546,7 +546,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
 
         return data
 
-    async def execute(self, taken_data: ServerGoalHandleDict[GoalT]) -> None:
+    async def execute(self, taken_data: 'ServerGoalHandleDict[GoalT]') -> None:
         """
         Execute work after data has been taken from a ready wait set.
 
