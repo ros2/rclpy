@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import threading
 import time
 from types import TracebackType
@@ -55,7 +54,6 @@ if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup
     from typing_extensions import Unpack, TypeAlias
 
-if sys.version_info >= (3, 11):
     ClientGoalHandleDictResultT = TypeVar('ClientGoalHandleDictResultT')
     ClientGoalHandleDictFeedbackT = TypeVar('ClientGoalHandleDictFeedbackT')
 
@@ -65,7 +63,6 @@ if sys.version_info >= (3, 11):
         goal: Tuple[int, SendGoalServiceResponse]
         cancel: Tuple[int, CancelGoal.Response]
         result: Tuple[int, GetResultServiceResponse[ClientGoalHandleDictResultT]]
-        # feedback: CancelGoal
         feedback: FeedbackMessage[ClientGoalHandleDictFeedbackT]
         status: GoalStatusArray
 else:
@@ -162,7 +159,7 @@ class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
 
 
 class ActionClient(Generic[GoalT, ResultT, FeedbackT],
-                   Waitable[ClientGoalHandleDict[ResultT, FeedbackT]]):
+                   Waitable['ClientGoalHandleDict[ResultT, FeedbackT]']):
     """ROS Action client."""
 
     def __init__(
@@ -300,9 +297,9 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         self._is_result_response_ready = ready_entities[4]
         return any(ready_entities)
 
-    def take_data(self) -> ClientGoalHandleDict[ResultT, FeedbackT]:
+    def take_data(self) -> 'ClientGoalHandleDict[ResultT, FeedbackT]':
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
-        data: ClientGoalHandleDict[ResultT, FeedbackT] = {}
+        data: 'ClientGoalHandleDict[ResultT, FeedbackT]' = {}
         if self._is_goal_response_ready:
             taken_data = self._client_handle.take_goal_response(
                 self._action_type.Impl.SendGoalService.Response)
@@ -340,7 +337,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
 
         return data
 
-    async def execute(self, taken_data: ClientGoalHandleDict[ResultT, FeedbackT]) -> None:
+    async def execute(self, taken_data: 'ClientGoalHandleDict[ResultT, FeedbackT]') -> None:
         """
         Execute work after data has been taken from a ready wait set.
 

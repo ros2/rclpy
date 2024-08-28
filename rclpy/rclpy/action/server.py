@@ -18,8 +18,8 @@ import threading
 import traceback
 
 from types import TracebackType
-from typing import (Any, Callable, Dict, Generic, Literal, Optional, Tuple, Type, TypeVar,
-                    TYPE_CHECKING, TypedDict)
+from typing import (Any, Callable, Dict, Generic, Literal, Optional, Tuple, Type,
+                    TYPE_CHECKING, TypedDict, TypeVar)
 
 
 from action_msgs.msg import GoalInfo, GoalStatus
@@ -38,13 +38,17 @@ from unique_identifier_msgs.msg import UUID
 
 
 if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
+
     from rclpy.callback_groups import CallbackGroup
     from rclpy.node import Node
 
+    ServerGoalHandleDictGoalT = TypeVar('ServerGoalHandleDictGoalT')
+
     class ServerGoalHandleDict(TypedDict,
-                               Generic[GoalT],
+                               Generic[ServerGoalHandleDictGoalT],
                                total=False):
-        goal: Tuple['_rclpy.rmw_request_id_t', SendGoalServiceRequest[GoalT]]
+        goal: Tuple['_rclpy.rmw_request_id_t', SendGoalServiceRequest[ServerGoalHandleDictGoalT]]
         cancel: Tuple['_rclpy.rmw_request_id_t', CancelGoal.Request]
         result: Tuple['_rclpy.rmw_request_id_t', GetResultServiceRequest]
         expired: Tuple[GoalInfo, ...]
