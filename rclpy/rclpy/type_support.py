@@ -12,9 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NoReturn, Optional, Protocol, Type, TypeVar, Union
+from typing import Any, ClassVar, Iterable, Optional, Protocol, Type, TypeAlias, TypeVar, Union
 
+
+from action_msgs.msg._goal_status_array import GoalStatusArray
+from action_msgs.srv._cancel_goal import CancelGoal
+from builtin_interfaces.msg import Time
 from rclpy.exceptions import NoTypeSupportImportedException
+from service_msgs.msg._service_event_info import ServiceEventInfo
+from unique_identifier_msgs.msg import UUID
 
 
 class PyCapsule(Protocol):
@@ -56,24 +62,84 @@ MsgT = TypeVar('MsgT', bound=Msg, contravariant=True)
 
 SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
-SrvEventT = TypeVar('SrvEventT', bound=Msg)
 
 
-class Srv(Protocol[SrvRequestT, SrvResponseT, SrvEventT], metaclass=CommonMsgSrvMetaClass):
+class EventMessage(Protocol[SrvRequestT, SrvResponseT], Msg):
+    info: ServiceEventInfo
+    request: Iterable[SrvRequestT]
+    response: Iterable[SrvResponseT]
+
+
+class Srv(Protocol[SrvRequestT, SrvResponseT], metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
 
     Request: Type[SrvRequestT]
     Response: Type[SrvResponseT]
-    Event: Type[SrvEventT]
+    Event: Type[EventMessage[SrvRequestT, SrvResponseT]]
 
-    def __init__(self) -> NoReturn: ...
+
+GoalT = TypeVar('GoalT', bound=Msg)
+ResultT = TypeVar('ResultT', bound=Msg)
+FeedbackT = TypeVar('FeedbackT', bound=Msg)
+
+
+class SendGoalServiceRequest(Protocol[GoalT], Msg):
+    goal_id: UUID
+    goal: GoalT
+
+
+class SendGoalServiceResponse(Protocol, Msg):
+    accepted: bool
+    stamp: Time
+
+
+SendGoalService: 'TypeAlias' = Srv[SendGoalServiceRequest[GoalT], SendGoalServiceResponse]
+
+
+class GetResultServiceRequest(Protocol, Msg):
+    goal_id: UUID
+
+
+class GetResultServiceResponse(Protocol[ResultT], Msg):
+    status: int
+    result: ResultT
+
+
+GetResultService: 'TypeAlias' = Srv[GetResultServiceRequest, GetResultServiceResponse[ResultT]]
+
+
+class FeedbackMessage(Protocol[FeedbackT], Msg):
+    goal_id: UUID
+    feedback: FeedbackT
+
+
+class Impl(Protocol[GoalT, ResultT, FeedbackT]):
+
+    SendGoalService: Type[SendGoalService[GoalT]]
+    GetResultService: Type[GetResultService[ResultT]]
+    FeedbackMessage: Type[FeedbackMessage[FeedbackT]]
+    CancelGoalService: ClassVar[Type[CancelGoal]]
+    GoalStatusMessage: ClassVar[Type[GoalStatusArray]]
+
+
+class Action(Protocol[GoalT,
+                      ResultT,
+                      FeedbackT],
+             metaclass=CommonMsgSrvMetaClass):
+    Goal: Type[GoalT]
+    Result: Type[ResultT]
+    Feedback: Type[FeedbackT]
+
+    Impl: Type[Impl[GoalT, ResultT, FeedbackT]]
 
 
 # Can be used if https://github.com/python/typing/issues/548 ever gets approved.
 SrvT = TypeVar('SrvT', bound=Type[Srv])
+ActionT = TypeVar('ActionT', bound=Type[Action])
 
 
-def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv]]) -> None:
+def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv[Any, Any],
+                                                       Action[Any, Any, Any]]]) -> None:
     try:
         ts = msg_or_srv_type._TYPE_SUPPORT
     except AttributeError as e:
@@ -105,7 +171,7 @@ def check_is_valid_msg_type(msg_type: Type[Msg]) -> None:
         ) from None
 
 
-def check_is_valid_srv_type(srv_type: Type[Srv]) -> None:
+def check_is_valid_srv_type(srv_type: Type[Srv[Any, Any]]) -> None:
     check_for_type_support(srv_type)
     try:
         assert None not in (

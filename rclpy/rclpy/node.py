@@ -88,7 +88,6 @@ from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.type_support import MsgT
 from rclpy.type_support import Srv
-from rclpy.type_support import SrvEventT
 from rclpy.type_support import SrvRequestT
 from rclpy.type_support import SrvResponseT
 from rclpy.utilities import get_default_context
@@ -1679,12 +1678,12 @@ class Node:
 
     def create_client(
         self,
-        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
-    ) -> Client[SrvRequestT, SrvResponseT, SrvEventT]:
+    ) -> Client[SrvRequestT, SrvResponseT]:
         """
         Create a new service client.
 
@@ -1721,13 +1720,13 @@ class Node:
 
     def create_service(
         self,
-        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
-    ) -> Service[SrvRequestT, SrvResponseT, SrvEventT]:
+    ) -> Service[SrvRequestT, SrvResponseT]:
         """
         Create a new service server.
 
