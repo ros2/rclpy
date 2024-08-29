@@ -28,12 +28,12 @@ from typing import Union
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
+from typing_extensions import TypeVar
 import yaml
 
 PARAMETER_SEPARATOR_STRING = '.'
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeVar
     # Mypy does not handle string literals of array.array[int/str/float] very well
     # So if user has newer version of python can use proper array types.
     if sys.version_info > (3, 9):
@@ -55,7 +55,6 @@ if TYPE_CHECKING:
                                        bound=AllowableParameterValue,
                                        default=AllowableParameterValue)
 else:
-    from typing import TypeVar
     # Done to prevent runtime errors of undefined values.
     # after python3.13 is minimum support this could be removed.
     AllowableParameterValue = Any
