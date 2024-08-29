@@ -27,6 +27,7 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
+from typing_extensions import deprecated
 
 if TYPE_CHECKING:
     from typing import TypeAlias
@@ -144,6 +145,8 @@ class EventHandler(Waitable[EventHandlerData]):
         self.__event.destroy_when_not_in_use()
 
 
+@deprecated('QoSEventHandler foo is deprecated, use EventHandler instead.',
+            category=DeprecationWarning, stacklevel=2)
 class QoSEventHandler(EventHandler):
 
     def __init_subclass__(cls, **kwargs):
