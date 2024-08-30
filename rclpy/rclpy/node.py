@@ -98,6 +98,8 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_parameter_name import validate_parameter_name
 from rclpy.validate_topic_name import validate_topic_name
 from rclpy.waitable import Waitable
+from typing_extensions import deprecated
+
 
 HIDDEN_NODE_PREFIX = '_'
 
@@ -372,10 +374,22 @@ class Node:
                           ) -> Parameter[AllowableParameterValueT]: ...
 
     @overload
+    @deprecated('when declaring a parameter only providing its name is deprecated. '
+                'You have to either:\n'
+                '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
+                ' (and optionally a descriptor).\n'
+                '\t- Pass a name and a parameter type.\n'
+                '\t- Pass a name and a descriptor with `dynamic_typing=True')
+    def declare_parameter(self, name: str,
+                          value: None = None,
+                          descriptor: None = None,
+                          ignore_override: bool = False) -> Parameter[Any]: ...
+
+    @overload
     def declare_parameter(self, name: str,
                           value: Union[None, Parameter.Type, ParameterValue] = None,
                           descriptor: Optional[ParameterDescriptor] = None,
-                          ignore_override: bool = False) -> Parameter[None]: ...
+                          ignore_override: bool = False) -> Parameter[Any]: ...
 
     def declare_parameter(
         self,
@@ -383,7 +397,7 @@ class Node:
         value: Union[AllowableParameterValue, Parameter.Type, ParameterValue] = None,
         descriptor: Optional[ParameterDescriptor] = None,
         ignore_override: bool = False
-    ) -> Parameter:
+    ) -> Parameter[Any]:
         """
         Declare and initialize a parameter.
 
@@ -413,6 +427,13 @@ class Node:
             args = (name, value, descriptor)
         return self.declare_parameters('', [args], ignore_override)[0]
 
+    @overload
+    @deprecated('when declaring a parameter only providing its name is deprecated. '
+                'You have to either:\n'
+                '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
+                ' (and optionally a descriptor).\n'
+                '\t- Pass a name and a parameter type.\n'
+                '\t- Pass a name and a descriptor with `dynamic_typing=True')
     def declare_parameters(
         self,
         namespace: str,
@@ -423,7 +444,34 @@ class Node:
                   ParameterDescriptor],
         ]],
         ignore_override: bool = False
-    ) -> List[Parameter]:
+    ) -> List[Parameter[Any]]: ...
+
+    @overload
+    def declare_parameters(
+        self,
+        namespace: str,
+        parameters: List[Union[
+            Tuple[str, Parameter.Type],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
+                  ParameterDescriptor],
+        ]],
+        ignore_override: bool = False
+    ) -> List[Parameter[Any]]: ...
+
+    def declare_parameters(
+        self,
+        namespace: str,
+        parameters: Union[List[Union[
+            Tuple[str],
+            Tuple[str, Parameter.Type],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
+                  ParameterDescriptor]]],
+                  List[Union[
+            Tuple[str, Parameter.Type],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
+                  ParameterDescriptor]]]],
+        ignore_override: bool = False
+    ) -> List[Parameter[Any]]:
         """
         Declare a list of parameters.
 
