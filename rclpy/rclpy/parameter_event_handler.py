@@ -34,7 +34,7 @@ class ParameterCallbackHandle:
         parameter_name: str,
         node_name: str,
         callback: Callable[[Parameter], None],
-    ):
+    ) -> None:
         self.parameter_name = parameter_name
         self.node_name = node_name
         self.callback = callback
@@ -45,7 +45,7 @@ class ParameterEventCallbackHandle:
     def __init__(
         self,
         callback: Callable[[ParameterEvent], None]
-    ):
+    ) -> None:
         self.callback = callback
         self.mutex = Lock()
 
@@ -55,7 +55,7 @@ class ParameterEventHandler:
     class Callbacks:
         def __init__(
             self
-        ):
+        ) -> None:
             """
             Create a Callbacks container for ParameterEventHandler.
 
@@ -68,7 +68,7 @@ class ParameterEventHandler:
             self.event_callbacks: List[ParameterEventCallbackHandle] = []
             self.mutex = Lock()
 
-        def event_callback(self, event: ParameterEvent):
+        def event_callback(self, event: ParameterEvent) -> None:
             """
             Search for callback and execute it.
 
@@ -188,7 +188,7 @@ class ParameterEventHandler:
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False,
-    ):
+    ) -> None:
         """
         Create ParameterEventHandler.
 
@@ -248,7 +248,7 @@ class ParameterEventHandler:
             raw=raw,
         )
 
-    def destroy(self):
+    def destroy(self) -> None:
         self.node.destroy_subscription(
             self.parameter_event_subscription
         )
