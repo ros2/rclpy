@@ -630,7 +630,7 @@ class Executor(ContextManager['Executor']):
         while not yielded_work and not self._is_shutdown and not condition():
             # Refresh "all" nodes in case executor was woken by a node being added or removed
             nodes_to_use = nodes
-            if nodes is None:
+            if nodes_to_use is None:
                 nodes_to_use = self.get_nodes()
 
             # Yield tasks in-progress before waiting for new work
@@ -640,7 +640,7 @@ class Executor(ContextManager['Executor']):
             if tasks:
                 for task, entity, node in tasks:
                     if (not task.executing() and not task.done() and
-                            (node is None or nodes_to_use and node in nodes_to_use)):
+                            (node is None or node in nodes_to_use)):
                         yielded_work = True
                         yield task, entity, node
                 with self._tasks_lock:
@@ -654,19 +654,18 @@ class Executor(ContextManager['Executor']):
             clients: List[Client[Any, Any, Any]] = []
             services: List[Service[Any, Any, Any]] = []
             waitables: List[Waitable[Any]] = []
-            if nodes_to_use:
-                for node in nodes_to_use:
-                    subscriptions.extend(filter(self.can_execute, node.subscriptions))
-                    timers.extend(filter(self.can_execute, node.timers))
-                    clients.extend(filter(self.can_execute, node.clients))
-                    services.extend(filter(self.can_execute, node.services))
-                    node_guards = filter(self.can_execute, node.guards)
-                    waitables.extend(filter(self.can_execute, node.waitables))
-                    # retrigger a guard condition that was triggered but not handled
-                    for gc in node_guards:
-                        if gc._executor_triggered:
-                            gc.trigger()
-                        guards.append(gc)
+            for node in nodes_to_use:
+                subscriptions.extend(filter(self.can_execute, node.subscriptions))
+                timers.extend(filter(self.can_execute, node.timers))
+                clients.extend(filter(self.can_execute, node.clients))
+                services.extend(filter(self.can_execute, node.services))
+                node_guards = filter(self.can_execute, node.guards)
+                waitables.extend(filter(self.can_execute, node.waitables))
+                # retrigger a guard condition that was triggered but not handled
+                for gc in node_guards:
+                    if gc._executor_triggered:
+                        gc.trigger()
+                    guards.append(gc)
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
@@ -776,56 +775,54 @@ class Executor(ContextManager['Executor']):
                         gc._executor_triggered = True
 
                 # Check waitables before wait set is destroyed
-                if nodes_to_use:
-                    for node in nodes_to_use:
-                        for wt in node.waitables:
-                            # Only check waitables that were added to the wait set
-                            if wt in waitables and wt.is_ready(wait_set):
-                                if wt.callback_group.can_execute(wt):
-                                    handler = self._make_handler(wt, node, self._take_waitable)
-                                    yielded_work = True
-                                    yield handler, wt, node
+                for node in nodes_to_use:
+                    for wt in node.waitables:
+                        # Only check waitables that were added to the wait set
+                        if wt in waitables and wt.is_ready(wait_set):
+                            if wt.callback_group.can_execute(wt):
+                                handler = self._make_handler(wt, node, self._take_waitable)
+                                yielded_work = True
+                                yield handler, wt, node
 
             # Process ready entities one node at a time
-            if nodes_to_use:
-                for node in nodes_to_use:
-                    for tmr in node.timers:
-                        if tmr.handle.pointer in timers_ready:
-                            # Check timer is ready to workaround rcl issue with cancelled timers
-                            if tmr.handle.is_timer_ready():
-                                if tmr.callback_group:
-                                    if tmr.callback_group.can_execute(tmr):
-                                        handler = self._make_handler(tmr, node, self._take_timer)
-                                        yielded_work = True
-                                        yield handler, tmr, node
+            for node in nodes_to_use:
+                for tmr in node.timers:
+                    if tmr.handle.pointer in timers_ready:
+                        # Check timer is ready to workaround rcl issue with cancelled timers
+                        if tmr.handle.is_timer_ready():
+                            if tmr.callback_group:
+                                if tmr.callback_group.can_execute(tmr):
+                                    handler = self._make_handler(tmr, node, self._take_timer)
+                                    yielded_work = True
+                                    yield handler, tmr, node
 
-                    for sub in node.subscriptions:
-                        if sub.handle.pointer in subs_ready:
-                            if sub.callback_group.can_execute(sub):
-                                handler = self._make_handler(sub, node, self._take_subscription)
-                                yielded_work = True
-                                yield handler, sub, node
+                for sub in node.subscriptions:
+                    if sub.handle.pointer in subs_ready:
+                        if sub.callback_group.can_execute(sub):
+                            handler = self._make_handler(sub, node, self._take_subscription)
+                            yielded_work = True
+                            yield handler, sub, node
 
-                    for gc in node.guards:
-                        if gc._executor_triggered:
-                            if gc.callback_group and gc.callback_group.can_execute(gc):
-                                handler = self._make_handler(gc, node, self._take_guard_condition)
-                                yielded_work = True
-                                yield handler, gc, node
+                for gc in node.guards:
+                    if gc._executor_triggered:
+                        if gc.callback_group and gc.callback_group.can_execute(gc):
+                            handler = self._make_handler(gc, node, self._take_guard_condition)
+                            yielded_work = True
+                            yield handler, gc, node
 
-                    for client in node.clients:
-                        if client.handle.pointer in clients_ready:
-                            if client.callback_group.can_execute(client):
-                                handler = self._make_handler(client, node, self._take_client)
-                                yielded_work = True
-                                yield handler, client, node
+                for client in node.clients:
+                    if client.handle.pointer in clients_ready:
+                        if client.callback_group.can_execute(client):
+                            handler = self._make_handler(client, node, self._take_client)
+                            yielded_work = True
+                            yield handler, client, node
 
-                    for srv in node.services:
-                        if srv.handle.pointer in services_ready:
-                            if srv.callback_group.can_execute(srv):
-                                handler = self._make_handler(srv, node, self._take_service)
-                                yielded_work = True
-                                yield handler, srv, node
+                for srv in node.services:
+                    if srv.handle.pointer in services_ready:
+                        if srv.callback_group.can_execute(srv):
+                            handler = self._make_handler(srv, node, self._take_service)
+                            yielded_work = True
+                            yield handler, srv, node
 
             # Check timeout timer
             if (
