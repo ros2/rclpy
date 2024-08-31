@@ -23,12 +23,12 @@ from typing import Optional
 from typing import overload
 from typing import Tuple
 from typing import TYPE_CHECKING
+from typing import TypeVar
 from typing import Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
-from typing_extensions import TypeVar
 import yaml
 
 PARAMETER_SEPARATOR_STRING = '.'
@@ -51,14 +51,13 @@ if TYPE_CHECKING:
                                         List[float], Tuple[float, ...], 'array.array[float]',
                                         List[str], Tuple[str, ...], 'array.array[str]']
 
-    AllowableParameterValueT = TypeVar('AllowableParameterValueT',
-                                       bound=AllowableParameterValue,
-                                       default=AllowableParameterValue)
 else:
     # Done to prevent runtime errors of undefined values.
     # after python3.13 is minimum support this could be removed.
     AllowableParameterValue = Any
-    AllowableParameterValueT = TypeVar('AllowableParameterValueT')
+
+AllowableParameterValueT = TypeVar('AllowableParameterValueT',
+                                   bound=AllowableParameterValue)
 
 
 class Parameter(Generic[AllowableParameterValueT]):
@@ -170,8 +169,11 @@ class Parameter(Generic[AllowableParameterValueT]):
     def __init__(self, name: str, type_: Optional['Parameter.Type'] = None) -> None: ...
 
     @overload
-    def __init__(self, name: str, type_: Optional['Parameter.Type'],
+    def __init__(self, name: str, type_: 'Parameter.Type',
                  value: AllowableParameterValueT) -> None: ...
+
+    @overload
+    def __init__(self, name: str, *, value: AllowableParameterValueT) -> None: ...
 
     def __init__(self, name: str, type_: Optional['Parameter.Type'] = None, value=None) -> None:
         if type_ is None:

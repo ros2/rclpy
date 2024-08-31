@@ -23,7 +23,8 @@ if TYPE_CHECKING:
     from rclpy.client import Client
     from rclpy.service import Service
     from rclpy.waitable import Waitable
-    Entity = Union[Subscription, Timer, Client, Service, Waitable[Any]]
+    from rclpy.guard_condition import GuardCondition
+    Entity = Union[Subscription, Timer, Client, Service, Waitable[Any], GuardCondition]
 
 
 class CallbackGroup:
