@@ -24,8 +24,8 @@ from action_msgs.msg._goal_status_array import GoalStatusArray
 from action_msgs.srv._cancel_goal import CancelGoal
 from rclpy.clock import JumpHandle
 from rclpy.clock_type import ClockType
-from rclpy.qos import (QoSDurabilityPolicy, QoSHistoryPolicy, QoSLivelinessPolicy,
-                       QoSReliabilityPolicy)
+from rclpy.duration import Duration
+from rclpy.parameter import Parameter
 from rclpy.subscription import MessageInfo
 from type_support import (MsgT, Action, GoalT, ResultT, FeedbackT, SendGoalServiceResponse,
                           GetResultServiceResponse, FeedbackMessage, SendGoalServiceRequest, GetResultServiceRequest)
@@ -178,8 +178,116 @@ class Subscription(Destroyable, Generic[MsgT]):
         """Count the publishers from a subscription."""
 
 
-class Node:
+class Node(Destroyable):
+
+    def __init__(self, node_name: str, namespace_: str, context: Context,
+                 pycli_args: list[str] | None, use_global_arguments: bool,
+                 enable_rosout: bool) -> None: ...
+
+    @property
+    def pointer(self) -> int:
+        """Get the address of the entity as an integer."""
+
+    def get_fully_qualified_name(self) -> str:
+        """Get the fully qualified name of the node."""
+
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with a node."""
+
+    def get_node_name(self) -> str:
+        """Get the name of a node."""
+
+    def get_namespace(self) -> str:
+        """Get the namespace of a node."""
+
+    def get_count_publishers(self, topic_name: str) -> int:
+        """Return the count of all the publishers known for that topic in the entire ROS graph."""
+
+    def get_count_subscribers(self, topic_name: str) -> int:
+        """Return the count of all the subscribers known for that topic in the entire ROS graph."""
+
+    def get_count_clients(self, service_name: str) -> int:
+        """Return the count of all the clients known for that service in the entire ROS graph."""
+
+    def get_count_services(self, service_name: str) -> int:
+        """Return the count of all the servers known for that service in the entire ROS graph."""
+
+    def get_node_names_and_namespaces(self) -> list[tuple[str, str, str] | tuple[str, str]]:
+        """Get the list of nodes discovered by the provided node."""
+
+    def get_node_names_and_namespaces_with_enclaves(self) -> list[tuple[str, str, str] |
+                                                                  tuple[str, str]]:
+        """Get the list of nodes discovered by the provided node, with their enclaves."""
+
+    def get_action_client_names_and_types_by_node(self, remote_node_name: str,
+                                                  remote_node_namespace: str) -> list[tuple[str,
+                                                                                      list[str]]]:
+        """Get action client names and types by node."""
+
+    def get_action_server_names_and_types_by_node(self, remote_node_name: str,
+                                                  remote_node_namespace: str) -> list[tuple[str,
+                                                                                      list[str]]]:
+        """Get action server names and types by node."""
+
+    def get_action_names_and_types(self) -> list[tuple[str, list[str]]]:
+        """Get action names and types."""
+
+    def get_parameters(self, pyparamter_cls: type[Parameter]) -> dict[str, Parameter]:
+        """Get a list of parameters for the current node."""
+
+
+def rclpy_resolve_name(node: Node, topic_name: str, only_expand: bool, is_service: bool) -> str:
+    """Expand and remap a topic or service name."""
+
+
+def rclpy_get_publisher_names_and_types_by_node(node: Node, no_demangle: bool, node_name: str,
+                                                node_namespace: str
+                                                ) -> list[tuple[str, list[str]]]:
+    """Get topic names and types for which a remote node has publishers."""
+
+
+def rclpy_get_subscriber_names_and_types_by_node(node: Node, no_demangle: bool, node_name: str,
+                                                 node_namespace: str
+                                                 ) -> list[tuple[str, list[str]]]:
+    """Get topic names and types for which a remote node has subscribers."""
+
+
+def rclpy_get_service_names_and_types_by_node(node: Node, node_name: str, node_namespace: str
+                                              ) -> list[tuple[str, list[str]]]:
+    """Get all service names and types in the ROS graph."""
+
+
+def rclpy_get_client_names_and_types_by_node(node: Node, node_name: str, node_namespace: str
+                                             ) -> list[tuple[str, list[str]]]:
+    """Get service names and types for which a remote node has servers."""
+
+
+def rclpy_get_service_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
+    """Get all service names and types in the ROS graph."""
+
+
+class TypeHashDict(TypedDict):
+    version: int
+    value: bytes
+
+
+class QoSDict(TypedDict):
     pass
+
+
+class TopicEndpointInfoDict(TypedDict):
+    node_name: str
+    node_namespace: str
+    topic_type: str
+    topic_type_hash: TypeHashDict
+    endpoint_type: int
+    endpoint_gid: list[int]
+    qos_profile: rmw_qos_profile_dict
+
+
+def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: bool
+                                       ) -> list[TopicEndpointInfoDict]:
+    """Get publishers info for a topic."""
 
 
 class Publisher(Destroyable, Generic[MsgT]):
@@ -262,14 +370,14 @@ PredefinedQosProfileTNames = Literal['qos_profile_sensor_data', 'qos_profile_def
 
 
 class rmw_qos_profile_dict(TypedDict):
-    qos_history: QoSHistoryPolicy | int
-    qos_depth: int
-    qos_reliability: QoSReliabilityPolicy | int
-    qos_durability: QoSDurabilityPolicy | int
-    pyqos_lifespan: rcl_duration_t
-    pyqos_deadline: rcl_duration_t
-    qos_liveliness: QoSLivelinessPolicy | int
-    pyqos_liveliness_lease_duration: rcl_duration_t
+    depth: int
+    history: int
+    reliability: int
+    durability: int
+    lifespan: Duration
+    deadline: Duration
+    liveliness: int
+    liveliness_lease_duration: Duration
     avoid_ros_namespace_conventions: bool
 
 
@@ -524,7 +632,19 @@ class ActionGoalHandle:
     def is_active(self) -> bool:
         """Check if a goal is active."""
 
-        
+
+class RCLError(RuntimeError):
+    pass
+
+
+class NodeNameNonExistentError(RCLError):
+    pass
+
+
+class InvalidHandle(RuntimeError):
+    pass
+
+
 class SignalHandlerOptions(Enum):
     _value_: int
     NO = ...
