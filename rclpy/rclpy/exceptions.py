@@ -109,7 +109,7 @@ class InvalidParameterTypeException(ParameterException):
 
     from rclpy.parameter import Parameter
 
-    def __init__(self, desired_parameter: Parameter, expected_type: Parameter.Type) -> None:
+    def __init__(self, desired_parameter: Parameter, expected_type: str) -> None:
         from rclpy.parameter import Parameter
         ParameterException.__init__(
             self,
