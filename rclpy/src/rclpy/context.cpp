@@ -150,12 +150,10 @@ Context::ok()
 void
 Context::shutdown()
 {
-  {
-    std::lock_guard<std::mutex> guard{g_contexts_mutex};
-    auto iter = std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get());
-    if (iter != g_contexts.end()) {
-      g_contexts.erase(iter);
-    }
+  std::lock_guard<std::mutex> guard{g_contexts_mutex};
+  auto iter = std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get());
+  if (iter != g_contexts.end()) {
+    g_contexts.erase(iter);
   }
 
   rcl_ret_t ret = rcl_shutdown(rcl_context_.get());
