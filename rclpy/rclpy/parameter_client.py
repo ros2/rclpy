@@ -32,6 +32,7 @@ from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import QoSOverridingOptions
+from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
 from rclpy.task import Future
 
@@ -136,8 +137,8 @@ class AsyncParameterClient:
         self,
         prefixes: Optional[List[str]] = None,
         depth: Optional[int] = None,
-        callback: Optional[Callable] = None
-    ) -> Future:
+        callback: Optional[Callable[[ListParameters.Response], None]] = None
+    ) -> Future[ListParameters.Response]:
         """
         List all parameters with given prefixes.
 
@@ -156,7 +157,9 @@ class AsyncParameterClient:
             future.add_done_callback(callback)
         return future
 
-    def get_parameters(self, names: List[str], callback: Optional[Callable] = None) -> Future:
+    def get_parameters(self, names: List[str],
+                       callback: Optional[Callable[[GetParameters.Response], None]] = None
+                       ) -> Future[GetParameters.Response]:
         """
         Get parameters given names.
 
@@ -174,8 +177,8 @@ class AsyncParameterClient:
     def set_parameters(
         self,
         parameters: Sequence[Union[Parameter, ParameterMsg]],
-        callback: Optional[Callable] = None
-    ) -> Future:
+        callback: Optional[Callable[[SetParameters.Response], None]] = None
+    ) -> Future[SetParameters.Response]:
         """
         Set parameters given a list of parameters.
 
@@ -200,8 +203,8 @@ class AsyncParameterClient:
     def describe_parameters(
         self,
         names: List[str],
-        callback: Optional[Callable] = None
-    ) -> Future:
+        callback: Optional[Callable[[DescribeParameters.Response], None]] = None
+    ) -> Future[DescribeParameters.Response]:
         """
         Describe parameters given names.
 
@@ -222,8 +225,8 @@ class AsyncParameterClient:
     def get_parameter_types(
         self,
         names: List[str],
-        callback: Optional[Callable] = None
-    ) -> Future:
+        callback: Optional[Callable[[GetParameterTypes.Response], None]] = None
+    ) -> Future[GetParameterTypes.Response]:
         """
         Get parameter types given names.
 
@@ -246,8 +249,8 @@ class AsyncParameterClient:
     def set_parameters_atomically(
         self,
         parameters: Sequence[Union[Parameter, ParameterMsg]],
-        callback: Optional[Callable] = None
-    ) -> Future:
+        callback: Optional[Callable[[SetParametersAtomically.Response], None]] = None
+    ) -> Future[SetParametersAtomically.Response]:
         """
         Set parameters atomically.
 
@@ -270,8 +273,9 @@ class AsyncParameterClient:
         return future
 
     def delete_parameters(
-        self, names: List[str], callback: Optional[Callable] = None
-    ) -> Future:
+        self, names: List[str],
+        callback: Optional[Callable[[SetParameters.Response], None]] = None
+    ) -> Future[SetParameters.Response]:
         """
         Unset parameters with given names.
 
@@ -295,8 +299,8 @@ class AsyncParameterClient:
         self,
         parameter_file: str,
         use_wildcard: bool = False,
-        callback: Optional[Callable] = None
-    ) -> Future:
+        callback: Optional[Callable[[SetParameters.Response], None]] = None
+    ) -> Future[SetParameters.Response]:
         """
         Load parameters from a yaml file.
 
@@ -317,8 +321,8 @@ class AsyncParameterClient:
         self,
         parameter_file: str,
         use_wildcard: bool = False,
-        callback: Optional[Callable] = None
-    ) -> Future:
+        callback: Optional[Callable[[SetParameters.Response], None]] = None
+    ) -> Future[SetParameters.Response]:
         """
         Load parameters from a yaml file atomically.
 
@@ -336,14 +340,15 @@ class AsyncParameterClient:
         return future
 
     def on_parameter_event(
-        self, callback: Callable,
+        self, callback: Union[Callable[[ParameterEvent], None],
+                              Callable[[ParameterEvent, MessageInfo], None]],
         qos_profile: QoSProfile = qos_profile_parameter_events,
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False
-    ) -> Subscription:
+    ) -> Subscription[ParameterEvent]:
         return self.node.create_subscription(
             ParameterEvent,
             '/parameter_events',
