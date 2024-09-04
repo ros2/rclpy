@@ -14,7 +14,7 @@
 
 from enum import Enum, IntEnum
 from typing import (Callable, Iterable, List, Optional, Tuple, Type, TYPE_CHECKING,
-                    TypedDict, TypeVar, Union)
+                    TypeVar, Union)
 import warnings
 
 from rclpy.duration import Duration
@@ -54,18 +54,6 @@ class InvalidQoSProfileException(Exception):
 
     def __init__(self, message: str) -> None:
         Exception(self, f'Invalid QoSProfile: {message}')
-
-
-class QoSProfileDictionary(TypedDict):
-    history: 'QoSHistoryPolicy'
-    depth: int
-    reliability: 'QoSReliabilityPolicy'
-    durability: 'QoSDurabilityPolicy'
-    lifespan: Duration
-    deadline: Duration
-    liveliness: 'QoSLivelinessPolicy'
-    liveliness_lease_duration: Duration
-    avoid_ros_namespace_conventions: bool
 
 
 class QoSProfile:

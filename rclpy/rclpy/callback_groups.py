@@ -18,14 +18,14 @@ import weakref
 
 
 if TYPE_CHECKING:
-    from .subscription import Subscription
-    from .timer import Timer
-    from .client import Client
-    from .service import Service
-    from .guard_condition import GuardCondition
-    from .waitable import Waitable
+    from rclpy.subscription import Subscription
+    from rclpy.timer import Timer
+    from rclpy.client import Client
+    from rclpy.service import Service
+    from rclpy.waitable import Waitable
+    from rclpy.guard_condition import GuardCondition
     Entity = Union[Subscription[Any], Timer, Client[Any, Any, Any], Service[Any, Any, Any],
-                   GuardCondition, Waitable[Any]]
+                   Waitable[Any], GuardCondition]
 
 
 class CallbackGroup:
