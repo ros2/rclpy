@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, ClassVar, Iterable, Optional, Protocol, Type, TypeAlias, TypeVar, Union
+from typing import Any, ClassVar, Iterable, Optional, Protocol, Type, TYPE_CHECKING, TypeVar, Union
 
 
 from action_msgs.msg._goal_status_array import GoalStatusArray
@@ -21,6 +21,10 @@ from builtin_interfaces.msg import Time
 from rclpy.exceptions import NoTypeSupportImportedException
 from service_msgs.msg._service_event_info import ServiceEventInfo
 from unique_identifier_msgs.msg import UUID
+
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
 
 
 class PyCapsule(Protocol):
@@ -134,8 +138,8 @@ class Action(Protocol[GoalT,
 
 
 # Can be used if https://github.com/python/typing/issues/548 ever gets approved.
-SrvT = TypeVar('SrvT', bound=Type[Srv])
-ActionT = TypeVar('ActionT', bound=Type[Action])
+SrvT = TypeVar('SrvT', bound=Srv)
+ActionT = TypeVar('ActionT', bound=Action)
 
 
 def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv[Any, Any],
