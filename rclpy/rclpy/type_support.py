@@ -40,7 +40,7 @@ ProtocolType: Type = type(Protocol)
 class CommonMsgSrvMetaClass(ProtocolType):
     """Shared attributes between messages and services."""
 
-    _TYPE_SUPPORT: Optional[PyCapsule]
+    _TYPE_SUPPORT: ClassVar[Optional[PyCapsule]]
 
     @classmethod
     def __import_type_support__(cls) -> None:
@@ -50,10 +50,10 @@ class CommonMsgSrvMetaClass(ProtocolType):
 class MsgMetaClass(CommonMsgSrvMetaClass):
     """Generic Message Metaclass Alias."""
 
-    _CREATE_ROS_MESSAGE:  Optional[PyCapsule]
-    _CONVERT_FROM_PY:  Optional[PyCapsule]
-    _CONVERT_TO_PY:  Optional[PyCapsule]
-    _DESTROY_ROS_MESSAGE:  Optional[PyCapsule]
+    _CREATE_ROS_MESSAGE:  ClassVar[Optional[PyCapsule]]
+    _CONVERT_FROM_PY:  ClassVar[Optional[PyCapsule]]
+    _CONVERT_TO_PY:  ClassVar[Optional[PyCapsule]]
+    _DESTROY_ROS_MESSAGE:  ClassVar[Optional[PyCapsule]]
 
 
 class Msg(Protocol, metaclass=MsgMetaClass):
