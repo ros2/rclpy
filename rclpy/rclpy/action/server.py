@@ -227,7 +227,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
     def __init__(
         self,
         node: 'Node',
-        action_type: type[Action[GoalT, ResultT, FeedbackT]],
+        action_type: Type[Action[GoalT, ResultT, FeedbackT]],
         action_name: str,
         execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
         *,
@@ -496,7 +496,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             self._logger.warn('Failed to send result response (the client may have gone away)')
 
     @property
-    def action_type(self) -> type[Action[GoalT, ResultT, FeedbackT]]:
+    def action_type(self) -> Type[Action[GoalT, ResultT, FeedbackT]]:
         return self._action_type
 
     # Start Waitable API
