@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.1.2 (2024-09-06)
+------------------
 * Fixes spin_until_future_complete inside callback (`#1316 <https://github.com/ros2/rclpy/issues/1316>`_) (`#1341 <https://github.com/ros2/rclpy/issues/1341>`_)
   Closes rclpy:`#1313 <https://github.com/ros2/rclpy/issues/1313>`_
   Current if spin_unitl_future_complete is called inside a nodes callback it removes the node from the executor
