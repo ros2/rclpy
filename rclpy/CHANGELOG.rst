@@ -2,6 +2,27 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixes spin_until_future_complete inside callback (`#1316 <https://github.com/ros2/rclpy/issues/1316>`_) (`#1341 <https://github.com/ros2/rclpy/issues/1341>`_)
+  Closes rclpy:`#1313 <https://github.com/ros2/rclpy/issues/1313>`_
+  Current if spin_unitl_future_complete is called inside a nodes callback it removes the node from the executor
+  This results in any subsiquent waitables to never be checked by the node since the node is no longer in the executor
+  This aims to fix that by only removing the node from the executor if it wasn't already present
+  Co-authored-by: mergify[bot] <37929162+mergify[bot]@users.noreply.github.com>
+  (cherry picked from commit 47346ef9688039b890ae19c499d4b51587a7305b)
+  Co-authored-by: Jonathan <jmblixt3@gmail.com>
+* Install signal handlers after context is initialized. (`#1333 <https://github.com/ros2/rclpy/issues/1333>`_)
+  Co-authored-by: Shane Loretz <shane.loretz@gmail.com>
+* Fix a bad bug in fetching the lifecycle transitions. (`#1321 <https://github.com/ros2/rclpy/issues/1321>`_) (`#1322 <https://github.com/ros2/rclpy/issues/1322>`_)
+  We were fetching one more lifecycle transition than existed
+  in the source list (i.e. we should use < instead of <=).
+  In turn, this allows us to enable the test_lifecycle.py test,
+  and to fix the spurious "empty" string in the expected states.
+  (cherry picked from commit 2a8f23ed1b52ea2355658cce09d7045b955f417a)
+  Co-authored-by: Chris Lalancette <clalancette@gmail.com>
+* Contributors: Tomoya Fujita, mergify[bot]
+
 7.1.1 (2024-04-16)
 ------------------
 * Clock.py types. (`#1244 <https://github.com/ros2/rclpy/issues/1244>`_)
