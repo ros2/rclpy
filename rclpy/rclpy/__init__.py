@@ -265,8 +265,10 @@ def spin_until_future_complete(
         if ``None`` or negative. Don't wait if 0.
     """
     executor = get_global_executor() if executor is None else executor
+    node_added = False
     try:
-        executor.add_node(node)
+        node_added = executor.add_node(node)
         executor.spin_until_future_complete(future, timeout_sec)
     finally:
-        executor.remove_node(node)
+        if node_added:
+            executor.remove_node(node)
