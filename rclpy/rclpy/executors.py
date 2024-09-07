@@ -790,11 +790,10 @@ class Executor(ContextManager['Executor']):
                     if tmr.handle.pointer in timers_ready:
                         # Check timer is ready to workaround rcl issue with cancelled timers
                         if tmr.handle.is_timer_ready():
-                            if tmr.callback_group:
-                                if tmr.callback_group.can_execute(tmr):
-                                    handler = self._make_handler(tmr, node, self._take_timer)
-                                    yielded_work = True
-                                    yield handler, tmr, node
+                            if tmr.callback_group and tmr.callback_group.can_execute(tmr):
+                                handler = self._make_handler(tmr, node, self._take_timer)
+                                yielded_work = True
+                                yield handler, tmr, node
 
                 for sub in node.subscriptions:
                     if sub.handle.pointer in subs_ready:
