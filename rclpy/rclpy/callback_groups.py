@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from rclpy.service import Service
     from rclpy.waitable import Waitable
     from rclpy.guard_condition import GuardCondition
-    Entity = Union[Subscription[Any], Timer, Client[Any, Any, Any], Service[Any, Any, Any],
+    Entity = Union[Subscription[Any], Timer, Client[Any, Any], Service[Any, Any],
                    GuardCondition, Waitable[Any]]
 
 

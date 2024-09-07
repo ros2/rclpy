@@ -465,7 +465,7 @@ class Executor(ContextManager['Executor']):
 
         return None
 
-    def _take_client(self, client: Client[Any, Any, Any]
+    def _take_client(self, client: Client[Any, Any]
                      ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
         try:
             with client.handle:
@@ -495,7 +495,7 @@ class Executor(ContextManager['Executor']):
 
         return None
 
-    def _take_service(self, srv: Service[Any, Any, Any]
+    def _take_service(self, srv: Service[Any, Any]
                       ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
         try:
             with srv.handle:
@@ -651,8 +651,8 @@ class Executor(ContextManager['Executor']):
             subscriptions: List[Subscription[Any, ]] = []
             guards: List[GuardCondition] = []
             timers: List[Timer] = []
-            clients: List[Client[Any, Any, Any]] = []
-            services: List[Service[Any, Any, Any]] = []
+            clients: List[Client[Any, Any]] = []
+            services: List[Service[Any, Any]] = []
             waitables: List[Waitable[Any]] = []
             for node in nodes_to_use:
                 subscriptions.extend(filter(self.can_execute, node.subscriptions))
