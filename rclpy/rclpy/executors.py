@@ -70,8 +70,6 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
     from .callback_groups import Entity
     EntityT = TypeVar('EntityT', bound=Entity)
-else:
-    EntityT = TypeVar('EntityT')
 
 
 FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[..., T],
@@ -553,7 +551,7 @@ class Executor(ContextManager['Executor']):
         # Mark this so it doesn't get added back to the wait list
         entity._executor_event = True
 
-        async def handler(entity: EntityT, gc: GuardCondition, is_shutdown: bool,
+        async def handler(entity: 'EntityT', gc: GuardCondition, is_shutdown: bool,
                           work_tracker: _WorkTracker) -> None:
             if is_shutdown or entity.callback_group is not None and \
                     not entity.callback_group.beginning_execution(entity):
