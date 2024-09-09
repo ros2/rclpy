@@ -94,8 +94,8 @@ class _WorkTracker:
         with self._work_condition:
             self._num_work_executing += 1
 
-    def __exit__(self, exc_type: Type[BaseException] | None,
-                 exc_val: BaseException | None, exctb: TracebackType | None) -> None:
+    def __exit__(self, exc_type: Optional[Type[BaseException]],
+                 exc_val: Optional[BaseException], exctb: Optional[TracebackType]) -> None:
         """Decrement the amount of work executing by 1."""
         with self._work_condition:
             self._num_work_executing -= 1
