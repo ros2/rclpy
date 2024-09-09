@@ -80,6 +80,11 @@ class InvalidHandle : public std::runtime_error
   using std::runtime_error::runtime_error;
 };
 
+class CONTEXT_ALREADY_SHUTDOWN : public std::runtime_error
+{
+  using std::runtime_error::runtime_error;
+};
+
 }  // namespace rclpy
 
 #endif  // RCLPY__EXCEPTIONS_HPP_
