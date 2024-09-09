@@ -74,6 +74,15 @@ def test_double_init():
         rclpy.shutdown(context=context)
 
 
+def test_double_shutdown():
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+    assert context.ok()
+    rclpy.shutdown(context=context)
+    with pytest.raises(RuntimeError):
+        rclpy.shutdown(context=context)
+
+
 def test_create_node_without_init():
     context = rclpy.context.Context()
     with pytest.raises(NotInitializedException):
