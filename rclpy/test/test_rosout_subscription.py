@@ -35,7 +35,7 @@ class TestRosoutSubscription(unittest.TestCase):
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
 
-    def setUp(self):
+    def setUp(self) -> None:
         # create subscriber of 'rosout' topic
         self.sub = self.node.create_subscription(
             Log,
@@ -50,14 +50,14 @@ class TestRosoutSubscription(unittest.TestCase):
         if msg.name == self.rosout_msg_name:
             self.fut.set_result(None)
 
-    def test_parent_log(self):
+    def test_parent_log(self) -> None:
         self.rosout_msg_name = 'test_rosout_subscription'
         logger = self.node.get_logger()
         logger.info('test')
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())
 
-    def test_child_log(self):
+    def test_child_log(self) -> None:
         self.rosout_msg_name = 'test_rosout_subscription.child1'
         logger = self.node.get_logger()
         logger.info('test')
@@ -80,14 +80,14 @@ class TestRosoutSubscription(unittest.TestCase):
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())
 
-    def test_child_hierarchy(self):
+    def test_child_hierarchy(self) -> None:
         self.rosout_msg_name = 'test_rosout_subscription.child.grandchild'
         logger = self.node.get_logger().get_child('child').get_child('grandchild')
         logger.info('test')
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())
 
-    def test_first_child_removed(self):
+    def test_first_child_removed(self) -> None:
         self.rosout_msg_name = 'test_rosout_subscription.child'
         logger = self.node.get_logger().get_child('child')
         logger2 = self.node.get_logger().get_child('child')
@@ -99,7 +99,7 @@ class TestRosoutSubscription(unittest.TestCase):
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())
 
-    def test_logger_parameter(self):
+    def test_logger_parameter(self) -> None:
         self.rosout_msg_name = 'test_rosout_subscription.child'
         logger = self.node.get_logger().get_child('child')
 
@@ -114,7 +114,7 @@ class TestRosoutSubscription(unittest.TestCase):
         self.executor.spin_until_future_complete(self.fut, 3)
         self.assertTrue(self.fut.done())
 
-    def test_logger_rosout_disabled_without_exception(self):
+    def test_logger_rosout_disabled_without_exception(self) -> None:
         node = rclpy.create_node('mynode', context=self.context, enable_rosout=False)
         try:
             logger = node.get_logger().get_child('child')
