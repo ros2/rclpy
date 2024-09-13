@@ -30,8 +30,6 @@ from rclpy.exceptions import NotInitializedException
 from rclpy.time import Time
 from rclpy.utilities import get_default_context
 
-from .mock_compat import __name__ as _  # noqa: ignore=F401
-
 
 A_SMALL_AMOUNT_OF_TIME = Duration(seconds=0.5)
 
