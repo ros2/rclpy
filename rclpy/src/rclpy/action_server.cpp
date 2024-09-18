@@ -424,7 +424,7 @@ define_action_server(py::object module)
     "Check if an action entity has any ready wait set entities.")
   .def(
     "add_to_waitset", &ActionServer::add_to_waitset,
-    "Add an action entity to a wait set.");
+    "Add an action entitiy to a wait set.");
 }
 
 }  // namespace rclpy
