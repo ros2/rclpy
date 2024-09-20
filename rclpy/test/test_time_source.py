@@ -29,8 +29,6 @@ from rclpy.time_source import CLOCK_TOPIC
 from rclpy.time_source import TimeSource
 import rosgraph_msgs.msg
 
-from .mock_compat import __name__ as _  # noqa: ignore=F401
-
 
 class TestTimeSource(unittest.TestCase):
 
