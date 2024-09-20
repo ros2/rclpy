@@ -463,14 +463,15 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         send_goal_future.add_done_callback(unblock)
 
         event.wait()
-        exeception = send_goal_future.exception()
-        if exeception is not None:
-            raise exeception
+        exception = send_goal_future.exception()
+        if exception is not None:
+            raise exception
 
         goal_handle = send_goal_future.result()
 
-        if goal_handle is None:
-            return None
+        if not isinstance(goal_handle, ClientGoalHandle):
+            raise TypeError(
+                'Expected type ClientGoalHandle but received {}'.format(type(goal_handle)))
         result = self._get_result(goal_handle)
 
         return result
@@ -547,9 +548,9 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         future.add_done_callback(unblock)
 
         event.wait()
-        exeception = future.exception()
-        if exeception is not None:
-            raise exeception
+        exception = future.exception()
+        if exception is not None:
+            raise exception
         return future.result()
 
     def _cancel_goal_async(
