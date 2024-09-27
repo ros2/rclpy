@@ -462,9 +462,10 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             'Result request received for goal with ID: {0}'.format(goal_uuid))
 
         # If no goal with the requested ID exists, then return UNKNOWN status
+        # or the goal with the requested ID has been already expired
         if bytes(goal_uuid) not in self._goal_handles:
-            self._logger.debug(
-                'Sending result response for unknown goal ID: {0}'.format(goal_uuid))
+            self._logger.warn(
+                'Sending result response for unknown or expired goal ID: {0}'.format(goal_uuid))
             result_response = self._action_type.Impl.GetResultService.Response()
             result_response.status = GoalStatus.STATUS_UNKNOWN
             self._handle.send_result_response(request_header, result_response)
