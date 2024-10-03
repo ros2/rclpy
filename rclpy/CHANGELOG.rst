@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.6.0 (2024-10-03)
+------------------
 * TestClient.test_service_timestamps failing consistently. (`#1364 <https://github.com/ros2/rclpy/issues/1364>`_)
 * Revert "Add types to Action Server and Action Client (`#1349 <https://github.com/ros2/rclpy/issues/1349>`_)" (`#1359 <https://github.com/ros2/rclpy/issues/1359>`_)
 * Revert "Executors types (`#1345 <https://github.com/ros2/rclpy/issues/1345>`_)" (`#1360 <https://github.com/ros2/rclpy/issues/1360>`_)
