@@ -20,7 +20,7 @@ import rclpy.utilities
 
 class TestValidateRemoveRosArgs(unittest.TestCase):
 
-    def test_remove_ros_args(self):
+    def test_remove_ros_args(self) -> None:
         args = [
             'process_name',
             '-d',
@@ -41,7 +41,7 @@ class TestValidateRemoveRosArgs(unittest.TestCase):
 
 class TestUtilities(unittest.TestCase):
 
-    def test_timeout_sec_to_nsec(self):
+    def test_timeout_sec_to_nsec(self) -> None:
         self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(None))
         self.assertGreater(0, rclpy.utilities.timeout_sec_to_nsec(-1))
         self.assertEqual(0, rclpy.utilities.timeout_sec_to_nsec(0))

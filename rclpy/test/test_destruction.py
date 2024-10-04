@@ -22,7 +22,7 @@ from test_msgs.msg import BasicTypes
 from test_msgs.srv import BasicTypes as BasicTypesSrv
 
 
-def test_destroy_node():
+def test_destroy_node() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
@@ -32,7 +32,7 @@ def test_destroy_node():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_node_twice():
+def test_destroy_node_twice() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
@@ -43,14 +43,14 @@ def test_destroy_node_twice():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_node_while_spinning():
+def test_destroy_node_while_spinning() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
         executor = rclpy.executors.SingleThreadedExecutor(context=context)
         node = rclpy.create_node('test_node1', context=context)
 
-        def spin():
+        def spin() -> None:
             with pytest.raises(rclpy.executors.ExternalShutdownException):
                 rclpy.spin(node, executor)
 
@@ -73,7 +73,7 @@ def test_destroy_node_while_spinning():
         rclpy.try_shutdown(context=context)
 
 
-def test_destroy_timers():
+def test_destroy_timers() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
@@ -94,7 +94,7 @@ def test_destroy_timers():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_entities():
+def test_destroy_entities() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
@@ -130,7 +130,7 @@ def test_destroy_entities():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_subscription_asap():
+def test_destroy_subscription_asap() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
 
@@ -155,7 +155,7 @@ def test_destroy_subscription_asap():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_node_asap():
+def test_destroy_node_asap() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
 
@@ -172,7 +172,7 @@ def test_destroy_node_asap():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_publisher_asap():
+def test_destroy_publisher_asap() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
 
@@ -197,7 +197,7 @@ def test_destroy_publisher_asap():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_client_asap():
+def test_destroy_client_asap() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
 
@@ -222,7 +222,7 @@ def test_destroy_client_asap():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_service_asap():
+def test_destroy_service_asap() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
 
@@ -247,7 +247,7 @@ def test_destroy_service_asap():
         rclpy.shutdown(context=context)
 
 
-def test_destroy_timer_asap():
+def test_destroy_timer_asap() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
 

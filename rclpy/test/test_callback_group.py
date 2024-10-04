@@ -37,7 +37,7 @@ class TestCallbackGroup(unittest.TestCase):
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
 
-    def test_reentrant_group(self):
+    def test_reentrant_group(self) -> None:
         self.assertIsNotNone(self.node.handle)
         group = ReentrantCallbackGroup()
         t1 = self.node.create_timer(1.0, lambda: None, callback_group=group)
@@ -48,7 +48,7 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertTrue(group.beginning_execution(t1))
         self.assertTrue(group.beginning_execution(t2))
 
-    def test_reentrant_group_not_blocking(self):
+    def test_reentrant_group_not_blocking(self) -> None:
         self.assertIsNotNone(self.node.handle)
         # Create multithreaded executor needed for parallel callback handling
         executor = MultiThreadedExecutor(num_threads=2, context=self.context)
@@ -129,7 +129,7 @@ class TestCallbackGroup(unittest.TestCase):
         finally:
             executor.shutdown()
 
-    def test_mutually_exclusive_group(self):
+    def test_mutually_exclusive_group(self) -> None:
         self.assertIsNotNone(self.node.handle)
         group = MutuallyExclusiveCallbackGroup()
         t1 = self.node.create_timer(1.0, lambda: None, callback_group=group)
@@ -146,7 +146,7 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertTrue(group.can_execute(t2))
         self.assertTrue(group.beginning_execution(t2))
 
-    def test_create_timer_with_group(self):
+    def test_create_timer_with_group(self) -> None:
         tmr1 = self.node.create_timer(1.0, lambda: None)
         group = ReentrantCallbackGroup()
         tmr2 = self.node.create_timer(1.0, lambda: None, callback_group=group)
@@ -154,7 +154,7 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertFalse(group.has_entity(tmr1))
         self.assertTrue(group.has_entity(tmr2))
 
-    def test_create_subscription_with_group(self):
+    def test_create_subscription_with_group(self) -> None:
         sub1 = self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
         group = ReentrantCallbackGroup()
         sub2 = self.node.create_subscription(
@@ -163,7 +163,7 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertFalse(group.has_entity(sub1))
         self.assertTrue(group.has_entity(sub2))
 
-    def test_create_client_with_group(self):
+    def test_create_client_with_group(self) -> None:
         cli1 = self.node.create_client(GetParameters, 'get/parameters')
         group = ReentrantCallbackGroup()
         cli2 = self.node.create_client(GetParameters, 'get/parameters', callback_group=group)
@@ -171,7 +171,7 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertFalse(group.has_entity(cli1))
         self.assertTrue(group.has_entity(cli2))
 
-    def test_create_service_with_group(self):
+    def test_create_service_with_group(self) -> None:
         srv1 = self.node.create_service(GetParameters, 'get/parameters', lambda req: None)
         group = ReentrantCallbackGroup()
         srv2 = self.node.create_service(

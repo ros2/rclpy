@@ -154,7 +154,7 @@ def test_cancel_reset(period):
         rclpy.shutdown(context=context)
 
 
-def test_time_until_next_call():
+def test_time_until_next_call() -> None:
     node = None
     executor = None
     timer = None
@@ -185,7 +185,7 @@ def test_time_until_next_call():
         rclpy.shutdown(context=context)
 
 
-def test_timer_without_autostart():
+def test_timer_without_autostart() -> None:
     node = None
     timer = None
     rclpy.init()
@@ -207,7 +207,7 @@ def test_timer_without_autostart():
         rclpy.shutdown()
 
 
-def test_timer_context_manager():
+def test_timer_context_manager() -> None:
     rclpy.init()
     try:
         with rclpy.create_node('test_timer_without_autostart') as node:
@@ -223,7 +223,7 @@ def test_timer_context_manager():
         rclpy.shutdown()
 
 
-def test_timer_info_construction():
+def test_timer_info_construction() -> None:
     timer_info = TimerInfo()
     assert timer_info.expected_call_time.nanoseconds == 0
     assert timer_info.actual_call_time.nanoseconds == 0
@@ -247,7 +247,7 @@ def test_timer_info_construction():
     assert timer_info_copy.actual_call_time.clock_type == ClockType.STEADY_TIME
 
 
-def test_timer_with_info():
+def test_timer_with_info() -> None:
     node = None
     executor = None
     timer = None
@@ -283,7 +283,7 @@ def test_timer_with_info():
         rclpy.shutdown(context=context)
 
 
-def test_timer_info_with_partial():
+def test_timer_info_with_partial() -> None:
     node = None
     executor = None
     timer = None

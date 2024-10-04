@@ -19,7 +19,7 @@ from rclpy.topic_or_service_is_hidden import topic_or_service_is_hidden
 
 class TestTopicOrServiceIsHidden(unittest.TestCase):
 
-    def test_topic_or_service_is_hidden(self):
+    def test_topic_or_service_is_hidden(self) -> None:
         tests = [
             ('/chatter', False),
             ('chatter', False),

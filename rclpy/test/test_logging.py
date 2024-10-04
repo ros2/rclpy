@@ -27,7 +27,7 @@ from rclpy.time_source import TimeSource
 
 class TestLogging(unittest.TestCase):
 
-    def test_root_logger_level(self):
+    def test_root_logger_level(self) -> None:
         original_severity = rclpy.logging._root_logger.get_effective_level()
         for severity in LoggingSeverity:
             rclpy.logging._root_logger.set_level(severity)
@@ -35,7 +35,7 @@ class TestLogging(unittest.TestCase):
                 severity, rclpy.logging._root_logger.get_effective_level())
         rclpy.logging._root_logger.set_level(original_severity)
 
-    def test_logger_level(self):
+    def test_logger_level(self) -> None:
         # We should be able to set the threshold of a nonexistent logger / one that doesn't
         # correspond to a python object, e.g. an RMW internal logger.
         name = 'my_internal_logger_name'
@@ -47,14 +47,14 @@ class TestLogging(unittest.TestCase):
                     severity, rclpy.logging.get_logger_effective_level(name))
         rclpy.logging.set_logger_level(name, original_severity)
 
-    def test_logger_object_level(self):
+    def test_logger_object_level(self) -> None:
         logger = rclpy.logging.get_logger('test_logger')
         for severity in LoggingSeverity:
             if severity is not LoggingSeverity.UNSET:  # unset causes the hierarchy to be traversed
                 logger.set_level(severity)
                 self.assertEqual(severity, logger.get_effective_level())
 
-    def test_logger_effective_level(self):
+    def test_logger_effective_level(self) -> None:
         name = 'my_nonexistent_logger_name'
         self.assertEqual(
             rclpy.logging._root_logger.get_effective_level(),
@@ -71,7 +71,7 @@ class TestLogging(unittest.TestCase):
             LoggingSeverity.ERROR,
             rclpy.logging.get_logger_effective_level(name))
 
-    def test_log_threshold(self):
+    def test_log_threshold(self) -> None:
         rclpy.logging._root_logger.set_level(LoggingSeverity.INFO)
 
         # Logging below threshold not expected to be logged
@@ -83,7 +83,7 @@ class TestLogging(unittest.TestCase):
         self.assertTrue(rclpy.logging._root_logger.error('message_error'))
         self.assertTrue(rclpy.logging._root_logger.fatal('message_fatal'))
 
-    def test_log_once(self):
+    def test_log_once(self) -> None:
         message_was_logged = []
         for i in range(5):
             message_was_logged.append(rclpy.logging._root_logger.log(
@@ -103,7 +103,7 @@ class TestLogging(unittest.TestCase):
             ))
         self.assertEqual(message_was_logged, [True] * 5)
 
-    def test_log_throttle(self):
+    def test_log_throttle(self) -> None:
         message_was_logged = []
         system_clock = Clock()
         for i in range(5):
@@ -123,7 +123,7 @@ class TestLogging(unittest.TestCase):
                 False  # t=1.6, throttled
             ])
 
-    def test_log_throttle_ros_clock(self):
+    def test_log_throttle_ros_clock(self) -> None:
         message_was_logged = []
         ros_clock = ROSClock()
         time_source = TimeSource()
@@ -167,7 +167,7 @@ class TestLogging(unittest.TestCase):
                 True  # t=4.0, not throttled
             ])
 
-    def test_log_skip_first(self):
+    def test_log_skip_first(self) -> None:
         message_was_logged = []
         for i in range(5):
             message_was_logged.append(rclpy.logging._root_logger.log(
@@ -177,7 +177,7 @@ class TestLogging(unittest.TestCase):
             ))
         self.assertEqual(message_was_logged, [False] + [True] * 4)
 
-    def test_log_skip_first_throttle(self):
+    def test_log_skip_first_throttle(self) -> None:
         # Because of the ordering of supported_filters, first the throttle condition will be
         # evaluated/updated, then the skip_first condition
         message_was_logged = []
@@ -200,7 +200,7 @@ class TestLogging(unittest.TestCase):
                 False  # t=1.6, throttled
             ])
 
-    def test_log_skip_first_once(self):
+    def test_log_skip_first_once(self) -> None:
         # Because of the ordering of supported_filters, first the skip_first condition will be
         # evaluated/updated, then the once condition
         message_was_logged = []
@@ -214,7 +214,7 @@ class TestLogging(unittest.TestCase):
             time.sleep(0.3)
         self.assertEqual(message_was_logged, [False, True] + [False] * 3)
 
-    def test_log_arguments(self):
+    def test_log_arguments(self) -> None:
         system_clock = Clock()
         # Check half-specified filter not allowed if a required parameter is missing
         with self.assertRaisesRegex(TypeError, 'required parameter .* not specified'):
@@ -241,7 +241,7 @@ class TestLogging(unittest.TestCase):
                 unused_kwarg='unused_kwarg',
             )
 
-    def test_log_parameters_changing(self):
+    def test_log_parameters_changing(self) -> None:
         # Check changing log call parameters is not allowed
         with self.assertRaisesRegex(ValueError, 'parameters cannot be changed between'):
             # Start at 1 because a throttle_duration_sec of 0 causes the filter to be ignored.
@@ -267,7 +267,7 @@ class TestLogging(unittest.TestCase):
                     severity,
                 )
 
-    def test_named_logger(self):
+    def test_named_logger(self) -> None:
         my_logger = rclpy.logging.get_logger('my_logger')
 
         my_logger.set_level(LoggingSeverity.INFO)
@@ -299,7 +299,7 @@ class TestLogging(unittest.TestCase):
                 ))
             self.assertEqual(message_was_logged, [True] + [False] * 4)
 
-    def test_named_logger_hierarchy(self):
+    def test_named_logger_hierarchy(self) -> None:
         # Create a logger that implicitly is a child of the un-named root logger
         with self.assertRaisesRegex(ValueError, 'Logger name must not be empty'):
             my_logger = rclpy.logging.get_logger('')
@@ -351,7 +351,7 @@ class TestLogging(unittest.TestCase):
 
         rclpy.logging._root_logger.set_level(original_severity)
 
-    def test_clear_config(self):
+    def test_clear_config(self) -> None:
         my_logger = rclpy.logging.get_logger('my_temp_logger')
         my_logger.set_level(LoggingSeverity.WARN)
         self.assertEqual(LoggingSeverity.WARN, my_logger.get_effective_level())
@@ -361,16 +361,16 @@ class TestLogging(unittest.TestCase):
             rclpy.logging._root_logger.get_effective_level(),
             my_logger.get_effective_level())
 
-    def test_logging_severity_from_string(self):
+    def test_logging_severity_from_string(self) -> None:
         for severity in rclpy.logging.LoggingSeverity:
             self.assertEqual(
                 rclpy.logging.get_logging_severity_from_string(severity.name), severity)
 
-    def test_nonexistent_logging_severity_from_string(self):
+    def test_nonexistent_logging_severity_from_string(self) -> None:
         with self.assertRaises(RuntimeError):
             rclpy.logging.get_logging_severity_from_string('non_existent_severity')
 
-    def test_get_logging_directory(self):
+    def test_get_logging_directory(self) -> None:
         os.environ['HOME'] = '/fake_home_dir'
         os.environ.pop('USERPROFILE', None)
         os.environ.pop('ROS_LOG_DIR', None)

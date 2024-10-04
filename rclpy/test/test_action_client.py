@@ -31,7 +31,7 @@ from unique_identifier_msgs.msg import UUID
 TIME_FUDGE = 0.3
 
 
-class MockActionServer():
+class MockActionServer:
 
     def __init__(self, node):
         self.goal_srv = node.create_service(
@@ -82,7 +82,7 @@ class TestActionClient(unittest.TestCase):
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.feedback = None
 
     def feedback_callback(self, feedback):
@@ -93,12 +93,12 @@ class TestActionClient(unittest.TestCase):
         while (time.time() - start_time) < duration:
             rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
 
-    def test_constructor_defaults(self):
+    def test_constructor_defaults(self) -> None:
         # Defaults
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         ac.destroy()
 
-    def test_constructor_no_defaults(self):
+    def test_constructor_no_defaults(self) -> None:
         ac = ActionClient(
             self.node,
             Fibonacci,
@@ -111,7 +111,7 @@ class TestActionClient(unittest.TestCase):
         )
         ac.destroy()
 
-    def test_get_num_entities(self):
+    def test_get_num_entities(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         num_entities = ac.get_num_entities()
         self.assertEqual(num_entities.num_subscriptions, 2)
@@ -121,7 +121,7 @@ class TestActionClient(unittest.TestCase):
         self.assertEqual(num_entities.num_services, 0)
         ac.destroy()
 
-    def test_wait_for_server_nowait(self):
+    def test_wait_for_server_nowait(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
             start = time.monotonic()
@@ -132,7 +132,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_wait_for_server_timeout(self):
+    def test_wait_for_server_timeout(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
             start = time.monotonic()
@@ -143,7 +143,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_wait_for_server_exists(self):
+    def test_wait_for_server_exists(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             start = time.monotonic()
@@ -154,7 +154,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_async(self):
+    def test_send_goal_async(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -166,7 +166,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_async_with_feedback_after_goal(self):
+    def test_send_goal_async_with_feedback_after_goal(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -186,7 +186,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_async_with_feedback_before_goal(self):
+    def test_send_goal_async_with_feedback_before_goal(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -209,7 +209,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_async_with_feedback_after_goal_result_requested(self):
+    def test_send_goal_async_with_feedback_after_goal_result_requested(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -235,7 +235,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_async_with_feedback_for_another_goal(self):
+    def test_send_goal_async_with_feedback_for_another_goal(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -266,7 +266,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_async_with_feedback_for_not_a_goal(self):
+    def test_send_goal_async_with_feedback_for_not_a_goal(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -286,7 +286,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_multiple(self):
+    def test_send_goal_multiple(self) -> None:
         ac = ActionClient(
             self.node,
             Fibonacci,
@@ -310,7 +310,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_goal_async_no_server(self):
+    def test_send_goal_async_no_server(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'not_fibonacci')
         try:
             future = ac.send_goal_async(Fibonacci.Goal())
@@ -319,7 +319,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_send_cancel_async(self):
+    def test_send_cancel_async(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -340,7 +340,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_get_result_async(self):
+    def test_get_result_async(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
@@ -358,7 +358,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def test_different_type_raises(self):
+    def test_different_type_raises(self) -> None:
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             with self.assertRaises(TypeError):

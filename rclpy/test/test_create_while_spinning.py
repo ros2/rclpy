@@ -36,7 +36,7 @@ class TestCreateWhileSpinning(unittest.TestCase):
     This is a regression test for ros2/rclpy#188.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         rclpy.init()
         self.node = rclpy.create_node('TestCreateWhileSpinning', namespace='/rclpy')
         self.executor = SingleThreadedExecutor()
@@ -46,20 +46,20 @@ class TestCreateWhileSpinning(unittest.TestCase):
         # Make sure executor is blocked by rcl_wait
         time.sleep(TIMEOUT)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.executor.shutdown()
         rclpy.shutdown()
         self.exec_thread.join()
         self.node.destroy_node()
 
-    def test_publish_subscribe(self):
+    def test_publish_subscribe(self) -> None:
         evt = threading.Event()
         self.node.create_subscription(BasicTypes, 'foo', lambda msg: evt.set(), 1)
         pub = self.node.create_publisher(BasicTypes, 'foo', 1)
         pub.publish(BasicTypes())
         assert evt.wait(TIMEOUT)
 
-    def test_client_server(self):
+    def test_client_server(self) -> None:
         evt = threading.Event()
 
         def trigger_event(req, resp):
@@ -73,29 +73,29 @@ class TestCreateWhileSpinning(unittest.TestCase):
         cli.call_async(BasicTypesSrv.Request())
         assert evt.wait(TIMEOUT)
 
-    def test_guard_condition(self):
+    def test_guard_condition(self) -> None:
         evt = threading.Event()
 
         guard = self.node.create_guard_condition(lambda: evt.set())
         guard.trigger()
         assert evt.wait(TIMEOUT)
 
-    def test_timer(self):
+    def test_timer(self) -> None:
         evt = threading.Event()
 
         self.node.create_timer(TIMEOUT / 10, lambda: evt.set())
         assert evt.wait(TIMEOUT)
 
-    def test_waitable(self):
+    def test_waitable(self) -> None:
         evt = threading.Event()
 
         class DummyWaitable(Waitable):
 
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__(ReentrantCallbackGroup())
 
-            def __enter__(self):
-                return self
+            def __enter__(self) -> None:
+                pass
 
             def __exit__(self, exc_type, exc_val, exc_tb) -> None:
                 pass
@@ -103,7 +103,7 @@ class TestCreateWhileSpinning(unittest.TestCase):
             def is_ready(self, wait_set):
                 return False
 
-            def take_data(self):
+            def take_data(self) -> None:
                 return None
 
             async def execute(self, taken_data):

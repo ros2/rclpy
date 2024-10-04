@@ -24,7 +24,7 @@ from type_description_interfaces.srv import GetTypeDescription
 
 class TestTypeDescriptionService(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.context = rclpy.context.Context()
         rclpy.init(context=self.context)
 
@@ -43,12 +43,12 @@ class TestTypeDescriptionService(unittest.TestCase):
         self.executor = SingleThreadedExecutor(context=self.context)
         self.executor.add_node(self.test_node)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.executor.shutdown()
         self.test_node.destroy_node()
         rclpy.shutdown(context=self.context)
 
-    def test_get_type_description(self):
+    def test_get_type_description(self) -> None:
         pub_infos = self.test_node.get_publishers_info_by_topic(self.test_topic)
         assert len(pub_infos)
         type_hash = pub_infos[0].topic_type_hash
