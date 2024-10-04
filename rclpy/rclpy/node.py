@@ -172,8 +172,8 @@ class Node:
         self._parameters: Dict[str, Parameter[Any]] = {}
         self._publishers: List[Publisher[Any]] = []
         self._subscriptions: List[Subscription[Any]] = []
-        self._clients: List[Client[Any, Any, Any]] = []
-        self._services: List[Service[Any, Any, Any]] = []
+        self._clients: List[Client[Any, Any]] = []
+        self._services: List[Service[Any, Any]] = []
         self._timers: List[Timer] = []
         self._guards: List[GuardCondition] = []
         self.__waitables: List[Waitable[Any]] = []
@@ -269,12 +269,12 @@ class Node:
         yield from self._subscriptions
 
     @property
-    def clients(self) -> Iterator[Client[Any, Any, Any]]:
+    def clients(self) -> Iterator[Client[Any, Any]]:
         """Get clients that have been created on this node."""
         yield from self._clients
 
     @property
-    def services(self) -> Iterator[Service[Any, Any, Any]]:
+    def services(self) -> Iterator[Service[Any, Any]]:
         """Get services that have been created on this node."""
         yield from self._services
 
@@ -1891,7 +1891,7 @@ class Node:
             return True
         return False
 
-    def destroy_client(self, client: Client[Any, Any, Any]) -> bool:
+    def destroy_client(self, client: Client[Any, Any]) -> bool:
         """
         Destroy a service client created by the node.
 
@@ -1907,7 +1907,7 @@ class Node:
             return True
         return False
 
-    def destroy_service(self, service: Service[Any, Any, Any]) -> bool:
+    def destroy_service(self, service: Service[Any, Any]) -> bool:
         """
         Destroy a service server created by the node.
 
