@@ -1733,7 +1733,7 @@ class Node:
         self,
         srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
-        callback: Callable[[SrvRequestT, SrvResponseT]],
+        callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
