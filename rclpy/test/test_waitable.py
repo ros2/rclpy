@@ -50,8 +50,8 @@ class ClientWaitable(Waitable):
         self.node = node
         self.future = None
 
-    def __enter__(self):
-        return self
+    def __enter__(self) -> None:
+        pass
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         pass
@@ -99,8 +99,8 @@ class ServerWaitable(Waitable):
         self.node = node
         self.future = None
 
-    def __enter__(self):
-        return self
+    def __enter__(self) -> None:
+        pass
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         pass
@@ -150,8 +150,8 @@ class TimerWaitable(Waitable):
         self.node = node
         self.future = None
 
-    def __enter__(self):
-        return self
+    def __enter__(self) -> None:
+        pass
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         pass
@@ -200,8 +200,8 @@ class SubscriptionWaitable(Waitable):
         self.node = node
         self.future = None
 
-    def __enter__(self):
-        return self
+    def __enter__(self) -> None:
+        pass
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         pass
@@ -251,8 +251,8 @@ class GuardConditionWaitable(Waitable):
         self.node = node
         self.future = None
 
-    def __enter__(self):
-        return self
+    def __enter__(self) -> None:
+        pass
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         pass
@@ -291,8 +291,8 @@ class MutuallyExclusiveWaitable(Waitable):
     def __init__(self):
         super().__init__(MutuallyExclusiveCallbackGroup())
 
-    def __enter__(self):
-        return self
+    def __enter__(self) -> None:
+        pass
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         pass

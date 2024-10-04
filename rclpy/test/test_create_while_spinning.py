@@ -94,8 +94,8 @@ class TestCreateWhileSpinning(unittest.TestCase):
             def __init__(self):
                 super().__init__(ReentrantCallbackGroup())
 
-            def __enter__(self):
-                return self
+            def __enter__(self) -> None:
+                pass
 
             def __exit__(self, exc_type, exc_val, exc_tb) -> None:
                 pass
