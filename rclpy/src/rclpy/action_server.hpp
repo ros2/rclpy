@@ -231,7 +231,7 @@ public:
   py::tuple
   is_ready(WaitSet & wait_set);
 
-  /// Add an action entity to a wait set.
+  /// Add an action entitiy to a wait set.
   /**
    * Raises RuntimeError on failure.
    * Raises RCLError if an error occurs in rcl

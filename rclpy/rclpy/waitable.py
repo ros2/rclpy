@@ -22,6 +22,8 @@ T = TypeVar('T')
 
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from rclpy.callback_groups import CallbackGroup
     from rclpy.task import Future
 
@@ -89,7 +91,7 @@ class Waitable(Generic[T]):
         # List of Futures that have callbacks needing execution
         self._futures: List[Future[Any]] = []
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> 'Self':
         """Implement to mark entities as in-use to prevent destruction while waiting on them."""
         raise NotImplementedError('Must be implemented by subclass')
 
