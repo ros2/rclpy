@@ -56,15 +56,14 @@ MsgT = TypeVar('MsgT', bound=Msg, contravariant=True)
 
 SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
-SrvEventT = TypeVar('SrvEventT', bound=Msg)
 
 
-class Srv(Protocol[SrvRequestT, SrvResponseT, SrvEventT], metaclass=CommonMsgSrvMetaClass):
+class Srv(Protocol[SrvRequestT, SrvResponseT], metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
 
     Request: Type[SrvRequestT]
     Response: Type[SrvResponseT]
-    Event: Type[SrvEventT]
+    Event: Type[Msg]
 
     def __init__(self) -> NoReturn: ...
 
