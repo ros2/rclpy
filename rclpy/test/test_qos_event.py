@@ -75,28 +75,29 @@ class TestQoSEvent(unittest.TestCase):
         self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
         self.node.destroy_publisher(publisher)
 
-        # Arg with one of the callbacks
-        callbacks.deadline = deadline_callback
-        expected_num_event_handlers += 1
-        publisher = self.node.create_publisher(
-            EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
-        self.node.destroy_publisher(publisher)
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+            # Arg with one of the callbacks
+            callbacks.deadline = deadline_callback
+            expected_num_event_handlers += 1
+            publisher = self.node.create_publisher(
+                EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
+            self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
+            self.node.destroy_publisher(publisher)
 
-        # Arg with two callbacks
-        callbacks.liveliness = liveliness_callback
-        expected_num_event_handlers += 1
-        publisher = self.node.create_publisher(
-            EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
-        self.node.destroy_publisher(publisher)
+            # Arg with two callbacks
+            callbacks.liveliness = liveliness_callback
+            expected_num_event_handlers += 1
+            publisher = self.node.create_publisher(
+                EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
+            self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
+            self.node.destroy_publisher(publisher)
 
-        # Arg with three callbacks
-        callbacks.incompatible_qos = incompatible_qos_callback
-        publisher = self.node.create_publisher(
-            EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
-        self.assertEqual(len(publisher.event_handlers), 4)
-        self.node.destroy_publisher(publisher)
+            # Arg with three callbacks
+            callbacks.incompatible_qos = incompatible_qos_callback
+            publisher = self.node.create_publisher(
+                EmptyMsg, self.topic_name, 10, event_callbacks=callbacks)
+            self.assertEqual(len(publisher.event_handlers), 4)
+            self.node.destroy_publisher(publisher)
 
     def test_subscription_constructor(self):
         callbacks = SubscriptionEventCallbacks()
@@ -118,28 +119,29 @@ class TestQoSEvent(unittest.TestCase):
         self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
         self.node.destroy_subscription(subscription)
 
-        # Arg with one of the callbacks
-        callbacks.deadline = deadline_callback
-        expected_num_event_handlers += 1
-        subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
-        self.node.destroy_subscription(subscription)
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+            # Arg with one of the callbacks
+            callbacks.deadline = deadline_callback
+            expected_num_event_handlers += 1
+            subscription = self.node.create_subscription(
+                EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
+            self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
+            self.node.destroy_subscription(subscription)
 
-        # Arg with two callbacks
-        callbacks.liveliness = liveliness_callback
-        expected_num_event_handlers += 1
-        subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
-        self.node.destroy_subscription(subscription)
+            # Arg with two callbacks
+            callbacks.liveliness = liveliness_callback
+            expected_num_event_handlers += 1
+            subscription = self.node.create_subscription(
+                EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
+            self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
+            self.node.destroy_subscription(subscription)
 
-        # Arg with three callbacks
-        callbacks.incompatible_qos = incompatible_qos_callback
-        subscription = self.node.create_subscription(
-            EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
-        self.assertEqual(len(subscription.event_handlers), 4)
-        self.node.destroy_subscription(subscription)
+            # Arg with three callbacks
+            callbacks.incompatible_qos = incompatible_qos_callback
+            subscription = self.node.create_subscription(
+                EmptyMsg, self.topic_name, message_callback, 10, event_callbacks=callbacks)
+            self.assertEqual(len(subscription.event_handlers), 4)
+            self.node.destroy_subscription(subscription)
 
     def test_default_incompatible_qos_callbacks(self):
         original_logger = rclpy.logging._root_logger
@@ -179,16 +181,20 @@ class TestQoSEvent(unittest.TestCase):
         executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
         rclpy.spin_until_future_complete(self.node, log_msgs_future, executor, 10.0)
 
-        self.assertEqual(
-            pub_log_msg,
-            "New subscription discovered on topic '{}', requesting incompatible QoS. "
-            'No messages will be sent to it. '
-            'Last incompatible policy: DURABILITY'.format(self.topic_name))
-        self.assertEqual(
-            sub_log_msg,
-            "New publisher discovered on topic '{}', offering incompatible QoS. "
-            'No messages will be received from it. '
-            'Last incompatible policy: DURABILITY'.format(self.topic_name))
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+            self.assertEqual(
+                pub_log_msg,
+                "New subscription discovered on topic '{}', requesting incompatible QoS. "
+                'No messages will be sent to it. '
+                'Last incompatible policy: DURABILITY'.format(self.topic_name))
+            self.assertEqual(
+                sub_log_msg,
+                "New publisher discovered on topic '{}', offering incompatible QoS. "
+                'No messages will be received from it. '
+                'Last incompatible policy: DURABILITY'.format(self.topic_name))
+        else:
+            self.assertEqual(pub_log_msg, None)
+            self.assertEqual(sub_log_msg, None)
 
         rclpy.logging._root_logger = original_logger
 
@@ -204,12 +210,14 @@ class TestQoSEvent(unittest.TestCase):
 
     def test_publisher_event_create_destroy(self):
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
-        self._do_create_destroy(
-            publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
-        self._do_create_destroy(
-            publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
-        self._do_create_destroy(
-            publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
+
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+            self._do_create_destroy(
+                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
+            self._do_create_destroy(
+                publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
+            self._do_create_destroy(
+                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
         self._do_create_destroy(
             publisher, QoSPublisherEventType.RCL_PUBLISHER_MATCHED)
         self.node.destroy_publisher(publisher)
@@ -218,12 +226,13 @@ class TestQoSEvent(unittest.TestCase):
         message_callback = Mock()
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10)
-        self._do_create_destroy(
-            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
-        self._do_create_destroy(
-            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
-        self._do_create_destroy(
-            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+            self._do_create_destroy(
+                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
+            self._do_create_destroy(
+                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
+            self._do_create_destroy(
+                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
         self._do_create_destroy(
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED)
         self.node.destroy_subscription(subscription)
@@ -235,62 +244,63 @@ class TestQoSEvent(unittest.TestCase):
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
-        deadline_event_handle = self._create_event_handle(
-            publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
-        with deadline_event_handle:
-            deadline_event_index = wait_set.add_event(deadline_event_handle)
-        self.assertIsNotNone(deadline_event_index)
-
-        liveliness_event_handle = self._create_event_handle(
-            publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
-        with liveliness_event_handle:
-            liveliness_event_index = wait_set.add_event(
-                    liveliness_event_handle)
-        self.assertIsNotNone(liveliness_event_index)
-
-        incompatible_qos_event_handle = self._create_event_handle(
-            publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
-        with incompatible_qos_event_handle:
-            incompatible_qos_event_index = wait_set.add_event(
-                    incompatible_qos_event_handle)
-        self.assertIsNotNone(incompatible_qos_event_index)
-
-        # We live in our own namespace and have created no other participants, so
-        # there can't be any of these events.
-        wait_set.wait(0)
-        self.assertFalse(wait_set.is_ready('event', deadline_event_index))
-        self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
-        self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
-
-        # Calling take data even though not ready should provide me an empty initialized message
-        # Tests data conversion utilities in C side
-        try:
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+            deadline_event_handle = self._create_event_handle(
+                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
             with deadline_event_handle:
-                event_data = deadline_event_handle.take_event()
-            self.assertIsInstance(event_data, QoSOfferedDeadlineMissedInfo)
-            self.assertEqual(event_data.total_count, 0)
-            self.assertEqual(event_data.total_count_change, 0)
-        except NotImplementedError:
-            pass
+                deadline_event_index = wait_set.add_event(deadline_event_handle)
+            self.assertIsNotNone(deadline_event_index)
 
-        try:
+            liveliness_event_handle = self._create_event_handle(
+                publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
             with liveliness_event_handle:
-                event_data = liveliness_event_handle.take_event()
-            self.assertIsInstance(event_data, QoSLivelinessLostInfo)
-            self.assertEqual(event_data.total_count, 0)
-            self.assertEqual(event_data.total_count_change, 0)
-        except NotImplementedError:
-            pass
+                liveliness_event_index = wait_set.add_event(
+                        liveliness_event_handle)
+            self.assertIsNotNone(liveliness_event_index)
 
-        try:
+            incompatible_qos_event_handle = self._create_event_handle(
+                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
             with incompatible_qos_event_handle:
-                event_data = incompatible_qos_event_handle.take_event()
-            self.assertIsInstance(event_data, QoSOfferedIncompatibleQoSInfo)
-            self.assertEqual(event_data.total_count, 0)
-            self.assertEqual(event_data.total_count_change, 0)
-            self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
-        except NotImplementedError:
-            pass
+                incompatible_qos_event_index = wait_set.add_event(
+                        incompatible_qos_event_handle)
+            self.assertIsNotNone(incompatible_qos_event_index)
+
+            # We live in our own namespace and have created no other participants, so
+            # there can't be any of these events.
+            wait_set.wait(0)
+            self.assertFalse(wait_set.is_ready('event', deadline_event_index))
+            self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
+            self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
+
+            # Calling take data even though not ready should provide me an empty initialized message
+            # Tests data conversion utilities in C side
+            try:
+                with deadline_event_handle:
+                    event_data = deadline_event_handle.take_event()
+                self.assertIsInstance(event_data, QoSOfferedDeadlineMissedInfo)
+                self.assertEqual(event_data.total_count, 0)
+                self.assertEqual(event_data.total_count_change, 0)
+            except NotImplementedError:
+                pass
+
+            try:
+                with liveliness_event_handle:
+                    event_data = liveliness_event_handle.take_event()
+                self.assertIsInstance(event_data, QoSLivelinessLostInfo)
+                self.assertEqual(event_data.total_count, 0)
+                self.assertEqual(event_data.total_count_change, 0)
+            except NotImplementedError:
+                pass
+
+            try:
+                with incompatible_qos_event_handle:
+                    event_data = incompatible_qos_event_handle.take_event()
+                self.assertIsInstance(event_data, QoSOfferedIncompatibleQoSInfo)
+                self.assertEqual(event_data.total_count, 0)
+                self.assertEqual(event_data.total_count_change, 0)
+                self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
+            except NotImplementedError:
+                pass
 
         self.node.destroy_publisher(publisher)
 
@@ -301,63 +311,65 @@ class TestQoSEvent(unittest.TestCase):
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
-        deadline_event_handle = self._create_event_handle(
-            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
-        with deadline_event_handle:
-            deadline_event_index = wait_set.add_event(deadline_event_handle)
-        self.assertIsNotNone(deadline_event_index)
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
 
-        liveliness_event_handle = self._create_event_handle(
-            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
-        with liveliness_event_handle:
-            liveliness_event_index = wait_set.add_event(liveliness_event_handle)
-        self.assertIsNotNone(liveliness_event_index)
-
-        incompatible_qos_event_handle = self._create_event_handle(
-            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
-        with incompatible_qos_event_handle:
-            incompatible_qos_event_index = wait_set.add_event(
-                    incompatible_qos_event_handle)
-        self.assertIsNotNone(incompatible_qos_event_index)
-
-        # We live in our own namespace and have created no other participants, so
-        # there can't be any of these events.
-        wait_set.wait(0)
-        self.assertFalse(wait_set.is_ready('event', deadline_event_index))
-        self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
-        self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
-
-        # Calling take data even though not ready should provide me an empty initialized message
-        # Tests data conversion utilities in C side
-        try:
+            deadline_event_handle = self._create_event_handle(
+                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
             with deadline_event_handle:
-                event_data = deadline_event_handle.take_event()
-            self.assertIsInstance(event_data, QoSRequestedDeadlineMissedInfo)
-            self.assertEqual(event_data.total_count, 0)
-            self.assertEqual(event_data.total_count_change, 0)
-        except NotImplementedError:
-            pass
+                deadline_event_index = wait_set.add_event(deadline_event_handle)
+            self.assertIsNotNone(deadline_event_index)
 
-        try:
+            liveliness_event_handle = self._create_event_handle(
+                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
             with liveliness_event_handle:
-                event_data = liveliness_event_handle.take_event()
-            self.assertIsInstance(event_data, QoSLivelinessChangedInfo)
-            self.assertEqual(event_data.alive_count, 0)
-            self.assertEqual(event_data.alive_count_change, 0)
-            self.assertEqual(event_data.not_alive_count, 0)
-            self.assertEqual(event_data.not_alive_count_change, 0)
-        except NotImplementedError:
-            pass
+                liveliness_event_index = wait_set.add_event(liveliness_event_handle)
+            self.assertIsNotNone(liveliness_event_index)
 
-        try:
+            incompatible_qos_event_handle = self._create_event_handle(
+                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
             with incompatible_qos_event_handle:
-                event_data = incompatible_qos_event_handle.take_event()
-            self.assertIsInstance(event_data, QoSRequestedIncompatibleQoSInfo)
-            self.assertEqual(event_data.total_count, 0)
-            self.assertEqual(event_data.total_count_change, 0)
-            self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
-        except NotImplementedError:
-            pass
+                incompatible_qos_event_index = wait_set.add_event(
+                        incompatible_qos_event_handle)
+            self.assertIsNotNone(incompatible_qos_event_index)
+
+            # We live in our own namespace and have created no other participants, so
+            # there can't be any of these events.
+            wait_set.wait(0)
+            self.assertFalse(wait_set.is_ready('event', deadline_event_index))
+            self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
+            self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
+
+            # Calling take data even though not ready should provide me an empty initialized message
+            # Tests data conversion utilities in C side
+            try:
+                with deadline_event_handle:
+                    event_data = deadline_event_handle.take_event()
+                self.assertIsInstance(event_data, QoSRequestedDeadlineMissedInfo)
+                self.assertEqual(event_data.total_count, 0)
+                self.assertEqual(event_data.total_count_change, 0)
+            except NotImplementedError:
+                pass
+
+            try:
+                with liveliness_event_handle:
+                    event_data = liveliness_event_handle.take_event()
+                self.assertIsInstance(event_data, QoSLivelinessChangedInfo)
+                self.assertEqual(event_data.alive_count, 0)
+                self.assertEqual(event_data.alive_count_change, 0)
+                self.assertEqual(event_data.not_alive_count, 0)
+                self.assertEqual(event_data.not_alive_count_change, 0)
+            except NotImplementedError:
+                pass
+
+            try:
+                with incompatible_qos_event_handle:
+                    event_data = incompatible_qos_event_handle.take_event()
+                self.assertIsInstance(event_data, QoSRequestedIncompatibleQoSInfo)
+                self.assertEqual(event_data.total_count, 0)
+                self.assertEqual(event_data.total_count_change, 0)
+                self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
+            except NotImplementedError:
+                pass
 
         self.node.destroy_subscription(subscription)
 
