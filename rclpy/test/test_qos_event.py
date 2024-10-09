@@ -75,7 +75,7 @@ class TestQoSEvent(unittest.TestCase):
         self.assertEqual(len(publisher.event_handlers), expected_num_event_handlers)
         self.node.destroy_publisher(publisher)
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             # Arg with one of the callbacks
             callbacks.deadline = deadline_callback
             expected_num_event_handlers += 1
@@ -119,7 +119,7 @@ class TestQoSEvent(unittest.TestCase):
         self.assertEqual(len(subscription.event_handlers), expected_num_event_handlers)
         self.node.destroy_subscription(subscription)
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             # Arg with one of the callbacks
             callbacks.deadline = deadline_callback
             expected_num_event_handlers += 1
@@ -181,7 +181,7 @@ class TestQoSEvent(unittest.TestCase):
         executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
         rclpy.spin_until_future_complete(self.node, log_msgs_future, executor, 10.0)
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             self.assertEqual(
                 pub_log_msg,
                 "New subscription discovered on topic '{}', requesting incompatible QoS. "
@@ -211,7 +211,7 @@ class TestQoSEvent(unittest.TestCase):
     def test_publisher_event_create_destroy(self):
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             self._do_create_destroy(
                 publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
             self._do_create_destroy(
@@ -226,7 +226,7 @@ class TestQoSEvent(unittest.TestCase):
         message_callback = Mock()
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10)
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             self._do_create_destroy(
                 subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
             self._do_create_destroy(
@@ -244,7 +244,7 @@ class TestQoSEvent(unittest.TestCase):
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             deadline_event_handle = self._create_event_handle(
                 publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
             with deadline_event_handle:
@@ -272,7 +272,8 @@ class TestQoSEvent(unittest.TestCase):
             self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
             self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
 
-            # Calling take data even though not ready should provide me an empty initialized message
+            # Calling take data even though not ready should provide me an empty
+            # initialized message
             # Tests data conversion utilities in C side
             try:
                 with deadline_event_handle:
@@ -311,7 +312,7 @@ class TestQoSEvent(unittest.TestCase):
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
 
             deadline_event_handle = self._create_event_handle(
                 subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
@@ -339,7 +340,8 @@ class TestQoSEvent(unittest.TestCase):
             self.assertFalse(wait_set.is_ready('event', liveliness_event_index))
             self.assertFalse(wait_set.is_ready('event', incompatible_qos_event_index))
 
-            # Calling take data even though not ready should provide me an empty initialized message
+            # Calling take data even though not ready should provide me an empty
+            # initialized message
             # Tests data conversion utilities in C side
             try:
                 with deadline_event_handle:

@@ -188,7 +188,7 @@ class TestCheckQosCompatibility(unittest.TestCase):
             pub_qos, sub_qos
         )
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             assert compatibility == QoSCompatibility.ERROR
             assert reason != ''
         else:
@@ -211,7 +211,7 @@ class TestCheckQosCompatibility(unittest.TestCase):
             pub_qos, sub_qos
         )
 
-        if _rclpy.rclpy_get_rmw_implementation_identifier() != "rmw_zenoh_cpp":
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
             assert compatibility == QoSCompatibility.WARNING
             assert reason != ''
         else:
