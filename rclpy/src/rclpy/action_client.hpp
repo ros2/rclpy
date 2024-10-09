@@ -207,7 +207,7 @@ public:
   py::tuple
   is_ready(WaitSet & wait_set);
 
-  /// Add an action entitiy to a wait set.
+  /// Add an action entity to a wait set.
   /**
    * Raises RuntimeError on failure.
    * \param[in] wait_set Capsule pointer to an rcl_wait_set_t.
