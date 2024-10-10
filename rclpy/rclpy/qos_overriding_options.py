@@ -36,9 +36,9 @@ from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.subscription import Subscription
+from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
-    from typing import TypeAlias
     from rclpy.node import Node
 
 
@@ -47,7 +47,7 @@ class InvalidQosOverridesError(Exception):
 
 
 # Return type of qos validation callbacks
-QosCallbackResult: 'TypeAlias' = SetParametersResult
+QosCallbackResult: TypeAlias = SetParametersResult
 # Qos callback type annotation
 QosCallbackType = Callable[[QoSProfile], QosCallbackResult]
 

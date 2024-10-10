@@ -13,15 +13,13 @@
 # limitations under the License.
 
 from enum import Enum, IntEnum
-from typing import (Callable, Iterable, List, Optional, Tuple, Type, TYPE_CHECKING,
+from typing import (Callable, Iterable, List, Optional, Tuple, Type,
                     TypeVar, Union)
 import warnings
 
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-
-if TYPE_CHECKING:
-    from typing import TypeAlias
+from typing_extensions import TypeAlias
 
 
 class QoSPolicyKind(IntEnum):
@@ -516,7 +514,7 @@ class QoSPresetProfiles(Enum):
         return cls[name.upper()].value
 
 
-QoSCompatibility: 'TypeAlias' = _rclpy.QoSCompatibility
+QoSCompatibility: TypeAlias = _rclpy.QoSCompatibility
 
 
 def qos_check_compatible(publisher_qos: QoSProfile,
