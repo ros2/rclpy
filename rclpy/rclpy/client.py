@@ -28,7 +28,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
-from rclpy.type_support import Srv, SrvEventT, SrvRequestT, SrvResponseT
+from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
 # Left To Support Legacy TypeVars
 SrvType = TypeVar('SrvType')
@@ -36,12 +36,12 @@ SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
-class Client(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
+class Client(Generic[SrvRequestT, SrvResponseT]):
     def __init__(
         self,
         context: Context,
         client_impl: _rclpy.Client,
-        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         qos_profile: QoSProfile,
         callback_group: CallbackGroup
@@ -231,7 +231,7 @@ class Client(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
         """
         self.__client.destroy_when_not_in_use()
 
-    def __enter__(self) -> 'Client[SrvRequestT, SrvResponseT, SrvEventT]':
+    def __enter__(self) -> 'Client[SrvRequestT, SrvResponseT]':
         return self
 
     def __exit__(
