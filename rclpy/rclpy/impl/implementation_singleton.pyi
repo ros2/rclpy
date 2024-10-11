@@ -12,18 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from types import TracebackType
-from typing import Optional, Protocol, Type
 
+from rclpy.impl import _rclpy_pybind11
 
-class DestroyableType(Protocol):
-
-    def __enter__(self) -> None:
-        ...
-
-    def __exit__(self, exc_type: Optional[Type[BaseException]],
-                 exc_val: Optional[BaseException], exctb: Optional[TracebackType]) -> None:
-        ...
-
-    def destroy_when_not_in_use(self) -> None:
-        ...
+rclpy_implementation = _rclpy_pybind11

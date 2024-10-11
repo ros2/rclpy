@@ -17,6 +17,8 @@ import functools
 import threading
 import traceback
 
+from typing import Any, TypedDict
+
 from action_msgs.msg import GoalInfo, GoalStatus
 
 from rclpy.executors import await_or_execute
@@ -47,6 +49,13 @@ class CancelResponse(Enum):
 
 
 GoalEvent = _rclpy.GoalEvent
+
+
+class ServerGoalHandleDict(TypedDict, total=False):
+    goal: Any
+    cancel: Any
+    result: Any
+    expired: Any
 
 
 class ServerGoalHandle:
@@ -178,7 +187,7 @@ def default_cancel_callback(cancel_request):
     return CancelResponse.REJECT
 
 
-class ActionServer(Waitable):
+class ActionServer(Waitable[ServerGoalHandleDict]):
     """ROS Action server."""
 
     def __init__(
@@ -197,7 +206,7 @@ class ActionServer(Waitable):
         cancel_service_qos_profile=qos_profile_services_default,
         feedback_pub_qos_profile=QoSProfile(depth=10),
         status_pub_qos_profile=qos_profile_action_status_default,
-        result_timeout=900
+        result_timeout=10
     ):
         """
         Create an ActionServer.
@@ -402,9 +411,10 @@ class ActionServer(Waitable):
             'Result request received for goal with ID: {0}'.format(goal_uuid))
 
         # If no goal with the requested ID exists, then return UNKNOWN status
+        # or the goal with the requested ID has been already expired
         if bytes(goal_uuid) not in self._goal_handles:
-            self._logger.debug(
-                'Sending result response for unknown goal ID: {0}'.format(goal_uuid))
+            self._logger.warn(
+                'Sending result response for unknown or expired goal ID: {0}'.format(goal_uuid))
             result_response = self._action_type.Impl.GetResultService.Response()
             result_response.status = GoalStatus.STATUS_UNKNOWN
             self._handle.send_result_response(request_header, result_response)
@@ -446,9 +456,9 @@ class ActionServer(Waitable):
         self._is_goal_expired = ready_entities[3]
         return any(ready_entities)
 
-    def take_data(self):
+    def take_data(self) -> ServerGoalHandleDict:
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
-        data = {}
+        data: ServerGoalHandleDict = {}
         if self._is_goal_request_ready:
             with self._lock:
                 taken_data = self._handle.take_goal_request(
@@ -482,7 +492,7 @@ class ActionServer(Waitable):
 
         return data
 
-    async def execute(self, taken_data):
+    async def execute(self, taken_data: ServerGoalHandleDict) -> None:
         """
         Execute work after data has been taken from a ready wait set.
 

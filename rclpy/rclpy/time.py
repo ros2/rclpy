@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Protocol, Tuple, Union
+from typing import overload, Tuple, Union
 
 import builtin_interfaces.msg
 
@@ -21,13 +21,6 @@ from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 from .clock_type import ClockType
-
-
-class TimeType(Protocol):
-    """Type alias of _rclpy.rcl_time_point_t."""
-
-    nanoseconds: int
-    clock_type: ClockType
 
 
 class Time:
@@ -56,7 +49,7 @@ class Time:
             # pybind11 would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C time point.')
-        self._time_handle: TimeType = _rclpy.rcl_time_point_t(total_nanoseconds, clock_type)
+        self._time_handle = _rclpy.rcl_time_point_t(total_nanoseconds, clock_type)
 
     @property
     def nanoseconds(self) -> int:
@@ -95,6 +88,12 @@ class Time:
     def __radd__(self, other: Duration) -> 'Time':
         return self.__add__(other)
 
+    @overload
+    def __sub__(self, other: 'Time') -> Duration: ...
+
+    @overload
+    def __sub__(self, other: Duration) -> 'Time': ...
+
     def __sub__(self, other: Union['Time', Duration]) -> Union['Time', Duration]:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
@@ -113,40 +112,40 @@ class Time:
         else:
             return NotImplemented
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: 'Time') -> bool:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds == other.nanoseconds
         return NotImplemented
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: 'Time') -> bool:
         if isinstance(other, Time):
             return not self.__eq__(other)
         return NotImplemented
 
-    def __lt__(self, other: object) -> bool:
+    def __lt__(self, other: 'Time') -> bool:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds < other.nanoseconds
         return NotImplemented
 
-    def __le__(self, other: object) -> bool:
+    def __le__(self, other: 'Time') -> bool:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds <= other.nanoseconds
         return NotImplemented
 
-    def __gt__(self, other: object) -> bool:
+    def __gt__(self, other: 'Time') -> bool:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds > other.nanoseconds
         return NotImplemented
 
-    def __ge__(self, other: object) -> bool:
+    def __ge__(self, other: 'Time') -> bool:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")

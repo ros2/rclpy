@@ -13,9 +13,11 @@
 # limitations under the License.
 
 from enum import IntEnum
+from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 import warnings
 
 import rclpy
@@ -25,6 +27,9 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
+
+if TYPE_CHECKING:
+    from typing import TypeAlias
 
 
 QoSPublisherEventType = _rclpy.rcl_publisher_event_type_t
@@ -70,7 +75,10 @@ IncompatibleTypeInfo = _rclpy.rmw_incompatible_type_status_t
 UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
 
 
-class EventHandler(Waitable):
+EventHandlerData: 'TypeAlias' = Optional[Any]
+
+
+class EventHandler(Waitable[EventHandlerData]):
     """Waitable type to handle QoS events."""
 
     def __init__(
@@ -101,7 +109,7 @@ class EventHandler(Waitable):
             self._ready_to_take_data = True
         return self._ready_to_take_data
 
-    def take_data(self):
+    def take_data(self) -> EventHandlerData:
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         if self._ready_to_take_data:
             self._ready_to_take_data = False
@@ -109,7 +117,7 @@ class EventHandler(Waitable):
                 return self.__event.take_event()
         return None
 
-    async def execute(self, taken_data):
+    async def execute(self, taken_data: EventHandlerData) -> None:
         """Execute work after data has been taken from a ready wait set."""
         if not taken_data:
             return
@@ -132,7 +140,7 @@ class EventHandler(Waitable):
         """Mark event as not-in-use to allow destruction after waiting on it."""
         self.__event.__exit__(t, v, tb)
 
-    def destroy(self):
+    def destroy(self) -> None:
         self.__event.destroy_when_not_in_use()
 
 
@@ -189,8 +197,8 @@ class SubscriptionEventCallbacks:
         self.use_default_callbacks = use_default_callbacks
 
     def create_event_handlers(
-        self, callback_group: CallbackGroup, subscription: _rclpy.Subscription, topic_name: str,
-    ) -> List[EventHandler]:
+        self, callback_group: CallbackGroup, subscription: '_rclpy.Subscription',
+            topic_name: str) -> List[EventHandler]:
         with subscription:
             logger = get_logger(subscription.get_logger_name())
 

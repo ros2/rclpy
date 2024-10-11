@@ -2,6 +2,98 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.6.0 (2024-10-03)
+------------------
+* TestClient.test_service_timestamps failing consistently. (`#1364 <https://github.com/ros2/rclpy/issues/1364>`_)
+* Revert "Add types to Action Server and Action Client (`#1349 <https://github.com/ros2/rclpy/issues/1349>`_)" (`#1359 <https://github.com/ros2/rclpy/issues/1359>`_)
+* Revert "Executors types (`#1345 <https://github.com/ros2/rclpy/issues/1345>`_)" (`#1360 <https://github.com/ros2/rclpy/issues/1360>`_)
+* remove mock_compat (`#1357 <https://github.com/ros2/rclpy/issues/1357>`_)
+* Executors types (`#1345 <https://github.com/ros2/rclpy/issues/1345>`_)
+* Add types to Action Server and Action Client (`#1349 <https://github.com/ros2/rclpy/issues/1349>`_)
+* Remove TODO for OpenSplice DDS issue. (`#1354 <https://github.com/ros2/rclpy/issues/1354>`_)
+* Add types to parameter_client.py (`#1348 <https://github.com/ros2/rclpy/issues/1348>`_)
+* Add types to Node.py (`#1346 <https://github.com/ros2/rclpy/issues/1346>`_)
+* Add types to signals.py (`#1344 <https://github.com/ros2/rclpy/issues/1344>`_)
+* Fixes spin_until_future_complete inside callback (`#1316 <https://github.com/ros2/rclpy/issues/1316>`_)
+* add types (`#1339 <https://github.com/ros2/rclpy/issues/1339>`_)
+* Add types to wait_for_message.py and moves Handles into type stubs (`#1325 <https://github.com/ros2/rclpy/issues/1325>`_)
+* Add types to waitable.py (`#1328 <https://github.com/ros2/rclpy/issues/1328>`_)
+* Replace rclpyHandle with type stubs (`#1326 <https://github.com/ros2/rclpy/issues/1326>`_)
+* Fix time subtraction (`#1312 <https://github.com/ros2/rclpy/issues/1312>`_)
+* Adds types to TypeDescriptionService. (`#1329 <https://github.com/ros2/rclpy/issues/1329>`_)
+* Import DurationHandle not DurationType (`#1332 <https://github.com/ros2/rclpy/issues/1332>`_)
+* Creates PublisherHandle and updates publisher.py (`#1310 <https://github.com/ros2/rclpy/issues/1310>`_)
+* Subscription types (`#1281 <https://github.com/ros2/rclpy/issues/1281>`_)
+* Add types to qos.py (`#1255 <https://github.com/ros2/rclpy/issues/1255>`_)
+* minor improvements (`#1330 <https://github.com/ros2/rclpy/issues/1330>`_)
+* Initialize signal handlers after context (`#1331 <https://github.com/ros2/rclpy/issues/1331>`_)
+* shutdown ThreadPoolExecutor in MultiThreadedExecutor. (`#1309 <https://github.com/ros2/rclpy/issues/1309>`_)
+* Generics Services and Clients (`#1275 <https://github.com/ros2/rclpy/issues/1275>`_)
+* Add types to ParameterService (`#1262 <https://github.com/ros2/rclpy/issues/1262>`_)
+* Add types to timer.py (`#1260 <https://github.com/ros2/rclpy/issues/1260>`_)
+* Add types to rcutils_logger.py (`#1249 <https://github.com/ros2/rclpy/issues/1249>`_)
+* Add types to topic_endpoint_info.oy (`#1253 <https://github.com/ros2/rclpy/issues/1253>`_)
+* Add types to parameter.py. (`#1246 <https://github.com/ros2/rclpy/issues/1246>`_)
+* Guard condition types. (`#1252 <https://github.com/ros2/rclpy/issues/1252>`_)
+* Add types to callback_groups.py (`#1251 <https://github.com/ros2/rclpy/issues/1251>`_)
+* Utilities.py types. (`#1250 <https://github.com/ros2/rclpy/issues/1250>`_)
+* reduce result_timeout to 10 secs from 15 mins. (`#1171 <https://github.com/ros2/rclpy/issues/1171>`_)
+* Add TimerInfo to timer callback. (`#1292 <https://github.com/ros2/rclpy/issues/1292>`_)
+* Contributors: Jonathan, Michael Carlstrom, Shane Loretz, Tomoya Fujita
+
+7.5.0 (2024-07-29)
+------------------
+* Add types to task.py (`#1254 <https://github.com/ros2/rclpy/issues/1254>`_)
+* Fix a bad bug in fetching the lifecycle transitions. (`#1321 <https://github.com/ros2/rclpy/issues/1321>`_)
+* Fix a bug when using multiple rclpy.init context managers. (`#1314 <https://github.com/ros2/rclpy/issues/1314>`_)
+* Executor executes the tasks in FIFO order. (`#1304 <https://github.com/ros2/rclpy/issues/1304>`_)
+* Contributors: Chris Lalancette, Michael Carlstrom, Tomoya Fujita
+
+7.4.0 (2024-06-25)
+------------------
+* Add top-level try_shutdown method. (`#1302 <https://github.com/ros2/rclpy/issues/1302>`_)
+* Make rclpy initialization context-manager aware. (`#1298 <https://github.com/ros2/rclpy/issues/1298>`_)
+* Contributors: Chris Lalancette
+
+7.3.0 (2024-06-17)
+------------------
+* Docstring specifying proper destruction and creation of Rate, Timer and GuardCondition (`#1286 <https://github.com/ros2/rclpy/issues/1286>`_)
+* Make timers context-aware. (`#1296 <https://github.com/ros2/rclpy/issues/1296>`_)
+* Make service lients context-aware. (`#1295 <https://github.com/ros2/rclpy/issues/1295>`_)
+* Make service servers context-manager aware. (`#1294 <https://github.com/ros2/rclpy/issues/1294>`_)
+* Make nodes context-manager aware. (`#1293 <https://github.com/ros2/rclpy/issues/1293>`_)
+* Make subscriptions context-manager aware. (`#1291 <https://github.com/ros2/rclpy/issues/1291>`_)
+* Make publishers context-manager aware. (`#1289 <https://github.com/ros2/rclpy/issues/1289>`_)
+* (NumberOfEntities) improve performance (`#1285 <https://github.com/ros2/rclpy/issues/1285>`_)
+* Using Generics for messages (`#1239 <https://github.com/ros2/rclpy/issues/1239>`_)
+* Contributors: Chris Lalancette, Elian NEPPEL, Matthijs van der Burgh, Michael Carlstrom
+
+7.2.0 (2024-04-26)
+------------------
+
+7.1.1 (2024-04-16)
+------------------
+* Clock.py types. (`#1244 <https://github.com/ros2/rclpy/issues/1244>`_)
+  * Start typing time.py
+  * Testing out Enum wrapper for ClockType
+  * convert to rcl_clock_type_t
+  * Update create_time_point
+  * add types to logging_service
+  * Add types to duration.py
+  * Add newlines for class definintions
+  * update type alias name
+  * Update to use Protocols
+  * Add types to time.py
+  * Add types
+  * Fix import order
+  * Started typing clock.py
+  * Move typealias import
+* pybind11 definition doc typo fixes. (`#1270 <https://github.com/ros2/rclpy/issues/1270>`_)
+* Fix small flake8 error in rclpy. (`#1267 <https://github.com/ros2/rclpy/issues/1267>`_)
+  Newer versions of flake8 complain that using 'str' as a
+  variable shadows a builtin.  Just make it 's'.
+* Contributors: Chris Lalancette, Michael Carlstrom, Tomoya Fujita
+
 7.1.0 (2024-03-28)
 ------------------
 * Allow specifying qos (`#1225 <https://github.com/ros2/rclpy/issues/1225>`_)

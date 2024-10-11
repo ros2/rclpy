@@ -12,23 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union
+from __future__ import annotations
 
-from rclpy.publisher import MsgType
+from typing import Generic, Tuple, Type, TYPE_CHECKING, TypedDict, Union
+
+from rclpy.callback_groups import CallbackGroup
+from rclpy.event_handler import PublisherEventCallbacks
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.publisher import Publisher
+from rclpy.qos import QoSProfile
+from rclpy.type_support import MsgT
 
 from .managed_entity import SimpleManagedEntity
 
+if TYPE_CHECKING:
+    from typing import TypeAlias, Unpack
+    LifecyclePublisherArgs: TypeAlias = Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile,
+                                              PublisherEventCallbacks, CallbackGroup]
 
-class LifecyclePublisher(SimpleManagedEntity, Publisher):
+    class LifecyclePublisherKWArgs(TypedDict, Generic[MsgT]):
+        publisher_impl: _rclpy.Publisher[MsgT]
+        msg_type: Type[MsgT]
+        topic: str
+        qos_profile: QoSProfile
+        event_callbacks: PublisherEventCallbacks
+        callback_group: CallbackGroup
+
+
+class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
     """Managed publisher entity."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args: 'Unpack[LifecyclePublisherArgs]',
+        **kwargs: 'Unpack[LifecyclePublisherKWArgs[MsgT]]'
+    ) -> None:
         SimpleManagedEntity.__init__(self)
         Publisher.__init__(self, *args, **kwargs)
 
     @SimpleManagedEntity.when_enabled
-    def publish(self, msg: Union[MsgType, bytes]) -> None:
+    def publish(self, msg: Union[MsgT, bytes]) -> None:
         """
         Publish a message if the lifecycle publisher is enabled.
 
