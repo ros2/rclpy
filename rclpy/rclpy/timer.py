@@ -67,7 +67,7 @@ class Timer:
     def __init__(
         self,
         callback: Union[Callable[[], None], Callable[[TimerInfo], None], None],
-        callback_group: CallbackGroup,
+        callback_group: Optional[CallbackGroup],
         timer_period_ns: int,
         clock: Clock,
         *,
