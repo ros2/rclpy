@@ -28,22 +28,22 @@ STD_MSGS_STRING_TYPE_HASH_STR = 'RIHS01_' \
 
 class TestTypeHash(unittest.TestCase):
 
-    def test_dict_constructor(self):
+    def test_dict_constructor(self) -> None:
         type_hash = TypeHash(**STD_MSGS_STRING_TYPE_HASH_DICT)
         self.assertTrue(hasattr(type_hash, '__slots__'))
         self.assertEqual(STD_MSGS_STRING_TYPE_HASH_DICT['version'], type_hash.version)
         self.assertEqual(STD_MSGS_STRING_TYPE_HASH_DICT['value'], type_hash.value)
 
-    def test_print_valid(self):
+    def test_print_valid(self) -> None:
         actual_str = str(TypeHash(**STD_MSGS_STRING_TYPE_HASH_DICT))
         expected_str = STD_MSGS_STRING_TYPE_HASH_STR
         self.assertEqual(expected_str, actual_str)
 
-    def test_print_invalid(self):
+    def test_print_invalid(self) -> None:
         actual_str = str(TypeHash())
         expected_str = 'INVALID'
         self.assertEqual(expected_str, actual_str)
 
-    def test_equals(self):
+    def test_equals(self) -> None:
         self.assertEqual(TypeHash(), TypeHash())
         self.assertNotEqual(TypeHash(version=5), TypeHash())

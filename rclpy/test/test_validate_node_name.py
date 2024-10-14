@@ -20,7 +20,7 @@ from rclpy.validate_node_name import validate_node_name
 
 class TestValidateNodeName(unittest.TestCase):
 
-    def test_validate_node_name(self):
+    def test_validate_node_name(self) -> None:
         tests = [
             'my_node',
         ]
@@ -28,7 +28,7 @@ class TestValidateNodeName(unittest.TestCase):
             # Will raise if invalid
             validate_node_name(topic)
 
-    def test_validate_node_name_failures(self):
+    def test_validate_node_name_failures(self) -> None:
         # node name must not be empty
         with self.assertRaisesRegex(InvalidNodeNameException, 'must not be empty'):
             validate_node_name('')

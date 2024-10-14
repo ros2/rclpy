@@ -80,7 +80,7 @@ def test_get_service_name_after_remapping(service_name, namespace, cli_args, exp
     node.destroy_node()
 
 
-def test_service_context_manager():
+def test_service_context_manager() -> None:
     with rclpy.create_node('ctx_mgr_test') as node:
         with node.create_service(
                 srv_type=Empty, srv_name='empty_service', callback=lambda _: None) as srv:

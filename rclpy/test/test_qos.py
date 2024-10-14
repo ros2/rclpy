@@ -36,12 +36,12 @@ class TestQosProfile(unittest.TestCase):
         converted_profile = QoSProfile(**c_qos_profile.to_dict())
         self.assertEqual(qos_profile, converted_profile)
 
-    def test_depth_only_constructor(self):
+    def test_depth_only_constructor(self) -> None:
         qos = QoSProfile(depth=1)
         assert qos.depth == 1
         assert qos.history == QoSHistoryPolicy.KEEP_LAST
 
-    def test_eq_operator(self):
+    def test_eq_operator(self) -> None:
         profile_1 = QoSProfile(history=QoSHistoryPolicy.KEEP_LAST, depth=1)
         profile_same = QoSProfile(
             history=QoSHistoryPolicy.KEEP_LAST, depth=1)
@@ -61,11 +61,11 @@ class TestQosProfile(unittest.TestCase):
         self.assertNotEqual(profile_1, profile_different_duration)
         self.assertEqual(profile_different_duration, profile_equal_duration)
 
-    def test_simple_round_trip(self):
+    def test_simple_round_trip(self) -> None:
         source_profile = QoSProfile(history=QoSHistoryPolicy.KEEP_ALL)
         self.convert_and_assert_equality(source_profile)
 
-    def test_big_nanoseconds(self):
+    def test_big_nanoseconds(self) -> None:
         # Under 31 bits
         no_problem = QoSProfile(
             history=QoSHistoryPolicy.KEEP_ALL,
@@ -84,7 +84,7 @@ class TestQosProfile(unittest.TestCase):
             lifespan=Duration(seconds=5))
         self.convert_and_assert_equality(uint32_problem)
 
-    def test_alldata_round_trip(self):
+    def test_alldata_round_trip(self) -> None:
         source_profile = QoSProfile(
             history=QoSHistoryPolicy.KEEP_ALL,
             depth=12,
@@ -98,7 +98,7 @@ class TestQosProfile(unittest.TestCase):
         )
         self.convert_and_assert_equality(source_profile)
 
-    def test_invalid_qos(self):
+    def test_invalid_qos(self) -> None:
         with self.assertRaises(InvalidQoSProfileException):
             # No history or depth settings provided
             QoSProfile()
@@ -106,7 +106,7 @@ class TestQosProfile(unittest.TestCase):
             # History is KEEP_LAST, but no depth is provided
             QoSProfile(history=QoSHistoryPolicy.KEEP_LAST)
 
-    def test_policy_short_names(self):
+    def test_policy_short_names(self) -> None:
         # Full test on History to show the mechanism works
         assert (
             QoSHistoryPolicy.short_keys() ==
@@ -121,14 +121,14 @@ class TestQosProfile(unittest.TestCase):
             QoSHistoryPolicy.get_from_short_key('KEEP_last') ==
             QoSHistoryPolicy.KEEP_LAST.value)
 
-    def test_preset_profiles(self):
+    def test_preset_profiles(self) -> None:
         # Make sure the Enum does what we expect
         assert QoSPresetProfiles.SYSTEM_DEFAULT.value == qos_profile_system_default
         assert (
             QoSPresetProfiles.SYSTEM_DEFAULT.value ==
             QoSPresetProfiles.get_from_short_key('system_default'))
 
-    def test_keep_last_zero_depth_constructor(self):
+    def test_keep_last_zero_depth_constructor(self) -> None:
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter('always', category=UserWarning)
             qos = QoSProfile(history=QoSHistoryPolicy.KEEP_LAST, depth=0)
@@ -137,7 +137,7 @@ class TestQosProfile(unittest.TestCase):
             assert "A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0])
         assert qos.history == QoSHistoryPolicy.KEEP_LAST
 
-    def test_keep_last_zero_depth_set(self):
+    def test_keep_last_zero_depth_set(self) -> None:
         qos = QoSProfile(history=QoSHistoryPolicy.KEEP_LAST, depth=1)
         assert qos.depth == 1
 
@@ -151,7 +151,7 @@ class TestQosProfile(unittest.TestCase):
 
 class TestCheckQosCompatibility(unittest.TestCase):
 
-    def test_compatible(self):
+    def test_compatible(self) -> None:
         qos = QoSProfile(
             depth=1,
             reliability=QoSReliabilityPolicy.RELIABLE,
@@ -168,7 +168,7 @@ class TestCheckQosCompatibility(unittest.TestCase):
         assert compatibility == QoSCompatibility.OK
         assert reason == ''
 
-    def test_incompatible(self):
+    def test_incompatible(self) -> None:
         """
         This test is assuming a DDS implementation.
 
@@ -195,7 +195,7 @@ class TestCheckQosCompatibility(unittest.TestCase):
             assert compatibility == QoSCompatibility.OK
             assert reason == ''
 
-    def test_warn_of_possible_incompatibility(self):
+    def test_warn_of_possible_incompatibility(self) -> None:
         """
         This test is assuming a DDS implementation.
 

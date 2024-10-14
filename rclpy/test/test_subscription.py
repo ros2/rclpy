@@ -24,7 +24,7 @@ from test_msgs.msg import Empty
 
 
 @pytest.fixture(scope='session', autouse=True)
-def setup_ros():
+def setup_ros() -> None:
     rclpy.init()
 
 
@@ -79,7 +79,7 @@ def test_get_subscription_topic_name_after_remapping(topic_name, namespace, cli_
     node.destroy_node()
 
 
-def test_subscription_callback_type():
+def test_subscription_callback_type() -> None:
     node = Node('test_node', namespace='test_subscription/test_subscription_callback_type')
     sub = node.create_subscription(
         msg_type=Empty,
@@ -107,7 +107,7 @@ def test_subscription_callback_type():
     node.destroy_node()
 
 
-def test_subscription_context_manager():
+def test_subscription_context_manager() -> None:
     node = Node('test_node', namespace='test_subscription/test_subscription_callback_type')
     with node.create_subscription(
             msg_type=Empty,
@@ -126,7 +126,7 @@ def test_subscription_context_manager():
     node.destroy_node()
 
 
-def test_subscription_publisher_count():
+def test_subscription_publisher_count() -> None:
     topic_name = 'test_subscription/test_subscription_publisher_count/topic'
     node = Node('test_node', namespace='test_subscription/test_subscription_publisher_count')
     sub = node.create_subscription(
