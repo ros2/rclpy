@@ -13,41 +13,36 @@
 # limitations under the License.
 
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, overload, TYPE_CHECKING, Union
 
 from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 
-if TYPE_CHECKING:
-    from typing import TypeAlias
-    from rclpy.lifecycle.node import LifecycleState
 
-
-TransitionCallbackReturn: 'TypeAlias' = _rclpy.TransitionCallbackReturnType
+TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
 
 
 class ManagedEntity:
 
-    def on_configure(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_configure(self, state) -> TransitionCallbackReturn:
         """Handle configure transition request."""
         return TransitionCallbackReturn.SUCCESS
 
-    def on_cleanup(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_cleanup(self, state) -> TransitionCallbackReturn:
         """Handle cleanup transition request."""
         return TransitionCallbackReturn.SUCCESS
 
-    def on_shutdown(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_shutdown(self, state) -> TransitionCallbackReturn:
         """Handle shutdown transition request."""
         return TransitionCallbackReturn.SUCCESS
 
-    def on_activate(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_activate(self, state) -> TransitionCallbackReturn:
         """Handle activate transition request."""
         return TransitionCallbackReturn.SUCCESS
 
-    def on_deactivate(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_deactivate(self, state) -> TransitionCallbackReturn:
         """Handle deactivate transition request."""
         return TransitionCallbackReturn.SUCCESS
 
-    def on_error(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_error(self, state) -> TransitionCallbackReturn:
         """Handle error transition request."""
         return TransitionCallbackReturn.SUCCESS
 
@@ -55,43 +50,26 @@ class ManagedEntity:
 class SimpleManagedEntity(ManagedEntity):
     """A simple managed entity that only sets a flag when activated/deactivated."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         self._enabled = False
 
-    def on_activate(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_activate(self, state) -> TransitionCallbackReturn:
         self._enabled = True
         return TransitionCallbackReturn.SUCCESS
 
-    def on_deactivate(self, state: 'LifecycleState') -> TransitionCallbackReturn:
+    def on_deactivate(self, state) -> TransitionCallbackReturn:
         self._enabled = False
         return TransitionCallbackReturn.SUCCESS
 
     @property
-    def is_activated(self) -> bool:
+    def is_activated(self):
         return self._enabled
 
     @staticmethod
-    @overload
-    def when_enabled(wrapped: None, *,
-                     when_not_enabled: Optional[Callable[..., None]] = None
-                     ) -> Callable[[Callable[..., None]], Callable[..., None]]: ...
-
-    @staticmethod
-    @overload
-    def when_enabled(wrapped: Callable[..., None], *,
-                     when_not_enabled: Optional[Callable[..., None]] = None
-                     ) -> Callable[..., None]: ...
-
-    @staticmethod
-    def when_enabled(wrapped: Optional[Callable[..., None]] = None, *,
-                     when_not_enabled: Optional[Callable[..., None]] = None) -> Union[
-                         Callable[..., None],
-                         Callable[[Callable[..., None]], Callable[..., None]]
-                        ]:
-        def decorator(wrapped: Callable[..., None]) -> Callable[..., None]:
+    def when_enabled(wrapped=None, *, when_not_enabled=None):
+        def decorator(wrapped):
             @wraps(wrapped)
-            def only_when_enabled_wrapper(self: SimpleManagedEntity, *args: List[Any],
-                                          **kwargs: Dict[str, Any]) -> None:
+            def only_when_enabled_wrapper(self: SimpleManagedEntity, *args, **kwargs):
                 if not self._enabled:
                     if when_not_enabled is not None:
                         when_not_enabled()
