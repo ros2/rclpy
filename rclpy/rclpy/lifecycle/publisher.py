@@ -12,41 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
+from typing import Union
 
-from typing import Generic, Tuple, Type, TYPE_CHECKING, TypedDict, Union
-
-from rclpy.callback_groups import CallbackGroup
-from rclpy.event_handler import PublisherEventCallbacks
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.publisher import Publisher
-from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
 
 from .managed_entity import SimpleManagedEntity
 
-if TYPE_CHECKING:
-    from typing import TypeAlias, Unpack
-    LifecyclePublisherArgs: TypeAlias = Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile,
-                                              PublisherEventCallbacks, CallbackGroup]
 
-    class LifecyclePublisherKWArgs(TypedDict, Generic[MsgT]):
-        publisher_impl: _rclpy.Publisher[MsgT]
-        msg_type: Type[MsgT]
-        topic: str
-        qos_profile: QoSProfile
-        event_callbacks: PublisherEventCallbacks
-        callback_group: CallbackGroup
-
-
-class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
+class LifecyclePublisher(SimpleManagedEntity, Publisher):
     """Managed publisher entity."""
 
-    def __init__(
-        self,
-        *args: 'Unpack[LifecyclePublisherArgs]',
-        **kwargs: 'Unpack[LifecyclePublisherKWArgs[MsgT]]'
-    ) -> None:
+    def __init__(self, *args, **kwargs):
         SimpleManagedEntity.__init__(self)
         Publisher.__init__(self, *args, **kwargs)
 

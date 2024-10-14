@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from enum import Enum, IntEnum
 from types import TracebackType
-from typing import Any, Generic, Literal, overload, Sequence, TypeAlias, TypedDict
+from typing import Any, Generic, Literal, overload, Sequence, TypedDict
 
 from rclpy.clock import JumpHandle
 from rclpy.clock_type import ClockType
@@ -101,23 +101,21 @@ class rcl_duration_t:
     nanoseconds: int
 
 
-class rcl_subscription_event_type_t(Enum):
-    _value_: int
-    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED = ...
-    RCL_SUBSCRIPTION_LIVELINESS_CHANGED = ...
-    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = ...
-    RCL_SUBSCRIPTION_MESSAGE_LOST = ...
-    RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE = ...
-    RCL_SUBSCRIPTION_MATCHED = ...
+class rcl_subscription_event_type_t(IntEnum):
+    RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED: int
+    RCL_SUBSCRIPTION_LIVELINESS_CHANGED: int
+    RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS: int
+    RCL_SUBSCRIPTION_MESSAGE_LOST: int
+    RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE: int
+    RCL_SUBSCRIPTION_MATCHED: int
 
 
-class rcl_publisher_event_type_t(Enum):
-    _value_: int
-    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED = ...
-    RCL_PUBLISHER_LIVELINESS_LOST = ...
-    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS = ...
-    RCL_PUBLISHER_INCOMPATIBLE_TYPE = ...
-    RCL_PUBLISHER_MATCHED = ...
+class rcl_publisher_event_type_t(IntEnum):
+    RCL_PUBLISHER_OFFERED_DEADLINE_MISSED: int
+    RCL_PUBLISHER_LIVELINESS_LOST: int
+    RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS: int
+    RCL_PUBLISHER_INCOMPATIBLE_TYPE: int
+    RCL_PUBLISHER_MATCHED: int
 
 
 class EventHandle(Destroyable):
@@ -135,73 +133,6 @@ class EventHandle(Destroyable):
 
     def take_event(self) -> Any | None:
         """Get pending data from a ready event."""
-
-
-LifecycleStateMachineState: TypeAlias = tuple[int, str]
-
-
-class LifecycleStateMachine(Destroyable):
-
-    def __init__(self, node: Node, enable_com_interface: bool) -> None: ...
-
-    @property
-    def initialized(self) -> bool:
-        """Check if state machine is initialized."""
-
-    @property
-    def current_state(self) -> LifecycleStateMachineState:
-        """Get the current state machine state."""
-
-    @property
-    def available_states(self) -> list[LifecycleStateMachineState]:
-        """Get the available states."""
-
-    @property
-    def available_transitions(self) -> list[tuple[int, str, int, str, int, str]]:
-        """Get the available transitions."""
-
-    @property
-    def transition_graph(self) -> list[tuple[int, str, int, str, int, str]]:
-        """Get the transition graph."""
-
-    def get_transition_by_label(self, label: str) -> int:
-        """Get the transition id from a transition label."""
-
-    def trigger_transition_by_id(self, transition_id: int, publish_update: bool) -> None:
-        """Trigger a transition by transition id."""
-
-    def trigger_transition_by_label(self, label: str, publish_update: bool) -> None:
-        """Trigger a transition by label."""
-
-    @property
-    def service_change_state(self) -> Service:
-        """Get the change state service."""
-
-    @property
-    def service_get_state(self) -> Service:
-        """Get the get state service."""
-
-    @property
-    def service_get_available_states(self) -> Service:
-        """Get the get available states service."""
-
-    @property
-    def service_get_available_transitions(self) -> Service:
-        """Get the get available transitions service."""
-
-    @property
-    def service_get_transition_graph(self) -> Service:
-        """Get the get transition graph service."""
-
-
-class TransitionCallbackReturnType(Enum):
-    _value_: int
-    SUCCESS = ...
-    FAILURE = ...
-    ERROR = ...
-
-    def to_label(self) -> str:
-        """Convert the transition callback return code to a transition label."""
 
 
 class GuardCondition(Destroyable):
