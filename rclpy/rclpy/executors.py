@@ -322,14 +322,14 @@ class Executor(ContextManager['Executor']):
 
         if timeout_sec is None or timeout_sec < 0:
             while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once_until_future_complete(future, timeout_sec)
+                self._spin_once_until_future_complete(future, timeout_sec)
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = TimeoutObject(timeout_sec)
 
             while self._context.ok() and not future.done() and not self._is_shutdown:
-                self.spin_once_until_future_complete(future, timeout_left)
+                self._spin_once_until_future_complete(future, timeout_left)
                 now = time.monotonic()
 
                 if now >= end:
@@ -365,6 +365,13 @@ class Executor(ContextManager['Executor']):
         :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
+        raise NotImplementedError()
+
+    def _spin_once_until_future_complete(
+        self,
+        future: Future,
+        timeout_sec: Optional[Union[float, TimeoutObject]] = None
+    ) -> None:
         raise NotImplementedError()
 
     def _take_timer(self, tmr):
@@ -852,13 +859,20 @@ class SingleThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
 
+    def _spin_once_until_future_complete(
+        self,
+        future: Future,
+        timeout_sec: Optional[Union[float, TimeoutObject]] = None
+    ) -> None:
+        self._spin_once_impl(timeout_sec, future.done)
+
     def spin_once_until_future_complete(
         self,
         future: Future,
         timeout_sec: Optional[Union[float, TimeoutObject]] = None
     ) -> None:
         future.add_done_callback(lambda x: self.wake())
-        self._spin_once_impl(timeout_sec, future.done)
+        self._spin_once_until_future_complete(future, timeout_sec)
 
 
 class MultiThreadedExecutor(Executor):
@@ -924,13 +938,20 @@ class MultiThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
 
+    def _spin_once_until_future_complete(
+        self,
+        future: Future,
+        timeout_sec: Optional[Union[float, TimeoutObject]] = None
+    ) -> None:
+        self._spin_once_impl(timeout_sec, future.done)
+
     def spin_once_until_future_complete(
         self,
         future: Future,
         timeout_sec: Optional[Union[float, TimeoutObject]] = None
     ) -> None:
         future.add_done_callback(lambda x: self.wake())
-        self._spin_once_impl(timeout_sec, future.done)
+        self._spin_once_until_future_complete(future, timeout_sec)
 
     def shutdown(
         self,
