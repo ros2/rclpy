@@ -16,6 +16,7 @@ import unittest
 import warnings
 
 from rclpy.duration import Duration
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import InvalidQoSProfileException
 from rclpy.qos import qos_check_compatible
 from rclpy.qos import qos_profile_system_default
@@ -187,8 +188,12 @@ class TestCheckQosCompatibility(unittest.TestCase):
             pub_qos, sub_qos
         )
 
-        assert compatibility == QoSCompatibility.ERROR
-        assert reason != ''
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
+            assert compatibility == QoSCompatibility.ERROR
+            assert reason != ''
+        else:
+            assert compatibility == QoSCompatibility.OK
+            assert reason == ''
 
     def test_warn_of_possible_incompatibility(self) -> None:
         """
@@ -206,5 +211,9 @@ class TestCheckQosCompatibility(unittest.TestCase):
             pub_qos, sub_qos
         )
 
-        assert compatibility == QoSCompatibility.WARNING
-        assert reason != ''
+        if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
+            assert compatibility == QoSCompatibility.WARNING
+            assert reason != ''
+        else:
+            assert compatibility == QoSCompatibility.OK
+            assert reason == ''
