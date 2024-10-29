@@ -21,7 +21,7 @@ from rclpy.validate_full_topic_name import validate_full_topic_name
 
 class TestValidateFullTopicName(unittest.TestCase):
 
-    def test_validate_full_topic_name(self):
+    def test_validate_full_topic_name(self) -> None:
         tests = [
             '/chatter',
             '/node_name/chatter',
@@ -31,7 +31,7 @@ class TestValidateFullTopicName(unittest.TestCase):
             # Will raise if invalid
             validate_full_topic_name(topic)
 
-    def test_validate_full_topic_name_failures(self):
+    def test_validate_full_topic_name_failures(self) -> None:
         # topic name may not contain '?'
         with self.assertRaisesRegex(InvalidTopicNameException, 'must not contain characters'):
             validate_full_topic_name('/invalid_topic?')
@@ -39,7 +39,7 @@ class TestValidateFullTopicName(unittest.TestCase):
         with self.assertRaisesRegex(InvalidTopicNameException, 'must be absolute'):
             validate_full_topic_name('invalid_topic')
 
-    def test_validate_full_topic_name_failures_services(self):
+    def test_validate_full_topic_name_failures_services(self) -> None:
         # service name may not contain '?'
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not contain characters'):
             validate_full_topic_name('/invalid_service?', is_service=True)

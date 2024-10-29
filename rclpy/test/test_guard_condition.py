@@ -35,10 +35,10 @@ class TestGuardCondition(unittest.TestCase):
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
 
-    def test_trigger(self):
+    def test_trigger(self) -> None:
         called = False
 
-        def func():
+        def func() -> None:
             nonlocal called
             called = True
 
@@ -53,15 +53,15 @@ class TestGuardCondition(unittest.TestCase):
 
         self.node.destroy_guard_condition(gc)
 
-    def test_double_trigger(self):
+    def test_double_trigger(self) -> None:
         called1 = False
         called2 = False
 
-        def func1():
+        def func1() -> None:
             nonlocal called1
             called1 = True
 
-        def func2():
+        def func2() -> None:
             nonlocal called2
             called2 = True
 

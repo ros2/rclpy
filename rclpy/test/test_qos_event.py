@@ -41,14 +41,14 @@ from test_msgs.msg import Empty as EmptyMsg
 class TestQoSEvent(unittest.TestCase):
     topic_name = 'test_topic'
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.context = rclpy.context.Context()
         rclpy.init(context=self.context)
         self.node = rclpy.create_node('TestQoSEvent',
                                       namespace='/rclpy/test',
                                       context=self.context)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         # These tests create a bunch of events by hand instead of using Node APIs,
         # so they won't be cleaned up when calling `node.destroy_node()`, but they could still
         # keep the node alive from one test to the next.
@@ -57,7 +57,7 @@ class TestQoSEvent(unittest.TestCase):
         self.node.destroy_node()
         rclpy.shutdown(context=self.context)
 
-    def test_publisher_constructor(self):
+    def test_publisher_constructor(self) -> None:
         callbacks = PublisherEventCallbacks()
         liveliness_callback = Mock()
         deadline_callback = Mock()
@@ -99,7 +99,7 @@ class TestQoSEvent(unittest.TestCase):
             self.assertEqual(len(publisher.event_handlers), 4)
             self.node.destroy_publisher(publisher)
 
-    def test_subscription_constructor(self):
+    def test_subscription_constructor(self) -> None:
         callbacks = SubscriptionEventCallbacks()
         liveliness_callback = Mock()
         deadline_callback = Mock()
@@ -143,7 +143,7 @@ class TestQoSEvent(unittest.TestCase):
             self.assertEqual(len(subscription.event_handlers), 4)
             self.node.destroy_subscription(subscription)
 
-    def test_default_incompatible_qos_callbacks(self):
+    def test_default_incompatible_qos_callbacks(self) -> None:
         original_logger = rclpy.logging._root_logger
 
         pub_log_msg = None
@@ -208,7 +208,7 @@ class TestQoSEvent(unittest.TestCase):
         handle = self._create_event_handle(parent_entity, event_type)
         handle.destroy_when_not_in_use()
 
-    def test_publisher_event_create_destroy(self):
+    def test_publisher_event_create_destroy(self) -> None:
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
 
         if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
@@ -222,7 +222,7 @@ class TestQoSEvent(unittest.TestCase):
             publisher, QoSPublisherEventType.RCL_PUBLISHER_MATCHED)
         self.node.destroy_publisher(publisher)
 
-    def test_subscription_event_create_destroy(self):
+    def test_subscription_event_create_destroy(self) -> None:
         message_callback = Mock()
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10)
@@ -237,7 +237,7 @@ class TestQoSEvent(unittest.TestCase):
             subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED)
         self.node.destroy_subscription(subscription)
 
-    def test_call_publisher_rclpy_event_apis(self):
+    def test_call_publisher_rclpy_event_apis(self) -> None:
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
@@ -305,7 +305,7 @@ class TestQoSEvent(unittest.TestCase):
 
         self.node.destroy_publisher(publisher)
 
-    def test_call_subscription_rclpy_event_apis(self):
+    def test_call_subscription_rclpy_event_apis(self) -> None:
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         subscription = self.node.create_subscription(EmptyMsg, self.topic_name, Mock(), 10)
@@ -375,7 +375,7 @@ class TestQoSEvent(unittest.TestCase):
 
         self.node.destroy_subscription(subscription)
 
-    def test_call_publisher_rclpy_event_matched(self):
+    def test_call_publisher_rclpy_event_matched(self) -> None:
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 2, self.context.handle)
@@ -422,7 +422,7 @@ class TestQoSEvent(unittest.TestCase):
         self.assertEqual(matched_status.current_count, 0)
         self.assertEqual(matched_status.current_count_change, -1)
 
-    def test_call_subscription_rclpy_event_matched_unmatched(self):
+    def test_call_subscription_rclpy_event_matched_unmatched(self) -> None:
         message_callback = Mock()
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10)
