@@ -87,7 +87,7 @@ class TestActionGraph(unittest.TestCase):
             end = time.monotonic()
         assert len(nat) == expected_num_names
 
-    def test_get_action_client_names_and_types_by_node(self):
+    def test_get_action_client_names_and_types_by_node(self) -> None:
         self.get_names_and_types(
             get_action_client_names_and_types_by_node,
             self.node1,
@@ -128,7 +128,7 @@ class TestActionGraph(unittest.TestCase):
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION0 in [name20, name21]
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION1 in [name20, name21]
 
-    def test_get_action_server_names_and_types_by_node(self):
+    def test_get_action_server_names_and_types_by_node(self) -> None:
         self.get_names_and_types(
             get_action_server_names_and_types_by_node,
             self.node1,
@@ -170,7 +170,7 @@ class TestActionGraph(unittest.TestCase):
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION0 in [name20, name21]
         assert TEST_NAMESPACE2 + '/' + TEST_ACTION1 in [name20, name21]
 
-    def test_get_action_names_and_types(self):
+    def test_get_action_names_and_types(self) -> None:
         names_and_types = self.get_names_and_types(
             get_action_names_and_types,
             self.node0,
