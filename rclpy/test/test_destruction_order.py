@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 
 
-def test_destruction_order():
+def test_destruction_order() -> None:
     context = rclpy.context.Context()
     rclpy.init(context=context)
     node1 = Node('test_destruction_order_node_1', context=context)

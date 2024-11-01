@@ -89,6 +89,7 @@ from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.type_support import MsgT
 from rclpy.type_support import Srv
+from rclpy.type_support import SrvEventT
 from rclpy.type_support import SrvRequestT
 from rclpy.type_support import SrvResponseT
 from rclpy.utilities import get_default_context
@@ -174,8 +175,8 @@ class Node:
         self._parameters: Dict[str, Parameter[Any]] = {}
         self._publishers: List[Publisher[Any]] = []
         self._subscriptions: List[Subscription[Any]] = []
-        self._clients: List[Client[Any, Any]] = []
-        self._services: List[Service[Any, Any]] = []
+        self._clients: List[Client[Any, Any, Any]] = []
+        self._services: List[Service[Any, Any, Any]] = []
         self._timers: List[Timer] = []
         self._guards: List[GuardCondition] = []
         self.__waitables: List[Waitable[Any]] = []
@@ -271,12 +272,12 @@ class Node:
         yield from self._subscriptions
 
     @property
-    def clients(self) -> Iterator[Client[Any, Any]]:
+    def clients(self) -> Iterator[Client[Any, Any, Any]]:
         """Get clients that have been created on this node."""
         yield from self._clients
 
     @property
-    def services(self) -> Iterator[Service[Any, Any]]:
+    def services(self) -> Iterator[Service[Any, Any, Any]]:
         """Get services that have been created on this node."""
         yield from self._services
 
@@ -1737,12 +1738,12 @@ class Node:
 
     def create_client(
         self,
-        srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
-    ) -> Client[SrvRequestT, SrvResponseT]:
+    ) -> Client[SrvRequestT, SrvResponseT, SrvEventT]:
         """
         Create a new service client.
 
@@ -1779,13 +1780,13 @@ class Node:
 
     def create_service(
         self,
-        srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
+        srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
-    ) -> Service[SrvRequestT, SrvResponseT]:
+    ) -> Service[SrvRequestT, SrvResponseT, SrvEventT]:
         """
         Create a new service server.
 
@@ -1939,7 +1940,7 @@ class Node:
             return True
         return False
 
-    def destroy_client(self, client: Client[Any, Any]) -> bool:
+    def destroy_client(self, client: Client[Any, Any, Any]) -> bool:
         """
         Destroy a service client created by the node.
 
@@ -1955,7 +1956,7 @@ class Node:
             return True
         return False
 
-    def destroy_service(self, service: Service[Any, Any]) -> bool:
+    def destroy_service(self, service: Service[Any, Any, Any]) -> bool:
         """
         Destroy a service server created by the node.
 

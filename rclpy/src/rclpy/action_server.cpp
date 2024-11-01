@@ -400,7 +400,7 @@ define_action_server(py::object module)
     "Send an action cancel response.")
   .def(
     "publish_feedback", &ActionServer::publish_feedback,
-    "Publish a feedback message from a given action server.")
+    " Publish a feedback message from a given action server.")
   .def(
     "publish_status", &ActionServer::publish_status,
     "Publish a status message from a given action server.")
@@ -424,7 +424,7 @@ define_action_server(py::object module)
     "Check if an action entity has any ready wait set entities.")
   .def(
     "add_to_waitset", &ActionServer::add_to_waitset,
-    "Add an action entity to a wait set.");
+    "Add an action entitiy to a wait set.");
 }
 
 }  // namespace rclpy

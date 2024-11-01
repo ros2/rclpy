@@ -15,7 +15,7 @@
 from rclpy.context import Context
 
 
-def test_on_shutdown_method():
+def test_on_shutdown_method() -> None:
     context = Context()
     context.init()
     assert context.ok()
@@ -24,7 +24,7 @@ def test_on_shutdown_method():
 
     class SomeClass:
 
-        def on_shutdown(self):
+        def on_shutdown(self) -> None:
             nonlocal callback_called
             callback_called = True
 
@@ -37,14 +37,14 @@ def test_on_shutdown_method():
     assert callback_called
 
 
-def test_on_shutdown_function():
+def test_on_shutdown_function() -> None:
     context = Context()
     context.init()
     assert context.ok()
 
     callback_called = False
 
-    def on_shutdown():
+    def on_shutdown() -> None:
         nonlocal callback_called
         callback_called = True
 
@@ -56,7 +56,7 @@ def test_on_shutdown_function():
     assert callback_called
 
 
-def test_context_manager():
+def test_context_manager() -> None:
     context = Context()
 
     assert not context.ok(), 'the context should not be ok() before init() is called'

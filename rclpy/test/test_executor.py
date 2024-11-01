@@ -31,12 +31,12 @@ from test_msgs.srv import Empty
 
 class TestExecutor(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.context = rclpy.context.Context()
         rclpy.init(context=self.context)
         self.node = rclpy.create_node('TestExecutor', namespace='/rclpy', context=self.context)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.node.destroy_node()
         rclpy.shutdown(context=self.context)
         self.context.destroy()
@@ -44,7 +44,7 @@ class TestExecutor(unittest.TestCase):
     def func_execution(self, executor):
         got_callback = False
 
-        def timer_callback():
+        def timer_callback() -> None:
             nonlocal got_callback
             got_callback = True
 
@@ -59,7 +59,7 @@ class TestExecutor(unittest.TestCase):
         self.node.destroy_timer(tmr)
         return got_callback
 
-    def test_single_threaded_executor_executes(self):
+    def test_single_threaded_executor_executes(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         try:
@@ -67,13 +67,13 @@ class TestExecutor(unittest.TestCase):
         finally:
             executor.shutdown()
 
-    def test_executor_immediate_shutdown(self):
+    def test_executor_immediate_shutdown(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         try:
             got_callback = False
 
-            def timer_callback():
+            def timer_callback() -> None:
                 nonlocal got_callback
                 got_callback = True
 
@@ -94,7 +94,7 @@ class TestExecutor(unittest.TestCase):
         finally:
             executor.shutdown()
 
-    def test_shutdown_executor_before_waiting_for_callbacks(self):
+    def test_shutdown_executor_before_waiting_for_callbacks(self) -> None:
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             executor = cls(context=self.context)
@@ -102,7 +102,7 @@ class TestExecutor(unittest.TestCase):
             with self.assertRaises(ShutdownException):
                 executor.wait_for_ready_callbacks()
 
-    def test_shutdown_exception_from_callback_generator(self):
+    def test_shutdown_exception_from_callback_generator(self) -> None:
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             executor = cls(context=self.context)
@@ -111,13 +111,13 @@ class TestExecutor(unittest.TestCase):
             with self.assertRaises(ShutdownException):
                 next(cb_generator)
 
-    def test_remove_node(self):
+    def test_remove_node(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
 
         got_callback = False
 
-        def timer_callback():
+        def timer_callback() -> None:
             nonlocal got_callback
             got_callback = True
 
@@ -134,7 +134,7 @@ class TestExecutor(unittest.TestCase):
 
         assert not got_callback
 
-    def test_multi_threaded_executor_num_threads(self):
+    def test_multi_threaded_executor_num_threads(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
         # check default behavior, either platform configuration or defaults to 2
@@ -160,7 +160,7 @@ class TestExecutor(unittest.TestCase):
             assert len(w) == 1
             assert issubclass(w[0].category, UserWarning)
 
-    def test_multi_threaded_executor_executes(self):
+    def test_multi_threaded_executor_executes(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(context=self.context)
         try:
@@ -168,7 +168,7 @@ class TestExecutor(unittest.TestCase):
         finally:
             executor.shutdown()
 
-    def test_multi_threaded_executor_closes_threads(self):
+    def test_multi_threaded_executor_closes_threads(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
         def get_threads():
@@ -186,13 +186,13 @@ class TestExecutor(unittest.TestCase):
             executor.shutdown(wait_for_threads=True)
             self.assertTrue(main_thread_name == get_threads())
 
-    def test_add_node_to_executor(self):
+    def test_add_node_to_executor(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
         self.assertIn(self.node, executor.get_nodes())
 
-    def test_executor_spin_non_blocking(self):
+    def test_executor_spin_non_blocking(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -201,7 +201,7 @@ class TestExecutor(unittest.TestCase):
         end = time.monotonic()
         self.assertLess(start - end, 0.001)
 
-    def test_execute_coroutine_timer(self):
+    def test_execute_coroutine_timer(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -209,7 +209,7 @@ class TestExecutor(unittest.TestCase):
         called1 = False
         called2 = False
 
-        async def coroutine():
+        async def coroutine() -> None:
             nonlocal called1
             nonlocal called2
             called1 = True
@@ -229,7 +229,7 @@ class TestExecutor(unittest.TestCase):
         finally:
             self.node.destroy_timer(tmr)
 
-    def test_execute_coroutine_guard_condition(self):
+    def test_execute_coroutine_guard_condition(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -237,7 +237,7 @@ class TestExecutor(unittest.TestCase):
         called1 = False
         called2 = False
 
-        async def coroutine():
+        async def coroutine() -> None:
             nonlocal called1
             nonlocal called2
             called1 = True
@@ -258,7 +258,7 @@ class TestExecutor(unittest.TestCase):
         finally:
             self.node.destroy_guard_condition(gc)
 
-    def test_create_task_coroutine(self):
+    def test_create_task_coroutine(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -273,7 +273,7 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
 
-    def test_create_task_normal_function(self):
+    def test_create_task_normal_function(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -288,7 +288,7 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
 
-    def test_create_task_fifo_order(self):
+    def test_create_task_fifo_order(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -314,7 +314,7 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future2.done())
         self.assertEqual('Sentinel Result 2', future2.result())
 
-    def test_create_task_dependent_coroutines(self):
+    def test_create_task_dependent_coroutines(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -344,7 +344,7 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future1.done())
         self.assertEqual('Sentinel Result 1', future1.result())
 
-    def test_create_task_during_spin(self):
+    def test_create_task_during_spin(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -382,12 +382,12 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
 
-    def test_global_executor_completes_async_task(self):
+    def test_global_executor_completes_async_task(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
         class TriggerAwait:
 
-            def __init__(self):
+            def __init__(self) -> None:
                 self.do_yield = True
 
             def __await__(self):
@@ -399,7 +399,7 @@ class TestExecutor(unittest.TestCase):
         did_callback = False
         did_return = False
 
-        async def timer_callback():
+        async def timer_callback() -> None:
             nonlocal trigger, did_callback, did_return
             did_callback = True
             await trigger
@@ -416,7 +416,7 @@ class TestExecutor(unittest.TestCase):
         rclpy.spin_once(self.node, timeout_sec=0, executor=executor)
         self.assertTrue(did_return)
 
-    def test_executor_add_node(self):
+    def test_executor_add_node(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         assert executor.add_node(self.node)
@@ -424,12 +424,12 @@ class TestExecutor(unittest.TestCase):
         assert not executor.add_node(self.node)
         assert id(executor) == id(self.node.executor)
 
-    def test_executor_spin_until_future_complete_timeout(self):
+    def test_executor_spin_until_future_complete_timeout(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        def timer_callback():
+        def timer_callback() -> None:
             pass
         timer = self.node.create_timer(0.003, timer_callback)
 
@@ -446,12 +446,12 @@ class TestExecutor(unittest.TestCase):
 
         timer.cancel()
 
-    def test_executor_spin_until_future_complete_future_done(self):
+    def test_executor_spin_until_future_complete_future_done(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        def timer_callback():
+        def timer_callback() -> None:
             pass
         timer = self.node.create_timer(0.003, timer_callback)
 
@@ -487,12 +487,12 @@ class TestExecutor(unittest.TestCase):
 
         timer.cancel()
 
-    def test_executor_spin_until_future_complete_do_not_wait(self):
+    def test_executor_spin_until_future_complete_do_not_wait(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        def timer_callback():
+        def timer_callback() -> None:
             pass
         timer = self.node.create_timer(0.003, timer_callback)
 
@@ -504,11 +504,11 @@ class TestExecutor(unittest.TestCase):
 
         timer.cancel()
 
-    def test_executor_add_node_wakes_executor(self):
+    def test_executor_add_node_wakes_executor(self) -> None:
         self.assertIsNotNone(self.node.handle)
         got_callback = False
 
-        def timer_callback():
+        def timer_callback() -> None:
             nonlocal got_callback
             got_callback = True
 
@@ -532,14 +532,14 @@ class TestExecutor(unittest.TestCase):
             executor.shutdown()
             self.node.destroy_timer(tmr)
 
-    def shutdown_executor_from_callback(self):
+    def shutdown_executor_from_callback(self) -> None:
         """https://github.com/ros2/rclpy/issues/944: allow for executor shutdown from callback."""
         self.assertIsNotNone(self.node.handle)
         timer_period = 0.1
         executor = SingleThreadedExecutor(context=self.context)
         shutdown_event = threading.Event()
 
-        def timer_callback():
+        def timer_callback() -> None:
             nonlocal shutdown_event, executor
             executor.shutdown()
             shutdown_event.set()
@@ -551,7 +551,7 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(shutdown_event.wait(120))
         self.node.destroy_timer(tmr)
 
-    def test_context_manager(self):
+    def test_context_manager(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
         executor: Executor = SingleThreadedExecutor(context=self.context)
@@ -567,7 +567,7 @@ class TestExecutor(unittest.TestCase):
         # Make sure it does not raise (smoke test)
         executor.shutdown()
 
-    def test_single_threaded_spin_once_until_future(self):
+    def test_single_threaded_spin_once_until_future(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
 
@@ -595,7 +595,7 @@ class TestExecutor(unittest.TestCase):
 
         executor.shutdown()
 
-    def test_multi_threaded_spin_once_until_future(self):
+    def test_multi_threaded_spin_once_until_future(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(context=self.context)
 
@@ -623,7 +623,7 @@ class TestExecutor(unittest.TestCase):
 
         executor.shutdown()
 
-    def test_not_lose_callback(self):
+    def test_not_lose_callback(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
 
@@ -632,7 +632,7 @@ class TestExecutor(unittest.TestCase):
         cli = self.node.create_client(
             srv_type=Empty, srv_name='test_service', callback_group=callback_group)
 
-        async def timer1_callback():
+        async def timer1_callback() -> None:
             timer1.cancel()
             await cli.call_async(Empty.Request())
 
@@ -640,7 +640,7 @@ class TestExecutor(unittest.TestCase):
 
         count = 0
 
-        def timer2_callback():
+        def timer2_callback() -> None:
             nonlocal count
             count += 1
         timer2 = self.node.create_timer(1.5, timer2_callback, callback_group)

@@ -31,7 +31,7 @@ from rclpy.publisher import Publisher
 from test_msgs.msg import BasicTypes
 
 
-def test_lifecycle_node_init():
+def test_lifecycle_node_init() -> None:
     rclpy.init()
     node = LifecycleNode('test_lifecycle_node_init_1')
     assert node
@@ -55,7 +55,7 @@ def test_lifecycle_node_init():
         LifecycleNode('test_lifecycle_node_init_3', enable_communication_interface='asd')
 
 
-def test_lifecycle_state_transitions():
+def test_lifecycle_state_transitions() -> None:
     node = LifecycleNode(
         'test_lifecycle_state_transitions_1', enable_communication_interface=False)
     # normal transitions
@@ -153,7 +153,7 @@ def test_lifecycle_services(request):
     thread = Thread(target=executor.spin)
     thread.start()
 
-    def cleanup():
+    def cleanup() -> None:
         # Stop executor and join thread.
         # This cleanup is run even if an assertion fails.
         executor.shutdown()
@@ -193,7 +193,7 @@ def test_lifecycle_services(request):
     }
 
 
-def test_lifecycle_publisher():
+def test_lifecycle_publisher() -> None:
     node = LifecycleNode('test_lifecycle_publisher', enable_communication_interface=False)
     with mock.patch.object(Publisher, 'publish') as mock_publish:
         pub = node.create_lifecycle_publisher(BasicTypes, 'test_lifecycle_publisher_topic', 10)

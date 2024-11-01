@@ -21,7 +21,7 @@ from rclpy.topic_endpoint_info import TopicEndpointInfo, TopicEndpointTypeEnum
 
 class TestQosProfile(unittest.TestCase):
 
-    def test_node_name_only_constructor(self):
+    def test_node_name_only_constructor(self) -> None:
         test_node_name = 'test_string'
 
         info_for_ref = TopicEndpointInfo()
@@ -32,7 +32,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(info_for_ref, info_from_ctor)
         self.assertEqual(test_node_name, info_from_ctor.node_name)
 
-    def test_node_namespace_only_constructor(self):
+    def test_node_namespace_only_constructor(self) -> None:
         test_node_namespace = 'test_string'
 
         info_for_ref = TopicEndpointInfo()
@@ -43,7 +43,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(info_for_ref, info_from_ctor)
         self.assertEqual(test_node_namespace, info_from_ctor.node_namespace)
 
-    def test_topic_type_only_constructor(self):
+    def test_topic_type_only_constructor(self) -> None:
         test_topic_type = 'test_string'
 
         info_for_ref = TopicEndpointInfo()
@@ -54,7 +54,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(info_for_ref, info_from_ctor)
         self.assertEqual(test_topic_type, info_from_ctor.topic_type)
 
-    def test_endpoint_type_only_constructor(self):
+    def test_endpoint_type_only_constructor(self) -> None:
         test_endpoint_type = TopicEndpointTypeEnum.SUBSCRIPTION
 
         info_for_ref = TopicEndpointInfo()
@@ -65,7 +65,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(info_for_ref, info_from_ctor)
         self.assertEqual(test_endpoint_type, info_from_ctor.endpoint_type)
 
-    def test_endpoint_gid_only_constructor(self):
+    def test_endpoint_gid_only_constructor(self) -> None:
         test_endpoint_gid = [0, 0, 0, 0, 0]
 
         info_for_ref = TopicEndpointInfo()
@@ -76,7 +76,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(info_for_ref, info_from_ctor)
         self.assertEqual(test_endpoint_gid, info_from_ctor.endpoint_gid)
 
-    def test_qos_profile_only_constructor(self):
+    def test_qos_profile_only_constructor(self) -> None:
         c_qos_profile = _rclpy.rmw_qos_profile_t.predefined('qos_profile_default')
         test_qos_profile = QoSProfile(**c_qos_profile.to_dict())
 
@@ -88,7 +88,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(info_for_ref, info_from_ctor)
         self.assertEqual(test_qos_profile, info_from_ctor.qos_profile)
 
-    def test_print(self):
+    def test_print(self) -> None:
         actual_info_str = str(TopicEndpointInfo())
         expected_info_str = 'Node name: \n' \
             'Node namespace: \n' \

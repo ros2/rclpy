@@ -74,7 +74,7 @@ class TestClient(unittest.TestCase):
         print(rclpy_node.get_name() + ': rclpy_node exit')
 #        rclpy_node.destroy_node()
 
-    def test_wait_for_service_5sec(self):
+    def test_wait_for_service_5sec(self) -> None:
         cli = self.node.create_client(GetParameters, 'get/parameters')
         try:
             start = time.monotonic()
@@ -85,7 +85,7 @@ class TestClient(unittest.TestCase):
         finally:
             self.node.destroy_client(cli)
 
-    def test_wait_for_service_nowait(self):
+    def test_wait_for_service_nowait(self) -> None:
         cli = self.node.create_client(GetParameters, 'get/parameters')
         try:
             start = time.monotonic()
@@ -96,7 +96,7 @@ class TestClient(unittest.TestCase):
         finally:
             self.node.destroy_client(cli)
 
-    def test_wait_for_service_exists(self):
+    def test_wait_for_service_exists(self) -> None:
         cli = self.node.create_client(GetParameters, 'test_wfs_exists')
         srv = self.node.create_service(GetParameters, 'test_wfs_exists', lambda request: None)
         try:
@@ -109,7 +109,7 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
-    def test_concurrent_calls_to_service(self):
+    def test_concurrent_calls_to_service(self) -> None:
         cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(
             GetParameters, 'get/parameters',
@@ -130,7 +130,7 @@ class TestClient(unittest.TestCase):
     @unittest.skipIf(
         get_rmw_implementation_identifier() == 'rmw_connextdds' and platform.system() == 'Windows',
         reason='Source timestamp not implemented for Connext on Windows')
-    def test_service_timestamps(self):
+    def test_service_timestamps(self) -> None:
         cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(
             GetParameters, 'get/parameters',
@@ -141,7 +141,7 @@ class TestClient(unittest.TestCase):
             for i in range(5):
                 with srv.handle:
                     result = srv.handle.service_take_request(srv.srv_type.Request)
-                if result is not None:
+                if result != (None, None):
                     request, header = result
                     self.assertTrue(header is not None)
                     self.assertNotEqual(0, header.source_timestamp)
@@ -153,7 +153,7 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
-    def test_different_type_raises(self):
+    def test_different_type_raises(self) -> None:
         cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(
             GetParameters, 'get/parameters',
@@ -172,7 +172,7 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
-    def test_get_service_name(self):
+    def test_get_service_name(self) -> None:
         test_service_name_list = [
             # test_service_name, namespace, cli_args for remap, expected service name
             # No namespaces
@@ -189,7 +189,7 @@ class TestClient(unittest.TestCase):
         ]
         TestClient.do_test_service_name(test_service_name_list)
 
-    def test_get_service_name_after_remapping(self):
+    def test_get_service_name_after_remapping(self) -> None:
         test_service_name_list = [
             ('service', None, ['--ros-args', '--remap', 'service:=new_service'], '/new_service'),
             ('service', 'ns', ['--ros-args', '--remap', 'service:=new_service'],
@@ -201,7 +201,7 @@ class TestClient(unittest.TestCase):
         ]
         TestClient.do_test_service_name(test_service_name_list)
 
-    def test_sync_call(self):
+    def test_sync_call(self) -> None:
         def _service(request, response):
             return response
         cli = self.node.create_client(GetParameters, 'get/parameters')
@@ -221,7 +221,7 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
-    def test_sync_call_timeout(self):
+    def test_sync_call_timeout(self) -> None:
         def _service(request, response):
             time.sleep(1)
             return response
@@ -242,7 +242,7 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
-    def test_sync_call_context_manager(self):
+    def test_sync_call_context_manager(self) -> None:
         def _service(request, response):
             return response
         with self.node.create_client(GetParameters, 'get/parameters') as cli:
