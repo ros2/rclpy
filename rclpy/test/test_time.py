@@ -24,7 +24,7 @@ from test_msgs.msg import Builtins
 
 class TestTime(unittest.TestCase):
 
-    def test_time_construction(self):
+    def test_time_construction(self) -> None:
         time = Time()
         assert time.nanoseconds == 0
 
@@ -44,7 +44,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             time = Time(clock_type='SYSTEM_TIME')
 
-    def test_duration_construction(self):
+    def test_duration_construction(self) -> None:
         duration = Duration()
         assert duration.nanoseconds == 0
 
@@ -68,7 +68,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(OverflowError):
             Duration(nanoseconds=-2**63 - 1)
 
-    def test_time_operators(self):
+    def test_time_operators(self) -> None:
         time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
 
         # Addition/subtraction of time and duration
@@ -113,7 +113,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             duration - time1
 
-    def test_time_comparators(self):
+    def test_time_comparators(self) -> None:
         # Times with the same clock type
         time1 = Time(nanoseconds=1)
         time2 = Time(nanoseconds=2)
@@ -159,7 +159,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             time1 <= duration
 
-    def test_duration_comparators(self):
+    def test_duration_comparators(self) -> None:
         duration1 = Duration(nanoseconds=1)
         duration2 = Duration(nanoseconds=2)
         self.assertFalse(duration1 == duration2)
@@ -188,7 +188,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             duration1 <= time
 
-    def test_time_message_conversions(self):
+    def test_time_message_conversions(self) -> None:
         time1 = Time(nanoseconds=1, clock_type=ClockType.ROS_TIME)
         builtins_msg = Builtins()
         builtins_msg.time_value = time1.to_msg()
@@ -201,7 +201,7 @@ class TestTime(unittest.TestCase):
         time3 = Time.from_msg(builtins_msg.time_value, clock_type=ClockType.SYSTEM_TIME)
         assert time3.clock_type == ClockType.SYSTEM_TIME
 
-    def test_time_message_conversions_big_nanoseconds(self):
+    def test_time_message_conversions_big_nanoseconds(self) -> None:
         time1 = Time(nanoseconds=1553575413247045598, clock_type=ClockType.ROS_TIME)
         builtins_msg = Builtins()
         builtins_msg.time_value = time1.to_msg()
@@ -211,7 +211,7 @@ class TestTime(unittest.TestCase):
         assert isinstance(time2, Time)
         assert time1 == time2
 
-    def test_duration_message_conversions(self):
+    def test_duration_message_conversions(self) -> None:
         duration = Duration(nanoseconds=1)
         builtins_msg = Builtins()
         builtins_msg.duration_value = duration.to_msg()
@@ -219,11 +219,11 @@ class TestTime(unittest.TestCase):
         assert isinstance(duration2, Duration)
         assert duration2.nanoseconds == 1
 
-    def test_seconds_nanoseconds(self):
+    def test_seconds_nanoseconds(self) -> None:
         assert (1, int(5e8)) == Time(seconds=1, nanoseconds=5e8).seconds_nanoseconds()
         assert (1, int(5e8)) == Time(seconds=0, nanoseconds=15e8).seconds_nanoseconds()
         assert (0, 0) == Time().seconds_nanoseconds()
 
-    def test_infinite_duration(self):
+    def test_infinite_duration(self) -> None:
         duration = Infinite
         assert str(duration) == 'Infinite'
