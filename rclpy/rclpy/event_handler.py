@@ -17,7 +17,6 @@ from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 import warnings
 
 import rclpy
@@ -27,9 +26,8 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
-
-if TYPE_CHECKING:
-    from typing import TypeAlias
+from typing_extensions import deprecated
+from typing_extensions import TypeAlias
 
 
 QoSPublisherEventType = _rclpy.rcl_publisher_event_type_t
@@ -75,7 +73,7 @@ IncompatibleTypeInfo = _rclpy.rmw_incompatible_type_status_t
 UnsupportedEventTypeError = _rclpy.UnsupportedEventTypeError
 
 
-EventHandlerData: 'TypeAlias' = Optional[Any]
+EventHandlerData: TypeAlias = Optional[Any]
 
 
 class EventHandler(Waitable[EventHandlerData]):
@@ -144,6 +142,8 @@ class EventHandler(Waitable[EventHandlerData]):
         self.__event.destroy_when_not_in_use()
 
 
+@deprecated('QoSEventHandler foo is deprecated, use EventHandler instead.',
+            category=DeprecationWarning, stacklevel=2)
 class QoSEventHandler(EventHandler):
 
     def __init_subclass__(cls, **kwargs):
