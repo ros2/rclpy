@@ -75,6 +75,7 @@ from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
+from rclpy.qos import qos_profile_system_default
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
@@ -139,6 +140,7 @@ class Node:
         namespace: Optional[str] = None,
         use_global_arguments: bool = True,
         enable_rosout: bool = True,
+        rosout_qos_profile: Optional[Union[QoSProfile, int]] = qos_profile_system_default,
         start_parameter_services: bool = True,
         parameter_overrides: Optional[List[Parameter[Any]]] = None,
         allow_undeclared_parameters: bool = False,
@@ -159,6 +161,10 @@ class Node:
         :param use_global_arguments: ``False`` if the node should ignore process-wide command line
             args.
         :param enable_rosout: ``False`` if the node should ignore rosout logging.
+        :param rosout_qos_profile: A QoSProfile or a history depth to apply to the rosout publisher.
+            In the case that a history depth is provided, the QoS history is set to KEEP_LAST
+            the QoS history depth is set to the value of the parameter,
+            and all other QoS settings are set to their default value.
         :param start_parameter_services: ``False`` if the node should not create parameter
             services.
         :param parameter_overrides: A list of overrides for initial values for parameters declared
@@ -196,6 +202,8 @@ class Node:
         if self._context.handle is None or not self._context.ok():
             raise NotInitializedException('cannot create node')
 
+        rosout_qos_profile = self._validate_qos_or_depth_parameter(rosout_qos_profile)
+
         with self._context.handle:
             try:
                 self.__node = _rclpy.Node(
@@ -204,7 +212,8 @@ class Node:
                     self._context.handle,
                     cli_args,
                     use_global_arguments,
-                    enable_rosout
+                    enable_rosout,
+                    rosout_qos_profile.get_c_qos_profile()
                 )
             except ValueError:
                 # these will raise more specific errors if the name or namespace is bad

@@ -45,6 +45,7 @@ public:
    * \param[in] pycli_args a sequence of command line arguments for just this node, or None
    * \param[in] use_global_arguments if true then the node will also use cli arguments on context
    * \param[in] enable rosout if true then enable rosout logging
+   * \param[in] rosout_qos_profile rmw_qos_profile_t object for rosout publisher.
    */
   Node(
     const char * node_name,
@@ -52,7 +53,8 @@ public:
     Context & context,
     py::object pycli_args,
     bool use_global_arguments,
-    bool enable_rosout);
+    bool enable_rosout,
+    py::object rosout_qos_profile);
 
   /// Get the fully qualified name of the node.
   /**

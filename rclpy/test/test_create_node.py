@@ -19,6 +19,7 @@ import rclpy
 from rclpy.exceptions import InvalidNamespaceException
 from rclpy.exceptions import InvalidNodeNameException
 from rclpy.parameter import Parameter
+from rclpy.qos import qos_profile_sensor_data
 
 
 class TestCreateNode(unittest.TestCase):
@@ -81,6 +82,29 @@ class TestCreateNode(unittest.TestCase):
                 Parameter('use_sim_time', Parameter.Type.BOOL, True)
             ]
         ).destroy_node()
+
+    def test_create_node_disable_rosout(self):
+        node_name = 'create_node_test_disable_rosout'
+        namespace = '/ns'
+        node = rclpy.create_node(
+            node_name, namespace=namespace, context=self.context, enable_rosout=False)
+        node.destroy_node()
+
+    def test_create_node_rosout_qos_profile(self):
+        node_name = 'create_node_test_rosout_rosout_qos_profile'
+        namespace = '/ns'
+        node = rclpy.create_node(
+            node_name, namespace=namespace, context=self.context, enable_rosout=True,
+            rosout_qos_profile=qos_profile_sensor_data)
+        node.destroy_node()
+
+    def test_create_node_rosout_qos_depth(self):
+        node_name = 'create_node_test_rosout_rosout_qos_depth'
+        namespace = '/ns'
+        node = rclpy.create_node(
+            node_name, namespace=namespace, context=self.context, enable_rosout=True,
+            rosout_qos_profile=10)
+        node.destroy_node()
 
 
 if __name__ == '__main__':
