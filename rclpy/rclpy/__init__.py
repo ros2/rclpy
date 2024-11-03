@@ -44,10 +44,13 @@ from types import TracebackType
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
 from typing import TYPE_CHECKING
 
 from rclpy.context import Context
 from rclpy.parameter import Parameter
+from rclpy.qos import QoSProfile
+from rclpy.qos import qos_profile_system_default
 from rclpy.signals import install_signal_handlers
 from rclpy.signals import SignalHandlerOptions
 from rclpy.signals import uninstall_signal_handlers
@@ -214,6 +217,7 @@ def create_node(
     namespace: Optional[str] = None,
     use_global_arguments: bool = True,
     enable_rosout: bool = True,
+    rosout_qos_profile: Optional[Union[QoSProfile, int]] = qos_profile_system_default,
     start_parameter_services: bool = True,
     parameter_overrides: Optional[List[Parameter]] = None,
     allow_undeclared_parameters: bool = False,
@@ -233,6 +237,10 @@ def create_node(
     :param use_global_arguments: ``False`` if the node should ignore process-wide command line
         arguments.
     :param enable_rosout: ``False`` if the node should ignore rosout logging.
+    :param rosout_qos_profile: A QoSProfile or a history depth to apply to rosout publisher.
+        In the case that a history depth is provided, the QoS history is set to KEEP_LAST,
+        the QoS history depth is set to the value of the parameter,
+        and all other QoS settings are set to their default values.
     :param start_parameter_services: ``False`` if the node should not create parameter services.
     :param parameter_overrides: A list of :class:`.Parameter` which are used to override the
         initial values of parameters declared on this node.
@@ -251,6 +259,7 @@ def create_node(
         node_name, context=context, cli_args=cli_args, namespace=namespace,
         use_global_arguments=use_global_arguments,
         enable_rosout=enable_rosout,
+        rosout_qos_profile=rosout_qos_profile,
         start_parameter_services=start_parameter_services,
         parameter_overrides=parameter_overrides,
         allow_undeclared_parameters=allow_undeclared_parameters,
