@@ -74,8 +74,8 @@ from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
-from rclpy.qos import QoSProfile
 from rclpy.qos import qos_profile_system_default
+from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
@@ -161,7 +161,7 @@ class Node:
         :param use_global_arguments: ``False`` if the node should ignore process-wide command line
             args.
         :param enable_rosout: ``False`` if the node should ignore rosout logging.
-        :param rosout_qos_profile: A QoSProfile or a history depth to apply to the rosout publisher.
+        :param rosout_qos_profile: A QoSProfile or a history depth to apply to rosout publisher.
             In the case that a history depth is provided, the QoS history is set to KEEP_LAST
             the QoS history depth is set to the value of the parameter,
             and all other QoS settings are set to their default value.

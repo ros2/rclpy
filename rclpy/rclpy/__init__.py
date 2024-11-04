@@ -44,13 +44,13 @@ from types import TracebackType
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import Union
 from typing import TYPE_CHECKING
+from typing import Union
 
 from rclpy.context import Context
 from rclpy.parameter import Parameter
-from rclpy.qos import QoSProfile
 from rclpy.qos import qos_profile_system_default
+from rclpy.qos import QoSProfile
 from rclpy.signals import install_signal_handlers
 from rclpy.signals import SignalHandlerOptions
 from rclpy.signals import uninstall_signal_handlers
