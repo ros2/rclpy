@@ -74,7 +74,7 @@ from rclpy.parameter_service import ParameterService
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_services_default
-from rclpy.qos import qos_profile_system_default
+from rclpy.qos import qos_profile_rosout_default
 from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
@@ -140,7 +140,7 @@ class Node:
         namespace: Optional[str] = None,
         use_global_arguments: bool = True,
         enable_rosout: bool = True,
-        rosout_qos_profile: Optional[Union[QoSProfile, int]] = qos_profile_system_default,
+        rosout_qos_profile: Optional[Union[QoSProfile, int]] = qos_profile_rosout_default,
         start_parameter_services: bool = True,
         parameter_overrides: Optional[List[Parameter[Any]]] = None,
         allow_undeclared_parameters: bool = False,

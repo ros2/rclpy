@@ -430,7 +430,8 @@ class Timer(Destroyable):
 PredefinedQosProfileTNames = Literal['qos_profile_sensor_data', 'qos_profile_default',
                                      'qos_profile_system_default', 'qos_profile_services_default',
                                      'qos_profile_unknown', 'qos_profile_parameters',
-                                     'qos_profile_parameter_events', 'qos_profile_best_available']
+                                     'qos_profile_parameter_events', 'qos_profile_best_available',
+                                     'qos_profile_rosout_default']
 
 
 class rmw_qos_profile_dict(TypedDict):

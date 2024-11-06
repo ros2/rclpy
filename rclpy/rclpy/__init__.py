@@ -49,7 +49,7 @@ from typing import Union
 
 from rclpy.context import Context
 from rclpy.parameter import Parameter
-from rclpy.qos import qos_profile_system_default
+from rclpy.qos import qos_profile_rosout_default
 from rclpy.qos import QoSProfile
 from rclpy.signals import install_signal_handlers
 from rclpy.signals import SignalHandlerOptions
@@ -217,7 +217,7 @@ def create_node(
     namespace: Optional[str] = None,
     use_global_arguments: bool = True,
     enable_rosout: bool = True,
-    rosout_qos_profile: Optional[Union[QoSProfile, int]] = qos_profile_system_default,
+    rosout_qos_profile: Optional[Union[QoSProfile, int]] = qos_profile_rosout_default,
     start_parameter_services: bool = True,
     parameter_overrides: Optional[List[Parameter]] = None,
     allow_undeclared_parameters: bool = False,
