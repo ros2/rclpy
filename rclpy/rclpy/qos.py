@@ -479,13 +479,15 @@ qos_profile_parameter_events = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
 #: can occur due to races with discovery.
 qos_profile_best_available = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
     'qos_profile_best_available').to_dict())
-
 # Separate rcl_action profile defined at
 # ros2/rcl : rcl/rcl_action/include/rcl_action/default_qos.h
 #
 #: For actions, using reliable reliability, transient-local durability.
 qos_profile_action_status_default = QoSProfile(**_rclpy.rclpy_action_get_rmw_qos_profile(
     'rcl_action_qos_profile_status_default'))
+#: The default qos profile setting for topic /rosout publisher.
+qos_profile_rosout_default = QoSProfile(**_rclpy.rmw_qos_profile_t.predefined(
+    'qos_profile_rosout_default').to_dict())
 
 
 class QoSPresetProfiles(Enum):
@@ -498,6 +500,7 @@ class QoSPresetProfiles(Enum):
     PARAMETER_EVENTS = qos_profile_parameter_events
     ACTION_STATUS_DEFAULT = qos_profile_action_status_default
     BEST_AVAILABLE = qos_profile_best_available
+    ROSOUT_DEFAULT = qos_profile_rosout_default
 
     """Noted that the following are duplicated from QoSPolicyEnum.
 
