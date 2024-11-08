@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+4.1.7 (2024-11-09)
+------------------
 * TestClient.test_service_timestamps failing consistently. (`#1366 <https://github.com/ros2/rclpy/issues/1366>`_)
 * Fixes spin_until_future_complete inside callback (`#1342 <https://github.com/ros2/rclpy/issues/1342>`_)
 * Install signal handlers after context is initialized. (`#1336 <https://github.com/ros2/rclpy/issues/1336>`_)
