@@ -152,7 +152,7 @@ Context::shutdown()
 {
   std::lock_guard<std::mutex> guard{g_contexts_mutex};
   if (already_shutdown_) {
-    throw CONTEXT_ALREADY_SHUTDOWN("Context already shutdown.");
+    throw ContextAlreadyShutdown("Context already shutdown.");
   }
   auto iter = std::find(g_contexts.begin(), g_contexts.end(), rcl_context_.get());
   if (iter != g_contexts.end()) {
