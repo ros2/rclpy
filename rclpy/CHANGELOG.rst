@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* TestClient.test_service_timestamps failing consistently. (`#1366 <https://github.com/ros2/rclpy/issues/1366>`_)
+* Fixes spin_until_future_complete inside callback (`#1342 <https://github.com/ros2/rclpy/issues/1342>`_)
+* Install signal handlers after context is initialized. (`#1336 <https://github.com/ros2/rclpy/issues/1336>`_)
+* Fix a bad bug in fetching the lifecycle transitions. (`#1323 <https://github.com/ros2/rclpy/issues/1323>`_)
+* Contributors: Chris Lalancette, Jonathan, Shane Loretz, Tomoya Fujita
+
 4.1.6 (2024-07-10)
 ------------------
 * update RCL_RET_TIMEOUT error handling with action service response. (`#1277 <https://github.com/ros2/rclpy/issues/1277>`_)
