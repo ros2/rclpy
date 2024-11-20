@@ -20,66 +20,64 @@ from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import Union
 import warnings
 
 import rclpy
 from rclpy.callback_groups import CallbackGroup
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from .impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
+from typing_extensions import deprecated
+from typing_extensions import TypeAlias
 
-if TYPE_CHECKING:
-    from typing import TypeAlias
 
-
-QoSPublisherEventType: 'TypeAlias' = _rclpy.rcl_publisher_event_type_t
-QoSSubscriptionEventType: 'TypeAlias' = _rclpy.rcl_subscription_event_type_t
+QoSPublisherEventType: TypeAlias = _rclpy.rcl_publisher_event_type_t
+QoSSubscriptionEventType: TypeAlias = _rclpy.rcl_subscription_event_type_t
 
 
 # Payload type for Subscription Deadline callback.
-QoSRequestedDeadlineMissedInfo: 'TypeAlias' = _rclpy.rmw_requested_deadline_missed_status_t
+QoSRequestedDeadlineMissedInfo: TypeAlias = _rclpy.rmw_requested_deadline_missed_status_t
 
 # Payload type for Subscription Liveliness callback.
-QoSLivelinessChangedInfo: 'TypeAlias' = _rclpy.rmw_liveliness_changed_status_t
+QoSLivelinessChangedInfo: TypeAlias = _rclpy.rmw_liveliness_changed_status_t
 
 # Payload type for Subscription Message Lost callback.
-QoSMessageLostInfo: 'TypeAlias' = _rclpy.rmw_message_lost_status_t
+QoSMessageLostInfo: TypeAlias = _rclpy.rmw_message_lost_status_t
 
 # Payload type for Subscription Incompatible QoS callback.
-QoSRequestedIncompatibleQoSInfo: 'TypeAlias' = _rclpy.rmw_requested_qos_incompatible_event_status_t
+QoSRequestedIncompatibleQoSInfo: TypeAlias = _rclpy.rmw_requested_qos_incompatible_event_status_t
 
 # Payload type for Subscription matched callback.
-QoSSubscriptionMatchedInfo: 'TypeAlias' = _rclpy.rmw_matched_status_t
+QoSSubscriptionMatchedInfo: TypeAlias = _rclpy.rmw_matched_status_t
 
 # Payload type for Publisher Deadline callback.
-QoSOfferedDeadlineMissedInfo: 'TypeAlias' = _rclpy.rmw_offered_deadline_missed_status_t
+QoSOfferedDeadlineMissedInfo: TypeAlias = _rclpy.rmw_offered_deadline_missed_status_t
 
 # Payload type for Publisher Liveliness callback.
-QoSLivelinessLostInfo: 'TypeAlias' = _rclpy.rmw_liveliness_lost_status_t
+QoSLivelinessLostInfo: TypeAlias = _rclpy.rmw_liveliness_lost_status_t
 
 # Payload type for Publisher matched callback.
-QoSPublisherMatchedInfo: 'TypeAlias' = _rclpy.rmw_matched_status_t
+QoSPublisherMatchedInfo: TypeAlias = _rclpy.rmw_matched_status_t
 
 """
 Payload type for Publisher Incompatible QoS callback.
 
 Mirrors rmw_offered_incompatible_qos_status_t from rmw/types.h
 """
-QoSOfferedIncompatibleQoSInfo: 'TypeAlias' = QoSRequestedIncompatibleQoSInfo
+QoSOfferedIncompatibleQoSInfo: TypeAlias = QoSRequestedIncompatibleQoSInfo
 
 # Payload type for Incompatible Type callback.
-IncompatibleTypeInfo: 'TypeAlias' = _rclpy.rmw_incompatible_type_status_t
+IncompatibleTypeInfo: TypeAlias = _rclpy.rmw_incompatible_type_status_t
 
 
 """Raised when registering a callback for an event type that is not supported."""
-UnsupportedEventTypeError: 'TypeAlias' = _rclpy.UnsupportedEventTypeError
+UnsupportedEventTypeError: TypeAlias = _rclpy.UnsupportedEventTypeError
 
 
-EventHandlerData: 'TypeAlias' = Optional[Union[
+EventHandlerData: TypeAlias = Optional[Union[
                 QoSRequestedDeadlineMissedInfo,
                 QoSLivelinessChangedInfo,
                 QoSMessageLostInfo,
@@ -111,7 +109,7 @@ class EventHandler(Waitable[EventHandlerData]):
         self.callback = callback
 
         with parent_impl:
-            self.__event = _rclpy.EventHandle(parent_impl, event_type)
+            self.__event: '_rclpy.EventHandle[Any]' = _rclpy.EventHandle(parent_impl, event_type)
 
         self._ready_to_take_data = False
         self._event_index: Optional[int] = None
@@ -165,6 +163,8 @@ class EventHandler(Waitable[EventHandlerData]):
         self.__event.destroy_when_not_in_use()
 
 
+@deprecated('QoSEventHandler foo is deprecated, use EventHandler instead.',
+            category=DeprecationWarning, stacklevel=2)
 class QoSEventHandler(EventHandler):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

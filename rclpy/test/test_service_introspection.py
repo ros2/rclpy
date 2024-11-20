@@ -31,7 +31,7 @@ class TestServiceEvents(unittest.TestCase):
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.node = rclpy.create_node(
             'TestServiceIntrospection', context=self.context)
         self.executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
@@ -42,7 +42,7 @@ class TestServiceEvents(unittest.TestCase):
                                                  self.sub_callback, 10)
         self.event_messages: List[BasicTypes.Event] = []
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.node.destroy_node()
 
     @classmethod
@@ -57,7 +57,7 @@ class TestServiceEvents(unittest.TestCase):
         resp.int64_value = req.int64_value
         return resp
 
-    def test_service_introspection_metadata(self):
+    def test_service_introspection_metadata(self) -> None:
         req = BasicTypes.Request()
         req.bool_value = False
         req.int64_value = 12345
@@ -103,7 +103,7 @@ class TestServiceEvents(unittest.TestCase):
         self.assertEqual(len(result_dict[ServiceEventInfo.RESPONSE_RECEIVED].request), 0)
         self.assertEqual(len(result_dict[ServiceEventInfo.RESPONSE_RECEIVED].response), 0)
 
-    def test_service_introspection_contents(self):
+    def test_service_introspection_contents(self) -> None:
         req = BasicTypes.Request()
         req.bool_value = False
         req.int64_value = 12345

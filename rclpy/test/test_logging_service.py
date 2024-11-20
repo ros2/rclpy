@@ -26,7 +26,7 @@ from rclpy.executors import SingleThreadedExecutor
 
 class TestLoggingService(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.context = rclpy.context.Context()
         rclpy.init(context=self.context)
         self.test_node_with_logger_service = rclpy.create_node(
@@ -49,7 +49,7 @@ class TestLoggingService(unittest.TestCase):
         self.thread = threading.Thread(target=self.executor1.spin, daemon=True)
         self.thread.start()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.executor1.shutdown()
         self.thread.join()
         self.executor2.shutdown()
@@ -57,7 +57,7 @@ class TestLoggingService(unittest.TestCase):
         self.test_node_with_logger_service.destroy_node()
         rclpy.shutdown(context=self.context)
 
-    def test_connect_get_logging_service(self):
+    def test_connect_get_logging_service(self) -> None:
         client = self.test_node.create_client(
             GetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/get_logger_levels')
@@ -66,7 +66,7 @@ class TestLoggingService(unittest.TestCase):
         finally:
             self.test_node.destroy_client(client)
 
-    def test_connect_set_logging_service(self):
+    def test_connect_set_logging_service(self) -> None:
         client = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels'
@@ -76,7 +76,7 @@ class TestLoggingService(unittest.TestCase):
         finally:
             self.test_node.destroy_client(client)
 
-    def test_set_and_get_one_logging_level(self):
+    def test_set_and_get_one_logging_level(self) -> None:
         test_log_name = 'rcl'
         test_log_level = 10
 
@@ -115,7 +115,7 @@ class TestLoggingService(unittest.TestCase):
         self.assertEqual(response.levels[0].level, test_log_level)
         self.test_node.destroy_client(get_client)
 
-    def test_set_and_get_multi_logging_level(self):
+    def test_set_and_get_multi_logging_level(self) -> None:
         test_log_name1 = 'rcl'
         test_log_level1 = 20
 
@@ -175,7 +175,7 @@ class TestLoggingService(unittest.TestCase):
         self.assertEqual(response.levels[2].level, test_log_level3)
         self.test_node.destroy_client(get_client)
 
-    def test_set_logging_level_with_invalid_param(self):
+    def test_set_logging_level_with_invalid_param(self) -> None:
         set_client = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
@@ -201,7 +201,7 @@ class TestLoggingService(unittest.TestCase):
         self.assertEqual(response.results[1].reason, 'Failed reason: Invalid logger level.')
         self.test_node.destroy_client(set_client)
 
-    def test_set_logging_level_with_partial_invalid_param(self):
+    def test_set_logging_level_with_partial_invalid_param(self) -> None:
         set_client = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
