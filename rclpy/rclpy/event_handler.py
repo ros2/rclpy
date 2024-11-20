@@ -19,7 +19,6 @@ from typing import List
 from typing import Optional
 import warnings
 
-
 import rclpy
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
