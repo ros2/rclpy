@@ -25,7 +25,7 @@ import warnings
 
 import rclpy
 from rclpy.callback_groups import CallbackGroup
-from .impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
