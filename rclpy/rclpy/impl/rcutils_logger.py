@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import suppress
 import inspect
 import os
-import sys
 from types import FrameType
 from typing import cast
 from typing import ClassVar
@@ -33,12 +31,7 @@ from typing import Union
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
-
-if sys.version_info >= (3, 12):
-    from typing import Unpack
-else:
-    with suppress(ModuleNotFoundError):
-        from typing_extensions import Unpack
+from typing_extensions import deprecated, Unpack
 
 
 SupportedFiltersKeys = Literal['throttle', 'skip_first', 'once']
@@ -430,6 +423,7 @@ class RcutilsLogger:
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.WARN, **kwargs)
 
+    @deprecated('Deprecated in favor of :py:classmethod:RcutilsLogger.warning:.')
     def warn(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
         """
         Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.

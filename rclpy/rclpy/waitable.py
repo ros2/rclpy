@@ -20,7 +20,6 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 T = TypeVar('T')
 
-
 if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup
     from rclpy.task import Future
