@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.7.0 (2024-11-20)
+------------------
 * Fix the race condition while calling rcl_shutdown (`#1353 <https://github.com/ros2/rclpy/issues/1353>`_)
 * Use @deprecated to mark deprecated APIs for type checkers. (`#1350 <https://github.com/ros2/rclpy/issues/1350>`_)
 * init (`#1358 <https://github.com/ros2/rclpy/issues/1358>`_)
