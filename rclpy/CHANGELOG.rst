@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.15 (2024-11-25)
+-------------------
+* TestClient.test_service_timestamps failing consistently. (`#1364 <https://github.com/ros2/rclpy/issues/1364>`_) (`#1365 <https://github.com/ros2/rclpy/issues/1365>`_)
+* Fixes spin_until_future_complete inside callback (`#1316 <https://github.com/ros2/rclpy/issues/1316>`_) (`#1343 <https://github.com/ros2/rclpy/issues/1343>`_)
+* Install signal handlers after context is initialized. (`#1333 <https://github.com/ros2/rclpy/issues/1333>`_) (`#1335 <https://github.com/ros2/rclpy/issues/1335>`_)
+* Avoid causing infinite loop when message is empty (`#935 <https://github.com/ros2/rclpy/issues/935>`_) (`#1334 <https://github.com/ros2/rclpy/issues/1334>`_)
+* Contributors: mergify[bot]
+
 3.3.14 (2024-07-26)
 -------------------
 * Fix a bad bug in fetching the lifecycle transitions. (`#1321 <https://github.com/ros2/rclpy/issues/1321>`_) (`#1324 <https://github.com/ros2/rclpy/issues/1324>`_)
