@@ -61,7 +61,7 @@ class Future(Generic[T]):
 
     def __await__(self) -> Generator[None, None, Optional[T]]:
         # Yield if the task is not finished
-        while not self._done:
+        while not self._done and not self._cancelled:
             yield
         return self.result()
 
@@ -239,7 +239,12 @@ class Task(Future[T]):
 
         The return value of the handler is stored as the task result.
         """
-        if self._done or self._executing or not self._task_lock.acquire(blocking=False):
+        if (
+            self._done or
+            self._cancelled or
+            self._executing or
+            not self._task_lock.acquire(blocking=False)
+        ):
             return
         try:
             if self._done:
