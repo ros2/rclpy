@@ -78,7 +78,7 @@ function(configure_build_install_location _library_name)
 endfunction()
 
 # Split from main extension and converted to pybind11
-pybind11_add_module(_rclpy_pybind11 SHARED
+pybind11_add_module(_rclpy_pybind11
   src/rclpy/_rclpy_logging.cpp
   src/rclpy/_rclpy_pybind11.cpp
   src/rclpy/action_client.cpp
