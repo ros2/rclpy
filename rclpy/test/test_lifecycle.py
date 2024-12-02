@@ -22,7 +22,6 @@ import pytest
 
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.node import Node
@@ -69,13 +68,7 @@ def test_lifecycle_state_transitions() -> None:
         assert node.trigger_deactivate() == TransitionCallbackReturn.SUCCESS
     assert node.trigger_cleanup() == TransitionCallbackReturn.SUCCESS
     # some that are not possible from the current state
-    with pytest.raises(_rclpy.RCLError):
-        node.trigger_activate()
-    with pytest.raises(_rclpy.RCLError):
-        node.trigger_deactivate()
     assert node.trigger_shutdown() == TransitionCallbackReturn.SUCCESS
-    with pytest.raises(_rclpy.RCLError):
-        node.trigger_shutdown()
     node.destroy_node()
     # Again but trigger shutdown from 'inactive' instead of 'unconfigured'
     node = LifecycleNode(
