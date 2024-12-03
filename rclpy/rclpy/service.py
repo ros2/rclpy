@@ -18,6 +18,7 @@ from typing import Generic
 from typing import Optional
 from typing import Type
 from typing import TypeVar
+from typing import Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
@@ -35,7 +36,7 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
     def __init__(
         self,
-        service_impl: _rclpy.Service,
+        service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT, SrvEventT]',
         srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
@@ -66,7 +67,8 @@ class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
         self._executor_event = False
         self.qos_profile = qos_profile
 
-    def send_response(self, response: SrvResponseT, header) -> None:
+    def send_response(self, response: SrvResponseT,
+                      header: Union[_rclpy.rmw_service_info_t, _rclpy.rmw_request_id_t]) -> None:
         """
         Send a service response.
 
@@ -104,7 +106,7 @@ class Service(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
                                                    introspection_state)
 
     @property
-    def handle(self):
+    def handle(self) -> '_rclpy.Service[SrvRequestT, SrvResponseT, SrvEventT]':
         return self.__service
 
     @property
