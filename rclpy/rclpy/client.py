@@ -40,7 +40,7 @@ class Client(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
     def __init__(
         self,
         context: Context,
-        client_impl: _rclpy.Client,
+        client_impl: '_rclpy.Client[SrvRequestT, SrvResponseT, SrvEventT]',
         srv_type: Type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
         srv_name: str,
         qos_profile: QoSProfile,
@@ -214,7 +214,7 @@ class Client(Generic[SrvRequestT, SrvResponseT, SrvEventT]):
                                                   introspection_state)
 
     @property
-    def handle(self):
+    def handle(self) -> '_rclpy.Client[SrvRequestT, SrvResponseT, SrvEventT]':
         return self.__client
 
     @property
