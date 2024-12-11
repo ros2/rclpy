@@ -49,6 +49,21 @@ class Duration:
             return 'Infinite'
         return f'{self.nanoseconds} nanoseconds'
 
+    def __add__(self, other: 'Duration') -> 'Duration':
+        if isinstance(other, Duration):
+            return Duration(nanoseconds=other.nanoseconds + self.nanoseconds)
+        return NotImplemented
+
+    def __sub__(self, other: 'Duration') -> 'Duration':
+        if isinstance(other, Duration):
+            return Duration(nanoseconds=self.nanoseconds - other.nanoseconds)
+        return NotImplemented
+
+    def __mul__(self, other: int) -> 'Duration':
+        if isinstance(other, int):
+            return Duration(nanoseconds=self.nanoseconds * other)
+        return NotImplemented
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Duration):
             return self.nanoseconds == other.nanoseconds
