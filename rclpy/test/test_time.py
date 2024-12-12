@@ -75,6 +75,11 @@ class TestTime(unittest.TestCase):
         assert (duration1 + duration2).nanoseconds == 3 * S_TO_NS
         assert (duration2 - duration1).nanoseconds == 1 * S_TO_NS
         assert (duration1 * 2) == duration2
+        assert (duration2 * 0.5) == duration1
+        assert (duration2 // 2) == duration1
+        assert (duration2 * float('inf')) == Infinite
+        with self.assertRaises(ValueError):
+            duration2 * float('NaN')
 
     def test_time_operators(self) -> None:
         time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)

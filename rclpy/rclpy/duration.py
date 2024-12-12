@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import math
 from typing import Union
 
 import builtin_interfaces.msg
@@ -59,9 +59,21 @@ class Duration:
             return Duration(nanoseconds=self.nanoseconds - other.nanoseconds)
         return NotImplemented
 
-    def __mul__(self, other: int) -> 'Duration':
+    def __mul__(self, other: Union[int, float]) -> 'Duration':
         if isinstance(other, int):
             return Duration(nanoseconds=self.nanoseconds * other)
+        if isinstance(other, float):
+            if not math.isfinite(other):
+                if other == float('inf'):
+                    return Infinite
+                else:
+                    raise ValueError("Can't multiply duration with nan")
+            return Duration(nanoseconds=int(self.nanoseconds * other))
+        return NotImplemented
+
+    def __floordiv__(self, other: int) -> 'Duration':
+        if isinstance(other, int):
+            return Duration(nanoseconds=self.nanoseconds // other)
         return NotImplemented
 
     def __eq__(self, other: object) -> bool:
