@@ -91,6 +91,7 @@ class LifecycleNodeMixin(ManagedEntity):
             raise RuntimeError('LifecycleNodeMixin uses Node fields so Node needs to be'
                                'in the inheritance tree.')
 
+        self._logger = self.get_logger()
         self._callbacks: Dict[int, Callable[[LifecycleState], TransitionCallbackReturn]] = {}
         # register all state machine transition callbacks
         self.__register_callback(
@@ -389,18 +390,35 @@ class LifecycleNodeMixin(ManagedEntity):
         self.__check_is_initialized()
         initial_state = self._state_machine.current_state
         initial_state = LifecycleState(state_id=initial_state[0], label=initial_state[1])
-        self._state_machine.trigger_transition_by_id(transition_id, True)
-
+        try:
+            self._state_machine.trigger_transition_by_id(transition_id, True)
+        except _rclpy.RCLError:
+            self._logger.error(
+                'Unable to start transition {0} from current state {1}'
+                .format(transition_id, self._state_machine.current_state))
+            return TransitionCallbackReturn.ERROR
         cb_return_code = self.__execute_callback(
             self._state_machine.current_state[0], initial_state)
-        self._state_machine.trigger_transition_by_label(cb_return_code.to_label(), True)
-
+        try:
+            self._state_machine.trigger_transition_by_label(cb_return_code.to_label(), True)
+        except _rclpy.RCLError:
+            self._logger.error(
+                'Failed to complete transition {0}, current state is {1}'
+                .format(transition_id, self._state_machine.current_state))
+            return TransitionCallbackReturn.ERROR
         if cb_return_code == TransitionCallbackReturn.ERROR:
             # Now we're in the errorprocessing state, trigger the on_error callback
             # and transition again based on the return code.
             error_cb_ret_code = self.__execute_callback(
                 self._state_machine.current_state[0], initial_state)
-            self._state_machine.trigger_transition_by_label(error_cb_ret_code.to_label(), True)
+            try:
+                self._state_machine.trigger_transition_by_label(error_cb_ret_code.to_label(), True)
+            except _rclpy.RCLError:
+                self._logger.error(
+                    'Failed to complete transition to {0} during error processing state, '
+                    'current state is {1}'
+                    .format(error_cb_ret_code.to_label(), self._state_machine.current_state))
+                return TransitionCallbackReturn.ERROR
         return cb_return_code
 
     def __check_is_initialized(self) -> None:
