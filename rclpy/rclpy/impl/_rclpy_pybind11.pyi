@@ -14,16 +14,17 @@
 
 from __future__ import annotations
 
-from enum import Enum, IntEnum
+from enum import Enum
 from types import TracebackType
 from typing import Any, Generic, Literal, overload, Sequence, TypeAlias, TypedDict
 
 from rclpy.clock import JumpHandle
 from rclpy.clock_type import ClockType
 from rclpy.duration import Duration
+from rclpy.impl import service_introspection
 from rclpy.parameter import Parameter
 from rclpy.subscription import MessageInfo
-from rclpy.type_support import MsgT
+from rclpy.type_support import MsgT, Srv, SrvEventT, SrvRequestT, SrvResponseT
 
 
 def rclpy_remove_ros_args(pycli_args: Sequence[str]) -> list[str]:
@@ -34,13 +35,27 @@ def rclpy_get_rmw_implementation_identifier() -> str:
     """Retrieve the identifier for the active RMW implementation."""
 
 
-class Client:
-    pass
-
-
 class rcl_time_point_t:
     nanoseconds: int
     clock_type: ClockType
+
+
+class rmw_service_info_t:
+
+    @property
+    def source_timestamp(self) -> int: ...
+
+    @property
+    def received_timestamp(self) -> int: ...
+
+    @property
+    def request_id(self) -> rmw_request_id_t: ...
+
+
+class rmw_request_id_t:
+
+    @property
+    def sequence_number(self) -> int: ...
 
 
 class Destroyable:
@@ -52,6 +67,73 @@ class Destroyable:
 
     def destroy_when_not_in_use(self) -> None:
         """Destroy the rcl object as soon as it's not actively being used."""
+
+
+class Client(Destroyable, Generic[SrvRequestT, SrvResponseT, SrvEventT]):
+
+    def __init__(self, node: Node, srv_type: type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
+                 srv_name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
+
+    @property
+    def service_name(self) -> str:
+        """Get the name of the service."""
+
+    @property
+    def pointer(self) -> int:
+        """Get the address of the entity as an integer."""
+
+    def send_request(self, pyrequest: SrvRequestT) -> int:
+        """Send a request."""
+
+    def service_server_is_available(self) -> bool:
+        """Return true if the service server is available."""
+
+    def take_response(
+        self, pyresponse_type: type[SrvResponseT]
+    ) -> tuple[rmw_service_info_t, SrvResponseT] | tuple[None, None]:
+        """Take a received response from an earlier request."""
+
+    def configure_introspection(
+        self,
+        clock: Clock,
+        pyqos_service_event_pub: rmw_qos_profile_t,
+        introspection_state: service_introspection.ServiceIntrospectionState
+    ) -> None:
+        """Configure whether introspection is enabled."""
+
+
+class Service(Destroyable, Generic[SrvRequestT, SrvResponseT, SrvEventT]):
+
+    def __init__(self, node: Node, pysrv_type: type[Srv[SrvRequestT, SrvResponseT, SrvEventT]],
+                 name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
+
+    @property
+    def pointer(self) -> int:
+        """Get the address of the entity as an integer."""
+
+    @property
+    def name(self) -> str:
+        """Get the name of the service."""
+
+    @property
+    def qos(self) -> rmw_qos_profile_dict:
+        """Get the qos profile of the service."""
+
+    def service_send_response(self, pyresponse: SrvResponseT, header: rmw_request_id_t) -> None:
+        """Send a response."""
+
+    def service_take_request(
+        self,
+        pyrequest_type: type[SrvRequestT]
+    ) -> tuple[rmw_service_info_t, SrvRequestT] | tuple[None, None]:
+        """Take a request from a given service."""
+
+    def configure_introspection(
+        self, clock: Clock,
+        pyqos_service_event_pub: rmw_qos_profile_t,
+        introspection_state: service_introspection.ServiceIntrospectionState
+    ) -> None:
+        """Configure whether introspection is enabled."""
 
 
 class Clock(Destroyable):
@@ -214,10 +296,6 @@ class GuardCondition(Destroyable):
 
     def trigger_guard_condition(self) -> None:
         """Trigger a general purpose guard condition."""
-
-
-class Service:
-    pass
 
 
 class Subscription(Destroyable, Generic[MsgT]):
@@ -523,7 +601,7 @@ class NodeNameNonExistentError(RCLError):
 class InvalidHandle(RuntimeError):
     pass
 
-  
+
 class SignalHandlerOptions(Enum):
     _value_: int
     NO = ...
