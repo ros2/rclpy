@@ -273,6 +273,27 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
 
+    def test_create_task_coroutine_cancel(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        async def coroutine():
+            await asyncio.sleep(1)
+            return 'Sentinel Result'
+
+        future = executor.create_task(coroutine)
+        self.assertFalse(future.done())
+        self.assertFalse(future.cancelled())
+
+        future.cancel()
+        self.assertTrue(future.cancelled())
+
+        executor.spin_until_future_complete(future)
+        self.assertFalse(future.done())
+        self.assertTrue(future.cancelled())
+        self.assertEqual(None, future.result())
+
     def test_create_task_normal_function(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
