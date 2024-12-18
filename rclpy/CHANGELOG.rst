@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.1.3 (2024-12-18)
+------------------
 * TestClient.test_service_timestamps failing consistently. (`#1364 <https://github.com/ros2/rclpy/issues/1364>`_) (`#1367 <https://github.com/ros2/rclpy/issues/1367>`_)
   (cherry picked from commit 7f9a307a9d232445928d04f50add7c0b3995fe22)
   Co-authored-by: Tomoya Fujita <Tomoya.Fujita@sony.com>
