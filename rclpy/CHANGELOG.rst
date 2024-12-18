@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* TestClient.test_service_timestamps failing consistently. (`#1364 <https://github.com/ros2/rclpy/issues/1364>`_) (`#1367 <https://github.com/ros2/rclpy/issues/1367>`_)
+  (cherry picked from commit 7f9a307a9d232445928d04f50add7c0b3995fe22)
+  Co-authored-by: Tomoya Fujita <Tomoya.Fujita@sony.com>
+* Contributors: mergify[bot]
+
 7.1.2 (2024-09-06)
 ------------------
 * Fixes spin_until_future_complete inside callback (`#1316 <https://github.com/ros2/rclpy/issues/1316>`_) (`#1341 <https://github.com/ros2/rclpy/issues/1341>`_)
