@@ -129,12 +129,22 @@ class ServerGoalHandle:
             if not self._goal_handle.is_active():
                 self._action_server.notify_goal_done()
 
+    def _set_result(self, response):
+        # Set result
+        result_response = self._action_server._action_type.Impl.GetResultService.Response()
+        result_response.status = self.status
+        if response is not None:
+            result_response.result = response
+        else:
+            result_response.result = self._action_server._action_type.Result()
+        self._action_server._result_futures[bytes(self.goal_id.uuid)].set_result(result_response)
+
     def execute(self, execute_callback=None):
         # It's possible that there has been a request to cancel the goal prior to executing.
         # In this case we want to avoid the illegal state transition to EXECUTING
         # but still call the users execute callback to let them handle canceling the goal.
         if not self.is_cancel_requested:
-            self._update_state(_rclpy.GoalEvent.EXECUTE)
+            self.executing()
         self._action_server.notify_execute(self, execute_callback)
 
     def publish_feedback(self, feedback):
@@ -155,14 +165,20 @@ class ServerGoalHandle:
             # Publish
             self._action_server._handle.publish_feedback(feedback_message)
 
-    def succeed(self):
+    def executing(self):
+        self._update_state(_rclpy.GoalEvent.EXECUTE)
+
+    def succeed(self, response=None):
         self._update_state(_rclpy.GoalEvent.SUCCEED)
+        self._set_result(response)
 
-    def abort(self):
+    def abort(self, response=None):
         self._update_state(_rclpy.GoalEvent.ABORT)
+        self._set_result(response)
 
-    def canceled(self):
+    def canceled(self, response=None):
         self._update_state(_rclpy.GoalEvent.CANCELED)
+        self._set_result(response)
 
     def destroy(self):
         with self._lock:
@@ -195,7 +211,7 @@ class ActionServer(Waitable[ServerGoalHandleDict]):
         node,
         action_type,
         action_name,
-        execute_callback,
+        execute_callback=None,
         *,
         callback_group=None,
         goal_callback=default_goal_callback,
@@ -242,7 +258,11 @@ class ActionServer(Waitable[ServerGoalHandleDict]):
         self.register_handle_accepted_callback(handle_accepted_callback)
         self.register_goal_callback(goal_callback)
         self.register_cancel_callback(cancel_callback)
-        self.register_execute_callback(execute_callback)
+        if execute_callback:
+            self.register_execute_callback(execute_callback)
+        elif handle_accepted_callback is default_handle_accepted_callback:
+            self._logger.warning(
+                'Not handling nor executing the goal, this server will do nothing')
 
         # Import the typesupport for the action module if not already done
         check_for_type_support(action_type)
