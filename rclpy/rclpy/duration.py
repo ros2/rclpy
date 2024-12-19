@@ -71,7 +71,6 @@ class Duration:
             return Duration(nanoseconds=int(self.nanoseconds * other))
         return NotImplemented
 
-
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Duration):
             return self.nanoseconds == other.nanoseconds
