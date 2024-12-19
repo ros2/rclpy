@@ -15,6 +15,7 @@
 import unittest
 
 from rclpy.clock_type import ClockType
+from rclpy.constants import S_TO_NS
 from rclpy.duration import Duration
 from rclpy.duration import Infinite
 from rclpy.time import Time
@@ -67,6 +68,17 @@ class TestTime(unittest.TestCase):
         assert Duration(nanoseconds=-2**63).nanoseconds == -2**63
         with self.assertRaises(OverflowError):
             Duration(nanoseconds=-2**63 - 1)
+
+    def test_duration_operators(self) -> None:
+        duration1 = Duration(seconds=1, nanoseconds=0)
+        duration2 = Duration(seconds=2, nanoseconds=0)
+        assert (duration1 + duration2).nanoseconds == 3 * S_TO_NS
+        assert (duration2 - duration1).nanoseconds == 1 * S_TO_NS
+        assert (duration1 * 2) == duration2
+        assert (duration2 * 0.5) == duration1
+        assert (duration2 * float('inf')) == Infinite
+        with self.assertRaises(ValueError):
+            duration2 * float('NaN')
 
     def test_time_operators(self) -> None:
         time1 = Time(nanoseconds=1, clock_type=ClockType.STEADY_TIME)
