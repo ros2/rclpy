@@ -71,10 +71,6 @@ class Duration:
             return Duration(nanoseconds=int(self.nanoseconds * other))
         return NotImplemented
 
-    def __floordiv__(self, other: int) -> 'Duration':
-        if isinstance(other, int):
-            return Duration(nanoseconds=self.nanoseconds // other)
-        return NotImplemented
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Duration):

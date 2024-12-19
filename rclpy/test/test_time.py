@@ -76,7 +76,6 @@ class TestTime(unittest.TestCase):
         assert (duration2 - duration1).nanoseconds == 1 * S_TO_NS
         assert (duration1 * 2) == duration2
         assert (duration2 * 0.5) == duration1
-        assert (duration2 // 2) == duration1
         assert (duration2 * float('inf')) == Infinite
         with self.assertRaises(ValueError):
             duration2 * float('NaN')
