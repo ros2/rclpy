@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+8.0.0 (2024-12-20)
+------------------
 * Add support for operator overloading of `Duration` (`#1387 <https://github.com/ros2/rclpy/issues/1387>`_)
 * Service/Client Implementation types (`#1384 <https://github.com/ros2/rclpy/issues/1384>`_)
 * avoid lifecycle node transition exception (`#1319 <https://github.com/ros2/rclpy/issues/1319>`_)
