@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add support for operator overloading of `Duration` (`#1387 <https://github.com/ros2/rclpy/issues/1387>`_)
+* Service/Client Implementation types (`#1384 <https://github.com/ros2/rclpy/issues/1384>`_)
+* avoid lifecycle node transition exception (`#1319 <https://github.com/ros2/rclpy/issues/1319>`_)
+* Client:call generates TimeoutError exception when it is timed out. (`#1271 <https://github.com/ros2/rclpy/issues/1271>`_)
+* Add in python3-dev build dependency. (`#1380 <https://github.com/ros2/rclpy/issues/1380>`_)
+* Contributors: Arjo Chakravarty, Chris Lalancette, Michael Carlstrom, Tomoya Fujita
+
 7.7.0 (2024-11-20)
 ------------------
 * Fix the race condition while calling rcl_shutdown (`#1353 <https://github.com/ros2/rclpy/issues/1353>`_)
