@@ -330,6 +330,9 @@ class ActionServer(Waitable[ServerGoalHandleDict]):
 
         self._logger.debug('New goal accepted: {0}'.format(goal_uuid.uuid))
 
+        # Publish accepted status before execution
+        self._handle.publish_status()
+
         # Provide the user a reference to the goal handle
         await await_or_execute(self._handle_accepted_callback, goal_handle)
 
