@@ -17,6 +17,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <build_depend>boost</build_depend>
   <build_depend>pybind11_vendor</build_depend>
   <build_depend>python3-dev</build_depend>
   <build_depend>rcpputils</build_depend>

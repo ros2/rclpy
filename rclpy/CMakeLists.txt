@@ -17,6 +17,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(Boost REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rcl REQUIRED)
 find_package(rcl_action REQUIRED)
@@ -90,6 +91,9 @@ pybind11_add_module(_rclpy_pybind11 SHARED
   src/rclpy/destroyable.cpp
   src/rclpy/duration.cpp
   src/rclpy/clock_event.cpp
+  src/rclpy/events_executor/events_executor.cpp
+  src/rclpy/events_executor/rcl_support.cpp
+  src/rclpy/events_executor/timers_manager.cpp
   src/rclpy/exceptions.cpp
   src/rclpy/graph.cpp
   src/rclpy/guard_condition.cpp
@@ -121,6 +125,7 @@ target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/
 )
 target_link_libraries(_rclpy_pybind11 PRIVATE
+  Boost::boost
   lifecycle_msgs::lifecycle_msgs__rosidl_generator_c
   lifecycle_msgs::lifecycle_msgs__rosidl_typesupport_c
   rcl::rcl
@@ -182,6 +187,7 @@ if(BUILD_TESTING)
       test/test_create_node.py
       test/test_create_while_spinning.py
       test/test_destruction.py
+      test/test_events_executor.py
       test/test_executor.py
       test/test_expand_topic_name.py
       test/test_guard_condition.py
