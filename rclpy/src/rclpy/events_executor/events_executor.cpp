@@ -1,4 +1,4 @@
-// Copyright 2024 Brad Martin
+// Copyright 2024-2025 Brad Martin
 // Copyright 2024 Merlin Labs, Inc.
 //
 // Based on a similar approach as the iRobot rclcpp EventsExecutor implementation:
@@ -530,6 +530,10 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
   auto with_waitset = std::make_shared<ScopedWith>(wait_set);
   waitable.attr("add_to_wait_set")(wait_set);
   rcl_wait_set_t* const rcl_waitset = GetRclWaitSet(wait_set);
+  // Be careful not to bind any py::objects into any callbacks, because that will try to
+  // do reference counting without the GIL.  Ownership will be maintained with the info
+  // struct instance which is guaranteed to outlast any callback.
+  py::handle ws_handle = wait_set;
   // We null out each entry in the waitset as we set it up, so that the waitset itself
   // can be reused when something becomes ready to signal to the Waitable what's ready
   // and what's not.  We also bind with_waitset into each callback we set up, to ensure
@@ -541,7 +545,7 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     rcl_waitset->subscriptions[i] = nullptr;
     sub_entities.subscriptions.push_back(rcl_sub);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableSubReady, this, waitable,
-                              rcl_sub, wait_set, i, with_waitset, pl::_1);
+                              rcl_sub, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK !=
         rcl_subscription_set_on_new_message_callback(
             rcl_sub, RclEventCallbackTrampoline,
@@ -562,7 +566,7 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     // own an instance of `with_waitable` associated with this callback, we'll bind it
     // directly into the callback instead.
     const auto cb = std::bind(&EventsExecutor::HandleWaitableTimerReady, this, waitable,
-                              rcl_timer, wait_set, i, with_waitable, with_waitset);
+                              rcl_timer, ws_handle, i, with_waitable, with_waitset);
     timers_manager_.rcl_manager().AddTimer(rcl_timer, cb);
   }
   for (size_t i = 0; i < rcl_waitset->size_of_clients; ++i) {
@@ -570,7 +574,7 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     rcl_waitset->clients[i] = nullptr;
     sub_entities.clients.push_back(rcl_client);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableClientReady, this,
-                              waitable, rcl_client, wait_set, i, with_waitset, pl::_1);
+                              waitable, rcl_client, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK !=
         rcl_client_set_on_new_response_callback(
             rcl_client, RclEventCallbackTrampoline,
@@ -586,7 +590,7 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     rcl_waitset->services[i] = nullptr;
     sub_entities.services.push_back(rcl_service);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableServiceReady, this,
-                              waitable, rcl_service, wait_set, i, with_waitset, pl::_1);
+                              waitable, rcl_service, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK !=
         rcl_service_set_on_new_request_callback(
             rcl_service, RclEventCallbackTrampoline,
@@ -602,7 +606,7 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     rcl_waitset->events[i] = nullptr;
     sub_entities.events.push_back(rcl_event);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableEventReady, this, waitable,
-                              rcl_event, wait_set, i, with_waitset, pl::_1);
+                              rcl_event, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK != rcl_event_set_callback(rcl_event, RclEventCallbackTrampoline,
                                              rcl_callback_manager_.MakeCallback(
                                                  rcl_event, cb, with_waitable))) {
