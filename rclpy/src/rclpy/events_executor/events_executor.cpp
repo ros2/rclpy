@@ -34,7 +34,7 @@
 #include <chrono>
 #include <utility>
 
-#include <boost/asio/post.hpp>
+#include <asio/post.hpp>
 
 namespace pl = std::placeholders;
 namespace py = pybind11;
@@ -62,7 +62,7 @@ EventsExecutor::EventsExecutor(py::object context)
   // just establish our own signal handling directly instead.  This unfortunately
   // bypasses the rclpy.init() options that allow a user to disable certain signal
   // handlers, but it doesn't look like we can do any better.
-  signals_.async_wait([this](const boost::system::error_code & ec, int) {
+  signals_.async_wait([this](const asio::error_code & ec, int) {
       if (!ec) {
         py::gil_scoped_acquire gil_acquire;
         // Don't call context.try_shutdown() here, because that can call back to us to
@@ -91,8 +91,8 @@ pybind11::object EventsExecutor::create_task(
   // GIL is not held.  We'll do manual refcounting on it instead.
   py::handle cb_task_handle = task;
   cb_task_handle.inc_ref();
-  boost::asio::post(io_context_,
-                    std::bind(&EventsExecutor::IterateTask, this, cb_task_handle));
+  asio::post(io_context_,
+             std::bind(&EventsExecutor::IterateTask, this, cb_task_handle));
   return task;
 }
 
@@ -151,7 +151,7 @@ void EventsExecutor::wake()
 {
   if (!wake_pending_.exchange(true)) {
     // Update tracked entities.
-    boost::asio::post(io_context_, [this]() {
+    asio::post(io_context_, [this]() {
         py::gil_scoped_acquire gil_acquire;
         UpdateEntitiesFromNodes(!py::cast<bool>(rclpy_context_.attr("ok")()));
     });
@@ -175,7 +175,7 @@ void EventsExecutor::spin(std::optional<double> timeout_sec)
     // touch Python will need to reacquire it though.
     py::gil_scoped_release gil_release;
     // Don't let asio auto stop if there's nothing to do
-    const auto work = boost::asio::make_work_guard(io_context_);
+    const auto work = asio::make_work_guard(io_context_);
     if (timeout_sec) {
       io_context_.run_for(std::chrono::duration_cast<std::chrono::nanoseconds>(
           std::chrono::duration<double>(*timeout_sec)));
@@ -201,7 +201,7 @@ void EventsExecutor::spin_once(std::optional<double> timeout_sec)
     // touch Python will need to reacquire it though.
     py::gil_scoped_release gil_release;
     // Don't let asio auto stop if there's nothing to do
-    const auto work = boost::asio::make_work_guard(io_context_);
+    const auto work = asio::make_work_guard(io_context_);
     if (timeout_sec) {
       io_context_.run_one_for(std::chrono::duration_cast<std::chrono::nanoseconds>(
           std::chrono::duration<double>(*timeout_sec)));
@@ -866,7 +866,7 @@ void EventsExecutor::IterateTask(py::handle task)
     // TODO(bmartin427) Not sure this is correct; in particular, it's unclear how a task
     // that needs to wait a while can avoid either blocking or spinning.  Revisit when
     // asyncio support is intentionally added.
-    boost::asio::post(io_context_, std::bind(&EventsExecutor::IterateTask, this, task));
+    asio::post(io_context_, std::bind(&EventsExecutor::IterateTask, this, task));
   }
 }
 
