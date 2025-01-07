@@ -23,7 +23,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <boost/asio/any_io_executor.hpp>
+#include <asio/any_io_executor.hpp>
 
 #include "events_executor/python_hasher.hpp"
 #include "events_executor/scoped_with.hpp"
@@ -36,14 +36,14 @@ namespace events_executor
 /// This class manages low-level rcl timers in the system on behalf of EventsExecutor.
 class RclTimersManager {
 public:
-  explicit RclTimersManager(const boost::asio::any_io_executor &);
+  explicit RclTimersManager(const asio::any_io_executor &);
   ~RclTimersManager();
 
   void AddTimer(rcl_timer_t *, std::function<void()> ready_callback);
   void RemoveTimer(rcl_timer_t *);
 
 private:
-  boost::asio::any_io_executor executor_;
+  asio::any_io_executor executor_;
 
   class ClockManager;
   /// Handlers for each distinct clock source in the system.
@@ -56,7 +56,7 @@ public:
   /// @p timer_ready_callback will be invoked with the timer handle whenever a managed
   /// timer is ready for servicing.
   TimersManager(
-    const boost::asio::any_io_executor &,
+    const asio::any_io_executor &,
     std::function<void(pybind11::handle)> timer_ready_callback);
   ~TimersManager();
 

@@ -26,7 +26,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <boost/asio/any_io_executor.hpp>
+#include <asio/any_io_executor.hpp>
 
 #include "scoped_with.hpp"
 
@@ -51,7 +51,7 @@ public:
   /// All user callbacks will be posted on the @p executor given to the constructor.
   /// These callbacks will be invoked without the Python Global Interpreter Lock held,
   /// so if they need to access Python at all make sure to acquire that explicitly.
-  explicit RclCallbackManager(const boost::asio::any_io_executor & executor);
+  explicit RclCallbackManager(const asio::any_io_executor & executor);
   ~RclCallbackManager();
 
   /// Creates a callback wrapper to be passed to RCL C functions.  @p key should be a
@@ -77,7 +77,7 @@ private:
     std::shared_ptr<ScopedWith> with;
   };
 
-  boost::asio::any_io_executor executor_;
+  asio::any_io_executor executor_;
 
   /// The map key is the raw pointer to the RCL entity object (subscription, etc)
   /// associated with the callback.

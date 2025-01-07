@@ -31,8 +31,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/signal_set.hpp>
+#include <asio/io_context.hpp>
+#include <asio/signal_set.hpp>
 
 #include "rcl_support.hpp"
 #include "scoped_with.hpp"
@@ -170,8 +170,8 @@ private:
   const pybind11::object asyncio_run_;
   const pybind11::object rclpy_task_;
 
-  boost::asio::io_context io_context_;
-  boost::asio::signal_set signals_;
+  asio::io_context io_context_;
+  asio::signal_set signals_;
 
   std::recursive_mutex nodes_mutex_;  ///< Protects the node set
   pybind11::set nodes_;               ///< The set of all nodes we're executing

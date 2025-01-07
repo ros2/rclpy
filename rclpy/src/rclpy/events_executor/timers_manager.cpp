@@ -16,16 +16,15 @@
 
 #include <rcl/error_handling.h>
 
+#include <chrono>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
 
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/system/error_code.hpp>
+#include <asio/post.hpp>
+#include <asio/steady_timer.hpp>
 
 #include "rcl_support.hpp"
 
@@ -87,7 +86,7 @@ extern "C" void RclTimerResetTrampoline(const void * user_data, size_t)
 /// the provided asio executor.
 class RclTimersManager::ClockManager {
 public:
-  ClockManager(const boost::asio::any_io_executor & executor, rcl_clock_t * clock)
+  ClockManager(const asio::any_io_executor & executor, rcl_clock_t * clock)
   : executor_(executor), clock_(clock)
   {
     // Need to establish a clock jump callback so we can tell when debug time is
@@ -107,8 +106,7 @@ public:
             on_debug = false;
             break;
         }
-        boost::asio::post(executor_,
-                        std::bind(&ClockManager::HandleJump, this, on_debug));
+        asio::post(executor_, std::bind(&ClockManager::HandleJump, this, on_debug));
       };
     if (RCL_RET_OK != rcl_clock_add_jump_callback(clock_, threshold,
                                                   RclClockJumpTrampoline, &jump_cb_))
@@ -120,7 +118,7 @@ public:
     // This isn't necessary yet but every timer will eventually depend on it.  Again,
     // this could happen on any thread.
     reset_cb_ = [this]() {
-        boost::asio::post(executor_, std::bind(&ClockManager::UpdateTimers, this));
+        asio::post(executor_, std::bind(&ClockManager::UpdateTimers, this));
       };
 
     // Initialize which timebase we're on
@@ -217,7 +215,7 @@ private:
 
         // Post the user callback to be invoked later once timing-sensitive code is
         // done.
-        boost::asio::post(executor_, timer_cb_pair.second);
+        asio::post(executor_, timer_cb_pair.second);
 
         // Update time until *next* call.
         next_call_ns = GetNextCallNanoseconds(timer_cb_pair.first);
@@ -231,14 +229,11 @@ private:
     // anticipate the next timer being ready.  If we are, we'll just re-check
     // everything at the next jump callback.
     if (!on_debug_time_ && next_ready_ns) {
-      // Boost doesn't support nanoseconds by default.  Round the conversion up so we
-      // don't wake early and find nothing to do.
-      const int64_t sleep_us = (*next_ready_ns + 999) / 1000;
-      next_update_wait_.expires_from_now(boost::posix_time::microseconds(sleep_us));
-      next_update_wait_.async_wait([this](const boost::system::error_code & ec) {
+      next_update_wait_.expires_from_now(std::chrono::nanoseconds(*next_ready_ns));
+      next_update_wait_.async_wait([this](const asio::error_code & ec) {
           if (!ec) {
             UpdateTimers();
-          } else if (ec != boost::asio::error::operation_aborted) {
+          } else if (ec != asio::error::operation_aborted) {
             throw std::runtime_error("Error waiting for next timer: " + ec.message());
           }
       });
@@ -266,17 +261,17 @@ private:
     }
   }
 
-  boost::asio::any_io_executor executor_;
+  asio::any_io_executor executor_;
   rcl_clock_t * const clock_;
   ClockJumpCallbackT jump_cb_;
   TimerResetCallbackT reset_cb_;
   bool on_debug_time_{};
 
   std::unordered_map<rcl_timer_t *, std::function<void()>> timers_;
-  boost::asio::deadline_timer next_update_wait_{executor_};
+  asio::steady_timer next_update_wait_{executor_};
 };
 
-RclTimersManager::RclTimersManager(const boost::asio::any_io_executor & executor)
+RclTimersManager::RclTimersManager(const asio::any_io_executor & executor)
 : executor_(executor) {}
 
 RclTimersManager::~RclTimersManager() {}
@@ -323,7 +318,7 @@ void RclTimersManager::RemoveTimer(rcl_timer_t * timer)
 }
 
 TimersManager::TimersManager(
-  const boost::asio::any_io_executor & executor,
+  const asio::any_io_executor & executor,
   std::function<void(py::handle)> timer_ready_callback)
 : rcl_manager_(executor), ready_callback_(timer_ready_callback) {}
 
