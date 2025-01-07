@@ -24,32 +24,35 @@
 // limitations under the License.
 #include "events_executor/events_executor.hpp"
 
+#include <pybind11/eval.h>
+#include <pybind11/functional.h>
+#include <pybind11/stl.h>
+#include <Python.h>
+
+#include <rcl/error_handling.h>
+
 #include <chrono>
 #include <utility>
 
 #include <boost/asio/post.hpp>
 
-#include <Python.h>
-#include <rcl/error_handling.h>
-
-#include <pybind11/eval.h>
-#include <pybind11/functional.h>
-#include <pybind11/stl.h>
-
 namespace pl = std::placeholders;
 namespace py = pybind11;
 
-namespace rclpy {
-namespace events_executor {
+namespace rclpy
+{
+namespace events_executor
+{
 
 EventsExecutor::EventsExecutor(py::object context)
-    : rclpy_context_(context),
-      asyncio_run_(py::module_::import("asyncio").attr("run")),
-      rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
-      signals_(io_context_, SIGINT, SIGTERM),
-      rcl_callback_manager_(io_context_.get_executor()),
-      timers_manager_(io_context_.get_executor(),
-                      std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1)) {
+: rclpy_context_(context),
+  asyncio_run_(py::module_::import("asyncio").attr("run")),
+  rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
+  signals_(io_context_, SIGINT, SIGTERM),
+  rcl_callback_manager_(io_context_.get_executor()),
+  timers_manager_(io_context_.get_executor(),
+    std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1))
+{
   // rclpy.Executor creates a sigint handling guard condition here.  This is necessary
   // because a sleeping event loop won't notice Ctrl-C unless some other event wakes
   // it up otherwise.
@@ -59,24 +62,26 @@ EventsExecutor::EventsExecutor(py::object context)
   // just establish our own signal handling directly instead.  This unfortunately
   // bypasses the rclpy.init() options that allow a user to disable certain signal
   // handlers, but it doesn't look like we can do any better.
-  signals_.async_wait([this](const boost::system::error_code& ec, int) {
-    if (!ec) {
-      py::gil_scoped_acquire gil_acquire;
-      // Don't call context.try_shutdown() here, because that can call back to us to
-      // request a blocking shutdown(), which doesn't make any sense because we have to
-      // be spinning to process the callback that's asked to wait for spinning to stop.
-      // We'll have to call that later outside of any spin loop.
-      // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/__init__.py#L105-L109
-      sigint_pending_.store(true);
-      io_context_.stop();
-    }
+  signals_.async_wait([this](const boost::system::error_code & ec, int) {
+      if (!ec) {
+        py::gil_scoped_acquire gil_acquire;
+        // Don't call context.try_shutdown() here, because that can call back to us to
+        // request a blocking shutdown(), which doesn't make any sense because we have
+        // to be spinning to process the callback that's asked to wait for spinning to
+        // stop.  We'll have to call that later outside of any spin loop.
+        // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/__init__.py#L105-L109
+        sigint_pending_.store(true);
+        io_context_.stop();
+      }
   });
 }
 
-EventsExecutor::~EventsExecutor() { shutdown(); }
+EventsExecutor::~EventsExecutor() {shutdown();}
 
-pybind11::object EventsExecutor::create_task(py::object callback, py::args args,
-                                             const py::kwargs& kwargs) {
+pybind11::object EventsExecutor::create_task(
+  py::object callback, py::args args,
+  const py::kwargs & kwargs)
+{
   // Create and return a rclpy.task.Task() object, and schedule it to be called later.
   using py::literals::operator""_a;
   py::object task = rclpy_task_(callback, args, kwargs, "executor"_a = py::cast(this));
@@ -91,7 +96,8 @@ pybind11::object EventsExecutor::create_task(py::object callback, py::args args,
   return task;
 }
 
-bool EventsExecutor::shutdown(std::optional<double> timeout) {
+bool EventsExecutor::shutdown(std::optional<double> timeout)
+{
   // NOTE: The rclpy context can invoke this with a lock on the context held.  Therefore
   // we must not try to go access that context during this method or we can deadlock.
   // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/context.py#L101-L103
@@ -115,7 +121,8 @@ bool EventsExecutor::shutdown(std::optional<double> timeout) {
   return true;
 }
 
-bool EventsExecutor::add_node(py::object node) {
+bool EventsExecutor::add_node(py::object node)
+{
   std::lock_guard<std::recursive_mutex> lock(nodes_mutex_);
   if (nodes_.contains(node)) {
     return false;
@@ -128,7 +135,8 @@ bool EventsExecutor::add_node(py::object node) {
   return true;
 }
 
-void EventsExecutor::remove_node(py::handle node) {
+void EventsExecutor::remove_node(py::handle node)
+{
   std::lock_guard<std::recursive_mutex> lock(nodes_mutex_);
   if (!nodes_.contains(node)) {
     return;
@@ -139,12 +147,13 @@ void EventsExecutor::remove_node(py::handle node) {
   wake();
 }
 
-void EventsExecutor::wake() {
+void EventsExecutor::wake()
+{
   if (!wake_pending_.exchange(true)) {
     // Update tracked entities.
     boost::asio::post(io_context_, [this]() {
-      py::gil_scoped_acquire gil_acquire;
-      UpdateEntitiesFromNodes(!py::cast<bool>(rclpy_context_.attr("ok")()));
+        py::gil_scoped_acquire gil_acquire;
+        UpdateEntitiesFromNodes(!py::cast<bool>(rclpy_context_.attr("ok")()));
     });
   }
 }
@@ -155,7 +164,8 @@ void EventsExecutor::wake() {
 // executor instance.
 // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/executors.py#L184-L185
 
-void EventsExecutor::spin(std::optional<double> timeout_sec) {
+void EventsExecutor::spin(std::optional<double> timeout_sec)
+{
   {
     std::unique_lock<std::timed_mutex> spin_lock(spinning_mutex_, std::try_to_lock);
     if (!spin_lock) {
@@ -180,7 +190,8 @@ void EventsExecutor::spin(std::optional<double> timeout_sec) {
   }
 }
 
-void EventsExecutor::spin_once(std::optional<double> timeout_sec) {
+void EventsExecutor::spin_once(std::optional<double> timeout_sec)
+{
   {
     std::unique_lock<std::timed_mutex> spin_lock(spinning_mutex_, std::try_to_lock);
     if (!spin_lock) {
@@ -205,21 +216,25 @@ void EventsExecutor::spin_once(std::optional<double> timeout_sec) {
   }
 }
 
-void EventsExecutor::spin_until_future_complete(py::handle future,
-                                                std::optional<double> timeout_sec) {
+void EventsExecutor::spin_until_future_complete(
+  py::handle future,
+  std::optional<double> timeout_sec)
+{
   future.attr("add_done_callback")(
-      py::cpp_function([this](py::handle) { io_context_.stop(); }));
+      py::cpp_function([this](py::handle) {io_context_.stop();}));
   spin(timeout_sec);
 }
 
 void EventsExecutor::spin_once_until_future_complete(
-    py::handle future, std::optional<double> timeout_sec) {
+  py::handle future, std::optional<double> timeout_sec)
+{
   future.attr("add_done_callback")(
-      py::cpp_function([this](py::handle) { io_context_.stop(); }));
+      py::cpp_function([this](py::handle) {io_context_.stop();}));
   spin_once(timeout_sec);
 }
 
-void EventsExecutor::UpdateEntitiesFromNodes(bool shutdown) {
+void EventsExecutor::UpdateEntitiesFromNodes(bool shutdown)
+{
   // Clear pending flag as early as possible, so we error on the side of retriggering
   // a few harmless updates rather than potentially missing important additions.
   wake_pending_.store(false);
@@ -277,9 +292,10 @@ void EventsExecutor::UpdateEntitiesFromNodes(bool shutdown) {
 }
 
 void EventsExecutor::UpdateEntitySet(
-    py::set& entity_set, const py::set& new_entity_set,
-    std::function<void(py::handle)> added_entity_callback,
-    std::function<void(py::handle)> removed_entity_callback) {
+  py::set & entity_set, const py::set & new_entity_set,
+  std::function<void(py::handle)> added_entity_callback,
+  std::function<void(py::handle)> removed_entity_callback)
+{
   py::set added_entities = new_entity_set - entity_set;
   for (py::handle added_entity : added_entities) {
     added_entity_callback(added_entity);
@@ -293,26 +309,30 @@ void EventsExecutor::UpdateEntitySet(
   entity_set = new_entity_set;
 }
 
-void EventsExecutor::HandleAddedSubscription(py::handle subscription) {
+void EventsExecutor::HandleAddedSubscription(py::handle subscription)
+{
   py::handle handle = subscription.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_subscription_t* rcl_ptr = GetRclSubscription(handle);
+  const rcl_subscription_t * rcl_ptr = GetRclSubscription(handle);
   const auto cb =
-      std::bind(&EventsExecutor::HandleSubscriptionReady, this, subscription, pl::_1);
+    std::bind(&EventsExecutor::HandleSubscriptionReady, this, subscription, pl::_1);
   if (RCL_RET_OK != rcl_subscription_set_on_new_message_callback(
                         rcl_ptr, RclEventCallbackTrampoline,
-                        rcl_callback_manager_.MakeCallback(rcl_ptr, cb, with))) {
+                        rcl_callback_manager_.MakeCallback(rcl_ptr, cb, with)))
+  {
     throw std::runtime_error(
         std::string("Failed to set the on new message callback for subscription: ") +
         rcl_get_error_string().str);
   }
 }
 
-void EventsExecutor::HandleRemovedSubscription(py::handle subscription) {
+void EventsExecutor::HandleRemovedSubscription(py::handle subscription)
+{
   py::handle handle = subscription.attr("handle");
-  const rcl_subscription_t* rcl_ptr = GetRclSubscription(handle);
+  const rcl_subscription_t * rcl_ptr = GetRclSubscription(handle);
   if (RCL_RET_OK !=
-      rcl_subscription_set_on_new_message_callback(rcl_ptr, nullptr, nullptr)) {
+    rcl_subscription_set_on_new_message_callback(rcl_ptr, nullptr, nullptr))
+  {
     throw std::runtime_error(
         std::string("Failed to clear the on new message callback for subscription: ") +
         rcl_get_error_string().str);
@@ -320,8 +340,10 @@ void EventsExecutor::HandleRemovedSubscription(py::handle subscription) {
   rcl_callback_manager_.RemoveCallback(rcl_ptr);
 }
 
-void EventsExecutor::HandleSubscriptionReady(py::handle subscription,
-                                             size_t number_of_events) {
+void EventsExecutor::HandleSubscriptionReady(
+  py::handle subscription,
+  size_t number_of_events)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_subscription() and _execute_subcription().
@@ -334,7 +356,7 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription,
   const py::handle msg_type = subscription.attr("msg_type");
   const py::handle raw = subscription.attr("raw");
   const int callback_type =
-      py::cast<int>(subscription.attr("_callback_type").attr("value"));
+    py::cast<int>(subscription.attr("_callback_type").attr("value"));
   const int message_only = py::cast<int>(
       subscription.attr("CallbackType").attr("MessageOnly").attr("value"));
   const py::handle callback = subscription.attr("callback");
@@ -354,7 +376,7 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription,
         } else {
           callback(msg_info);
         }
-      } catch (const py::error_already_set& e) {
+      } catch (const py::error_already_set & e) {
         HandleCallbackExceptionInNodeEntity(e, subscription, "subscriptions");
         throw;
       }
@@ -364,46 +386,53 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription,
   }
 }
 
-void EventsExecutor::HandleAddedTimer(py::handle timer) {
+void EventsExecutor::HandleAddedTimer(py::handle timer)
+{
   timers_manager_.AddTimer(timer);
 }
 
-void EventsExecutor::HandleRemovedTimer(py::handle timer) {
+void EventsExecutor::HandleRemovedTimer(py::handle timer)
+{
   timers_manager_.RemoveTimer(timer);
 }
 
-void EventsExecutor::HandleTimerReady(py::handle timer) {
+void EventsExecutor::HandleTimerReady(py::handle timer)
+{
   py::gil_scoped_acquire gil_acquire;
 
   try {
     // Unlike most rclpy objects this doesn't document whether it's a Callable or might
     // be a Coroutine.  Let's hope it's the former. 🤞
     timer.attr("callback")();
-  } catch (const py::error_already_set& e) {
+  } catch (const py::error_already_set & e) {
     HandleCallbackExceptionInNodeEntity(e, timer, "timers");
     throw;
   }
 }
 
-void EventsExecutor::HandleAddedClient(py::handle client) {
+void EventsExecutor::HandleAddedClient(py::handle client)
+{
   py::handle handle = client.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_client_t* rcl_ptr = GetRclClient(handle);
+  const rcl_client_t * rcl_ptr = GetRclClient(handle);
   const auto cb = std::bind(&EventsExecutor::HandleClientReady, this, client, pl::_1);
   if (RCL_RET_OK != rcl_client_set_on_new_response_callback(
                         rcl_ptr, RclEventCallbackTrampoline,
-                        rcl_callback_manager_.MakeCallback(rcl_ptr, cb, with))) {
+                        rcl_callback_manager_.MakeCallback(rcl_ptr, cb, with)))
+  {
     throw std::runtime_error(
         std::string("Failed to set the on new response callback for client: ") +
         rcl_get_error_string().str);
   }
 }
 
-void EventsExecutor::HandleRemovedClient(py::handle client) {
+void EventsExecutor::HandleRemovedClient(py::handle client)
+{
   py::handle handle = client.attr("handle");
-  const rcl_client_t* rcl_ptr = GetRclClient(handle);
+  const rcl_client_t * rcl_ptr = GetRclClient(handle);
   if (RCL_RET_OK !=
-      rcl_client_set_on_new_response_callback(rcl_ptr, nullptr, nullptr)) {
+    rcl_client_set_on_new_response_callback(rcl_ptr, nullptr, nullptr))
+  {
     throw std::runtime_error(
         std::string("Failed to clear the on new response callback for client: ") +
         rcl_get_error_string().str);
@@ -411,7 +440,8 @@ void EventsExecutor::HandleRemovedClient(py::handle client) {
   rcl_callback_manager_.RemoveCallback(rcl_ptr);
 }
 
-void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_events) {
+void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_events)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_client() and _execute_client().
@@ -431,7 +461,7 @@ void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_event
       py::object future;
       try {
         future = get_pending_request(sequence);
-      } catch (const py::error_already_set& e) {
+      } catch (const py::error_already_set & e) {
         if (e.matches(PyExc_KeyError)) {
           // The request was cancelled
           continue;
@@ -441,7 +471,7 @@ void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_event
       future.attr("_set_executor")(py::cast(this));
       try {
         future.attr("set_result")(response);
-      } catch (const py::error_already_set& e) {
+      } catch (const py::error_already_set & e) {
         HandleCallbackExceptionInNodeEntity(e, client, "clients");
         throw;
       }
@@ -449,25 +479,29 @@ void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_event
   }
 }
 
-void EventsExecutor::HandleAddedService(py::handle service) {
+void EventsExecutor::HandleAddedService(py::handle service)
+{
   py::handle handle = service.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_service_t* rcl_ptr = GetRclService(handle);
+  const rcl_service_t * rcl_ptr = GetRclService(handle);
   const auto cb = std::bind(&EventsExecutor::HandleServiceReady, this, service, pl::_1);
   if (RCL_RET_OK != rcl_service_set_on_new_request_callback(
                         rcl_ptr, RclEventCallbackTrampoline,
-                        rcl_callback_manager_.MakeCallback(rcl_ptr, cb, with))) {
+                        rcl_callback_manager_.MakeCallback(rcl_ptr, cb, with)))
+  {
     throw std::runtime_error(
         std::string("Failed to set the on new request callback for service: ") +
         rcl_get_error_string().str);
   }
 }
 
-void EventsExecutor::HandleRemovedService(py::handle service) {
+void EventsExecutor::HandleRemovedService(py::handle service)
+{
   py::handle handle = service.attr("handle");
-  const rcl_service_t* rcl_ptr = GetRclService(handle);
+  const rcl_service_t * rcl_ptr = GetRclService(handle);
   if (RCL_RET_OK !=
-      rcl_service_set_on_new_request_callback(rcl_ptr, nullptr, nullptr)) {
+    rcl_service_set_on_new_request_callback(rcl_ptr, nullptr, nullptr))
+  {
     throw std::runtime_error(
         std::string("Failed to clear the on new request callback for service: ") +
         rcl_get_error_string().str);
@@ -475,7 +509,8 @@ void EventsExecutor::HandleRemovedService(py::handle service) {
   rcl_callback_manager_.RemoveCallback(rcl_ptr);
 }
 
-void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_events) {
+void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_events)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_service() and _execute_service().
@@ -498,7 +533,7 @@ void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_eve
         py::object response;
         try {
           response = callback(request, res_type());
-        } catch (const py::error_already_set& e) {
+        } catch (const py::error_already_set & e) {
           HandleCallbackExceptionInNodeEntity(e, service, "services");
           throw;
         }
@@ -508,7 +543,8 @@ void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_eve
   }
 }
 
-void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
+void EventsExecutor::HandleAddedWaitable(py::handle waitable)
+{
   // The Waitable API is too abstract for us to work with directly; it only exposes APIs
   // for dealing with wait sets, and all of the rcl callback API requires knowing
   // exactly what kinds of rcl objects you're working with.  We'll try to figure out
@@ -522,14 +558,14 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     throw std::runtime_error("Guard conditions not supported");
   }
   const py::object _rclpy = py::module_::import("rclpy.impl.implementation_singleton")
-                                .attr("rclpy_implementation");
+    .attr("rclpy_implementation");
   py::object wait_set = _rclpy.attr("WaitSet")(
       num_entities.attr("num_subscriptions"), 0, num_entities.attr("num_timers"),
       num_entities.attr("num_clients"), num_entities.attr("num_services"),
       num_entities.attr("num_events"), rclpy_context_.attr("handle"));
   auto with_waitset = std::make_shared<ScopedWith>(wait_set);
   waitable.attr("add_to_wait_set")(wait_set);
-  rcl_wait_set_t* const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
   // Be careful not to bind any py::objects into any callbacks, because that will try to
   // do reference counting without the GIL.  Ownership will be maintained with the info
   // struct instance which is guaranteed to outlast any callback.
@@ -541,15 +577,16 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
   // registered.
   WaitableSubEntities sub_entities;
   for (size_t i = 0; i < rcl_waitset->size_of_subscriptions; ++i) {
-    const rcl_subscription_t* const rcl_sub = rcl_waitset->subscriptions[i];
+    const rcl_subscription_t * const rcl_sub = rcl_waitset->subscriptions[i];
     rcl_waitset->subscriptions[i] = nullptr;
     sub_entities.subscriptions.push_back(rcl_sub);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableSubReady, this, waitable,
                               rcl_sub, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK !=
-        rcl_subscription_set_on_new_message_callback(
+      rcl_subscription_set_on_new_message_callback(
             rcl_sub, RclEventCallbackTrampoline,
-            rcl_callback_manager_.MakeCallback(rcl_sub, cb, with_waitable))) {
+            rcl_callback_manager_.MakeCallback(rcl_sub, cb, with_waitable)))
+    {
       throw std::runtime_error(
           std::string(
               "Failed to set the on new message callback for Waitable subscription: ") +
@@ -559,7 +596,7 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
   for (size_t i = 0; i < rcl_waitset->size_of_timers; ++i) {
     // Unfortunately we do require a non-const pointer here, while the waitset structure
     // contains a const pointer.
-    rcl_timer_t* const rcl_timer = const_cast<rcl_timer_t*>(rcl_waitset->timers[i]);
+    rcl_timer_t * const rcl_timer = const_cast<rcl_timer_t *>(rcl_waitset->timers[i]);
     rcl_waitset->timers[i] = nullptr;
     sub_entities.timers.push_back(rcl_timer);
     // Since this callback doesn't go through RclCallbackManager which would otherwise
@@ -570,15 +607,16 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     timers_manager_.rcl_manager().AddTimer(rcl_timer, cb);
   }
   for (size_t i = 0; i < rcl_waitset->size_of_clients; ++i) {
-    const rcl_client_t* const rcl_client = rcl_waitset->clients[i];
+    const rcl_client_t * const rcl_client = rcl_waitset->clients[i];
     rcl_waitset->clients[i] = nullptr;
     sub_entities.clients.push_back(rcl_client);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableClientReady, this,
                               waitable, rcl_client, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK !=
-        rcl_client_set_on_new_response_callback(
+      rcl_client_set_on_new_response_callback(
             rcl_client, RclEventCallbackTrampoline,
-            rcl_callback_manager_.MakeCallback(rcl_client, cb, with_waitable))) {
+            rcl_callback_manager_.MakeCallback(rcl_client, cb, with_waitable)))
+    {
       throw std::runtime_error(
           std::string(
               "Failed to set the on new response callback for Waitable client: ") +
@@ -586,15 +624,16 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     }
   }
   for (size_t i = 0; i < rcl_waitset->size_of_services; ++i) {
-    const rcl_service_t* const rcl_service = rcl_waitset->services[i];
+    const rcl_service_t * const rcl_service = rcl_waitset->services[i];
     rcl_waitset->services[i] = nullptr;
     sub_entities.services.push_back(rcl_service);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableServiceReady, this,
                               waitable, rcl_service, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK !=
-        rcl_service_set_on_new_request_callback(
+      rcl_service_set_on_new_request_callback(
             rcl_service, RclEventCallbackTrampoline,
-            rcl_callback_manager_.MakeCallback(rcl_service, cb, with_waitable))) {
+            rcl_callback_manager_.MakeCallback(rcl_service, cb, with_waitable)))
+    {
       throw std::runtime_error(
           std::string(
               "Failed to set the on new request callback for Waitable service: ") +
@@ -602,14 +641,15 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
     }
   }
   for (size_t i = 0; i < rcl_waitset->size_of_events; ++i) {
-    const rcl_event_t* const rcl_event = rcl_waitset->events[i];
+    const rcl_event_t * const rcl_event = rcl_waitset->events[i];
     rcl_waitset->events[i] = nullptr;
     sub_entities.events.push_back(rcl_event);
     const auto cb = std::bind(&EventsExecutor::HandleWaitableEventReady, this, waitable,
                               rcl_event, ws_handle, i, with_waitset, pl::_1);
     if (RCL_RET_OK != rcl_event_set_callback(rcl_event, RclEventCallbackTrampoline,
                                              rcl_callback_manager_.MakeCallback(
-                                                 rcl_event, cb, with_waitable))) {
+                                                 rcl_event, cb, with_waitable)))
+    {
       throw std::runtime_error(
           std::string("Failed to set the callback for Waitable event: ") +
           rcl_get_error_string().str);
@@ -622,43 +662,47 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable) {
   waitable_entities_[waitable] = std::move(sub_entities);
 }
 
-void EventsExecutor::HandleRemovedWaitable(py::handle waitable) {
+void EventsExecutor::HandleRemovedWaitable(py::handle waitable)
+{
   const auto nh = waitable_entities_.extract(waitable);
   if (!nh) {
     throw std::runtime_error("Couldn't find sub-entities entry for removed Waitable");
   }
-  const WaitableSubEntities& sub_entities = nh.mapped();
-  for (const rcl_subscription_t* const rcl_sub : sub_entities.subscriptions) {
+  const WaitableSubEntities & sub_entities = nh.mapped();
+  for (const rcl_subscription_t * const rcl_sub : sub_entities.subscriptions) {
     if (RCL_RET_OK !=
-        rcl_subscription_set_on_new_message_callback(rcl_sub, nullptr, nullptr)) {
+      rcl_subscription_set_on_new_message_callback(rcl_sub, nullptr, nullptr))
+    {
       throw std::runtime_error(std::string("Failed to clear the on new message "
                                            "callback for Waitable subscription: ") +
                                rcl_get_error_string().str);
     }
     rcl_callback_manager_.RemoveCallback(rcl_sub);
   }
-  for (rcl_timer_t* const rcl_timer : sub_entities.timers) {
+  for (rcl_timer_t * const rcl_timer : sub_entities.timers) {
     timers_manager_.rcl_manager().RemoveTimer(rcl_timer);
   }
-  for (const rcl_client_t* const rcl_client : sub_entities.clients) {
+  for (const rcl_client_t * const rcl_client : sub_entities.clients) {
     if (RCL_RET_OK !=
-        rcl_client_set_on_new_response_callback(rcl_client, nullptr, nullptr)) {
+      rcl_client_set_on_new_response_callback(rcl_client, nullptr, nullptr))
+    {
       throw std::runtime_error(std::string("Failed to clear the on new response "
                                            "callback for Waitable client: ") +
                                rcl_get_error_string().str);
     }
     rcl_callback_manager_.RemoveCallback(rcl_client);
   }
-  for (const rcl_service_t* const rcl_service : sub_entities.services) {
+  for (const rcl_service_t * const rcl_service : sub_entities.services) {
     if (RCL_RET_OK !=
-        rcl_service_set_on_new_request_callback(rcl_service, nullptr, nullptr)) {
+      rcl_service_set_on_new_request_callback(rcl_service, nullptr, nullptr))
+    {
       throw std::runtime_error(std::string("Failed to clear the on new request "
                                            "callback for Waitable service: ") +
                                rcl_get_error_string().str);
     }
     rcl_callback_manager_.RemoveCallback(rcl_service);
   }
-  for (const rcl_event_t* const rcl_event : sub_entities.events) {
+  for (const rcl_event_t * const rcl_event : sub_entities.events) {
     if (RCL_RET_OK != rcl_event_set_callback(rcl_event, nullptr, nullptr)) {
       throw std::runtime_error(
           std::string("Failed to clear the callback for Waitable event: ") +
@@ -669,64 +713,71 @@ void EventsExecutor::HandleRemovedWaitable(py::handle waitable) {
 }
 
 void EventsExecutor::HandleWaitableSubReady(
-    py::handle waitable, const rcl_subscription_t* rcl_sub, py::handle wait_set,
-    size_t wait_set_sub_index, std::shared_ptr<ScopedWith>, size_t number_of_events) {
+  py::handle waitable, const rcl_subscription_t * rcl_sub, py::handle wait_set,
+  size_t wait_set_sub_index, std::shared_ptr<ScopedWith>, size_t number_of_events)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our subscription object is
   // ready, and then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t* const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
   rcl_waitset->subscriptions[wait_set_sub_index] = rcl_sub;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
   rcl_waitset->subscriptions[wait_set_sub_index] = nullptr;
 }
 
-void EventsExecutor::HandleWaitableTimerReady(py::handle waitable,
-                                              const rcl_timer_t* rcl_timer,
-                                              py::handle wait_set,
-                                              size_t wait_set_timer_index,
-                                              std::shared_ptr<ScopedWith>,
-                                              std::shared_ptr<ScopedWith>) {
+void EventsExecutor::HandleWaitableTimerReady(
+  py::handle waitable,
+  const rcl_timer_t * rcl_timer,
+  py::handle wait_set,
+  size_t wait_set_timer_index,
+  std::shared_ptr<ScopedWith>,
+  std::shared_ptr<ScopedWith>)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our timer object is ready, and
   // then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t* const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
   rcl_waitset->timers[wait_set_timer_index] = rcl_timer;
   HandleWaitableReady(waitable, wait_set, 1);
   // Null out the wait set again so that other callbacks can use it on other objects.
   rcl_waitset->timers[wait_set_timer_index] = nullptr;
 }
 
-void EventsExecutor::HandleWaitableClientReady(py::handle waitable,
-                                               const rcl_client_t* rcl_client,
-                                               py::handle wait_set,
-                                               size_t wait_set_client_index,
-                                               std::shared_ptr<ScopedWith>,
-                                               size_t number_of_events) {
+void EventsExecutor::HandleWaitableClientReady(
+  py::handle waitable,
+  const rcl_client_t * rcl_client,
+  py::handle wait_set,
+  size_t wait_set_client_index,
+  std::shared_ptr<ScopedWith>,
+  size_t number_of_events)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our client object is ready, and
   // then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t* const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
   rcl_waitset->clients[wait_set_client_index] = rcl_client;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
   rcl_waitset->clients[wait_set_client_index] = nullptr;
 }
 
-void EventsExecutor::HandleWaitableServiceReady(py::handle waitable,
-                                                const rcl_service_t* rcl_service,
-                                                py::handle wait_set,
-                                                size_t wait_set_service_index,
-                                                std::shared_ptr<ScopedWith>,
-                                                size_t number_of_events) {
+void EventsExecutor::HandleWaitableServiceReady(
+  py::handle waitable,
+  const rcl_service_t * rcl_service,
+  py::handle wait_set,
+  size_t wait_set_service_index,
+  std::shared_ptr<ScopedWith>,
+  size_t number_of_events)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our service object is ready,
   // and then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t* const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
   rcl_waitset->services[wait_set_service_index] = rcl_service;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
@@ -734,28 +785,31 @@ void EventsExecutor::HandleWaitableServiceReady(py::handle waitable,
 }
 
 void EventsExecutor::HandleWaitableEventReady(
-    py::handle waitable, const rcl_event_t* rcl_event, py::handle wait_set,
-    size_t wait_set_event_index, std::shared_ptr<ScopedWith>, size_t number_of_events) {
+  py::handle waitable, const rcl_event_t * rcl_event, py::handle wait_set,
+  size_t wait_set_event_index, std::shared_ptr<ScopedWith>, size_t number_of_events)
+{
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our event object is ready, and
   // then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t* const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
   rcl_waitset->events[wait_set_event_index] = rcl_event;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
   rcl_waitset->events[wait_set_event_index] = nullptr;
 }
 
-void EventsExecutor::HandleWaitableReady(py::handle waitable, py::handle wait_set,
-                                         size_t number_of_events) {
+void EventsExecutor::HandleWaitableReady(
+  py::handle waitable, py::handle wait_set,
+  size_t number_of_events)
+{
   // Largely based on rclpy.Executor._take_waitable()
   // https://github.com/ros2/rclpy/blob/a19180c238d4d97ed2b58868d8fb7fa3e3b621f2/rclpy/rclpy/executors.py#L447-L454
   py::object is_ready = waitable.attr("is_ready");
   py::object take_data = waitable.attr("take_data");
   py::object execute = waitable.attr("execute");
   py::object futures = waitable.attr("_futures");
-  for (auto& future : futures) {
+  for (auto & future : futures) {
     future.attr("_set_executor")(py::cast(this));
   }
   for (size_t i = 0; i < number_of_events; ++i) {
@@ -769,14 +823,15 @@ void EventsExecutor::HandleWaitableReady(py::handle waitable, py::handle wait_se
       // execute() is an async method, we need to use asyncio to run it
       // TODO(bmartin427) Don't run all of this immediately, blocking everything else
       asyncio_run_(execute(data));
-    } catch (const py::error_already_set& e) {
+    } catch (const py::error_already_set & e) {
       HandleCallbackExceptionInNodeEntity(e, waitable, "waitables");
       throw;
     }
   }
 }
 
-void EventsExecutor::IterateTask(py::handle task) {
+void EventsExecutor::IterateTask(py::handle task)
+{
   py::gil_scoped_acquire gil_acquire;
   // Calling this won't throw, but it may set the exception property on the task object.
   task();
@@ -794,7 +849,7 @@ void EventsExecutor::IterateTask(py::handle task) {
       scope["ex"] = ex;
       try {
         py::exec("raise ex", scope);
-      } catch (py::error_already_set& cpp_ex) {
+      } catch (py::error_already_set & cpp_ex) {
         // There's no good way to know what node this task came from.  If we only have
         // one node, we can use the logger from that, otherwise we'll have to leave it
         // undefined.
@@ -816,15 +871,15 @@ void EventsExecutor::IterateTask(py::handle task) {
 }
 
 void EventsExecutor::HandleCallbackExceptionInNodeEntity(
-    const py::error_already_set& exc, py::handle entity,
-    const std::string& node_entity_attr) {
+  const py::error_already_set & exc, py::handle entity,
+  const std::string & node_entity_attr)
+{
   // Try to identify the node associated with the entity that threw the exception, so we
   // can log to it.
   for (py::handle node : nodes_) {
     if (py::set(node.attr(node_entity_attr.c_str())).contains(entity)) {
-      HandleCallbackExceptionWithLogger(exc, node.attr("get_logger")(),
-                                        node_entity_attr);
-      return;
+      return HandleCallbackExceptionWithLogger(exc, node.attr("get_logger")(),
+                                               node_entity_attr);
     }
   }
 
@@ -832,9 +887,11 @@ void EventsExecutor::HandleCallbackExceptionInNodeEntity(
   HandleCallbackExceptionWithLogger(exc, py::none(), node_entity_attr);
 }
 
-void EventsExecutor::HandleCallbackExceptionWithLogger(const py::error_already_set& exc,
-                                                       py::object logger,
-                                                       const std::string& entity_type) {
+void EventsExecutor::HandleCallbackExceptionWithLogger(
+  const py::error_already_set & exc,
+  py::object logger,
+  const std::string & entity_type)
+{
   if (logger.is_none()) {
     py::object logging = py::module_::import("rclpy.logging");
     logger = logging.attr("get_logger")("UNKNOWN");
@@ -860,20 +917,21 @@ logger.warn("Error occurred at:\n" + "".join(traceback.format_tb(exc_trace)))
 
 // pybind11 module bindings
 
-void define_events_executor(py::object module) {
+void define_events_executor(py::object module)
+{
   py::class_<EventsExecutor>(module, "EventsExecutor")
-      .def(py::init<py::object>(), py::arg("context"))
-      .def_property_readonly("context", &EventsExecutor::get_context)
-      .def("create_task", &EventsExecutor::create_task, py::arg("callback"))
-      .def("shutdown", &EventsExecutor::shutdown, py::arg("timeout_sec") = py::none())
-      .def("add_node", &EventsExecutor::add_node, py::arg("node"))
-      .def("remove_node", &EventsExecutor::remove_node, py::arg("node"))
-      .def("wake", &EventsExecutor::wake)
-      .def("spin", [](EventsExecutor& exec) { exec.spin(); })
-      .def("spin_once", &EventsExecutor::spin_once, py::arg("timeout_sec") = py::none())
-      .def("spin_until_future_complete", &EventsExecutor::spin_until_future_complete,
+  .def(py::init<py::object>(), py::arg("context"))
+  .def_property_readonly("context", &EventsExecutor::get_context)
+  .def("create_task", &EventsExecutor::create_task, py::arg("callback"))
+  .def("shutdown", &EventsExecutor::shutdown, py::arg("timeout_sec") = py::none())
+  .def("add_node", &EventsExecutor::add_node, py::arg("node"))
+  .def("remove_node", &EventsExecutor::remove_node, py::arg("node"))
+  .def("wake", &EventsExecutor::wake)
+  .def("spin", [](EventsExecutor & exec) {exec.spin();})
+  .def("spin_once", &EventsExecutor::spin_once, py::arg("timeout_sec") = py::none())
+  .def("spin_until_future_complete", &EventsExecutor::spin_until_future_complete,
            py::arg("future"), py::arg("timeout_sec") = py::none())
-      .def("spin_once_until_future_complete",
+  .def("spin_once_until_future_complete",
            &EventsExecutor::spin_once_until_future_complete, py::arg("future"),
            py::arg("timeout_sec") = py::none());
 }

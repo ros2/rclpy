@@ -1,4 +1,4 @@
-# Copyright 2024 Brad Martin
+# Copyright 2024-2025 Brad Martin
 # Copyright 2024 Merlin Labs, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,7 @@ class SubTestNode(rclpy.node.Node):
     """Node to test subscriptions and subscription-related events."""
 
     def __init__(self, *, transient_local: bool = False):
-        super().__init__("test_sub_node")
+        super().__init__('test_sub_node')
         self._new_pub_future: rclpy.Future[
             rclpy.event_handler.QoSSubscriptionMatchedInfo
         ] | None = None
@@ -55,7 +55,7 @@ class SubTestNode(rclpy.node.Node):
             test_msgs.msg.BasicTypes,
             # This node seems to get stale discovery data and then complain about QoS
             # changes if we reuse the same topic name.
-            "test_topic" + ("_transient_local" if transient_local else ""),
+            'test_topic' + ('_transient_local' if transient_local else ''),
             self._handle_sub,
             _get_pub_sub_qos(transient_local),
             event_callbacks=rclpy.event_handler.SubscriptionEventCallbacks(
@@ -92,13 +92,13 @@ class PubTestNode(rclpy.node.Node):
     """Node to test publications and publication-related events."""
 
     def __init__(self, *, transient_local: bool = False):
-        super().__init__("test_pub_node")
+        super().__init__('test_pub_node')
         self._new_sub_future: rclpy.Future[
             rclpy.event_handler.QoSPublisherMatchedInfo
         ] | None = None
         self._pub = self.create_publisher(
             test_msgs.msg.BasicTypes,
-            "test_topic" + ("_transient_local" if transient_local else ""),
+            'test_topic' + ('_transient_local' if transient_local else ''),
             _get_pub_sub_qos(transient_local),
             event_callbacks=rclpy.event_handler.PublisherEventCallbacks(
                 matched=self._handle_matched_pub
@@ -127,19 +127,20 @@ class ServiceServerTestNode(rclpy.node.Node):
     """Node to test service server-side operation."""
 
     def __init__(self):
-        super().__init__("test_service_server_node")
+        super().__init__('test_service_server_node')
         self._got_request_future: rclpy.Future[
             test_msgs.srv.BasicTypes.Request
         ] | None = None
         self._pending_response: test_msgs.srv.BasicTypes.Response | None = None
         self.create_service(
-            test_msgs.srv.BasicTypes, "test_service", self._handle_request
+            test_msgs.srv.BasicTypes, 'test_service', self._handle_request
         )
 
     def expect_request(
         self, success: bool, error_msg: str
     ) -> rclpy.Future[test_msgs.srv.BasicTypes.Request]:
-        """Expect an incoming request.
+        """
+        Expect an incoming request.
 
         The arguments are used to compose the response.
         """
@@ -167,8 +168,8 @@ class ServiceClientTestNode(rclpy.node.Node):
     """Node to test service client-side operation."""
 
     def __init__(self):
-        super().__init__("test_service_client_node")
-        self._client = self.create_client(test_msgs.srv.BasicTypes, "test_service")
+        super().__init__('test_service_client_node')
+        self._client = self.create_client(test_msgs.srv.BasicTypes, 'test_service')
 
     def issue_request(
         self, value: float
@@ -183,7 +184,7 @@ class TimerTestNode(rclpy.node.Node):
     def __init__(
         self, index: int = 0, parameter_overrides: list[rclpy.Parameter] | None = None
     ):
-        super().__init__(f"test_timer{index}", parameter_overrides=parameter_overrides)
+        super().__init__(f'test_timer{index}', parameter_overrides=parameter_overrides)
         self._timer_events = 0
         self._tick_future: rclpy.Future[None] | None = None
         self._timer = self.create_timer(0.1, self._handle_timer)
@@ -207,11 +208,11 @@ class ClockPublisherNode(rclpy.node.Node):
     """Node to publish rostime clock updates."""
 
     def __init__(self):
-        super().__init__("clock_node")
+        super().__init__('clock_node')
         self._now = rclpy.time.Time()
         self._pub = self.create_publisher(
             rosgraph_msgs.msg.Clock,
-            "/clock",
+            '/clock',
             rclpy.qos.QoSProfile(
                 depth=1, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT
             ),
@@ -227,8 +228,8 @@ class ActionServerTestNode(rclpy.node.Node):
 
     def __init__(self):
         super().__init__(
-            "test_action_server_node",
-            parameter_overrides=[rclpy.Parameter("use_sim_time", value=True)],
+            'test_action_server_node',
+            parameter_overrides=[rclpy.Parameter('use_sim_time', value=True)],
         )
         self._got_goal_future: rclpy.Future[
             test_msgs.action.Fibonacci.Goal
@@ -236,7 +237,7 @@ class ActionServerTestNode(rclpy.node.Node):
         self._srv = rclpy.action.ActionServer(
             self,
             test_msgs.action.Fibonacci,
-            "test_action",
+            'test_action',
             self._handle_execute,
             handle_accepted_callback=self._handle_accepted,
             result_timeout=10,
@@ -260,7 +261,8 @@ class ActionServerTestNode(rclpy.node.Node):
         # Wait to finish until instructed by test
 
     def advance_feedback(self) -> list[int] | None:
-        """Add an entry to the result in progress and sends a feedback message.
+        """
+        Add an entry to the result in progress and sends a feedback message.
 
         Returns the current sequence in progress if incomplete, or None if the sequence
         is complete and it's time to complete the operation instead.
@@ -281,7 +283,8 @@ class ActionServerTestNode(rclpy.node.Node):
         return self._sequence
 
     def execute(self) -> rclpy.action.server.ServerGoalHandle:
-        """Completes the action in progress.
+        """
+        Completes the action in progress.
 
         Returns the handle to the goal executed.
 
@@ -305,9 +308,9 @@ class ActionClientTestNode(rclpy.node.Node):
     """Node to test action client-side operation."""
 
     def __init__(self):
-        super().__init__("test_action_client_node")
+        super().__init__('test_action_client_node')
         self._client = rclpy.action.ActionClient(
-            self, test_msgs.action.Fibonacci, "test_action"
+            self, test_msgs.action.Fibonacci, 'test_action'
         )
         self._feedback_future: rclpy.Future[
             test_msgs.action.Fibonacci.Feedback
@@ -319,7 +322,8 @@ class ActionClientTestNode(rclpy.node.Node):
     def send_goal(
         self, order: int
     ) -> rclpy.Future[rclpy.action.client.ClientGoalHandle]:
-        """Send a new goal.
+        """
+        Send a new goal.
 
         The future will contain the goal handle when the goal submission response has
         been received.
@@ -372,10 +376,11 @@ class ActionClientTestNode(rclpy.node.Node):
 
 
 class TestEventsExecutor(unittest.TestCase):
+
     def setUp(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Prevent nodes under test from discovering other random stuff to talk to
-        os.environ["ROS_AUTOMATIC_DISCOVERY_RANGE"] = "OFF"
+        os.environ['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'OFF'
         rclpy.init()
 
         self.executor = rclpy.experimental.EventsExecutor()
@@ -531,7 +536,7 @@ class TestEventsExecutor(unittest.TestCase):
 
     def test_service(self) -> None:
         server_node = ServiceServerTestNode()
-        got_request_future = server_node.expect_request(True, "test response 0")
+        got_request_future = server_node.expect_request(True, 'test response 0')
         self.executor.add_node(server_node)
         self._expect_future_not_done(got_request_future)
 
@@ -542,10 +547,10 @@ class TestEventsExecutor(unittest.TestCase):
             got_response_future = client_node.issue_request(7.1)
             self._check_service_request_future(got_request_future, 7.1)
             got_request_future = server_node.expect_request(
-                True, f"test response {i + 1}"
+                True, f'test response {i + 1}'
             )
             self._check_service_response_future(
-                got_response_future, True, f"test response {i}"
+                got_response_future, True, f'test response {i}'
             )
 
         # Destroy server node and retry issuing a request
@@ -559,7 +564,7 @@ class TestEventsExecutor(unittest.TestCase):
     def test_timers(self) -> None:
         realtime_node = TimerTestNode(index=0)
         rostime_node = TimerTestNode(
-            index=1, parameter_overrides=[rclpy.Parameter("use_sim_time", value=True)]
+            index=1, parameter_overrides=[rclpy.Parameter('use_sim_time', value=True)]
         )
         clock_node = ClockPublisherNode()
         for node in [realtime_node, rostime_node, clock_node]:
@@ -655,5 +660,5 @@ class TestEventsExecutor(unittest.TestCase):
         self.assertFalse(goal_acknowledged_future.done())  # Already waited a bit
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
