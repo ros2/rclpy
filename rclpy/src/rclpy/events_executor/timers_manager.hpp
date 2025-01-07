@@ -1,4 +1,4 @@
-// Copyright 2024 Brad Martin
+// Copyright 2024-2025 Brad Martin
 // Copyright 2024 Merlin Labs, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,64 +14,68 @@
 // limitations under the License.
 #pragma once
 
+#include <pybind11/pybind11.h>
+
+#include <rcl/time.h>
+#include <rcl/timer.h>
+
 #include <functional>
 #include <memory>
 #include <unordered_map>
 
 #include <boost/asio/any_io_executor.hpp>
 
-#include <pybind11/pybind11.h>
-
-#include <rcl/time.h>
-#include <rcl/timer.h>
-
 #include "events_executor/python_hasher.hpp"
 #include "events_executor/scoped_with.hpp"
 
-namespace rclpy {
-namespace events_executor {
+namespace rclpy
+{
+namespace events_executor
+{
 
 /// This class manages low-level rcl timers in the system on behalf of EventsExecutor.
 class RclTimersManager {
- public:
-  explicit RclTimersManager(const boost::asio::any_io_executor&);
+public:
+  explicit RclTimersManager(const boost::asio::any_io_executor &);
   ~RclTimersManager();
 
-  void AddTimer(rcl_timer_t*, std::function<void()> ready_callback);
-  void RemoveTimer(rcl_timer_t*);
+  void AddTimer(rcl_timer_t *, std::function<void()> ready_callback);
+  void RemoveTimer(rcl_timer_t *);
 
- private:
+private:
   boost::asio::any_io_executor executor_;
 
   class ClockManager;
   /// Handlers for each distinct clock source in the system.
-  std::unordered_map<const rcl_clock_t*, std::unique_ptr<ClockManager>> clock_managers_;
+  std::unordered_map<const rcl_clock_t *, std::unique_ptr<ClockManager>> clock_managers_;
 };
 
 /// This class manages rclpy.Timer Python objects on behalf of EventsExecutor.
 class TimersManager {
- public:
+public:
   /// @p timer_ready_callback will be invoked with the timer handle whenever a managed
   /// timer is ready for servicing.
-  TimersManager(const boost::asio::any_io_executor&,
-                std::function<void(pybind11::handle)> timer_ready_callback);
+  TimersManager(
+    const boost::asio::any_io_executor &,
+    std::function<void(pybind11::handle)> timer_ready_callback);
   ~TimersManager();
 
   /// Accessor for underlying rcl timer manager, for management of non-Python timers.
-  RclTimersManager& rcl_manager() { return rcl_manager_; }
+  RclTimersManager & rcl_manager() {return rcl_manager_;}
 
   // Both of these methods expect the GIL to be held when they are called.
   void AddTimer(pybind11::handle timer);
   void RemoveTimer(pybind11::handle timer);
 
- private:
-  struct PyRclMapping {
+private:
+  struct PyRclMapping
+  {
     /// Marks the corresponding Python object as in-use for as long as we're using the
     /// rcl pointer derived from it.
     std::unique_ptr<ScopedWith> with;
 
     /// The underlying rcl object
-    rcl_timer_t* rcl_ptr{};
+    rcl_timer_t * rcl_ptr{};
   };
 
   RclTimersManager rcl_manager_;

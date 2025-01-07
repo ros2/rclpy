@@ -1,4 +1,4 @@
-// Copyright 2024 Brad Martin
+// Copyright 2024-2025 Brad Martin
 // Copyright 2024 Merlin Labs, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,22 +16,26 @@
 
 #include <pybind11/pybind11.h>
 
-namespace rclpy {
-namespace events_executor {
+namespace rclpy
+{
+namespace events_executor
+{
 
 /// Enters a python context manager for the scope of this object instance.
 class ScopedWith {
- public:
+public:
   explicit ScopedWith(pybind11::handle object)
-      : object_(pybind11::cast<pybind11::object>(object)) {
+  : object_(pybind11::cast<pybind11::object>(object))
+  {
     object_.attr("__enter__")();
   }
 
-  ~ScopedWith() {
+  ~ScopedWith()
+  {
     object_.attr("__exit__")(pybind11::none(), pybind11::none(), pybind11::none());
   }
 
- private:
+private:
   pybind11::object object_;
 };
 

@@ -1,4 +1,4 @@
-// Copyright 2024 Brad Martin
+// Copyright 2024-2025 Brad Martin
 // Copyright 2024 Merlin Labs, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +16,17 @@
 
 #include <pybind11/pybind11.h>
 
-namespace rclpy {
-namespace events_executor {
+namespace rclpy
+{
+namespace events_executor
+{
 /// This is intended to be used as the Hash template arg to STL containers using a
 /// pybind11::handle as a Key.  This is the same hash that a native Python dict or set
 /// would use given the same key.
-struct PythonHasher {
-  inline ssize_t operator()(const pybind11::handle& handle) const {
+struct PythonHasher
+{
+  inline ssize_t operator()(const pybind11::handle & handle) const
+  {
     return pybind11::hash(handle);
   }
 };

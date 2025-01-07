@@ -1,4 +1,4 @@
-# Copyright 2024 Brad Martin
+# Copyright 2024-2025 Brad Martin
 # Copyright 2024 Merlin Labs, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +16,8 @@ import faulthandler
 import typing
 
 import rclpy.executors
-import rclpy.node
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+import rclpy.node
 
 
 # Try to look like we inherit from the rclpy Executor for type checking purposes without

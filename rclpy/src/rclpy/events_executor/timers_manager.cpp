@@ -1,4 +1,4 @@
-// Copyright 2024 Brad Martin
+// Copyright 2024-2025 Brad Martin
 // Copyright 2024 Merlin Labs, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,8 @@
 // limitations under the License.
 #include "events_executor/timers_manager.hpp"
 
+#include <rcl/error_handling.h>
+
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -25,16 +27,17 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/system/error_code.hpp>
 
-#include <rcl/error_handling.h>
-
 #include "rcl_support.hpp"
 
 namespace py = pybind11;
 
-namespace rclpy {
-namespace events_executor {
+namespace rclpy
+{
+namespace events_executor
+{
 
-namespace {
+namespace
+{
 
 // Implementation note: the original iRobot TimersManager associated with the rclcpp
 // EventsExecutor maintained a heap with all outstanding timers sorted by their next
@@ -55,22 +58,25 @@ namespace {
 // this assumption, so we can reassess this decision.
 constexpr size_t WARN_TIMERS_COUNT = 8;
 
-typedef std::function<void(const rcl_time_jump_t*)> ClockJumpCallbackT;
+typedef std::function<void(const rcl_time_jump_t *)> ClockJumpCallbackT;
 typedef std::function<void()> TimerResetCallbackT;
 
-extern "C" void RclClockJumpTrampoline(const rcl_time_jump_t* time_jump,
-                                       bool before_jump, void* user_data) {
+extern "C" void RclClockJumpTrampoline(
+  const rcl_time_jump_t * time_jump,
+  bool before_jump, void * user_data)
+{
   // rcl calls this both before and after a clock change, and we never want the before
   // callback, so let's just eliminate that case early.
   if (before_jump) {
     return;
   }
-  auto cb = reinterpret_cast<ClockJumpCallbackT*>(user_data);
+  auto cb = reinterpret_cast<ClockJumpCallbackT *>(user_data);
   (*cb)(time_jump);
 }
 
-extern "C" void RclTimerResetTrampoline(const void* user_data, size_t) {
-  auto cb = reinterpret_cast<const TimerResetCallbackT*>(user_data);
+extern "C" void RclTimerResetTrampoline(const void * user_data, size_t)
+{
+  auto cb = reinterpret_cast<const TimerResetCallbackT *>(user_data);
   (*cb)();
 }
 
@@ -80,31 +86,33 @@ extern "C" void RclTimerResetTrampoline(const void* user_data, size_t) {
 /// (including construction and destruction) are assumed to happen on the thread running
 /// the provided asio executor.
 class RclTimersManager::ClockManager {
- public:
-  ClockManager(const boost::asio::any_io_executor& executor, rcl_clock_t* clock)
-      : executor_(executor), clock_(clock) {
+public:
+  ClockManager(const boost::asio::any_io_executor & executor, rcl_clock_t * clock)
+  : executor_(executor), clock_(clock)
+  {
     // Need to establish a clock jump callback so we can tell when debug time is
     // updated.
     rcl_jump_threshold_t threshold{
-        .on_clock_change = true, .min_forward = 1, .min_backward = -1};
+      .on_clock_change = true, .min_forward = 1, .min_backward = -1};
     // Note, this callback could happen on any thread
-    jump_cb_ = [this](const rcl_time_jump_t* time_jump) {
-      bool on_debug{};
-      switch (time_jump->clock_change) {
-        case RCL_ROS_TIME_NO_CHANGE:
-        case RCL_ROS_TIME_ACTIVATED:
-          on_debug = true;
-          break;
-        case RCL_ROS_TIME_DEACTIVATED:
-        case RCL_SYSTEM_TIME_NO_CHANGE:
-          on_debug = false;
-          break;
-      }
-      boost::asio::post(executor_,
+    jump_cb_ = [this](const rcl_time_jump_t * time_jump) {
+        bool on_debug{};
+        switch (time_jump->clock_change) {
+          case RCL_ROS_TIME_NO_CHANGE:
+          case RCL_ROS_TIME_ACTIVATED:
+            on_debug = true;
+            break;
+          case RCL_ROS_TIME_DEACTIVATED:
+          case RCL_SYSTEM_TIME_NO_CHANGE:
+            on_debug = false;
+            break;
+        }
+        boost::asio::post(executor_,
                         std::bind(&ClockManager::HandleJump, this, on_debug));
-    };
+      };
     if (RCL_RET_OK != rcl_clock_add_jump_callback(clock_, threshold,
-                                                  RclClockJumpTrampoline, &jump_cb_)) {
+                                                  RclClockJumpTrampoline, &jump_cb_))
+    {
       throw std::runtime_error(std::string("Failed to set RCL clock jump callback: ") +
                                rcl_get_error_string().str);
     }
@@ -112,8 +120,8 @@ class RclTimersManager::ClockManager {
     // This isn't necessary yet but every timer will eventually depend on it.  Again,
     // this could happen on any thread.
     reset_cb_ = [this]() {
-      boost::asio::post(executor_, std::bind(&ClockManager::UpdateTimers, this));
-    };
+        boost::asio::post(executor_, std::bind(&ClockManager::UpdateTimers, this));
+      };
 
     // Initialize which timebase we're on
     if (clock_->type == RCL_ROS_TIME) {
@@ -125,9 +133,11 @@ class RclTimersManager::ClockManager {
     }
   }
 
-  ~ClockManager() {
+  ~ClockManager()
+  {
     if (RCL_RET_OK !=
-        rcl_clock_remove_jump_callback(clock_, RclClockJumpTrampoline, &jump_cb_)) {
+      rcl_clock_remove_jump_callback(clock_, RclClockJumpTrampoline, &jump_cb_))
+    {
       py::gil_scoped_acquire gil_acquire;
       py::print(std::string("Failed to remove RCL clock jump callback: ") +
                 rcl_get_error_string().str);
@@ -137,12 +147,14 @@ class RclTimersManager::ClockManager {
     }
   }
 
-  bool empty() const { return timers_.empty(); }
+  bool empty() const {return timers_.empty();}
 
-  void AddTimer(rcl_timer_t* timer, std::function<void()> ready_callback) {
+  void AddTimer(rcl_timer_t * timer, std::function<void()> ready_callback)
+  {
     // All timers have the same reset callback
     if (RCL_RET_OK !=
-        rcl_timer_set_on_reset_callback(timer, RclTimerResetTrampoline, &reset_cb_)) {
+      rcl_timer_set_on_reset_callback(timer, RclTimerResetTrampoline, &reset_cb_))
+    {
       throw std::runtime_error(std::string("Failed to set timer reset callback: ") +
                                rcl_get_error_string().str);
     }
@@ -154,7 +166,8 @@ class RclTimersManager::ClockManager {
     UpdateTimers();
   }
 
-  void RemoveTimer(rcl_timer_t* timer) {
+  void RemoveTimer(rcl_timer_t * timer)
+  {
     auto it = timers_.find(timer);
     if (it == timers_.end()) {
       throw py::key_error("Attempt to remove unmanaged timer");
@@ -171,17 +184,19 @@ class RclTimersManager::ClockManager {
     // so we won't bother.
   }
 
- private:
-  void HandleJump(bool on_debug_time) {
+private:
+  void HandleJump(bool on_debug_time)
+  {
     on_debug_time_ = on_debug_time;
     UpdateTimers();
   }
 
-  void UpdateTimers() {
+  void UpdateTimers()
+  {
     // First, evaluate all of our timers and dispatch any that are ready now.  While
     // we're at it, keep track of the earliest next timer callback that is due.
     std::optional<int64_t> next_ready_ns;
-    for (const auto& timer_cb_pair : timers_) {
+    for (const auto & timer_cb_pair : timers_) {
       auto next_call_ns = GetNextCallNanoseconds(timer_cb_pair.first);
       if (next_call_ns <= 0) {
         // This just notifies RCL that we're considering the timer triggered, for the
@@ -220,12 +235,12 @@ class RclTimersManager::ClockManager {
       // don't wake early and find nothing to do.
       const int64_t sleep_us = (*next_ready_ns + 999) / 1000;
       next_update_wait_.expires_from_now(boost::posix_time::microseconds(sleep_us));
-      next_update_wait_.async_wait([this](const boost::system::error_code& ec) {
-        if (!ec) {
-          UpdateTimers();
-        } else if (ec != boost::asio::error::operation_aborted) {
-          throw std::runtime_error("Error waiting for next timer: " + ec.message());
-        }
+      next_update_wait_.async_wait([this](const boost::system::error_code & ec) {
+          if (!ec) {
+            UpdateTimers();
+          } else if (ec != boost::asio::error::operation_aborted) {
+            throw std::runtime_error("Error waiting for next timer: " + ec.message());
+          }
       });
     } else {
       next_update_wait_.cancel();
@@ -235,10 +250,11 @@ class RclTimersManager::ClockManager {
   /// Returns the number of nanoseconds until the next callback on the given timer is
   /// due.  Value may be negative or zero if callback time has already been reached.
   /// Returns std::nullopt if the timer is canceled.
-  static std::optional<int64_t> GetNextCallNanoseconds(const rcl_timer_t* rcl_timer) {
+  static std::optional<int64_t> GetNextCallNanoseconds(const rcl_timer_t * rcl_timer)
+  {
     int64_t time_until_next_call{};
     const rcl_ret_t ret =
-        rcl_timer_get_time_until_next_call(rcl_timer, &time_until_next_call);
+      rcl_timer_get_time_until_next_call(rcl_timer, &time_until_next_call);
     switch (ret) {
       case RCL_RET_OK:
         return time_until_next_call;
@@ -251,23 +267,25 @@ class RclTimersManager::ClockManager {
   }
 
   boost::asio::any_io_executor executor_;
-  rcl_clock_t* const clock_;
+  rcl_clock_t * const clock_;
   ClockJumpCallbackT jump_cb_;
   TimerResetCallbackT reset_cb_;
   bool on_debug_time_{};
 
-  std::unordered_map<rcl_timer_t*, std::function<void()>> timers_;
+  std::unordered_map<rcl_timer_t *, std::function<void()>> timers_;
   boost::asio::deadline_timer next_update_wait_{executor_};
 };
 
-RclTimersManager::RclTimersManager(const boost::asio::any_io_executor& executor)
-    : executor_(executor) {}
+RclTimersManager::RclTimersManager(const boost::asio::any_io_executor & executor)
+: executor_(executor) {}
 
 RclTimersManager::~RclTimersManager() {}
 
-namespace {
-rcl_clock_t* GetTimerClock(rcl_timer_t* timer) {
-  rcl_clock_t* clock{};
+namespace
+{
+rcl_clock_t * GetTimerClock(rcl_timer_t * timer)
+{
+  rcl_clock_t * clock{};
   if (RCL_RET_OK != rcl_timer_clock(timer, &clock)) {
     throw std::runtime_error(std::string("Failed to determine clock for timer: ") +
                              rcl_get_error_string().str);
@@ -276,11 +294,13 @@ rcl_clock_t* GetTimerClock(rcl_timer_t* timer) {
 }
 }  // namespace
 
-void RclTimersManager::AddTimer(rcl_timer_t* timer,
-                                std::function<void()> ready_callback) {
+void RclTimersManager::AddTimer(
+  rcl_timer_t * timer,
+  std::function<void()> ready_callback)
+{
   // Figure out the clock this timer is using, make sure a manager exists for that
   // clock, then forward the timer to that clock's manager.
-  rcl_clock_t* clock = GetTimerClock(timer);
+  rcl_clock_t * clock = GetTimerClock(timer);
   auto it = clock_managers_.find(clock);
   if (it == clock_managers_.end()) {
     std::tie(it, std::ignore) = clock_managers_.insert(
@@ -289,8 +309,9 @@ void RclTimersManager::AddTimer(rcl_timer_t* timer,
   it->second->AddTimer(timer, ready_callback);
 }
 
-void RclTimersManager::RemoveTimer(rcl_timer_t* timer) {
-  const rcl_clock_t* clock = GetTimerClock(timer);
+void RclTimersManager::RemoveTimer(rcl_timer_t * timer)
+{
+  const rcl_clock_t * clock = GetTimerClock(timer);
   auto it = clock_managers_.find(clock);
   if (it == clock_managers_.end()) {
     throw py::key_error("Attempt to remove timer from unmanaged clock");
@@ -301,13 +322,15 @@ void RclTimersManager::RemoveTimer(rcl_timer_t* timer) {
   }
 }
 
-TimersManager::TimersManager(const boost::asio::any_io_executor& executor,
-                             std::function<void(py::handle)> timer_ready_callback)
-    : rcl_manager_(executor), ready_callback_(timer_ready_callback) {}
+TimersManager::TimersManager(
+  const boost::asio::any_io_executor & executor,
+  std::function<void(py::handle)> timer_ready_callback)
+: rcl_manager_(executor), ready_callback_(timer_ready_callback) {}
 
 TimersManager::~TimersManager() {}
 
-void TimersManager::AddTimer(py::handle timer) {
+void TimersManager::AddTimer(py::handle timer)
+{
   PyRclMapping mapping;
   py::handle handle = timer.attr("handle");
   mapping.with = std::make_unique<ScopedWith>(handle);
@@ -316,7 +339,8 @@ void TimersManager::AddTimer(py::handle timer) {
   timer_mappings_[timer] = std::move(mapping);
 }
 
-void TimersManager::RemoveTimer(py::handle timer) {
+void TimersManager::RemoveTimer(py::handle timer)
+{
   const auto it = timer_mappings_.find(timer);
   if (it == timer_mappings_.end()) {
     throw py::key_error("Attempt to remove unmanaged timer");
