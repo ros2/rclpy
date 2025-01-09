@@ -161,7 +161,7 @@ private:
   pybind11::set nodes_;               ///< The set of all nodes we're executing
   std::atomic<bool> wake_pending_{};  ///< An unhandled call to wake() has been made
   std::timed_mutex spinning_mutex_;   ///< Held while a thread is spinning
-  std::atomic<bool> sigint_pending_{};
+  std::atomic<bool> signal_pending_{};
 
   // Collection of awaitable entities we're servicing
   pybind11::set subscriptions_;

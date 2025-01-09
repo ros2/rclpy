@@ -53,7 +53,7 @@ EventsExecutor::EventsExecutor(py::object context)
 : rclpy_context_(context),
   asyncio_run_(py::module_::import("asyncio").attr("run")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
-  signals_(io_context_, SIGINT, SIGTERM),
+  signals_(io_context_),
   rcl_callback_manager_(io_context_.get_executor()),
   timers_manager_(
     io_context_.get_executor(), std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1))
@@ -63,20 +63,32 @@ EventsExecutor::EventsExecutor(py::object context)
   //
   // Unfortunately it doesn't look like we can either support generic guard conditions or hook into
   // the existing rclpy signal handling in any other useful way.  We'll just establish our own
-  // signal handling directly instead.  This unfortunately bypasses the rclpy.init() options that
-  // allow a user to disable certain signal handlers, but it doesn't look like we can do any better.
-  signals_.async_wait([this](const asio::error_code & ec, int) {
-      if (!ec) {
-        py::gil_scoped_acquire gil_acquire;
-        // Don't call context.try_shutdown() here, because that can call back to us to request a
-        // blocking shutdown(), which doesn't make any sense because we have to be spinning to
-        // process the callback that's asked to wait for spinning to stop.  We'll have to call that
-        // later outside of any spin loop.
-        // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/__init__.py#L105-L109
-        sigint_pending_.store(true);
-        io_context_.stop();
-      }
-  });
+  // signal handling directly instead.  We can at least hook into the rclpy.init() options that
+  // allow a user to disable certain signal handlers.
+  auto rclpy_signals = py::module_::import("rclpy.signals");
+  const int signal_options =
+    py::cast<int>(rclpy_signals.attr("get_current_signal_handlers_options")());
+  const auto sig_ops_enum = rclpy_signals.attr("SignalHandlerOptions");
+  if (signal_options & py::cast<int>(sig_ops_enum.attr("SIGINT"))) {
+        signals_.add(SIGINT);
+  }
+  if (signal_options & py::cast<int>(sig_ops_enum.attr("SIGTERM"))) {
+        signals_.add(SIGTERM);
+  }
+  if (signal_options != py::cast<int>(sig_ops_enum.attr("NO"))) {
+        signals_.async_wait([this](const asio::error_code & ec, int) {
+            if (!ec) {
+              py::gil_scoped_acquire gil_acquire;
+              // Don't call context.try_shutdown() here, because that can call back to us to request
+              // a blocking shutdown(), which doesn't make any sense because we have to be spinning
+              // to process the callback that's asked to wait for spinning to stop.  We'll have to
+              // call that later outside of any spin loop.
+              // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/__init__.py#L105-L109
+              signal_pending_.store(true);
+              io_context_.stop();
+            }
+    });
+  }
 }
 
 EventsExecutor::~EventsExecutor() {shutdown();}
@@ -184,7 +196,7 @@ void EventsExecutor::spin(std::optional<double> timeout_sec)
     io_context_.restart();
   }
 
-  if (sigint_pending_.exchange(false)) {
+  if (signal_pending_.exchange(false)) {
     rclpy_context_.attr("try_shutdown")();
   }
 }
@@ -210,7 +222,7 @@ void EventsExecutor::spin_once(std::optional<double> timeout_sec)
     io_context_.restart();
   }
 
-  if (sigint_pending_.exchange(false)) {
+  if (signal_pending_.exchange(false)) {
     rclpy_context_.attr("try_shutdown")();
   }
 }
