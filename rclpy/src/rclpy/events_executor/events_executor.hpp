@@ -46,15 +46,15 @@ namespace events_executor
 
 /// Events executor implementation for rclpy
 ///
-/// This executor implementation attempts to replicate the function of the rclcpp
-/// EventsExecutor for the benefit of rclpy applications.  It is implemented in C++ to
-/// minimize the overhead of processing the event loop.
+/// This executor implementation attempts to replicate the function of the rclcpp EventsExecutor for
+/// the benefit of rclpy applications.  It is implemented in C++ to minimize the overhead of
+/// processing the event loop.
 ///
-/// We assume all public methods could be invoked from any thread.  Callbacks on the
-/// executor loop will be issued on the thread that called one of the spin*() variants
-/// (ignoring any parallelism that might be allowed by the callback group
-/// configuration).
-class EventsExecutor {
+/// We assume all public methods could be invoked from any thread.  Callbacks on the executor loop
+/// will be issued on the thread that called one of the spin*() variants (ignoring any parallelism
+/// that might be allowed by the callback group configuration).
+class EventsExecutor
+{
 public:
   /// @param context the rclpy Context object to operate on
   explicit EventsExecutor(pybind11::object context);
@@ -64,20 +64,16 @@ public:
   // rclpy Executor API methods:
   pybind11::object get_context() const {return rclpy_context_;}
   pybind11::object create_task(
-    pybind11::object callback, pybind11::args args,
-    const pybind11::kwargs & kwargs);
+    pybind11::object callback, pybind11::args args, const pybind11::kwargs & kwargs);
   bool shutdown(std::optional<double> timeout_sec = {});
   bool add_node(pybind11::object node);
   void remove_node(pybind11::handle node);
   void wake();
   void spin(std::optional<double> timeout_sec = {});
   void spin_once(std::optional<double> timeout_sec = {});
-  void spin_until_future_complete(
-    pybind11::handle future,
-    std::optional<double> timeout_sec = {});
+  void spin_until_future_complete(pybind11::handle future, std::optional<double> timeout_sec = {});
   void spin_once_until_future_complete(
-    pybind11::handle future,
-    std::optional<double> timeout_sec = {});
+    pybind11::handle future, std::optional<double> timeout_sec = {});
 
 private:
   // Structure to hold entities discovered underlying a Waitable object.
@@ -90,14 +86,14 @@ private:
     std::vector<const rcl_event_t *> events;
   };
 
-  /// Updates the sets of known entities based on the currently tracked nodes.  This is
-  /// not thread safe, so it must be posted to the io_context if the executor is
-  /// currently spinning.  Expects the GIL to be held before calling.  If @p shutdown is
-  /// true, a purge of all known nodes and entities is forced.
+  /// Updates the sets of known entities based on the currently tracked nodes.  This is not thread
+  /// safe, so it must be posted to the io_context if the executor is currently spinning.  Expects
+  /// the GIL to be held before calling.  If @p shutdown is true, a purge of all known nodes and
+  /// entities is forced.
   void UpdateEntitiesFromNodes(bool shutdown);
 
-  /// Given an existing set of entities and a set with the desired new state, updates
-  /// the existing set and invokes callbacks on each added or removed entity.
+  /// Given an existing set of entities and a set with the desired new state, updates the existing
+  /// set and invokes callbacks on each added or removed entity.
   void UpdateEntitySet(
     pybind11::set & entity_set, const pybind11::set & new_entity_set,
     std::function<void(pybind11::handle)> added_entity_callback,
@@ -142,18 +138,15 @@ private:
   void HandleWaitableReady(
     pybind11::handle waitable, std::shared_ptr<rclpy::WaitSet> wait_set, size_t number_of_events);
 
-  /// Helper for create_task().  @p task needs to have had one reference manually added
-  /// to it.  See create_task() implementation for details.
+  /// Helper for create_task().  @p task needs to have had one reference manually added to it.  See
+  /// create_task() implementation for details.
   void IterateTask(pybind11::handle task);
 
   void HandleCallbackExceptionInNodeEntity(
-    const pybind11::error_already_set &,
-    pybind11::handle entity,
+    const pybind11::error_already_set &, pybind11::handle entity,
     const std::string & node_entity_attr);
   void HandleCallbackExceptionWithLogger(
-    const pybind11::error_already_set &,
-    pybind11::object logger,
-    const std::string & entity_type);
+    const pybind11::error_already_set &, pybind11::object logger, const std::string & entity_type);
 
   const pybind11::object rclpy_context_;
 
@@ -177,10 +170,9 @@ private:
   pybind11::set services_;
   pybind11::set waitables_;
 
-  /// Cache for rcl pointers underlying each waitables_ entry, because those are harder
-  /// to retrieve than the other entity types.
-  std::unordered_map<pybind11::handle, WaitableSubEntities, PythonHasher>
-  waitable_entities_;
+  /// Cache for rcl pointers underlying each waitables_ entry, because those are harder to retrieve
+  /// than the other entity types.
+  std::unordered_map<pybind11::handle, WaitableSubEntities, PythonHasher> waitable_entities_;
 
   RclCallbackManager rcl_callback_manager_;
   TimersManager timers_manager_;

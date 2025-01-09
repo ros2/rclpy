@@ -25,22 +25,21 @@ namespace rclpy
 namespace events_executor
 {
 
-extern "C" void RclEventCallbackTrampoline(
-  const void * user_data,
-  size_t number_of_events)
+extern "C" void RclEventCallbackTrampoline(const void * user_data, size_t number_of_events)
 {
   const auto cb = reinterpret_cast<const std::function<void(size_t)> *>(user_data);
   (*cb)(number_of_events);
 }
 
 RclCallbackManager::RclCallbackManager(const asio::any_io_executor & executor)
-: executor_(executor) {}
+: executor_(executor)
+{
+}
 
 RclCallbackManager::~RclCallbackManager()
 {
-  // Should not still have any callbacks registered when we exit, because otherwise RCL
-  // can call pointers that will no longer be valid.  We can't throw an exception here,
-  // but we can explode.
+  // Should not still have any callbacks registered when we exit, because otherwise RCL can call
+  // pointers that will no longer be valid.  We can't throw an exception here, but we can explode.
   if (!owned_cbs_.empty()) {
     py::gil_scoped_acquire gil_acquire;
     py::print("Destroying callback manager with callbacks remaining");
@@ -49,28 +48,25 @@ RclCallbackManager::~RclCallbackManager()
 }
 
 const void * RclCallbackManager::MakeCallback(
-  const void * key,
-  std::function<void(size_t)> callback,
-  std::shared_ptr<ScopedWith> with)
+  const void * key, std::function<void(size_t)> callback, std::shared_ptr<ScopedWith> with)
 {
-  // We don't support replacing an existing callback with a new one, because it gets
-  // tricky making sure we don't delete an old callback while the middleware still holds
-  // a pointer to it.
+  // We don't support replacing an existing callback with a new one, because it gets tricky making
+  // sure we don't delete an old callback while the middleware still holds a pointer to it.
   if (owned_cbs_.count(key) != 0) {
     throw py::key_error("Attempt to replace existing callback");
   }
   CbEntry new_entry;
-  new_entry.cb = std::make_unique<std::function<void(size_t)>>(
-    [this, callback, key](size_t number_of_events) {
-      asio::post(executor_, [this, callback, key, number_of_events]() {
-        if (!owned_cbs_.count(key)) {
-            // This callback has been removed, just drop it as the objects it may want
-            // to touch may no longer exist.
-          return;
-        }
-        callback(number_of_events);
-        });
+  new_entry.cb =
+    std::make_unique<std::function<void(size_t)>>([this, callback, key](size_t number_of_events) {
+        asio::post(executor_, [this, callback, key, number_of_events]() {
+          if (!owned_cbs_.count(key)) {
+            // This callback has been removed, just drop it as the objects it may want to touch may
+            // no longer exist.
+            return;
+          }
+          callback(number_of_events);
       });
+    });
   new_entry.with = with;
   const void * ret = new_entry.cb.get();
   owned_cbs_[key] = std::move(new_entry);
