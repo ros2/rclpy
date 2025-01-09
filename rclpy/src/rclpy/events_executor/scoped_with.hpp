@@ -22,7 +22,8 @@ namespace events_executor
 {
 
 /// Enters a python context manager for the scope of this object instance.
-class ScopedWith {
+class ScopedWith
+{
 public:
   explicit ScopedWith(pybind11::handle object)
   : object_(pybind11::cast<pybind11::object>(object))
@@ -30,10 +31,7 @@ public:
     object_.attr("__enter__")();
   }
 
-  ~ScopedWith()
-  {
-    object_.attr("__exit__")(pybind11::none(), pybind11::none(), pybind11::none());
-  }
+  ~ScopedWith() {object_.attr("__exit__")(pybind11::none(), pybind11::none(), pybind11::none());}
 
 private:
   pybind11::object object_;

@@ -34,7 +34,8 @@ namespace events_executor
 {
 
 /// This class manages low-level rcl timers in the system on behalf of EventsExecutor.
-class RclTimersManager {
+class RclTimersManager
+{
 public:
   explicit RclTimersManager(const asio::any_io_executor &);
   ~RclTimersManager();
@@ -51,13 +52,13 @@ private:
 };
 
 /// This class manages rclpy.Timer Python objects on behalf of EventsExecutor.
-class TimersManager {
+class TimersManager
+{
 public:
-  /// @p timer_ready_callback will be invoked with the timer handle whenever a managed
-  /// timer is ready for servicing.
+  /// @p timer_ready_callback will be invoked with the timer handle whenever a managed timer is
+  /// ready for servicing.
   TimersManager(
-    const asio::any_io_executor &,
-    std::function<void(pybind11::handle)> timer_ready_callback);
+    const asio::any_io_executor &, std::function<void(pybind11::handle)> timer_ready_callback);
   ~TimersManager();
 
   /// Accessor for underlying rcl timer manager, for management of non-Python timers.
@@ -70,8 +71,8 @@ public:
 private:
   struct PyRclMapping
   {
-    /// Marks the corresponding Python object as in-use for as long as we're using the
-    /// rcl pointer derived from it.
+    /// Marks the corresponding Python object as in-use for as long as we're using the rcl pointer
+    /// derived from it.
     std::unique_ptr<ScopedWith> with;
 
     /// The underlying rcl object
