@@ -34,9 +34,10 @@
 #include <asio/io_context.hpp>
 #include <asio/signal_set.hpp>
 
-#include "rcl_support.hpp"
-#include "scoped_with.hpp"
-#include "timers_manager.hpp"
+#include "events_executor/rcl_support.hpp"
+#include "events_executor/scoped_with.hpp"
+#include "events_executor/timers_manager.hpp"
+#include "wait_set.hpp"
 
 namespace rclpy
 {
@@ -121,35 +122,25 @@ private:
   void HandleAddedWaitable(pybind11::handle);
   void HandleRemovedWaitable(pybind11::handle);
   void HandleWaitableSubReady(
-    pybind11::handle waitable, const rcl_subscription_t *,
-    pybind11::handle wait_set, size_t wait_set_sub_index,
-    std::shared_ptr<ScopedWith> with_waitset,
-    size_t number_of_events);
+    pybind11::handle waitable, const rcl_subscription_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
+    size_t wait_set_sub_index, std::shared_ptr<ScopedWith> with_waitset, size_t number_of_events);
   void HandleWaitableTimerReady(
-    pybind11::handle waitable, const rcl_timer_t *,
-    pybind11::handle wait_set, size_t wait_set_timer_index,
-    std::shared_ptr<ScopedWith> with_waitable,
+    pybind11::handle waitable, const rcl_timer_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
+    size_t wait_set_timer_index, std::shared_ptr<ScopedWith> with_waitable,
     std::shared_ptr<ScopedWith> with_waitset);
   void HandleWaitableClientReady(
-    pybind11::handle waitable, const rcl_client_t *,
-    pybind11::handle wait_set,
-    size_t wait_set_client_index,
-    std::shared_ptr<ScopedWith> with_waitset,
+    pybind11::handle waitable, const rcl_client_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
+    size_t wait_set_client_index, std::shared_ptr<ScopedWith> with_waitset,
     size_t number_of_events);
   void HandleWaitableServiceReady(
-    pybind11::handle waitable, const rcl_service_t *,
-    pybind11::handle wait_set,
-    size_t wait_set_service_index,
-    std::shared_ptr<ScopedWith> with_waitset,
+    pybind11::handle waitable, const rcl_service_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
+    size_t wait_set_service_index, std::shared_ptr<ScopedWith> with_waitset,
     size_t number_of_events);
   void HandleWaitableEventReady(
-    pybind11::handle waitable, const rcl_event_t *,
-    pybind11::handle wait_set, size_t wait_set_event_index,
-    std::shared_ptr<ScopedWith> with_waitset,
-    size_t number_of_events);
+    pybind11::handle waitable, const rcl_event_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
+    size_t wait_set_event_index, std::shared_ptr<ScopedWith> with_waitset, size_t number_of_events);
   void HandleWaitableReady(
-    pybind11::handle waitable, pybind11::handle wait_set,
-    size_t number_of_events);
+    pybind11::handle waitable, std::shared_ptr<rclpy::WaitSet> wait_set, size_t number_of_events);
 
   /// Helper for create_task().  @p task needs to have had one reference manually added
   /// to it.  See create_task() implementation for details.

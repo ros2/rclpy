@@ -26,7 +26,7 @@
 #include <asio/post.hpp>
 #include <asio/steady_timer.hpp>
 
-#include "rcl_support.hpp"
+#include "timer.hpp"
 
 namespace py = pybind11;
 
@@ -329,7 +329,7 @@ void TimersManager::AddTimer(py::handle timer)
   PyRclMapping mapping;
   py::handle handle = timer.attr("handle");
   mapping.with = std::make_unique<ScopedWith>(handle);
-  mapping.rcl_ptr = GetRclTimer(handle);
+  mapping.rcl_ptr = py::cast<Timer>(handle).rcl_ptr();
   rcl_manager_.AddTimer(mapping.rcl_ptr, std::bind(ready_callback_, timer));
   timer_mappings_[timer] = std::move(mapping);
 }

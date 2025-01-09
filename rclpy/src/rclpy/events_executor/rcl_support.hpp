@@ -14,21 +14,14 @@
 // limitations under the License.
 #pragma once
 
-#include <pybind11/pybind11.h>
-
-#include <rcl/client.h>
-#include <rcl/service.h>
-#include <rcl/subscription.h>
-#include <rcl/timer.h>
-#include <rcl/wait.h>
-
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 
 #include <asio/any_io_executor.hpp>
 
-#include "scoped_with.hpp"
+#include "events_executor/scoped_with.hpp"
 
 namespace rclpy
 {
@@ -83,31 +76,6 @@ private:
   /// associated with the callback.
   std::unordered_map<const void *, CbEntry> owned_cbs_;
 };
-
-/// Returns the RCL subscription object pointer from a subscription handle (i.e. the
-/// handle attribute of an rclpy Subscription object, which is a _rclpy C++
-/// Subscription object).  Assumes that a ScopedWith has already been entered on the
-/// given handle.
-rcl_subscription_t * GetRclSubscription(pybind11::handle);
-
-/// Returns the RCL timer object pointer from a timer handle (i.e. the handle attribute
-/// of an rclpy Timer object, which is a _rclpy C++ Timer object).  Assumes that a
-/// ScopedWith has already been entered on the given handle.
-rcl_timer_t * GetRclTimer(pybind11::handle);
-
-/// Returns the RCL client object pointer from a client handle (i.e. the handle
-/// attribute of an rclpy Client object, which is a _rclpy C++ Client object). Assumes
-/// that a ScopedWith has already been entered on the given handle.
-rcl_client_t * GetRclClient(pybind11::handle);
-
-/// Returns the RCL service object pointer from a service handle (i.e. the handle
-/// attribute of an rclpy Service object, which is a _rclpy C++ Service object).
-/// Assumes that a ScopedWith has already been entered on the given handle.
-rcl_service_t * GetRclService(pybind11::handle);
-
-/// Returns the RCL wait set object pointer from a _rclpy C++ WaitSet object.  Assumes
-/// that a ScopedWith has already been entered on the given object.
-rcl_wait_set_t * GetRclWaitSet(pybind11::handle);
 
 }  // namespace events_executor
 }  // namespace rclpy

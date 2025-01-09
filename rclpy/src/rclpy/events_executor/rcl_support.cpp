@@ -14,8 +14,6 @@
 // limitations under the License.
 #include "events_executor/rcl_support.hpp"
 
-#include <cstdlib>
-#include <functional>
 #include <utility>
 
 #include <asio/post.hpp>
@@ -85,42 +83,6 @@ void RclCallbackManager::RemoveCallback(const void * key)
     throw py::key_error("Attempt to remove nonexistent callback");
   }
 }
-
-namespace
-{
-// This helper function is used for retrieving rcl pointers from _rclpy C++ objects.
-// Because _rclpy doesn't install its C++ headers for public use, it's difficult to use
-// the C++ classes directly.  But, we can treat them as if they are Python objects using
-// their defined Python API.  Unfortunately the python interfaces convert the returned
-// pointer to integers, so recovering that looks a little weird.
-template<typename RclT>
-RclT * GetRclPtr(py::handle py_ent_handle)
-{
-  return reinterpret_cast<RclT *>(py::cast<size_t>(py_ent_handle.attr("pointer")));
-}
-}  // namespace
-
-rcl_subscription_t * GetRclSubscription(py::handle sub_handle)
-{
-  return GetRclPtr<rcl_subscription_t>(sub_handle);
-}
-
-rcl_timer_t * GetRclTimer(py::handle timer_handle)
-{
-  return GetRclPtr<rcl_timer_t>(timer_handle);
-}
-
-rcl_client_t * GetRclClient(py::handle cl_handle)
-{
-  return GetRclPtr<rcl_client_t>(cl_handle);
-}
-
-rcl_service_t * GetRclService(py::handle srv_handle)
-{
-  return GetRclPtr<rcl_service_t>(srv_handle);
-}
-
-rcl_wait_set_t * GetRclWaitSet(py::handle ws) {return GetRclPtr<rcl_wait_set_t>(ws);}
 
 }  // namespace events_executor
 }  // namespace rclpy
