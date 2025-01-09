@@ -36,6 +36,11 @@
 
 #include <asio/post.hpp>
 
+#include "client.hpp"
+#include "context.hpp"
+#include "service.hpp"
+#include "subscription.hpp"
+
 namespace pl = std::placeholders;
 namespace py = pybind11;
 
@@ -313,7 +318,7 @@ void EventsExecutor::HandleAddedSubscription(py::handle subscription)
 {
   py::handle handle = subscription.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_subscription_t * rcl_ptr = GetRclSubscription(handle);
+  const rcl_subscription_t * rcl_ptr = py::cast<Subscription>(handle).rcl_ptr();
   const auto cb =
     std::bind(&EventsExecutor::HandleSubscriptionReady, this, subscription, pl::_1);
   if (RCL_RET_OK != rcl_subscription_set_on_new_message_callback(
@@ -329,7 +334,7 @@ void EventsExecutor::HandleAddedSubscription(py::handle subscription)
 void EventsExecutor::HandleRemovedSubscription(py::handle subscription)
 {
   py::handle handle = subscription.attr("handle");
-  const rcl_subscription_t * rcl_ptr = GetRclSubscription(handle);
+  const rcl_subscription_t * rcl_ptr = py::cast<Subscription>(handle).rcl_ptr();
   if (RCL_RET_OK !=
     rcl_subscription_set_on_new_message_callback(rcl_ptr, nullptr, nullptr))
   {
@@ -414,7 +419,7 @@ void EventsExecutor::HandleAddedClient(py::handle client)
 {
   py::handle handle = client.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_client_t * rcl_ptr = GetRclClient(handle);
+  const rcl_client_t * rcl_ptr = py::cast<Client>(handle).rcl_ptr();
   const auto cb = std::bind(&EventsExecutor::HandleClientReady, this, client, pl::_1);
   if (RCL_RET_OK != rcl_client_set_on_new_response_callback(
                         rcl_ptr, RclEventCallbackTrampoline,
@@ -429,7 +434,7 @@ void EventsExecutor::HandleAddedClient(py::handle client)
 void EventsExecutor::HandleRemovedClient(py::handle client)
 {
   py::handle handle = client.attr("handle");
-  const rcl_client_t * rcl_ptr = GetRclClient(handle);
+  const rcl_client_t * rcl_ptr = py::cast<Client>(handle).rcl_ptr();
   if (RCL_RET_OK !=
     rcl_client_set_on_new_response_callback(rcl_ptr, nullptr, nullptr))
   {
@@ -483,7 +488,7 @@ void EventsExecutor::HandleAddedService(py::handle service)
 {
   py::handle handle = service.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_service_t * rcl_ptr = GetRclService(handle);
+  const rcl_service_t * rcl_ptr = py::cast<Service>(handle).rcl_ptr();
   const auto cb = std::bind(&EventsExecutor::HandleServiceReady, this, service, pl::_1);
   if (RCL_RET_OK != rcl_service_set_on_new_request_callback(
                         rcl_ptr, RclEventCallbackTrampoline,
@@ -498,7 +503,7 @@ void EventsExecutor::HandleAddedService(py::handle service)
 void EventsExecutor::HandleRemovedService(py::handle service)
 {
   py::handle handle = service.attr("handle");
-  const rcl_service_t * rcl_ptr = GetRclService(handle);
+  const rcl_service_t * rcl_ptr = py::cast<Service>(handle).rcl_ptr();
   if (RCL_RET_OK !=
     rcl_service_set_on_new_request_callback(rcl_ptr, nullptr, nullptr))
   {
@@ -557,19 +562,16 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable)
   if (py::cast<size_t>(num_entities.attr("num_guard_conditions")) != 0) {
     throw std::runtime_error("Guard conditions not supported");
   }
-  const py::object _rclpy = py::module_::import("rclpy.impl.implementation_singleton")
-    .attr("rclpy_implementation");
-  py::object wait_set = _rclpy.attr("WaitSet")(
-      num_entities.attr("num_subscriptions"), 0, num_entities.attr("num_timers"),
-      num_entities.attr("num_clients"), num_entities.attr("num_services"),
-      num_entities.attr("num_events"), rclpy_context_.attr("handle"));
-  auto with_waitset = std::make_shared<ScopedWith>(wait_set);
+  auto wait_set = std::make_shared<WaitSet>(
+    py::cast<size_t>(num_entities.attr("num_subscriptions")), 0U,
+    py::cast<size_t>(num_entities.attr("num_timers")),
+    py::cast<size_t>(num_entities.attr("num_clients")),
+    py::cast<size_t>(num_entities.attr("num_services")),
+    py::cast<size_t>(num_entities.attr("num_events")),
+    *py::cast<Context *>(rclpy_context_.attr("handle")));
+  auto with_waitset = std::make_shared<ScopedWith>(py::cast(wait_set));
   waitable.attr("add_to_wait_set")(wait_set);
-  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
-  // Be careful not to bind any py::objects into any callbacks, because that will try to
-  // do reference counting without the GIL.  Ownership will be maintained with the info
-  // struct instance which is guaranteed to outlast any callback.
-  py::handle ws_handle = wait_set;
+  rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
   // We null out each entry in the waitset as we set it up, so that the waitset itself
   // can be reused when something becomes ready to signal to the Waitable what's ready
   // and what's not.  We also bind with_waitset into each callback we set up, to ensure
@@ -580,8 +582,9 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable)
     const rcl_subscription_t * const rcl_sub = rcl_waitset->subscriptions[i];
     rcl_waitset->subscriptions[i] = nullptr;
     sub_entities.subscriptions.push_back(rcl_sub);
-    const auto cb = std::bind(&EventsExecutor::HandleWaitableSubReady, this, waitable,
-                              rcl_sub, ws_handle, i, with_waitset, pl::_1);
+    const auto cb = std::bind(
+      &EventsExecutor::HandleWaitableSubReady, this, waitable, rcl_sub, wait_set, i, with_waitset,
+      pl::_1);
     if (RCL_RET_OK !=
       rcl_subscription_set_on_new_message_callback(
             rcl_sub, RclEventCallbackTrampoline,
@@ -602,16 +605,18 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable)
     // Since this callback doesn't go through RclCallbackManager which would otherwise
     // own an instance of `with_waitable` associated with this callback, we'll bind it
     // directly into the callback instead.
-    const auto cb = std::bind(&EventsExecutor::HandleWaitableTimerReady, this, waitable,
-                              rcl_timer, ws_handle, i, with_waitable, with_waitset);
+    const auto cb = std::bind(
+      &EventsExecutor::HandleWaitableTimerReady, this, waitable, rcl_timer, wait_set, i,
+      with_waitable, with_waitset);
     timers_manager_.rcl_manager().AddTimer(rcl_timer, cb);
   }
   for (size_t i = 0; i < rcl_waitset->size_of_clients; ++i) {
     const rcl_client_t * const rcl_client = rcl_waitset->clients[i];
     rcl_waitset->clients[i] = nullptr;
     sub_entities.clients.push_back(rcl_client);
-    const auto cb = std::bind(&EventsExecutor::HandleWaitableClientReady, this,
-                              waitable, rcl_client, ws_handle, i, with_waitset, pl::_1);
+    const auto cb = std::bind(
+      &EventsExecutor::HandleWaitableClientReady, this, waitable, rcl_client, wait_set, i,
+      with_waitset, pl::_1);
     if (RCL_RET_OK !=
       rcl_client_set_on_new_response_callback(
             rcl_client, RclEventCallbackTrampoline,
@@ -627,8 +632,9 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable)
     const rcl_service_t * const rcl_service = rcl_waitset->services[i];
     rcl_waitset->services[i] = nullptr;
     sub_entities.services.push_back(rcl_service);
-    const auto cb = std::bind(&EventsExecutor::HandleWaitableServiceReady, this,
-                              waitable, rcl_service, ws_handle, i, with_waitset, pl::_1);
+    const auto cb = std::bind(
+      &EventsExecutor::HandleWaitableServiceReady, this, waitable, rcl_service, wait_set, i,
+      with_waitset, pl::_1);
     if (RCL_RET_OK !=
       rcl_service_set_on_new_request_callback(
             rcl_service, RclEventCallbackTrampoline,
@@ -644,8 +650,9 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable)
     const rcl_event_t * const rcl_event = rcl_waitset->events[i];
     rcl_waitset->events[i] = nullptr;
     sub_entities.events.push_back(rcl_event);
-    const auto cb = std::bind(&EventsExecutor::HandleWaitableEventReady, this, waitable,
-                              rcl_event, ws_handle, i, with_waitset, pl::_1);
+    const auto cb = std::bind(
+      &EventsExecutor::HandleWaitableEventReady, this, waitable, rcl_event, wait_set, i,
+      with_waitset, pl::_1);
     if (RCL_RET_OK != rcl_event_set_callback(rcl_event, RclEventCallbackTrampoline,
                                              rcl_callback_manager_.MakeCallback(
                                                  rcl_event, cb, with_waitable)))
@@ -713,14 +720,14 @@ void EventsExecutor::HandleRemovedWaitable(py::handle waitable)
 }
 
 void EventsExecutor::HandleWaitableSubReady(
-  py::handle waitable, const rcl_subscription_t * rcl_sub, py::handle wait_set,
+  py::handle waitable, const rcl_subscription_t * rcl_sub, std::shared_ptr<WaitSet> wait_set,
   size_t wait_set_sub_index, std::shared_ptr<ScopedWith>, size_t number_of_events)
 {
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our subscription object is
   // ready, and then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
   rcl_waitset->subscriptions[wait_set_sub_index] = rcl_sub;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
@@ -728,18 +735,14 @@ void EventsExecutor::HandleWaitableSubReady(
 }
 
 void EventsExecutor::HandleWaitableTimerReady(
-  py::handle waitable,
-  const rcl_timer_t * rcl_timer,
-  py::handle wait_set,
-  size_t wait_set_timer_index,
-  std::shared_ptr<ScopedWith>,
-  std::shared_ptr<ScopedWith>)
+  py::handle waitable, const rcl_timer_t * rcl_timer, std::shared_ptr<WaitSet> wait_set,
+  size_t wait_set_timer_index, std::shared_ptr<ScopedWith>, std::shared_ptr<ScopedWith>)
 {
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our timer object is ready, and
   // then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
   rcl_waitset->timers[wait_set_timer_index] = rcl_timer;
   HandleWaitableReady(waitable, wait_set, 1);
   // Null out the wait set again so that other callbacks can use it on other objects.
@@ -747,18 +750,14 @@ void EventsExecutor::HandleWaitableTimerReady(
 }
 
 void EventsExecutor::HandleWaitableClientReady(
-  py::handle waitable,
-  const rcl_client_t * rcl_client,
-  py::handle wait_set,
-  size_t wait_set_client_index,
-  std::shared_ptr<ScopedWith>,
-  size_t number_of_events)
+  py::handle waitable, const rcl_client_t * rcl_client, std::shared_ptr<WaitSet> wait_set,
+  size_t wait_set_client_index, std::shared_ptr<ScopedWith>, size_t number_of_events)
 {
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our client object is ready, and
   // then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
   rcl_waitset->clients[wait_set_client_index] = rcl_client;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
@@ -766,18 +765,14 @@ void EventsExecutor::HandleWaitableClientReady(
 }
 
 void EventsExecutor::HandleWaitableServiceReady(
-  py::handle waitable,
-  const rcl_service_t * rcl_service,
-  py::handle wait_set,
-  size_t wait_set_service_index,
-  std::shared_ptr<ScopedWith>,
-  size_t number_of_events)
+  py::handle waitable, const rcl_service_t * rcl_service, std::shared_ptr<WaitSet> wait_set,
+  size_t wait_set_service_index, std::shared_ptr<ScopedWith>, size_t number_of_events)
 {
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our service object is ready,
   // and then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
   rcl_waitset->services[wait_set_service_index] = rcl_service;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
@@ -785,14 +780,14 @@ void EventsExecutor::HandleWaitableServiceReady(
 }
 
 void EventsExecutor::HandleWaitableEventReady(
-  py::handle waitable, const rcl_event_t * rcl_event, py::handle wait_set,
+  py::handle waitable, const rcl_event_t * rcl_event, std::shared_ptr<WaitSet> wait_set,
   size_t wait_set_event_index, std::shared_ptr<ScopedWith>, size_t number_of_events)
 {
   py::gil_scoped_acquire gil_acquire;
 
   // We need to set up the wait set to make it look like our event object is ready, and
   // then poke the Waitable to do what it needs to do from there.
-  rcl_wait_set_t * const rcl_waitset = GetRclWaitSet(wait_set);
+  rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
   rcl_waitset->events[wait_set_event_index] = rcl_event;
   HandleWaitableReady(waitable, wait_set, number_of_events);
   // Null out the wait set again so that other callbacks can use it on other objects.
@@ -800,8 +795,7 @@ void EventsExecutor::HandleWaitableEventReady(
 }
 
 void EventsExecutor::HandleWaitableReady(
-  py::handle waitable, py::handle wait_set,
-  size_t number_of_events)
+  py::handle waitable, std::shared_ptr<WaitSet> wait_set, size_t number_of_events)
 {
   // Largely based on rclpy.Executor._take_waitable()
   // https://github.com/ros2/rclpy/blob/a19180c238d4d97ed2b58868d8fb7fa3e3b621f2/rclpy/rclpy/executors.py#L447-L454
