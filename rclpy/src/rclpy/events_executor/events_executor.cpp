@@ -76,7 +76,7 @@ EventsExecutor::EventsExecutor(py::object context)
         signals_.add(SIGTERM);
   }
   if (signal_options != py::cast<int>(sig_ops_enum.attr("NO"))) {
-        signals_.async_wait([this](const asio::error_code & ec, int) {
+        signals_.async_wait([this](const asio::error_code & ec, int signum) {
             if (!ec) {
               py::gil_scoped_acquire gil_acquire;
               // Don't call context.try_shutdown() here, because that can call back to us to request
@@ -84,7 +84,7 @@ EventsExecutor::EventsExecutor(py::object context)
               // to process the callback that's asked to wait for spinning to stop.  We'll have to
               // call that later outside of any spin loop.
               // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/__init__.py#L105-L109
-              signal_pending_.store(true);
+              signal_pending_.store(signum);
               io_context_.stop();
             }
     });
@@ -196,9 +196,7 @@ void EventsExecutor::spin(std::optional<double> timeout_sec)
     io_context_.restart();
   }
 
-  if (signal_pending_.exchange(false)) {
-    rclpy_context_.attr("try_shutdown")();
-  }
+  CheckForSignals();
 }
 
 void EventsExecutor::spin_once(std::optional<double> timeout_sec)
@@ -222,9 +220,7 @@ void EventsExecutor::spin_once(std::optional<double> timeout_sec)
     io_context_.restart();
   }
 
-  if (signal_pending_.exchange(false)) {
-    rclpy_context_.attr("try_shutdown")();
-  }
+  CheckForSignals();
 }
 
 void EventsExecutor::spin_until_future_complete(
@@ -819,10 +815,8 @@ void EventsExecutor::IterateTask(py::handle task)
     if (!ex.is_none()) {
       // It's not clear how to easily turn a Python exception into a C++ one, so let's just throw it
       // again and let pybind translate it normally.
-      py::dict scope;
-      scope["ex"] = ex;
       try {
-        py::exec("raise ex", scope);
+        Raise(ex);
       } catch (py::error_already_set & cpp_ex) {
         // There's no good way to know what node this task came from.  If we only have one node, we
         // can use the logger from that, otherwise we'll have to leave it undefined.
@@ -882,6 +876,30 @@ logger.fatal(f"Exception in '{node_entity_attr}' callback: {exc_value}")
 logger.warn("Error occurred at:\n" + "".join(traceback.format_tb(exc_trace)))
 )",
     scope);
+}
+
+void EventsExecutor::Raise(py::object ex)
+{
+  py::dict scope;
+  scope["ex"] = ex;
+  py::exec("raise ex", scope);
+}
+
+void EventsExecutor::CheckForSignals()
+{
+  const int signum = signal_pending_.exchange(0);
+  if (signum) {
+    rclpy_context_.attr("try_shutdown")();
+    if (signum == SIGINT) {
+      PyErr_SetInterrupt();
+      return;
+    }
+  }
+
+  const bool ok = py::cast<bool>(rclpy_context_.attr("ok")());
+  if (!ok) {
+        Raise(py::module_::import("rclpy.executors").attr("ExternalShutdownException")());
+  }
 }
 
 // pybind11 module bindings

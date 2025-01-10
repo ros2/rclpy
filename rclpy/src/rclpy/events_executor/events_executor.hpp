@@ -148,6 +148,12 @@ private:
   void HandleCallbackExceptionWithLogger(
     const pybind11::error_already_set &, pybind11::object logger, const std::string & entity_type);
 
+  /// Raises the given python object instance as a Python exception
+  void Raise(pybind11::object);
+
+  /// Handles any pending signals; needs to be performed at the end of every spin*() method.
+  void CheckForSignals();
+
   const pybind11::object rclpy_context_;
 
   // Imported python objects we depend on
@@ -157,11 +163,11 @@ private:
   asio::io_context io_context_;
   asio::signal_set signals_;
 
-  std::recursive_mutex nodes_mutex_;  ///< Protects the node set
-  pybind11::set nodes_;               ///< The set of all nodes we're executing
-  std::atomic<bool> wake_pending_{};  ///< An unhandled call to wake() has been made
-  std::timed_mutex spinning_mutex_;   ///< Held while a thread is spinning
-  std::atomic<bool> signal_pending_{};
+  std::recursive_mutex nodes_mutex_;   ///< Protects the node set
+  pybind11::set nodes_;                ///< The set of all nodes we're executing
+  std::atomic<bool> wake_pending_{};   ///< An unhandled call to wake() has been made
+  std::timed_mutex spinning_mutex_;    ///< Held while a thread is spinning
+  std::atomic<int> signal_pending_{};  ///< Signal number of caught signal, 0 if none
 
   // Collection of awaitable entities we're servicing
   pybind11::set subscriptions_;
