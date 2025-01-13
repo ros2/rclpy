@@ -69,6 +69,7 @@ public:
   bool add_node(pybind11::object node);
   void remove_node(pybind11::handle node);
   void wake();
+  pybind11::list get_nodes() const;
   void spin(std::optional<double> timeout_sec = {});
   void spin_once(std::optional<double> timeout_sec = {});
   void spin_until_future_complete(pybind11::handle future, std::optional<double> timeout_sec = {});
