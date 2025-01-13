@@ -70,16 +70,16 @@ class Future(Generic[T]):
         while self._pending():
             yield
         return self.result()
-    
+
     def _pending(self) -> bool:
         return self._state == FutureState.PENDING
-    
+
     def cancel(self) -> None:
         """Request cancellation of the running task if it is not done already."""
         with self._lock:
             if not self._pending():
                 return
-        
+
         self._state = FutureState.CANCELLED
         self._schedule_or_invoke_done_callbacks()
 
@@ -130,12 +130,9 @@ class Future(Generic[T]):
         :param result: The output of a long running task.
         """
         with self._lock:
-            if not self._pending():
-                raise RuntimeError(f"Cannot set result from state: {self._state}")
-            
             self._result = result
             self._state = FutureState.FINISHED
-            
+
         self._schedule_or_invoke_done_callbacks()
 
     def set_exception(self, exception: Exception) -> None:
@@ -145,9 +142,6 @@ class Future(Generic[T]):
         :param result: The output of a long running task.
         """
         with self._lock:
-            if not self._pending():
-                raise RuntimeError(f"Cannot set exception from state: {self._state}")
-        
             self._exception = exception
             self._exception_fetched = False
             self._state = FutureState.FINISHED
