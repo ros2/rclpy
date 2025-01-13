@@ -99,6 +99,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_shutdown_executor_before_waiting_for_callbacks(self) -> None:
         self.assertIsNotNone(self.node.handle)
+        # EventsExecutor does not support the wait_for_ready_callbacks() API
         for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             executor = cls(context=self.context)
             executor.shutdown()
@@ -107,6 +108,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_shutdown_exception_from_callback_generator(self) -> None:
         self.assertIsNotNone(self.node.handle)
+        # This test touches the Executor private API and is not compatible with EventsExecutor
         for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             executor = cls(context=self.context)
             cb_generator = executor._wait_for_ready_callbacks()
@@ -594,8 +596,7 @@ class TestExecutor(unittest.TestCase):
     def test_context_manager(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        # TODO(bmartin427) Context management for executors is new since Iron and not supported by
-        # EventsExecutor yet.
+        # This test touches the Executor private API and is not compatible with EventsExecutor
         executor: Executor = SingleThreadedExecutor(context=self.context)
 
         with executor as the_executor:
