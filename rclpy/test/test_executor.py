@@ -192,10 +192,10 @@ class TestExecutor(unittest.TestCase):
 
     def test_add_node_to_executor(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        # TODO(bmartin427) EventsExecutor.get_nodes() method doesn't exist
-        executor = SingleThreadedExecutor(context=self.context)
-        executor.add_node(self.node)
-        self.assertIn(self.node, executor.get_nodes())
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
+            executor = cls(context=self.context)
+            executor.add_node(self.node)
+            self.assertIn(self.node, executor.get_nodes())
 
     def test_executor_spin_non_blocking(self) -> None:
         self.assertIsNotNone(self.node.handle)

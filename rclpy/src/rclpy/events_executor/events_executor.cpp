@@ -170,6 +170,8 @@ void EventsExecutor::wake()
   }
 }
 
+py::list EventsExecutor::get_nodes() const {return nodes_;}
+
 // NOTE: The timeouts on the below two methods are always realtime even if we're running in debug
 // time.  This is true of other executors too, because debug time is always associated with a
 // specific node and more than one node may be connected to an executor instance.
@@ -937,6 +939,7 @@ void define_events_executor(py::object module)
   .def("add_node", &EventsExecutor::add_node, py::arg("node"))
   .def("remove_node", &EventsExecutor::remove_node, py::arg("node"))
   .def("wake", &EventsExecutor::wake)
+  .def("get_nodes", &EventsExecutor::get_nodes)
   .def("spin", [](EventsExecutor & exec) {exec.spin();})
   .def("spin_once", &EventsExecutor::spin_once, py::arg("timeout_sec") = py::none())
   .def(
