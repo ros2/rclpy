@@ -169,6 +169,10 @@ private:
   std::timed_mutex spinning_mutex_;    ///< Held while a thread is spinning
   std::atomic<int> signal_pending_{};  ///< Signal number of caught signal, 0 if none
 
+  /// This flag is used by spin_once() to determine if a user-visible callback has been dispatched
+  /// during its operation.
+  bool ran_user_{};
+
   // Collection of awaitable entities we're servicing
   pybind11::set subscriptions_;
   pybind11::set timers_;

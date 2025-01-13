@@ -188,8 +188,13 @@ void EventsExecutor::spin(std::optional<double> timeout_sec)
     // Don't let asio auto stop if there's nothing to do
     const auto work = asio::make_work_guard(io_context_);
     if (timeout_sec) {
-      io_context_.run_for(std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::duration<double>(*timeout_sec)));
+      const auto timeout_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(*timeout_sec));
+      const auto end = std::chrono::steady_clock::now() + timeout_ns;
+      // Dispatch anything that's immediately ready, even with zero timeout
+      io_context_.poll();
+      // Now possibly block until the end of the timeout period
+      io_context_.run_until(end);
     } else {
       io_context_.run();
     }
@@ -211,11 +216,23 @@ void EventsExecutor::spin_once(std::optional<double> timeout_sec)
     py::gil_scoped_release gil_release;
     // Don't let asio auto stop if there's nothing to do
     const auto work = asio::make_work_guard(io_context_);
+    // We can't just use asio run_one*() here, because 'one' asio callback might include some
+    // internal housekeeping, and not a user-visible callback that was intended when the Executor
+    // was asked to dispatch 'once'.
+    ran_user_ = false;
     if (timeout_sec) {
-      io_context_.run_one_for(std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::duration<double>(*timeout_sec)));
+      const auto timeout_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(*timeout_sec));
+      const auto end = std::chrono::steady_clock::now() + timeout_ns;
+      // Dispatch anything that's immediately ready, even with zero timeout
+      while (io_context_.poll_one() && !ran_user_) {
+      }
+      // Now possibly block until the end of the timeout period
+      while (!ran_user_ && io_context_.run_one_until(end)) {
+      }
     } else {
-      io_context_.run_one();
+      while (io_context_.run_one() && !ran_user_) {
+      }
     }
     io_context_.restart();
   }
@@ -344,6 +361,7 @@ void EventsExecutor::HandleRemovedSubscription(py::handle subscription)
 
 void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t number_of_events)
 {
+  ran_user_ = true;
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_subscription() and _execute_subcription().
@@ -390,6 +408,7 @@ void EventsExecutor::HandleRemovedTimer(py::handle timer) {timers_manager_.Remov
 
 void EventsExecutor::HandleTimerReady(py::handle timer)
 {
+  ran_user_ = true;
   py::gil_scoped_acquire gil_acquire;
 
   try {
@@ -433,6 +452,7 @@ void EventsExecutor::HandleRemovedClient(py::handle client)
 
 void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_events)
 {
+  ran_user_ = true;
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_client() and _execute_client().
@@ -501,6 +521,7 @@ void EventsExecutor::HandleRemovedService(py::handle service)
 
 void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_events)
 {
+  ran_user_ = true;
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_service() and _execute_service().
@@ -774,6 +795,7 @@ void EventsExecutor::HandleWaitableEventReady(
 void EventsExecutor::HandleWaitableReady(
   py::handle waitable, std::shared_ptr<WaitSet> wait_set, size_t number_of_events)
 {
+  ran_user_ = true;
   // Largely based on rclpy.Executor._take_waitable()
   // https://github.com/ros2/rclpy/blob/a19180c238d4d97ed2b58868d8fb7fa3e3b621f2/rclpy/rclpy/executors.py#L447-L454
   py::object is_ready = waitable.attr("is_ready");
@@ -803,6 +825,7 @@ void EventsExecutor::HandleWaitableReady(
 
 void EventsExecutor::IterateTask(py::handle task)
 {
+  ran_user_ = true;
   py::gil_scoped_acquire gil_acquire;
   // Calling this won't throw, but it may set the exception property on the task object.
   task();
