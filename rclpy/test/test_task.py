@@ -322,6 +322,29 @@ class TestFuture(unittest.TestCase):
         f.add_done_callback(cb)
         assert called
 
+    def test_set_result_on_done_future_raises_exception(self) -> None:
+        f = Future()
+        f.set_result(None)
+        with self.assertRaises(RuntimeError):
+            f.set_result(None)
+
+    def test_set_result_on_cancelled_future_raises_exception(self) -> None:
+        f = Future()
+        f.cancel()
+        with self.assertRaises(RuntimeError):
+            f.set_result(None)
+
+    def test_set_exception_on_done_future_raises_exception(self) -> None:
+        f = Future()
+        f.set_result(None)
+        with self.assertRaises(RuntimeError):
+            f.set_exception(Exception())
+
+    def test_set_exception_on_cancelled_future_raises_exception(self) -> None:
+        f = Future()
+        f.cancel()
+        with self.assertRaises(RuntimeError):
+            f.set_exception(Exception())
 
 if __name__ == '__main__':
     unittest.main()
