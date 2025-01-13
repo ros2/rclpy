@@ -93,9 +93,9 @@ class Future(Generic[T]):
 
     def done(self) -> bool:
         """
-        Indicate if the task has finished or cancelled executing.
+        Indicate if the task has finished executing.
 
-        :return: True if the task is finished, cancelled or raised while it was executing
+        :return: True if the task is finished or raised while it was executing
         """
         return self._state == FutureState.FINISHED
 
@@ -124,8 +124,6 @@ class Future(Generic[T]):
     def set_result(self, result: T) -> None:
         """
         Set the result returned by a task.
-
-        :raises: RuntimeError if future state is not pending
 
         :param result: The output of a long running task.
         """
