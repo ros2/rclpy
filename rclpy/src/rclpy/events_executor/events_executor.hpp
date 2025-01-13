@@ -75,6 +75,8 @@ public:
   void spin_until_future_complete(pybind11::handle future, std::optional<double> timeout_sec = {});
   void spin_once_until_future_complete(
     pybind11::handle future, std::optional<double> timeout_sec = {});
+  EventsExecutor * enter();
+  void exit(pybind11::object, pybind11::object, pybind11::object);
 
 private:
   // Structure to hold entities discovered underlying a Waitable object.

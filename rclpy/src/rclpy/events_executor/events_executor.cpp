@@ -256,6 +256,9 @@ void EventsExecutor::spin_once_until_future_complete(
   spin_once(timeout_sec);
 }
 
+EventsExecutor * EventsExecutor::enter() {return this;}
+void EventsExecutor::exit(py::object, py::object, py::object) {shutdown();}
+
 void EventsExecutor::UpdateEntitiesFromNodes(bool shutdown)
 {
   // Clear pending flag as early as possible, so we error on the side of retriggering a few harmless
@@ -947,7 +950,9 @@ void define_events_executor(py::object module)
       py::arg("timeout_sec") = py::none())
   .def(
       "spin_once_until_future_complete", &EventsExecutor::spin_once_until_future_complete,
-      py::arg("future"), py::arg("timeout_sec") = py::none());
+      py::arg("future"), py::arg("timeout_sec") = py::none())
+  .def("__enter__", &EventsExecutor::enter)
+  .def("__exit__", &EventsExecutor::exit);
 }
 
 }  // namespace events_executor
