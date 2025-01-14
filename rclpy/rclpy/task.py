@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import auto, StrEnum
+from enum import Enum
 import inspect
 import sys
 import threading
@@ -32,12 +32,12 @@ def _fake_weakref() -> None:
     return None
 
 
-class FutureState(StrEnum):
+class FutureState(Enum):
     """States defining the lifecycle of a future."""
 
-    PENDING = auto()
-    CANCELLED = auto()
-    FINISHED = auto()
+    PENDING = 'PENDING'
+    CANCELLED = 'CANCELLED'
+    FINISHED = 'FINISHED'
 
 
 class Future(Generic[T]):

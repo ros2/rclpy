@@ -322,9 +322,9 @@ class Executor(ContextManager['Executor']):
 
         if timeout_sec is None or timeout_sec < 0:
             while (
-                self._context.ok() and
-                not future.done() and
-                not future.cancelled()
+                self._context.ok()
+                and not future.done()
+                and not future.cancelled()
                 and not self._is_shutdown
             ):
                 self._spin_once_until_future_complete(future, timeout_sec)
@@ -334,9 +334,9 @@ class Executor(ContextManager['Executor']):
             timeout_left = TimeoutObject(timeout_sec)
 
             while (
-                self._context.ok() and
-                not future.done() and
-                not future.cancelled()
+                self._context.ok()
+                and not future.done()
+                and not future.cancelled()
                 and not self._is_shutdown
             ):
                 self._spin_once_until_future_complete(future, timeout_left)
