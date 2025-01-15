@@ -30,6 +30,7 @@ from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.task import Future
+from rclpy.task import Task
 from rclpy.type_support import (Action, check_for_type_support, FeedbackMessage, FeedbackT,
                                 GetResultServiceRequest, GetResultServiceResponse, GoalT, ResultT,
                                 SendGoalServiceRequest)
@@ -98,7 +99,8 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
         :param goal_info: GoalInfo message.
         :param goal_request: The user defined goal request message from an ActionClient.
         """
-        self._goal_handle = _rclpy.ActionGoalHandle(action_server._handle, goal_info)
+        self._goal_handle: Optional[_rclpy.ActionGoalHandle] = \
+            _rclpy.ActionGoalHandle(action_server._handle, goal_info)
         self._action_server = action_server
         self._goal_info = goal_info
         self._goal_request = goal_request
@@ -492,9 +494,11 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         try:
             # If the client goes away anytime before this, sending the result response may fail.
             # Catch the exception here and go on so we don't crash.
-            self._handle.send_result_response(request_header, future.result())
+            result = future.result()
+            if result:
+                self._handle.send_result_response(request_header, result)
         except RCLError:
-            self._logger.warn('Failed to send result response (the client may have gone away)')
+            self._logger.warning('Failed to send result response (the client may have gone away)')
 
     @property
     def action_type(self) -> Type[Action[GoalT, ResultT, FeedbackT]]:
@@ -604,7 +608,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
 
         # Schedule user callback for execution
         if self._node.executor:
-            self._node.executor.create_task(self._execute_goal, execute_callback, goal_handle)
+            _: Task[None] = self._node.executor.create_task(self._execute_goal, execute_callback,
+                                                            goal_handle)
 
     def notify_goal_done(self) -> None:
         with self._lock:

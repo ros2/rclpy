@@ -1,7 +1,6 @@
-from enum import Enum
+from enum import IntEnum
 
-class ServiceIntrospectionState(Enum):
-    __value__: int
+class ServiceIntrospectionState(IntEnum):
     OFF = ...
     METADATA = ...
     CONTENTS = ...

@@ -17,6 +17,7 @@ from enum import IntEnum
 import sys
 from typing import Any
 from typing import Dict
+from typing import Final
 from typing import Generic
 from typing import List
 from typing import Optional
@@ -31,7 +32,7 @@ from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
 import yaml
 
-PARAMETER_SEPARATOR_STRING = '.'
+PARAMETER_SEPARATOR_STRING: Final = '.'
 
 if TYPE_CHECKING:
     # Mypy does not handle string literals of array.array[int/str/float] very well
@@ -76,7 +77,7 @@ class Parameter(Generic[AllowableParameterValueT]):
 
         @classmethod
         def from_parameter_value(cls,
-                                 parameter_value: AllowableParameterValueT
+                                 parameter_value: AllowableParameterValue
                                  ) -> 'Parameter.Type':
             """
             Get a Parameter.Type from a given variable.
@@ -113,7 +114,7 @@ class Parameter(Generic[AllowableParameterValueT]):
                 raise TypeError(
                     f"The given value is not one of the allowed types '{parameter_value}'.")
 
-        def check(self, parameter_value: AllowableParameterValueT) -> bool:
+        def check(self, parameter_value: AllowableParameterValue) -> bool:
             if Parameter.Type.NOT_SET == self:
                 return parameter_value is None
             if Parameter.Type.BOOL == self:
@@ -142,7 +143,7 @@ class Parameter(Generic[AllowableParameterValueT]):
             return False
 
     @classmethod
-    def from_parameter_msg(cls, param_msg: ParameterMsg) -> 'Parameter[AllowableParameterValueT]':
+    def from_parameter_msg(cls, param_msg: ParameterMsg) -> 'Parameter[Any]':
         value = None
         type_ = Parameter.Type(value=param_msg.value.type)
         if Parameter.Type.BOOL == type_:
@@ -166,7 +167,8 @@ class Parameter(Generic[AllowableParameterValueT]):
         return cls(param_msg.name, type_, value)
 
     @overload
-    def __init__(self, name: str, type_: Optional['Parameter.Type'] = None) -> None: ...
+    def __init__(self, name: str, type_: Optional['Parameter.Type'] = None,
+                 value: None = None) -> None: ...
 
     @overload
     def __init__(self, name: str, type_: 'Parameter.Type',

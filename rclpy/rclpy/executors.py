@@ -51,6 +51,7 @@ from rclpy.service import Service
 from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
+from rclpy.task import FunctionOrCoroutineFunction
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.timer import Timer, TimerInfo
@@ -72,10 +73,6 @@ if TYPE_CHECKING:
     from rclpy.node import Node  # noqa: F401
     from .callback_groups import Entity
     EntityT = TypeVar('EntityT', bound=Entity)
-
-
-FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[..., T],
-                                                 Callable[..., Coroutine[None, None, T]]]
 
 
 YieldedCallback: 'TypeAlias' = Generator[Tuple[Task[None],
@@ -602,7 +599,7 @@ class Executor(ContextManager['Executor']):
                         gc.trigger()
                     except InvalidHandle:
                         pass
-        task = Task(
+        task: Task[None] = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
         with self._tasks_lock:

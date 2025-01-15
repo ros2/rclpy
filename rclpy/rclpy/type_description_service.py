@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import weakref
 
 from rcl_interfaces.msg import ParameterDescriptor
@@ -49,7 +49,7 @@ class TypeDescriptionService:
         self._node_weak_ref = weakref.ref(node)
         node_name = node.get_name()
         self.service_name = TOPIC_SEPARATOR_STRING.join((node_name, 'get_type_description'))
-        self._type_description_srv = None
+        self._type_description_srv: Optional[_rclpy.TypeDescriptionService] = None
 
         self.enabled = False
         if not node.has_parameter(START_TYPE_DESCRIPTION_SERVICE_PARAM):
@@ -106,6 +106,8 @@ class TypeDescriptionService:
         request: GetTypeDescription.Request,
         response: GetTypeDescription.Response
     ) -> GetTypeDescription.Response:
+        if self._type_description_srv is None:
+            raise RuntimeError('Cannot handle request if TypeDescriptionService is None.')
         return self._type_description_srv.handle_request(
             request, GetTypeDescription.Response, self._get_node().handle)
 

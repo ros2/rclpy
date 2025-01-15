@@ -13,6 +13,6 @@
 # limitations under the License.
 
 
-from impl import _rclpy_pybind11
+from rclpy.impl import _rclpy_pybind11
 
 rclpy_implementation = _rclpy_pybind11

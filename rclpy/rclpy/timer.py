@@ -41,7 +41,7 @@ class TimerInfo:
             self, *,
             expected_call_time: int = 0,
             actual_call_time: int = 0,
-            clock_type: ClockType = ClockType.SYSTEM_TIME):
+            clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME):
         if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if expected_call_time < 0 or actual_call_time < 0:

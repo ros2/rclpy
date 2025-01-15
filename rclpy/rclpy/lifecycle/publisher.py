@@ -44,7 +44,7 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
 
     def __init__(
         self,
-        *args: 'Unpack[LifecyclePublisherArgs]',
+        *args: 'Unpack[LifecyclePublisherArgs[MsgT]]',
         **kwargs: 'Unpack[LifecyclePublisherKWArgs[MsgT]]'
     ) -> None:
         SimpleManagedEntity.__init__(self)

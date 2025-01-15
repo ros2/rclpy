@@ -31,7 +31,7 @@ class PyCapsule(Protocol):
 
 
 # Done because metaclasses need to inherit from type
-ProtocolType: Type = type(Protocol)
+ProtocolType: Any = type(Protocol)
 
 
 class CommonMsgSrvMetaClass(ProtocolType):
@@ -59,7 +59,7 @@ class Msg(Protocol, metaclass=MsgMetaClass):
     pass
 
 
-MsgT = TypeVar('MsgT', bound=Msg, contravariant=True)
+MsgT = TypeVar('MsgT', bound=Msg)
 
 SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)

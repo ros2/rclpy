@@ -122,10 +122,10 @@ def get_available_rmw_implementations() -> Set[str]:
 
     :raises RuntimeError: if the environment variable includes a missing RMW implementation.
     """
-    available_rmw_implementations = ament_index_python.get_resources(
+    available_rmw_implementations_dictionary = ament_index_python.get_resources(
         'rmw_typesupport')
     available_rmw_implementations = {
-        name for name in available_rmw_implementations
+        name for name in available_rmw_implementations_dictionary
         if name != 'rmw_implementation'}
 
     # filter by implementations in environment variable if provided

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
 from typing import Callable
 from typing import Iterable
 from typing import List
@@ -104,7 +105,7 @@ class QoSOverridingOptions:
 
 
 def _declare_qos_parameters(
-    entity_type: Union[Type[Publisher], Type[Subscription]],
+    entity_type: Union[Type[Publisher[Any]], Type[Subscription[Any]]],
     node: 'Node',
     topic_name: Text,
     qos: QoSProfile,
@@ -135,7 +136,7 @@ def _declare_qos_parameters(
         descriptor.description = description.format(policy_name)
         descriptor.read_only = True
         try:
-            param = node.declare_parameter(
+            param: Parameter[Any] = node.declare_parameter(
                 name.format(policy_name),
                 _get_qos_policy_parameter(qos, policy),
                 descriptor)
@@ -149,8 +150,8 @@ def _declare_qos_parameters(
                 f"{description.format('Provided QoS overrides')}, are not valid: {result.reason}")
 
 
-def _get_allowed_policies(entity_type: Union[Type[Publisher],
-                                             Type[Subscription]]) -> List[QoSPolicyKind]:
+def _get_allowed_policies(entity_type: Union[Type[Publisher[Any]],
+                                             Type[Subscription[Any]]]) -> List[QoSPolicyKind]:
     allowed_policies = list(QoSPolicyKind.__members__.values())
     if issubclass(entity_type, Subscription):
         allowed_policies.remove(QoSPolicyKind.LIFESPAN)
@@ -177,7 +178,7 @@ def _get_qos_policy_parameter(qos: QoSProfile, policy: QoSPolicyKind) -> Union[s
 
 def _override_qos_policy_with_param(qos: QoSProfile,
                                     policy: QoSPolicyKind,
-                                    param: Parameter) -> None:
+                                    param: Parameter[Any]) -> None:
     value = param.value
     policy_name = policy.name.lower()
     if policy in (

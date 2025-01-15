@@ -14,40 +14,70 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import IntEnum
 from types import TracebackType
-from typing import Any, Generic, Literal, overload, Sequence, TypeAlias, TypedDict, TypeVar
+from typing import Any, Final, Generic, Literal, overload, Sequence, TypeAlias, TypedDict, TypeVar
 
 
 from action_msgs.msg import GoalInfo
 from action_msgs.msg._goal_status_array import GoalStatusArray
 from action_msgs.srv._cancel_goal import CancelGoal
 from rclpy.clock import JumpHandle
-from rclpy.clock_type import ClockType
 from rclpy.duration import Duration
-from rclpy.impl import service_introspection
+from rclpy.impl import service_introspection as service_introspection
 from rclpy.parameter import Parameter
 from rclpy.subscription import MessageInfo
 from rclpy.type_support import (Action, FeedbackMessage, FeedbackT, GetResultServiceRequest,
-                                GetResultServiceResponse, GoalT, MsgT, ResultT,
+                                GetResultServiceResponse, GoalT, Msg, MsgT, ResultT,
                                 SendGoalServiceRequest, SendGoalServiceResponse, Srv, SrvRequestT,
                                 SrvResponseT)
-
+from type_description_interfaces.srv import GetTypeDescription
 
 T = TypeVar('T')
 
 
-def rclpy_remove_ros_args(pycli_args: Sequence[str]) -> list[str]:
-    """Remove ROS-specific arguments from argument vector."""
+RCL_DEFAULT_DOMAIN_ID: Final[int] = ...
+RMW_DURATION_INFINITE: Final[int] = ...
+RMW_QOS_DEADLINE_BEST_AVAILABLE: Final[int] = ...
+RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE: Final[int] = ...
 
 
-def rclpy_get_rmw_implementation_identifier() -> str:
-    """Retrieve the identifier for the active RMW implementation."""
+class RCUTILS_LOG_SEVERITY(IntEnum):
+    RCUTILS_LOG_SEVERITY_UNSET = ...
+    RCUTILS_LOG_SEVERITY_DEBUG = ...
+    RCUTILS_LOG_SEVERITY_INFO = ...
+    RCUTILS_LOG_SEVERITY_WARN = ...
+    RCUTILS_LOG_SEVERITY_ERROR = ...
+    RCUTILS_LOG_SEVERITY_FATAL = ...
+
+
+class ClockType(IntEnum):
+    UNINITIALIZED = ...
+    ROS_TIME = ...
+    SYSTEM_TIME = ...
+    STEADY_TIME = ...
+
+
+class ClockChange(IntEnum):
+    ROS_TIME_NO_CHANGE = ...
+    """ROS time is active and will continue to be active"."""
+    ROS_TIME_ACTIVATED = ...
+    """ROS time is being activated."""
+    ROS_TIME_DEACTIVATED = ...
+    """ROS TIME is being deactivated, the clock will report system time after the jump."""
+    SYSTEM_TIME_NO_CHANGE = ...
+    """ROS time is inactive and the clock will keep reporting system time."""
 
 
 class rcl_time_point_t:
-    nanoseconds: int
-    clock_type: ClockType
+
+    def __init__(self, nanoseconds: int, clock_type: int) -> None: ...
+
+    @property
+    def nanoseconds(self) -> int: ...
+
+    @property
+    def clock_type(self) -> ClockType: ...
 
 
 class rmw_service_info_t:
@@ -164,6 +194,29 @@ class Clock(Destroyable):
         """Remove a time jump callback from a clock."""
 
 
+class ClockEvent:
+
+    def __init__(self) -> None: ...
+
+    def wait_until_steady(self, clock: Clock, until: rcl_time_point_t) -> None:
+        """Wait for the event to be set (monotonic wait)."""
+
+    def wait_until_system(self, clock: Clock, until: rcl_time_point_t) -> None:
+        """Wait for the event to be set (system timed wait)."""
+
+    def wait_until_ros(self, clock: Clock, until: rcl_time_point_t) -> None:
+        """Wait for the event to be set (ROS timed wait)."""
+
+    def is_set(self) -> bool:
+        """Return True if the event is set, False otherwise."""
+
+    def set(self) -> None:   # noqa: A003
+        """Set the event, waking all those who wait on it."""
+
+    def clear(self) -> None:
+        """Unset the event."""
+
+
 class Context(Destroyable):
 
     def __init__(self, pyargs: list[str], domain_id: int) -> None: ...
@@ -183,11 +236,14 @@ class Context(Destroyable):
 
 
 class rcl_duration_t:
-    nanoseconds: int
+
+    def __init__(self, nanoseconds: int) -> None: ...
+
+    @property
+    def nanoseconds(self) -> int: ...
 
 
-class rcl_subscription_event_type_t(Enum):
-    _value_: int
+class rcl_subscription_event_type_t(IntEnum):
     RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED = ...
     RCL_SUBSCRIPTION_LIVELINESS_CHANGED = ...
     RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS = ...
@@ -196,8 +252,7 @@ class rcl_subscription_event_type_t(Enum):
     RCL_SUBSCRIPTION_MATCHED = ...
 
 
-class rcl_publisher_event_type_t(Enum):
-    _value_: int
+class rcl_publisher_event_type_t(IntEnum):
     RCL_PUBLISHER_OFFERED_DEADLINE_MISSED = ...
     RCL_PUBLISHER_LIVELINESS_LOST = ...
     RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS = ...
@@ -222,8 +277,7 @@ class rmw_message_lost_status_t:
     total_count_change: int
 
 
-class rmw_qos_policy_kind_e(Enum):
-    _value_: int
+class rmw_qos_policy_kind_e(IntEnum):
     RMW_QOS_POLICY_INVALID = ...
     RMW_QOS_POLICY_DURABILITY = ...
     RMW_QOS_POLICY_DEADLINE = ...
@@ -359,28 +413,27 @@ class LifecycleStateMachine(Destroyable):
         """Trigger a transition by label."""
 
     @property
-    def service_change_state(self) -> Service:
+    def service_change_state(self) -> Service[Any, Any]:
         """Get the change state service."""
 
     @property
-    def service_get_state(self) -> Service:
+    def service_get_state(self) -> Service[Any, Any]:
         """Get the get state service."""
 
     @property
-    def service_get_available_states(self) -> Service:
+    def service_get_available_states(self) -> Service[Any, Any]:
         """Get the get available states service."""
 
     @property
-    def service_get_available_transitions(self) -> Service:
+    def service_get_available_transitions(self) -> Service[Any, Any]:
         """Get the get available transitions service."""
 
     @property
-    def service_get_transition_graph(self) -> Service:
+    def service_get_transition_graph(self) -> Service[Any, Any]:
         """Get the get transition graph service."""
 
 
-class TransitionCallbackReturnType(Enum):
-    _value_: int
+class TransitionCallbackReturnType(IntEnum):
     SUCCESS = ...
     FAILURE = ...
     ERROR = ...
@@ -457,11 +510,10 @@ class Node(Destroyable):
     def get_count_services(self, service_name: str) -> int:
         """Return the count of all the servers known for that service in the entire ROS graph."""
 
-    def get_node_names_and_namespaces(self) -> list[tuple[str, str, str] | tuple[str, str]]:
+    def get_node_names_and_namespaces(self) -> list[tuple[str, str]]:
         """Get the list of nodes discovered by the provided node."""
 
-    def get_node_names_and_namespaces_with_enclaves(self) -> list[tuple[str, str, str] |
-                                                                  tuple[str, str]]:
+    def get_node_names_and_namespaces_with_enclaves(self) -> list[tuple[str, str, str]]:
         """Get the list of nodes discovered by the provided node, with their enclaves."""
 
     def get_action_client_names_and_types_by_node(self, remote_node_name: str,
@@ -477,62 +529,12 @@ class Node(Destroyable):
     def get_action_names_and_types(self) -> list[tuple[str, list[str]]]:
         """Get action names and types."""
 
-    def get_parameters(self, pyparamter_cls: type[Parameter]) -> dict[str, Parameter]:
+    def get_parameters(self, pyparamter_cls: type[Parameter[Any]]) -> dict[str, Parameter[Any]]:
         """Get a list of parameters for the current node."""
-
-
-def rclpy_resolve_name(node: Node, topic_name: str, only_expand: bool, is_service: bool) -> str:
-    """Expand and remap a topic or service name."""
-
-
-def rclpy_get_publisher_names_and_types_by_node(node: Node, no_demangle: bool, node_name: str,
-                                                node_namespace: str
-                                                ) -> list[tuple[str, list[str]]]:
-    """Get topic names and types for which a remote node has publishers."""
-
-
-def rclpy_get_subscriber_names_and_types_by_node(node: Node, no_demangle: bool, node_name: str,
-                                                 node_namespace: str
-                                                 ) -> list[tuple[str, list[str]]]:
-    """Get topic names and types for which a remote node has subscribers."""
-
-
-def rclpy_get_service_names_and_types_by_node(node: Node, node_name: str, node_namespace: str
-                                              ) -> list[tuple[str, list[str]]]:
-    """Get all service names and types in the ROS graph."""
-
-
-def rclpy_get_client_names_and_types_by_node(node: Node, node_name: str, node_namespace: str
-                                             ) -> list[tuple[str, list[str]]]:
-    """Get service names and types for which a remote node has servers."""
-
-
-def rclpy_get_service_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
-    """Get all service names and types in the ROS graph."""
-
-
-class TypeHashDict(TypedDict):
-    version: int
-    value: bytes
 
 
 class QoSDict(TypedDict):
     pass
-
-
-class TopicEndpointInfoDict(TypedDict):
-    node_name: str
-    node_namespace: str
-    topic_type: str
-    topic_type_hash: TypeHashDict
-    endpoint_type: int
-    endpoint_gid: list[int]
-    qos_profile: rmw_qos_profile_dict
-
-
-def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: bool
-                                       ) -> list[TopicEndpointInfoDict]:
-    """Get publishers info for a topic."""
 
 
 class Publisher(Destroyable, Generic[MsgT]):
@@ -608,6 +610,12 @@ class Timer(Destroyable):
         """Check if a timer is canceled."""
 
 
+class QoSCompatibility(IntEnum):
+    OK = ...
+    WARNING = ...
+    ERROR = ...
+
+
 PredefinedQosProfileTNames = Literal['qos_profile_sensor_data', 'qos_profile_default',
                                      'qos_profile_system_default', 'qos_profile_services_default',
                                      'qos_profile_unknown', 'qos_profile_parameters',
@@ -665,13 +673,13 @@ class WaitSet(Destroyable):
     def clear_entities(self) -> None:
         """Clear all the pointers in the wait set."""
 
-    def add_service(self, service: Service) -> int:
+    def add_service(self, service: Service[Any, Any]) -> int:
         """Add a service to the wait set structure."""
 
     def add_subscription(self, subscription: Subscription[Any]) -> int:
         """Add a subcription to the wait set structure."""
 
-    def add_client(self, client: Client) -> int:
+    def add_client(self, client: Client[Any, Any]) -> int:
         """Add a client to the wait set structure."""
 
     def add_guard_condition(self, guard_condition: GuardCondition) -> int:
@@ -699,6 +707,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
             self,
             node: Node,
             pyaction_type: type[Action[GoalT, ResultT, FeedbackT]],
+            action_name: str,
             goal_service_qos: rmw_qos_profile_t,
             result_service_qos: rmw_qos_profile_t,
             cancel_service_qos: rmw_qos_profile_t,
@@ -725,10 +734,10 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
                       ) -> FeedbackMessage[FeedbackT] | None:
         """Take a feedback message from a given action client."""
 
-    def send_cancel_request(self: CancelGoal.Request) -> int:
+    def send_cancel_request(self, pyrequest: CancelGoal.Request) -> int:
         """Send an action cancel request."""
 
-    def send_goal_request(self: SendGoalServiceRequest[GoalT]) -> int:
+    def send_goal_request(self, pyrequest: SendGoalServiceRequest[GoalT]) -> int:
         """Send an action goal request."""
 
     def take_result_response(
@@ -743,18 +752,17 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
     def is_action_server_available(self) -> bool:
         """Check if an action server is available for the given action client."""
 
-    def add_to_waitset(self, waitset: WaitSet) -> None:
+    def add_to_waitset(self, wait_set: WaitSet) -> None:
         """Add an action entity to a wait set."""
 
-    def is_ready(self) -> bool:
+    def is_ready(self, wait_set: WaitSet) -> tuple[bool, bool, bool, bool, bool]:
         """Check if an action entity has any ready wait set entities."""
 
     def take_status(self, pymsg_type: type[GoalStatusArray]) -> GoalStatusArray | None:
         """Take an action status response."""
 
 
-class GoalEvent(Enum):
-    _value_: int
+class GoalEvent(IntEnum):
     EXECUTE = ...
     CANCEL_GOAL = ...
     SUCCEED = ...
@@ -856,9 +864,10 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Destroyable):
         """Add an action entity to a wait set."""
 
 
-class ActionGoalHandle:
+class ActionGoalHandle(Destroyable):
 
-    def __init__(self, action_server: ActionServer, pygoal_info_msg: GoalInfo) -> None:
+    def __init__(self, action_server: ActionServer[Any, Any, Any],
+                 pygoal_info_msg: GoalInfo) -> None:
         ...
 
     @property
@@ -875,10 +884,6 @@ class ActionGoalHandle:
         """Check if a goal is active."""
 
 
-class RCLError(RuntimeError):
-    pass
-
-
 class NodeNameNonExistentError(RCLError):
     pass
 
@@ -887,12 +892,41 @@ class InvalidHandle(RuntimeError):
     pass
 
 
-class SignalHandlerOptions(Enum):
-    _value_: int
+class SignalHandlerOptions(IntEnum):
     NO = ...
     SigInt = ...
     SigTerm = ...
-    All = ...
+    ALL = ...
+
+
+class TypeDescriptionService(Destroyable):
+
+    def __init__(self, hanlde: Node) -> None: ...
+
+    @property
+    def impl(self) -> Service[GetTypeDescription.Request, GetTypeDescription.Response]:
+        """Get the rcl service wrapper capsule."""
+
+    def handle_request(
+        self, pyrequest: GetTypeDescription.Request,
+        pyresponse_type: type[GetTypeDescription.Response],
+        node: Node
+    ) -> GetTypeDescription.Response:
+        """Handle an incoming request by calling RCL implementation."""
+
+
+class rmw_qos_compatibility_type_e(IntEnum):
+    RMW_QOS_COMPATIBILITY_OK = ...
+    RMW_QOS_COMPATIBILITY_WARNING = ...
+    RMW_QOS_COMPATIBILITY_ERROR = ...
+
+
+rmw_qos_compatibility_type_t: TypeAlias = rmw_qos_compatibility_type_e
+
+
+class QoSCheckCompatibleResult:
+    compatibility: rmw_qos_compatibility_type_t
+    reason: str
 
 
 def register_sigint_guard_condition(guard_condition: GuardCondition) -> None:
@@ -913,3 +947,162 @@ def get_current_signal_handlers_options() -> SignalHandlerOptions:
 
 def uninstall_signal_handlers() -> None:
     """Uninstall rclpy signal handlers."""
+
+
+def rclpy_qos_check_compatible(publisher_qos_profile: rmw_qos_profile_t,
+                               subscription_qos_profile: rmw_qos_profile_t
+                               ) -> QoSCheckCompatibleResult:
+    """Check if two QoS profiles are compatible."""
+
+
+def rclpy_action_get_rmw_qos_profile(rmw_profile: str) -> rmw_qos_profile_dict:
+    """Get an action RMW QoS profile."""
+
+
+def rclpy_expand_topic_name(topic: str, node_name: str, node_namespace: str) -> str:
+    """Expand a topic name."""
+
+
+def rclpy_remap_topic_name(node: Node, topic_name: str) -> str:
+    """Remap a topic name."""
+
+
+def rclpy_get_validation_error_for_topic_name(topic_name: str) -> tuple[str, int] | None:
+    """Get the error message and invalid index of a topic name or None if valid."""
+
+
+def rclpy_get_validation_error_for_full_topic_name(topic_name: str) -> tuple[str, int] | None:
+    """Get the error message and invalid index of a full topic name or None if valid."""
+
+
+def rclpy_get_validation_error_for_namespace(namespace_: str) -> tuple[str, int] | None:
+    """Get the error message and invalid index of a namespace or None if valid."""
+
+
+def rclpy_get_validation_error_for_node_name(namespace_: str) -> tuple[str, int] | None:
+    """Get the error message and invalid index of a node name or None if valid."""
+
+
+def rclpy_resolve_name(node: Node, topic_name: str, only_expand: bool, is_service: bool) -> str:
+    """Expand and remap a topic or service name."""
+
+
+def rclpy_get_topic_names_and_types(node: Node, no_demangle: bool) -> list[tuple[str, list[str]]]:
+    """Get all topic names and types in the ROS graph."""
+
+
+def rclpy_get_publisher_names_and_types_by_node(node: Node, no_demangle: bool, node_name: str,
+                                                node_namespace: str
+                                                ) -> list[tuple[str, list[str]]]:
+    """Get topic names and types for which a remote node has publishers."""
+
+
+def rclpy_get_subscriber_names_and_types_by_node(node: Node, no_demangle: bool, node_name: str,
+                                                 node_namespace: str
+                                                 ) -> list[tuple[str, list[str]]]:
+    """Get topic names and types for which a remote node has subscribers."""
+
+
+class TypeHashDict(TypedDict):
+    version: int
+    value: bytes
+
+
+class TopicEndpointInfoDict(TypedDict):
+    node_name: str
+    node_namespace: str
+    topic_type: str
+    topic_type_hash: TypeHashDict
+    endpoint_type: int
+    endpoint_gid: list[int]
+    qos_profile: rmw_qos_profile_dict
+
+
+def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: bool
+                                       ) -> list[TopicEndpointInfoDict]:
+    """Get publishers info for a topic."""
+
+
+def rclpy_get_subscriptions_info_by_topic(node: Node, topic_name: str, no_mangle: bool
+                                          ) -> list[TopicEndpointInfoDict]:
+    """Get subscriptions info for a topic."""
+
+
+def rclpy_get_service_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
+    """Get all service names and types in the ROS graph."""
+
+
+def rclpy_get_service_names_and_types_by_node(node: Node, node_name: str, node_namespace: str
+                                              ) -> list[tuple[str, list[str]]]:
+    """Get all service names and types in the ROS graph."""
+
+
+def rclpy_get_client_names_and_types_by_node(node: Node, node_name: str, node_namespace: str
+                                             ) -> list[tuple[str, list[str]]]:
+    """Get service names and types for which a remote node has servers."""
+
+
+def rclpy_serialize(pymsg: Msg, py_msg_type: type[Msg]) -> bytes:
+    """Serialize a ROS message."""
+
+
+def rclpy_deserialize(pybuffer: bytes, pymsg_type: type[MsgT]) -> MsgT:
+    """Deserialize a ROS message."""
+
+
+def rclpy_get_rmw_implementation_identifier() -> str:
+    """Retrieve the identifier for the active RMW implementation."""
+
+
+def rclpy_assert_liveliness(publisher: Publisher[Any]) -> None:
+    """Assert the liveliness of an entity."""
+
+
+def rclpy_remove_ros_args(pycli_args: Sequence[str]) -> list[str]:
+    """Remove ROS-specific arguments from argument vector."""
+
+
+def rclpy_logging_fini() -> None:
+    """Finalize RCL logging."""
+
+
+def rclpy_logging_configure(context: Context) -> None:
+    """Initialize RCL logging."""
+
+
+def rclpy_logging_get_separator_string() -> str: ...
+
+
+def rclpy_logging_initialize() -> None: ...
+
+
+def rclpy_logging_shutdown() -> None: ...
+
+
+def rclpy_logging_set_logger_level(name: str, level: int,
+                                   detailed_error: bool = False) -> None: ...
+
+
+def rclpy_logging_get_logger_effective_level(name: str) -> int: ...
+
+
+def rclpy_logging_logger_is_enabled_for(name: str, severity: int) -> bool: ...
+
+
+def rclpy_logging_rcutils_log(severity: int, name: str, message: str, function_name: str,
+                              file_name: str, line_number: int) -> None: ...
+
+
+def rclpy_logging_severity_level_from_string(log_level: str) -> int: ...
+
+
+def rclpy_logging_get_logging_directory() -> str: ...
+
+
+def rclpy_logging_rosout_add_sublogger(logger_name: str, sublogger_name: str) -> bool: ...
+
+
+def rclpy_logging_rosout_remove_sublogger(logger_name: str, sublogger_name: str) -> None: ...
+
+
+def rclpy_logging_get_logger_level(name: str) -> int: ...

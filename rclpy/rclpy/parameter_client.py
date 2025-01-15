@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import time
-from typing import Callable, List, Optional, Sequence, Union
+from typing import Any, Callable, List, Optional, Sequence, Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterEvent
@@ -176,7 +176,7 @@ class AsyncParameterClient:
 
     def set_parameters(
         self,
-        parameters: Sequence[Union[Parameter, ParameterMsg]],
+        parameters: Sequence[Union[Parameter[Any], ParameterMsg]],
         callback: Optional[Callable[[SetParameters.Response], None]] = None
     ) -> Future[SetParameters.Response]:
         """
@@ -248,7 +248,7 @@ class AsyncParameterClient:
 
     def set_parameters_atomically(
         self,
-        parameters: Sequence[Union[Parameter, ParameterMsg]],
+        parameters: Sequence[Union[Parameter[Any], ParameterMsg]],
         callback: Optional[Callable[[SetParametersAtomically.Response], None]] = None
     ) -> Future[SetParametersAtomically.Response]:
         """

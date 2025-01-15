@@ -117,7 +117,7 @@ class ParameterService:
 
     def _list_parameters_callback(
         self,
-        request: ListParameters.Response,
+        request: ListParameters.Request,
         response: ListParameters.Response
     ) -> ListParameters.Response:
         node = self._get_node()

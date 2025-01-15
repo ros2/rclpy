@@ -153,7 +153,8 @@ class Context(ContextManager['Context']):
             if node is not None:
                 node.destroy_node()
 
-        self.__context.shutdown()
+        if self.__context:
+            self.__context.shutdown()
         self._call_on_shutdown_callbacks()
         self._logging_fini()
 

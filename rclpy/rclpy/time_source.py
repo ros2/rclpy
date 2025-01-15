@@ -35,7 +35,7 @@ USE_SIM_TIME_NAME = 'use_sim_time'
 class TimeSource:
 
     def __init__(self, *, node: Optional['Node'] = None):
-        self._clock_sub: Optional['Subscription'] = None
+        self._clock_sub: Optional['Subscription[rosgraph_msgs.msg.Clock]'] = None
         self._node_weak_ref: Optional[weakref.ReferenceType['Node']] = None
         self._associated_clocks: Set[ROSClock] = set()
         # Zero time is a special value that means time is uninitialzied
@@ -127,7 +127,7 @@ class TimeSource:
         for clock in self._associated_clocks:
             clock.set_ros_time_override(time_from_msg)
 
-    def _on_parameter_event(self, parameter_list: List[Parameter]) -> SetParametersResult:
+    def _on_parameter_event(self, parameter_list: List[Parameter[bool]]) -> SetParametersResult:
         successful = True
         reason = ''
 

@@ -19,6 +19,7 @@ from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import overload
 from typing import Type
 from typing import Union
 import warnings
@@ -95,13 +96,33 @@ EventHandlerData: TypeAlias = Optional[Union[
 class EventHandler(Waitable[EventHandlerData]):
     """Waitable type to handle QoS events."""
 
+    @overload
     def __init__(
         self,
         *,
         callback_group: CallbackGroup,
         callback: Callable[..., None],
-        event_type: Union[QoSSubscriptionEventType, QoSPublisherEventType],
-        parent_impl: 'Union[ _rclpy.Subscription[Any], _rclpy.Publisher[Any]]',
+        event_type: QoSSubscriptionEventType,
+        parent_impl:  _rclpy.Subscription[Any],
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        *,
+        callback_group: CallbackGroup,
+        callback: Callable[..., None],
+        event_type: QoSPublisherEventType,
+        parent_impl:  _rclpy.Publisher[Any],
+    ) -> None: ...
+
+    def __init__(
+        self,
+        *,
+        callback_group: CallbackGroup,
+        callback: Callable[..., None],
+        event_type: Any,
+        parent_impl: Any,
     ) -> None:
         # Waitable init adds self to callback_group
         super().__init__(callback_group)

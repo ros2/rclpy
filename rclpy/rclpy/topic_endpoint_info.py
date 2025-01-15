@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from enum import IntEnum
-from typing import List, Union
+from typing import Any, List, Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSHistoryPolicy, QoSPresetProfiles, QoSProfile
@@ -46,7 +46,8 @@ class TopicEndpointInfo:
     ]
 
     def __init__(self, node_name: str = '', node_namespace: str = '',
-                 topic_type: str = '', topic_type_hash: TypeHash = TypeHash(),
+                 topic_type: str = '',
+                 topic_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
                  endpoint_type: TopicEndpointTypeEnum = TopicEndpointTypeEnum.INVALID,
                  endpoint_gid: List[int] = [],
                  qos_profile: QoSProfile = QoSPresetProfiles.UNKNOWN.value) -> None:
@@ -100,8 +101,9 @@ class TopicEndpointInfo:
         assert isinstance(value, str)
         self._topic_type = value
 
+    # Has to be marked Any due to mypy#3004. Return type is actually TypeHash
     @property
-    def topic_type_hash(self) -> TypeHash:
+    def topic_type_hash(self) -> Any:
         """
         Get field 'topic_type_hash'.
 

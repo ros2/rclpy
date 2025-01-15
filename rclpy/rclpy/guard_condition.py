@@ -22,7 +22,7 @@ from rclpy.utilities import get_default_context
 
 class GuardCondition:
 
-    def __init__(self, callback: Optional[Callable],
+    def __init__(self, callback: Optional[Callable[[], None]],
                  callback_group: Optional[CallbackGroup],
                  context: Optional[Context] = None) -> None:
         """

@@ -30,6 +30,7 @@ import lifecycle_msgs.srv
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.service import Service
@@ -91,7 +92,7 @@ class LifecycleNodeMixin(ManagedEntity):
             raise RuntimeError('LifecycleNodeMixin uses Node fields so Node needs to be'
                                'in the inheritance tree.')
 
-        self._logger = self.get_logger()
+        self._logger: RcutilsLogger = self.get_logger()
         self._callbacks: Dict[int, Callable[[LifecycleState], TransitionCallbackReturn]] = {}
         # register all state machine transition callbacks
         self.__register_callback(
@@ -126,7 +127,7 @@ class LifecycleNodeMixin(ManagedEntity):
             check_is_valid_srv_type(srv_type)
 
         with self.handle:
-            self._state_machine = _rclpy.LifecycleStateMachine(
+            self._state_machine: _rclpy.LifecycleStateMachine = _rclpy.LifecycleStateMachine(
                 self.handle, enable_communication_interface)
         if enable_communication_interface:
             self._service_change_state = Service(
@@ -389,7 +390,7 @@ class LifecycleNodeMixin(ManagedEntity):
     def __change_state(self, transition_id: int) -> TransitionCallbackReturn:
         self.__check_is_initialized()
         initial_state = self._state_machine.current_state
-        initial_state = LifecycleState(state_id=initial_state[0], label=initial_state[1])
+        life_cycle_state = LifecycleState(state_id=initial_state[0], label=initial_state[1])
         try:
             self._state_machine.trigger_transition_by_id(transition_id, True)
         except _rclpy.RCLError:
@@ -398,7 +399,7 @@ class LifecycleNodeMixin(ManagedEntity):
                 .format(transition_id, self._state_machine.current_state))
             return TransitionCallbackReturn.ERROR
         cb_return_code = self.__execute_callback(
-            self._state_machine.current_state[0], initial_state)
+            self._state_machine.current_state[0], life_cycle_state)
         try:
             self._state_machine.trigger_transition_by_label(cb_return_code.to_label(), True)
         except _rclpy.RCLError:
@@ -410,7 +411,7 @@ class LifecycleNodeMixin(ManagedEntity):
             # Now we're in the errorprocessing state, trigger the on_error callback
             # and transition again based on the return code.
             error_cb_ret_code = self.__execute_callback(
-                self._state_machine.current_state[0], initial_state)
+                self._state_machine.current_state[0], life_cycle_state)
             try:
                 self._state_machine.trigger_transition_by_label(error_cb_ret_code.to_label(), True)
             except _rclpy.RCLError:
@@ -509,7 +510,7 @@ class LifecycleNodeArgs(TypedDict):
     use_global_arguments: bool
     enable_rosout: bool
     start_parameter_services: bool
-    parameter_overrides: 'Optional[List[Parameter]]'
+    parameter_overrides: 'Optional[List[Parameter[Any]]]'
     allow_undeclared_parameters: bool
     automatically_declare_parameters_from_overrides: bool
     enable_logger_service: bool

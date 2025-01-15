@@ -36,7 +36,7 @@ class Time:
     def __init__(
             self, *,
             seconds: Union[int, float] = 0, nanoseconds: int = 0,
-            clock_type: ClockType = ClockType.SYSTEM_TIME):
+            clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME):
         if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if seconds < 0:
@@ -66,7 +66,7 @@ class Time:
         return (nanoseconds // S_TO_NS, nanoseconds % S_TO_NS)
 
     @property
-    def clock_type(self) -> ClockType:
+    def clock_type(self) -> _rclpy.ClockType:
         """:return: the type of clock that produced this instance."""
         return self._time_handle.clock_type
 
@@ -112,14 +112,14 @@ class Time:
         else:
             return NotImplemented
 
-    def __eq__(self, other: 'Time') -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Time):
             if self.clock_type != other.clock_type:
                 raise TypeError("Can't compare times with different clock types")
             return self.nanoseconds == other.nanoseconds
         return NotImplemented
 
-    def __ne__(self, other: 'Time') -> bool:
+    def __ne__(self, other: object) -> bool:
         if isinstance(other, Time):
             return not self.__eq__(other)
         return NotImplemented

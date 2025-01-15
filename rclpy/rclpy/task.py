@@ -16,8 +16,9 @@ from enum import Enum
 import inspect
 import sys
 import threading
-from typing import (Callable, cast, Coroutine, Dict, Generator, Generic, Iterable, List,
-                    Optional, TYPE_CHECKING, TypeVar, Union)
+from types import CoroutineType
+from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, List,
+                    Optional, Tuple, TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
 
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
 
 T = TypeVar('T')
 
-FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[[], T],
+FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[..., T],
                                                  Callable[..., Coroutine[None, None, T]]]
 
 
@@ -224,17 +225,17 @@ class Task(Future[T]):
 
     def __init__(self,
                  handler: FunctionOrCoroutineFunction[T],
-                 args: Optional[Iterable[object]] = None,
-                 kwargs: Optional[Dict[str, object]] = None,
+                 args: Optional[Tuple[Any, ...]] = None,
+                 kwargs: Optional[Dict[str, Any]] = None,
                  executor: Optional['Executor'] = None) -> None:
         super().__init__(executor=executor)
         # Arguments passed into the function
         if args is None:
-            args = []
-        self._args: Optional[List[object]] = args
+            args = ()
+        self._args: Optional[Tuple[Any, ...]] = args
         if kwargs is None:
             kwargs = {}
-        self._kwargs: Optional[Dict[str, object]] = kwargs
+        self._kwargs: Optional[Dict[str, Any]] = kwargs
 
         # _handler is either a normal function or a coroutine
         if inspect.iscoroutinefunction(handler):
@@ -275,7 +276,7 @@ class Task(Future[T]):
 
             if inspect.iscoroutine(self._handler):
                 # Execute a coroutine
-                handler = self._handler
+                handler: CoroutineType[None, None, T] = self._handler
                 try:
                     handler.send(None)
                 except StopIteration as e:

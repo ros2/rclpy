@@ -41,6 +41,7 @@ This will invalidate all entities derived from the context.
 """
 
 from types import TracebackType
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
@@ -146,9 +147,10 @@ def get_global_executor() -> 'Executor':
         __executor = SingleThreadedExecutor()
         context = get_default_context()
 
-        def reset_executor():
+        def reset_executor() -> None:
             global __executor
-            __executor.shutdown()
+            if __executor:
+                __executor.shutdown()
             __executor = None
         context.on_shutdown(reset_executor)
     return __executor
@@ -215,7 +217,7 @@ def create_node(
     use_global_arguments: bool = True,
     enable_rosout: bool = True,
     start_parameter_services: bool = True,
-    parameter_overrides: Optional[List[Parameter]] = None,
+    parameter_overrides: Optional[List[Parameter[Any]]] = None,
     allow_undeclared_parameters: bool = False,
     automatically_declare_parameters_from_overrides: bool = False,
     enable_logger_service: bool = False
@@ -314,7 +316,7 @@ def spin(node: 'Node', executor: Optional['Executor'] = None) -> None:
 
 def spin_until_future_complete(
     node: 'Node',
-    future: Future,
+    future: Future[Any],
     executor: Optional['Executor'] = None,
     timeout_sec: Optional[float] = None
 ) -> None:
