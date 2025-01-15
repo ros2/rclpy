@@ -299,15 +299,35 @@ class Executor:
         future.add_done_callback(lambda x: self.wake())
 
         if timeout_sec is None or timeout_sec < 0:
+<<<<<<< HEAD
             while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once_until_future_complete(future, timeout_sec)
+=======
+            while (
+                self._context.ok()
+                and not future.done()
+                and not future.cancelled()
+                and not self._is_shutdown
+            ):
+                self._spin_once_until_future_complete(future, timeout_sec)
+>>>>>>> 9a144bf (Check if Task(Future) is canceled. (#1377))
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = TimeoutObject(timeout_sec)
 
+<<<<<<< HEAD
             while self._context.ok() and not future.done() and not self._is_shutdown:
                 self.spin_once_until_future_complete(future, timeout_left)
+=======
+            while (
+                self._context.ok()
+                and not future.done()
+                and not future.cancelled()
+                and not self._is_shutdown
+            ):
+                self._spin_once_until_future_complete(future, timeout_left)
+>>>>>>> 9a144bf (Check if Task(Future) is canceled. (#1377))
                 now = time.monotonic()
 
                 if now >= end:
@@ -500,6 +520,8 @@ class Executor:
                 with self._tasks_lock:
                     # Get rid of any tasks that are done
                     self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
+                    # Get rid of any tasks that are cancelled
+                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].cancelled(), self._tasks))
 
             # Gather entities that can be waited on
             subscriptions: List[Subscription] = []

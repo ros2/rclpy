@@ -225,7 +225,31 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
 
+<<<<<<< HEAD
     def test_create_task_normal_function(self):
+=======
+    def test_create_task_coroutine_cancel(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        async def coroutine():
+            return 'Sentinel Result'
+
+        future = executor.create_task(coroutine)
+        self.assertFalse(future.done())
+        self.assertFalse(future.cancelled())
+
+        future.cancel()
+        self.assertTrue(future.cancelled())
+
+        executor.spin_until_future_complete(future)
+        self.assertFalse(future.done())
+        self.assertTrue(future.cancelled())
+        self.assertEqual(None, future.result())
+
+    def test_create_task_normal_function(self) -> None:
+>>>>>>> 9a144bf (Check if Task(Future) is canceled. (#1377))
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
