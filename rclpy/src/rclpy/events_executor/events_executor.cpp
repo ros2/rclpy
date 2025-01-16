@@ -117,15 +117,19 @@ bool EventsExecutor::shutdown(std::optional<double> timeout)
 
   io_context_.stop();
 
-  // Block until spinning is done, or timeout.
-  std::unique_lock<std::timed_mutex> spin_lock(spinning_mutex_, std::defer_lock);
-  if (timeout) {
-    if (!spin_lock.try_lock_for(std::chrono::duration<double>(*timeout))) {
-      return false;
+  // Block until spinning is done, or timeout.  Release the GIL while we block though.
+  {
+    py::gil_scoped_release gil_release;
+    std::unique_lock<std::timed_mutex> spin_lock(spinning_mutex_, std::defer_lock);
+    if (timeout) {
+      if (!spin_lock.try_lock_for(std::chrono::duration<double>(*timeout))) {
+        return false;
+      }
+    } else {
+      spin_lock.lock();
     }
-  } else {
-    spin_lock.lock();
   }
+
   // Tear down any callbacks we still have registered.
   for (py::handle node : py::list(nodes_)) {
     remove_node(node);

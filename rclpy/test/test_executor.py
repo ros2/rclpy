@@ -71,31 +71,31 @@ class TestExecutor(unittest.TestCase):
 
     def test_executor_immediate_shutdown(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        # TODO(bmartin427) EventsExecutor.shutdown() wedges here, not sure why yet
-        executor = SingleThreadedExecutor(context=self.context)
-        try:
-            got_callback = False
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
+            executor = cls(context=self.context)
+            try:
+                got_callback = False
 
-            def timer_callback() -> None:
-                nonlocal got_callback
-                got_callback = True
+                def timer_callback() -> None:
+                    nonlocal got_callback
+                    got_callback = True
 
-            timer_period = 1
-            tmr = self.node.create_timer(timer_period, timer_callback)
+                timer_period = 1
+                tmr = self.node.create_timer(timer_period, timer_callback)
 
-            self.assertTrue(executor.add_node(self.node))
-            t = threading.Thread(target=executor.spin, daemon=True)
-            start_time = time.monotonic()
-            t.start()
-            executor.shutdown()
-            t.join()
-            end_time = time.monotonic()
+                self.assertTrue(executor.add_node(self.node))
+                t = threading.Thread(target=executor.spin, daemon=True)
+                start_time = time.monotonic()
+                t.start()
+                executor.shutdown()
+                t.join()
+                end_time = time.monotonic()
 
-            self.node.destroy_timer(tmr)
-            self.assertLess(end_time - start_time, timer_period / 2)
-            self.assertFalse(got_callback)
-        finally:
-            executor.shutdown()
+                self.node.destroy_timer(tmr)
+                self.assertLess(end_time - start_time, timer_period / 2)
+                self.assertFalse(got_callback)
+            finally:
+                executor.shutdown()
 
     def test_shutdown_executor_before_waiting_for_callbacks(self) -> None:
         self.assertIsNotNone(self.node.handle)
