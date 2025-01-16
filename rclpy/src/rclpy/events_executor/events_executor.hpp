@@ -166,7 +166,6 @@ private:
   asio::io_context io_context_;
   asio::signal_set signals_;
 
-  std::recursive_mutex nodes_mutex_;   ///< Protects the node set
   pybind11::set nodes_;                ///< The set of all nodes we're executing
   std::atomic<bool> wake_pending_{};   ///< An unhandled call to wake() has been made
   std::timed_mutex spinning_mutex_;    ///< Held while a thread is spinning

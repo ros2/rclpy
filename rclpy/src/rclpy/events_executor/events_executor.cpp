@@ -136,7 +136,6 @@ bool EventsExecutor::shutdown(std::optional<double> timeout)
 
 bool EventsExecutor::add_node(py::object node)
 {
-  std::lock_guard<std::recursive_mutex> lock(nodes_mutex_);
   if (nodes_.contains(node)) {
     return false;
   }
@@ -149,7 +148,6 @@ bool EventsExecutor::add_node(py::object node)
 
 void EventsExecutor::remove_node(py::handle node)
 {
-  std::lock_guard<std::recursive_mutex> lock(nodes_mutex_);
   if (!nodes_.contains(node)) {
     return;
   }
@@ -271,26 +269,23 @@ void EventsExecutor::UpdateEntitiesFromNodes(bool shutdown)
   py::set clients;
   py::set services;
   py::set waitables;
-  {
-    std::lock_guard<std::recursive_mutex> lock(nodes_mutex_);
-    if (!shutdown) {
-      for (py::handle node : nodes_) {
-        subscriptions.attr("update")(py::set(node.attr("subscriptions")));
-        timers.attr("update")(py::set(node.attr("timers")));
-        clients.attr("update")(py::set(node.attr("clients")));
-        services.attr("update")(py::set(node.attr("services")));
-        waitables.attr("update")(py::set(node.attr("waitables")));
+  if (!shutdown) {
+    for (py::handle node : nodes_) {
+      subscriptions.attr("update")(py::set(node.attr("subscriptions")));
+      timers.attr("update")(py::set(node.attr("timers")));
+      clients.attr("update")(py::set(node.attr("clients")));
+      services.attr("update")(py::set(node.attr("services")));
+      waitables.attr("update")(py::set(node.attr("waitables")));
 
-        // It doesn't seem to be possible to support guard conditions with a callback-based (as
-        // opposed to waitset-based) API.  Fortunately we don't seem to need to.
-        if (!py::set(node.attr("guards")).empty()) {
-          throw std::runtime_error("Guard conditions not supported");
-        }
+      // It doesn't seem to be possible to support guard conditions with a callback-based (as
+      // opposed to waitset-based) API.  Fortunately we don't seem to need to.
+      if (!py::set(node.attr("guards")).empty()) {
+        throw std::runtime_error("Guard conditions not supported");
       }
-    } else {
-      // Remove all tracked entities and nodes.
-      nodes_.clear();
     }
+  } else {
+    // Remove all tracked entities and nodes.
+    nodes_.clear();
   }
 
   // Perform updates for added and removed entities
