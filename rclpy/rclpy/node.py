@@ -1336,7 +1336,7 @@ class Node:
 
     def _apply_integer_range(
         self,
-        parameter: Parameter[Any],
+        parameter: Parameter[int],
         integer_range: IntegerRange
     ) -> SetParametersResult:
         min_value = min(integer_range.from_value, integer_range.to_value)
@@ -1372,7 +1372,7 @@ class Node:
 
     def _apply_floating_point_range(
         self,
-        parameter: Parameter[Any],
+        parameter: Parameter[float],
         floating_point_range: FloatingPointRange
     ) -> SetParametersResult:
         min_value = min(floating_point_range.from_value, floating_point_range.to_value)
