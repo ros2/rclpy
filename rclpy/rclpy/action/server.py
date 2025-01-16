@@ -520,30 +520,30 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         data: 'ServerGoalHandleDict[GoalT]' = {}
         if self._is_goal_request_ready:
             with self._lock:
-                taken_data = self._handle.take_goal_request(
+                taken_goal_data = self._handle.take_goal_request(
                     self._action_type.Impl.SendGoalService.Request,
                 )
                 # If take fails, then we get (None, None)
-                if all(taken_data):
-                    data['goal'] = taken_data
+                if taken_goal_data[0]:
+                    data['goal'] = taken_goal_data
 
         if self._is_cancel_request_ready:
             with self._lock:
-                taken_data = self._handle.take_cancel_request(
+                taken_cancel_data = self._handle.take_cancel_request(
                     self._action_type.Impl.CancelGoalService.Request,
                 )
                 # If take fails, then we get (None, None)
-                if all(taken_data):
-                    data['cancel'] = taken_data
+                if taken_cancel_data[0]:
+                    data['cancel'] = taken_cancel_data
 
         if self._is_result_request_ready:
             with self._lock:
-                taken_data = self._handle.take_result_request(
+                taken_result_data = self._handle.take_result_request(
                     self._action_type.Impl.GetResultService.Request,
                 )
                 # If take fails, then we get (None, None)
-                if all(taken_data):
-                    data['result'] = taken_data
+                if taken_result_data[0]:
+                    data['result'] = taken_result_data
 
         if self._is_goal_expired:
             with self._lock:

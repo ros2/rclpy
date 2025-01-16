@@ -302,39 +302,39 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         """Take stuff from lower level so the wait set doesn't immediately wake again."""
         data: 'ClientGoalHandleDict[ResultT, FeedbackT]' = {}
         if self._is_goal_response_ready:
-            taken_data = self._client_handle.take_goal_response(
+            taken_goal_data = self._client_handle.take_goal_response(
                 self._action_type.Impl.SendGoalService.Response)
             # If take fails, then we get (None, None)
-            if all(taken_data):
-                data['goal'] = taken_data
+            if taken_goal_data[0]:
+                data['goal'] = taken_goal_data
 
         if self._is_cancel_response_ready:
-            taken_data = self._client_handle.take_cancel_response(
+            taken_cancel_data = self._client_handle.take_cancel_response(
                 self._action_type.Impl.CancelGoalService.Response)
             # If take fails, then we get (None, None)
-            if all(taken_data):
-                data['cancel'] = taken_data
+            if taken_cancel_data[0]:
+                data['cancel'] = taken_cancel_data
 
         if self._is_result_response_ready:
-            taken_data = self._client_handle.take_result_response(
+            taken_result_data = self._client_handle.take_result_response(
                 self._action_type.Impl.GetResultService.Response)
             # If take fails, then we get (None, None)
-            if all(taken_data):
-                data['result'] = taken_data
+            if taken_result_data[0]:
+                data['result'] = taken_result_data
 
         if self._is_feedback_ready:
-            taken_data = self._client_handle.take_feedback(
+            taken_feedback_data = self._client_handle.take_feedback(
                 self._action_type.Impl.FeedbackMessage)
             # If take fails, then we get None
-            if taken_data is not None:
-                data['feedback'] = taken_data
+            if taken_feedback_data is not None:
+                data['feedback'] = taken_feedback_data
 
         if self._is_status_ready:
-            taken_data = self._client_handle.take_status(
+            taken_status_data = self._client_handle.take_status(
                 self._action_type.Impl.GoalStatusMessage)
             # If take fails, then we get None
-            if taken_data is not None:
-                data['status'] = taken_data
+            if taken_status_data is not None:
+                data['status'] = taken_status_data
 
         return data
 
