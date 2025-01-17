@@ -305,7 +305,7 @@ class Executor:
                 and not future.cancelled()
                 and not self._is_shutdown
             ):
-                self._spin_once_until_future_complete(future, timeout_sec)
+                self.spin_once_until_future_complete(future, timeout_sec)
         else:
             start = time.monotonic()
             end = start + timeout_sec
@@ -317,7 +317,7 @@ class Executor:
                 and not future.cancelled()
                 and not self._is_shutdown
             ):
-                self._spin_once_until_future_complete(future, timeout_left)
+                self.spin_once_until_future_complete(future, timeout_left)
                 now = time.monotonic()
 
                 if now >= end:
