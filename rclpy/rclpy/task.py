@@ -25,16 +25,6 @@ def _fake_weakref():
     return None
 
 
-<<<<<<< HEAD
-class Future:
-    """Represent the outcome of a task in the future."""
-
-    def __init__(self, *, executor=None):
-        # true if the task is done or cancelled
-        self._done = False
-        # true if the task is cancelled
-        self._cancelled = False
-=======
 class FutureState(Enum):
     """States defining the lifecycle of a future."""
 
@@ -43,12 +33,11 @@ class FutureState(Enum):
     FINISHED = 'FINISHED'
 
 
-class Future(Generic[T]):
+class Future:
     """Represent the outcome of a task in the future."""
 
-    def __init__(self, *, executor: Optional['Executor'] = None) -> None:
+    def __init__(self, *, executor=None):
         self._state = FutureState.PENDING
->>>>>>> 9a144bf (Check if Task(Future) is canceled. (#1377))
         # the final return value of the handler
         self._result = None
         # An exception raised by the handler when called
@@ -74,14 +63,10 @@ class Future(Generic[T]):
             yield
         return self.result()
 
-<<<<<<< HEAD
-    def cancel(self):
-=======
     def _pending(self) -> bool:
         return self._state == FutureState.PENDING
 
-    def cancel(self) -> None:
->>>>>>> 9a144bf (Check if Task(Future) is canceled. (#1377))
+    def cancel(self):
         """Request cancellation of the running task if it is not done already."""
         with self._lock:
             if not self._pending():
@@ -199,12 +184,7 @@ class Future(Generic[T]):
         """
         invoke = False
         with self._lock:
-<<<<<<< HEAD
-            if self._done:
-=======
             if not self._pending():
-                assert self._executor is not None
->>>>>>> 9a144bf (Check if Task(Future) is canceled. (#1377))
                 executor = self._executor()
                 if executor is not None:
                     executor.create_task(callback, self)
@@ -274,10 +254,6 @@ class Task(Future):
                     self._handler.send(None)
                 except StopIteration as e:
                     # The coroutine finished; store the result
-<<<<<<< HEAD
-                    self._handler.close()
-=======
->>>>>>> 9a144bf (Check if Task(Future) is canceled. (#1377))
                     self.set_result(e.value)
                     self._complete_task()
                 except Exception as e:
