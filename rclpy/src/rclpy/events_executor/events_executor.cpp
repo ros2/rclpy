@@ -827,7 +827,7 @@ void EventsExecutor::IterateTask(py::handle task)
   py::gil_scoped_acquire gil_acquire;
   // Calling this won't throw, but it may set the exception property on the task object.
   task();
-  if (task.attr("done")()) {
+  if (py::cast<bool>(task.attr("done")())) {
     py::object ex = task.attr("exception")();
     // Drop reference with GIL held.  This doesn't necessarily destroy the underlying Task, since
     // the `create_task()` caller may have retained a reference to the returned value.
