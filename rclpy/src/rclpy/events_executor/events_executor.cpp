@@ -338,7 +338,7 @@ void EventsExecutor::HandleAddedSubscription(py::handle subscription)
 {
   py::handle handle = subscription.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_subscription_t * rcl_ptr = py::cast<Subscription>(handle).rcl_ptr();
+  const rcl_subscription_t * rcl_ptr = py::cast<const Subscription &>(handle).rcl_ptr();
   const auto cb = std::bind(&EventsExecutor::HandleSubscriptionReady, this, subscription, pl::_1);
   if (
     RCL_RET_OK !=
@@ -354,7 +354,7 @@ void EventsExecutor::HandleAddedSubscription(py::handle subscription)
 void EventsExecutor::HandleRemovedSubscription(py::handle subscription)
 {
   py::handle handle = subscription.attr("handle");
-  const rcl_subscription_t * rcl_ptr = py::cast<Subscription>(handle).rcl_ptr();
+  const rcl_subscription_t * rcl_ptr = py::cast<const Subscription &>(handle).rcl_ptr();
   if (RCL_RET_OK != rcl_subscription_set_on_new_message_callback(rcl_ptr, nullptr, nullptr)) {
     throw std::runtime_error(
       std::string("Failed to clear the on new message callback for subscription: ") +
@@ -373,10 +373,9 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t num
   //
   // NOTE: Simple object attributes we can count on to be owned by the parent object, but bound
   // method calls and function return values need to be owned by us.
-  const py::handle handle = subscription.attr("handle");
-  const py::object take_message = handle.attr("take_message");
-  const py::handle msg_type = subscription.attr("msg_type");
-  const py::handle raw = subscription.attr("raw");
+  Subscription & _rclpy_sub = py::cast<Subscription &>(subscription.attr("handle"));
+  const py::object msg_type = subscription.attr("msg_type");
+  const bool raw = py::cast<bool>(subscription.attr("raw"));
   const int callback_type = py::cast<int>(subscription.attr("_callback_type").attr("value"));
   const int message_only =
     py::cast<int>(subscription.attr("CallbackType").attr("MessageOnly").attr("value"));
@@ -388,7 +387,7 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t num
   // getting None in that case.  https://github.com/ros2/rmw_cyclonedds/issues/509
   bool got_none = false;
   for (size_t i = 0; number_of_events ? i < number_of_events : !got_none; ++i) {
-    py::object msg_info = take_message(msg_type, raw);
+    py::object msg_info = _rclpy_sub.take_message(msg_type, raw);
     if (!msg_info.is_none()) {
       try {
         if (callback_type == message_only) {
@@ -429,7 +428,7 @@ void EventsExecutor::HandleAddedClient(py::handle client)
 {
   py::handle handle = client.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_client_t * rcl_ptr = py::cast<Client>(handle).rcl_ptr();
+  const rcl_client_t * rcl_ptr = py::cast<const Client &>(handle).rcl_ptr();
   const auto cb = std::bind(&EventsExecutor::HandleClientReady, this, client, pl::_1);
   if (
     RCL_RET_OK !=
@@ -445,7 +444,7 @@ void EventsExecutor::HandleAddedClient(py::handle client)
 void EventsExecutor::HandleRemovedClient(py::handle client)
 {
   py::handle handle = client.attr("handle");
-  const rcl_client_t * rcl_ptr = py::cast<Client>(handle).rcl_ptr();
+  const rcl_client_t * rcl_ptr = py::cast<const Client &>(handle).rcl_ptr();
   if (RCL_RET_OK != rcl_client_set_on_new_response_callback(rcl_ptr, nullptr, nullptr)) {
     throw std::runtime_error(
       std::string("Failed to clear the on new response callback for client: ") +
@@ -461,14 +460,13 @@ void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_event
 
   // Largely based on rclpy.Executor._take_client() and _execute_client().
   // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/executors.py#L369-L384
-  const py::handle handle = client.attr("handle");
-  const py::object take_response = handle.attr("take_response");
+  Client & _rclpy_client = py::cast<Client &>(client.attr("handle"));
   const py::handle srv_type = client.attr("srv_type");
-  const py::handle res_type = srv_type.attr("Response");
+  const py::object res_type = srv_type.attr("Response");
   const py::object get_pending_request = client.attr("get_pending_request");
 
   for (size_t i = 0; i < number_of_events; ++i) {
-    py::tuple seq_and_response = take_response(res_type);
+    py::tuple seq_and_response = _rclpy_client.take_response(res_type);
     py::handle header = seq_and_response[0];
     py::handle response = seq_and_response[1];
     if (!header.is_none()) {
@@ -498,7 +496,7 @@ void EventsExecutor::HandleAddedService(py::handle service)
 {
   py::handle handle = service.attr("handle");
   auto with = std::make_shared<ScopedWith>(handle);
-  const rcl_service_t * rcl_ptr = py::cast<Service>(handle).rcl_ptr();
+  const rcl_service_t * rcl_ptr = py::cast<const Service &>(handle).rcl_ptr();
   const auto cb = std::bind(&EventsExecutor::HandleServiceReady, this, service, pl::_1);
   if (
     RCL_RET_OK !=
@@ -514,7 +512,7 @@ void EventsExecutor::HandleAddedService(py::handle service)
 void EventsExecutor::HandleRemovedService(py::handle service)
 {
   py::handle handle = service.attr("handle");
-  const rcl_service_t * rcl_ptr = py::cast<Service>(handle).rcl_ptr();
+  const rcl_service_t * rcl_ptr = py::cast<const Service &>(handle).rcl_ptr();
   if (RCL_RET_OK != rcl_service_set_on_new_request_callback(rcl_ptr, nullptr, nullptr)) {
     throw std::runtime_error(
       std::string("Failed to clear the on new request callback for service: ") +
@@ -530,30 +528,26 @@ void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_eve
 
   // Largely based on rclpy.Executor._take_service() and _execute_service().
   // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/executors.py#L386-L397
-  const py::handle handle = service.attr("handle");
-  const py::object service_take_request = handle.attr("service_take_request");
+  Service & _rclpy_service = py::cast<Service &>(service.attr("handle"));
   const py::handle srv_type = service.attr("srv_type");
-  const py::handle req_type = srv_type.attr("Request");
+  const py::object req_type = srv_type.attr("Request");
   const py::handle res_type = srv_type.attr("Response");
   const py::handle callback = service.attr("callback");
   const py::object send_response = service.attr("send_response");
 
   for (size_t i = 0; i < number_of_events; ++i) {
-    py::object maybe_request_and_header = service_take_request(req_type);
-    if (!maybe_request_and_header.is_none()) {
-      py::tuple request_and_header = py::cast<py::tuple>(maybe_request_and_header);
-      py::handle request = request_and_header[0];
-      py::handle header = request_and_header[1];
-      if (!request.is_none()) {
-        py::object response;
-        try {
-          response = callback(request, res_type());
-        } catch (const py::error_already_set & e) {
-          HandleCallbackExceptionInNodeEntity(e, service, "services");
-          throw;
-        }
-        send_response(response, header);
+    py::tuple request_and_header = _rclpy_service.service_take_request(req_type);
+    py::handle request = request_and_header[0];
+    py::handle header = request_and_header[1];
+    if (!request.is_none()) {
+      py::object response;
+      try {
+        response = callback(request, res_type());
+      } catch (const py::error_already_set & e) {
+        HandleCallbackExceptionInNodeEntity(e, service, "services");
+        throw;
       }
+      send_response(response, header);
     }
   }
 }
@@ -577,7 +571,7 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable)
     py::cast<size_t>(num_entities.attr("num_clients")),
     py::cast<size_t>(num_entities.attr("num_services")),
     py::cast<size_t>(num_entities.attr("num_events")),
-    *py::cast<Context *>(rclpy_context_.attr("handle")));
+    py::cast<Context &>(rclpy_context_.attr("handle")));
   auto with_waitset = std::make_shared<ScopedWith>(py::cast(wait_set));
   waitable.attr("add_to_wait_set")(wait_set);
   rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
