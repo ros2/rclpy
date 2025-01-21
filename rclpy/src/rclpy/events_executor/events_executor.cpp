@@ -51,7 +51,7 @@ namespace events_executor
 
 EventsExecutor::EventsExecutor(py::object context)
 : rclpy_context_(context),
-  asyncio_run_(py::module_::import("asyncio").attr("run")),
+  inspect_iscoroutine_(py::module_::import("inspect").attr("iscoroutine")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
   signals_(io_context_),
   rcl_callback_manager_(io_context_.get_executor()),
@@ -411,13 +411,18 @@ void EventsExecutor::HandleRemovedTimer(py::handle timer) {timers_manager_.Remov
 
 void EventsExecutor::HandleTimerReady(py::handle timer)
 {
-  ran_user_ = true;
   py::gil_scoped_acquire gil_acquire;
 
   try {
-    // Unlike most rclpy objects this doesn't document whether it's a Callable or might be a
-    // Coroutine.  Let's hope it's the former.
-    timer.attr("callback")();
+    // The type markup claims this can't be a coroutine, but this seems to be a lie because the unit
+    // test does exactly that.
+    py::object result = timer.attr("callback")();
+    if (py::cast<bool>(inspect_iscoroutine_(result))) {
+      // Create a Task to manage iteration of this coroutine later.
+      create_task(result);
+    } else {
+      ran_user_ = true;
+    }
   } catch (const py::error_already_set & e) {
     HandleCallbackExceptionInNodeEntity(e, timer, "timers");
     throw;
@@ -810,14 +815,8 @@ void EventsExecutor::HandleWaitableReady(
       throw std::runtime_error("Failed to make Waitable ready");
     }
     py::object data = take_data();
-    try {
-      // execute() is an async method, we need to use asyncio to run it
-      // TODO(bmartin427) Don't run all of this immediately, blocking everything else
-      asyncio_run_(execute(data));
-    } catch (const py::error_already_set & e) {
-      HandleCallbackExceptionInNodeEntity(e, waitable, "waitables");
-      throw;
-    }
+    // execute() is an async method, we need a Task to run it
+    create_task(execute(data));
   }
 }
 
