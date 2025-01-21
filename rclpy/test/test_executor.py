@@ -193,32 +193,34 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_coroutine_timer(self):
         self.assertIsNotNone(self.node.handle)
-        # TODO(bmartin427) EventsExecutor doesn't yet properly handle coroutines
-        executor = SingleThreadedExecutor(context=self.context)
-        executor.add_node(self.node)
-
-        called1 = False
-        called2 = False
-
-        async def coroutine():
-            nonlocal called1
-            nonlocal called2
-            called1 = True
-            await asyncio.sleep(0)
-            called2 = True
-
-        tmr = self.node.create_timer(0.1, coroutine)
-        try:
-            executor.spin_once(timeout_sec=1.23)
-            self.assertTrue(called1)
-            self.assertFalse(called2)
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
+            executor = cls(context=self.context)
+            executor.add_node(self.node)
 
             called1 = False
-            executor.spin_once(timeout_sec=0)
-            self.assertFalse(called1)
-            self.assertTrue(called2)
-        finally:
-            self.node.destroy_timer(tmr)
+            called2 = False
+
+            async def coroutine() -> None:
+                nonlocal called1
+                nonlocal called2
+                called1 = True
+                await asyncio.sleep(0)
+                called2 = True
+
+            # TODO(bmartin427) The type markup on Node.create_timer() says you can't pass a
+            # coroutine here.
+            tmr = self.node.create_timer(0.1, coroutine)
+            try:
+                executor.spin_once(timeout_sec=1.23)
+                self.assertTrue(called1)
+                self.assertFalse(called2)
+
+                called1 = False
+                executor.spin_once(timeout_sec=0)
+                self.assertFalse(called1)
+                self.assertTrue(called2)
+            finally:
+                self.node.destroy_timer(tmr)
 
     def test_execute_coroutine_guard_condition(self):
         self.assertIsNotNone(self.node.handle)
@@ -385,27 +387,27 @@ class TestExecutor(unittest.TestCase):
                     yield
                 return
 
-        # TODO(bmartin427) EventsExecutor doesn't yet properly handle async callbacks
-        trigger = TriggerAwait()
-        did_callback = False
-        did_return = False
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
+            trigger = TriggerAwait()
+            did_callback = False
+            did_return = False
 
-        async def timer_callback():
-            nonlocal trigger, did_callback, did_return
-            did_callback = True
-            await trigger
-            did_return = True
+            async def timer_callback() -> None:
+                nonlocal trigger, did_callback, did_return
+                did_callback = True
+                await trigger
+                did_return = True
 
-        timer = self.node.create_timer(0.1, timer_callback)
+            timer = self.node.create_timer(0.1, timer_callback)
 
-        executor = SingleThreadedExecutor(context=self.context)
-        rclpy.spin_once(self.node, timeout_sec=0.5, executor=executor)
-        self.assertTrue(did_callback)
+            executor = cls(context=self.context)
+            rclpy.spin_once(self.node, timeout_sec=0.5, executor=executor)
+            self.assertTrue(did_callback)
 
-        timer.cancel()
-        trigger.do_yield = False
-        rclpy.spin_once(self.node, timeout_sec=0, executor=executor)
-        self.assertTrue(did_return)
+            timer.cancel()
+            trigger.do_yield = False
+            rclpy.spin_once(self.node, timeout_sec=0, executor=executor)
+            self.assertTrue(did_return)
 
     def test_executor_add_node(self):
         self.assertIsNotNone(self.node.handle)

@@ -64,7 +64,7 @@ public:
   // rclpy Executor API methods:
   pybind11::object get_context() const {return rclpy_context_;}
   pybind11::object create_task(
-    pybind11::object callback, pybind11::args args, const pybind11::kwargs & kwargs);
+    pybind11::object callback, pybind11::args args = {}, const pybind11::kwargs & kwargs = {});
   bool shutdown(std::optional<double> timeout_sec = {});
   bool add_node(pybind11::object node);
   void remove_node(pybind11::handle node);
@@ -160,7 +160,7 @@ private:
   const pybind11::object rclpy_context_;
 
   // Imported python objects we depend on
-  const pybind11::object asyncio_run_;
+  const pybind11::object inspect_iscoroutine_;
   const pybind11::object rclpy_task_;
 
   asio::io_context io_context_;
