@@ -626,37 +626,37 @@ class TestExecutor(unittest.TestCase):
 
     def test_not_lose_callback(self):
         self.assertIsNotNone(self.node.handle)
-        # TODO(bmartin427) EventsExecutor has some kind of explosion here I haven't figured out yet
-        executor = SingleThreadedExecutor(context=self.context)
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
+            executor = cls(context=self.context)
 
-        callback_group = ReentrantCallbackGroup()
+            callback_group = ReentrantCallbackGroup()
 
-        cli = self.node.create_client(
-            srv_type=Empty, srv_name='test_service', callback_group=callback_group)
+            cli = self.node.create_client(
+                srv_type=Empty, srv_name='test_service', callback_group=callback_group)
 
-        async def timer1_callback():
-            timer1.cancel()
-            await cli.call_async(Empty.Request())
+            async def timer1_callback() -> None:
+                timer1.cancel()
+                await cli.call_async(Empty.Request())
 
-        timer1 = self.node.create_timer(0.5, timer1_callback, callback_group)
+            timer1 = self.node.create_timer(0.5, timer1_callback, callback_group)
 
-        count = 0
+            count = 0
 
-        def timer2_callback():
-            nonlocal count
-            count += 1
-        timer2 = self.node.create_timer(1.5, timer2_callback, callback_group)
+            def timer2_callback() -> None:
+                nonlocal count
+                count += 1
+            timer2 = self.node.create_timer(1.5, timer2_callback, callback_group)
 
-        executor.add_node(self.node)
-        future = Future(executor=executor)
-        executor.spin_until_future_complete(future, 4)
+            executor.add_node(self.node)
+            future = Future[None](executor=executor)
+            executor.spin_until_future_complete(future, 4)
 
-        assert count == 2
+            assert count == 2
 
-        executor.shutdown()
-        timer2.destroy()
-        timer1.destroy()
-        cli.destroy()
+            executor.shutdown()
+            self.node.destroy_timer(timer2)
+            self.node.destroy_timer(timer1)
+            self.node.destroy_client(cli)
 
 
 if __name__ == '__main__':
