@@ -575,25 +575,28 @@ class TestExecutor(unittest.TestCase):
                 executor.shutdown()
                 self.node.destroy_timer(tmr)
 
-    def shutdown_executor_from_callback(self) -> None:
+    def test_shutdown_executor_from_callback(self) -> None:
         """https://github.com/ros2/rclpy/issues/944: allow for executor shutdown from callback."""
         self.assertIsNotNone(self.node.handle)
         timer_period = 0.1
-        for cls in [SingleThreadedExecutor, EventsExecutor]:
-            executor = cls(context=self.context)
-            shutdown_event = threading.Event()
+        # TODO(bmartin427) This seems like an invalid test to me?  executor.shutdown() is
+        # documented as blocking until all callbacks are complete, unless you pass a non-negative
+        # timeout value which this doesn't.  I'm not sure how that's supposed to *not* deadlock if
+        # you block on all callbacks from within a callback.
+        executor = SingleThreadedExecutor(context=self.context)
+        shutdown_event = threading.Event()
 
-            def timer_callback() -> None:
-                nonlocal shutdown_event, executor
-                executor.shutdown()
-                shutdown_event.set()
+        def timer_callback() -> None:
+            nonlocal shutdown_event, executor
+            executor.shutdown()
+            shutdown_event.set()
 
-            tmr = self.node.create_timer(timer_period, timer_callback)
-            executor.add_node(self.node)
-            t = threading.Thread(target=executor.spin, daemon=True)
-            t.start()
-            self.assertTrue(shutdown_event.wait(120))
-            self.node.destroy_timer(tmr)
+        tmr = self.node.create_timer(timer_period, timer_callback)
+        executor.add_node(self.node)
+        t = threading.Thread(target=executor.spin, daemon=True)
+        t.start()
+        self.assertTrue(shutdown_event.wait(120))
+        self.node.destroy_timer(tmr)
 
     def test_context_manager(self) -> None:
         self.assertIsNotNone(self.node.handle)
