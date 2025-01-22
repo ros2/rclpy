@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 import inspect
 import sys
 import threading
@@ -24,14 +25,19 @@ def _fake_weakref():
     return None
 
 
+class FutureState(Enum):
+    """States defining the lifecycle of a future."""
+
+    PENDING = 'PENDING'
+    CANCELLED = 'CANCELLED'
+    FINISHED = 'FINISHED'
+
+
 class Future:
     """Represent the outcome of a task in the future."""
 
     def __init__(self, *, executor=None):
-        # true if the task is done or cancelled
-        self._done = False
-        # true if the task is cancelled
-        self._cancelled = False
+        self._state = FutureState.PENDING
         # the final return value of the handler
         self._result = None
         # An exception raised by the handler when called
@@ -53,15 +59,20 @@ class Future:
 
     def __await__(self):
         # Yield if the task is not finished
-        while not self._done:
+        while self._pending():
             yield
         return self.result()
+
+    def _pending(self):
+        return self._state == FutureState.PENDING
 
     def cancel(self):
         """Request cancellation of the running task if it is not done already."""
         with self._lock:
-            if not self._done:
-                self._cancelled = True
+            if not self._pending():
+                return
+
+        self._state = FutureState.CANCELLED
         self._schedule_or_invoke_done_callbacks()
 
     def cancelled(self):
@@ -71,7 +82,7 @@ class Future:
         :return: True if the task was cancelled
         :rtype: bool
         """
-        return self._cancelled
+        return self._state == FutureState.CANCELLED
 
     def done(self):
         """
@@ -80,7 +91,7 @@ class Future:
         :return: True if the task is finished or raised while it was executing
         :rtype: bool
         """
-        return self._done
+        return self._state == FutureState.FINISHED
 
     def result(self):
         """
@@ -111,8 +122,8 @@ class Future:
         """
         with self._lock:
             self._result = result
-            self._done = True
-            self._cancelled = False
+            self._state = FutureState.FINISHED
+
         self._schedule_or_invoke_done_callbacks()
 
     def set_exception(self, exception):
@@ -124,8 +135,8 @@ class Future:
         with self._lock:
             self._exception = exception
             self._exception_fetched = False
-            self._done = True
-            self._cancelled = False
+            self._state = FutureState.FINISHED
+
         self._schedule_or_invoke_done_callbacks()
 
     def _schedule_or_invoke_done_callbacks(self):
@@ -173,7 +184,7 @@ class Future:
         """
         invoke = False
         with self._lock:
-            if self._done:
+            if not self._pending():
                 executor = self._executor()
                 if executor is not None:
                     executor.create_task(callback, self)
@@ -226,10 +237,14 @@ class Task(Future):
 
         The return value of the handler is stored as the task result.
         """
-        if self._done or self._executing or not self._task_lock.acquire(blocking=False):
+        if (
+            not self._pending() or
+            self._executing or
+            not self._task_lock.acquire(blocking=False)
+        ):
             return
         try:
-            if self._done:
+            if not self._pending():
                 return
             self._executing = True
 
@@ -239,7 +254,6 @@ class Task(Future):
                     self._handler.send(None)
                 except StopIteration as e:
                     # The coroutine finished; store the result
-                    self._handler.close()
                     self.set_result(e.value)
                     self._complete_task()
                 except Exception as e:
@@ -271,3 +285,9 @@ class Task(Future):
         :rtype: bool
         """
         return self._executing
+
+    def cancel(self) -> None:
+        if self._pending() and inspect.iscoroutine(self._handler):
+            self._handler.close()
+
+        super().cancel()
