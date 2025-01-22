@@ -149,7 +149,7 @@ public:
         std::string("Failed to set timer reset callback: ") + rcl_get_error_string().str);
     }
     timers_[timer] = ready_callback;
-    if (timers_.size() == WARN_TIMERS_COUNT) {
+    if (timers_.size() >= WARN_TIMERS_COUNT) {
       py::print("Warning, the number of timers associated with this clock is large.");
       py::print("Management of this number of timers may be inefficient.");
     }
