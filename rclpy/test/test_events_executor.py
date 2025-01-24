@@ -18,6 +18,7 @@ import unittest
 
 import action_msgs.msg
 import rclpy.action
+import rclpy.clock_type
 import rclpy.duration
 import rclpy.event_handler
 import rclpy.executors
@@ -25,6 +26,7 @@ import rclpy.experimental
 import rclpy.node
 import rclpy.qos
 import rclpy.time
+import rclpy.timer
 import rosgraph_msgs.msg
 import test_msgs.action
 import test_msgs.msg
@@ -174,24 +176,22 @@ class TimerTestNode(rclpy.node.Node):
     def __init__(self, index: int = 0, parameter_overrides: list[rclpy.Parameter] | None = None):
         super().__init__(f'test_timer{index}', parameter_overrides=parameter_overrides)
         self._timer_events = 0
-        self._tick_future: rclpy.Future[None] | None = None
+        self._tick_future: rclpy.Future[rclpy.timer.TimerInfo] | None = None
         self._timer = self.create_timer(0.1, self._handle_timer)
 
     @property
     def timer_events(self) -> int:
         return self._timer_events
 
-    def expect_tick(self) -> rclpy.Future[None]:
+    def expect_tick(self) -> rclpy.Future[rclpy.timer.TimerInfo]:
+        """Get future on TimerInfo for an anticipated timer tick."""
         self._tick_future = rclpy.Future()
         return self._tick_future
 
-    def cancel(self) -> None:
-        self._timer.cancel()
-
-    def _handle_timer(self) -> None:
+    def _handle_timer(self, info: rclpy.timer.TimerInfo) -> None:
         self._timer_events += 1
         if self._tick_future is not None:
-            self._tick_future.set_result(None)
+            self._tick_future.set_result(info)
             self._tick_future = None
 
 
@@ -200,7 +200,7 @@ class ClockPublisherNode(rclpy.node.Node):
 
     def __init__(self):
         super().__init__('clock_node')
-        self._now = rclpy.time.Time()
+        self._now = rclpy.time.Time(clock_type=rclpy.clock_type.ClockType.ROS_TIME)
         self._pub = self.create_publisher(
             rosgraph_msgs.msg.Clock,
             '/clock',
@@ -210,6 +210,10 @@ class ClockPublisherNode(rclpy.node.Node):
     def advance_time(self, millisec: int) -> None:
         self._now += rclpy.duration.Duration(nanoseconds=millisec * 1000000)
         self._pub.publish(rosgraph_msgs.msg.Clock(clock=self._now.to_msg()))
+
+    @property
+    def now(self) -> rclpy.time.Time:
+        return self._now
 
 
 class ActionServerTestNode(rclpy.node.Node):
@@ -541,11 +545,15 @@ class TestEventsExecutor(unittest.TestCase):
 
         # Wait a bit, and make sure the realtime timer ticks, and the rostime one does
         # not.  Since this is based on wall time, be very flexible on tolerances here.
+        realtime_tick_future = realtime_node.expect_tick()
         self._spin_for(1.0)
         realtime_ticks = realtime_node.timer_events
         self.assertGreater(realtime_ticks, 1)
         self.assertLess(realtime_ticks, 50)
         self.assertEqual(rostime_node.timer_events, 0)
+        info = realtime_tick_future.result()
+        assert info is not None
+        self.assertGreaterEqual(info.actual_call_time, info.expected_call_time)
 
         # Manually tick the rostime timer by less than a full interval.
         rostime_tick_future = rostime_node.expect_tick()
@@ -554,6 +562,10 @@ class TestEventsExecutor(unittest.TestCase):
         self._expect_future_not_done(rostime_tick_future)
         clock_node.advance_time(1)
         self._expect_future_done(rostime_tick_future)
+        info = rostime_tick_future.result()
+        assert info is not None
+        self.assertEqual(info.actual_call_time, info.expected_call_time)
+        self.assertEqual(info.actual_call_time, clock_node.now)
         # Now tick by a bunch of full intervals.
         for _ in range(300):
             rostime_tick_future = rostime_node.expect_tick()

@@ -46,8 +46,8 @@ namespace events_executor
 
 /// Events executor implementation for rclpy
 ///
-/// This executor implementation attempts to replicate the function of the rclcpp EventsExecutor for
-/// the benefit of rclpy applications.  It is implemented in C++ to minimize the overhead of
+/// This executor implementation attempts to replicate the function of the rclcpp EventsExecutor
+/// for the benefit of rclpy applications.  It is implemented in C++ to minimize the overhead of
 /// processing the event loop.
 ///
 /// We assume all public methods could be invoked from any thread.  Callbacks on the executor loop
@@ -108,7 +108,7 @@ private:
 
   void HandleAddedTimer(pybind11::handle);
   void HandleRemovedTimer(pybind11::handle);
-  void HandleTimerReady(pybind11::handle);
+  void HandleTimerReady(pybind11::handle, const rcl_timer_call_info_t &);
 
   void HandleAddedClient(pybind11::handle);
   void HandleRemovedClient(pybind11::handle);
@@ -121,8 +121,9 @@ private:
   void HandleAddedWaitable(pybind11::handle);
   void HandleRemovedWaitable(pybind11::handle);
   void HandleWaitableSubReady(
-    pybind11::handle waitable, const rcl_subscription_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
-    size_t wait_set_sub_index, std::shared_ptr<ScopedWith> with_waitset, size_t number_of_events);
+    pybind11::handle waitable, const rcl_subscription_t *,
+    std::shared_ptr<rclpy::WaitSet> wait_set, size_t wait_set_sub_index,
+    std::shared_ptr<ScopedWith> with_waitset, size_t number_of_events);
   void HandleWaitableTimerReady(
     pybind11::handle waitable, const rcl_timer_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
     size_t wait_set_timer_index, std::shared_ptr<ScopedWith> with_waitable,
@@ -137,7 +138,8 @@ private:
     size_t number_of_events);
   void HandleWaitableEventReady(
     pybind11::handle waitable, const rcl_event_t *, std::shared_ptr<rclpy::WaitSet> wait_set,
-    size_t wait_set_event_index, std::shared_ptr<ScopedWith> with_waitset, size_t number_of_events);
+    size_t wait_set_event_index, std::shared_ptr<ScopedWith> with_waitset,
+    size_t number_of_events);
   void HandleWaitableReady(
     pybind11::handle waitable, std::shared_ptr<rclpy::WaitSet> wait_set, size_t number_of_events);
 
@@ -161,7 +163,9 @@ private:
 
   // Imported python objects we depend on
   const pybind11::object inspect_iscoroutine_;
+  const pybind11::object inspect_signature_;
   const pybind11::object rclpy_task_;
+  const pybind11::object rclpy_timer_timer_info_;
 
   asio::io_context io_context_;
   asio::signal_set signals_;
