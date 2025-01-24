@@ -47,9 +47,9 @@ class SubTestNode(rclpy.node.Node):
 
     def __init__(self, *, transient_local: bool = False):
         super().__init__('test_sub_node')
-        self._new_pub_future: rclpy.Future[
-            rclpy.event_handler.QoSSubscriptionMatchedInfo
-        ] | None = None
+        self._new_pub_future: (
+            rclpy.Future[rclpy.event_handler.QoSSubscriptionMatchedInfo] | None
+        ) = None
         self._received_future: rclpy.Future[test_msgs.msg.BasicTypes] | None = None
         self.create_subscription(
             test_msgs.msg.BasicTypes,
@@ -79,9 +79,7 @@ class SubTestNode(rclpy.node.Node):
             self._received_future = None
             future.set_result(msg)
 
-    def _handle_matched_sub(
-        self, info: rclpy.event_handler.QoSSubscriptionMatchedInfo
-    ) -> None:
+    def _handle_matched_sub(self, info: rclpy.event_handler.QoSSubscriptionMatchedInfo) -> None:
         """Handle a new publisher being matched to our subscription."""
         if self._new_pub_future is not None:
             self._new_pub_future.set_result(info)
@@ -93,9 +91,9 @@ class PubTestNode(rclpy.node.Node):
 
     def __init__(self, *, transient_local: bool = False):
         super().__init__('test_pub_node')
-        self._new_sub_future: rclpy.Future[
-            rclpy.event_handler.QoSPublisherMatchedInfo
-        ] | None = None
+        self._new_sub_future: rclpy.Future[rclpy.event_handler.QoSPublisherMatchedInfo] | None = (
+            None
+        )
         self._pub = self.create_publisher(
             test_msgs.msg.BasicTypes,
             'test_topic' + ('_transient_local' if transient_local else ''),
@@ -114,9 +112,7 @@ class PubTestNode(rclpy.node.Node):
     def publish(self, value: float) -> None:
         self._pub.publish(test_msgs.msg.BasicTypes(float32_value=value))
 
-    def _handle_matched_pub(
-        self, info: rclpy.event_handler.QoSPublisherMatchedInfo
-    ) -> None:
+    def _handle_matched_pub(self, info: rclpy.event_handler.QoSPublisherMatchedInfo) -> None:
         """Handle a new subscriber being matched to our publication."""
         if self._new_sub_future is not None:
             self._new_sub_future.set_result(info)
@@ -128,13 +124,9 @@ class ServiceServerTestNode(rclpy.node.Node):
 
     def __init__(self):
         super().__init__('test_service_server_node')
-        self._got_request_future: rclpy.Future[
-            test_msgs.srv.BasicTypes.Request
-        ] | None = None
+        self._got_request_future: rclpy.Future[test_msgs.srv.BasicTypes.Request] | None = None
         self._pending_response: test_msgs.srv.BasicTypes.Response | None = None
-        self.create_service(
-            test_msgs.srv.BasicTypes, 'test_service', self._handle_request
-        )
+        self.create_service(test_msgs.srv.BasicTypes, 'test_service', self._handle_request)
 
     def expect_request(
         self, success: bool, error_msg: str
@@ -171,9 +163,7 @@ class ServiceClientTestNode(rclpy.node.Node):
         super().__init__('test_service_client_node')
         self._client = self.create_client(test_msgs.srv.BasicTypes, 'test_service')
 
-    def issue_request(
-        self, value: float
-    ) -> rclpy.Future[test_msgs.srv.BasicTypes.Response]:
+    def issue_request(self, value: float) -> rclpy.Future[test_msgs.srv.BasicTypes.Response]:
         req = test_msgs.srv.BasicTypes.Request(float32_value=value)
         return self._client.call_async(req)
 
@@ -181,9 +171,7 @@ class ServiceClientTestNode(rclpy.node.Node):
 class TimerTestNode(rclpy.node.Node):
     """Node to test timer operation."""
 
-    def __init__(
-        self, index: int = 0, parameter_overrides: list[rclpy.Parameter] | None = None
-    ):
+    def __init__(self, index: int = 0, parameter_overrides: list[rclpy.Parameter] | None = None):
         super().__init__(f'test_timer{index}', parameter_overrides=parameter_overrides)
         self._timer_events = 0
         self._tick_future: rclpy.Future[None] | None = None
@@ -196,6 +184,9 @@ class TimerTestNode(rclpy.node.Node):
     def expect_tick(self) -> rclpy.Future[None]:
         self._tick_future = rclpy.Future()
         return self._tick_future
+
+    def cancel(self) -> None:
+        self._timer.cancel()
 
     def _handle_timer(self) -> None:
         self._timer_events += 1
@@ -213,9 +204,7 @@ class ClockPublisherNode(rclpy.node.Node):
         self._pub = self.create_publisher(
             rosgraph_msgs.msg.Clock,
             '/clock',
-            rclpy.qos.QoSProfile(
-                depth=1, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT
-            ),
+            rclpy.qos.QoSProfile(depth=1, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT),
         )
 
     def advance_time(self, millisec: int) -> None:
@@ -231,9 +220,7 @@ class ActionServerTestNode(rclpy.node.Node):
             'test_action_server_node',
             parameter_overrides=[rclpy.Parameter('use_sim_time', value=True)],
         )
-        self._got_goal_future: rclpy.Future[
-            test_msgs.action.Fibonacci.Goal
-        ] | None = None
+        self._got_goal_future: rclpy.Future[test_msgs.action.Fibonacci.Goal] | None = None
         self._srv = rclpy.action.ActionServer(
             self,
             test_msgs.action.Fibonacci,
@@ -250,9 +237,7 @@ class ActionServerTestNode(rclpy.node.Node):
         self._got_goal_future = rclpy.Future()
         return self._got_goal_future
 
-    def _handle_accepted(
-        self, goal_handle: rclpy.action.server.ServerGoalHandle
-    ) -> None:
+    def _handle_accepted(self, goal_handle: rclpy.action.server.ServerGoalHandle) -> None:
         self._goal_handle = goal_handle
         self._sequence = [0, 1]
         if self._got_goal_future is not None:
@@ -309,19 +294,11 @@ class ActionClientTestNode(rclpy.node.Node):
 
     def __init__(self):
         super().__init__('test_action_client_node')
-        self._client = rclpy.action.ActionClient(
-            self, test_msgs.action.Fibonacci, 'test_action'
-        )
-        self._feedback_future: rclpy.Future[
-            test_msgs.action.Fibonacci.Feedback
-        ] | None = None
-        self._result_future: rclpy.Future[
-            test_msgs.action.Fibonacci.Result
-        ] | None = None
+        self._client = rclpy.action.ActionClient(self, test_msgs.action.Fibonacci, 'test_action')
+        self._feedback_future: rclpy.Future[test_msgs.action.Fibonacci.Feedback] | None = None
+        self._result_future: rclpy.Future[test_msgs.action.Fibonacci.Result] | None = None
 
-    def send_goal(
-        self, order: int
-    ) -> rclpy.Future[rclpy.action.client.ClientGoalHandle]:
+    def send_goal(self, order: int) -> rclpy.Future[rclpy.action.client.ClientGoalHandle]:
         """
         Send a new goal.
 
@@ -337,9 +314,7 @@ class ActionClientTestNode(rclpy.node.Node):
         goal_ack_future.add_done_callback(self._handle_goal_ack)
         return goal_ack_future
 
-    def _handle_goal_ack(
-        self, future: rclpy.Future[rclpy.action.client.ClientGoalHandle]
-    ) -> None:
+    def _handle_goal_ack(self, future: rclpy.Future[rclpy.action.client.ClientGoalHandle]) -> None:
         handle = future.result()
         assert handle is not None
         result_future = handle.get_result_async()
@@ -526,9 +501,7 @@ class TestEventsExecutor(unittest.TestCase):
             self._expect_future_done(received_future)
         self.assertEqual(len(received_messages), 5)
         for i in range(5):
-            self.assertAlmostEqual(
-                received_messages[i].float32_value, 0.1 * i, places=5
-            )
+            self.assertAlmostEqual(received_messages[i].float32_value, 0.1 * i, places=5)
         self._expect_future_not_done(received_future)
 
         pub_node.publish(0.5)
@@ -546,12 +519,8 @@ class TestEventsExecutor(unittest.TestCase):
         for i in range(300):
             got_response_future = client_node.issue_request(7.1)
             self._check_service_request_future(got_request_future, 7.1)
-            got_request_future = server_node.expect_request(
-                True, f'test response {i + 1}'
-            )
-            self._check_service_response_future(
-                got_response_future, True, f'test response {i}'
-            )
+            got_request_future = server_node.expect_request(True, f'test response {i + 1}')
+            self._check_service_response_future(got_response_future, True, f'test response {i}')
 
         # Destroy server node and retry issuing a request
         self.executor.remove_node(server_node)
@@ -593,6 +562,27 @@ class TestEventsExecutor(unittest.TestCase):
 
         # Ensure the realtime timer ticked much less than the rostime one.
         self.assertLess(realtime_node.timer_events, rostime_node.timer_events)
+
+        # Create two timers with the same interval, both set to cancel the other from the callback.
+        # Only one of the callbacks should be delivered, though we can't necessarily predict which
+        # one.
+        def handler():
+            nonlocal count, timer1, timer2
+            count += 1
+            timer1.cancel()
+            timer2.cancel()
+
+        count = 0
+        timer1 = rostime_node.create_timer(0.01, handler)
+        timer2 = rostime_node.create_timer(0.01, handler)
+        self._spin_for(0.0)
+        self.assertEqual(count, 0)
+        clock_node.advance_time(10)
+        self._spin_for(0.0)
+        self.assertEqual(count, 1)
+        clock_node.advance_time(10)
+        self._spin_for(0.0)
+        self.assertEqual(count, 1)
 
     def test_action(self) -> None:
         clock_node = ClockPublisherNode()
@@ -639,14 +629,10 @@ class TestEventsExecutor(unittest.TestCase):
             got_goal_future = server_node.expect_goal()
 
         # Test completed goal expiration by time
-        self.assertEqual(
-            last_handle.status, action_msgs.msg.GoalStatus.STATUS_SUCCEEDED
-        )
+        self.assertEqual(last_handle.status, action_msgs.msg.GoalStatus.STATUS_SUCCEEDED)
         clock_node.advance_time(9999)
         self._spin_for(0.2)
-        self.assertEqual(
-            last_handle.status, action_msgs.msg.GoalStatus.STATUS_SUCCEEDED
-        )
+        self.assertEqual(last_handle.status, action_msgs.msg.GoalStatus.STATUS_SUCCEEDED)
         clock_node.advance_time(2)
         self._spin_for(0.2)
         self.assertEqual(last_handle.status, action_msgs.msg.GoalStatus.STATUS_UNKNOWN)

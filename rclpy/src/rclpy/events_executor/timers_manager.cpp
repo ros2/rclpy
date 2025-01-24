@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 
 #include <asio/post.hpp>
@@ -48,10 +49,6 @@ namespace
 //   of timers outstanding at once.  Assuming no more than a few timers exist in the whole process,
 //   the heap seems like overkill.
 // * Every time a timer ticks or is reset, the heap needs to be resorted anyway.
-// * The rcl timer interface doesn't expose any way to get timer expiration info in absolute terms;
-//   you can only find out 'time until next callback'.  This means if you are trying to sort the
-//   list of timers, the 'value' of each entry in the heap changes depending on when you look at it
-//   during the process of sorting.
 //
 // We will however yell a bit if we ever see a large number of timers that disproves this
 // assumption, so we can reassess this decision.
@@ -144,7 +141,9 @@ public:
   void AddTimer(rcl_timer_t * timer, std::function<void()> ready_callback)
   {
     // All timers have the same reset callback
-    if (RCL_RET_OK != rcl_timer_set_on_reset_callback(timer, RclTimerResetTrampoline, &reset_cb_)) {
+    if (
+      RCL_RET_OK != rcl_timer_set_on_reset_callback(timer, RclTimerResetTrampoline, &reset_cb_))
+    {
       throw std::runtime_error(
         std::string("Failed to set timer reset callback: ") + rcl_get_error_string().str);
     }
@@ -184,41 +183,31 @@ private:
   {
     // First, evaluate all of our timers and dispatch any that are ready now.  While we're at it,
     // keep track of the earliest next timer callback that is due.
-    std::optional<int64_t> next_ready_ns;
+    int64_t now{};
+    if (RCL_RET_OK != rcl_clock_get_now(clock_, &now)) {
+      throw std::runtime_error(
+        std::string("Failed to read RCL clock: ") + rcl_get_error_string().str);
+    }
+    std::optional<int64_t> next_ready_time_ns;
     for (const auto & timer_cb_pair : timers_) {
-      auto next_call_ns = GetNextCallNanoseconds(timer_cb_pair.first);
-      if (next_call_ns <= 0) {
-        // This just notifies RCL that we're considering the timer triggered, for the purposes of
-        // updating the next trigger time.
-        const auto ret = rcl_timer_call(timer_cb_pair.first);
-        switch (ret) {
-          case RCL_RET_OK:
-            break;
-          case RCL_RET_TIMER_CANCELED:
-            // Someone apparently canceled the timer *after* we just queried the next call time?
-            // Nevermind, then...
-            rcl_reset_error();
-            continue;
-          default:
-            throw std::runtime_error(
-              std::string("Failed to call RCL timer: ") + rcl_get_error_string().str);
+      auto this_next_time_ns = GetNextCallTimeNanoseconds(timer_cb_pair.first);
+      if (this_next_time_ns) {
+        if (*this_next_time_ns <= now) {
+          ready_timers_.insert(timer_cb_pair.first);
+          asio::post(
+            executor_, std::bind(&ClockManager::DispatchTimer, this, timer_cb_pair.first));
+        } else if (!next_ready_time_ns || (*this_next_time_ns < *next_ready_time_ns)) {
+          next_ready_time_ns = this_next_time_ns;
         }
-
-        // Post the user callback to be invoked later once timing-sensitive code is done.
-        asio::post(executor_, timer_cb_pair.second);
-
-        // Update time until *next* call.
-        next_call_ns = GetNextCallNanoseconds(timer_cb_pair.first);
-      }
-      if (!next_ready_ns || (next_call_ns < *next_ready_ns)) {
-        next_ready_ns = next_call_ns;
       }
     }
 
-    // If we're not on debug time, we should schedule another wakeup when we anticipate the next
-    // timer being ready.  If we are, we'll just re-check everything at the next jump callback.
-    if (!on_debug_time_ && next_ready_ns) {
-      next_update_wait_.expires_from_now(std::chrono::nanoseconds(*next_ready_ns));
+    // If we posted any timers for dispatch, then we'll re-evaluate things immediately after those
+    // complete.  Otherwise, if we're on debug time, we'll re-check everything at the next jump
+    // callback.  If neither of those things are true, then we need to schedule a wakeup for when
+    // we anticipate the next timer being ready.
+    if (ready_timers_.empty() && !on_debug_time_ && next_ready_time_ns) {
+      next_update_wait_.expires_from_now(std::chrono::nanoseconds(*next_ready_time_ns - now));
       next_update_wait_.async_wait([this](const asio::error_code & ec) {
           if (!ec) {
             UpdateTimers();
@@ -231,16 +220,48 @@ private:
     }
   }
 
-  /// Returns the number of nanoseconds until the next callback on the given timer is due.  Value
-  /// may be negative or zero if callback time has already been reached.  Returns std::nullopt if
-  /// the timer is canceled.
-  static std::optional<int64_t> GetNextCallNanoseconds(const rcl_timer_t * rcl_timer)
+  void DispatchTimer(rcl_timer_t * rcl_timer)
   {
-    int64_t time_until_next_call{};
-    const rcl_ret_t ret = rcl_timer_get_time_until_next_call(rcl_timer, &time_until_next_call);
+    ready_timers_.erase(rcl_timer);
+    // If we've dispatched all ready timers, then trigger another update to see when the next
+    // timers will be ready.
+    if (ready_timers_.empty()) {
+      asio::post(executor_, std::bind(&ClockManager::UpdateTimers, this));
+    }
+
+    const auto map_it = timers_.find(rcl_timer);
+    if (map_it == timers_.end()) {
+      // Perhaps the timer was removed before a pending callback could be dispatched?
+      return;
+    }
+
+    // This notifies RCL that we're considering the timer triggered, for the purposes of updating
+    // the next trigger time.
+    const auto ret = rcl_timer_call(rcl_timer);
     switch (ret) {
       case RCL_RET_OK:
-        return time_until_next_call;
+        // Dispatch the actual user callback.
+        map_it->second();
+        break;
+      case RCL_RET_TIMER_CANCELED:
+        // Someone canceled the timer after we queried the call time.  Nevermind, then...
+        rcl_reset_error();
+        break;
+      default:
+        throw std::runtime_error(
+          std::string("Failed to call RCL timer: ") + rcl_get_error_string().str);
+    }
+  }
+
+  /// Returns the absolute time in nanoseconds when the next callback on the given timer is due.
+  /// Returns std::nullopt if the timer is canceled.
+  static std::optional<int64_t> GetNextCallTimeNanoseconds(const rcl_timer_t * rcl_timer)
+  {
+    int64_t next_call_time{};
+    const rcl_ret_t ret = rcl_timer_get_next_call_time(rcl_timer, &next_call_time);
+    switch (ret) {
+      case RCL_RET_OK:
+        return next_call_time;
       case RCL_RET_TIMER_CANCELED:
         return {};
       default:
@@ -256,6 +277,7 @@ private:
   bool on_debug_time_{};
 
   std::unordered_map<rcl_timer_t *, std::function<void()>> timers_;
+  std::unordered_set<rcl_timer_t *> ready_timers_;
   asio::steady_timer next_update_wait_{executor_};
 };
 
