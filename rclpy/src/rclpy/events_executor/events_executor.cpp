@@ -227,8 +227,15 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
 void EventsExecutor::spin_until_future_complete(
   py::handle future, std::optional<double> timeout_sec, bool stop_after_user_callback)
 {
-  future.attr("add_done_callback")(py::cpp_function([this](py::handle) {io_context_.stop();}));
+  py::cpp_function cb([this](py::handle) {io_context_.stop();});
+  future.attr("add_done_callback")(cb);
   spin(timeout_sec, stop_after_user_callback);
+  // In case the future didn't complete (we hit the timeout or dispatched a different user callback
+  // after being asked to only run one), we need to clean up our callback; otherwise, it could fire
+  // later when the executor isn't valid, or we haven't been asked to wait for this future; also,
+  // we could end up adding a bunch more of these same callbacks if this method gets invoked in a
+  // loop.
+  future.attr("remove_done_callback")(cb);
 }
 
 EventsExecutor * EventsExecutor::enter() {return this;}
