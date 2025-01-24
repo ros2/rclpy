@@ -70,11 +70,10 @@ public:
   void remove_node(pybind11::handle node);
   void wake();
   pybind11::list get_nodes() const;
-  void spin(std::optional<double> timeout_sec = {});
-  void spin_once(std::optional<double> timeout_sec = {});
-  void spin_until_future_complete(pybind11::handle future, std::optional<double> timeout_sec = {});
-  void spin_once_until_future_complete(
-    pybind11::handle future, std::optional<double> timeout_sec = {});
+  void spin(std::optional<double> timeout_sec = {}, bool stop_after_user_callback = false);
+  void spin_until_future_complete(
+    pybind11::handle future, std::optional<double> timeout_sec = {},
+    bool stop_after_user_callback = false);
   EventsExecutor * enter();
   void exit(pybind11::object, pybind11::object, pybind11::object);
 
@@ -175,9 +174,9 @@ private:
   std::timed_mutex spinning_mutex_;    ///< Held while a thread is spinning
   std::atomic<int> signal_pending_{};  ///< Signal number of caught signal, 0 if none
 
-  /// This flag is used by spin_once() to determine if a user-visible callback has been dispatched
-  /// during its operation.
-  bool ran_user_{};
+  /// This flag is used by spin_once() to signal that the io_context_ should be stopped after a
+  /// single user-visible callback has been dispatched.
+  bool stop_after_user_callback_{};
 
   // Collection of awaitable entities we're servicing
   pybind11::set subscriptions_;
