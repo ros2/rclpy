@@ -48,7 +48,7 @@ private:
 
   class ClockManager;
   /// Handlers for each distinct clock source in the system.
-  std::unordered_map<const rcl_clock_t *, std::unique_ptr<ClockManager>> clock_managers_;
+  std::unordered_map<const rcl_clock_t *, std::shared_ptr<ClockManager>> clock_managers_;
 };
 
 /// This class manages rclpy.Timer Python objects on behalf of EventsExecutor.

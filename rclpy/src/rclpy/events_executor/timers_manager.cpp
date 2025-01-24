@@ -80,7 +80,7 @@ extern "C" void RclTimerResetTrampoline(const void * user_data, size_t)
 /// Manages a single clock source, and all timers operating on that source.  All methods (including
 /// construction and destruction) are assumed to happen on the thread running the provided asio
 /// executor.
-class RclTimersManager::ClockManager
+class RclTimersManager::ClockManager : public std::enable_shared_from_this<ClockManager>
 {
 public:
   ClockManager(const asio::any_io_executor & executor, rcl_clock_t * clock)
@@ -101,7 +101,7 @@ public:
             on_debug = false;
             break;
         }
-        asio::post(executor_, std::bind(&ClockManager::HandleJump, this, on_debug));
+        asio::post(executor_, CallIfAlive(&ClockManager::HandleJump, on_debug));
       };
     if (
       RCL_RET_OK !=
@@ -113,7 +113,7 @@ public:
 
     // This isn't necessary yet but every timer will eventually depend on it.  Again, this could
     // happen on any thread.
-    reset_cb_ = [this]() {asio::post(executor_, std::bind(&ClockManager::UpdateTimers, this));};
+    reset_cb_ = [this]() {asio::post(executor_, CallIfAlive(&ClockManager::UpdateTimers));};
 
     // Initialize which timebase we're on
     if (clock_->type == RCL_ROS_TIME) {
@@ -173,6 +173,20 @@ public:
   }
 
 private:
+  /// Returns a function suitable for being invoked later, which would invoke the given method on
+  /// `this` with the given args, provided that `this` still exists at that time.
+  template<typename ... Args>
+  std::function<void()> CallIfAlive(void (ClockManager::*method)(Args...), Args... args)
+  {
+    std::weak_ptr<ClockManager> weak_this(shared_from_this());
+    return [ = ]() {
+             auto locked = weak_this.lock();
+             if (locked) {
+               (locked.get()->*method)(args ...);
+             }
+           };
+  }
+
   void HandleJump(bool on_debug_time)
   {
     on_debug_time_ = on_debug_time;
@@ -194,8 +208,7 @@ private:
       if (this_next_time_ns) {
         if (*this_next_time_ns <= now) {
           ready_timers_.insert(timer_cb_pair.first);
-          asio::post(
-            executor_, std::bind(&ClockManager::DispatchTimer, this, timer_cb_pair.first));
+          asio::post(executor_, CallIfAlive(&ClockManager::DispatchTimer, timer_cb_pair.first));
         } else if (!next_ready_time_ns || (*this_next_time_ns < *next_ready_time_ns)) {
           next_ready_time_ns = this_next_time_ns;
         }
@@ -226,7 +239,7 @@ private:
     // If we've dispatched all ready timers, then trigger another update to see when the next
     // timers will be ready.
     if (ready_timers_.empty()) {
-      asio::post(executor_, std::bind(&ClockManager::UpdateTimers, this));
+      asio::post(executor_, CallIfAlive(&ClockManager::UpdateTimers));
     }
 
     const auto map_it = timers_.find(rcl_timer);
@@ -307,7 +320,7 @@ void RclTimersManager::AddTimer(rcl_timer_t * timer, std::function<void()> ready
   auto it = clock_managers_.find(clock);
   if (it == clock_managers_.end()) {
     std::tie(it, std::ignore) = clock_managers_.insert(
-      std::make_pair(clock, std::make_unique<ClockManager>(executor_, clock)));
+      std::make_pair(clock, std::make_shared<ClockManager>(executor_, clock)));
   }
   it->second->AddTimer(timer, ready_callback);
 }
