@@ -52,11 +52,13 @@ namespace events_executor
 EventsExecutor::EventsExecutor(py::object context)
 : rclpy_context_(context),
   inspect_iscoroutine_(py::module_::import("inspect").attr("iscoroutine")),
+  inspect_signature_(py::module_::import("inspect").attr("signature")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
+  rclpy_timer_timer_info_(py::module_::import("rclpy.timer").attr("TimerInfo")),
   signals_(io_context_),
   rcl_callback_manager_(io_context_.get_executor()),
   timers_manager_(
-    io_context_.get_executor(), std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1))
+    io_context_.get_executor(), std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1, pl::_2))
 {
   // rclpy.Executor creates a sigint handling guard condition here.  This is necessary because a
   // sleeping event loop won't notice Ctrl-C unless some other event wakes it up otherwise.
@@ -79,10 +81,10 @@ EventsExecutor::EventsExecutor(py::object context)
         signals_.async_wait([this](const asio::error_code & ec, int signum) {
             if (!ec) {
               py::gil_scoped_acquire gil_acquire;
-              // Don't call context.try_shutdown() here, because that can call back to us to request
-              // a blocking shutdown(), which doesn't make any sense because we have to be spinning
-              // to process the callback that's asked to wait for spinning to stop.  We'll have to
-              // call that later outside of any spin loop.
+              // Don't call context.try_shutdown() here, because that can call back to us to
+              // request a blocking shutdown(), which doesn't make any sense because we have to be
+              // spinning to process the callback that's asked to wait for spinning to stop.  We'll
+              // have to call that later outside of any spin loop.
               // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/__init__.py#L105-L109
               signal_pending_.store(signum);
               io_context_.stop();
@@ -111,8 +113,8 @@ pybind11::object EventsExecutor::create_task(
 
 bool EventsExecutor::shutdown(std::optional<double> timeout)
 {
-  // NOTE: The rclpy context can invoke this with a lock on the context held.  Therefore we must not
-  // try to go access that context during this method or we can deadlock.
+  // NOTE: The rclpy context can invoke this with a lock on the context held.  Therefore we must
+  // not try to go access that context during this method or we can deadlock.
   // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/context.py#L101-L103
 
   io_context_.stop();
@@ -144,7 +146,8 @@ bool EventsExecutor::add_node(py::object node)
     return false;
   }
   nodes_.add(node);
-  // Caution, the Node executor setter method calls executor.add_node() again making this reentrant.
+  // Caution, the Node executor setter method calls executor.add_node() again making this
+  // reentrant.
   node.attr("executor") = py::cast(this);
   wake();
   return true;
@@ -263,8 +266,8 @@ void EventsExecutor::exit(py::object, py::object, py::object) {shutdown();}
 
 void EventsExecutor::UpdateEntitiesFromNodes(bool shutdown)
 {
-  // Clear pending flag as early as possible, so we error on the side of retriggering a few harmless
-  // updates rather than potentially missing important additions.
+  // Clear pending flag as early as possible, so we error on the side of retriggering a few
+  // harmless updates rather than potentially missing important additions.
   wake_pending_.store(false);
 
   // Collect all entities currently associated with our nodes
@@ -409,23 +412,40 @@ void EventsExecutor::HandleAddedTimer(py::handle timer) {timers_manager_.AddTime
 
 void EventsExecutor::HandleRemovedTimer(py::handle timer) {timers_manager_.RemoveTimer(timer);}
 
-void EventsExecutor::HandleTimerReady(py::handle timer)
+void EventsExecutor::HandleTimerReady(py::handle timer, const rcl_timer_call_info_t & info)
 {
   py::gil_scoped_acquire gil_acquire;
-
+  py::object callback = timer.attr("callback");
+  // We need to distinguish callbacks that want a TimerInfo object from those that don't.
+  // Executor._take_timer() actually checks if an argument has type markup expecting a TypeInfo
+  // object.  This seems like overkill, vs just checking if it wants an argument at all?
+  py::object py_info;
+  if (py::len(inspect_signature_(callback).attr("parameters").attr("values")()) > 0) {
+    using py::literals::operator""_a;
+    py_info = rclpy_timer_timer_info_(
+      "expected_call_time"_a = info.expected_call_time,
+      "actual_call_time"_a = info.actual_call_time,
+      "clock_type"_a = timer.attr("clock").attr("clock_type"));
+  }
+  py::object result;
   try {
-    // The type markup claims this can't be a coroutine, but this seems to be a lie because the unit
-    // test does exactly that.
-    py::object result = timer.attr("callback")();
-    if (py::cast<bool>(inspect_iscoroutine_(result))) {
-      // Create a Task to manage iteration of this coroutine later.
-      create_task(result);
+    if (py_info) {
+      result = callback(py_info);
     } else {
-      ran_user_ = true;
+      result = callback();
     }
   } catch (const py::error_already_set & e) {
     HandleCallbackExceptionInNodeEntity(e, timer, "timers");
     throw;
+  }
+
+  // The type markup claims the callback can't be a coroutine, but this seems to be a lie because
+  // the unit test does exactly that.
+  if (py::cast<bool>(inspect_iscoroutine_(result))) {
+    // Create a Task to manage iteration of this coroutine later.
+    create_task(result);
+  } else {
+    ran_user_ = true;
   }
 }
 
@@ -559,12 +579,12 @@ void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_eve
 
 void EventsExecutor::HandleAddedWaitable(py::handle waitable)
 {
-  // The Waitable API is too abstract for us to work with directly; it only exposes APIs for dealing
-  // with wait sets, and all of the rcl callback API requires knowing exactly what kinds of rcl
-  // objects you're working with.  We'll try to figure out what kind of stuff is hiding behind the
-  // abstraction by having the Waitable add itself to a wait set, then take stock of what all ended
-  // up there.  We'll also have to hope that no Waitable implementations ever change their component
-  // entities over their lifetimes.
+  // The Waitable API is too abstract for us to work with directly; it only exposes APIs for
+  // dealing with wait sets, and all of the rcl callback API requires knowing exactly what kinds of
+  // rcl objects you're working with.  We'll try to figure out what kind of stuff is hiding behind
+  // the abstraction by having the Waitable add itself to a wait set, then take stock of what all
+  // ended up there.  We'll also have to hope that no Waitable implementations ever change their
+  // component entities over their lifetimes.
   auto with_waitable = std::make_shared<ScopedWith>(waitable);
   const py::object num_entities = waitable.attr("get_num_entities")();
   if (py::cast<size_t>(num_entities.attr("num_guard_conditions")) != 0) {
@@ -580,10 +600,10 @@ void EventsExecutor::HandleAddedWaitable(py::handle waitable)
   auto with_waitset = std::make_shared<ScopedWith>(py::cast(wait_set));
   waitable.attr("add_to_wait_set")(wait_set);
   rcl_wait_set_t * const rcl_waitset = wait_set->rcl_ptr();
-  // We null out each entry in the waitset as we set it up, so that the waitset itself can be reused
-  // when something becomes ready to signal to the Waitable what's ready and what's not.  We also
-  // bind with_waitset into each callback we set up, to ensure that object doesn't get destroyed
-  // while any of these callbacks are still registered.
+  // We null out each entry in the waitset as we set it up, so that the waitset itself can be
+  // reused when something becomes ready to signal to the Waitable what's ready and what's not.  We
+  // also bind with_waitset into each callback we set up, to ensure that object doesn't get
+  // destroyed while any of these callbacks are still registered.
   WaitableSubEntities sub_entities;
   for (size_t i = 0; i < rcl_waitset->size_of_subscriptions; ++i) {
     const rcl_subscription_t * const rcl_sub = rcl_waitset->subscriptions[i];
@@ -809,8 +829,8 @@ void EventsExecutor::HandleWaitableReady(
     future.attr("_set_executor")(py::cast(this));
   }
   for (size_t i = 0; i < number_of_events; ++i) {
-    // This method can have side effects, so it needs to be called even though it looks like just an
-    // accessor.
+    // This method can have side effects, so it needs to be called even though it looks like just
+    // an accessor.
     if (!is_ready(wait_set)) {
       throw std::runtime_error("Failed to make Waitable ready");
     }
@@ -833,8 +853,8 @@ void EventsExecutor::IterateTask(py::handle task)
     task.dec_ref();
 
     if (!ex.is_none()) {
-      // It's not clear how to easily turn a Python exception into a C++ one, so let's just throw it
-      // again and let pybind translate it normally.
+      // It's not clear how to easily turn a Python exception into a C++ one, so let's just throw
+      // it again and let pybind translate it normally.
       try {
         Raise(ex);
       } catch (py::error_already_set & cpp_ex) {

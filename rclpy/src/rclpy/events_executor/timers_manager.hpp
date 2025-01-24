@@ -40,7 +40,7 @@ public:
   explicit RclTimersManager(const asio::any_io_executor &);
   ~RclTimersManager();
 
-  void AddTimer(rcl_timer_t *, std::function<void()> ready_callback);
+  void AddTimer(rcl_timer_t *, std::function<void(const rcl_timer_call_info_t &)> ready_callback);
   void RemoveTimer(rcl_timer_t *);
 
 private:
@@ -55,10 +55,11 @@ private:
 class TimersManager
 {
 public:
-  /// @p timer_ready_callback will be invoked with the timer handle whenever a managed timer is
-  /// ready for servicing.
+  /// @p timer_ready_callback will be invoked with the timer handle and info whenever a managed
+  /// timer is ready for servicing.
   TimersManager(
-    const asio::any_io_executor &, std::function<void(pybind11::handle)> timer_ready_callback);
+    const asio::any_io_executor &,
+    std::function<void(pybind11::handle, const rcl_timer_call_info_t &)> timer_ready_callback);
   ~TimersManager();
 
   /// Accessor for underlying rcl timer manager, for management of non-Python timers.
@@ -80,7 +81,7 @@ private:
   };
 
   RclTimersManager rcl_manager_;
-  const std::function<void(pybind11::handle)> ready_callback_;
+  const std::function<void(pybind11::handle, const rcl_timer_call_info_t &)> ready_callback_;
 
   std::unordered_map<pybind11::handle, PyRclMapping, PythonHasher> timer_mappings_;
 };

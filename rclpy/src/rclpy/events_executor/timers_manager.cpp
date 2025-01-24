@@ -29,6 +29,7 @@
 
 #include "timer.hpp"
 
+namespace pl = std::placeholders;
 namespace py = pybind11;
 
 namespace rclpy
@@ -138,7 +139,8 @@ public:
 
   bool empty() const {return timers_.empty();}
 
-  void AddTimer(rcl_timer_t * timer, std::function<void()> ready_callback)
+  void AddTimer(
+    rcl_timer_t * timer, std::function<void(const rcl_timer_call_info_t &)> ready_callback)
   {
     // All timers have the same reset callback
     if (
@@ -250,11 +252,12 @@ private:
 
     // This notifies RCL that we're considering the timer triggered, for the purposes of updating
     // the next trigger time.
-    const auto ret = rcl_timer_call(rcl_timer);
+    rcl_timer_call_info_t info;
+    const auto ret = rcl_timer_call_with_info(rcl_timer, &info);
     switch (ret) {
       case RCL_RET_OK:
         // Dispatch the actual user callback.
-        map_it->second();
+        map_it->second(info);
         break;
       case RCL_RET_TIMER_CANCELED:
         // Someone canceled the timer after we queried the call time.  Nevermind, then...
@@ -289,7 +292,7 @@ private:
   TimerResetCallbackT reset_cb_;
   bool on_debug_time_{};
 
-  std::unordered_map<rcl_timer_t *, std::function<void()>> timers_;
+  std::unordered_map<rcl_timer_t *, std::function<void(const rcl_timer_call_info_t &)>> timers_;
   std::unordered_set<rcl_timer_t *> ready_timers_;
   asio::steady_timer next_update_wait_{executor_};
 };
@@ -312,7 +315,8 @@ rcl_clock_t * GetTimerClock(rcl_timer_t * timer)
 }
 }  // namespace
 
-void RclTimersManager::AddTimer(rcl_timer_t * timer, std::function<void()> ready_callback)
+void RclTimersManager::AddTimer(
+  rcl_timer_t * timer, std::function<void(const rcl_timer_call_info_t &)> ready_callback)
 {
   // Figure out the clock this timer is using, make sure a manager exists for that clock, then
   // forward the timer to that clock's manager.
@@ -339,7 +343,8 @@ void RclTimersManager::RemoveTimer(rcl_timer_t * timer)
 }
 
 TimersManager::TimersManager(
-  const asio::any_io_executor & executor, std::function<void(py::handle)> timer_ready_callback)
+  const asio::any_io_executor & executor,
+  std::function<void(py::handle, const rcl_timer_call_info_t &)> timer_ready_callback)
 : rcl_manager_(executor), ready_callback_(timer_ready_callback)
 {
 }
@@ -352,7 +357,7 @@ void TimersManager::AddTimer(py::handle timer)
   py::handle handle = timer.attr("handle");
   mapping.with = std::make_unique<ScopedWith>(handle);
   mapping.rcl_ptr = py::cast<const Timer &>(handle).rcl_ptr();
-  rcl_manager_.AddTimer(mapping.rcl_ptr, std::bind(ready_callback_, timer));
+  rcl_manager_.AddTimer(mapping.rcl_ptr, std::bind(ready_callback_, timer, pl::_1));
   timer_mappings_[timer] = std::move(mapping);
 }
 
