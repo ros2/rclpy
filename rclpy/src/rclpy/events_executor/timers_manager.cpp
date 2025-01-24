@@ -24,8 +24,6 @@
 #include <unordered_set>
 #include <utility>
 
-#include <asio/post.hpp>
-
 #include "events_executor/delayed_event_thread.hpp"
 #include "timer.hpp"
 
@@ -79,13 +77,13 @@ extern "C" void RclTimerResetTrampoline(const void * user_data, size_t)
 }  // namespace
 
 /// Manages a single clock source, and all timers operating on that source.  All methods (including
-/// construction and destruction) are assumed to happen on the thread running the provided asio
-/// executor.
+/// construction and destruction) are assumed to happen on the thread running the provided events
+/// queue.
 class RclTimersManager::ClockManager : public std::enable_shared_from_this<ClockManager>
 {
 public:
-  ClockManager(const asio::any_io_executor & executor, rcl_clock_t * clock)
-  : executor_(executor), clock_(clock)
+  ClockManager(EventsQueue * events_queue, rcl_clock_t * clock)
+  : events_queue_(events_queue), clock_(clock)
   {
     // Need to establish a clock jump callback so we can tell when debug time is updated.
     rcl_jump_threshold_t threshold{.on_clock_change = true, .min_forward = 1, .min_backward = -1};
@@ -102,7 +100,7 @@ public:
             on_debug = false;
             break;
         }
-        asio::post(executor_, CallIfAlive(&ClockManager::HandleJump, on_debug));
+        events_queue_->Enqueue(CallIfAlive(&ClockManager::HandleJump, on_debug));
       };
     if (
       RCL_RET_OK !=
@@ -114,7 +112,7 @@ public:
 
     // This isn't necessary yet but every timer will eventually depend on it.  Again, this could
     // happen on any thread.
-    reset_cb_ = [this]() {asio::post(executor_, CallIfAlive(&ClockManager::UpdateTimers));};
+    reset_cb_ = [this]() {events_queue_->Enqueue(CallIfAlive(&ClockManager::UpdateTimers));};
 
     // Initialize which timebase we're on
     if (clock_->type == RCL_ROS_TIME) {
@@ -214,7 +212,7 @@ private:
       if (this_next_time_ns) {
         if (*this_next_time_ns <= rcl_now) {
           ready_timers_.insert(timer_cb_pair.first);
-          asio::post(executor_, CallIfAlive(&ClockManager::DispatchTimer, timer_cb_pair.first));
+          events_queue_->Enqueue(CallIfAlive(&ClockManager::DispatchTimer, timer_cb_pair.first));
         } else if (!next_ready_time_ns || (*this_next_time_ns < *next_ready_time_ns)) {
           next_ready_time_ns = this_next_time_ns;
         }
@@ -240,7 +238,7 @@ private:
     // If we've dispatched all ready timers, then trigger another update to see when the next
     // timers will be ready.
     if (ready_timers_.empty()) {
-      asio::post(executor_, CallIfAlive(&ClockManager::UpdateTimers));
+      events_queue_->Enqueue(CallIfAlive(&ClockManager::UpdateTimers));
     }
 
     const auto map_it = timers_.find(rcl_timer);
@@ -285,7 +283,7 @@ private:
     }
   }
 
-  asio::any_io_executor executor_;
+  EventsQueue * const events_queue_;
   rcl_clock_t * const clock_;
   ClockJumpCallbackT jump_cb_;
   TimerResetCallbackT reset_cb_;
@@ -293,11 +291,11 @@ private:
 
   std::unordered_map<rcl_timer_t *, std::function<void(const rcl_timer_call_info_t &)>> timers_;
   std::unordered_set<rcl_timer_t *> ready_timers_;
-  DelayedEventThread next_update_wait_{executor_};
+  DelayedEventThread next_update_wait_{events_queue_};
 };
 
-RclTimersManager::RclTimersManager(const asio::any_io_executor & executor)
-: executor_(executor) {}
+RclTimersManager::RclTimersManager(EventsQueue * events_queue)
+: events_queue_(events_queue) {}
 
 RclTimersManager::~RclTimersManager() {}
 
@@ -323,7 +321,7 @@ void RclTimersManager::AddTimer(
   auto it = clock_managers_.find(clock);
   if (it == clock_managers_.end()) {
     std::tie(it, std::ignore) = clock_managers_.insert(
-      std::make_pair(clock, std::make_shared<ClockManager>(executor_, clock)));
+      std::make_pair(clock, std::make_shared<ClockManager>(events_queue_, clock)));
   }
   it->second->AddTimer(timer, ready_callback);
 }
@@ -342,9 +340,9 @@ void RclTimersManager::RemoveTimer(rcl_timer_t * timer)
 }
 
 TimersManager::TimersManager(
-  const asio::any_io_executor & executor,
+  EventsQueue * events_queue,
   std::function<void(py::handle, const rcl_timer_call_info_t &)> timer_ready_callback)
-: rcl_manager_(executor), ready_callback_(timer_ready_callback)
+: rcl_manager_(events_queue), ready_callback_(timer_ready_callback)
 {
 }
 

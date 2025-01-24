@@ -19,22 +19,21 @@
 #include <mutex>
 #include <thread>
 
-#include <asio/any_io_executor.hpp>
+#include "events_executor/events_queue.hpp"
 
 namespace rclpy
 {
 namespace events_executor
 {
 
-/// This object manages posting an event handler to an asio context after a specified delay.  The
+/// This object manages posting an event handler to an EventsQueue after a specified delay.  The
 /// current delay may be changed or canceled at any time.  This is done by way of a self-contained
 /// child thread to perform the wait.
-// TODO(bmartin427) At the moment, this object really doesn't make any sense, vs just using an asio
-// timer; however, this is an intermediate step towards migrating away from asio altogether.
 class DelayedEventThread
 {
 public:
-  explicit DelayedEventThread(const asio::any_io_executor &);
+  /// The pointer is aliased and must live for the lifetime of this object.
+  explicit DelayedEventThread(EventsQueue *);
   ~DelayedEventThread();
 
   /// Schedules an event handler to be enqueued at the specified time point.  Replaces any previous
@@ -47,7 +46,7 @@ public:
 private:
   void RunThread();
 
-  asio::any_io_executor executor_;
+  EventsQueue * const events_queue_;
   std::mutex mutex_;
   bool done_{};
   std::condition_variable cv_;

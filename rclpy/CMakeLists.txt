@@ -26,8 +26,6 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
-find_package(asio_cmake_module REQUIRED)
-find_package(ASIO REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rcl REQUIRED)
 find_package(rcl_action REQUIRED)
@@ -88,6 +86,7 @@ pybind11_add_module(_rclpy_pybind11
   src/rclpy/clock_event.cpp
   src/rclpy/events_executor/delayed_event_thread.cpp
   src/rclpy/events_executor/events_executor.cpp
+  src/rclpy/events_executor/events_queue.cpp
   src/rclpy/events_executor/rcl_support.cpp
   src/rclpy/events_executor/timers_manager.cpp
   src/rclpy/exceptions.cpp
@@ -121,7 +120,6 @@ target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/
 )
 target_link_libraries(_rclpy_pybind11 PRIVATE
-  ${ASIO_LIBRARIES}
   lifecycle_msgs::lifecycle_msgs__rosidl_generator_c
   lifecycle_msgs::lifecycle_msgs__rosidl_typesupport_c
   rcl::rcl

@@ -15,15 +15,13 @@
 
 #include <utility>
 
-#include <asio/post.hpp>
-
 namespace rclpy
 {
 namespace events_executor
 {
 
-DelayedEventThread::DelayedEventThread(const asio::any_io_executor & executor)
-: executor_(executor), thread_([this]() {RunThread();})
+DelayedEventThread::DelayedEventThread(EventsQueue * events_queue)
+: events_queue_(events_queue), thread_([this]() {RunThread();})
 {
 }
 
@@ -61,7 +59,7 @@ void DelayedEventThread::RunThread()
       {
         auto handler = std::move(handler_);
         handler_ = {};
-        asio::post(executor_, std::move(handler));
+        events_queue_->Enqueue(std::move(handler));
       }
     } else {
       // Wait indefinitely until we get signaled that there's something worth looking at.

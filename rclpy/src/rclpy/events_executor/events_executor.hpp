@@ -31,8 +31,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <asio/io_context.hpp>
-
+#include "events_executor/events_queue.hpp"
 #include "events_executor/rcl_support.hpp"
 #include "events_executor/scoped_with.hpp"
 #include "events_executor/timers_manager.hpp"
@@ -89,7 +88,7 @@ private:
   };
 
   /// Updates the sets of known entities based on the currently tracked nodes.  This is not thread
-  /// safe, so it must be posted to the io_context if the executor is currently spinning.  Expects
+  /// safe, so it must be posted to the EventsQueue if the executor is currently spinning.  Expects
   /// the GIL to be held before calling.  If @p shutdown is true, a purge of all known nodes and
   /// entities is forced.
   void UpdateEntitiesFromNodes(bool shutdown);
@@ -168,16 +167,14 @@ private:
   const pybind11::object rclpy_task_;
   const pybind11::object rclpy_timer_timer_info_;
 
-  asio::io_context io_context_;
+  EventsQueue events_queue_;
   ScopedSignalCallback signal_callback_;
-  // Never let asio auto stop if there's nothing to do
-  asio::executor_work_guard<asio::io_context::executor_type> work_;
 
   pybind11::set nodes_;                ///< The set of all nodes we're executing
   std::atomic<bool> wake_pending_{};   ///< An unhandled call to wake() has been made
   std::timed_mutex spinning_mutex_;    ///< Held while a thread is spinning
 
-  /// This flag is used by spin_once() to signal that the io_context_ should be stopped after a
+  /// This flag is used by spin_once() to signal that the EventsQueue should be stopped after a
   /// single user-visible callback has been dispatched.
   bool stop_after_user_callback_{};
 
