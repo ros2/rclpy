@@ -19,8 +19,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <asio/any_io_executor.hpp>
-
+#include "events_executor/events_queue.hpp"
 #include "events_executor/scoped_with.hpp"
 
 namespace rclpy
@@ -33,21 +32,22 @@ namespace events_executor
 ///
 /// Note that RCL callbacks are invoked in some arbitrary thread originating from the middleware.
 /// Callbacks should process quickly to avoid blocking the middleware; i.e.  all actual work should
-/// be posted to an asio loop in another thread.
+/// be posted to an EventsQueue running in another thread.
 extern "C" void RclEventCallbackTrampoline(const void * user_data, size_t number_of_events);
 
 /// Creates and maintains callback wrappers used with the RCL C library.
 class RclCallbackManager
 {
 public:
-  /// All user callbacks will be posted on the @p executor given to the constructor.  These
-  /// callbacks will be invoked without the Python Global Interpreter Lock held, so if they need to
-  /// access Python at all make sure to acquire that explicitly.
-  explicit RclCallbackManager(const asio::any_io_executor & executor);
+  /// All user callbacks will be posted on the @p events_queue given to the constructor.  This
+  /// pointer is aliased and must live for the lifetime of this object.  These callbacks will be
+  /// invoked without the Python Global Interpreter Lock held, so if they need to access Python at
+  /// all make sure to acquire that explicitly.
+  explicit RclCallbackManager(EventsQueue * events_queue);
   ~RclCallbackManager();
 
-  /// Creates a callback wrapper to be passed to RCL C functions.  @p key should be a pointer to the
-  /// rcl object that will be associated with the callback.  @p with protects the _rclpy object
+  /// Creates a callback wrapper to be passed to RCL C functions.  @p key should be a pointer to
+  /// the rcl object that will be associated with the callback.  @p with protects the _rclpy object
   /// handle owning the RCL object, for the duration the callback is established.
   const void * MakeCallback(
     const void * key, std::function<void(size_t)> callback, std::shared_ptr<ScopedWith> with);
@@ -58,15 +58,15 @@ public:
 
 private:
   /// The C RCL interface deals in raw pointers, so someone needs to own the C++ function objects
-  /// we'll be calling into.  We use unique pointers so the raw pointer to the object remains stable
-  /// while the map is manipulated.
+  /// we'll be calling into.  We use unique pointers so the raw pointer to the object remains
+  /// stable while the map is manipulated.
   struct CbEntry
   {
     std::unique_ptr<std::function<void(size_t)>> cb;
     std::shared_ptr<ScopedWith> with;
   };
 
-  asio::any_io_executor executor_;
+  EventsQueue * const events_queue_;
 
   /// The map key is the raw pointer to the RCL entity object (subscription, etc) associated with
   /// the callback.

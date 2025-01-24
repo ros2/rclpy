@@ -16,8 +16,6 @@
 
 #include <utility>
 
-#include <asio/post.hpp>
-
 namespace py = pybind11;
 
 namespace rclpy
@@ -31,10 +29,8 @@ extern "C" void RclEventCallbackTrampoline(const void * user_data, size_t number
   (*cb)(number_of_events);
 }
 
-RclCallbackManager::RclCallbackManager(const asio::any_io_executor & executor)
-: executor_(executor)
-{
-}
+RclCallbackManager::RclCallbackManager(EventsQueue * events_queue)
+: events_queue_(events_queue) {}
 
 RclCallbackManager::~RclCallbackManager()
 {
@@ -58,7 +54,7 @@ const void * RclCallbackManager::MakeCallback(
   CbEntry new_entry;
   new_entry.cb =
     std::make_unique<std::function<void(size_t)>>([this, callback, key](size_t number_of_events) {
-        asio::post(executor_, [this, callback, key, number_of_events]() {
+        events_queue_->Enqueue([this, callback, key, number_of_events]() {
           if (!owned_cbs_.count(key)) {
             // This callback has been removed, just drop it as the objects it may want to touch may
             // no longer exist.

@@ -23,8 +23,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <asio/any_io_executor.hpp>
-
+#include "events_executor/events_queue.hpp"
 #include "events_executor/python_hasher.hpp"
 #include "events_executor/scoped_with.hpp"
 
@@ -37,14 +36,15 @@ namespace events_executor
 class RclTimersManager
 {
 public:
-  explicit RclTimersManager(const asio::any_io_executor &);
+  /// The given pointer is aliased and must live for the lifetime of this object.
+  explicit RclTimersManager(EventsQueue *);
   ~RclTimersManager();
 
   void AddTimer(rcl_timer_t *, std::function<void(const rcl_timer_call_info_t &)> ready_callback);
   void RemoveTimer(rcl_timer_t *);
 
 private:
-  asio::any_io_executor executor_;
+  EventsQueue * const events_queue_;
 
   class ClockManager;
   /// Handlers for each distinct clock source in the system.
@@ -55,10 +55,11 @@ private:
 class TimersManager
 {
 public:
-  /// @p timer_ready_callback will be invoked with the timer handle and info whenever a managed
+  /// @param events_queue is aliased and must live for the lifetime of this object.
+  /// @param timer_ready_callback will be invoked with the timer handle and info whenever a managed
   /// timer is ready for servicing.
   TimersManager(
-    const asio::any_io_executor &,
+    EventsQueue * events_queue,
     std::function<void(pybind11::handle, const rcl_timer_call_info_t &)> timer_ready_callback);
   ~TimersManager();
 

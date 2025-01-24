@@ -34,8 +34,6 @@
 #include <chrono>
 #include <utility>
 
-#include <asio/post.hpp>
-
 #include "client.hpp"
 #include "context.hpp"
 #include "service.hpp"
@@ -55,11 +53,10 @@ EventsExecutor::EventsExecutor(py::object context)
   inspect_signature_(py::module_::import("inspect").attr("signature")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
   rclpy_timer_timer_info_(py::module_::import("rclpy.timer").attr("TimerInfo")),
-  signal_callback_([this]() {io_context_.stop();}),
-  work_(asio::make_work_guard(io_context_.get_executor())),
-  rcl_callback_manager_(io_context_.get_executor()),
+  signal_callback_([this]() {events_queue_.Stop();}),
+  rcl_callback_manager_(&events_queue_),
   timers_manager_(
-    io_context_.get_executor(), std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1, pl::_2))
+    &events_queue_, std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1, pl::_2))
 {
 }
 
@@ -77,7 +74,7 @@ pybind11::object EventsExecutor::create_task(
   // manual refcounting on it instead.
   py::handle cb_task_handle = task;
   cb_task_handle.inc_ref();
-  asio::post(io_context_, std::bind(&EventsExecutor::IterateTask, this, cb_task_handle));
+  events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, cb_task_handle));
   return task;
 }
 
@@ -87,7 +84,7 @@ bool EventsExecutor::shutdown(std::optional<double> timeout)
   // not try to go access that context during this method or we can deadlock.
   // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/context.py#L101-L103
 
-  io_context_.stop();
+  events_queue_.Stop();
 
   // Block until spinning is done, or timeout.  Release the GIL while we block though.
   {
@@ -138,7 +135,7 @@ void EventsExecutor::wake()
 {
   if (!wake_pending_.exchange(true)) {
     // Update tracked entities.
-    asio::post(io_context_, [this]() {
+    events_queue_.Enqueue([this]() {
         py::gil_scoped_acquire gil_acquire;
         UpdateEntitiesFromNodes(!py::cast<bool>(rclpy_context_.attr("ok")()));
     });
@@ -162,21 +159,18 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
     stop_after_user_callback_ = stop_after_user_callback;
     // Any blocked tasks may have become unblocked while we weren't looking.
     PostOutstandingTasks();
-    // Release the GIL while we block.  Any callbacks on the io_context that want to touch Python
+    // Release the GIL while we block.  Any callbacks on the events queue that want to touch Python
     // will need to reacquire it though.
     py::gil_scoped_release gil_release;
     if (timeout_sec) {
       const auto timeout_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::duration<double>(*timeout_sec));
       const auto end = std::chrono::steady_clock::now() + timeout_ns;
-      // Dispatch anything that's immediately ready, even with zero timeout
-      io_context_.poll();
-      // Now possibly block until the end of the timeout period
-      io_context_.run_until(end);
+      events_queue_.RunUntil(end);
     } else {
-      io_context_.run();
+      events_queue_.Run();
     }
-    io_context_.restart();
+    events_queue_.Restart();
   }
 
   const bool ok = py::cast<bool>(rclpy_context_.attr("ok")());
@@ -188,7 +182,7 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
 void EventsExecutor::spin_until_future_complete(
   py::handle future, std::optional<double> timeout_sec, bool stop_after_user_callback)
 {
-  py::cpp_function cb([this](py::handle) {io_context_.stop();});
+  py::cpp_function cb([this](py::handle) {events_queue_.Stop();});
   future.attr("add_done_callback")(cb);
   spin(timeout_sec, stop_after_user_callback);
   // In case the future didn't complete (we hit the timeout or dispatched a different user callback
@@ -253,7 +247,7 @@ void EventsExecutor::UpdateEntitiesFromNodes(bool shutdown)
 
   if (shutdown) {
     // Stop spinning after everything is torn down.
-    io_context_.stop();
+    events_queue_.Stop();
   }
 }
 
@@ -307,7 +301,7 @@ void EventsExecutor::HandleRemovedSubscription(py::handle subscription)
 void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t number_of_events)
 {
   if (stop_after_user_callback_) {
-    io_context_.stop();
+    events_queue_.Stop();
   }
   py::gil_scoped_acquire gil_acquire;
 
@@ -387,7 +381,7 @@ void EventsExecutor::HandleTimerReady(py::handle timer, const rcl_timer_call_inf
     // Create a Task to manage iteration of this coroutine later.
     create_task(result);
   } else if (stop_after_user_callback_) {
-    io_context_.stop();
+    events_queue_.Stop();
   }
   PostOutstandingTasks();
 }
@@ -424,7 +418,7 @@ void EventsExecutor::HandleRemovedClient(py::handle client)
 void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_events)
 {
   if (stop_after_user_callback_) {
-    io_context_.stop();
+    events_queue_.Stop();
   }
   py::gil_scoped_acquire gil_acquire;
 
@@ -496,7 +490,7 @@ void EventsExecutor::HandleRemovedService(py::handle service)
 void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_events)
 {
   if (stop_after_user_callback_) {
-    io_context_.stop();
+    events_queue_.Stop();
   }
   py::gil_scoped_acquire gil_acquire;
 
@@ -770,7 +764,7 @@ void EventsExecutor::HandleWaitableReady(
   py::handle waitable, std::shared_ptr<WaitSet> wait_set, size_t number_of_events)
 {
   if (stop_after_user_callback_) {
-    io_context_.stop();
+    events_queue_.Stop();
   }
   // Largely based on rclpy.Executor._take_waitable()
   // https://github.com/ros2/rclpy/blob/a19180c238d4d97ed2b58868d8fb7fa3e3b621f2/rclpy/rclpy/executors.py#L447-L454
@@ -798,7 +792,7 @@ void EventsExecutor::HandleWaitableReady(
 void EventsExecutor::IterateTask(py::handle task)
 {
   if (stop_after_user_callback_) {
-    io_context_.stop();
+    events_queue_.Stop();
   }
   py::gil_scoped_acquire gil_acquire;
   // Calling this won't throw, but it may set the exception property on the task object.
@@ -840,7 +834,7 @@ void EventsExecutor::IterateTask(py::handle task)
 void EventsExecutor::PostOutstandingTasks()
 {
   for (auto & task : blocked_tasks_) {
-    asio::post(io_context_, std::bind(&EventsExecutor::IterateTask, this, task));
+    events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, task));
   }
   // Clear the entire outstanding tasks list.  Any tasks that need further iteration will re-add
   // themselves during IterateTask().
