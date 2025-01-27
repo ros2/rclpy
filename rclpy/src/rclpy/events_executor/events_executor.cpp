@@ -55,42 +55,12 @@ EventsExecutor::EventsExecutor(py::object context)
   inspect_signature_(py::module_::import("inspect").attr("signature")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
   rclpy_timer_timer_info_(py::module_::import("rclpy.timer").attr("TimerInfo")),
-  signals_(io_context_),
+  signal_callback_([this]() {io_context_.stop();}),
+  work_(asio::make_work_guard(io_context_.get_executor())),
   rcl_callback_manager_(io_context_.get_executor()),
   timers_manager_(
     io_context_.get_executor(), std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1, pl::_2))
 {
-  // rclpy.Executor creates a sigint handling guard condition here.  This is necessary because a
-  // sleeping event loop won't notice Ctrl-C unless some other event wakes it up otherwise.
-  //
-  // Unfortunately it doesn't look like we can either support generic guard conditions or hook into
-  // the existing rclpy signal handling in any other useful way.  We'll just establish our own
-  // signal handling directly instead.  We can at least hook into the rclpy.init() options that
-  // allow a user to disable certain signal handlers.
-  auto rclpy_signals = py::module_::import("rclpy.signals");
-  const int signal_options =
-    py::cast<int>(rclpy_signals.attr("get_current_signal_handlers_options")());
-  const auto sig_ops_enum = rclpy_signals.attr("SignalHandlerOptions");
-  if (signal_options & py::cast<int>(sig_ops_enum.attr("SIGINT"))) {
-        signals_.add(SIGINT);
-  }
-  if (signal_options & py::cast<int>(sig_ops_enum.attr("SIGTERM"))) {
-        signals_.add(SIGTERM);
-  }
-  if (signal_options != py::cast<int>(sig_ops_enum.attr("NO"))) {
-        signals_.async_wait([this](const asio::error_code & ec, int signum) {
-            if (!ec) {
-              py::gil_scoped_acquire gil_acquire;
-              // Don't call context.try_shutdown() here, because that can call back to us to
-              // request a blocking shutdown(), which doesn't make any sense because we have to be
-              // spinning to process the callback that's asked to wait for spinning to stop.  We'll
-              // have to call that later outside of any spin loop.
-              // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/__init__.py#L105-L109
-              signal_pending_.store(signum);
-              io_context_.stop();
-            }
-    });
-  }
 }
 
 EventsExecutor::~EventsExecutor() {shutdown();}
@@ -193,8 +163,6 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
     // Release the GIL while we block.  Any callbacks on the io_context that want to touch Python
     // will need to reacquire it though.
     py::gil_scoped_release gil_release;
-    // Don't let asio auto stop if there's nothing to do
-    const auto work = asio::make_work_guard(io_context_);
     if (timeout_sec) {
       const auto timeout_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::duration<double>(*timeout_sec));
@@ -207,15 +175,6 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
       io_context_.run();
     }
     io_context_.restart();
-  }
-
-  const int signum = signal_pending_.exchange(0);
-  if (signum) {
-    rclpy_context_.attr("try_shutdown")();
-    if (signum == SIGINT) {
-      PyErr_SetInterrupt();
-      return;
-    }
   }
 
   const bool ok = py::cast<bool>(rclpy_context_.attr("ok")());
