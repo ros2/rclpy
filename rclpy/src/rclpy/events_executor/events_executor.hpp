@@ -32,11 +32,11 @@
 #include <vector>
 
 #include <asio/io_context.hpp>
-#include <asio/signal_set.hpp>
 
 #include "events_executor/rcl_support.hpp"
 #include "events_executor/scoped_with.hpp"
 #include "events_executor/timers_manager.hpp"
+#include "signal_handler.hpp"
 #include "wait_set.hpp"
 
 namespace rclpy
@@ -155,9 +155,6 @@ private:
   /// Raises the given python object instance as a Python exception
   void Raise(pybind11::object);
 
-  /// Handles any pending signals; needs to be performed at the end of every spin*() method.
-  void CheckForSignals();
-
   const pybind11::object rclpy_context_;
 
   // Imported python objects we depend on
@@ -167,12 +164,13 @@ private:
   const pybind11::object rclpy_timer_timer_info_;
 
   asio::io_context io_context_;
-  asio::signal_set signals_;
+  ScopedSignalCallback signal_callback_;
+  // Never let asio auto stop if there's nothing to do
+  asio::executor_work_guard<asio::io_context::executor_type> work_;
 
   pybind11::set nodes_;                ///< The set of all nodes we're executing
   std::atomic<bool> wake_pending_{};   ///< An unhandled call to wake() has been made
   std::timed_mutex spinning_mutex_;    ///< Held while a thread is spinning
-  std::atomic<int> signal_pending_{};  ///< Signal number of caught signal, 0 if none
 
   /// This flag is used by spin_once() to signal that the io_context_ should be stopped after a
   /// single user-visible callback has been dispatched.
