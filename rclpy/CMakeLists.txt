@@ -86,6 +86,7 @@ pybind11_add_module(_rclpy_pybind11
   src/rclpy/destroyable.cpp
   src/rclpy/duration.cpp
   src/rclpy/clock_event.cpp
+  src/rclpy/events_executor/delayed_event_thread.cpp
   src/rclpy/events_executor/events_executor.cpp
   src/rclpy/events_executor/rcl_support.cpp
   src/rclpy/events_executor/timers_manager.cpp
