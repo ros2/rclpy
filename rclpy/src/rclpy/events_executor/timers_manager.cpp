@@ -25,8 +25,8 @@
 #include <utility>
 
 #include <asio/post.hpp>
-#include <asio/steady_timer.hpp>
 
+#include "events_executor/delayed_event_thread.hpp"
 #include "timer.hpp"
 
 namespace pl = std::placeholders;
@@ -197,18 +197,22 @@ private:
 
   void UpdateTimers()
   {
-    // First, evaluate all of our timers and dispatch any that are ready now.  While we're at it,
-    // keep track of the earliest next timer callback that is due.
-    int64_t now{};
-    if (RCL_RET_OK != rcl_clock_get_now(clock_, &now)) {
+    // Let's not assume that rcl_clock_get_now() and std::chrono::steady_clock::now() are on the
+    // same timebase.
+    int64_t rcl_now{};
+    if (RCL_RET_OK != rcl_clock_get_now(clock_, &rcl_now)) {
       throw std::runtime_error(
         std::string("Failed to read RCL clock: ") + rcl_get_error_string().str);
     }
+    const auto chrono_now = std::chrono::steady_clock::now();
+
+    // First, evaluate all of our timers and dispatch any that are ready now.  While we're at it,
+    // keep track of the earliest next timer callback that is due.
     std::optional<int64_t> next_ready_time_ns;
     for (const auto & timer_cb_pair : timers_) {
       auto this_next_time_ns = GetNextCallTimeNanoseconds(timer_cb_pair.first);
       if (this_next_time_ns) {
-        if (*this_next_time_ns <= now) {
+        if (*this_next_time_ns <= rcl_now) {
           ready_timers_.insert(timer_cb_pair.first);
           asio::post(executor_, CallIfAlive(&ClockManager::DispatchTimer, timer_cb_pair.first));
         } else if (!next_ready_time_ns || (*this_next_time_ns < *next_ready_time_ns)) {
@@ -222,16 +226,11 @@ private:
     // callback.  If neither of those things are true, then we need to schedule a wakeup for when
     // we anticipate the next timer being ready.
     if (ready_timers_.empty() && !on_debug_time_ && next_ready_time_ns) {
-      next_update_wait_.expires_from_now(std::chrono::nanoseconds(*next_ready_time_ns - now));
-      next_update_wait_.async_wait([this](const asio::error_code & ec) {
-          if (!ec) {
-            UpdateTimers();
-          } else if (ec != asio::error::operation_aborted) {
-            throw std::runtime_error("Error waiting for next timer: " + ec.message());
-          }
-      });
+      next_update_wait_.EnqueueAt(
+        chrono_now + std::chrono::nanoseconds(*next_ready_time_ns - rcl_now),
+        CallIfAlive(&ClockManager::UpdateTimers));
     } else {
-      next_update_wait_.cancel();
+      next_update_wait_.Cancel();
     }
   }
 
@@ -294,7 +293,7 @@ private:
 
   std::unordered_map<rcl_timer_t *, std::function<void(const rcl_timer_call_info_t &)>> timers_;
   std::unordered_set<rcl_timer_t *> ready_timers_;
-  asio::steady_timer next_update_wait_{executor_};
+  DelayedEventThread next_update_wait_{executor_};
 };
 
 RclTimersManager::RclTimersManager(const asio::any_io_executor & executor)
