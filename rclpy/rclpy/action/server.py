@@ -75,7 +75,7 @@ class CancelResponse(Enum):
     ACCEPT = 2
 
 
-GoalEvent = _rclpy.GoalEvent
+GoalEvent: TypeAlias = _rclpy.GoalEvent
 
 
 class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
@@ -229,7 +229,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[Action[GoalT, ResultT, FeedbackT]],
+        action_type: Type[Action],
         action_name: str,
         execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
         *,
@@ -288,18 +288,19 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         self._node = node
         self._action_type = action_type
         with node.handle, node.get_clock().handle:
-            self._handle = _rclpy.ActionServer(
-                node.handle,
-                node.get_clock().handle,
-                action_type,
-                action_name,
-                goal_service_qos_profile.get_c_qos_profile(),
-                result_service_qos_profile.get_c_qos_profile(),
-                cancel_service_qos_profile.get_c_qos_profile(),
-                feedback_pub_qos_profile.get_c_qos_profile(),
-                status_pub_qos_profile.get_c_qos_profile(),
-                result_timeout,
-            )
+            self._handle: '_rclpy.ActionServer[GoalT, ResultT, FeedbackT]' = \
+                _rclpy.ActionServer(
+                    node.handle,
+                    node.get_clock().handle,
+                    action_type,
+                    action_name,
+                    goal_service_qos_profile.get_c_qos_profile(),
+                    result_service_qos_profile.get_c_qos_profile(),
+                    cancel_service_qos_profile.get_c_qos_profile(),
+                    feedback_pub_qos_profile.get_c_qos_profile(),
+                    status_pub_qos_profile.get_c_qos_profile(),
+                    result_timeout,
+                )
 
         # key: UUID in bytes, value: GoalHandle
         self._goal_handles: Dict[bytes, ServerGoalHandle[GoalT, ResultT, FeedbackT]] = {}
@@ -501,7 +502,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             self._logger.warning('Failed to send result response (the client may have gone away)')
 
     @property
-    def action_type(self) -> Type[Action[GoalT, ResultT, FeedbackT]]:
+    def action_type(self) -> Type[Action]:
         return self._action_type
 
     # Start Waitable API

@@ -41,7 +41,7 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         self,
         context: Context,
         client_impl: '_rclpy.Client[SrvRequestT, SrvResponseT]',
-        srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
+        srv_type: Type[Srv],
         srv_name: str,
         qos_profile: QoSProfile,
         callback_group: CallbackGroup
