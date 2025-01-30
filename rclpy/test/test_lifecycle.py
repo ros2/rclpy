@@ -51,7 +51,8 @@ def test_lifecycle_node_init() -> None:
     assert not node._state_machine.service_get_transition_graph
     node.destroy_node()
     with pytest.raises(TypeError):
-        LifecycleNode('test_lifecycle_node_init_3', enable_communication_interface='asd')
+        LifecycleNode('test_lifecycle_node_init_3',
+                      enable_communication_interface='asd')  # type: ignore[arg-type]
 
 
 def test_lifecycle_state_transitions() -> None:
@@ -112,7 +113,7 @@ def test_lifecycle_state_transitions() -> None:
     assert node._state_machine.current_state[1] == 'finalized'
 
 
-def test_lifecycle_services(request):
+def test_lifecycle_services(request) -> None:
     lc_node_name = 'test_lifecycle_services_lifecycle'
     lc_node = LifecycleNode(lc_node_name)
     client_node = Node('test_lifecycle_services_client')
@@ -156,6 +157,7 @@ def test_lifecycle_services(request):
     # test all services
     req = lifecycle_msgs.srv.GetState.Request()
     resp = get_state_cli.call(req)
+    assert resp
     assert resp.current_state.label == 'unconfigured'
     req = lifecycle_msgs.srv.ChangeState.Request()
     req.transition.id = lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE

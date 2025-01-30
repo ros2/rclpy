@@ -14,7 +14,7 @@
 
 from enum import IntEnum
 from types import TracebackType
-from typing import Callable, Optional, Type, TYPE_CHECKING, TypedDict, Union
+from typing import Callable, Literal, Optional, overload, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from typing_extensions import TypeAlias
@@ -147,6 +147,20 @@ class Clock:
     if TYPE_CHECKING:
         __clock: _rclpy.Clock
         _clock_type: Union[ClockType, _rclpy.ClockType]
+
+    @overload
+    def __new__(
+        cls,
+        *,
+        clock_type: Literal[ClockType.ROS_TIME, _rclpy.ClockType.ROS_TIME]
+    ) -> 'ROSClock': ...
+
+    @overload
+    def __new__(
+        cls,
+        *,
+        clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME
+    ) -> 'Clock': ...
 
     def __new__(cls, *,
                 clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME) -> 'Clock':

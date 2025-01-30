@@ -14,6 +14,7 @@
 
 import threading
 import time
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
@@ -315,8 +316,13 @@ class MutuallyExclusiveWaitable(Waitable):
 
 class TestWaitable(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node: rclpy.node.Node
+        executor: SingleThreadedExecutor
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
         cls.node = rclpy.create_node(
@@ -326,7 +332,7 @@ class TestWaitable(unittest.TestCase):
         cls.executor.add_node(cls.node)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.executor.shutdown()
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
@@ -347,7 +353,7 @@ class TestWaitable(unittest.TestCase):
         del self.waitable
 
     def test_waitable_with_client(self) -> None:
-        self.waitable = ClientWaitable(self.node)
+        self.waitable: Waitable = ClientWaitable(self.node)
         self.node.add_waitable(self.waitable)
 
         server = self.node.create_service(EmptySrv, 'test_client', lambda req, resp: resp)

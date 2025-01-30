@@ -68,7 +68,7 @@ class TestClock(unittest.TestCase):
         clock = Clock()
 
         with self.assertRaises(TypeError):
-            clock = Clock(clock_type='STEADY_TIME')
+            clock = Clock(clock_type='STEADY_TIME')  # type: ignore[call-overload]
 
         clock = Clock(clock_type=ClockType.STEADY_TIME)
         assert clock.clock_type == ClockType.STEADY_TIME

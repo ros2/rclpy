@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import time
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
@@ -22,6 +23,7 @@ from rclpy.action import get_action_client_names_and_types_by_node
 from rclpy.action import get_action_names_and_types
 from rclpy.action import get_action_server_names_and_types_by_node
 
+import rclpy.context
 from test_msgs.action import Fibonacci
 
 TEST_ACTION0 = 'foo_action'
@@ -36,8 +38,20 @@ TEST_NAMESPACE2 = '/baz_ns'
 
 class TestActionGraph(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node0: rclpy.node.Node
+        node1: rclpy.node.Node
+        node2: rclpy.node.Node
+        action_client10: ActionClient
+        action_server10: ActionServer
+        action_client20: ActionClient
+        action_server20: ActionServer
+        action_client21: ActionClient
+        action_server21: ActionServer
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
         cls.node0 = rclpy.create_node(TEST_NODE0, namespace=TEST_NAMESPACE0, context=cls.context)
@@ -45,11 +59,11 @@ class TestActionGraph(unittest.TestCase):
         cls.node2 = rclpy.create_node(TEST_NODE2, namespace=TEST_NAMESPACE2, context=cls.context)
 
         cls.action_client10 = ActionClient(cls.node1, Fibonacci, TEST_ACTION0)
-        cls.action_server10 = ActionServer(cls.node1, Fibonacci, TEST_ACTION0, lambda: None)
+        cls.action_server10 = ActionServer(cls.node1, Fibonacci, TEST_ACTION0, lambda _: None)
         cls.action_client20 = ActionClient(cls.node2, Fibonacci, TEST_ACTION0)
         cls.action_client21 = ActionClient(cls.node2, Fibonacci, TEST_ACTION1)
-        cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0, lambda: None)
-        cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1, lambda: None)
+        cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0, lambda _: None)
+        cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1, lambda _: None)
 
         assert cls.node1.wait_for_node(cls.node0.get_fully_qualified_name(), 2.0)
         assert cls.node1.wait_for_node(cls.node2.get_fully_qualified_name(), 2.0)
@@ -57,7 +71,7 @@ class TestActionGraph(unittest.TestCase):
         assert cls.node2.wait_for_node(cls.node1.get_fully_qualified_name(), 2.0)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.action_client10.destroy()
         cls.action_server10.destroy()
         cls.action_client20.destroy()

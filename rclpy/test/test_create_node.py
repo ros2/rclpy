@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
 
+import rclpy.context
 from rclpy.exceptions import InvalidNamespaceException
 from rclpy.exceptions import InvalidNodeNameException
 from rclpy.parameter import Parameter
@@ -23,13 +25,16 @@ from rclpy.parameter import Parameter
 
 class TestCreateNode(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         rclpy.shutdown(context=cls.context)
 
     def test_create_node(self) -> None:

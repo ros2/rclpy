@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import time
+from typing import List, Tuple, TYPE_CHECKING
 import unittest
 
 import rclpy
+import rclpy.context
 from rclpy.duration import Duration
 
 from test_msgs.msg import BasicTypes
@@ -30,6 +32,11 @@ TEST_FQN_TOPIC_TO = '/remapped/another_ns/new_topic'
 
 
 class TestPublisher(unittest.TestCase):
+
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node: rclpy.node.Node
+        node_with_ns: rclpy.node.Node
 
     @classmethod
     def setUp(cls):
@@ -56,7 +63,7 @@ class TestPublisher(unittest.TestCase):
         rclpy.shutdown(context=cls.context)
 
     @classmethod
-    def do_test_topic_name(cls, test_topics, node):
+    def do_test_topic_name(cls, test_topics: List[Tuple[str, str]], node: rclpy.node.Node):
         """
         Test the topic names of publishers created by the given node.
 

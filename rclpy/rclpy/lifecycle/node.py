@@ -60,7 +60,7 @@ class LifecycleState(NamedTuple):
     state_id: int
 
 
-class CreateLifecyclePublisherArgs(TypedDict):
+class CreateLifecyclePublisherArgs(TypedDict, total=False):
     callback_group: Optional[CallbackGroup]
     event_callbacks: 'Optional[PublisherEventCallbacks]'
     qos_overriding_options: 'Optional[QoSOverridingOptions]'
@@ -503,7 +503,7 @@ class LifecycleNodeMixin(ManagedEntity):
         return resp
 
 
-class LifecycleNodeArgs(TypedDict):
+class LifecycleNodeArgs(TypedDict, total=False):
     context: 'Optional[Context]'
     cli_args: Optional[List[str]]
     namespace: Optional[str]

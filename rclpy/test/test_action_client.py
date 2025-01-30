@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import time
+from typing import TYPE_CHECKING
 import unittest
 import uuid
 
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
+import rclpy.context
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.qos import qos_profile_action_status_default
 
@@ -33,7 +35,7 @@ TIME_FUDGE = 0.3
 
 class MockActionServer:
 
-    def __init__(self, node):
+    def __init__(self, node: rclpy.node.Node) -> None:
         self.goal_srv = node.create_service(
             Fibonacci.Impl.SendGoalService, '/fibonacci/_action/send_goal',
             self.goal_callback)
@@ -69,8 +71,14 @@ class MockActionServer:
 
 class TestActionClient(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        executor: SingleThreadedExecutor
+        node: rclpy.node.Node
+        mock_action_server: MockActionServer
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
         cls.executor = SingleThreadedExecutor(context=cls.context)
@@ -78,14 +86,14 @@ class TestActionClient(unittest.TestCase):
         cls.mock_action_server = MockActionServer(cls.node)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.node.destroy_node()
         rclpy.shutdown(context=cls.context)
 
     def setUp(self) -> None:
         self.feedback = None
 
-    def feedback_callback(self, feedback):
+    def feedback_callback(self, feedback) -> None:
         self.feedback = feedback
 
     def timed_spin(self, duration):
@@ -162,7 +170,7 @@ class TestActionClient(unittest.TestCase):
             rclpy.spin_until_future_complete(self.node, future, self.executor)
             self.assertTrue(future.done())
             goal_handle = future.result()
-            self.assertTrue(goal_handle.accepted)
+            self.assertTrue(goal_handle.accepted)  # type: ignore[union-attr]
         finally:
             ac.destroy()
 
@@ -224,6 +232,7 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(goal_future.done())
             # Then request result
             goal_handle = goal_future.result()
+            assert goal_handle
             result_future = goal_handle.get_result_async()
             rclpy.spin_until_future_complete(self.node, result_future, self.executor)
             self.assertTrue(result_future.done())
@@ -304,9 +313,15 @@ class TestActionClient(unittest.TestCase):
             self.assertTrue(future_0.done())
             self.assertTrue(future_1.done())
             self.assertTrue(future_2.done())
-            self.assertTrue(future_0.result().accepted)
-            self.assertTrue(future_1.result().accepted)
-            self.assertTrue(future_2.result().accepted)
+            future_0_result = future_0.result()
+            future_1_result = future_1.result()
+            future_2_result = future_2.result()
+            assert future_0_result
+            assert future_1_result
+            assert future_2_result
+            self.assertTrue(future_0_result.accepted)
+            self.assertTrue(future_1_result.accepted)
+            self.assertTrue(future_2_result.accepted)
         finally:
             ac.destroy()
 
@@ -331,11 +346,14 @@ class TestActionClient(unittest.TestCase):
             goal_handle = goal_future.result()
 
             # Cancel the goal
+            assert goal_handle
             cancel_future = goal_handle.cancel_goal_async()
             rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
             self.assertTrue(cancel_future.done())
+            result = cancel_future.result()
+            assert result
             self.assertEqual(
-                cancel_future.result().goals_canceling[0].goal_id,
+                result.goals_canceling[0].goal_id,
                 goal_handle.goal_id)
         finally:
             ac.destroy()
@@ -352,6 +370,7 @@ class TestActionClient(unittest.TestCase):
             goal_handle = goal_future.result()
 
             # Get the goal result
+            assert goal_handle
             result_future = goal_handle.get_result_async()
             rclpy.spin_until_future_complete(self.node, result_future, self.executor)
             self.assertTrue(result_future.done())
@@ -362,7 +381,7 @@ class TestActionClient(unittest.TestCase):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             with self.assertRaises(TypeError):
-                ac.send_goal('different goal type')
+                ac.send_goal('different goal type')  # type: ignore[call-arg]
             with self.assertRaises(TypeError):
                 ac.send_goal_async('different goal type')
         finally:

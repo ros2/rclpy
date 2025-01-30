@@ -121,9 +121,9 @@ class TestTime(unittest.TestCase):
 
         # Invalid arithmetic combinations
         with self.assertRaises(TypeError):
-            time1 + time2
+            time1 + time2  # type: ignore[operator]
         with self.assertRaises(TypeError):
-            duration - time1
+            duration - time1  # type: ignore[operator]
 
     def test_time_comparators(self) -> None:
         # Times with the same clock type

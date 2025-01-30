@@ -35,7 +35,7 @@ class Time:
 
     def __init__(
             self, *,
-            seconds: Union[int, float] = 0, nanoseconds: int = 0,
+            seconds: Union[int, float] = 0, nanoseconds: Union[int, float] = 0,
             clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME):
         if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')

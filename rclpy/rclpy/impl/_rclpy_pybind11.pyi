@@ -18,7 +18,6 @@ from enum import IntEnum
 from types import TracebackType
 from typing import Any, Final, Generic, Literal, overload, Sequence, TypeAlias, TypedDict, TypeVar
 
-
 from action_msgs.msg import GoalInfo
 from action_msgs.msg._goal_status_array import GoalStatusArray
 from action_msgs.srv._cancel_goal import CancelGoal
@@ -343,7 +342,7 @@ rmw_qos_incompatible_event_status_t = rmw_qos_incompatible_event_status_s
 rmw_offered_qos_incompatible_event_status_t = rmw_qos_incompatible_event_status_t
 
 
-class RCLError(BaseException):
+class RCLError(RuntimeError):
 
     def __init__(self, error_text: str) -> None: ...
 
@@ -351,6 +350,8 @@ class RCLError(BaseException):
 class UnsupportedEventTypeError(RCLError):
     pass
 
+UnknownROSArgsError: TypeAlias = RuntimeError
+RCLInvalidROSArgsError: TypeAlias = RCLError
 
 class EventHandle(Destroyable, Generic[T]):
 

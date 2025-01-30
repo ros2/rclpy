@@ -94,6 +94,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response
         self.assertEqual(len(response.results), 1)
         self.assertTrue(response.results[0].successful)
         self.assertEqual(response.results[0].reason, '')  # reason should be empty if successful
@@ -110,6 +111,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response
         self.assertEqual(len(response.levels), 1)
         self.assertEqual(response.levels[0].name, test_log_name)
         self.assertEqual(response.levels[0].level, test_log_level)
@@ -149,6 +151,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response
         self.assertEqual(len(response.results), 3)
         for result in response.results:
             self.assertTrue(result.successful)
@@ -166,6 +169,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response
         self.assertEqual(len(response.levels), 3)
         self.assertEqual(response.levels[0].name, test_log_name1)
         self.assertEqual(response.levels[0].level, test_log_level1)
@@ -194,6 +198,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response
         self.assertEqual(len(response.results), 2)
         self.assertFalse(response.results[0].successful)
         self.assertEqual(response.results[0].reason, 'Failed reason: Invalid logger level.')
@@ -224,6 +229,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response
         self.assertEqual(len(response.results), 3)
         self.assertTrue(response.results[0].successful)
         self.assertEqual(response.results[0].reason, '')

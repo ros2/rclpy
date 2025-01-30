@@ -402,6 +402,7 @@ class TestActionServer(unittest.TestCase):
         send_goal_response = goal_future.result()
         self.assertTrue(send_goal_response.accepted)
         self.assertIsNotNone(server_goal_handle)
+        assert server_goal_handle
         self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_ACCEPTED)
 
         # Cancel the goal, before execution
@@ -647,7 +648,7 @@ class TestActionServer(unittest.TestCase):
         self.assertIsNotNone(self.mock_action_client.feedback_msg)
         self.assertEqual(
             [1, 1, 2, 3],
-            self.mock_action_client.feedback_msg.feedback.sequence.tolist())
+            self.mock_action_client.feedback_msg.feedback.sequence.tolist())  # type: ignore[attr-defined]
         action_server.destroy()
 
     def test_different_feedback_type_raises(self) -> None:
@@ -680,7 +681,7 @@ class TestActionServer(unittest.TestCase):
             feedback_msg = self.mock_action_client.feedback_msg
             self.assertIsNotNone(feedback_msg)
             self.assertEqual(
-                [1, 1, 2, 3], feedback_msg.feedback.sequence.tolist())
+                [1, 1, 2, 3], feedback_msg.feedback.sequence.tolist())  # type: ignore[attr-defined]
         finally:
             action_server.destroy()
 

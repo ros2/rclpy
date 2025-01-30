@@ -91,10 +91,14 @@ class TestTimeSource(unittest.TestCase):
 
         # Other clock types are not supported.
         with self.assertRaises(ValueError):
-            time_source.attach_clock(Clock(clock_type=ClockType.SYSTEM_TIME))
+            time_source.attach_clock(
+                Clock(clock_type=ClockType.SYSTEM_TIME)  # type: ignore[arg-type]
+            )
 
         with self.assertRaises(ValueError):
-            time_source.attach_clock(Clock(clock_type=ClockType.STEADY_TIME))
+            time_source.attach_clock(
+                Clock(clock_type=ClockType.STEADY_TIME)  # type: ignore[arg-type]
+            )
 
     def test_time_source_not_using_sim_time(self) -> None:
         time_source = TimeSource(node=self.node)

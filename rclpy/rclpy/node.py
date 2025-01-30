@@ -63,7 +63,7 @@ from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
-from rclpy.guard_condition import GuardCondition
+from rclpy.guard_condition import GuardCondition, GuardConditionCallbackType
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.logging import get_logger
@@ -82,7 +82,7 @@ from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
-from rclpy.timer import Timer, TimerInfo
+from rclpy.timer import Timer, TimerCallbacksType
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
@@ -1824,7 +1824,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Union[Callable[[], None], Callable[[TimerInfo], None], None],
+        callback: Optional[TimerCallbacksType],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
@@ -1861,7 +1861,7 @@ class Node:
 
     def create_guard_condition(
         self,
-        callback: Callable[[], None],
+        callback: Optional[GuardConditionCallbackType],
         callback_group: Optional[CallbackGroup] = None
     ) -> GuardCondition:
         """

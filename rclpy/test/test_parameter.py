@@ -15,6 +15,7 @@
 from array import array
 import os
 from tempfile import NamedTemporaryFile
+from typing import Any, Sized
 import unittest
 
 import pytest
@@ -111,7 +112,7 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(p.value, ['hello', 'world'])
 
     def test_create_not_set_parameter(self) -> None:
-        p = Parameter('myparam', Parameter.Type.NOT_SET)
+        p: Parameter[Any] = Parameter('myparam', Parameter.Type.NOT_SET)
         self.assertIsNone(p.value)
 
         p = Parameter('myparam')
@@ -130,10 +131,10 @@ class TestParameter(unittest.TestCase):
 
     def test_error_on_illegal_value_type(self) -> None:
         with self.assertRaises(TypeError):
-            Parameter('illegaltype', 'mytype', 'myvalue')
+            Parameter('illegaltype', 'mytype', 'myvalue')  # type: ignore[call-overload]
 
         with self.assertRaises(TypeError):
-            Parameter('illegaltype', value={'invalid': 'type'})
+            Parameter('illegaltype', value={'invalid': 'type'})  # type: ignore[call-overload]
 
     def test_integer_tuple_array(self) -> None:
         # list
@@ -247,6 +248,7 @@ class TestParameter(unittest.TestCase):
         for input_value, expected_value in test_cases:
             result_value = parameter_value_to_python(input_value)
             if isinstance(expected_value, list):
+                assert isinstance(result_value, Sized)
                 assert len(result_value) == len(expected_value)
                 # element-wise comparison for lists
                 assert all(x == y for x, y in zip(result_value, expected_value))

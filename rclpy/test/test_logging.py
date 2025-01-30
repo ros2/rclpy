@@ -239,7 +239,7 @@ class TestLogging(unittest.TestCase):
                 name='my_name',
                 skip_first=True,
                 unused_kwarg='unused_kwarg',
-            )
+            )  # type: ignore[call-arg]
 
     def test_log_parameters_changing(self) -> None:
         # Check changing log call parameters is not allowed
@@ -285,7 +285,7 @@ class TestLogging(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "got multiple values for argument 'severity'"):
             my_logger.fatal(
                 'message_fatal',
-                severity=LoggingSeverity.DEBUG)
+                severity=LoggingSeverity.DEBUG)  # type: ignore[call-arg]
 
         # Check that this logger's context is independent of the root logger's context
         loggers = [my_logger, rclpy.logging._root_logger]
@@ -316,7 +316,7 @@ class TestLogging(unittest.TestCase):
             my_logger_child = my_logger.get_child('')
 
         with self.assertRaisesRegex(ValueError, 'Child logger name must not be empty'):
-            my_logger_child = my_logger.get_child(None)
+            my_logger_child = my_logger.get_child(None)  # type: ignore[arg-type]
 
         my_logger_child = my_logger.get_child('child')
         self.assertEqual(my_logger.name + '.child', my_logger_child.name)

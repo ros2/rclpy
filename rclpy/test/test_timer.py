@@ -16,6 +16,7 @@ import functools
 import os
 import platform
 import time
+from typing import Optional
 
 import pytest
 import rclpy
@@ -168,16 +169,21 @@ def test_time_until_next_call() -> None:
         timer = node.create_timer(1, lambda: None)
         assert not timer.is_canceled()
         executor.spin_once(0.1)
-        assert timer.time_until_next_call() <= (1 * S_TO_NS)
+        timer_result = timer.time_until_next_call()
+        assert timer_result
+        assert timer_result <= (1 * S_TO_NS)
         timer.reset()
         assert not timer.is_canceled()
-        assert timer.time_until_next_call() <= (1 * S_TO_NS)
+        timer_result = timer.time_until_next_call()
+        assert timer_result
+        assert timer_result <= (1 * S_TO_NS)
         timer.cancel()
         assert timer.is_canceled()
         assert timer.time_until_next_call() is None
     finally:
         if timer is not None:
-            node.destroy_timer(timer)
+            if node:
+                node.destroy_timer(timer)
         if executor is not None:
             executor.shutdown()
         if node is not None:
@@ -201,7 +207,8 @@ def test_timer_without_autostart() -> None:
         assert timer.is_canceled()
     finally:
         if timer is not None:
-            node.destroy_timer(timer)
+            if node:
+                node.destroy_timer(timer)
         if node is not None:
             node.destroy_node()
         rclpy.shutdown()
@@ -251,7 +258,7 @@ def test_timer_with_info() -> None:
     node = None
     executor = None
     timer = None
-    timer_info: TimerInfo = None
+    timer_info: Optional[TimerInfo] = None
     context = rclpy.context.Context()
     rclpy.init(context=context)
     try:
@@ -274,7 +281,7 @@ def test_timer_with_info() -> None:
         assert timer_info.actual_call_time.nanoseconds > 0
         assert timer_info.expected_call_time.nanoseconds > 0
     finally:
-        if timer is not None:
+        if timer is not None and node:
             node.destroy_timer(timer)
         if executor is not None:
             executor.shutdown()
@@ -287,7 +294,7 @@ def test_timer_info_with_partial() -> None:
     node = None
     executor = None
     timer = None
-    timer_info: TimerInfo = None
+    timer_info: Optional[TimerInfo] = None
     timer_called = False
     context = rclpy.context.Context()
     rclpy.init(context=context)
@@ -316,7 +323,8 @@ def test_timer_info_with_partial() -> None:
         assert timer_info.expected_call_time.nanoseconds > 0
     finally:
         if timer is not None:
-            node.destroy_timer(timer)
+            if node:
+                node.destroy_timer(timer)
         if executor is not None:
             executor.shutdown()
         if node is not None:

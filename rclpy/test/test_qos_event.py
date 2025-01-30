@@ -148,7 +148,7 @@ class TestQoSEvent(unittest.TestCase):
 
         pub_log_msg = None
         sub_log_msg = None
-        log_msgs_future = Future()
+        log_msgs_future: Future[bool] = Future()
 
         class MockLogger:
 
@@ -166,7 +166,7 @@ class TestQoSEvent(unittest.TestCase):
                 if pub_log_msg is not None and sub_log_msg is not None:
                     log_msgs_future.set_result(True)
 
-        rclpy.logging._root_logger = MockLogger()
+        rclpy.logging._root_logger = MockLogger()  # type: ignore[assignment]
 
         qos_profile_publisher = QoSProfile(
             depth=10, durability=QoSDurabilityPolicy.VOLATILE)
@@ -241,6 +241,8 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
+
+        assert self.context.handle
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
@@ -309,6 +311,7 @@ class TestQoSEvent(unittest.TestCase):
         # Go through the exposed apis and ensure that things don't explode when called
         # Make no assumptions about being able to actually receive the events
         subscription = self.node.create_subscription(EmptyMsg, self.topic_name, Mock(), 10)
+        assert self.context.handle
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
@@ -377,6 +380,7 @@ class TestQoSEvent(unittest.TestCase):
 
     def test_call_publisher_rclpy_event_matched(self) -> None:
         publisher = self.node.create_publisher(EmptyMsg, self.topic_name, 10)
+        assert self.context.handle
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 2, self.context.handle)
 
@@ -426,6 +430,7 @@ class TestQoSEvent(unittest.TestCase):
         message_callback = Mock()
         subscription = self.node.create_subscription(
             EmptyMsg, self.topic_name, message_callback, 10)
+        assert self.context.handle
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 2, self.context.handle)
 

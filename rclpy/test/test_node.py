@@ -15,7 +15,7 @@
 import pathlib
 import platform
 import time
-from typing import List
+from typing import List, TYPE_CHECKING
 import unittest
 from unittest.mock import Mock
 import warnings
@@ -63,13 +63,16 @@ TEST_RESOURCES_DIR = pathlib.Path(__file__).resolve().parent / 'resources' / 'te
 
 class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         rclpy.shutdown(context=cls.context)
 
     def setUp(self) -> None:
@@ -83,7 +86,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_accessors(self) -> None:
         self.assertIsNotNone(self.node.handle)
         with self.assertRaises(AttributeError):
-            self.node.handle = 'garbage'
+            self.node.handle = 'garbage'  # type: ignore[assignment]
         self.assertEqual(self.node.get_name(), TEST_NODE)
         self.assertEqual(self.node.get_namespace(), TEST_NAMESPACE)
         self.assertEqual(self.node.get_clock().clock_type, ClockType.ROS_TIME)
@@ -100,7 +103,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'must be greater than or equal to zero'):
             self.node.create_publisher(BasicTypes, 'chatter', -1)
         with self.assertRaisesRegex(TypeError, 'Expected QoSProfile or int'):
-            self.node.create_publisher(BasicTypes, 'chatter', 'foo')
+            self.node.create_publisher(BasicTypes, 'chatter', 'foo')  # type: ignore[arg-type]
 
     def test_create_subscription(self) -> None:
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
@@ -115,7 +118,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'must be greater than or equal to zero'):
             self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), -1)
         with self.assertRaisesRegex(TypeError, 'Expected QoSProfile or int'):
-            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 'foo')
+            self.node.create_subscription(BasicTypes, 'chatter',
+                                          lambda msg: print(msg), 'foo')  # type: ignore[arg-type]
 
     def raw_subscription_callback(self, msg):
         print('Raw subscription callback: %s length %d' % (msg, len(msg)))
@@ -147,7 +151,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         executor.shutdown()
 
-    def dummy_cb(self, msg):
+    def dummy_cb(self, msg) -> None:
         pass
 
     @unittest.skipIf(
@@ -182,13 +186,13 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_client(GetParameters, 'foo/{bad_sub}')
 
     def test_create_service(self) -> None:
-        self.node.create_service(GetParameters, 'get/parameters', lambda req: None)
+        self.node.create_service(GetParameters, 'get/parameters', lambda req, res: None)
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not contain characters'):
-            self.node.create_service(GetParameters, 'get/parameters?', lambda req: None)
+            self.node.create_service(GetParameters, 'get/parameters?', lambda req, res: None)
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not start with a number'):
-            self.node.create_service(GetParameters, '/get/42parameters', lambda req: None)
+            self.node.create_service(GetParameters, '/get/42parameters', lambda req, res: None)
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req: None)
+            self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req, res: None)
 
     def test_service_names_and_types(self) -> None:
         # test that it doesn't raise
@@ -354,7 +358,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(0, self.node.count_services(short_service_name))
         self.assertEqual(0, self.node.count_services(fq_service_name))
 
-        self.node.create_service(GetParameters, short_service_name, lambda req: None)
+        self.node.create_service(GetParameters, short_service_name, lambda req, res: None)
         self.assertEqual(1, self.node.count_clients(short_service_name))
         self.assertEqual(1, self.node.count_clients(fq_service_name))
         self.assertEqual(1, self.node.count_services(short_service_name))
@@ -366,7 +370,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(1, self.node.count_services(short_service_name))
         self.assertEqual(1, self.node.count_services(fq_service_name))
 
-        self.node.create_service(GetParameters, short_service_name, lambda req: None)
+        self.node.create_service(GetParameters, short_service_name, lambda req, res: None)
         self.assertEqual(2, self.node.count_clients(short_service_name))
         self.assertEqual(2, self.node.count_clients(fq_service_name))
         self.assertEqual(2, self.node.count_services(short_service_name))
@@ -374,9 +378,9 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         # error cases
         with self.assertRaises(TypeError):
-            self.node.count_clients(1)
+            self.node.count_clients(1)  # type: ignore[arg-type]
         with self.assertRaises(TypeError):
-            self.node.count_services(1)
+            self.node.count_services(1)  # type: ignore[arg-type]
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.count_clients('42')
         with self.assertRaisesRegex(ValueError, 'is invalid'):
@@ -437,7 +441,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
     def test_node_cannot_set_invalid_parameters(self) -> None:
         with self.assertRaises(TypeError):
-            self.node.set_parameters([42])
+            self.node.set_parameters([42])  # type: ignore[list-item]
 
     def test_node_set_parameters_atomically(self) -> None:
         result = self.node.set_parameters_atomically([
@@ -501,7 +505,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('unset').type_, Parameter.Type.NOT_SET)
 
     def test_node_declare_static_parameter(self) -> None:
-        value = self.node.declare_parameter('an_integer', 5)
+        value: Parameter[int] = self.node.declare_parameter('an_integer', 5)
         self.assertEqual(value.value, 5)
         self.assertFalse(
             self.node.set_parameters([Parameter('an_integer', value='asd')])[0].successful)
@@ -552,13 +556,16 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
 class TestExecutor(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         rclpy.shutdown(context=cls.context)
 
     def setUp(self) -> None:
@@ -600,13 +607,16 @@ class TestExecutor(unittest.TestCase):
 
 class TestNode(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         rclpy.shutdown(context=cls.context)
 
     def setUp(self) -> None:
@@ -722,7 +732,7 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 1,
                 'wrong_name_type',
-                ParameterDescriptor())
+                ParameterDescriptor())  # type: ignore[call-overload]
 
         with self.assertRaises(ValueError):
             self.node.declare_parameter(
@@ -2568,11 +2578,11 @@ def test_node_resolve_name() -> None:
 class TestNodeParamsFile(unittest.TestCase):
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         rclpy.init()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         rclpy.shutdown()
 
     def test_node_ns_params_file_with_wildcards(self) -> None:

@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import time
-from typing import List
+from typing import List, TYPE_CHECKING
 import unittest
 
 import rclpy
+import rclpy.context
 import rclpy.executors
 from rclpy.qos import qos_profile_system_default
 from rclpy.service_introspection import ServiceIntrospectionState
@@ -26,8 +27,11 @@ from test_msgs.srv import BasicTypes
 
 class TestServiceEvents(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
 
@@ -46,7 +50,7 @@ class TestServiceEvents(unittest.TestCase):
         self.node.destroy_node()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         rclpy.shutdown(context=cls.context)
 
     def sub_callback(self, msg):

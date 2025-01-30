@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from typing import Any, Callable, List, Tuple
 import unittest
 
 from rclpy.task import Future
@@ -22,9 +23,9 @@ from rclpy.task import Task
 class DummyExecutor:
 
     def __init__(self) -> None:
-        self.done_callbacks = []
+        self.done_callbacks: List[Tuple[Callable, Any]] = []
 
-    def create_task(self, cb, *args):
+    def create_task(self, cb: Callable, *args) -> None:
         self.done_callbacks.append((cb, args))
 
 
@@ -77,8 +78,8 @@ class TestTask(unittest.TestCase):
     def test_done_callback_scheduled(self) -> None:
         executor = DummyExecutor()
 
-        t = Task(lambda: None, executor=executor)
-        t.add_done_callback('Sentinel Value')
+        t = Task(lambda: None, executor=executor)  # type: ignore[arg-type]
+        t.add_done_callback('Sentinel Value')  # type: ignore[arg-type]
         t()
         self.assertTrue(t.done())
         self.assertEqual(1, len(executor.done_callbacks))
@@ -90,10 +91,10 @@ class TestTask(unittest.TestCase):
     def test_done_task_done_callback_scheduled(self) -> None:
         executor = DummyExecutor()
 
-        t = Task(lambda: None, executor=executor)
+        t = Task(lambda: None, executor=executor)  # type: ignore[arg-type]
         t()
         self.assertTrue(t.done())
-        t.add_done_callback('Sentinel Value')
+        t.add_done_callback('Sentinel Value')  # type: ignore[arg-type]
         self.assertEqual(1, len(executor.done_callbacks))
         self.assertEqual('Sentinel Value', executor.done_callbacks[0][0])
         args = executor.done_callbacks[0][1]
@@ -131,13 +132,13 @@ class TestTask(unittest.TestCase):
 
         def func() -> None:
             e = Exception()
-            e.sentinel_value = 'Sentinel Exception'
+            e.sentinel_value = 'Sentinel Exception'  # type: ignore[attr-defined]
             raise e
 
         t = Task(func)
         t()
         self.assertTrue(t.done())
-        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)
+        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)  # type: ignore[union-attr]
         with self.assertRaises(Exception):
             t.result()
 
@@ -145,13 +146,13 @@ class TestTask(unittest.TestCase):
 
         async def coro() -> None:
             e = Exception()
-            e.sentinel_value = 'Sentinel Exception'
+            e.sentinel_value = 'Sentinel Exception'  # type: ignore[attr-defined]
             raise e
 
-        t = Task(coro)
+        t: Task[None] = Task(coro)
         t()
         self.assertTrue(t.done())
-        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)
+        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)  # type: ignore[union-attr]
         with self.assertRaises(Exception):
             t.result()
 
@@ -203,30 +204,30 @@ class TestTask(unittest.TestCase):
 class TestFuture(unittest.TestCase):
 
     def test_cancelled(self) -> None:
-        f = Future()
+        f: Future[Any] = Future()
         f.cancel()
         self.assertTrue(f.cancelled())
 
     def test_done(self) -> None:
-        f = Future()
+        f: Future[None] = Future()
         self.assertFalse(f.done())
         f.set_result(None)
         self.assertTrue(f.done())
 
     def test_set_result(self) -> None:
-        f = Future()
+        f: Future[str] = Future()
         f.set_result('Sentinel Result')
         self.assertEqual('Sentinel Result', f.result())
         self.assertTrue(f.done())
 
     def test_set_exception(self) -> None:
-        f = Future()
-        f.set_exception('Sentinel Exception')
-        self.assertEqual('Sentinel Exception', f.exception())
+        f: Future[str] = Future()
+        f.set_exception(Exception('Sentinel Exception'))
+        self.assertEqual(Exception('Sentinel Exception'), f.exception())
         self.assertTrue(f.done())
 
     def test_await(self) -> None:
-        f = Future()
+        f: Future[Any] = Future()
 
         async def coro():
             nonlocal f
@@ -241,7 +242,7 @@ class TestFuture(unittest.TestCase):
             self.assertEqual('Sentinel Result', e.value)
 
     def test_await_exception(self) -> None:
-        f = Future()
+        f: Future[Any] = Future()
 
         async def coro():
             nonlocal f
@@ -255,23 +256,23 @@ class TestFuture(unittest.TestCase):
 
     def test_cancel_schedules_callbacks(self) -> None:
         executor = DummyExecutor()
-        f = Future(executor=executor)
+        f: Future[Any] = Future(executor=executor)  # type: ignore[arg-type]
         f.add_done_callback(lambda f: None)
         f.cancel()
         self.assertTrue(executor.done_callbacks)
 
     def test_set_result_schedules_callbacks(self) -> None:
         executor = DummyExecutor()
-        f = Future(executor=executor)
+        f: Future[str] = Future(executor=executor)  # type: ignore[arg-type]
         f.add_done_callback(lambda f: None)
         f.set_result('Anything')
         self.assertTrue(executor.done_callbacks)
 
     def test_set_exception_schedules_callbacks(self) -> None:
         executor = DummyExecutor()
-        f = Future(executor=executor)
+        f: Future[Any] = Future(executor=executor)  # type: ignore[arg-type]
         f.add_done_callback(lambda f: None)
-        f.set_exception('Anything')
+        f.set_exception(Exception('Anything'))
         self.assertTrue(executor.done_callbacks)
 
     def test_cancel_invokes_callbacks(self) -> None:
@@ -281,7 +282,7 @@ class TestFuture(unittest.TestCase):
             nonlocal called
             called = True
 
-        f = Future()
+        f: Future[Any] = Future()
         f.add_done_callback(cb)
         f.cancel()
         assert called
@@ -293,7 +294,7 @@ class TestFuture(unittest.TestCase):
             nonlocal called
             called = True
 
-        f = Future()
+        f: Future[str] = Future()
         f.add_done_callback(cb)
         f.set_result('Anything')
         assert called
@@ -301,13 +302,13 @@ class TestFuture(unittest.TestCase):
     def test_set_exception_invokes_callbacks(self) -> None:
         called = False
 
-        def cb(fut):
+        def cb(fut) -> None:
             nonlocal called
             called = True
 
-        f = Future()
+        f: Future[str] = Future()
         f.add_done_callback(cb)
-        f.set_exception('Anything')
+        f.set_exception(Exception('Anything'))
         assert called
 
     def test_add_done_callback_invokes_callback(self) -> None:
@@ -317,13 +318,13 @@ class TestFuture(unittest.TestCase):
             nonlocal called
             called = True
 
-        f = Future()
+        f: Future[str] = Future()
         f.set_result('Anything')
         f.add_done_callback(cb)
         assert called
 
     def test_set_result_on_done_future_without_exception(self) -> None:
-        f = Future()
+        f: Future[None] = Future()
         f.set_result(None)
         self.assertTrue(f.done())
         self.assertFalse(f.cancelled())
@@ -332,7 +333,7 @@ class TestFuture(unittest.TestCase):
         self.assertFalse(f.cancelled())
 
     def test_set_result_on_cancelled_future_without_exception(self) -> None:
-        f = Future()
+        f: Future[None] = Future()
         f.cancel()
         self.assertTrue(f.cancelled())
         self.assertFalse(f.done())
@@ -340,7 +341,7 @@ class TestFuture(unittest.TestCase):
         self.assertTrue(f.done())
 
     def test_set_exception_on_done_future_without_exception(self) -> None:
-        f = Future()
+        f: Future[None] = Future()
         f.set_result(None)
         self.assertIsNone(f.exception())
         f.set_exception(Exception())
@@ -348,7 +349,7 @@ class TestFuture(unittest.TestCase):
         self.assertIsNotNone(f.exception())
 
     def test_set_exception_on_cancelled_future_without_exception(self) -> None:
-        f = Future()
+        f: Future[Any] = Future()
         f.cancel()
         self.assertTrue(f.cancelled())
         self.assertIsNone(f.exception())

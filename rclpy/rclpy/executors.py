@@ -54,7 +54,7 @@ from rclpy.subscription import Subscription
 from rclpy.task import FunctionOrCoroutineFunction
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.timer import Timer, TimerInfo
+from rclpy.timer import Timer, TimerInfo, TimerCallbacksType
 from rclpy.type_support import Msg
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
@@ -417,8 +417,7 @@ class Executor(ContextManager['Executor']):
                     actual_call_time=info['actual_call_time'],
                     clock_type=tmr.clock.clock_type)
 
-                def check_argument_type(callback_func: Union[Callable[[], None],
-                                                             Callable[[TimerInfo], None]],
+                def check_argument_type(callback_func: TimerCallbacksType,
                                         target_type: Type[TimerInfo]) -> Optional[str]:
                     sig = inspect.signature(callback_func)
                     for param in sig.parameters.values():
