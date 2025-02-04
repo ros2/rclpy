@@ -18,6 +18,7 @@ from multiprocessing import Lock
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 
+from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterEvent
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
@@ -258,7 +259,7 @@ class ParameterEventHandler:
         event: ParameterEvent,
         parameter_name: str,
         node_name: str,
-    ) -> Optional[Parameter[Any]]:
+    ) -> Optional[ParameterMsg]:
         """
         Get specified parameter value from ParameterEvent message.
 

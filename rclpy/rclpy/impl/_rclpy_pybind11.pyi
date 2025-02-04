@@ -480,7 +480,7 @@ class Node(Destroyable):
 
     def __init__(self, node_name: str, namespace_: str, context: Context,
                  pycli_args: list[str] | None, use_global_arguments: bool,
-                 enable_rosout: bool) -> None: ...
+                 enable: bool, rosout_qos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
     def pointer(self) -> int:
