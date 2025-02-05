@@ -35,12 +35,11 @@ from rclpy.type_support import (Action, check_for_type_support, FeedbackMessage,
                                 GetResultServiceRequest, GetResultServiceResponse, GoalT, ResultT,
                                 SendGoalServiceRequest)
 from rclpy.waitable import NumberOfEntities, Waitable
+from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
 
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeAlias
-
     from rclpy.callback_groups import CallbackGroup
     from rclpy.node import Node
 
@@ -54,7 +53,7 @@ if TYPE_CHECKING:
         result: Tuple['_rclpy.rmw_request_id_t', GetResultServiceRequest]
         expired: Tuple[GoalInfo, ...]
 else:
-    ServerGoalHandleDict: 'TypeAlias' = Dict[str, object]
+    ServerGoalHandleDict: TypeAlias = Dict[str, object]
 
 
 # Re-export exception defined in _rclpy C extension.
