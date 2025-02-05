@@ -16,6 +16,7 @@ from typing import Any, ClassVar, Optional, Protocol, Type, TypeVar, Union
 
 from builtin_interfaces.msg import Time
 from rclpy.exceptions import NoTypeSupportImportedException
+from service_msgs.msg import ServiceEventInfo
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
 
@@ -59,6 +60,10 @@ MsgT = TypeVar('MsgT', bound=Msg)
 
 SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
+
+
+class EventMessage(Msg, Protocol):
+    info: ServiceEventInfo
 
 
 class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
