@@ -24,11 +24,14 @@ from typing import (Any, Callable, Dict, Generic, Literal, Optional, Tuple, Type
 
 from action_msgs.msg import GoalInfo, GoalStatus
 from action_msgs.srv._cancel_goal import CancelGoal
+
+from rclpy.clock import Clock
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
+from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.type_support import (Action, check_for_type_support, FeedbackMessage, FeedbackT,
@@ -706,7 +709,24 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             raise TypeError('Failed to register goal execution callback: not callable')
         self._execute_callback = execute_callback
 
-    def destroy(self) -> None:
+    def configure_introspection(
+        self, clock: Clock,
+        service_event_qos_profile: QoSProfile,
+        introspection_state: ServiceIntrospectionState
+    ) -> None:
+        """
+        Configure action server introspection.
+
+        :param clock: Clock to use for generating timestamps.
+        :param service_event_qos_profile: QoSProfile to use when creating service event publisher.
+        :param introspection_state: ServiceIntrospectionState to set introspection.
+        """
+        with self._handle:
+            self._handle.configure_introspection(clock.handle,
+                                                 service_event_qos_profile.get_c_qos_profile(),
+                                                 introspection_state)
+
+    def destroy(self):
         """Destroy the underlying action server handle."""
         for goal_handle in self._goal_handles.values():
             goal_handle.destroy()
