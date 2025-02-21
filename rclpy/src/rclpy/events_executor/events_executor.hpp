@@ -12,7 +12,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+
+#ifndef RCLPY__EVENTS_EXECUTOR__EVENTS_EXECUTOR_HPP_
+#define RCLPY__EVENTS_EXECUTOR__EVENTS_EXECUTOR_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -200,3 +202,5 @@ void define_events_executor(pybind11::object module);
 
 }  // namespace events_executor
 }  // namespace rclpy
+
+#endif  // RCLPY__EVENTS_EXECUTOR__EVENTS_EXECUTOR_HPP_

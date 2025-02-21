@@ -12,7 +12,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+
+#ifndef RCLPY__EVENTS_EXECUTOR__PYTHON_HASHER_HPP_
+#define RCLPY__EVENTS_EXECUTOR__PYTHON_HASHER_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -32,3 +34,5 @@ struct PythonHasher
 };
 }  // namespace events_executor
 }  // namespace rclpy
+
+#endif  // RCLPY__EVENTS_EXECUTOR__PYTHON_HASHER_HPP_
