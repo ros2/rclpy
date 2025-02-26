@@ -2,6 +2,16 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.0.0 (2025-02-02)
+------------------
+* add QoS Profile/Depth support to Node. (`#1376 <https://github.com/ros2/rclpy/issues/1376>`_)
+* Various typing fixes (`#1402 <https://github.com/ros2/rclpy/issues/1402>`_)
+* Add types to Action with rhel roscli fix (`#1361 <https://github.com/ros2/rclpy/issues/1361>`_)
+* Check if Task(Future) is canceled. (`#1377 <https://github.com/ros2/rclpy/issues/1377>`_)
+* Executors types (`#1370 <https://github.com/ros2/rclpy/issues/1370>`_)
+* event_handler.py types (`#1340 <https://github.com/ros2/rclpy/issues/1340>`_)
+* Contributors: Michael Carlstrom, Nadav Elkabets, Tomoya Fujita
+
 8.0.0 (2024-12-20)
 ------------------
 * Add support for operator overloading of `Duration` (`#1387 <https://github.com/ros2/rclpy/issues/1387>`_)
