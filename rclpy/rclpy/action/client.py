@@ -166,7 +166,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[Action[GoalT, ResultT, FeedbackT]],
+        action_type: Type[Action],
         action_name: str,
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
@@ -202,16 +202,17 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         self._action_type = action_type
         self._action_name = action_name
         with node.handle:
-            self._client_handle = _rclpy.ActionClient(
-                node.handle,
-                action_type,
-                action_name,
-                goal_service_qos_profile.get_c_qos_profile(),
-                result_service_qos_profile.get_c_qos_profile(),
-                cancel_service_qos_profile.get_c_qos_profile(),
-                feedback_sub_qos_profile.get_c_qos_profile(),
-                status_sub_qos_profile.get_c_qos_profile()
-            )
+            self._client_handle: '_rclpy.ActionClient[GoalT, ResultT, FeedbackT]' =  \
+                _rclpy.ActionClient(
+                    node.handle,
+                    action_type,
+                    action_name,
+                    goal_service_qos_profile.get_c_qos_profile(),
+                    result_service_qos_profile.get_c_qos_profile(),
+                    cancel_service_qos_profile.get_c_qos_profile(),
+                    feedback_sub_qos_profile.get_c_qos_profile(),
+                    status_sub_qos_profile.get_c_qos_profile()
+                )
 
         self._is_ready = False
 
