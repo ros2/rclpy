@@ -53,7 +53,7 @@ class SubTestNode(rclpy.node.Node):
             rclpy.Future[rclpy.event_handler.QoSSubscriptionMatchedInfo] | None
         ) = None
         self._received_future: rclpy.Future[test_msgs.msg.BasicTypes] | None = None
-        self.create_subscription(
+        self._sub = self.create_subscription(
             test_msgs.msg.BasicTypes,
             # This node seems to get stale discovery data and then complain about QoS
             # changes if we reuse the same topic name.
@@ -64,6 +64,9 @@ class SubTestNode(rclpy.node.Node):
                 matched=self._handle_matched_sub
             ),
         )
+
+    def drop_subscription(self) -> None:
+        self.destroy_subscription(self._sub)
 
     def expect_pub_info(
         self,
@@ -467,14 +470,22 @@ class TestEventsExecutor(unittest.TestCase):
             self._check_message_future(received_future, 0.1 * i)
             received_future = sub_node.expect_message()
 
-        # Destroy the subscriber node, make sure the publisher is notified
-        self.executor.remove_node(sub_node)
-        sub_node.destroy_node()
+        # Destroy the subscription, make sure the publisher is notified
+        sub_node.drop_subscription()
         self._check_match_event_future(new_sub_future, 1, 0)
+        new_sub_future = pub_node.expect_sub_info()
 
         # Publish another message to ensure all subscriber callbacks got cleaned up
         pub_node.publish(4.7)
         self._expect_future_not_done(new_pub_future)
+        self.assertFalse(received_future.done())  # Already waited a bit
+
+        # Delete the subscribing node entirely.  There should be no additional match activity and
+        # still no subscriber callbacks.
+        self.executor.remove_node(sub_node)
+        sub_node.destroy_node()
+        self._expect_future_not_done(new_sub_future)
+        self.assertFalse(new_pub_future.done())  # Already waited a bit
         self.assertFalse(received_future.done())  # Already waited a bit
 
     def test_pub_sub_multi_message(self) -> None:
