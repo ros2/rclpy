@@ -20,7 +20,8 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
 from typing_extensions import TypeAlias
 
-GuardConditionCallbackType: TypeAlias = Union[Callable[[], None], Callable[[], Coroutine[None, None, None]]]
+GuardConditionCallbackType: TypeAlias = Union[Callable[[], None],
+                                              Callable[[], Coroutine[None, None, None]]]
 
 
 class GuardCondition:

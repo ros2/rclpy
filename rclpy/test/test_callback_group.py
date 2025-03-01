@@ -20,8 +20,10 @@ from rcl_interfaces.srv import GetParameters
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.client import Client
 import rclpy.context
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.service import Service
 from rclpy.task import Future
 from test_msgs.msg import BasicTypes, Empty
 
@@ -71,7 +73,7 @@ class TestCallbackGroup(unittest.TestCase):
 
             # This callback is used to check if a callback can be received while another
             # long running callback is being executed
-            def short_callback(msg):
+            def short_callback(msg: Empty) -> None:
                 nonlocal got_short_callback
                 # Set flag so signal that the callback has been received
                 got_short_callback = True
@@ -170,17 +172,26 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertTrue(group.has_entity(sub2))
 
     def test_create_client_with_group(self) -> None:
-        cli1 = self.node.create_client(GetParameters, 'get/parameters')
+        cli1: Client[GetParameters.Request,
+                     GetParameters.Response] = self.node.create_client(GetParameters,
+                                                                       'get/parameters')
         group = ReentrantCallbackGroup()
-        cli2 = self.node.create_client(GetParameters, 'get/parameters', callback_group=group)
+        cli2: Client[GetParameters.Request,
+                     GetParameters.Response] = self.node.create_client(GetParameters,
+                                                                       'get/parameters',
+                                                                       callback_group=group)
 
         self.assertFalse(group.has_entity(cli1))
         self.assertTrue(group.has_entity(cli2))
 
     def test_create_service_with_group(self) -> None:
-        srv1 = self.node.create_service(GetParameters, 'get/parameters', lambda req, res: None)
+        srv1: Service[GetParameters.Request,
+                      GetParameters.Response] = self.node.create_service(GetParameters,
+                                                                         'get/parameters',
+                                                                         lambda req, res: None)
         group = ReentrantCallbackGroup()
-        srv2 = self.node.create_service(
+        srv2: Service[GetParameters.Request,
+                      GetParameters.Response] = self.node.create_service(
             GetParameters, 'get/parameters', lambda req, res: None, callback_group=group)
 
         self.assertFalse(group.has_entity(srv1))

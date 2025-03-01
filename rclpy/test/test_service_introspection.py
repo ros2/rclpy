@@ -17,6 +17,7 @@ from typing import List, TYPE_CHECKING
 import unittest
 
 import rclpy
+from rclpy.client import Client
 import rclpy.context
 import rclpy.executors
 from rclpy.qos import qos_profile_system_default
@@ -41,7 +42,8 @@ class TestServiceEvents(unittest.TestCase):
         self.executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
         self.executor.add_node(self.node)
         self.srv = self.node.create_service(BasicTypes, 'test_service', self.srv_callback)
-        self.cli = self.node.create_client(BasicTypes, 'test_service')
+        self.cli: Client[BasicTypes.Request,
+                         BasicTypes.Response] = self.node.create_client(BasicTypes, 'test_service')
         self.sub = self.node.create_subscription(BasicTypes.Event, 'test_service/_service_event',
                                                  self.sub_callback, 10)
         self.event_messages: List[BasicTypes.Event] = []
@@ -53,10 +55,11 @@ class TestServiceEvents(unittest.TestCase):
     def tearDownClass(cls) -> None:
         rclpy.shutdown(context=cls.context)
 
-    def sub_callback(self, msg):
+    def sub_callback(self, msg: BasicTypes.Request) -> None:
         self.event_messages.append(msg)
 
-    def srv_callback(self, req, resp):
+    def srv_callback(self, req: BasicTypes.Request,
+                     resp: BasicTypes.Response) -> BasicTypes.Response:
         resp.bool_value = not req.bool_value
         resp.int64_value = req.int64_value
         return resp

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import time
+from typing import Any
+from typing import Callable
 from typing import TYPE_CHECKING
 import unittest
 
@@ -43,12 +45,12 @@ class TestActionGraph(unittest.TestCase):
         node0: rclpy.node.Node
         node1: rclpy.node.Node
         node2: rclpy.node.Node
-        action_client10: ActionClient
-        action_server10: ActionServer
-        action_client20: ActionClient
-        action_server20: ActionServer
-        action_client21: ActionClient
-        action_server21: ActionServer
+        action_client10: ActionClient[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
+        action_server10: ActionServer[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
+        action_client20: ActionClient[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
+        action_server20: ActionServer[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
+        action_client21: ActionClient[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
+        action_server21: ActionServer[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -85,11 +87,11 @@ class TestActionGraph(unittest.TestCase):
 
     def get_names_and_types(
         self,
-        get_names_and_types_func,
-        *args,
-        expected_num_names,
-        timeout=5.0
-    ):
+        get_names_and_types_func: Callable[..., Any],
+        *args: Any,
+        expected_num_names: int,
+        timeout: float = 5.0
+    ) -> Any:
         # Since it can take some time for the ROS graph to update
         # keep trying to get names and types until we get the desired number or timeout
         start = time.monotonic()

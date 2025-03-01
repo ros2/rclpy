@@ -16,17 +16,19 @@ import asyncio
 import os
 import threading
 import time
-from typing import Any, Optional
+from typing import Any, Generator, Optional, Set
 import unittest
 import warnings
 
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.client import Client
 from rclpy.executors import Executor
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.task import Future
+from rclpy.task import Task
 from test_msgs.srv import Empty
 
 
@@ -42,7 +44,7 @@ class TestExecutor(unittest.TestCase):
         rclpy.shutdown(context=self.context)
         self.context.destroy()
 
-    def func_execution(self, executor):
+    def func_execution(self, executor: Executor) -> bool:
         got_callback = False
 
         def timer_callback() -> None:
@@ -172,7 +174,7 @@ class TestExecutor(unittest.TestCase):
     def test_multi_threaded_executor_closes_threads(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        def get_threads():
+        def get_threads() -> Set[str]:
             return {t.name for t in threading.enumerate()}
 
         main_thread_name = get_threads()
@@ -264,10 +266,10 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        async def coroutine():
+        async def coroutine() -> str:
             return 'Sentinel Result'
 
-        future = executor.create_task(coroutine)
+        future: Task[str] = executor.create_task(coroutine)
         self.assertFalse(future.done())
 
         executor.spin_once(timeout_sec=0)
@@ -279,10 +281,10 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        async def coroutine():
+        async def coroutine() -> str:
             return 'Sentinel Result'
 
-        future = executor.create_task(coroutine)
+        future: Task[str] = executor.create_task(coroutine)
         self.assertFalse(future.done())
         self.assertFalse(future.cancelled())
 
@@ -299,10 +301,10 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        def func():
+        def func() -> str:
             return 'Sentinel Result'
 
-        future = executor.create_task(func)
+        future: Task[str] = executor.create_task(func)
         self.assertFalse(future.done())
 
         executor.spin_once(timeout_sec=0)
@@ -314,15 +316,15 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        async def coro1():
+        async def coro1() -> str:
             return 'Sentinel Result 1'
 
-        future1 = executor.create_task(coro1)
+        future1: Task[str] = executor.create_task(coro1)
 
-        async def coro2():
+        async def coro2() -> str:
             return 'Sentinel Result 2'
 
-        future2 = executor.create_task(coro2)
+        future2: Task[str] = executor.create_task(coro2)
 
         # Coro1 is the 1st task, so it gets executed in this spin
         executor.spin_once(timeout_sec=0)
@@ -340,17 +342,17 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        async def coro1():
+        async def coro2() -> str:
+            return 'Sentinel Result 2'
+
+        future2: Task[str] = executor.create_task(coro2)
+
+        async def coro1() -> str:
             nonlocal future2
             await future2
             return 'Sentinel Result 1'
 
-        future1 = executor.create_task(coro1)
-
-        async def coro2():
-            return 'Sentinel Result 2'
-
-        future2 = executor.create_task(coro2)
+        future1: Task[str] = executor.create_task(coro1)
 
         # Coro1 is the 1st task, so it gets to await future2 in this spin
         executor.spin_once(timeout_sec=0)
@@ -370,9 +372,9 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        future = None
+        future: Optional[Task[str]] = None
 
-        def spin_until_task_done(executor):
+        def spin_until_task_done(executor: Executor) -> None:
             nonlocal future
             while future is None or not future.done():
                 try:
@@ -389,7 +391,7 @@ class TestExecutor(unittest.TestCase):
         # '_wait_for_ready_callbacks()'
         time.sleep(1)
 
-        def func():
+        def func() -> str:
             return 'Sentinel Result'
 
         # Create a task
@@ -411,7 +413,7 @@ class TestExecutor(unittest.TestCase):
             def __init__(self) -> None:
                 self.do_yield = True
 
-            def __await__(self):
+            def __await__(self) -> Generator[None, None, None]:
                 while self.do_yield:
                     yield
                 return
@@ -650,7 +652,7 @@ class TestExecutor(unittest.TestCase):
 
         callback_group = ReentrantCallbackGroup()
 
-        cli = self.node.create_client(
+        cli: Client[Empty.Request, Empty.Response] = self.node.create_client(
             srv_type=Empty, srv_name='test_service', callback_group=callback_group)
 
         async def timer1_callback() -> None:

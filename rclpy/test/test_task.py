@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import asyncio
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 import unittest
 
 from rclpy.task import Future
@@ -23,9 +23,9 @@ from rclpy.task import Task
 class DummyExecutor:
 
     def __init__(self) -> None:
-        self.done_callbacks: List[Tuple[Callable, Any]] = []
+        self.done_callbacks: List[Tuple[Callable[..., Any], Any]] = []
 
-    def create_task(self, cb: Callable, *args) -> None:
+    def create_task(self, cb: Callable[..., Any], *args: Any) -> None:
         self.done_callbacks.append((cb, args))
 
 
@@ -33,7 +33,7 @@ class TestTask(unittest.TestCase):
 
     def test_task_normal_callable(self) -> None:
 
-        def func():
+        def func() -> str:
             return 'Sentinel Result'
 
         t = Task(func)
@@ -43,7 +43,7 @@ class TestTask(unittest.TestCase):
 
     def test_task_lambda(self) -> None:
 
-        def func():
+        def func() -> str:
             return 'Sentinel Result'
 
         t = Task(lambda: func())
@@ -55,7 +55,7 @@ class TestTask(unittest.TestCase):
         called1 = False
         called2 = False
 
-        async def coro():
+        async def coro() -> str:
             nonlocal called1
             nonlocal called2
             called1 = True
@@ -63,7 +63,7 @@ class TestTask(unittest.TestCase):
             called2 = True
             return 'Sentinel Result'
 
-        t = Task(coro)
+        t: Task[str] = Task(coro)
         t()
         self.assertTrue(called1)
         self.assertFalse(called2)
@@ -138,7 +138,8 @@ class TestTask(unittest.TestCase):
         t = Task(func)
         t()
         self.assertTrue(t.done())
-        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)  # type: ignore[union-attr]
+        self.assertEqual('Sentinel Exception',
+                         t.exception().sentinel_value)  # type: ignore[union-attr]
         with self.assertRaises(Exception):
             t.result()
 
@@ -152,14 +153,15 @@ class TestTask(unittest.TestCase):
         t: Task[None] = Task(coro)
         t()
         self.assertTrue(t.done())
-        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)  # type: ignore[union-attr]
+        self.assertEqual('Sentinel Exception',
+                         t.exception().sentinel_value)  # type: ignore[union-attr]
         with self.assertRaises(Exception):
             t.result()
 
     def test_task_normal_callable_args(self) -> None:
         arg_in = 'Sentinel Arg'
 
-        def func(arg):
+        def func(arg: str) -> str:
             return arg
 
         t = Task(func, args=(arg_in,))
@@ -169,17 +171,17 @@ class TestTask(unittest.TestCase):
     def test_coroutine_args(self) -> None:
         arg_in = 'Sentinel Arg'
 
-        async def coro(arg):
+        async def coro(arg: str) -> str:
             return arg
 
-        t = Task(coro, args=(arg_in,))
+        t: Task[str] = Task(coro, args=(arg_in,))
         t()
         self.assertEqual('Sentinel Arg', t.result())
 
     def test_task_normal_callable_kwargs(self) -> None:
         arg_in = 'Sentinel Arg'
 
-        def func(kwarg=None):
+        def func(kwarg: Optional[str] = None) -> Optional[str]:
             return kwarg
 
         t = Task(func, kwargs={'kwarg': arg_in})
@@ -189,10 +191,10 @@ class TestTask(unittest.TestCase):
     def test_coroutine_kwargs(self) -> None:
         arg_in = 'Sentinel Arg'
 
-        async def coro(kwarg=None):
+        async def coro(kwarg: Optional[str] = None) -> Optional[str]:
             return kwarg
 
-        t = Task(coro, kwargs={'kwarg': arg_in})
+        t: Task[Optional[str]] = Task(coro, kwargs={'kwarg': arg_in})
         t()
         self.assertEqual('Sentinel Arg', t.result())
 
@@ -227,9 +229,9 @@ class TestFuture(unittest.TestCase):
         self.assertTrue(f.done())
 
     def test_await(self) -> None:
-        f: Future[Any] = Future()
+        f: Future[str] = Future()
 
-        async def coro():
+        async def coro() -> Optional[str]:
             nonlocal f
             return await f
 
@@ -244,7 +246,7 @@ class TestFuture(unittest.TestCase):
     def test_await_exception(self) -> None:
         f: Future[Any] = Future()
 
-        async def coro():
+        async def coro() -> Optional[Any]:
             nonlocal f
             return await f
 
@@ -278,7 +280,7 @@ class TestFuture(unittest.TestCase):
     def test_cancel_invokes_callbacks(self) -> None:
         called = False
 
-        def cb(fut):
+        def cb(fut: Future[Any]) -> None:
             nonlocal called
             called = True
 
@@ -290,7 +292,7 @@ class TestFuture(unittest.TestCase):
     def test_set_result_invokes_callbacks(self) -> None:
         called = False
 
-        def cb(fut):
+        def cb(fut: Future[str]) -> None:
             nonlocal called
             called = True
 
@@ -302,11 +304,11 @@ class TestFuture(unittest.TestCase):
     def test_set_exception_invokes_callbacks(self) -> None:
         called = False
 
-        def cb(fut) -> None:
+        def cb(fut: Future[Any]) -> None:
             nonlocal called
             called = True
 
-        f: Future[str] = Future()
+        f: Future[Any] = Future()
         f.add_done_callback(cb)
         f.set_exception(Exception('Anything'))
         assert called
@@ -314,7 +316,7 @@ class TestFuture(unittest.TestCase):
     def test_add_done_callback_invokes_callback(self) -> None:
         called = False
 
-        def cb(fut):
+        def cb(fut: Future[str]) -> None:
             nonlocal called
             called = True
 

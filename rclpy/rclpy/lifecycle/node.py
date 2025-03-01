@@ -36,13 +36,14 @@ from rclpy.qos import QoSProfile
 from rclpy.service import Service
 from rclpy.type_support import check_is_valid_srv_type, MsgT
 
+from typing_extensions import TypeAlias
+from typing_extensions import Unpack
+
 from .managed_entity import ManagedEntity
 from .publisher import LifecyclePublisher
 
-if TYPE_CHECKING:
-    from typing import TypeAlias
-    from typing import Unpack
 
+if TYPE_CHECKING:
     from rclpy.context import Context
     from rclpy.parameter import Parameter
     from rclpy.qos_overriding_options import QoSOverridingOptions

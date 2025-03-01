@@ -20,6 +20,7 @@ from rcl_interfaces.msg import LoggerLevel
 from rcl_interfaces.srv import GetLoggerLevels
 from rcl_interfaces.srv import SetLoggerLevels
 import rclpy
+from rclpy.client import Client
 import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
 
@@ -58,7 +59,8 @@ class TestLoggingService(unittest.TestCase):
         rclpy.shutdown(context=self.context)
 
     def test_connect_get_logging_service(self) -> None:
-        client = self.test_node.create_client(
+        client: Client[GetLoggerLevels.Request,
+                       GetLoggerLevels.Response] = self.test_node.create_client(
             GetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/get_logger_levels')
         try:
@@ -67,7 +69,8 @@ class TestLoggingService(unittest.TestCase):
             self.test_node.destroy_client(client)
 
     def test_connect_set_logging_service(self) -> None:
-        client = self.test_node.create_client(
+        client: Client[SetLoggerLevels.Request,
+                       SetLoggerLevels.Response] = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels'
         )
@@ -81,7 +84,8 @@ class TestLoggingService(unittest.TestCase):
         test_log_level = 10
 
         # Set debug level
-        set_client = self.test_node.create_client(
+        set_client: Client[SetLoggerLevels.Request,
+                           SetLoggerLevels.Response] = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))
@@ -101,7 +105,8 @@ class TestLoggingService(unittest.TestCase):
         self.test_node.destroy_client(set_client)
 
         # Get set level
-        get_client = self.test_node.create_client(
+        get_client: Client[GetLoggerLevels.Request,
+                           GetLoggerLevels.Response] = self.test_node.create_client(
             GetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/get_logger_levels')
         self.assertTrue(get_client.wait_for_service(2))
@@ -142,7 +147,8 @@ class TestLoggingService(unittest.TestCase):
         set_level.level = test_log_level3
         request.levels.append(set_level)
 
-        set_client = self.test_node.create_client(
+        set_client: Client[SetLoggerLevels.Request,
+                           SetLoggerLevels.Response] = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))
@@ -159,7 +165,8 @@ class TestLoggingService(unittest.TestCase):
         self.test_node.destroy_client(set_client)
 
         # Get multi log levels
-        get_client = self.test_node.create_client(
+        get_client: Client[GetLoggerLevels.Request,
+                           GetLoggerLevels.Response] = self.test_node.create_client(
             GetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/get_logger_levels')
         self.assertTrue(get_client.wait_for_service(2))
@@ -180,7 +187,8 @@ class TestLoggingService(unittest.TestCase):
         self.test_node.destroy_client(get_client)
 
     def test_set_logging_level_with_invalid_param(self) -> None:
-        set_client = self.test_node.create_client(
+        set_client: Client[SetLoggerLevels.Request,
+                           SetLoggerLevels.Response] = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))
@@ -207,7 +215,8 @@ class TestLoggingService(unittest.TestCase):
         self.test_node.destroy_client(set_client)
 
     def test_set_logging_level_with_partial_invalid_param(self) -> None:
-        set_client = self.test_node.create_client(
+        set_client: Client[SetLoggerLevels.Request,
+                           SetLoggerLevels.Response] = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))

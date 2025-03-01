@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from threading import Thread
+from typing import Any
+from typing import Literal
 from unittest import mock
 
 import lifecycle_msgs.msg
@@ -21,9 +23,11 @@ import lifecycle_msgs.srv
 import pytest
 
 import rclpy
+from rclpy.client import Client
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
+from rclpy.lifecycle.node import LifecycleState
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 
@@ -84,10 +88,10 @@ def test_lifecycle_state_transitions() -> None:
 
     class ErrorOnConfigureHandledCorrectlyNode(LifecycleNode):
 
-        def on_configure(self):
+        def on_configure(self, state: LifecycleState) -> Literal[TransitionCallbackReturn.ERROR]:
             return TransitionCallbackReturn.ERROR
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             super().__init__(*args, **kwargs)
 
     node = ErrorOnConfigureHandledCorrectlyNode(
@@ -98,13 +102,13 @@ def test_lifecycle_state_transitions() -> None:
 
     class ErrorOnConfigureHandledInCorrectlyNode(LifecycleNode):
 
-        def on_configure(self):
+        def on_configure(self, state: LifecycleState) -> Literal[TransitionCallbackReturn.ERROR]:
             return TransitionCallbackReturn.ERROR
 
-        def on_error(self):
+        def on_error(self, state: LifecycleState) -> Literal[TransitionCallbackReturn.ERROR]:
             return TransitionCallbackReturn.ERROR
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             super().__init__(*args, **kwargs)
 
     node = ErrorOnConfigureHandledInCorrectlyNode(
@@ -113,25 +117,34 @@ def test_lifecycle_state_transitions() -> None:
     assert node._state_machine.current_state[1] == 'finalized'
 
 
-def test_lifecycle_services(request) -> None:
+def test_lifecycle_services(request: pytest.FixtureRequest) -> None:
     lc_node_name = 'test_lifecycle_services_lifecycle'
     lc_node = LifecycleNode(lc_node_name)
     client_node = Node('test_lifecycle_services_client')
-    get_state_cli = client_node.create_client(
+    get_state_cli: Client[lifecycle_msgs.srv.GetState.Request,
+                          lifecycle_msgs.srv.GetState.Response] = client_node.create_client(
         lifecycle_msgs.srv.GetState,
         f'/{lc_node_name}/get_state')
-    change_state_cli = client_node.create_client(
+    change_state_cli: Client[lifecycle_msgs.srv.ChangeState.Request,
+                             lifecycle_msgs.srv.ChangeState.Response] = client_node.create_client(
         lifecycle_msgs.srv.ChangeState,
         f'/{lc_node_name}/change_state')
-    get_available_states_cli = client_node.create_client(
-        lifecycle_msgs.srv.GetAvailableStates,
-        f'/{lc_node_name}/get_available_states')
-    get_available_transitions_cli = client_node.create_client(
-        lifecycle_msgs.srv.GetAvailableTransitions,
-        f'/{lc_node_name}/get_available_transitions')
-    get_transition_graph_cli = client_node.create_client(
-        lifecycle_msgs.srv.GetAvailableTransitions,
-        f'/{lc_node_name}/get_transition_graph')
+    get_available_states_cli: Client[
+        lifecycle_msgs.srv.GetAvailableStates.Request,
+        lifecycle_msgs.srv.GetAvailableStates.Response] = client_node.create_client(
+            lifecycle_msgs.srv.GetAvailableStates,
+            f'/{lc_node_name}/get_available_states'
+        )
+    get_available_transitions_cli: Client[
+        lifecycle_msgs.srv.GetAvailableTransitions.Request,
+        lifecycle_msgs.srv.GetAvailableTransitions.Response] = client_node.create_client(
+            lifecycle_msgs.srv.GetAvailableTransitions,
+            f'/{lc_node_name}/get_available_transitions')
+    get_transition_graph_cli: Client[
+        lifecycle_msgs.srv.GetAvailableTransitions.Request,
+        lifecycle_msgs.srv.GetAvailableTransitions.Response] = client_node.create_client(
+            lifecycle_msgs.srv.GetAvailableTransitions,
+            f'/{lc_node_name}/get_transition_graph')
     for cli in (
         get_state_cli,
         change_state_cli,

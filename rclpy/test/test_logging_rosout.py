@@ -19,7 +19,7 @@ import pytest
 from rcl_interfaces.msg import Log
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
-from rclpy.logging import LoggingSeverity
+from rclpy.impl.logging_severity import LoggingSeverity
 
 TEST_PARAMETERS = [
     # name, enable_global_rosout_logs, enable_node_rosout, expected_data
@@ -32,7 +32,7 @@ TEST_PARAMETERS = [
 rosout_subscription_msg = None  # None=No result yet
 
 
-def rosout_subscription_callback(msg):
+def rosout_subscription_callback(msg: Log) -> None:
     global rosout_subscription_msg
     rosout_subscription_msg = msg
 
@@ -41,11 +41,11 @@ def rosout_subscription_callback(msg):
     'name,enable_global_rosout_logs,enable_node_rosout,expected_data',
     TEST_PARAMETERS)
 def test_enable_rosout(
-    name,
-    enable_global_rosout_logs,
-    enable_node_rosout,
-    expected_data
-):
+    name: str,
+    enable_global_rosout_logs: bool,
+    enable_node_rosout: bool,
+    expected_data: bool
+) -> None:
     if enable_global_rosout_logs:
         args = ['--ros-args', '--enable-rosout-logs']
     else:

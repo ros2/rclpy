@@ -15,7 +15,7 @@
 import pathlib
 import platform
 import time
-from typing import List, TYPE_CHECKING
+from typing import Any, cast, List, Tuple, TYPE_CHECKING, Union
 import unittest
 from unittest.mock import Mock
 import warnings
@@ -43,6 +43,7 @@ from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.parameter import AllowableParameterValue
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSDurabilityPolicy
@@ -121,7 +122,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_subscription(BasicTypes, 'chatter',
                                           lambda msg: print(msg), 'foo')  # type: ignore[arg-type]
 
-    def raw_subscription_callback(self, msg):
+    def raw_subscription_callback(self, msg: BasicTypes) -> None:
         print('Raw subscription callback: %s length %d' % (msg, len(msg)))
         self.raw_subscription_msg = msg
 
@@ -144,6 +145,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             cycle_count += 1
             executor.spin_once(timeout_sec=1)
         self.assertIsNotNone(self.raw_subscription_msg, 'raw subscribe timed out')
+        self.raw_subscription_msg = cast(BasicTypes, self.raw_subscription_msg)
         self.assertIs(type(self.raw_subscription_msg), bytes, 'raw subscribe did not return bytes')
         # The length might be implementation dependant, but shouldn't be zero
         # There may be a canonical serialization in the future at which point this can be updated
@@ -151,7 +153,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         executor.shutdown()
 
-    def dummy_cb(self, msg) -> None:
+    def dummy_cb(self, msg: BasicTypes) -> None:
         pass
 
     @unittest.skipIf(
@@ -223,7 +225,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_node_names_and_namespaces_with_enclaves()
 
-    def assert_qos_equal(self, expected_qos_profile, actual_qos_profile, *, is_publisher):
+    def assert_qos_equal(self, expected_qos_profile: QoSProfile,
+                         actual_qos_profile: QoSProfile, *, is_publisher: bool) -> None:
         # Depth and history are skipped because they are not retrieved.
         self.assertEqual(
             expected_qos_profile.durability,
@@ -309,8 +312,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         # Error cases
         with self.assertRaises(TypeError):
-            self.node.get_subscriptions_info_by_topic(1)
-            self.node.get_publishers_info_by_topic(1)
+            self.node.get_subscriptions_info_by_topic(1)  # type: ignore[arg-type]
+            self.node.get_publishers_info_by_topic(1)  # type: ignore[arg-type]
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_subscriptions_info_by_topic('13')
             self.node.get_publishers_info_by_topic('13')
@@ -339,7 +342,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         # error cases
         with self.assertRaises(TypeError):
-            self.node.count_subscribers(1)
+            self.node.count_subscribers(1)  # type: ignore[arg-type]
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.count_subscribers('42')
         with self.assertRaisesRegex(ValueError, 'is invalid'):
@@ -393,7 +396,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         node_logger.set_level(rclpy.logging.LoggingSeverity.INFO)
         node_logger.debug('test')
 
-    def modify_parameter_callback(self, parameters_list: List[Parameter]):
+    def modify_parameter_callback(self, parameters_list: List[Parameter[Any]]
+                                  ) -> List[Parameter[Any]]:
         modified_list = parameters_list.copy()
         for param in parameters_list:
             if param.name == 'foo':
@@ -759,7 +763,11 @@ class TestNode(unittest.TestCase):
                 descriptor=ParameterDescriptor(dynamic_typing=True))
 
     def test_declare_parameters(self) -> None:
-        parameters = [
+        parameters: List[Union[
+            Tuple[str],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue]],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
+                  ParameterDescriptor]]] = [
             ('initial_foo', 0, ParameterDescriptor()),
             ('foo', 42, ParameterDescriptor()),
             ('bar', 'hello', ParameterDescriptor()),
@@ -894,7 +902,7 @@ class TestNode(unittest.TestCase):
                     1,
                     'wrong_name_type',
                     ParameterDescriptor()
-                )]
+                )]  # type: ignore[list-item]
             )
 
         with self.assertRaises(ValueError):
@@ -922,11 +930,13 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 'wrong_parameter_value_type_not_set', Parameter.Type.NOT_SET)
 
-    def reject_parameter_callback(self, parameter_list):
+    def reject_parameter_callback(self, parameter_list: List[Parameter[Any]]
+                                  ) -> SetParametersResult:
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
 
-    def reject_parameter_callback_1(self, parameter_list):
+    def reject_parameter_callback_1(self, parameter_list: List[Parameter[Any]]
+                                    ) -> SetParametersResult:
         rejected_parameters = (
             param for param in parameter_list if 'refuse' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
@@ -1016,11 +1026,11 @@ class TestNode(unittest.TestCase):
         ]
         self.node.declare_parameters('', parameters)
 
-        parameters = self.node.get_parameters_by_prefix('foo_prefix')
-        self.assertIsInstance(parameters, dict)
-        self.assertEqual(len(parameters), 3)
+        parameters2 = self.node.get_parameters_by_prefix('foo_prefix')
+        self.assertIsInstance(parameters2, dict)
+        self.assertEqual(len(parameters2), 3)
         self.assertDictEqual(
-            parameters,
+            parameters2,
             {
                 'foo': self.node.get_parameter('foo_prefix.foo'),
                 'bar': self.node.get_parameter('foo_prefix.bar'),
@@ -1028,11 +1038,11 @@ class TestNode(unittest.TestCase):
             }
         )
 
-        parameters = self.node.get_parameters_by_prefix('bar_prefix')
-        self.assertIsInstance(parameters, dict)
-        self.assertEqual(len(parameters), 3)
+        parameters3 = self.node.get_parameters_by_prefix('bar_prefix')
+        self.assertIsInstance(parameters3, dict)
+        self.assertEqual(len(parameters3), 3)
         self.assertDictEqual(
-            parameters,
+            parameters3,
             {
                 'foo': self.node.get_parameter('bar_prefix.foo'),
                 'bar': self.node.get_parameter('bar_prefix.bar'),
@@ -1040,11 +1050,11 @@ class TestNode(unittest.TestCase):
             }
         )
 
-        parameters = self.node.get_parameters_by_prefix('')
-        self.assertIsInstance(parameters, dict)
+        parameters4 = self.node.get_parameters_by_prefix('')
+        self.assertIsInstance(parameters4, dict)
         # use_sim_time is automatically declared.
         self.assertDictEqual(
-            parameters,
+            parameters4,
             {
                 'foo_prefix.foo': self.node.get_parameter('foo_prefix.foo'),
                 'foo_prefix.bar': self.node.get_parameter('foo_prefix.bar'),
@@ -1058,15 +1068,17 @@ class TestNode(unittest.TestCase):
             }
         )
 
-        parameters = self.node.get_parameters_by_prefix('baz')
-        self.assertFalse(parameters)
-        self.assertIsInstance(parameters, dict)
+        parameters5 = self.node.get_parameters_by_prefix('baz')
+        self.assertFalse(parameters5)
+        self.assertIsInstance(parameters5, dict)
 
     def test_node_set_parameters(self) -> None:
         integer_value = 42
         string_value = 'hello'
         float_value = 2.41
-        parameter_tuples = [
+        parameter_tuples: List[Tuple[str,
+                                     AllowableParameterValue,
+                                     ParameterDescriptor]] = [
             (
                 'foo',
                 integer_value,
@@ -1085,7 +1097,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -1357,15 +1369,16 @@ class TestNode(unittest.TestCase):
         )
 
         with self.assertRaises(TypeError):
-            self.node.list_parameters(prefixes='foo', depth=0)
+            self.node.list_parameters(prefixes='foo', depth=0)  # type: ignore[arg-type]
 
         with self.assertRaises(ValueError):
             self.node.list_parameters(prefixes=[], depth=-1)
 
         with self.assertRaises(TypeError):
-            self.node.list_parameters(prefixes=[], depth=1.5)
+            self.node.list_parameters(prefixes=[], depth=1.5)  # type: ignore[arg-type]
 
-    def modify_parameter_callback(self, parameter_list: List[Parameter]):
+    def modify_parameter_callback(self, parameter_list: List[Parameter[Any]]
+                                  ) -> List[Parameter[Any]]:
         modified_list = parameter_list.copy()
         for param in parameter_list:
             if param.name == 'foo':
@@ -1373,7 +1386,8 @@ class TestNode(unittest.TestCase):
 
         return modified_list
 
-    def empty_parameter_callback(self, parameter_list: List[Parameter]):
+    def empty_parameter_callback(self, parameter_list: List[Parameter[Any]]
+                                 ) -> List[Parameter[Any]]:
         return []
 
     def test_add_remove_pre_set_parameter_callback(self) -> None:
@@ -1510,7 +1524,7 @@ class TestNode(unittest.TestCase):
         self.assertTrue(result[0].successful)
 
     def test_add_remove_post_set_parameter_callback(self) -> None:
-        def successful_parameter_set_callback(parameter_list: List[Parameter]):
+        def successful_parameter_set_callback(parameter_list: List[Parameter[Any]]) -> None:
             for param in parameter_list:
                 if param.name == 'param1':
                     self.track_value1 = param.value
@@ -1571,7 +1585,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -1706,7 +1720,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -1849,7 +1863,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -2145,17 +2159,17 @@ class TestNode(unittest.TestCase):
         self.assertAlmostEqual(self.node.get_parameter('int_value').value, 123)
 
         # Try to set a parameter out of range.
-        result = self.node.set_parameters([Parameter('in_range', value=12.0)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        result2 = self.node.set_parameters([Parameter('in_range', value=12.0)])
+        self.assertIsInstance(result2, list)
+        self.assertIsInstance(result2[0], SetParametersResult)
+        self.assertFalse(result2[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
 
         # Try to set a parameter out of range (bad step).
-        result = self.node.set_parameters([Parameter('in_range', value=4.25)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        result3 = self.node.set_parameters([Parameter('in_range', value=4.25)])
+        self.assertIsInstance(result3, list)
+        self.assertIsInstance(result3[0], SetParametersResult)
+        self.assertFalse(result3[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
 
         # From and to are always valid.
@@ -2227,30 +2241,30 @@ class TestNode(unittest.TestCase):
         self.assertAlmostEqual(self.node.get_parameter('float_value').value, 123.0)
 
         # Try to set a parameter out of range.
-        result = self.node.set_parameters([Parameter('in_range', value=12)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        result1 = self.node.set_parameters([Parameter('in_range', value=12)])
+        self.assertIsInstance(result1, list)
+        self.assertIsInstance(result1[0], SetParametersResult)
+        self.assertFalse(result1[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4)
 
         # Try to set a parameter out of range (bad step).
-        result = self.node.set_parameters([Parameter('in_range', value=5)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        result2 = self.node.set_parameters([Parameter('in_range', value=5)])
+        self.assertIsInstance(result2, list)
+        self.assertIsInstance(result2[0], SetParametersResult)
+        self.assertFalse(result2[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4)
 
         # From and to are always valid.
         # Parameters that don't comply with the description will raise an exception.
         integer_range = IntegerRange(from_value=-10, to_value=0, step=30)
-        parameters = [
+        parameters2 = [
             ('from_value_2', -10, ParameterDescriptor(integer_range=[integer_range])),
             ('to_value_2', 0, ParameterDescriptor(integer_range=[integer_range])),
             ('in_range_bad_step', -4, ParameterDescriptor(integer_range=[integer_range])),
             ('out_of_range', 30, ParameterDescriptor(integer_range=[integer_range]))
         ]
         with self.assertRaises(InvalidParameterValueException):
-            self.node.declare_parameters('', parameters)
+            self.node.declare_parameters('', parameters2)
 
         self.assertEqual(self.node.get_parameter('from_value_2').value, -10)
         self.assertEqual(self.node.get_parameter('to_value_2').value, 0)
@@ -2259,21 +2273,21 @@ class TestNode(unittest.TestCase):
 
         # Try some more parameters with no step.
         integer_range = IntegerRange(from_value=-10, to_value=10, step=0)
-        parameters = [
+        parameters3 = [
             ('from_value_no_step', -10, ParameterDescriptor(integer_range=[integer_range])),
             ('to_value_no_step', 10, ParameterDescriptor(integer_range=[integer_range])),
             ('in_range_no_step', 5, ParameterDescriptor(integer_range=[integer_range])),
         ]
 
-        result = self.node.declare_parameters('', parameters)
+        result3 = self.node.declare_parameters('', parameters3)
 
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], Parameter)
-        self.assertIsInstance(result[1], Parameter)
-        self.assertIsInstance(result[2], Parameter)
-        self.assertEqual(result[0].value, -10)
-        self.assertEqual(result[1].value, 10)
-        self.assertEqual(result[2].value, 5)
+        self.assertIsInstance(result3, list)
+        self.assertIsInstance(result3[0], Parameter)
+        self.assertIsInstance(result3[1], Parameter)
+        self.assertIsInstance(result3[2], Parameter)
+        self.assertEqual(result3[0].value, -10)
+        self.assertEqual(result3[1].value, 10)
+        self.assertEqual(result3[2].value, 5)
         self.assertEqual(self.node.get_parameter('from_value_no_step').value, -10)
         self.assertEqual(self.node.get_parameter('to_value_no_step').value, 10)
         self.assertEqual(self.node.get_parameter('in_range_no_step').value, 5)
@@ -2284,7 +2298,7 @@ class TestNode(unittest.TestCase):
             ('int_param_no_default', Parameter.Type.INTEGER),
             ('dynamic_param', None, ParameterDescriptor(dynamic_typing=True)),
         ]
-        result = self.node.declare_parameters('', parameters)
+        _ = self.node.declare_parameters('', parameters)
 
         # Try getting parameters before setting values
         int_param = self.node.get_parameter('int_param')

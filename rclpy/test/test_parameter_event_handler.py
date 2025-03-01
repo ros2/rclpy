@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
 from typing import Union
 import unittest
 
@@ -41,7 +42,7 @@ class CallbackChecker:
     def __init__(self) -> None:
         self.received = False
 
-    def callback(self, _: Union[Parameter, ParameterEvent]) -> None:
+    def callback(self, _: Union[Parameter[Any], ParameterEvent]) -> None:
         self.received = True
 
 
@@ -52,11 +53,11 @@ class CallCounter:
         self.first_callback_call_order = 0
         self.second_callback_call_order = 0
 
-    def first_callback(self, _: Union[Parameter, ParameterEvent]) -> None:
+    def first_callback(self, _: Union[Parameter[Any], ParameterEvent]) -> None:
         self.counter += 1
         self.first_callback_call_order = self.counter
 
-    def second_callback(self, _: Union[Parameter, ParameterEvent]) -> None:
+    def second_callback(self, _: Union[Parameter[Any], ParameterEvent]) -> None:
         self.counter += 1
         self.second_callback_call_order = self.counter
 

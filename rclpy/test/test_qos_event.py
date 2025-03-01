@@ -13,6 +13,10 @@
 # limitations under the License.
 
 import gc
+from typing import Any
+from typing import cast
+from typing import overload
+from typing import TypeVar
 import unittest
 from unittest.mock import Mock
 
@@ -30,12 +34,16 @@ from rclpy.event_handler import QoSSubscriptionEventType
 from rclpy.event_handler import QoSSubscriptionMatchedInfo
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.publisher import Publisher
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
+from rclpy.subscription import Subscription
 from rclpy.task import Future
 
 from test_msgs.msg import Empty as EmptyMsg
+
+T = TypeVar('T')
 
 
 class TestQoSEvent(unittest.TestCase):
@@ -152,10 +160,10 @@ class TestQoSEvent(unittest.TestCase):
 
         class MockLogger:
 
-            def get_child(self, name):
+            def get_child(self, name: str) -> 'MockLogger':
                 return self
 
-            def warn(self, message, once=False):
+            def warn(self, message: str, once: bool = False) -> None:
                 nonlocal pub_log_msg, sub_log_msg, log_msgs_future
 
                 if message.startswith('New subscription discovered'):
@@ -198,14 +206,35 @@ class TestQoSEvent(unittest.TestCase):
 
         rclpy.logging._root_logger = original_logger
 
-    def _create_event_handle(self, parent_entity, event_type):
+    @overload
+    def _create_event_handle(self, parent_entity: Subscription[Any],
+                             event_type: QoSSubscriptionEventType) -> _rclpy.EventHandle[T]: ...
+
+    @overload
+    def _create_event_handle(self, parent_entity: Publisher[Any],
+                             event_type: QoSPublisherEventType) -> _rclpy.EventHandle[T]: ...
+
+    def _create_event_handle(
+        self,
+        parent_entity: Any,
+        event_type: Any
+    ) -> _rclpy.EventHandle[T]:
         with parent_entity.handle:
-            event = _rclpy.EventHandle(parent_entity.handle, event_type)
+            event: '_rclpy.EventHandle[T]' = \
+                _rclpy.EventHandle(parent_entity.handle, event_type)
         self.assertIsNotNone(event)
         return event
 
-    def _do_create_destroy(self, parent_entity, event_type):
-        handle = self._create_event_handle(parent_entity, event_type)
+    @overload
+    def _do_create_destroy(self, parent_entity: Subscription[Any],
+                           event_type: QoSSubscriptionEventType) -> None: ...
+
+    @overload
+    def _do_create_destroy(self, parent_entity: Publisher[Any],
+                           event_type: QoSPublisherEventType) -> None: ...
+
+    def _do_create_destroy(self, parent_entity: Any, event_type: Any) -> None:
+        handle: '_rclpy.EventHandle[Any]' = self._create_event_handle(parent_entity, event_type)
         handle.destroy_when_not_in_use()
 
     def test_publisher_event_create_destroy(self) -> None:
@@ -247,21 +276,27 @@ class TestQoSEvent(unittest.TestCase):
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 3, self.context.handle)
 
         if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
-            deadline_event_handle = self._create_event_handle(
-                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
+            deadline_event_handle: '_rclpy.EventHandle[QoSOfferedDeadlineMissedInfo]' = \
+                self._create_event_handle(
+                    publisher,
+                    QoSPublisherEventType.RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
             with deadline_event_handle:
                 deadline_event_index = wait_set.add_event(deadline_event_handle)
             self.assertIsNotNone(deadline_event_index)
 
-            liveliness_event_handle = self._create_event_handle(
-                publisher, QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
+            liveliness_event_handle: '_rclpy.EventHandle[QoSLivelinessLostInfo]' = \
+                self._create_event_handle(
+                    publisher,
+                    QoSPublisherEventType.RCL_PUBLISHER_LIVELINESS_LOST)
             with liveliness_event_handle:
                 liveliness_event_index = wait_set.add_event(
                         liveliness_event_handle)
             self.assertIsNotNone(liveliness_event_index)
 
-            incompatible_qos_event_handle = self._create_event_handle(
-                publisher, QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
+            incompatible_qos_event_handle: '_rclpy.EventHandle[QoSOfferedIncompatibleQoSInfo]' = \
+                self._create_event_handle(
+                    publisher,
+                    QoSPublisherEventType.RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
             with incompatible_qos_event_handle:
                 incompatible_qos_event_index = wait_set.add_event(
                         incompatible_qos_event_handle)
@@ -281,6 +316,7 @@ class TestQoSEvent(unittest.TestCase):
                 with deadline_event_handle:
                     event_data = deadline_event_handle.take_event()
                 self.assertIsInstance(event_data, QoSOfferedDeadlineMissedInfo)
+                event_data = cast(QoSOfferedDeadlineMissedInfo, event_data)
                 self.assertEqual(event_data.total_count, 0)
                 self.assertEqual(event_data.total_count_change, 0)
             except NotImplementedError:
@@ -288,20 +324,22 @@ class TestQoSEvent(unittest.TestCase):
 
             try:
                 with liveliness_event_handle:
-                    event_data = liveliness_event_handle.take_event()
-                self.assertIsInstance(event_data, QoSLivelinessLostInfo)
-                self.assertEqual(event_data.total_count, 0)
-                self.assertEqual(event_data.total_count_change, 0)
+                    event_data2 = liveliness_event_handle.take_event()
+                self.assertIsInstance(event_data2, QoSLivelinessLostInfo)
+                event_data2 = cast(QoSLivelinessLostInfo, event_data2)
+                self.assertEqual(event_data2.total_count, 0)
+                self.assertEqual(event_data2.total_count_change, 0)
             except NotImplementedError:
                 pass
 
             try:
                 with incompatible_qos_event_handle:
-                    event_data = incompatible_qos_event_handle.take_event()
-                self.assertIsInstance(event_data, QoSOfferedIncompatibleQoSInfo)
-                self.assertEqual(event_data.total_count, 0)
-                self.assertEqual(event_data.total_count_change, 0)
-                self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
+                    event_data3 = incompatible_qos_event_handle.take_event()
+                self.assertIsInstance(event_data3, QoSOfferedIncompatibleQoSInfo)
+                event_data3 = cast(QoSOfferedIncompatibleQoSInfo, event_data3)
+                self.assertEqual(event_data3.total_count, 0)
+                self.assertEqual(event_data3.total_count_change, 0)
+                self.assertEqual(event_data3.last_policy_kind, QoSPolicyKind.INVALID)
             except NotImplementedError:
                 pass
 
@@ -317,20 +355,27 @@ class TestQoSEvent(unittest.TestCase):
 
         if _rclpy.rclpy_get_rmw_implementation_identifier() != 'rmw_zenoh_cpp':
 
-            deadline_event_handle = self._create_event_handle(
-                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
+            deadline_event_handle: '_rclpy.EventHandle[QoSRequestedDeadlineMissedInfo]' = \
+                self._create_event_handle(
+                    subscription,
+                    QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
             with deadline_event_handle:
                 deadline_event_index = wait_set.add_event(deadline_event_handle)
             self.assertIsNotNone(deadline_event_index)
 
-            liveliness_event_handle = self._create_event_handle(
-                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
+            liveliness_event_handle: '_rclpy.EventHandle[QoSLivelinessChangedInfo]' = \
+                self._create_event_handle(
+                    subscription,
+                    QoSSubscriptionEventType.RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
             with liveliness_event_handle:
                 liveliness_event_index = wait_set.add_event(liveliness_event_handle)
             self.assertIsNotNone(liveliness_event_index)
 
-            incompatible_qos_event_handle = self._create_event_handle(
-                subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
+            incompatible_qos_event_handle: \
+                '_rclpy.EventHandle[QoSRequestedIncompatibleQoSInfo]' = self._create_event_handle(
+                    subscription,
+                    QoSSubscriptionEventType.RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS
+                )
             with incompatible_qos_event_handle:
                 incompatible_qos_event_index = wait_set.add_event(
                         incompatible_qos_event_handle)
@@ -350,6 +395,7 @@ class TestQoSEvent(unittest.TestCase):
                 with deadline_event_handle:
                     event_data = deadline_event_handle.take_event()
                 self.assertIsInstance(event_data, QoSRequestedDeadlineMissedInfo)
+                event_data = cast(QoSRequestedDeadlineMissedInfo, event_data)
                 self.assertEqual(event_data.total_count, 0)
                 self.assertEqual(event_data.total_count_change, 0)
             except NotImplementedError:
@@ -357,22 +403,24 @@ class TestQoSEvent(unittest.TestCase):
 
             try:
                 with liveliness_event_handle:
-                    event_data = liveliness_event_handle.take_event()
-                self.assertIsInstance(event_data, QoSLivelinessChangedInfo)
-                self.assertEqual(event_data.alive_count, 0)
-                self.assertEqual(event_data.alive_count_change, 0)
-                self.assertEqual(event_data.not_alive_count, 0)
-                self.assertEqual(event_data.not_alive_count_change, 0)
+                    event_data2 = liveliness_event_handle.take_event()
+                self.assertIsInstance(event_data2, QoSLivelinessChangedInfo)
+                event_data2 = cast(QoSLivelinessChangedInfo, event_data2)
+                self.assertEqual(event_data2.alive_count, 0)
+                self.assertEqual(event_data2.alive_count_change, 0)
+                self.assertEqual(event_data2.not_alive_count, 0)
+                self.assertEqual(event_data2.not_alive_count_change, 0)
             except NotImplementedError:
                 pass
 
             try:
                 with incompatible_qos_event_handle:
-                    event_data = incompatible_qos_event_handle.take_event()
-                self.assertIsInstance(event_data, QoSRequestedIncompatibleQoSInfo)
-                self.assertEqual(event_data.total_count, 0)
-                self.assertEqual(event_data.total_count_change, 0)
-                self.assertEqual(event_data.last_policy_kind, QoSPolicyKind.INVALID)
+                    event_data3 = incompatible_qos_event_handle.take_event()
+                self.assertIsInstance(event_data3, QoSRequestedIncompatibleQoSInfo)
+                event_data3 = cast(QoSRequestedIncompatibleQoSInfo, event_data3)
+                self.assertEqual(event_data3.total_count, 0)
+                self.assertEqual(event_data3.total_count_change, 0)
+                self.assertEqual(event_data3.last_policy_kind, QoSPolicyKind.INVALID)
             except NotImplementedError:
                 pass
 
@@ -384,8 +432,9 @@ class TestQoSEvent(unittest.TestCase):
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 2, self.context.handle)
 
-        matched_event_handle = self._create_event_handle(
-            publisher, QoSPublisherEventType.RCL_PUBLISHER_MATCHED)
+        matched_event_handle: '_rclpy.EventHandle[QoSPublisherMatchedInfo]' = \
+            self._create_event_handle(publisher,
+                                      QoSPublisherEventType.RCL_PUBLISHER_MATCHED)
         with matched_event_handle:
             matched_event_index = wait_set.add_event(matched_event_handle)
         self.assertIsNotNone(matched_event_index)
@@ -405,6 +454,7 @@ class TestQoSEvent(unittest.TestCase):
 
         matched_status = matched_event_handle.take_event()
         self.assertIsInstance(matched_status, QoSPublisherMatchedInfo)
+        matched_status = cast(QoSPublisherMatchedInfo, matched_status)
         self.assertEqual(matched_status.total_count, 1)
         self.assertEqual(matched_status.total_count_change, 1)
         self.assertEqual(matched_status.current_count, 1)
@@ -421,6 +471,7 @@ class TestQoSEvent(unittest.TestCase):
         self.assertTrue(wait_set.is_ready('event', matched_event_index))
 
         matched_status = matched_event_handle.take_event()
+        matched_status = cast(QoSPublisherMatchedInfo, matched_status)
         self.assertEqual(matched_status.total_count, 1)
         self.assertEqual(matched_status.total_count_change, 0)
         self.assertEqual(matched_status.current_count, 0)
@@ -434,8 +485,9 @@ class TestQoSEvent(unittest.TestCase):
         with self.context.handle:
             wait_set = _rclpy.WaitSet(0, 0, 0, 0, 0, 2, self.context.handle)
 
-        matched_event_handle = self._create_event_handle(
-            subscription, QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED)
+        matched_event_handle: '_rclpy.EventHandle[QoSSubscriptionMatchedInfo]' = \
+            self._create_event_handle(subscription,
+                                      QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED)
         with matched_event_handle:
             matched_event_index = wait_set.add_event(matched_event_handle)
         self.assertIsNotNone(matched_event_index)
@@ -455,6 +507,7 @@ class TestQoSEvent(unittest.TestCase):
 
         matched_status = matched_event_handle.take_event()
         self.assertIsInstance(matched_status, QoSSubscriptionMatchedInfo)
+        matched_status = cast(QoSSubscriptionMatchedInfo, matched_status)
         self.assertEqual(matched_status.total_count, 1)
         self.assertEqual(matched_status.total_count_change, 1)
         self.assertEqual(matched_status.current_count, 1)
@@ -471,6 +524,7 @@ class TestQoSEvent(unittest.TestCase):
         self.assertTrue(wait_set.is_ready('event', matched_event_index))
 
         matched_status = matched_event_handle.take_event()
+        matched_status = cast(QoSSubscriptionMatchedInfo, matched_status)
         self.assertEqual(matched_status.total_count, 1)
         self.assertEqual(matched_status.total_count_change, 0)
         self.assertEqual(matched_status.current_count, 0)

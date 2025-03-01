@@ -19,6 +19,7 @@ from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Optional
@@ -379,8 +380,7 @@ class Node:
         return self._logger
 
     @overload
-    def declare_parameter(self, name: str, value: Union[AllowableParameterValueT,
-                                                        Parameter.Type, ParameterValue],
+    def declare_parameter(self, name: str, value: AllowableParameterValueT,
                           descriptor: Optional[ParameterDescriptor] = None,
                           ignore_override: bool = False
                           ) -> Parameter[AllowableParameterValueT]: ...
@@ -449,12 +449,7 @@ class Node:
     def declare_parameters(
         self,
         namespace: str,
-        parameters: List[Union[
-            Tuple[str],
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor],
-        ]],
+        parameters: Iterable[Tuple[str]],
         ignore_override: bool = False
     ) -> List[Parameter[Any]]: ...
 
@@ -462,8 +457,9 @@ class Node:
     def declare_parameters(
         self,
         namespace: str,
-        parameters: List[Union[
-            Tuple[str, Parameter.Type],
+        parameters: Iterable[Union[
+            Tuple[str],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue]],
             Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
                   ParameterDescriptor],
         ]],
@@ -473,13 +469,13 @@ class Node:
     def declare_parameters(
         self,
         namespace: str,
-        parameters: Union[List[Union[
+        parameters: Union[Iterable[Union[
             Tuple[str],
-            Tuple[str, Parameter.Type],
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue]],
             Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
                   ParameterDescriptor]]],
-                  List[Union[
-            Tuple[str, Parameter.Type],
+                  Iterable[Union[
+            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue]],
             Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
                   ParameterDescriptor]]]],
         ignore_override: bool = False
@@ -706,7 +702,7 @@ class Node:
         """Return True if parameter is declared; False otherwise."""
         return name in self._parameters
 
-    def get_parameter_types(self, names: List[str]) -> List[Parameter.Type]:
+    def get_parameter_types(self, names: List[str]) -> List[Union[int, Parameter.Type]]:
         """
         Get a list of parameter types.
 
@@ -721,7 +717,7 @@ class Node:
             raise TypeError('All names must be instances of type str')
         return [self.get_parameter_type(name) for name in names]
 
-    def get_parameter_type(self, name: str) -> Parameter.Type:
+    def get_parameter_type(self, name: str) -> Union[int, Parameter.Type]:
         """
         Get a parameter type by name.
 

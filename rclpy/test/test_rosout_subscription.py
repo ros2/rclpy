@@ -19,6 +19,9 @@ from rcl_interfaces.msg import Log
 import rclpy
 import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
+import rclpy.impl
+import rclpy.impl.rcutils_logger
+import rclpy.logging
 from rclpy.task import Future
 
 
@@ -53,7 +56,7 @@ class TestRosoutSubscription(unittest.TestCase):
         self.fut: Future[None] = Future()
         self.rosout_msg_name: Optional[str] = None
 
-    def _rosout_subscription_callback(self, msg):
+    def _rosout_subscription_callback(self, msg: Log) -> None:
         if msg.name == self.rosout_msg_name:
             self.fut.set_result(None)
 
@@ -110,7 +113,7 @@ class TestRosoutSubscription(unittest.TestCase):
         self.rosout_msg_name = 'test_rosout_subscription.child'
         logger = self.node.get_logger().get_child('child')
 
-        def call_logger(logger):
+        def call_logger(logger: rclpy.impl.rcutils_logger.RcutilsLogger) -> None:
             logger1 = logger
             logger1.info('test')
         call_logger(logger)

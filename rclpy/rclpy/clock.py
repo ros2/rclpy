@@ -14,7 +14,7 @@
 
 from enum import IntEnum
 from types import TracebackType
-from typing import Callable, Literal, Optional, overload, Type, TYPE_CHECKING, TypedDict, Union
+from typing import Callable, Literal, Optional, overload, Type, TYPE_CHECKING, TypedDict
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from typing_extensions import TypeAlias
@@ -146,25 +146,25 @@ class Clock:
 
     if TYPE_CHECKING:
         __clock: _rclpy.Clock
-        _clock_type: Union[ClockType, _rclpy.ClockType]
+        _clock_type: ClockType
 
     @overload
     def __new__(
         cls,
         *,
-        clock_type: Literal[ClockType.ROS_TIME, _rclpy.ClockType.ROS_TIME]
+        clock_type: Literal[ClockType.ROS_TIME]
     ) -> 'ROSClock': ...
 
     @overload
     def __new__(
         cls,
         *,
-        clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME
+        clock_type: ClockType = ClockType.SYSTEM_TIME
     ) -> 'Clock': ...
 
     def __new__(cls, *,
-                clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME) -> 'Clock':
-        if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
+                clock_type: ClockType = ClockType.SYSTEM_TIME) -> 'Clock':
+        if not isinstance(clock_type, ClockType):
             raise TypeError('Clock type must be a ClockType enum')
         if clock_type is ClockType.ROS_TIME:
             self: 'Clock' = super().__new__(ROSClock)
@@ -175,7 +175,7 @@ class Clock:
         return self
 
     @property
-    def clock_type(self) -> Union[ClockType, _rclpy.ClockType]:
+    def clock_type(self) -> ClockType:
         return self._clock_type
 
     @property

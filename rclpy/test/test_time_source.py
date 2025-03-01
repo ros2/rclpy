@@ -68,7 +68,7 @@ class TestTimeSource(unittest.TestCase):
             rclpy.spin_once(self.node, timeout_sec=1, executor=executor)
             time.sleep(1)
 
-    def set_use_sim_time_parameter(self, value):
+    def set_use_sim_time_parameter(self, value: bool) -> bool:
         self.node.set_parameters(
             [Parameter('use_sim_time', Parameter.Type.BOOL, value)])
         executor = rclpy.executors.SingleThreadedExecutor(context=self.context)

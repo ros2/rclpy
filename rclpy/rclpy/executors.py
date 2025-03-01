@@ -54,7 +54,7 @@ from rclpy.subscription import Subscription
 from rclpy.task import FunctionOrCoroutineFunction
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.timer import Timer, TimerInfo, TimerCallbacksType
+from rclpy.timer import Timer, TimerCallbacksType, TimerInfo
 from rclpy.type_support import Msg
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec

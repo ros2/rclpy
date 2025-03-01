@@ -25,7 +25,7 @@ class MockTypeMetaclass(type):
     _TYPE_SUPPORT = None
 
     @classmethod
-    def __import_type_support__(cls):
+    def __import_type_support__(cls) -> None:
         pass
 
 

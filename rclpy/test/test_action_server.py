@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import time
+from typing import Any
 import unittest
 import uuid
 
@@ -21,8 +22,12 @@ from action_msgs.srv import CancelGoal
 
 import rclpy
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
+from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.client import Client
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.node import Node
+from rclpy.task import Future
 
 from test_msgs.action import Fibonacci
 
@@ -31,13 +36,16 @@ from unique_identifier_msgs.msg import UUID
 
 class MockActionClient:
 
-    def __init__(self, node):
+    def __init__(self, node: Node):
         self.reset()
-        self.goal_srv = node.create_client(
+        self.goal_srv: Client[Fibonacci.Impl.SendGoalService.Request,
+                              Fibonacci.Impl.SendGoalService.Response] = node.create_client(
             Fibonacci.Impl.SendGoalService, '/fibonacci/_action/send_goal')
-        self.cancel_srv = node.create_client(
+        self.cancel_srv: Client[Fibonacci.Impl.CancelGoalService.Request,
+                                Fibonacci.Impl.CancelGoalService.Response] = node.create_client(
             Fibonacci.Impl.CancelGoalService, '/fibonacci/_action/cancel_goal')
-        self.result_srv = node.create_client(
+        self.result_srv: Client[Fibonacci.Impl.GetResultService.Request,
+                                Fibonacci.Impl.GetResultService.Response] = node.create_client(
             Fibonacci.Impl.GetResultService, '/fibonacci/_action/get_result')
         self.feedback_sub = node.create_subscription(
             Fibonacci.Impl.FeedbackMessage,
@@ -51,19 +59,21 @@ class MockActionClient:
         self.feedback_msg = None
         self.status_msg = None
 
-    def feedback_callback(self, feedback_msg):
+    def feedback_callback(self, feedback_msg: Fibonacci.Impl.FeedbackMessage) -> None:
         self.feedback_msg = feedback_msg
 
-    def status_callback(self, status_msg):
+    def status_callback(self, status_msg: Fibonacci.Impl.GoalStatusMessage) -> None:
         self.status_msg = status_msg
 
-    def send_goal(self, goal_msg):
+    def send_goal(self, goal_msg: Fibonacci.Impl.SendGoalService.Request
+                  ) -> Future[Fibonacci.Impl.SendGoalService.Response]:
         return self.goal_srv.call_async(goal_msg)
 
-    def cancel_goal(self, cancel_msg):
+    def cancel_goal(self, cancel_msg: Fibonacci.Impl.CancelGoalService.Request
+                    ) -> Future[Fibonacci.Impl.CancelGoalService.Response]:
         return self.cancel_srv.call_async(cancel_msg)
 
-    def get_result(self, goal_uuid):
+    def get_result(self, goal_uuid: UUID) -> Future[Fibonacci.Impl.GetResultService.Request]:
         result_request = Fibonacci.Impl.GetResultService.Request()
         result_request.goal_id = goal_uuid
         return self.result_srv.call_async(result_request)
@@ -83,12 +93,12 @@ class TestActionServer(unittest.TestCase):
         self.executor.shutdown()
         rclpy.shutdown(context=self.context)
 
-    def timed_spin(self, duration):
+    def timed_spin(self, duration: float) -> None:
         start_time = time.time()
         while (time.time() - start_time) < duration:
             rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
 
-    def execute_goal_callback(self, goal_handle):
+    def execute_goal_callback(self, goal_handle: ServerGoalHandle) -> Fibonacci.Result:
         goal_handle.succeed()
         return Fibonacci.Result()
 
@@ -140,14 +150,14 @@ class TestActionServer(unittest.TestCase):
         goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
         goal_order = 10
 
-        def goal_callback(goal):
+        def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
             nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.ACCEPT
 
         handle_accepted_callback_triggered = False
 
-        def handle_accepted_callback(goal_handle):
+        def handle_accepted_callback(goal_handle: ServerGoalHandle) -> None:
             nonlocal goal_order
             nonlocal goal_uuid
             nonlocal handle_accepted_callback_triggered
@@ -170,19 +180,21 @@ class TestActionServer(unittest.TestCase):
         goal_msg.goal.order = goal_order
         future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, self.executor)
-        self.assertTrue(future.result().accepted)
+        result = future.result()
+        self.assertIsNotNone(result)
+        self.assertTrue(result.accepted)  # type: ignore[union-attr]
         self.assertTrue(handle_accepted_callback_triggered)
         action_server.destroy()
 
     def test_single_goal_reject(self) -> None:
         goal_order = 10
 
-        def goal_callback(goal):
+        def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
             nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 
-        def handle_accepted_callback(goal_handle):
+        def handle_accepted_callback(goal_handle: ServerGoalHandle) -> None:
             # Since the goal is rejected, we don't expect this function to be called
             self.assertFalse(True)
 
@@ -200,12 +212,12 @@ class TestActionServer(unittest.TestCase):
         goal_msg.goal.order = goal_order
         future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, self.executor)
-        self.assertFalse(future.result().accepted)
+        self.assertFalse(future.result().accepted)  # type: ignore[union-attr]
         action_server.destroy()
 
     def test_goal_callback_invalid_return(self) -> None:
 
-        def goal_callback(goal):
+        def goal_callback(goal: Any) -> str:
             return 'Invalid return type'
 
         action_server = ActionServer(
@@ -213,7 +225,7 @@ class TestActionServer(unittest.TestCase):
             Fibonacci,
             'fibonacci',
             execute_callback=self.execute_goal_callback,
-            goal_callback=goal_callback,
+            goal_callback=goal_callback,  # type: ignore[arg-type]
             handle_accepted_callback=lambda gh: None,
         )
 
@@ -222,7 +234,7 @@ class TestActionServer(unittest.TestCase):
         future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, self.executor)
         # An invalid return type in the goal callback should translate to a rejected goal
-        self.assertFalse(future.result().accepted)
+        self.assertFalse(future.result().accepted)  # type: ignore[union-attr]
         action_server.destroy()
 
     def test_multi_goal_accept(self) -> None:
@@ -248,9 +260,9 @@ class TestActionServer(unittest.TestCase):
         rclpy.spin_until_future_complete(self.node, future1, executor)
         rclpy.spin_until_future_complete(self.node, future2, executor)
 
-        self.assertTrue(future0.result().accepted)
-        self.assertTrue(future1.result().accepted)
-        self.assertTrue(future2.result().accepted)
+        self.assertTrue(future0.result().accepted)  # type: ignore[union-attr]
+        self.assertTrue(future1.result().accepted)  # type: ignore[union-attr]
+        self.assertTrue(future2.result().accepted)  # type: ignore[union-attr]
         action_server.destroy()
 
     def test_duplicate_goal(self) -> None:
@@ -274,19 +286,21 @@ class TestActionServer(unittest.TestCase):
         rclpy.spin_until_future_complete(self.node, future1, executor)
 
         # Exactly one of the goals should be accepted
-        self.assertNotEqual(future0.result().accepted, future1.result().accepted)
+        self.assertNotEqual(future0.result().accepted,  # type: ignore[union-attr]
+                            future1.result().accepted)  # type: ignore[union-attr]
         action_server.destroy()
 
     def test_cancel_goal_accept(self) -> None:
 
-        def execute_callback(goal_handle):
+        def execute_callback(goal_handle: ServerGoalHandle) -> Fibonacci.Result:
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
             self.assertTrue(goal_handle.is_cancel_requested)
             goal_handle.canceled()
             return Fibonacci.Result()
 
-        def cancel_callback(request):
+        def cancel_callback(request: Fibonacci.Impl.CancelGoalService.Request
+                            ) -> CancelResponse:
             return CancelResponse.ACCEPT
 
         executor = MultiThreadedExecutor(context=self.context)
@@ -308,7 +322,7 @@ class TestActionServer(unittest.TestCase):
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, executor)
         goal_handle = goal_future.result()
-        self.assertTrue(goal_handle.accepted)
+        self.assertTrue(goal_handle.accepted)  # type: ignore[union-attr]
 
         cancel_srv = CancelGoal.Request()
         cancel_srv.goal_info.goal_id = goal_uuid
@@ -317,22 +331,26 @@ class TestActionServer(unittest.TestCase):
         cancel_future = self.mock_action_client.cancel_goal(cancel_srv)
         rclpy.spin_until_future_complete(self.node, cancel_future, executor)
         cancel_result = cancel_future.result()
-        self.assertEqual(len(cancel_result.goals_canceling), 1)
-        assert all(cancel_result.goals_canceling[0].goal_id.uuid == goal_uuid.uuid)
+        self.assertEqual(len(cancel_result.goals_canceling),  # type: ignore[union-attr]
+                         1)
+        assert all(
+            cancel_result.goals_canceling[0].goal_id.uuid ==  # type: ignore[union-attr]
+            goal_uuid.uuid)
 
         action_server.destroy()
         executor.shutdown()
 
     def test_cancel_goal_reject(self) -> None:
 
-        def execute_callback(goal_handle):
+        def execute_callback(goal_handle: ServerGoalHandle) -> Fibonacci.Result:
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
             self.assertFalse(goal_handle.is_cancel_requested)
             goal_handle.canceled()
             return Fibonacci.Result()
 
-        def cancel_callback(request):
+        def cancel_callback(request: Fibonacci.Impl.CancelGoalService.Request
+                            ) -> CancelResponse:
             return CancelResponse.REJECT
 
         executor = MultiThreadedExecutor(context=self.context)
@@ -354,7 +372,7 @@ class TestActionServer(unittest.TestCase):
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, executor)
         goal_handle = goal_future.result()
-        self.assertTrue(goal_handle.accepted)
+        self.assertTrue(goal_handle.accepted)  # type: ignore[union-attr]
 
         cancel_srv = CancelGoal.Request()
         cancel_srv.goal_info.goal_id = goal_uuid
@@ -363,7 +381,7 @@ class TestActionServer(unittest.TestCase):
         cancel_future = self.mock_action_client.cancel_goal(cancel_srv)
         rclpy.spin_until_future_complete(self.node, cancel_future, executor)
         cancel_result = cancel_future.result()
-        self.assertEqual(len(cancel_result.goals_canceling), 0)
+        self.assertEqual(len(cancel_result.goals_canceling), 0)  # type: ignore[union-attr]
 
         action_server.destroy()
         executor.shutdown()
@@ -371,14 +389,15 @@ class TestActionServer(unittest.TestCase):
     def test_cancel_defered_goal(self) -> None:
         server_goal_handle = None
 
-        def handle_accepted_callback(gh):
+        def handle_accepted_callback(gh: ServerGoalHandle) -> None:
             nonlocal server_goal_handle
             server_goal_handle = gh
 
-        def cancel_callback(request):
+        def cancel_callback(request: Fibonacci.Impl.CancelGoalService.Request
+                            ) -> CancelResponse:
             return CancelResponse.ACCEPT
 
-        def execute_callback(gh):
+        def execute_callback(gh: ServerGoalHandle) -> Fibonacci.Result:
             # The goal should already be in state CANCELING
             self.assertTrue(gh.is_cancel_requested)
             gh.canceled()
@@ -400,7 +419,7 @@ class TestActionServer(unittest.TestCase):
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
         send_goal_response = goal_future.result()
-        self.assertTrue(send_goal_response.accepted)
+        self.assertTrue(send_goal_response.accepted)  # type: ignore[union-attr]
         self.assertIsNotNone(server_goal_handle)
         assert server_goal_handle
         self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_ACCEPTED)
@@ -413,7 +432,7 @@ class TestActionServer(unittest.TestCase):
         cancel_future = self.mock_action_client.cancel_goal(cancel_srv)
         rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
         cancel_result = cancel_future.result()
-        self.assertEqual(len(cancel_result.goals_canceling), 1)
+        self.assertEqual(len(cancel_result.goals_canceling), 1)  # type: ignore[union-attr]
 
         self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_CANCELING)
 
@@ -424,13 +443,13 @@ class TestActionServer(unittest.TestCase):
         get_result_future = self.mock_action_client.get_result(goal_uuid)
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result = get_result_future.result()
-        self.assertEqual(result.status, GoalStatus.STATUS_CANCELED)
+        self.assertEqual(result.status, GoalStatus.STATUS_CANCELED)  # type: ignore[union-attr]
         self.assertEqual(server_goal_handle.status, GoalStatus.STATUS_CANCELED)
         action_server.destroy()
 
     def test_execute_succeed(self) -> None:
 
-        def execute_callback(goal_handle):
+        def execute_callback(goal_handle: ServerGoalHandle) -> Fibonacci.Result:
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
@@ -450,18 +469,20 @@ class TestActionServer(unittest.TestCase):
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
         goal_handle = goal_future.result()
-        self.assertTrue(goal_handle.accepted)
+        self.assertTrue(goal_handle.accepted)  # type: ignore[union-attr]
 
         get_result_future = self.mock_action_client.get_result(goal_uuid)
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result_response = get_result_future.result()
-        self.assertEqual(result_response.status, GoalStatus.STATUS_SUCCEEDED)
-        self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
+        self.assertEqual(result_response.status,  # type: ignore[union-attr]
+                         GoalStatus.STATUS_SUCCEEDED)
+        self.assertEqual(result_response.result.sequence.tolist(),  # type: ignore[union-attr]
+                         [1, 1, 2, 3, 5])
         action_server.destroy()
 
     def test_execute_abort(self) -> None:
 
-        def execute_callback(goal_handle):
+        def execute_callback(goal_handle: ServerGoalHandle) -> Fibonacci.Result:
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
@@ -481,18 +502,20 @@ class TestActionServer(unittest.TestCase):
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
         goal_handle = goal_future.result()
-        self.assertTrue(goal_handle.accepted)
+        self.assertTrue(goal_handle.accepted)  # type: ignore[union-attr]
 
         get_result_future = self.mock_action_client.get_result(goal_uuid)
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result_response = get_result_future.result()
-        self.assertEqual(result_response.status, GoalStatus.STATUS_ABORTED)
-        self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
+        self.assertEqual(result_response.status,  # type: ignore[union-attr]
+                         GoalStatus.STATUS_ABORTED)
+        self.assertEqual(result_response.result.sequence.tolist(),  # type: ignore[union-attr]
+                         [1, 1, 2, 3, 5])
         action_server.destroy()
 
     def test_execute_no_terminal_state(self) -> None:
 
-        def execute_callback(goal_handle):
+        def execute_callback(goal_handle: ServerGoalHandle) -> Fibonacci.Result:
             # Do not set the goal handles state
             result = Fibonacci.Result()
             result.sequence.extend([1, 1, 2, 3, 5])
@@ -511,19 +534,21 @@ class TestActionServer(unittest.TestCase):
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
         goal_handle = goal_future.result()
-        self.assertTrue(goal_handle.accepted)
+        self.assertTrue(goal_handle.accepted)  # type: ignore[union-attr]
 
         get_result_future = self.mock_action_client.get_result(goal_uuid)
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result_response = get_result_future.result()
         # Goal status should default to STATUS_ABORTED
-        self.assertEqual(result_response.status, GoalStatus.STATUS_ABORTED)
-        self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
+        self.assertEqual(result_response.status,  # type: ignore[union-attr]
+                         GoalStatus.STATUS_ABORTED)
+        self.assertEqual(result_response.result.sequence.tolist(),  # type: ignore[union-attr]
+                         [1, 1, 2, 3, 5])
         action_server.destroy()
 
     def test_execute_raises_exception(self) -> None:
 
-        def execute_callback(goal_handle):
+        def execute_callback(goal_handle: ServerGoalHandle) -> Fibonacci.Result:
             # User callback raises
             raise RuntimeError('test user callback raises')
 
@@ -540,14 +565,16 @@ class TestActionServer(unittest.TestCase):
         goal_future = self.mock_action_client.send_goal(goal_msg)
         rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
         goal_handle = goal_future.result()
-        self.assertTrue(goal_handle.accepted)
+
+        self.assertTrue(goal_handle.accepted)  # type: ignore[union-attr]
 
         get_result_future = self.mock_action_client.get_result(goal_uuid)
         rclpy.spin_until_future_complete(self.node, get_result_future, self.executor)
         result_response = get_result_future.result()
         # Goal status should default to STATUS_ABORTED
-        self.assertEqual(result_response.status, GoalStatus.STATUS_ABORTED)
-        self.assertEqual(result_response.result.sequence.tolist(), [])
+        self.assertEqual(result_response.status,  # type: ignore[union-attr]
+                         GoalStatus.STATUS_ABORTED)
+        self.assertEqual(result_response.result.sequence.tolist(), [])  # type: ignore[union-attr]
         action_server.destroy()
 
     def test_expire_goals_none(self) -> None:
@@ -625,7 +652,7 @@ class TestActionServer(unittest.TestCase):
 
     def test_feedback(self) -> None:
 
-        def execute_with_feedback(goal_handle):
+        def execute_with_feedback(goal_handle: ServerGoalHandle) -> Fibonacci:
             feedback = Fibonacci.Feedback()
             feedback.sequence = [1, 1, 2, 3]
             goal_handle.publish_feedback(feedback)
@@ -648,14 +675,15 @@ class TestActionServer(unittest.TestCase):
         self.assertIsNotNone(self.mock_action_client.feedback_msg)
         self.assertEqual(
             [1, 1, 2, 3],
-            self.mock_action_client.feedback_msg.feedback.sequence.tolist())  # type: ignore[attr-defined]
+            self.mock_action_client.feedback_msg.
+            feedback.sequence.tolist())  # type: ignore[attr-defined]
         action_server.destroy()
 
     def test_different_feedback_type_raises(self) -> None:
 
-        def execute_with_feedback(goal_handle):
+        def execute_with_feedback(goal_handle: ServerGoalHandle) -> Fibonacci.Result:
             try:
-                goal_handle.publish_feedback('different feedback type')
+                goal_handle.publish_feedback('different feedback type')  # type: ignore[arg-type]
             except TypeError:
                 feedback = Fibonacci.Feedback()
                 feedback.sequence = [1, 1, 2, 3]
@@ -681,7 +709,8 @@ class TestActionServer(unittest.TestCase):
             feedback_msg = self.mock_action_client.feedback_msg
             self.assertIsNotNone(feedback_msg)
             self.assertEqual(
-                [1, 1, 2, 3], feedback_msg.feedback.sequence.tolist())  # type: ignore[attr-defined]
+                [1, 1, 2, 3], feedback_msg.feedback.  # type: ignore[attr-defined]
+                sequence.tolist())
         finally:
             action_server.destroy()
 

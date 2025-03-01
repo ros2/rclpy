@@ -83,7 +83,7 @@ class QoSProfile:
                  liveliness: Union['QoSLivelinessPolicy', int, None] = None,
                  liveliness_lease_duration: Optional[Duration] = None,
                  avoid_ros_namespace_conventions: Optional[bool] = None
-                ) -> None:
+                 ) -> None:
 
         if history is None:
             if depth is None:

@@ -50,8 +50,8 @@ class TopicEndpointInfo:
                  topic_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
                  endpoint_type: Union[TopicEndpointTypeEnum, int] = TopicEndpointTypeEnum.INVALID,
                  endpoint_gid: List[int] = [],
-                 qos_profile: Union[QoSProfile,'_rclpy.rmw_qos_profile_dict'] = \
-                    QoSPresetProfiles.UNKNOWN.value) -> None:
+                 qos_profile: Union[QoSProfile, '_rclpy.rmw_qos_profile_dict'] =
+                 QoSPresetProfiles.UNKNOWN.value) -> None:
         self.node_name = node_name
         self.node_namespace = node_namespace
         self.topic_type = topic_type

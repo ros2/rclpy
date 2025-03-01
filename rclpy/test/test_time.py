@@ -43,7 +43,7 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(ValueError):
             time = Time(nanoseconds=-1)
         with self.assertRaises(TypeError):
-            time = Time(clock_type='SYSTEM_TIME')
+            time = Time(clock_type='SYSTEM_TIME')  # type: ignore[arg-type]
 
     def test_duration_construction(self) -> None:
         duration = Duration()

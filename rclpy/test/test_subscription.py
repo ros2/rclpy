@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import time
+from typing import List
 
 import pytest
 
@@ -41,7 +42,7 @@ def setup_ros() -> None:
     ('/topic', 'ns', '/topic'),
     ('/example/topic', 'ns', '/example/topic'),
 ])
-def test_get_subscription_topic_name(topic_name, namespace, expected):
+def test_get_subscription_topic_name(topic_name: str, namespace: str, expected: str) -> None:
     node = Node('node_name', namespace=namespace, cli_args=None)
     sub = node.create_subscription(
         msg_type=Empty,
@@ -64,7 +65,8 @@ def test_get_subscription_topic_name(topic_name, namespace, expected):
     ('example/topic', 'ns', ['--ros-args', '--remap', 'example/topic:=new_topic'],
      '/ns/new_topic'),
 ])
-def test_get_subscription_topic_name_after_remapping(topic_name, namespace, cli_args, expected):
+def test_get_subscription_topic_name_after_remapping(topic_name: str, namespace: str,
+                                                     cli_args: List[str], expected: str) -> None:
     node = Node('node_name', namespace=namespace, cli_args=cli_args)
     sub = node.create_subscription(
         msg_type=Empty,

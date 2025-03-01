@@ -147,6 +147,9 @@ if(BUILD_TESTING)
   list(APPEND AMENT_LINT_AUTO_EXCLUDE "ament_cmake_cppcheck")
   ament_lint_auto_find_test_dependencies()
 
+  find_package(ament_cmake_mypy REQUIRED)
+  ament_cmake_mypy(CONFIG_FILE "pyproject.toml")
+
   find_package(ament_cmake_cppcheck REQUIRED)
   ament_cppcheck()
   set_tests_properties(cppcheck PROPERTIES TIMEOUT 420)
