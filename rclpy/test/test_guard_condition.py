@@ -17,8 +17,8 @@ import unittest
 
 import rclpy
 import rclpy.context
-from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.node import Node
 
 
 class TestGuardCondition(unittest.TestCase):

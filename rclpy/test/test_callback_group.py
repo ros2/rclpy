@@ -22,8 +22,8 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
 import rclpy.context
-from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
 from rclpy.service import Service
 from rclpy.task import Future
 from test_msgs.msg import BasicTypes, Empty

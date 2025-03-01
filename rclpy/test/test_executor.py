@@ -342,7 +342,6 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-
         async def coro1() -> str:
             nonlocal future2  # type: ignore[misc]
             await future2
