@@ -19,6 +19,7 @@ import unittest
 
 import rclpy
 import rclpy.context
+from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.wait_for_message import wait_for_message
 from test_msgs.msg import BasicTypes
@@ -31,7 +32,7 @@ class TestWaitForMessage(unittest.TestCase):
 
     if TYPE_CHECKING:
         context: rclpy.context.Context
-        node: rclpy.node.Node
+        node: Node
 
     @classmethod
     def setUpClass(cls) -> None:

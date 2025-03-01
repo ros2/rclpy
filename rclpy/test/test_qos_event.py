@@ -218,7 +218,7 @@ class TestQoSEvent(unittest.TestCase):
         self,
         parent_entity: Any,
         event_type: Any
-    ) -> _rclpy.EventHandle[T]:
+    ) -> '_rclpy.EventHandle[T]':
         with parent_entity.handle:
             event: '_rclpy.EventHandle[T]' = \
                 _rclpy.EventHandle(parent_entity.handle, event_type)

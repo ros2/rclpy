@@ -22,6 +22,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
 import rclpy.context
+from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.service import Service
 from rclpy.task import Future
@@ -32,7 +33,7 @@ class TestCallbackGroup(unittest.TestCase):
 
     if TYPE_CHECKING:
         context: rclpy.context.Context
-        node: rclpy.node.Node
+        node: Node
 
     @classmethod
     def setUpClass(cls) -> None:

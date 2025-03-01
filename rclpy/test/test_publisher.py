@@ -19,6 +19,7 @@ import unittest
 import rclpy
 import rclpy.context
 from rclpy.duration import Duration
+from rclpy.node import Node
 
 from test_msgs.msg import BasicTypes
 
@@ -35,8 +36,8 @@ class TestPublisher(unittest.TestCase):
 
     if TYPE_CHECKING:
         context: rclpy.context.Context
-        node: rclpy.node.Node
-        node_with_ns: rclpy.node.Node
+        node: Node
+        node_with_ns: Node
 
     @classmethod
     def setUp(cls) -> None:
@@ -63,7 +64,7 @@ class TestPublisher(unittest.TestCase):
         rclpy.shutdown(context=cls.context)
 
     @classmethod
-    def do_test_topic_name(cls, test_topics: List[Tuple[str, str]], node: rclpy.node.Node) -> None:
+    def do_test_topic_name(cls, test_topics: List[Tuple[str, str]], node: Node) -> None:
         """
         Test the topic names of publishers created by the given node.
 

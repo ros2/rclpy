@@ -22,6 +22,7 @@ from rclpy.action.client import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 import rclpy.context
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.node import Node
 from rclpy.qos import qos_profile_action_status_default
 
 from test_msgs.action import Fibonacci
@@ -35,7 +36,7 @@ TIME_FUDGE = 0.3
 
 class MockActionServer:
 
-    def __init__(self, node: rclpy.node.Node):
+    def __init__(self, node: Node):
         self.goal_srv = node.create_service(
             Fibonacci.Impl.SendGoalService, '/fibonacci/_action/send_goal',
             self.goal_callback)
@@ -80,7 +81,7 @@ class TestActionClient(unittest.TestCase):
     if TYPE_CHECKING:
         context: rclpy.context.Context
         executor: SingleThreadedExecutor
-        node: rclpy.node.Node
+        node: Node
         mock_action_server: MockActionServer
 
     @classmethod

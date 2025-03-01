@@ -24,6 +24,7 @@ from rclpy.action import ActionServer
 from rclpy.action import get_action_client_names_and_types_by_node
 from rclpy.action import get_action_names_and_types
 from rclpy.action import get_action_server_names_and_types_by_node
+from rclpy.node import Node
 
 import rclpy.context
 from test_msgs.action import Fibonacci
@@ -42,9 +43,9 @@ class TestActionGraph(unittest.TestCase):
 
     if TYPE_CHECKING:
         context: rclpy.context.Context
-        node0: rclpy.node.Node
-        node1: rclpy.node.Node
-        node2: rclpy.node.Node
+        node0: Node
+        node1: Node
+        node2: Node
         action_client10: ActionClient[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
         action_server10: ActionServer[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]
         action_client20: ActionClient[Fibonacci.Goal, Fibonacci.Feedback, Fibonacci.Result]

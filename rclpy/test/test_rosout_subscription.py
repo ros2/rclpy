@@ -22,6 +22,7 @@ from rclpy.executors import SingleThreadedExecutor
 import rclpy.impl
 import rclpy.impl.rcutils_logger
 import rclpy.logging
+from rclpy.node import Node
 from rclpy.task import Future
 
 
@@ -29,7 +30,7 @@ class TestRosoutSubscription(unittest.TestCase):
 
     if TYPE_CHECKING:
         context: rclpy.context.Context
-        node: rclpy.node.Node
+        node: Node
         executor: SingleThreadedExecutor
 
     @classmethod

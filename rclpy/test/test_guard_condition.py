@@ -17,6 +17,7 @@ import unittest
 
 import rclpy
 import rclpy.context
+from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
 
 
@@ -24,7 +25,7 @@ class TestGuardCondition(unittest.TestCase):
 
     if TYPE_CHECKING:
         context: rclpy.context.Context
-        node: rclpy.node.Node
+        node: Node
         executor: SingleThreadedExecutor
 
     @classmethod
