@@ -208,11 +208,11 @@ class TestQoSEvent(unittest.TestCase):
 
     @overload
     def _create_event_handle(self, parent_entity: Subscription[Any],
-                             event_type: QoSSubscriptionEventType) -> _rclpy.EventHandle[T]: ...
+                             event_type: QoSSubscriptionEventType) -> '_rclpy.EventHandle[T]': ...
 
     @overload
     def _create_event_handle(self, parent_entity: Publisher[Any],
-                             event_type: QoSPublisherEventType) -> _rclpy.EventHandle[T]: ...
+                             event_type: QoSPublisherEventType) -> '_rclpy.EventHandle[T]': ...
 
     def _create_event_handle(
         self,

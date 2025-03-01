@@ -224,8 +224,8 @@ class TestFuture(unittest.TestCase):
 
     def test_set_exception(self) -> None:
         f: Future[str] = Future()
-        f.set_exception(Exception('Sentinel Exception'))
-        self.assertEqual(Exception('Sentinel Exception'), f.exception())
+        f.set_exception('Sentinel Exception')  # type: ignore[arg-type]
+        self.assertEqual('Sentinel Exception', f.exception())
         self.assertTrue(f.done())
 
     def test_await(self) -> None:
