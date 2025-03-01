@@ -148,7 +148,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   find_package(ament_cmake_mypy REQUIRED)
-  ament_cmake_mypy(CONFIG_FILE "pyproject.toml")
+  ament_mypy(CONFIG_FILE "pyproject.toml")
 
   find_package(ament_cmake_cppcheck REQUIRED)
   ament_cppcheck()
