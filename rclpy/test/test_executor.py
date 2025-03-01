@@ -342,17 +342,18 @@ class TestExecutor(unittest.TestCase):
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
 
-        async def coro2() -> str:
-            return 'Sentinel Result 2'
-
-        future2: Task[str] = executor.create_task(coro2)
 
         async def coro1() -> str:
-            nonlocal future2
+            nonlocal future2  # type: ignore[misc]
             await future2
             return 'Sentinel Result 1'
 
         future1: Task[str] = executor.create_task(coro1)
+
+        async def coro2() -> str:
+            return 'Sentinel Result 2'
+
+        future2: Task[str] = executor.create_task(coro2)
 
         # Coro1 is the 1st task, so it gets to await future2 in this spin
         executor.spin_once(timeout_sec=0)
