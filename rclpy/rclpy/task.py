@@ -22,15 +22,16 @@ from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, Li
 import warnings
 import weakref
 
+from typing_extensions import TypeAlias
+
 if TYPE_CHECKING:
-    from typing import TypeAlias
 
     from rclpy.executors import Executor
 
 T = TypeVar('T')
 
-FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[..., T],
-                                                 Callable[..., Coroutine[None, None, T]]]
+FunctionOrCoroutineFunction: TypeAlias = Union[Callable[..., T],
+                                               Callable[..., Coroutine[None, None, T]]]
 
 
 def _fake_weakref() -> None:

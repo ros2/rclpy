@@ -188,13 +188,17 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_client(GetParameters, 'foo/{bad_sub}')
 
     def test_create_service(self) -> None:
-        self.node.create_service(GetParameters, 'get/parameters', lambda req, res: None)
+        self.node.create_service(GetParameters, 'get/parameters',
+                                 lambda req, res: None)  # type: ignore[misc]
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not contain characters'):
-            self.node.create_service(GetParameters, 'get/parameters?', lambda req, res: None)
+            self.node.create_service(GetParameters, 'get/parameters?',
+                                     lambda req, res: None)  # type: ignore[misc]
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not start with a number'):
-            self.node.create_service(GetParameters, '/get/42parameters', lambda req, res: None)
+            self.node.create_service(GetParameters, '/get/42parameters',
+                                     lambda req, res: None)  # type: ignore[misc]
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req, res: None)
+            self.node.create_service(GetParameters, 'foo/{bad_sub}',
+                                     lambda req, res: None)  # type: ignore[misc]
 
     def test_service_names_and_types(self) -> None:
         # test that it doesn't raise
@@ -361,7 +365,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(0, self.node.count_services(short_service_name))
         self.assertEqual(0, self.node.count_services(fq_service_name))
 
-        self.node.create_service(GetParameters, short_service_name, lambda req, res: None)
+        self.node.create_service(GetParameters, short_service_name,
+                                 lambda req, res: None)  # type: ignore[misc]
         self.assertEqual(1, self.node.count_clients(short_service_name))
         self.assertEqual(1, self.node.count_clients(fq_service_name))
         self.assertEqual(1, self.node.count_services(short_service_name))
@@ -373,7 +378,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(1, self.node.count_services(short_service_name))
         self.assertEqual(1, self.node.count_services(fq_service_name))
 
-        self.node.create_service(GetParameters, short_service_name, lambda req, res: None)
+        self.node.create_service(GetParameters, short_service_name,
+                                 lambda req, res: None)  # type: ignore[misc]
         self.assertEqual(2, self.node.count_clients(short_service_name))
         self.assertEqual(2, self.node.count_clients(fq_service_name))
         self.assertEqual(2, self.node.count_services(short_service_name))
@@ -2298,7 +2304,7 @@ class TestNode(unittest.TestCase):
             ('int_param_no_default', Parameter.Type.INTEGER),
             ('dynamic_param', None, ParameterDescriptor(dynamic_typing=True)),
         ]
-        _ = self.node.declare_parameters('', parameters)
+        _ = self.node.declare_parameters('', parameters)  # type: ignore[arg-type]
 
         # Try getting parameters before setting values
         int_param = self.node.get_parameter('int_param')

@@ -17,13 +17,13 @@ from rclpy.exceptions import InvalidHandle
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
-if TYPE_CHECKING:
-    from typing import TypeAlias
+from typing_extensions import TypeAlias
 
+if TYPE_CHECKING:
     from rclpy.context import Context
 
 # re-export SignalHandlerOptions enum
-SignalHandlerOptions: 'TypeAlias' = _rclpy.SignalHandlerOptions
+SignalHandlerOptions: TypeAlias = _rclpy.SignalHandlerOptions
 
 
 def install_signal_handlers(options: SignalHandlerOptions = SignalHandlerOptions.ALL) -> None:

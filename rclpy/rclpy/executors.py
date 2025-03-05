@@ -61,6 +61,8 @@ from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
+
+from typing_extensions import TypeAlias
 # For documentation purposes
 # TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
 
@@ -68,8 +70,6 @@ T = TypeVar('T')
 
 # Avoid import cycle
 if TYPE_CHECKING:
-    from typing import TypeAlias
-
     from rclpy.node import Node  # noqa: F401
     from .callback_groups import Entity
     EntityT = TypeVar('EntityT', bound=Entity)
@@ -211,7 +211,7 @@ class Executor(ContextManager['Executor']):
         self._shutdown_lock = Lock()
         # State for wait_for_ready_callbacks to reuse generator
         self._cb_iter: Optional[YieldedCallback] = None
-        self._last_args: Optional[tuple[object, ...]] = None
+        self._last_args: Optional[Tuple[object, ...]] = None
         self._last_kwargs: Optional[Dict[str, object]] = None
         # Executor cannot use ROS clock because that requires a node
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)

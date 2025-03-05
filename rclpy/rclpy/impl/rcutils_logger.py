@@ -145,7 +145,7 @@ class LoggingFilter:
     """
     @classmethod
     def initialize_context(cls, context: RcutilsLoggerContext,
-                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:
+                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:  # type: ignore[misc]
         # Store all parameters in the context so we can check that users never try to change them.
         for param_name, param_value in cls.params.items():
             kwargs_value = kwargs.get(param_name, param_value)
@@ -172,7 +172,7 @@ class Once(LoggingFilter):
 
     @classmethod
     def initialize_context(cls, context: RcutilsLoggerContext,
-                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:
+                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:  # type: ignore[misc]
         context = cast(OnceContext, context)
         super(Once, cls).initialize_context(context, **kwargs)
         context['has_been_logged_once'] = False
@@ -197,7 +197,7 @@ class Throttle(LoggingFilter):
 
     @classmethod
     def initialize_context(cls, context: RcutilsLoggerContext,
-                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:
+                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:  # type: ignore[misc]
         context = cast(ThrottleContext, context)
         super(Throttle, cls).initialize_context(context, **kwargs)
         context['throttle_last_logged'] = 0
@@ -228,7 +228,7 @@ class SkipFirst(LoggingFilter):
 
     @classmethod
     def initialize_context(cls, context: RcutilsLoggerContext,
-                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:
+                           **kwargs: 'Unpack[LoggingFilterArgs]') -> None:  # type: ignore[misc]
         context = cast(SkipFirstContext, context)
         super(SkipFirst, cls).initialize_context(context, **kwargs)
         context['first_has_been_skipped'] = False
@@ -250,7 +250,8 @@ supported_filters['skip_first'] = SkipFirst
 supported_filters['once'] = Once
 
 
-def get_filters_from_kwargs(**kwargs: 'Unpack[LoggingFilterArgs]') -> List[SupportedFiltersKeys]:
+def get_filters_from_kwargs(**kwargs: 'Unpack[LoggingFilterArgs]'  # type: ignore[misc]
+                            ) -> List[SupportedFiltersKeys]:
     """
     Determine which filters have had parameters specified in the given keyword arguments.
 
@@ -328,7 +329,8 @@ class RcutilsLogger:
         return result
 
     def log(self, message: str, severity: Union[int, LoggingSeverity],
-            name: Optional[str] = None, **kwargs: 'Unpack[LoggingFilterArgs]') -> bool:
+            name: Optional[str] = None, **kwargs: 'Unpack[LoggingFilterArgs]'  # type: ignore[misc]
+            ) -> bool:
         r"""
         Log a message with the specified severity.
 
@@ -411,20 +413,20 @@ class RcutilsLogger:
             caller_id.function_name, caller_id.file_path, caller_id.line_number)
         return True
 
-    def debug(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
+    def debug(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:  # type: ignore[misc]
         """Log a message with `DEBUG` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.DEBUG, **kwargs)
 
-    def info(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
+    def info(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:  # type: ignore[misc]
         """Log a message with `INFO` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.INFO, **kwargs)
 
-    def warning(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
+    def warning(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:  # type: ignore[misc]
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.WARN, **kwargs)
 
     @deprecated('Deprecated in favor of :py:classmethod:RcutilsLogger.warning:.')
-    def warn(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
+    def warn(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:  # type: ignore[misc]
         """
         Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.
 
@@ -432,10 +434,10 @@ class RcutilsLogger:
         """
         return self.warning(message, **kwargs)
 
-    def error(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
+    def error(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:  # type: ignore[misc]
         """Log a message with `ERROR` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.ERROR, **kwargs)
 
-    def fatal(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
+    def fatal(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:  # type: ignore[misc]
         """Log a message with `FATAL` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.FATAL, **kwargs)

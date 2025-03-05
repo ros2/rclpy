@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from threading import Lock
-from typing import Any, Literal, Optional, TYPE_CHECKING, Union
+from typing import Any, Literal, Optional, Set, TYPE_CHECKING, Union
 import weakref
 
 
@@ -41,7 +41,7 @@ class CallbackGroup:
 
     def __init__(self) -> None:
         super().__init__()
-        self.entities: set[weakref.ReferenceType['Entity']] = set()
+        self.entities: Set[weakref.ReferenceType['Entity']] = set()
 
     def add_entity(self, entity: 'Entity') -> None:
         """

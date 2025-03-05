@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 from types import TracebackType
-from typing import Any, Final, Generic, Literal, overload, Sequence, TypeAlias, TypedDict, TypeVar
+from typing import Any, Final, Generic, Literal, overload, Sequence, TypedDict, TypeVar
 
 from action_msgs.msg import GoalInfo
 from action_msgs.msg._goal_status_array import GoalStatusArray
@@ -31,6 +31,8 @@ from rclpy.type_support import (Action, FeedbackMessage, FeedbackT, GetResultSer
                                 SendGoalServiceRequest, SendGoalServiceResponse, Srv, SrvRequestT,
                                 SrvResponseT)
 from type_description_interfaces.srv import GetTypeDescription
+
+from typing_extensions import TypeAlias
 
 T = TypeVar('T')
 

@@ -327,7 +327,7 @@ class LifecycleNodeMixin(ManagedEntity):
         qos_profile: Union[QoSProfile, int],
         *,
         publisher_class: None = None,
-        **kwargs: 'Unpack[CreateLifecyclePublisherArgs]'
+        **kwargs: 'Unpack[CreateLifecyclePublisherArgs]'  # type: ignore[misc]
     ) -> LifecyclePublisher[MsgT]:
         # TODO(ivanpauno): Should we override lifecycle publisher?
         # There is an issue with python using the overridden method
@@ -530,7 +530,7 @@ class LifecycleNode(LifecycleNodeMixin, Node):
         node_name: str,
         *,
         enable_communication_interface: bool = True,
-        **kwargs: 'Unpack[LifecycleNodeArgs]',
+        **kwargs: 'Unpack[LifecycleNodeArgs]',  # type: ignore[misc]
     ) -> None:
         """
         Create a lifecycle node.

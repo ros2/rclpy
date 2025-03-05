@@ -94,5 +94,6 @@ def test_service_context_manager() -> None:
         srv: Service[Empty.Request,
                      Empty.Response]
         with node.create_service(
-                srv_type=Empty, srv_name='empty_service', callback=lambda _, __: None) as srv:
+                srv_type=Empty, srv_name='empty_service',
+                callback=lambda _, __: None) as srv:  # type: ignore[misc]
             assert srv.service_name == '/empty_service'

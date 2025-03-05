@@ -15,14 +15,15 @@
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional, overload, TYPE_CHECKING, Union
 
+from typing_extensions import TypeAlias
+
 from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 
 if TYPE_CHECKING:
-    from typing import TypeAlias
     from rclpy.lifecycle.node import LifecycleState
 
 
-TransitionCallbackReturn: 'TypeAlias' = _rclpy.TransitionCallbackReturnType
+TransitionCallbackReturn: TypeAlias = _rclpy.TransitionCallbackReturnType
 
 
 class ManagedEntity:

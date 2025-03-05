@@ -551,8 +551,14 @@ class Node:
             # Note(jubeira): declare_parameters verifies the name, but set_parameters doesn't.
             validate_parameter_name(name)
 
-            second_arg = parameter_tuple[1] if len(parameter_tuple) > 1 else None
-            descriptor = parameter_tuple[2] if len(parameter_tuple) > 2 else ParameterDescriptor()
+            if len(parameter_tuple) > 1:
+                second_arg = parameter_tuple[1]  # type: ignore[misc]
+            else:
+                second_arg = None
+            if len(parameter_tuple) > 2:
+                descriptor = parameter_tuple[2]  # type: ignore[misc]
+            else:
+                descriptor = ParameterDescriptor()
             if not isinstance(descriptor, ParameterDescriptor):
                 raise TypeError(
                     f'Third element {descriptor} at index {index} in parameters list '

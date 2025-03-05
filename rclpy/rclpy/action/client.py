@@ -432,7 +432,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
 
     # End Waitable API
 
-    def send_goal(self, goal: GoalT, **kwargs: 'Unpack[SendGoalKWargs]'
+    def send_goal(self, goal: GoalT, **kwargs: 'Unpack[SendGoalKWargs]'  # type: ignore[misc]
                   ) -> Optional[GetResultServiceResponse[ResultT]]:
         """
         Send a goal and wait for the result.
