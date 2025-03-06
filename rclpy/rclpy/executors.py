@@ -17,6 +17,7 @@ from contextlib import ExitStack
 from functools import partial
 import inspect
 import os
+import sys
 from threading import Condition
 from threading import Lock
 from threading import RLock
@@ -954,7 +955,7 @@ class MultiThreadedExecutor(Executor):
         if num_threads is None:
             # On Linux, it will try to use the number of CPU this process has access to.
             # Other platforms, os.sched_getaffinity() doesn't exist so we use the number of CPUs.
-            if hasattr(os, 'sched_getaffinity'):
+            if sys.platform == "linux":
                 num_threads = len(os.sched_getaffinity(0))
             else:
                 num_threads = os.cpu_count()

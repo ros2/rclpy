@@ -14,6 +14,7 @@
 
 import asyncio
 import os
+import sys
 import threading
 import time
 from typing import Any, Generator, Optional, Set
@@ -142,7 +143,7 @@ class TestExecutor(unittest.TestCase):
 
         # check default behavior, either platform configuration or defaults to 2
         executor = MultiThreadedExecutor(context=self.context)
-        if hasattr(os, 'sched_getaffinity'):
+        if sys.platform == "linux":
             platform_threads: Optional[int] = len(os.sched_getaffinity(0))
         else:
             platform_threads = os.cpu_count()
