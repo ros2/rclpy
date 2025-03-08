@@ -1183,8 +1183,25 @@ class TestNode(unittest.TestCase):
         )
         self.node.declare_parameter(*parameter_tuple)
         # Tries to set the parameter with a callback that returns None.
-        with self.assertRaises(TypeError):
-            self.node.add_on_set_parameters_callback(self.return_none_parameter_callback)
+        self.node.add_on_set_parameters_callback(self.return_none_parameter_callback)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always', category=UserWarning)
+            result = self.node.set_parameters(
+                [
+                    Parameter(
+                        name=parameter_tuple[0],
+                        value=parameter_tuple[1]
+                    )
+                ]
+            )
+            assert len(w) == 1, f'Expected 1 warning, but got {len(w)}'
+            assert issubclass(w[0].category, UserWarning)
+            assert 'Callback returned None, it should return SetParameterResult.' \
+                in str(w[0].message)
+            self.assertIsInstance(result, list)
+            self.assertIsInstance(result[0], SetParametersResult)
+            self.assertFalse(result[0].successful)
+            self.assertEqual(result[0].reason, 'Callback returned None')
 
     def test_node_set_parameters_rejection_list(self) -> None:
         # Declare a new parameters and set a list of callbacks so that it's rejected when set.
