@@ -999,6 +999,9 @@ class Node:
         elif self._on_set_parameters_callbacks:
             for callback in self._on_set_parameters_callbacks:
                 result = callback(parameter_list)
+                if result is None:
+                    # This should not happen. But if it does, it should not succeed..
+                    result = SetParametersResult(successful=False, reason='Callback returned None')
                 if not result.successful:
                     return result
         result = SetParametersResult(successful=True)
@@ -1194,6 +1197,10 @@ class Node:
         :param callback: The function that is called whenever parameters are being validated
                          for the node.
         """
+        if not callable(callback):
+            raise TypeError('Callback must be callable, got {}', type(callback))
+        if not isinstance(callback([Parameter('dummy', value=0)]), SetParametersResult):
+            raise TypeError('Callback must return a SetParametersResult, got {}', type(callback))
         self._on_set_parameters_callbacks.insert(0, callback)
 
     def add_post_set_parameters_callback(
@@ -1215,6 +1222,8 @@ class Node:
 
         :param callback: The function that is called after parameters are set for the node.
         """
+        if not callable(callback):
+            raise TypeError('Callback must be callable, got {}', type(callback))
         self._post_set_parameters_callbacks.insert(0, callback)
 
     def remove_pre_set_parameters_callback(

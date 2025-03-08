@@ -912,6 +912,9 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 'wrong_parameter_value_type_not_set', Parameter.Type.NOT_SET)
 
+    def return_none_parameter_callback(self, parameter_list):
+        return None
+
     def reject_parameter_callback(self, parameter_list):
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
@@ -1170,6 +1173,18 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], SetParametersResult)
         self.assertFalse(result[0].successful)
+
+    def test_node_set_parameters_return_none(self) -> None:
+        # Declare a new parameter and set a callback that returns None.
+        parameter_tuple = (
+            'test_param',
+            True,
+            ParameterDescriptor()
+        )
+        self.node.declare_parameter(*parameter_tuple)
+        # Tries to set the parameter with a callback that returns None.
+        with self.assertRaises(TypeError):
+            self.node.add_on_set_parameters_callback(self.return_none_parameter_callback)
 
     def test_node_set_parameters_rejection_list(self) -> None:
         # Declare a new parameters and set a list of callbacks so that it's rejected when set.
