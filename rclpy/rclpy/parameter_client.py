@@ -38,11 +38,12 @@ from rclpy.task import Future
 
 class AsyncParameterClient:
     def __init__(
-            self,
-            node: Node,
-            remote_node_name: str,
-            qos_profile: QoSProfile = qos_profile_services_default,
-            callback_group: Optional[CallbackGroup] = None):
+        self,
+        node: Node,
+        remote_node_name: str,
+        qos_profile: QoSProfile = qos_profile_services_default,
+        callback_group: Optional[CallbackGroup] = None,
+    ) -> None:
         """
         Create an AsyncParameterClient.
 
