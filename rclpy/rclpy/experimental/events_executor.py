@@ -17,12 +17,11 @@ import typing
 
 import rclpy.executors
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-import rclpy.node
 
 
 # Try to look like we inherit from the rclpy Executor for type checking purposes without
 # getting any of the code from the base class.
-def EventsExecutor(*, context: rclpy.Context | None = None) -> rclpy.executors.Executor:
+def EventsExecutor(*, context: typing.Optional[rclpy.Context] = None) -> rclpy.executors.Executor:
     if context is None:
         context = rclpy.get_default_context()
 
