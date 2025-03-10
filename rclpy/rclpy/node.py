@@ -829,6 +829,11 @@ class Node:
         elif self._parameters_callbacks:
             for callback in self._parameters_callbacks:
                 result = callback(parameter_list)
+                if not isinstance(result, SetParametersResult):
+                    warnings.warn(
+                        'Callback returned an invalid type, it should return SetParameterResult.')
+                    result = SetParametersResult(
+                        successful=False, reason='Callback returned an invalid type')
                 if not result.successful:
                     return result
         result = SetParametersResult(successful=True)
@@ -889,6 +894,48 @@ class Node:
         It is considered bad practice to reject changes for "unknown" parameters as this prevents
         other parts of the node (that may be aware of these parameters) from handling them.
 
+<<<<<<< HEAD
+=======
+        :param callback: The function that is called whenever parameters are being validated
+                         for the node.
+        """
+        if not callable(callback):
+            raise TypeError('Callback must be callable, got {}', type(callback))
+        self._on_set_parameters_callbacks.insert(0, callback)
+
+    def add_post_set_parameters_callback(
+            self,
+            callback: Callable[[List[Parameter[Any]]], None]
+    ) -> None:
+        """
+        Add a callback gets triggered after parameters are set successfully.
+
+        Calling this function will add a callback in self._post_set_parameter_callbacks list.
+
+        The callback signature is designed to allow handling of the ``set_parameter*``
+        or ``declare_parameter*`` methods. The callback takes a list of parameters that
+        have been set successfully.
+
+        The callback can be valuable as a place to cause side effects based on parameter
+        changes. For instance updating the internally tracked class attributes once the params
+        have been changed successfully.
+
+        :param callback: The function that is called after parameters are set for the node.
+        """
+        if not callable(callback):
+            raise TypeError('Callback must be callable, got {}', type(callback))
+        self._post_set_parameters_callbacks.insert(0, callback)
+
+    def remove_pre_set_parameters_callback(
+            self,
+            callback: Callable[[List[Parameter[Any]]], List[Parameter[Any]]]
+    ) -> None:
+        """
+        Remove a callback from list of callbacks.
+
+        Calling this function will remove the callback from self._pre_set_parameter_callbacks list.
+
+>>>>>>> 94f42b6 (Check parameter callback signature during registration. (#1425))
         :param callback: The function that is called whenever parameters are set for the node.
         """
         self._parameters_callbacks.insert(0, callback)
