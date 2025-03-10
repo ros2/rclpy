@@ -1196,12 +1196,12 @@ class TestNode(unittest.TestCase):
             )
             assert len(w) == 1, f'Expected 1 warning, but got {len(w)}'
             assert issubclass(w[0].category, UserWarning)
-            assert 'Callback returned None, it should return SetParameterResult.' \
+            assert 'Callback returned an invalid type, it should return SetParameterResult.' \
                 in str(w[0].message)
             self.assertIsInstance(result, list)
             self.assertIsInstance(result[0], SetParametersResult)
             self.assertFalse(result[0].successful)
-            self.assertEqual(result[0].reason, 'Callback returned None')
+            self.assertEqual(result[0].reason, 'Callback returned an invalid type')
 
     def test_node_set_parameters_rejection_list(self) -> None:
         # Declare a new parameters and set a list of callbacks so that it's rejected when set.

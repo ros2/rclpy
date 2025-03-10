@@ -999,9 +999,11 @@ class Node:
         elif self._on_set_parameters_callbacks:
             for callback in self._on_set_parameters_callbacks:
                 result = callback(parameter_list)
-                if result is None:
-                    warnings.warn('Callback returned None, it should return SetParameterResult.')
-                    result = SetParametersResult(successful=False, reason='Callback returned None')
+                if not isinstance(result, SetParametersResult):
+                    warnings.warn(
+                        'Callback returned an invalid type, it should return SetParameterResult.')
+                    result = SetParametersResult(
+                        successful=False, reason='Callback returned an invalid type')
                 if not result.successful:
                     return result
         result = SetParametersResult(successful=True)
