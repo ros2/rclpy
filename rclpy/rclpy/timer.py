@@ -25,42 +25,6 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
 
 
-<<<<<<< HEAD
-=======
-class TimerInfo:
-    """
-    Represents a timer call information.
-
-    A ``TimerInfo`` object encapsulate the timer information when called.
-    """
-
-    def __init__(
-        self, *,
-        expected_call_time: int = 0,
-        actual_call_time: int = 0,
-        clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME,
-    ) -> None:
-        if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
-            raise TypeError('Clock type must be a ClockType enum')
-        if expected_call_time < 0 or actual_call_time < 0:
-            raise ValueError('call time values must not be negative')
-        self._expected_call_time: Time = Time(
-            nanoseconds=expected_call_time, clock_type=clock_type)
-        self._actual_call_time: Time = Time(
-            nanoseconds=actual_call_time, clock_type=clock_type)
-
-    @property
-    def expected_call_time(self) -> Time:
-        """:return: the expected_call_time."""
-        return self._expected_call_time
-
-    @property
-    def actual_call_time(self) -> Time:
-        """:return: the actual_call_time."""
-        return self._actual_call_time
-
-
->>>>>>> 238ab50 (Fix function params indentation (#1426))
 class Timer:
 
     def __init__(
@@ -154,17 +118,7 @@ class Timer:
 class Rate:
     """A utility for sleeping at a fixed rate."""
 
-<<<<<<< HEAD
-    def __init__(self, timer: Timer, *, context):
-=======
-    def __init__(self, timer: Timer, *, context: Context) -> None:
-        """
-        Create a Rate.
-
-        .. warning:: Users should not create a rate with this constructor, instead they
-           should call :meth:`.Node.create_rate`.
-        """
->>>>>>> 238ab50 (Fix function params indentation (#1426))
+    def __init__(self, timer: Timer, *, context) -> None:
         # Rate is a wrapper around a timer
         self._timer = timer
         self._is_shutdown = False

@@ -41,17 +41,10 @@ class Time:
     """
 
     def __init__(
-<<<<<<< HEAD
-            self, *,
-            seconds: Union[int, float] = 0, nanoseconds: int = 0,
-            clock_type: ClockType = ClockType.SYSTEM_TIME):
-=======
         self, *,
-        seconds: Union[int, float] = 0,
-        nanoseconds: int = 0,
-        clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME,
-    ) -> None:
->>>>>>> 238ab50 (Fix function params indentation (#1426))
+        seconds: Union[int, float] = 0, nanoseconds: int = 0,
+        clock_type: ClockType = ClockType.SYSTEM_TIME
+    ) -> None
         if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if seconds < 0:
