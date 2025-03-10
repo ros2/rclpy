@@ -80,7 +80,7 @@ class Timer:
         *,
         context: Optional[Context] = None,
         autostart: bool = True
-    ):
+    ) -> None:
         """
         Create a Timer.
 
@@ -184,7 +184,7 @@ class Timer:
 class Rate:
     """A utility for sleeping at a fixed rate."""
 
-    def __init__(self, timer: Timer, *, context: Context):
+    def __init__(self, timer: Timer, *, context: Context) -> None:
         """
         Create a Rate.
 
