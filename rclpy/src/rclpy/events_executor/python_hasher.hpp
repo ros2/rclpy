@@ -27,7 +27,7 @@ namespace events_executor
 /// would use given the same key.
 struct PythonHasher
 {
-  inline ssize_t operator()(const pybind11::handle & handle) const
+  inline auto operator()(const pybind11::handle & handle) const
   {
     return pybind11::hash(handle);
   }
