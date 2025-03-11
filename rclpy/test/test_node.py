@@ -1174,9 +1174,6 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result[0], SetParametersResult)
         self.assertFalse(result[0].successful)
 
-<<<<<<< HEAD
-    def test_node_set_parameters_rejection_list(self):
-=======
     def test_node_set_parameters_return_none(self) -> None:
         # Declare a new parameter and set a callback that returns None.
         parameter_tuple = (
@@ -1206,8 +1203,7 @@ class TestNode(unittest.TestCase):
             self.assertFalse(result[0].successful)
             self.assertEqual(result[0].reason, 'Callback returned an invalid type')
 
-    def test_node_set_parameters_rejection_list(self) -> None:
->>>>>>> 94f42b6 (Check parameter callback signature during registration. (#1425))
+    def test_node_set_parameters_rejection_list(self):
         # Declare a new parameters and set a list of callbacks so that it's rejected when set.
         reject_list_parameter_tuple = [
             ('reject', True, ParameterDescriptor()),
