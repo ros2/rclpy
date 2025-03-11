@@ -86,7 +86,10 @@ public:
   : events_queue_(events_queue), clock_(clock)
   {
     // Need to establish a clock jump callback so we can tell when debug time is updated.
-    rcl_jump_threshold_t threshold{.on_clock_change = true, .min_forward = 1, .min_backward = -1};
+    rcl_jump_threshold_t threshold;
+    threshold.on_clock_change = true;
+    threshold.min_forward.nanoseconds = 1;
+    threshold.min_backward.nanoseconds = -1;
     // Note, this callback could happen on any thread
     jump_cb_ = [this](const rcl_time_jump_t * time_jump) {
         bool on_debug{};
