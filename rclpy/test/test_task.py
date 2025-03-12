@@ -141,7 +141,8 @@ class TestTask(unittest.TestCase):
         t = Task(func)
         t()
         self.assertTrue(t.done())
-        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)  # type: ignore[union-attr]
+        self.assertEqual('Sentinel Exception',
+                         t.exception().sentinel_value)  # type: ignore[union-attr]
         with self.assertRaises(Exception):
             t.result()
 
@@ -155,7 +156,8 @@ class TestTask(unittest.TestCase):
         t = Task(coro)
         t()
         self.assertTrue(t.done())
-        self.assertEqual('Sentinel Exception', t.exception().sentinel_value)  # type: ignore[union-attr]
+        self.assertEqual('Sentinel Exception',
+                         t.exception().sentinel_value)  # type: ignore[union-attr]
         with self.assertRaises(Exception):
             t.result()
 
