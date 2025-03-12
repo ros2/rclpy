@@ -692,7 +692,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
                                                         .get_c_qos_profile(),
                                                         introspection_state)
 
-    def destroy(self):
+    def destroy(self) -> None:
         """Destroy the underlying action client handle."""
         self._client_handle.destroy_when_not_in_use()
         self._node.remove_waitable(self)

@@ -726,7 +726,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
                                                  service_event_qos_profile.get_c_qos_profile(),
                                                  introspection_state)
 
-    def destroy(self):
+    def destroy(self) -> None:
         """Destroy the underlying action server handle."""
         for goal_handle in self._goal_handles.values():
             goal_handle.destroy()

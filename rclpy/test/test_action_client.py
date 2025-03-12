@@ -395,8 +395,8 @@ class TestActionClient(unittest.TestCase):
             rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
             self.assertTrue(goal_future.done())
 
-            # By default, action client introspection is disabled. So no service event message can
-            # be received.
+            # By default, action client introspection is disabled.
+            # So no service event message can be received.
             start = time.monotonic()
             end = start + 1.0
             while len(self.event_messages) < 1:
