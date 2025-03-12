@@ -148,7 +148,7 @@ class TestQoSEvent(unittest.TestCase):
 
         pub_log_msg = None
         sub_log_msg = None
-        log_msgs_future = Future()
+        log_msgs_future: Future[bool] = Future()
 
         class MockLogger:
 

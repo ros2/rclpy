@@ -60,8 +60,8 @@ class TestCallbackGroup(unittest.TestCase):
             received_short_callback_in_long_callback = False
 
             # Setup two future objects that control the executor
-            future_up = Future()
-            future_down = Future()
+            future_up: Future[None] = Future()
+            future_down: Future[None] = Future()
 
             # This callback is used to check if a callback can be received while another
             # long running callback is being executed

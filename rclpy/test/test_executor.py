@@ -16,6 +16,7 @@ import asyncio
 import os
 import threading
 import time
+from typing import Any
 import unittest
 import warnings
 
@@ -454,7 +455,7 @@ class TestExecutor(unittest.TestCase):
         timer = self.node.create_timer(0.003, timer_callback)
 
         # Timeout
-        future = Future()
+        future: Future[Any] = Future()
         self.assertFalse(future.done())
         start = time.monotonic()
         executor.spin_until_future_complete(future=future, timeout_sec=0.1)
@@ -475,11 +476,11 @@ class TestExecutor(unittest.TestCase):
             pass
         timer = self.node.create_timer(0.003, timer_callback)
 
-        def set_future_result(future):
+        def set_future_result(future: Future[str]) -> None:
             future.set_result('finished')
 
         # Future complete timeout_sec > 0
-        future = Future()
+        future: Future[str] = Future()
         self.assertFalse(future.done())
         t = threading.Thread(target=lambda: set_future_result(future))
         t.start()
@@ -517,7 +518,7 @@ class TestExecutor(unittest.TestCase):
         timer = self.node.create_timer(0.003, timer_callback)
 
         # Do not wait timeout_sec = 0
-        future = Future()
+        future: Future[Any] = Future()
         self.assertFalse(future.done())
         executor.spin_until_future_complete(future=future, timeout_sec=0)
         self.assertFalse(future.done())
@@ -591,7 +592,7 @@ class TestExecutor(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
 
-        future = Future(executor=executor)
+        future: Future[bool] = Future(executor=executor)
 
         # Setup a thread to spin_once_until_future_complete, which will spin
         # for a maximum of 10 seconds.
@@ -619,7 +620,7 @@ class TestExecutor(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(context=self.context)
 
-        future = Future(executor=executor)
+        future: Future[bool] = Future(executor=executor)
 
         # Setup a thread to spin_once_until_future_complete, which will spin
         # for a maximum of 10 seconds.
@@ -666,7 +667,7 @@ class TestExecutor(unittest.TestCase):
         timer2 = self.node.create_timer(1.5, timer2_callback, callback_group)
 
         executor.add_node(self.node)
-        future = Future(executor=executor)
+        future: Future[Any] = Future(executor=executor)
         executor.spin_until_future_complete(future, 4)
 
         assert count == 2

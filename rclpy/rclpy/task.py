@@ -16,21 +16,16 @@ from enum import Enum
 import inspect
 import sys
 import threading
-from types import CoroutineType
 from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, List,
-                    Optional, Tuple, TYPE_CHECKING, TypeVar, Union)
+                    Optional, overload, Tuple, TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
 
 if TYPE_CHECKING:
-    from typing import TypeAlias
 
     from rclpy.executors import Executor
 
 T = TypeVar('T')
-
-FunctionOrCoroutineFunction: 'TypeAlias' = Union[Callable[..., T],
-                                                 Callable[..., Coroutine[None, None, T]]]
 
 
 def _fake_weakref() -> None:
@@ -223,8 +218,22 @@ class Task(Future[T]):
     This class should only be instantiated by :class:`rclpy.executors.Executor`.
     """
 
+    @overload
     def __init__(self,
-                 handler: FunctionOrCoroutineFunction[T],
+                 handler: Callable[..., Coroutine[Any, Any, T]],
+                 args: Optional[Tuple[Any, ...]] = None,
+                 kwargs: Optional[Dict[str, Any]] = None,
+                 executor: Optional['Executor'] = None) -> None: ...
+
+    @overload
+    def __init__(self,
+                 handler: Callable[..., T],
+                 args: Optional[Tuple[Any, ...]] = None,
+                 kwargs: Optional[Dict[str, Any]] = None,
+                 executor: Optional['Executor'] = None) -> None: ...
+
+    def __init__(self,
+                 handler: Callable[..., Any],
                  args: Optional[Tuple[Any, ...]] = None,
                  kwargs: Optional[Dict[str, Any]] = None,
                  executor: Optional['Executor'] = None) -> None:
@@ -240,10 +249,10 @@ class Task(Future[T]):
         # _handler is either a normal function or a coroutine
         if inspect.iscoroutinefunction(handler):
             self._handler: Union[
-                Coroutine[None, None, T],
+                Coroutine[Any, Any, T],
                 Callable[[], T],
                 None
-             ] = handler(*args, **kwargs)
+             ] = cast(Coroutine[Any, Any, T], handler(*args, **kwargs))
             self._args = None
             self._kwargs = None
         else:
@@ -276,7 +285,7 @@ class Task(Future[T]):
 
             if inspect.iscoroutine(self._handler):
                 # Execute a coroutine
-                handler: CoroutineType[None, None, T] = self._handler
+                handler = self._handler
                 try:
                     handler.send(None)
                 except StopIteration as e:
