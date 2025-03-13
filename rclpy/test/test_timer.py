@@ -19,7 +19,7 @@ import time
 
 import pytest
 import rclpy
-from rclpy.clock import ClockType
+from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.timer import TimerInfo

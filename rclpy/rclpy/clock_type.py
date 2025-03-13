@@ -12,19 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
-
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from typing_extensions import TypeAlias
 
-
-class ClockType(IntEnum):
-    """
-    Enum for clock type.
-
-    This enum must match the one defined in rclpy/_rclpy_pybind11.cpp.
-    """
-
-    UNINITIALIZED = _rclpy.ClockType.UNINITIALIZED
-    ROS_TIME = _rclpy.ClockType.ROS_TIME
-    SYSTEM_TIME = _rclpy.ClockType.SYSTEM_TIME
-    STEADY_TIME = _rclpy.ClockType.STEADY_TIME
+ClockType: TypeAlias = _rclpy.ClockType

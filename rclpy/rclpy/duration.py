@@ -22,7 +22,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 class Duration:
     """A period between two time points, with nanosecond precision."""
 
-    def __init__(self, *, seconds: Union[int, float] = 0, nanoseconds: int = 0):
+    def __init__(self, *, seconds: Union[int, float] = 0, nanoseconds: Union[int, float] = 0):
         """
         Create an instance of :class:`Duration`, combined from given seconds and nanoseconds.
 

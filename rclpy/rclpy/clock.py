@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
 from types import TracebackType
-from typing import Callable, Optional, Type, TYPE_CHECKING, TypedDict, Union
+from typing import Callable, Literal, Optional, overload, Type, TYPE_CHECKING, TypedDict
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from typing_extensions import TypeAlias
@@ -27,11 +26,7 @@ from .time import Time
 from .utilities import get_default_context
 
 
-class ClockChange(IntEnum):
-    ROS_TIME_NO_CHANGE = _rclpy.ClockChange.ROS_TIME_NO_CHANGE
-    ROS_TIME_ACTIVATED = _rclpy.ClockChange.ROS_TIME_ACTIVATED
-    ROS_TIME_DEACTIVATED = _rclpy.ClockChange.ROS_TIME_DEACTIVATED
-    SYSTEM_TIME_NO_CHANGE = _rclpy.ClockChange.SYSTEM_TIME_NO_CHANGE
+ClockChange: TypeAlias = _rclpy.ClockChange
 
 
 class JumpThreshold:
@@ -146,11 +141,25 @@ class Clock:
 
     if TYPE_CHECKING:
         __clock: _rclpy.Clock
-        _clock_type: Union[ClockType, _rclpy.ClockType]
+        _clock_type: ClockType
+
+    @overload
+    def __new__(
+        cls,
+        *,
+        clock_type: Literal[ClockType.ROS_TIME]
+    ) -> 'ROSClock': ...
+
+    @overload
+    def __new__(
+        cls,
+        *,
+        clock_type: ClockType = ClockType.SYSTEM_TIME
+    ) -> 'Clock': ...
 
     def __new__(cls, *,
-                clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME) -> 'Clock':
-        if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
+                clock_type: ClockType = ClockType.SYSTEM_TIME) -> 'Clock':
+        if not isinstance(clock_type, ClockType):
             raise TypeError('Clock type must be a ClockType enum')
         if clock_type is ClockType.ROS_TIME:
             self: 'Clock' = super().__new__(ROSClock)
@@ -161,7 +170,7 @@ class Clock:
         return self
 
     @property
-    def clock_type(self) -> Union[ClockType, _rclpy.ClockType]:
+    def clock_type(self) -> ClockType:
         return self._clock_type
 
     @property
