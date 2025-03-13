@@ -33,11 +33,14 @@ from action_msgs.msg import GoalStatus
 from action_msgs.msg._goal_status_array import GoalStatusArray
 from action_msgs.srv import CancelGoal
 from builtin_interfaces.msg import Time
+
+from rclpy.clock import Clock
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
+from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.type_support import Action
 from rclpy.type_support import check_for_type_support
@@ -671,6 +674,24 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
             timeout_sec -= sleep_time
 
         return self.server_is_ready()
+
+    def configure_introspection(
+        self, clock: Clock,
+        service_event_qos_profile: QoSProfile,
+        introspection_state: ServiceIntrospectionState
+    ) -> None:
+        """
+        Configure action client introspection.
+
+        :param clock: Clock to use for generating timestamps.
+        :param service_event_qos_profile: QoSProfile to use when creating service event publisher.
+        :param introspection_state: ServiceIntrospectionState to set introspection.
+        """
+        with self._client_handle:
+            self._client_handle.configure_introspection(clock.handle,
+                                                        service_event_qos_profile
+                                                        .get_c_qos_profile(),
+                                                        introspection_state)
 
     def destroy(self) -> None:
         """Destroy the underlying action client handle."""

@@ -23,6 +23,10 @@ import rclpy
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.qos import qos_profile_system_default
+from rclpy.service_introspection import ServiceIntrospectionState
+
+from service_msgs.msg import ServiceEventInfo
 
 from test_msgs.action import Fibonacci
 
@@ -683,6 +687,126 @@ class TestActionServer(unittest.TestCase):
                 [1, 1, 2, 3], feedback_msg.feedback.sequence.tolist())
         finally:
             action_server.destroy()
+
+    def test_action_introspection_default_status(self) -> None:
+        goal_order = 10
+
+        def goal_callback(goal):
+            nonlocal goal_order
+            self.assertEqual(goal.order, goal_order)
+            return GoalResponse.REJECT
+
+        def handle_accepted_callback(goal_handle):
+            # Since the goal is rejected, we don't expect this function to be called
+            self.assertFalse(True)
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            goal_callback=goal_callback,
+            handle_accepted_callback=handle_accepted_callback,
+        )
+
+        # There is no need to check if introspection is enabled for all internal services,
+        # as the implementation in the RCL interface operates on the three internal services
+        # simultaneously.
+
+        self.event_messages = []
+
+        def sub_callback(msg):
+            self.event_messages.append(msg)
+
+        send_goal_service_event_sub = self.node.create_subscription(
+            Fibonacci.Impl.SendGoalService.Event,
+            '/fibonacci/_action/send_goal/_service_event',
+            sub_callback, 3)
+
+        goal_msg = Fibonacci.Impl.SendGoalService.Request()
+        goal_msg.goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_msg.goal.order = goal_order
+        future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, self.executor)
+        self.assertFalse(future.result().accepted)
+
+        # By default, action client introspection is disabled. So no service event message can
+        # be received.
+        start = time.monotonic()
+        end = start + 1.0
+        while len(self.event_messages) < 1:
+            rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
+            now = time.monotonic()
+            if now >= end:
+                break
+
+        self.assertEqual(len(self.event_messages), 0)
+
+        send_goal_service_event_sub.destroy()
+        action_server.destroy()
+
+    def test_configure_introspection_content(self) -> None:
+        goal_order = 10
+
+        def goal_callback(goal):
+            nonlocal goal_order
+            self.assertEqual(goal.order, goal_order)
+            return GoalResponse.REJECT
+
+        def handle_accepted_callback(goal_handle):
+            # Since the goal is rejected, we don't expect this function to be called
+            self.assertFalse(True)
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+            goal_callback=goal_callback,
+            handle_accepted_callback=handle_accepted_callback,
+        )
+
+        action_server.configure_introspection(self.node.get_clock(), qos_profile_system_default,
+                                              ServiceIntrospectionState.CONTENTS)
+
+        # There is no need to check if introspection is enabled for all internal services,
+        # as the implementation in the RCL interface operates on the three internal services
+        # simultaneously.
+
+        self.event_messages = []
+
+        def sub_callback(msg):
+            self.event_messages.append(msg)
+
+        send_goal_service_event_sub = self.node.create_subscription(
+            Fibonacci.Impl.SendGoalService.Event,
+            '/fibonacci/_action/send_goal/_service_event',
+            sub_callback, 3)
+
+        goal_msg = Fibonacci.Impl.SendGoalService.Request()
+        goal_msg.goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_msg.goal.order = goal_order
+        future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, self.executor)
+        self.assertFalse(future.result().accepted)
+
+        start = time.monotonic()
+        end = start + 5.0
+        while len(self.event_messages) < 1:
+            rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
+            now = time.monotonic()
+            self.assertTrue(now < end)
+        self.assertEqual(len(self.event_messages), 1)
+
+        self.assertEqual(self.event_messages[0].info.event_type, ServiceEventInfo.REQUEST_RECEIVED)
+
+        # For ServiceIntrospectionState.CONTENTS mode, the request or response section must
+        # contain data. In this case, the request section must contain data.
+        self.assertEqual(len(self.event_messages[0].request), 1)
+        self.assertEqual(len(self.event_messages[0].response), 0)
+
+        send_goal_service_event_sub.destroy()
+        action_server.destroy()
 
 
 if __name__ == '__main__':
