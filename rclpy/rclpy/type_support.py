@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, ClassVar, Iterable, Optional, Protocol, Type, TypeVar, Union
+from typing import Any, ClassVar, Optional, Protocol, Type, TypeVar, Union
 
-
-from action_msgs.msg._goal_status_array import GoalStatusArray
-from action_msgs.srv._cancel_goal import CancelGoal
 from builtin_interfaces.msg import Time
 from rclpy.exceptions import NoTypeSupportImportedException
-from service_msgs.msg._service_event_info import ServiceEventInfo
+from service_msgs.msg import ServiceEventInfo
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
 
@@ -65,18 +62,17 @@ SrvRequestT = TypeVar('SrvRequestT', bound=Msg)
 SrvResponseT = TypeVar('SrvResponseT', bound=Msg)
 
 
-class EventMessage(Msg, Protocol[SrvRequestT, SrvResponseT]):
+class EventMessage(Msg, Protocol):
     info: ServiceEventInfo
-    request: Iterable[SrvRequestT]
-    response: Iterable[SrvResponseT]
 
 
-class Srv(Protocol[SrvRequestT, SrvResponseT], metaclass=CommonMsgSrvMetaClass):
+class Srv(Protocol, metaclass=CommonMsgSrvMetaClass):
     """Generic Service Type Alias."""
 
-    Request: Type[SrvRequestT]
-    Response: Type[SrvResponseT]
-    Event: Type[EventMessage[SrvRequestT, SrvResponseT]]
+    pass
+    # Request: ClassVar[Type[Any]]
+    # Response: ClassVar[Type[Any]]
+    # Event: ClassVar[Type[Any]]
 
 
 GoalT = TypeVar('GoalT', bound=Msg)
@@ -94,7 +90,7 @@ class SendGoalServiceResponse(Msg, Protocol):
     stamp: Time
 
 
-SendGoalService: TypeAlias = Srv[SendGoalServiceRequest[GoalT], SendGoalServiceResponse]
+SendGoalService: TypeAlias = Srv
 
 
 class GetResultServiceRequest(Msg, Protocol):
@@ -106,7 +102,7 @@ class GetResultServiceResponse(Msg, Protocol[ResultT]):
     result: ResultT
 
 
-GetResultService: TypeAlias = Srv[GetResultServiceRequest, GetResultServiceResponse[ResultT]]
+GetResultService: TypeAlias = Srv
 
 
 class FeedbackMessage(Msg, Protocol[FeedbackT]):
@@ -114,33 +110,27 @@ class FeedbackMessage(Msg, Protocol[FeedbackT]):
     feedback: FeedbackT
 
 
-class Impl(Protocol[GoalT, ResultT, FeedbackT]):
+class Action(Protocol, metaclass=CommonMsgSrvMetaClass):
+    pass
+    # Goal: ClassVar[Type[Any]]
+    # Result: ClassVar[Type[Any]]
+    # Feedback: ClassVar[Type[Any]]
 
-    SendGoalService: Type[SendGoalService[GoalT]]
-    GetResultService: Type[GetResultService[ResultT]]
-    FeedbackMessage: Type[FeedbackMessage[FeedbackT]]
-    CancelGoalService: ClassVar[Type[CancelGoal]]
-    GoalStatusMessage: ClassVar[Type[GoalStatusArray]]
+    # class Impl(Protocol):
 
-
-class Action(Protocol[GoalT,
-                      ResultT,
-                      FeedbackT],
-             metaclass=CommonMsgSrvMetaClass):
-    Goal: Type[GoalT]
-    Result: Type[ResultT]
-    Feedback: Type[FeedbackT]
-
-    Impl: Type[Impl[GoalT, ResultT, FeedbackT]]
+    #     SendGoalService: ClassVar[Type[Any]]
+    #     GetResultService: ClassVar[Type[Any]]
+    #     FeedbackMessage: ClassVar[Type[Any]]
+    #     CancelGoalService: ClassVar[Type[CancelGoal]]
+    #     GoalStatusMessage: ClassVar[Type[GoalStatusArray]]
 
 
 # Can be used if https://github.com/python/typing/issues/548 ever gets approved.
-SrvT = TypeVar('SrvT', bound=Srv[Any, Any])
-ActionT = TypeVar('ActionT', bound=Action[Any, Any, Any])
+SrvT = TypeVar('SrvT', bound=Srv)
+ActionT = TypeVar('ActionT', bound=Action)
 
 
-def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv[Any, Any],
-                                                       Action[Any, Any, Any]]]) -> None:
+def check_for_type_support(msg_or_srv_type: Type[Union[Msg, Srv, Action]]) -> None:
     try:
         ts = msg_or_srv_type._TYPE_SUPPORT
     except AttributeError as e:
@@ -172,7 +162,7 @@ def check_is_valid_msg_type(msg_type: Type[Msg]) -> None:
         ) from None
 
 
-def check_is_valid_srv_type(srv_type: Type[Srv[Any, Any]]) -> None:
+def check_is_valid_srv_type(srv_type: Type[Srv]) -> None:
     check_for_type_support(srv_type)
     try:
         assert None not in (

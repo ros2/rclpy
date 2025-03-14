@@ -24,13 +24,13 @@ import time
 from types import TracebackType
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import ContextManager
 from typing import Coroutine
 from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
+from typing import overload
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -51,7 +51,6 @@ from rclpy.service import Service
 from rclpy.signals import SignalHandlerGuardCondition
 from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
-from rclpy.task import FunctionOrCoroutineFunction
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.timer import Timer, TimerInfo
@@ -118,14 +117,20 @@ class _WorkTracker:
         return True
 
 
-async def await_or_execute(callback: FunctionOrCoroutineFunction[T], *args: Any) -> T:
+@overload
+async def await_or_execute(callback: Callable[..., Coroutine[Any, Any, T]], *args: Any) -> T: ...
+
+
+@overload
+async def await_or_execute(callback: Callable[..., T], *args: Any) -> T: ...
+
+
+async def await_or_execute(callback: Callable[..., Any], *args: Any) -> Any:
     """Await a callback if it is a coroutine, else execute it."""
     if inspect.iscoroutinefunction(callback):
         # Await a coroutine
-        callback = cast(Callable[..., Coroutine[None, None, T]], callback)
         return await callback(*args)
     else:
-        callback = cast(Callable[..., T], callback)
         # Call a normal function
         return callback(*args)
 
@@ -224,8 +229,17 @@ class Executor(ContextManager['Executor']):
         """Get the context associated with the executor."""
         return self._context
 
-    def create_task(self, callback: FunctionOrCoroutineFunction[T], *args: Any, **kwargs: Any
-                    ) -> Task[T]:
+    @overload
+    def create_task(self, callback: Callable[..., Coroutine[Any, Any, T]],
+                    *args: Any, **kwargs: Any
+                    ) -> Task[T]: ...
+
+    @overload
+    def create_task(self, callback: Callable[..., T], *args: Any, **kwargs: Any
+                    ) -> Task[T]: ...
+
+    def create_task(self, callback: Callable[..., Any], *args: Any, **kwargs: Any
+                    ) -> Task[Any]:
         """
         Add a callback or coroutine to be executed during :meth:`spin` and return a Future.
 

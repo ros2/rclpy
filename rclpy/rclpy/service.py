@@ -37,7 +37,7 @@ class Service(Generic[SrvRequestT, SrvResponseT]):
     def __init__(
         self,
         service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]',
-        srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
+        srv_type: Type[Srv],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         callback_group: CallbackGroup,

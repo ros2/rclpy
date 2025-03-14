@@ -24,6 +24,7 @@ from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.srv import SetParametersAtomically
 from rclpy.callback_groups import CallbackGroup
+from rclpy.client import Client
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.node import Node
 from rclpy.parameter import Parameter as Parameter
@@ -39,11 +40,12 @@ from rclpy.task import Future
 
 class AsyncParameterClient:
     def __init__(
-            self,
-            node: Node,
-            remote_node_name: str,
-            qos_profile: QoSProfile = qos_profile_services_default,
-            callback_group: Optional[CallbackGroup] = None):
+        self,
+        node: Node,
+        remote_node_name: str,
+        qos_profile: QoSProfile = qos_profile_services_default,
+        callback_group: Optional[CallbackGroup] = None,
+    ) -> None:
         """
         Create an AsyncParameterClient.
 
@@ -77,27 +79,36 @@ class AsyncParameterClient:
         """
         self.remote_node_name = remote_node_name
         self.node = node
-        self._get_parameter_client = self.node.create_client(
+        self._get_parameter_client: Client[GetParameters.Request,
+                                           GetParameters.Response] = self.node.create_client(
             GetParameters, f'{remote_node_name}/get_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._list_parameter_client = self.node.create_client(
+        self._list_parameter_client: Client[ListParameters.Request,
+                                            ListParameters.Response] = self.node.create_client(
             ListParameters, f'{remote_node_name}/list_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._set_parameter_client = self.node.create_client(
+        self._set_parameter_client: Client[SetParameters.Request,
+                                           SetParameters.Response] = self.node.create_client(
             SetParameters, f'{remote_node_name}/set_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._get_parameter_types_client = self.node.create_client(
+        self._get_parameter_types_client: Client[GetParameterTypes.Request,
+                                                 GetParameterTypes.Response] = \
+            self.node.create_client(
             GetParameterTypes, f'{remote_node_name}/get_parameter_types',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._describe_parameters_client = self.node.create_client(
+        self._describe_parameters_client: Client[DescribeParameters.Request,
+                                                 DescribeParameters.Response] = \
+            self.node.create_client(
             DescribeParameters, f'{remote_node_name}/describe_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._set_parameters_atomically_client = self.node.create_client(
+        self._set_parameters_atomically_client: Client[SetParametersAtomically.Request,
+                                                       SetParametersAtomically.Response] = \
+            self.node.create_client(
             SetParametersAtomically, f'{remote_node_name}/set_parameters_atomically',
             qos_profile=qos_profile, callback_group=callback_group
         )
@@ -137,7 +148,7 @@ class AsyncParameterClient:
         self,
         prefixes: Optional[List[str]] = None,
         depth: Optional[int] = None,
-        callback: Optional[Callable[[ListParameters.Response], None]] = None
+        callback: Optional[Callable[[Future[ListParameters.Response]], None]] = None
     ) -> Future[ListParameters.Response]:
         """
         List all parameters with given prefixes.
@@ -158,7 +169,7 @@ class AsyncParameterClient:
         return future
 
     def get_parameters(self, names: List[str],
-                       callback: Optional[Callable[[GetParameters.Response], None]] = None
+                       callback: Optional[Callable[[Future[GetParameters.Response]], None]] = None
                        ) -> Future[GetParameters.Response]:
         """
         Get parameters given names.
@@ -177,7 +188,7 @@ class AsyncParameterClient:
     def set_parameters(
         self,
         parameters: Sequence[Union[Parameter[Any], ParameterMsg]],
-        callback: Optional[Callable[[SetParameters.Response], None]] = None
+        callback: Optional[Callable[[Future[SetParameters.Response]], None]] = None
     ) -> Future[SetParameters.Response]:
         """
         Set parameters given a list of parameters.
@@ -203,7 +214,7 @@ class AsyncParameterClient:
     def describe_parameters(
         self,
         names: List[str],
-        callback: Optional[Callable[[DescribeParameters.Response], None]] = None
+        callback: Optional[Callable[[Future[DescribeParameters.Response]], None]] = None
     ) -> Future[DescribeParameters.Response]:
         """
         Describe parameters given names.
@@ -225,7 +236,7 @@ class AsyncParameterClient:
     def get_parameter_types(
         self,
         names: List[str],
-        callback: Optional[Callable[[GetParameterTypes.Response], None]] = None
+        callback: Optional[Callable[[Future[GetParameterTypes.Response]], None]] = None
     ) -> Future[GetParameterTypes.Response]:
         """
         Get parameter types given names.
@@ -249,7 +260,7 @@ class AsyncParameterClient:
     def set_parameters_atomically(
         self,
         parameters: Sequence[Union[Parameter[Any], ParameterMsg]],
-        callback: Optional[Callable[[SetParametersAtomically.Response], None]] = None
+        callback: Optional[Callable[[Future[SetParametersAtomically.Response]], None]] = None
     ) -> Future[SetParametersAtomically.Response]:
         """
         Set parameters atomically.
@@ -274,7 +285,7 @@ class AsyncParameterClient:
 
     def delete_parameters(
         self, names: List[str],
-        callback: Optional[Callable[[SetParameters.Response], None]] = None
+        callback: Optional[Callable[[Future[SetParameters.Response]], None]] = None
     ) -> Future[SetParameters.Response]:
         """
         Unset parameters with given names.
@@ -299,7 +310,7 @@ class AsyncParameterClient:
         self,
         parameter_file: str,
         use_wildcard: bool = False,
-        callback: Optional[Callable[[SetParameters.Response], None]] = None
+        callback: Optional[Callable[[Future[SetParameters.Response]], None]] = None
     ) -> Future[SetParameters.Response]:
         """
         Load parameters from a yaml file.
@@ -321,15 +332,15 @@ class AsyncParameterClient:
         self,
         parameter_file: str,
         use_wildcard: bool = False,
-        callback: Optional[Callable[[SetParameters.Response], None]] = None
-    ) -> Future[SetParameters.Response]:
+        callback: Optional[Callable[[Future[SetParametersAtomically.Response]], None]] = None
+    ) -> Future[SetParametersAtomically.Response]:
         """
         Load parameters from a yaml file atomically.
 
         Wrapper around `rclpy.parameter.parameter_dict_from_yaml_file`.
 
         The result after the returned future is complete
-        will be of type ``rcl_interfaces.srv.SetParameters.Response``.
+        will be of type ``rcl_interfaces.srv.SetParametersAtomically.Response``.
 
         :param parameter_file: Path to the parameter file.
         :param use_wildcard: Whether to use wildcard expansion.

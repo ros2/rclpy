@@ -219,7 +219,7 @@ def create_node(
     namespace: Optional[str] = None,
     use_global_arguments: bool = True,
     enable_rosout: bool = True,
-    rosout_qos_profile: Optional[Union[QoSProfile, int]] = qos_profile_rosout_default,
+    rosout_qos_profile: Union[QoSProfile, int] = qos_profile_rosout_default,
     start_parameter_services: bool = True,
     parameter_overrides: Optional[List[Parameter[Any]]] = None,
     allow_undeclared_parameters: bool = False,

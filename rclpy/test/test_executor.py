@@ -670,7 +670,7 @@ class TestExecutor(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(context=self.context)
 
-        future = Future(executor=executor)
+        future: Future[bool] = Future(executor=executor)
 
         # Setup a thread to spin_once_until_future_complete, which will spin
         # for a maximum of 10 seconds.

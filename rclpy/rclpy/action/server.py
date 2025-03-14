@@ -24,23 +24,25 @@ from typing import (Any, Callable, Dict, Generic, Literal, Optional, Tuple, Type
 
 from action_msgs.msg import GoalInfo, GoalStatus
 from action_msgs.srv._cancel_goal import CancelGoal
+
+from rclpy.clock import Clock
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
+from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.type_support import (Action, check_for_type_support, FeedbackMessage, FeedbackT,
                                 GetResultServiceRequest, GetResultServiceResponse, GoalT, ResultT,
                                 SendGoalServiceRequest)
 from rclpy.waitable import NumberOfEntities, Waitable
+from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
 
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeAlias
-
     from rclpy.callback_groups import CallbackGroup
     from rclpy.node import Node
 
@@ -54,7 +56,7 @@ if TYPE_CHECKING:
         result: Tuple['_rclpy.rmw_request_id_t', GetResultServiceRequest]
         expired: Tuple[GoalInfo, ...]
 else:
-    ServerGoalHandleDict: 'TypeAlias' = Dict[str, object]
+    ServerGoalHandleDict: TypeAlias = Dict[str, object]
 
 
 # Re-export exception defined in _rclpy C extension.
@@ -75,7 +77,7 @@ class CancelResponse(Enum):
     ACCEPT = 2
 
 
-GoalEvent = _rclpy.GoalEvent
+GoalEvent: TypeAlias = _rclpy.GoalEvent
 
 
 class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
@@ -229,7 +231,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[Action[GoalT, ResultT, FeedbackT]],
+        action_type: Type[Action],
         action_name: str,
         execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
         *,
@@ -288,18 +290,19 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         self._node = node
         self._action_type = action_type
         with node.handle, node.get_clock().handle:
-            self._handle = _rclpy.ActionServer(
-                node.handle,
-                node.get_clock().handle,
-                action_type,
-                action_name,
-                goal_service_qos_profile.get_c_qos_profile(),
-                result_service_qos_profile.get_c_qos_profile(),
-                cancel_service_qos_profile.get_c_qos_profile(),
-                feedback_pub_qos_profile.get_c_qos_profile(),
-                status_pub_qos_profile.get_c_qos_profile(),
-                result_timeout,
-            )
+            self._handle: '_rclpy.ActionServer[GoalT, ResultT, FeedbackT]' = \
+                _rclpy.ActionServer(
+                    node.handle,
+                    node.get_clock().handle,
+                    action_type,
+                    action_name,
+                    goal_service_qos_profile.get_c_qos_profile(),
+                    result_service_qos_profile.get_c_qos_profile(),
+                    cancel_service_qos_profile.get_c_qos_profile(),
+                    feedback_pub_qos_profile.get_c_qos_profile(),
+                    status_pub_qos_profile.get_c_qos_profile(),
+                    result_timeout,
+                )
 
         # key: UUID in bytes, value: GoalHandle
         self._goal_handles: Dict[bytes, ServerGoalHandle[GoalT, ResultT, FeedbackT]] = {}
@@ -504,7 +507,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             self._logger.warning('Failed to send result response (the client may have gone away)')
 
     @property
-    def action_type(self) -> Type[Action[GoalT, ResultT, FeedbackT]]:
+    def action_type(self) -> Type[Action]:
         return self._action_type
 
     # Start Waitable API
@@ -708,6 +711,23 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         if not callable(execute_callback):
             raise TypeError('Failed to register goal execution callback: not callable')
         self._execute_callback = execute_callback
+
+    def configure_introspection(
+        self, clock: Clock,
+        service_event_qos_profile: QoSProfile,
+        introspection_state: ServiceIntrospectionState
+    ) -> None:
+        """
+        Configure action server introspection.
+
+        :param clock: Clock to use for generating timestamps.
+        :param service_event_qos_profile: QoSProfile to use when creating service event publisher.
+        :param introspection_state: ServiceIntrospectionState to set introspection.
+        """
+        with self._handle:
+            self._handle.configure_introspection(clock.handle,
+                                                 service_event_qos_profile.get_c_qos_profile(),
+                                                 introspection_state)
 
     def destroy(self) -> None:
         """Destroy the underlying action server handle."""

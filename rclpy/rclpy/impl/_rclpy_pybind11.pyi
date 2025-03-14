@@ -104,7 +104,7 @@ class Destroyable:
 
 class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+    def __init__(self, node: Node, srv_type: type[Srv],
                  srv_name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
@@ -137,7 +137,7 @@ class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
 class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, pysrv_type: type[Srv[SrvRequestT, SrvResponseT]],
+    def __init__(self, node: Node, pysrv_type: type[Srv],
                  name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
@@ -480,7 +480,7 @@ class Node(Destroyable):
 
     def __init__(self, node_name: str, namespace_: str, context: Context,
                  pycli_args: list[str] | None, use_global_arguments: bool,
-                 enable_rosout: bool) -> None: ...
+                 enable: bool, rosout_qos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -707,7 +707,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
     def __init__(
             self,
             node: Node,
-            pyaction_type: type[Action[GoalT, ResultT, FeedbackT]],
+            pyaction_type: type[Action],
             action_name: str,
             goal_service_qos: rmw_qos_profile_t,
             result_service_qos: rmw_qos_profile_t,
@@ -777,7 +777,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Destroyable):
         self,
         node: Node,
         rclpy_clock: Clock,
-        pyaction_type: type[Action[GoalT, ResultT, FeedbackT]],
+        pyaction_type: type[Action],
         action_name: str,
         goal_service_qos: rmw_qos_profile_t,
         result_service_qos: rmw_qos_profile_t,

@@ -38,10 +38,11 @@ class TimerInfo:
     """
 
     def __init__(
-            self, *,
-            expected_call_time: int = 0,
-            actual_call_time: int = 0,
-            clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME):
+        self, *,
+        expected_call_time: int = 0,
+        actual_call_time: int = 0,
+        clock_type: Union[ClockType, _rclpy.ClockType] = ClockType.SYSTEM_TIME,
+    ) -> None:
         if not isinstance(clock_type, (ClockType, _rclpy.ClockType)):
             raise TypeError('Clock type must be a ClockType enum')
         if expected_call_time < 0 or actual_call_time < 0:
@@ -73,7 +74,7 @@ class Timer:
         *,
         context: Optional[Context] = None,
         autostart: bool = True
-    ):
+    ) -> None:
         """
         Create a Timer.
 
@@ -177,7 +178,7 @@ class Timer:
 class Rate:
     """A utility for sleeping at a fixed rate."""
 
-    def __init__(self, timer: Timer, *, context: Context):
+    def __init__(self, timer: Timer, *, context: Context) -> None:
         """
         Create a Rate.
 

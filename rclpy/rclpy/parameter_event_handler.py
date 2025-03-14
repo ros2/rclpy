@@ -15,14 +15,14 @@
 from collections import defaultdict
 from itertools import chain
 from multiprocessing import Lock
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 
+from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterEvent
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.node import Node
-from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import QoSOverridingOptions
@@ -33,7 +33,7 @@ class ParameterCallbackHandle:
         self,
         parameter_name: str,
         node_name: str,
-        callback: Callable[[Parameter[Any]], None],
+        callback: Callable[[ParameterMsg], None],
     ) -> None:
         self.parameter_name = parameter_name
         self.node_name = node_name
@@ -97,7 +97,7 @@ class ParameterEventHandler:
             self,
             parameter_name: str,
             node_name: str,
-            callback: Callable[[Parameter[Any]], None],
+            callback: Callable[[ParameterMsg], None],
         ) -> ParameterCallbackHandle:
             """
             Add new parameter callback.
@@ -258,7 +258,7 @@ class ParameterEventHandler:
         event: ParameterEvent,
         parameter_name: str,
         node_name: str,
-    ) -> Optional[Parameter[Any]]:
+    ) -> Optional[ParameterMsg]:
         """
         Get specified parameter value from ParameterEvent message.
 
@@ -277,7 +277,7 @@ class ParameterEventHandler:
         return None
 
     @staticmethod
-    def get_parameters_from_event(event: ParameterEvent) -> Iterable[Parameter[Any]]:
+    def get_parameters_from_event(event: ParameterEvent) -> Iterable[ParameterMsg]:
         """
         Get all parameters from a ParameterEvent message.
 
@@ -290,7 +290,7 @@ class ParameterEventHandler:
         self,
         parameter_name: str,
         node_name: str,
-        callback: Callable[[Parameter[Any]], None],
+        callback: Callable[[ParameterMsg], None],
     ) -> ParameterCallbackHandle:
         """
         Add new parameter callback.
