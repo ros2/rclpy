@@ -87,11 +87,11 @@ class TestExecutor(unittest.TestCase):
 
                     self.assertTrue(executor.add_node(self.node))
                     t = threading.Thread(target=executor.spin, daemon=True)
-                    start_time = time.monotonic()
+                    start_time = time.perf_counter()
                     t.start()
                     executor.shutdown()
                     t.join()
-                    end_time = time.monotonic()
+                    end_time = time.perf_counter()
 
                     self.node.destroy_timer(tmr)
                     self.assertLess(end_time - start_time, timer_period / 2)
@@ -211,9 +211,9 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
-                start = time.monotonic()
+                start = time.perf_counter()
                 executor.spin_once(timeout_sec=0)
-                end = time.monotonic()
+                end = time.perf_counter()
                 self.assertLess(start - end, 0.001)
 
     def test_execute_coroutine_timer(self) -> None:
@@ -494,9 +494,9 @@ class TestExecutor(unittest.TestCase):
                 # Timeout
                 future = Future[None]()
                 self.assertFalse(future.done())
-                start = time.monotonic()
+                start = time.perf_counter()
                 executor.spin_until_future_complete(future=future, timeout_sec=0.1)
-                end = time.monotonic()
+                end = time.perf_counter()
                 # Nothing is ever setting the future, so this should have waited
                 # at least 0.1 seconds.
                 self.assertGreaterEqual(end - start, 0.1)
