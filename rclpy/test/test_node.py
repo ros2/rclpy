@@ -777,6 +777,9 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 'wrong_parameter_value_type_not_set', Parameter.Type.NOT_SET)
 
+    def return_none_parameter_callback(self, parameter_list):
+        return None
+
     def reject_parameter_callback(self, parameter_list):
         rejected_parameters = (param for param in parameter_list if 'reject' in param.name)
         return SetParametersResult(successful=(not any(rejected_parameters)))
@@ -1051,6 +1054,35 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], SetParametersResult)
         self.assertFalse(result[0].successful)
+
+    def test_node_set_parameters_return_none(self) -> None:
+        # Declare a new parameter and set a callback that returns None.
+        parameter_tuple = (
+            'test_param',
+            True,
+            ParameterDescriptor()
+        )
+        self.node.declare_parameter(*parameter_tuple)
+        # Tries to set the parameter with a callback that returns None.
+        self.node.add_on_set_parameters_callback(self.return_none_parameter_callback)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always', category=UserWarning)
+            result = self.node.set_parameters(
+                [
+                    Parameter(
+                        name=parameter_tuple[0],
+                        value=parameter_tuple[1]
+                    )
+                ]
+            )
+            assert len(w) == 1, f'Expected 1 warning, but got {len(w)}'
+            assert issubclass(w[0].category, UserWarning)
+            assert 'Callback returned an invalid type, it should return SetParameterResult.' \
+                in str(w[0].message)
+            self.assertIsInstance(result, list)
+            self.assertIsInstance(result[0], SetParametersResult)
+            self.assertFalse(result[0].successful)
+            self.assertEqual(result[0].reason, 'Callback returned an invalid type')
 
     def test_node_set_parameters_rejection_list(self):
         # Declare a new parameters and set a list of callbacks so that it's rejected when set.
