@@ -248,6 +248,19 @@ public:
     return rcl_action_server_.get();
   }
 
+  /// Configure action server introspection
+  /**
+   * \param[in] clock clock to use for service event timestamps
+   * \param[in] pyqos_service_event_pub QoSProfile python object for the service event publisher
+   * \param[in] introspection_state which state to set introspection to
+   *
+   * \throws RCLError if it failed to configure introspection.
+   */
+  void
+  configure_introspection(
+    Clock & clock, py::object pyqos_service_event_pub,
+    rcl_service_introspection_state_t introspection_state);
+
   /// Force an early destruction of this object
   void
   destroy() override;
@@ -255,6 +268,7 @@ public:
 private:
   Node node_;
   std::shared_ptr<rcl_action_server_t> rcl_action_server_;
+  const rosidl_action_type_support_t * action_type_support_;
 };
 /// Define a pybind11 wrapper for an rclpy::ActionServer
 /**

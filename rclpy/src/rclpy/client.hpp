@@ -95,6 +95,8 @@ public:
    * \param[in] clock clock to use for service event timestamps
    * \param[in] pyqos_service_event_pub QoSProfile python object for the service event publisher
    * \param[in] introspection_state which state to set introspection to
+   *
+   * \throws RCLError if it failed to configure introspection.
    */
   void
   configure_introspection(

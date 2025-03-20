@@ -50,9 +50,9 @@ ActionClient::ActionClient(
   const rmw_qos_profile_t & status_topic_qos)
 : node_(node)
 {
-  rosidl_action_type_support_t * ts =
+  action_type_support_ =
     static_cast<rosidl_action_type_support_t *>(common_get_type_support(pyaction_type));
-  if (!ts) {
+  if (!action_type_support_) {
     throw py::error_already_set();
   }
 
@@ -86,7 +86,7 @@ ActionClient::ActionClient(
   rcl_ret_t ret = rcl_action_client_init(
     rcl_action_client_.get(),
     node_.rcl_ptr(),
-    ts,
+    action_type_support_,
     action_name,
     &action_client_ops);
   if (RCL_RET_ACTION_NAME_INVALID == ret) {
@@ -270,6 +270,25 @@ ActionClient::is_ready(WaitSet & wait_set)
 }
 
 void
+ActionClient::configure_introspection(
+  Clock & clock, py::object pyqos_service_event_pub,
+  rcl_service_introspection_state_t introspection_state)
+{
+  rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
+  pub_opts.qos =
+    pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
+    pyqos_service_event_pub.cast<rmw_qos_profile_t>();
+
+  rcl_ret_t ret = rcl_action_client_configure_action_introspection(
+    rcl_action_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(),
+    action_type_support_, pub_opts, introspection_state);
+
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to configure action client introspection");
+  }
+}
+
+void
 define_action_client(py::object module)
 {
   py::class_<ActionClient, Destroyable, std::shared_ptr<ActionClient>>(module, "ActionClient")
@@ -317,6 +336,9 @@ define_action_client(py::object module)
     "Check if an action entity has any ready wait set entities.")
   .def(
     "take_status", &ActionClient::take_status,
-    "Take an action status response.");
+    "Take an action status response.")
+  .def(
+    "configure_introspection", &ActionClient::configure_introspection,
+    "Configure whether internal client introspection is enabled");
 }
 }  // namespace rclpy

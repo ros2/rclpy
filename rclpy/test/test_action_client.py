@@ -20,7 +20,10 @@ import rclpy
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
-from rclpy.qos import qos_profile_action_status_default
+from rclpy.qos import qos_profile_action_status_default, qos_profile_system_default
+from rclpy.service_introspection import ServiceIntrospectionState
+
+from service_msgs.msg import ServiceEventInfo
 
 from test_msgs.action import Fibonacci
 
@@ -366,6 +369,92 @@ class TestActionClient(unittest.TestCase):
             with self.assertRaises(TypeError):
                 ac.send_goal_async('different goal type')
         finally:
+            ac.destroy()
+
+    def test_action_introspection_default_status(self) -> None:
+        ac: ActionClient = ActionClient(self.node, Fibonacci, 'fibonacci')
+
+        self.event_messages = []
+
+        def sub_callback(msg):
+            self.event_messages.append(msg)
+
+        # There is no need to check if introspection is enabled for all internal services,
+        # as the implementation in the RCL interface operates on the three internal services
+        # simultaneously. So only check send_goal service event.
+        send_goal_service_event_sub = self.node.create_subscription(
+            Fibonacci.Impl.SendGoalService.Event,
+            '/fibonacci/_action/send_goal/_service_event',
+            sub_callback, 3)
+
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send a goal
+            goal_future = ac.send_goal_async(Fibonacci.Goal())
+            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            self.assertTrue(goal_future.done())
+
+            # By default, action client introspection is disabled.
+            # So no service event message can be received.
+            start = time.monotonic()
+            end = start + 1.0
+            while len(self.event_messages) < 1:
+                rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
+                now = time.monotonic()
+                if now >= end:
+                    break
+
+            self.assertEqual(len(self.event_messages), 0)
+        finally:
+            self.node.destroy_subscription(send_goal_service_event_sub)
+            ac.destroy()
+
+    def test_configure_introspection_content(self) -> None:
+        ac: ActionClient = ActionClient(self.node, Fibonacci, 'fibonacci')
+
+        self.event_messages = []
+
+        def sub_callback(msg):
+            self.event_messages.append(msg)
+
+        # There is no need to check if introspection is enabled for all internal services,
+        # as the implementation in the RCL interface operates on the three internal services
+        # simultaneously. So only check send_goal service event.
+        send_goal_service_event_sub = self.node.create_subscription(
+            Fibonacci.Impl.SendGoalService.Event,
+            '/fibonacci/_action/send_goal/_service_event',
+            sub_callback, 3)
+
+        try:
+            ac.configure_introspection(self.node.get_clock(),
+                                       qos_profile_system_default,
+                                       ServiceIntrospectionState.CONTENTS)
+
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send a goal
+            goal_future = ac.send_goal_async(Fibonacci.Goal())
+            rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+            self.assertTrue(goal_future.done())
+
+            start = time.monotonic()
+            end = start + 5.0
+            while len(self.event_messages) < 1:
+                rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
+                now = time.monotonic()
+                self.assertTrue(now < end)
+
+            self.assertEqual(len(self.event_messages), 1)
+
+            self.assertEqual(self.event_messages[0].info.event_type, ServiceEventInfo.REQUEST_SENT)
+
+            # For ServiceIntrospectionState.CONTENTS mode, the request or response section must
+            # contain data. In this case, the request section must contain data.
+            self.assertEqual(len(self.event_messages[0].request), 1)
+            self.assertEqual(len(self.event_messages[0].response), 0)
+        finally:
+            self.node.destroy_subscription(send_goal_service_event_sub)
             ac.destroy()
 
 
