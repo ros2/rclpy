@@ -207,6 +207,20 @@ class Future(Generic[T]):
         if invoke:
             callback(self)
 
+    def remove_done_callback(self, callback: Callable[['Future[T]'], None]) -> bool:
+        """
+        Remove a previously-added done callback.
+
+        Returns true if the given callback was found and removed.  Always fails if the Future was
+        already complete.
+        """
+        with self._lock:
+            try:
+                self._callbacks.remove(callback)
+            except ValueError:
+                return False
+            return True
+
 
 class Task(Future[T]):
     """

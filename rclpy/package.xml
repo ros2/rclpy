@@ -55,13 +55,6 @@
 
   <doc_depend>python3-sphinx</doc_depend>
   <doc_depend>python3-sphinx-rtd-theme</doc_depend>
-  <!-- We add these modules as doc_depends in order to include them into the
-  autodoc_mock_imports list. This prevents TypeErrors from being thrown
-  when these modules import constants from rclpy C modules.
-  TODO: Remove these depends once a better solution is found.-->
-  <doc_depend>rclpy.duration</doc_depend>
-  <doc_depend>rclpy.qos</doc_depend>
-  <doc_depend>rclpy.clock</doc_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
