@@ -52,11 +52,10 @@ EventsExecutor::EventsExecutor(py::object context)
   inspect_iscoroutine_(py::module_::import("inspect").attr("iscoroutine")),
   inspect_signature_(py::module_::import("inspect").attr("signature")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
-  rclpy_timer_timer_info_(py::module_::import("rclpy.timer").attr("TimerInfo")),
   signal_callback_([this]() {events_queue_.Stop();}),
   rcl_callback_manager_(&events_queue_),
   timers_manager_(
-    &events_queue_, std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1, pl::_2))
+    &events_queue_, std::bind(&EventsExecutor::HandleTimerReady, this, pl::_1))
 {
 }
 
@@ -348,28 +347,13 @@ void EventsExecutor::HandleAddedTimer(py::handle timer) {timers_manager_.AddTime
 
 void EventsExecutor::HandleRemovedTimer(py::handle timer) {timers_manager_.RemoveTimer(timer);}
 
-void EventsExecutor::HandleTimerReady(py::handle timer, const rcl_timer_call_info_t & info)
+void EventsExecutor::HandleTimerReady(py::handle timer)
 {
   py::gil_scoped_acquire gil_acquire;
   py::object callback = timer.attr("callback");
-  // We need to distinguish callbacks that want a TimerInfo object from those that don't.
-  // Executor._take_timer() actually checks if an argument has type markup expecting a TypeInfo
-  // object.  This seems like overkill, vs just checking if it wants an argument at all?
-  py::object py_info;
-  if (py::len(inspect_signature_(callback).attr("parameters").attr("values")()) > 0) {
-    using py::literals::operator""_a;
-    py_info = rclpy_timer_timer_info_(
-      "expected_call_time"_a = info.expected_call_time,
-      "actual_call_time"_a = info.actual_call_time,
-      "clock_type"_a = timer.attr("clock").attr("clock_type"));
-  }
   py::object result;
   try {
-    if (py_info) {
-      result = callback(py_info);
-    } else {
-      result = callback();
-    }
+    result = callback();
   } catch (const py::error_already_set & e) {
     HandleCallbackExceptionInNodeEntity(e, timer, "timers");
     throw;

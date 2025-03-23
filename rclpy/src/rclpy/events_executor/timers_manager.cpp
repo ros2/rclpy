@@ -141,7 +141,7 @@ public:
   bool empty() const {return timers_.empty();}
 
   void AddTimer(
-    rcl_timer_t * timer, std::function<void(const rcl_timer_call_info_t &)> ready_callback)
+    rcl_timer_t * timer, std::function<void()> ready_callback)
   {
     // All timers have the same reset callback
     if (
@@ -257,7 +257,7 @@ private:
     switch (ret) {
       case RCL_RET_OK:
         // Dispatch the actual user callback.
-        map_it->second(info);
+        map_it->second();
         break;
       case RCL_RET_TIMER_CANCELED:
         // Someone canceled the timer after we queried the call time.  Nevermind, then...
@@ -292,7 +292,7 @@ private:
   TimerResetCallbackT reset_cb_;
   bool on_debug_time_{};
 
-  std::unordered_map<rcl_timer_t *, std::function<void(const rcl_timer_call_info_t &)>> timers_;
+  std::unordered_map<rcl_timer_t *, std::function<void()>> timers_;
   std::unordered_set<rcl_timer_t *> ready_timers_;
   DelayedEventThread next_update_wait_{events_queue_};
 };
@@ -316,7 +316,7 @@ rcl_clock_t * GetTimerClock(rcl_timer_t * timer)
 }  // namespace
 
 void RclTimersManager::AddTimer(
-  rcl_timer_t * timer, std::function<void(const rcl_timer_call_info_t &)> ready_callback)
+  rcl_timer_t * timer, std::function<void()> ready_callback)
 {
   // Figure out the clock this timer is using, make sure a manager exists for that clock, then
   // forward the timer to that clock's manager.
@@ -344,7 +344,7 @@ void RclTimersManager::RemoveTimer(rcl_timer_t * timer)
 
 TimersManager::TimersManager(
   EventsQueue * events_queue,
-  std::function<void(py::handle, const rcl_timer_call_info_t &)> timer_ready_callback)
+  std::function<void(py::handle)> timer_ready_callback)
 : rcl_manager_(events_queue), ready_callback_(timer_ready_callback)
 {
 }
@@ -357,7 +357,7 @@ void TimersManager::AddTimer(py::handle timer)
   py::handle handle = timer.attr("handle");
   mapping.with = std::make_unique<ScopedWith>(handle);
   mapping.rcl_ptr = py::cast<const Timer &>(handle).rcl_ptr();
-  rcl_manager_.AddTimer(mapping.rcl_ptr, std::bind(ready_callback_, timer, pl::_1));
+  rcl_manager_.AddTimer(mapping.rcl_ptr, std::bind(ready_callback_, timer));
   timer_mappings_[timer] = std::move(mapping);
 }
 
