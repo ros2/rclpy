@@ -162,7 +162,7 @@ class TopicEndpointInfo:
         return self._qos_profile
 
     @qos_profile.setter
-    def qos_profile(self, value: Union[QoSProfile, '_rclpy.rmw_qos_profile_dict']) -> None:
+    def qos_profile(self, value: Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']) -> None:
         if isinstance(value, QoSProfile):
             self._qos_profile = value
         elif isinstance(value, dict):
