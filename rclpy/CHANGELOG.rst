@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.16 (2025-03-25)
+-------------------
+* Check parameter callback signature during registration. (backport `#1425 <https://github.com/ros2/rclpy/issues/1425>`_) (`#1430 <https://github.com/ros2/rclpy/issues/1430>`_)
+* Remove `SHARED` (`#1305 <https://github.com/ros2/rclpy/issues/1305>`_) (`#1422 <https://github.com/ros2/rclpy/issues/1422>`_)
+* publish action goal status once accepted before execution. (`#1228 <https://github.com/ros2/rclpy/issues/1228>`_) (`#1416 <https://github.com/ros2/rclpy/issues/1416>`_)
+* Fix doc generation for Humble (`#1414 <https://github.com/ros2/rclpy/issues/1414>`_)
+* Check if Task(Future) is canceled. (backport `#1377 <https://github.com/ros2/rclpy/issues/1377>`_) (`#1403 <https://github.com/ros2/rclpy/issues/1403>`_)
+* Contributors: Scotrraaj Gopal, mergify[bot]
+
 3.3.15 (2024-11-25)
 -------------------
 * TestClient.test_service_timestamps failing consistently. (`#1364 <https://github.com/ros2/rclpy/issues/1364>`_) (`#1365 <https://github.com/ros2/rclpy/issues/1365>`_)
