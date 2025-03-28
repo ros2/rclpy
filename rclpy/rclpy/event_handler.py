@@ -261,7 +261,7 @@ class SubscriptionEventCallbacks:
             pass
 
         if self.matched:
-            event_handlers.append(QoSEventHandler(
+            event_handlers.append(EventHandler(
                 callback_group=callback_group,
                 callback=self.matched,
                 event_type=QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED,
@@ -372,7 +372,7 @@ class PublisherEventCallbacks:
             pass
 
         if self.matched:
-            event_handlers.append(QoSEventHandler(
+            event_handlers.append(EventHandler(
                 callback_group=callback_group,
                 callback=self.matched,
                 event_type=QoSPublisherEventType.RCL_PUBLISHER_MATCHED,

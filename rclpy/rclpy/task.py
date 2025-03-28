@@ -16,6 +16,7 @@ from enum import Enum
 import inspect
 import sys
 import threading
+from typing import Callable
 import warnings
 import weakref
 
@@ -196,6 +197,20 @@ class Future:
         # Invoke when not holding self._lock
         if invoke:
             callback(self)
+
+    def remove_done_callback(self, callback: Callable[['Future'], None]) -> bool:
+        """
+        Remove a previously-added done callback.
+
+        Returns true if the given callback was found and removed.  Always fails if the Future was
+        already complete.
+        """
+        with self._lock:
+            try:
+                self._callbacks.remove(callback)
+            except ValueError:
+                return False
+            return True
 
 
 class Task(Future):
