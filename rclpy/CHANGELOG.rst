@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.1.4 (2025-04-02)
+------------------
 * Backport of the Events Executor (`#1391 <https://github.com/ros2/rclpy/issues/1391>`_) (`#1435 <https://github.com/ros2/rclpy/issues/1435>`_)
   * Introduce EventsExecutor implementation (`#1389 <https://github.com/ros2/rclpy/issues/1389>`_)
   Co-authored-by: Brad Martin <bmartin@fatlxception.org>
