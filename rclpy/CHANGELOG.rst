@@ -2,6 +2,71 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Backport of the Events Executor (`#1391 <https://github.com/ros2/rclpy/issues/1391>`_) (`#1435 <https://github.com/ros2/rclpy/issues/1435>`_)
+  * Introduce EventsExecutor implementation (`#1389 <https://github.com/ros2/rclpy/issues/1389>`_)
+  Co-authored-by: Brad Martin <bmartin@fatlxception.org>
+  Co-authored-by: Brad Martin <52003535+bmartin427@users.noreply.github.com>
+  Co-authored-by: Janosch Machowinski <jmachowinski@users.noreply.github.com>
+* Check parameter callback signature during registration. (backport `#1425 <https://github.com/ros2/rclpy/issues/1425>`_) (`#1429 <https://github.com/ros2/rclpy/issues/1429>`_)
+  * Check parameter callback signature during registration. (`#1425 <https://github.com/ros2/rclpy/issues/1425>`_)
+  (cherry picked from commit 94f42b6b16de00f1b0543a793c6cd614843ea69e)
+* Merge pull request `#1427 <https://github.com/ros2/rclpy/issues/1427>`_ from ros2/mergify/bp/jazzy/pr-1426
+  Fix function params indentation (backport `#1426 <https://github.com/ros2/rclpy/issues/1426>`_)
+* Fixed merge
+* fix merge
+* Fix function params indentation (`#1426 <https://github.com/ros2/rclpy/issues/1426>`_)
+  And add return type.
+  (cherry picked from commit 238ab50fec7fd5aaab319fe5ad59de692b3b4b47)
+  # Conflicts:
+  #	rclpy/rclpy/time.py
+  #	rclpy/rclpy/timer.py
+* Remove `SHARED` (`#1305 <https://github.com/ros2/rclpy/issues/1305>`_) (`#1421 <https://github.com/ros2/rclpy/issues/1421>`_)
+  When the module is compiled with `MODULE` (the default), the proper linker flags are added on macOS (specifically `-undefined dynamic_lookup`). Otherwise, `rclpy` segfaults when linked on conda.
+  Is the `SHARED` really necessary? The `pybind11` documentation says:
+  > Specifying `SHARED` will create a more traditional dynamic library which can also be linked from elsewhere.
+  (cherry picked from commit 7fb093ba17daa6fdacb22d383c1e90933b860de9)
+  Co-authored-by: Wolf Vollprecht <w.vollprecht@gmail.com>
+* publish action goal status once accepted before execution. (`#1228 <https://github.com/ros2/rclpy/issues/1228>`_) (`#1415 <https://github.com/ros2/rclpy/issues/1415>`_)
+  (cherry picked from commit 87fbec0d6bbfda968d14689c977e9a6bdaa48886)
+  Co-authored-by: Tomoya Fujita <Tomoya.Fujita@sony.com>
+* Check if Task(Future) is canceled. (backport `#1377 <https://github.com/ros2/rclpy/issues/1377>`_) (`#1404 <https://github.com/ros2/rclpy/issues/1404>`_)
+  * Check if Task(Future) is canceled. (`#1377 <https://github.com/ros2/rclpy/issues/1377>`_)
+  * Check if Task(Future) is canceled.
+  * Close cancelled coroutine (`#1394 <https://github.com/ros2/rclpy/issues/1394>`_)
+  * Add FutureState
+  * Close canceled coroutine
+  * Fixed behavior in test
+  ---------
+  * address flake8 and pep257 failures.
+  * Cancelled future is not done (`#1397 <https://github.com/ros2/rclpy/issues/1397>`_)
+  * Remove redundant coro.close
+  * Only finished future is done
+  * Add function _pending and fix checks
+  * Replace check in done from pending to finished
+  * Adapt test to new behavior
+  * Add tests
+  * Make changes within active task mutex
+  ---------
+  * keep the consistent behavior to avoid exception, and adjusted some tests accordingly.
+  * revert doc section to raise the exception.
+  * remove StrEnum and put logical operator in the beginning of line.
+  * add more test to check Task state.
+  ---------
+  Co-authored-by: Nadav Elkabets <elnadav12@gmail.com>
+  Co-authored-by: Nadav Elkabets <32939935+nadavelkabets@users.noreply.github.com>
+  (cherry picked from commit 9a144bf040fb8c74058c6b4fd9830fd0e0e3594e)
+  # Conflicts:
+  #	rclpy/rclpy/executors.py
+  #	rclpy/rclpy/task.py
+  #	rclpy/test/test_executor.py
+  * resolve conflicts.
+  * _spin_once_until_future_complete does not exist.
+  ---------
+  Co-authored-by: Tomoya Fujita <Tomoya.Fujita@sony.com>
+* Contributors: Alejandro Hernandez Cordero, Alejandro Hernández Cordero, Christophe Bedard, Florian Vahl, mergify[bot]
+
 7.1.3 (2024-12-18)
 ------------------
 * TestClient.test_service_timestamps failing consistently. (`#1364 <https://github.com/ros2/rclpy/issues/1364>`_) (`#1367 <https://github.com/ros2/rclpy/issues/1367>`_)
