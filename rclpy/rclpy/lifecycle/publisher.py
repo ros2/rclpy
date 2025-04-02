@@ -23,10 +23,12 @@ from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
 
+from typing_extensions import TypeAlias
+from typing_extensions import Unpack
+
 from .managed_entity import SimpleManagedEntity
 
 if TYPE_CHECKING:
-    from typing import TypeAlias, Unpack
     LifecyclePublisherArgs: TypeAlias = Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile,
                                               PublisherEventCallbacks, CallbackGroup]
 

@@ -13,16 +13,24 @@
 # limitations under the License.
 
 from threading import Thread
+from typing import Any
+from typing import Literal
 from unittest import mock
 
 import lifecycle_msgs.msg
-import lifecycle_msgs.srv
+from lifecycle_msgs.srv import ChangeState
+from lifecycle_msgs.srv import GetAvailableStates
+from lifecycle_msgs.srv import GetAvailableTransitions
+from lifecycle_msgs.srv import GetState
 
 import pytest
+from pytest import FixtureRequest
 
 import rclpy
+from rclpy.client import Client
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.lifecycle import LifecycleNode
+from rclpy.lifecycle import LifecycleState
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -51,7 +59,8 @@ def test_lifecycle_node_init() -> None:
     assert not node._state_machine.service_get_transition_graph
     node.destroy_node()
     with pytest.raises(TypeError):
-        LifecycleNode('test_lifecycle_node_init_3', enable_communication_interface='asd')
+        LifecycleNode('test_lifecycle_node_init_3',
+                      enable_communication_interface='asd')  # type: ignore[arg-type]
 
 
 def test_lifecycle_state_transitions() -> None:
@@ -83,10 +92,10 @@ def test_lifecycle_state_transitions() -> None:
 
     class ErrorOnConfigureHandledCorrectlyNode(LifecycleNode):
 
-        def on_configure(self):
+        def on_configure(self, state: LifecycleState) -> Literal[TransitionCallbackReturn.ERROR]:
             return TransitionCallbackReturn.ERROR
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             super().__init__(*args, **kwargs)
 
     node = ErrorOnConfigureHandledCorrectlyNode(
@@ -97,13 +106,13 @@ def test_lifecycle_state_transitions() -> None:
 
     class ErrorOnConfigureHandledInCorrectlyNode(LifecycleNode):
 
-        def on_configure(self):
+        def on_configure(self, state: LifecycleState) -> Literal[TransitionCallbackReturn.ERROR]:
             return TransitionCallbackReturn.ERROR
 
-        def on_error(self):
+        def on_error(self, state: LifecycleState) -> Literal[TransitionCallbackReturn.ERROR]:
             return TransitionCallbackReturn.ERROR
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             super().__init__(*args, **kwargs)
 
     node = ErrorOnConfigureHandledInCorrectlyNode(
@@ -112,24 +121,29 @@ def test_lifecycle_state_transitions() -> None:
     assert node._state_machine.current_state[1] == 'finalized'
 
 
-def test_lifecycle_services(request):
+def test_lifecycle_services(request: FixtureRequest) -> None:
     lc_node_name = 'test_lifecycle_services_lifecycle'
     lc_node = LifecycleNode(lc_node_name)
     client_node = Node('test_lifecycle_services_client')
-    get_state_cli = client_node.create_client(
-        lifecycle_msgs.srv.GetState,
+    get_state_cli: Client[GetState.Request, GetState.Response] = client_node.create_client(
+        GetState,
         f'/{lc_node_name}/get_state')
-    change_state_cli = client_node.create_client(
-        lifecycle_msgs.srv.ChangeState,
+    change_state_cli: Client[ChangeState.Request,
+                             ChangeState.Response] = client_node.create_client(
+        ChangeState,
         f'/{lc_node_name}/change_state')
-    get_available_states_cli = client_node.create_client(
-        lifecycle_msgs.srv.GetAvailableStates,
+    get_available_states_cli: Client[GetAvailableStates.Request,
+                                     GetAvailableStates.Response] = client_node.create_client(
+        GetAvailableStates,
         f'/{lc_node_name}/get_available_states')
-    get_available_transitions_cli = client_node.create_client(
-        lifecycle_msgs.srv.GetAvailableTransitions,
-        f'/{lc_node_name}/get_available_transitions')
-    get_transition_graph_cli = client_node.create_client(
-        lifecycle_msgs.srv.GetAvailableTransitions,
+    get_available_transitions_cli: Client[GetAvailableTransitions.Request,
+                                          GetAvailableTransitions.Response] = \
+        client_node.create_client(
+            GetAvailableTransitions,
+            f'/{lc_node_name}/get_available_transitions')
+    get_transition_graph_cli: Client[GetAvailableTransitions.Request,
+                                     GetAvailableTransitions.Response] = client_node.create_client(
+        GetAvailableTransitions,
         f'/{lc_node_name}/get_transition_graph')
     for cli in (
         get_state_cli,
@@ -154,29 +168,30 @@ def test_lifecycle_services(request):
     request.addfinalizer(cleanup)
 
     # test all services
-    req = lifecycle_msgs.srv.GetState.Request()
+    req = GetState.Request()
     resp = get_state_cli.call(req)
+    assert resp
     assert resp.current_state.label == 'unconfigured'
-    req = lifecycle_msgs.srv.ChangeState.Request()
+    req = ChangeState.Request()
     req.transition.id = lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE
     resp = change_state_cli.call(req)
     assert resp.success
-    req = lifecycle_msgs.srv.GetState.Request()
+    req = GetState.Request()
     resp = get_state_cli.call(req)
     assert resp.current_state.label == 'inactive'
-    req = lifecycle_msgs.srv.GetAvailableStates.Request()
+    req = GetAvailableStates.Request()
     resp = get_available_states_cli.call(req)
     states_labels = {state.label for state in resp.available_states}
     assert states_labels == {
         'unknown', 'unconfigured', 'inactive', 'active', 'finalized', 'configuring', 'cleaningup',
         'shuttingdown', 'activating', 'deactivating', 'errorprocessing'
     }
-    req = lifecycle_msgs.srv.GetAvailableTransitions.Request()
+    req = GetAvailableTransitions.Request()
     resp = get_available_transitions_cli.call(req)
     transitions_labels = {
         transition_def.transition.label for transition_def in resp.available_transitions}
     assert transitions_labels == {'activate', 'cleanup', 'shutdown'}
-    req = lifecycle_msgs.srv.GetAvailableTransitions.Request()
+    req = GetAvailableTransitions.Request()
     resp = get_transition_graph_cli.call(req)
     transitions_labels = {
         transition_def.transition.label for transition_def in resp.available_transitions}

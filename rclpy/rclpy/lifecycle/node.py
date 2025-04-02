@@ -36,19 +36,19 @@ from rclpy.qos import QoSProfile
 from rclpy.service import Service
 from rclpy.type_support import check_is_valid_srv_type, MsgT
 
+from typing_extensions import TypeAlias
+from typing_extensions import Unpack
+
 from .managed_entity import ManagedEntity
 from .publisher import LifecyclePublisher
 
 if TYPE_CHECKING:
-    from typing import TypeAlias
-    from typing import Unpack
-
     from rclpy.context import Context
     from rclpy.parameter import Parameter
     from rclpy.qos_overriding_options import QoSOverridingOptions
     from rclpy.event_handler import PublisherEventCallbacks
 
-TransitionCallbackReturn: 'TypeAlias' = _rclpy.TransitionCallbackReturnType
+TransitionCallbackReturn: TypeAlias = _rclpy.TransitionCallbackReturnType
 
 
 CallbackNames = Literal['on_configure', 'on_cleanup', 'on_shutdown', 'on_activate',
@@ -60,7 +60,7 @@ class LifecycleState(NamedTuple):
     state_id: int
 
 
-class CreateLifecyclePublisherArgs(TypedDict):
+class CreateLifecyclePublisherArgs(TypedDict, total=False):
     callback_group: Optional[CallbackGroup]
     event_callbacks: 'Optional[PublisherEventCallbacks]'
     qos_overriding_options: 'Optional[QoSOverridingOptions]'
@@ -503,7 +503,7 @@ class LifecycleNodeMixin(ManagedEntity):
         return resp
 
 
-class LifecycleNodeArgs(TypedDict):
+class LifecycleNodeArgs(TypedDict, total=False):
     context: 'Optional[Context]'
     cli_args: Optional[List[str]]
     namespace: Optional[str]

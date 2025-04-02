@@ -45,12 +45,17 @@ class TopicEndpointInfo:
         '_qos_profile'
     ]
 
-    def __init__(self, node_name: str = '', node_namespace: str = '',
-                 topic_type: str = '',
-                 topic_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
-                 endpoint_type: TopicEndpointTypeEnum = TopicEndpointTypeEnum.INVALID,
-                 endpoint_gid: List[int] = [],
-                 qos_profile: QoSProfile = QoSPresetProfiles.UNKNOWN.value) -> None:
+    def __init__(
+        self,
+        node_name: str = '',
+        node_namespace: str = '',
+        topic_type: str = '',
+        topic_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
+        endpoint_type: Union[TopicEndpointTypeEnum, int] = TopicEndpointTypeEnum.INVALID,
+        endpoint_gid: List[int] = [],
+        qos_profile: Union[QoSProfile, '_rclpy._rmw_qos_profile_dict'] =
+            QoSPresetProfiles.UNKNOWN.value
+    ):
         self.node_name = node_name
         self.node_namespace = node_namespace
         self.topic_type = topic_type
@@ -120,8 +125,9 @@ class TopicEndpointInfo:
         else:
             assert False
 
+    # Has to be marked Any due to mypy#3004. Return type is actually TopicEndpointTypeEnum
     @property
-    def endpoint_type(self) -> TopicEndpointTypeEnum:
+    def endpoint_type(self) -> Any:
         """
         Get field 'endpoint_type'.
 
@@ -152,8 +158,9 @@ class TopicEndpointInfo:
         assert all(isinstance(x, int) for x in value)
         self._endpoint_gid = value
 
+    # Has to be marked Any due to mypy#3004. Return type is actually QoSProfile
     @property
-    def qos_profile(self) -> QoSProfile:
+    def qos_profile(self) -> Any:
         """
         Get field 'qos_profile'.
 
