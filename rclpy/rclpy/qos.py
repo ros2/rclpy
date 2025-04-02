@@ -73,7 +73,8 @@ class QoSProfile:
         '_avoid_ros_namespace_conventions',
     ]
 
-    def __init__(self, history: Union['QoSHistoryPolicy', int, None] = None,
+    def __init__(self,
+                 history: Union['QoSHistoryPolicy', int, None] = None,
                  depth: Optional[int] = None,
                  reliability: Union['QoSReliabilityPolicy', int, None] = None,
                  durability: Union['QoSDurabilityPolicy', int, None] = None,
@@ -363,7 +364,7 @@ class HistoryPolicy(QoSPolicyEnum):
 
 
 # Alias with the old name, for retrocompatibility
-QoSHistoryPolicy = HistoryPolicy
+QoSHistoryPolicy: TypeAlias = HistoryPolicy
 
 
 @_deprecated_policy_value_aliases((
@@ -387,7 +388,7 @@ class ReliabilityPolicy(QoSPolicyEnum):
 
 
 # Alias with the old name, for retrocompatibility
-QoSReliabilityPolicy = ReliabilityPolicy
+QoSReliabilityPolicy: TypeAlias = ReliabilityPolicy
 
 
 @_deprecated_policy_value_aliases((
@@ -411,7 +412,7 @@ class DurabilityPolicy(QoSPolicyEnum):
 
 
 # Alias with the old name, for retrocompatibility
-QoSDurabilityPolicy = DurabilityPolicy
+QoSDurabilityPolicy: TypeAlias = DurabilityPolicy
 
 
 @_deprecated_policy_value_aliases((
