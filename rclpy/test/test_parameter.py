@@ -114,13 +114,13 @@ class TestParameter(unittest.TestCase):
         p = Parameter('myparam', Parameter.Type.NOT_SET)
         self.assertIsNone(p.value)
 
-        p1 = Parameter('myparam')
-        self.assertIsNone(p1.value)
-        self.assertEqual(p1.type_, Parameter.Type.NOT_SET)
+        p = Parameter('myparam')
+        self.assertIsNone(p.value)
+        self.assertEqual(p.type_, Parameter.Type.NOT_SET)
 
-        p2 = Parameter('myparam', value=None)
-        self.assertIsNone(p2.value)
-        self.assertEqual(p2.type_, Parameter.Type.NOT_SET)
+        p = Parameter('myparam', value=None)
+        self.assertIsNone(p.value)
+        self.assertEqual(p.type_, Parameter.Type.NOT_SET)
 
     def test_value_and_type_must_agree(self) -> None:
         with self.assertRaises(ValueError):
