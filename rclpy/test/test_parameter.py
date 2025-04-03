@@ -114,13 +114,13 @@ class TestParameter(unittest.TestCase):
         p = Parameter('myparam', Parameter.Type.NOT_SET)
         self.assertIsNone(p.value)
 
-        p = Parameter('myparam')
-        self.assertIsNone(p.value)
-        self.assertEqual(p.type_, Parameter.Type.NOT_SET)
+        p1 = Parameter('myparam')
+        self.assertIsNone(p1.value)
+        self.assertEqual(p1.type_, Parameter.Type.NOT_SET)
 
-        p = Parameter('myparam', value=None)
-        self.assertIsNone(p.value)
-        self.assertEqual(p.type_, Parameter.Type.NOT_SET)
+        p2 = Parameter('myparam', value=None)
+        self.assertIsNone(p2.value)
+        self.assertEqual(p2.type_, Parameter.Type.NOT_SET)
 
     def test_value_and_type_must_agree(self) -> None:
         with self.assertRaises(ValueError):
@@ -130,10 +130,10 @@ class TestParameter(unittest.TestCase):
 
     def test_error_on_illegal_value_type(self) -> None:
         with self.assertRaises(TypeError):
-            Parameter('illegaltype', 'mytype', 'myvalue')
+            Parameter('illegaltype', 'mytype', 'myvalue')  # type: ignore[call-overload]
 
         with self.assertRaises(TypeError):
-            Parameter('illegaltype', value={'invalid': 'type'})
+            Parameter('illegaltype', value={'invalid': 'type'})  # type: ignore[call-overload]
 
     def test_integer_tuple_array(self) -> None:
         # list
@@ -246,7 +246,7 @@ class TestParameter(unittest.TestCase):
 
         for input_value, expected_value in test_cases:
             result_value = parameter_value_to_python(input_value)
-            if isinstance(expected_value, list):
+            if isinstance(result_value, list) and isinstance(expected_value, list):
                 assert len(result_value) == len(expected_value)
                 # element-wise comparison for lists
                 assert all(x == y for x, y in zip(result_value, expected_value))

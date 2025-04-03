@@ -24,6 +24,7 @@ import rclpy.event_handler
 import rclpy.executors
 import rclpy.experimental
 import rclpy.node
+import rclpy.parameter
 import rclpy.qos
 import rclpy.time
 import rclpy.timer
@@ -183,7 +184,7 @@ class TimerTestNode(rclpy.node.Node):
     def __init__(
         self,
         index: int = 0,
-        parameter_overrides: typing.Optional[list[rclpy.Parameter]] = None,
+        parameter_overrides: typing.Optional[list[rclpy.parameter.Parameter[bool]]] = None,
     ) -> None:
         super().__init__(f'test_timer{index}', parameter_overrides=parameter_overrides)
         self._timer_events = 0
@@ -233,7 +234,7 @@ class ActionServerTestNode(rclpy.node.Node):
     def __init__(self) -> None:
         super().__init__(
             'test_action_server_node',
-            parameter_overrides=[rclpy.Parameter('use_sim_time', value=True)],
+            parameter_overrides=[rclpy.parameter.Parameter('use_sim_time', value=True)],
         )
         self._got_goal_future: typing.Optional[rclpy.Future[test_msgs.action.Fibonacci.Goal]] = (
             None
@@ -565,7 +566,7 @@ class TestEventsExecutor(unittest.TestCase):
     def test_timers(self) -> None:
         realtime_node = TimerTestNode(index=0)
         rostime_node = TimerTestNode(
-            index=1, parameter_overrides=[rclpy.Parameter('use_sim_time', value=True)]
+            index=1, parameter_overrides=[rclpy.parameter.Parameter('use_sim_time', value=True)]
         )
         clock_node = ClockPublisherNode()
         for node in [realtime_node, rostime_node, clock_node]:

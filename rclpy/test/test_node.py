@@ -15,7 +15,11 @@
 import pathlib
 import platform
 import time
+from typing import Any
 from typing import List
+from typing import Tuple
+from typing import TYPE_CHECKING
+from typing import Union
 import unittest
 from unittest.mock import Mock
 import warnings
@@ -32,6 +36,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
 import rclpy
 from rclpy.clock_type import ClockType
+import rclpy.context
 from rclpy.duration import Duration
 from rclpy.exceptions import InvalidParameterException
 from rclpy.exceptions import InvalidParameterTypeException
@@ -63,13 +68,16 @@ TEST_RESOURCES_DIR = pathlib.Path(__file__).resolve().parent / 'resources' / 'te
 
 class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         rclpy.shutdown(context=cls.context)
 
     def setUp(self) -> None:
@@ -83,7 +91,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_accessors(self) -> None:
         self.assertIsNotNone(self.node.handle)
         with self.assertRaises(AttributeError):
-            self.node.handle = 'garbage'
+            self.node.handle = 'garbage'  # type: ignore[assignment]
         self.assertEqual(self.node.get_name(), TEST_NODE)
         self.assertEqual(self.node.get_namespace(), TEST_NAMESPACE)
         self.assertEqual(self.node.get_clock().clock_type, ClockType.ROS_TIME)
@@ -100,7 +108,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'must be greater than or equal to zero'):
             self.node.create_publisher(BasicTypes, 'chatter', -1)
         with self.assertRaisesRegex(TypeError, 'Expected QoSProfile or int'):
-            self.node.create_publisher(BasicTypes, 'chatter', 'foo')
+            self.node.create_publisher(BasicTypes, 'chatter', 'foo')  # type: ignore[arg-type]
 
     def test_create_subscription(self) -> None:
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)
@@ -115,7 +123,10 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'must be greater than or equal to zero'):
             self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), -1)
         with self.assertRaisesRegex(TypeError, 'Expected QoSProfile or int'):
-            self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 'foo')
+            self.node.create_subscription(BasicTypes,
+                                          'chatter',
+                                          lambda msg: print(msg),
+                                          'foo')  # type: ignore[arg-type]
 
     def raw_subscription_callback(self, msg):
         print('Raw subscription callback: %s length %d' % (msg, len(msg)))
@@ -389,7 +400,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         node_logger.set_level(rclpy.logging.LoggingSeverity.INFO)
         node_logger.debug('test')
 
-    def modify_parameter_callback(self, parameters_list: List[Parameter]):
+    def modify_parameter_callback(self, parameters_list: List[Parameter[Any]]):
         modified_list = parameters_list.copy()
         for param in parameters_list:
             if param.name == 'foo':
@@ -437,7 +448,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
     def test_node_cannot_set_invalid_parameters(self) -> None:
         with self.assertRaises(TypeError):
-            self.node.set_parameters([42])
+            self.node.set_parameters([42])  # type: ignore[list-item]
 
     def test_node_set_parameters_atomically(self) -> None:
         result = self.node.set_parameters_atomically([
@@ -552,6 +563,9 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
 class TestExecutor(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+
     @classmethod
     def setUpClass(cls):
         cls.context = rclpy.context.Context()
@@ -599,6 +613,9 @@ class TestExecutor(unittest.TestCase):
 
 
 class TestNode(unittest.TestCase):
+
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
 
     @classmethod
     def setUpClass(cls):
@@ -722,7 +739,7 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter(
                 1,
                 'wrong_name_type',
-                ParameterDescriptor())
+                ParameterDescriptor())  # type: ignore[call-overload]
 
         with self.assertRaises(ValueError):
             self.node.declare_parameter(
@@ -999,7 +1016,7 @@ class TestNode(unittest.TestCase):
         self.assertEqual(result.value, 153)
 
     def test_node_get_parameters_by_prefix(self) -> None:
-        parameters = [
+        parameter_tuples: List[Tuple[str, Union[int, str, float]]] = [
             ('foo_prefix.foo', 43),
             ('foo_prefix.bar', 'hello'),
             ('foo_prefix.baz', 2.41),
@@ -1007,7 +1024,7 @@ class TestNode(unittest.TestCase):
             ('bar_prefix.bar', 12.3),
             ('bar_prefix.baz', 'world'),
         ]
-        self.node.declare_parameters('', parameters)
+        self.node.declare_parameters('', parameter_tuples)
 
         parameters = self.node.get_parameters_by_prefix('foo_prefix')
         self.assertIsInstance(parameters, dict)
@@ -1078,7 +1095,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -1240,7 +1257,7 @@ class TestNode(unittest.TestCase):
         self.assertTrue(result[2].successful)
 
     def test_node_list_parameters(self) -> None:
-        parameters = [
+        parameters: List[Tuple[str, Union[int, str, float]]] = [
             ('foo_prefix.foo', 43),
             ('foo_prefix.bar', 'hello'),
             ('foo_prefix.baz', 2.41),
@@ -1379,15 +1396,16 @@ class TestNode(unittest.TestCase):
         )
 
         with self.assertRaises(TypeError):
-            self.node.list_parameters(prefixes='foo', depth=0)
+            self.node.list_parameters(prefixes='foo', depth=0)  # type: ignore[arg-type]
 
         with self.assertRaises(ValueError):
             self.node.list_parameters(prefixes=[], depth=-1)
 
         with self.assertRaises(TypeError):
-            self.node.list_parameters(prefixes=[], depth=1.5)
+            self.node.list_parameters(prefixes=[], depth=1.5)  # type: ignore[arg-type]
 
-    def modify_parameter_callback(self, parameter_list: List[Parameter]):
+    def modify_parameter_callback(self, parameter_list: List[Parameter[Any]]
+                                  ) -> List[Parameter[Any]]:
         modified_list = parameter_list.copy()
         for param in parameter_list:
             if param.name == 'foo':
@@ -1395,7 +1413,7 @@ class TestNode(unittest.TestCase):
 
         return modified_list
 
-    def empty_parameter_callback(self, parameter_list: List[Parameter]):
+    def empty_parameter_callback(self, parameter_list: List[Parameter[Any]]):
         return []
 
     def test_add_remove_pre_set_parameter_callback(self) -> None:
@@ -1532,7 +1550,7 @@ class TestNode(unittest.TestCase):
         self.assertTrue(result[0].successful)
 
     def test_add_remove_post_set_parameter_callback(self) -> None:
-        def successful_parameter_set_callback(parameter_list: List[Parameter]):
+        def successful_parameter_set_callback(parameter_list: List[Parameter[Any]]) -> None:
             for param in parameter_list:
                 if param.name == 'param1':
                     self.track_value1 = param.value
@@ -1567,8 +1585,8 @@ class TestNode(unittest.TestCase):
         self.assertTrue(self.node.has_parameter('param2'))
         self.assertEqual(self.node.get_parameter('param1').value, 1.0)
         self.assertEqual(self.node.get_parameter('param2').value, 2.0)
-        self.assertTrue(self.track_value1 == 1.0)
-        self.assertTrue(self.track_value2 == 2.0)
+        self.assertTrue(self.track_value1 == 1.0)  # type: ignore[comparison-overlap]
+        self.assertTrue(self.track_value2 == 2.0)  # type: ignore[comparison-overlap]
 
     def test_node_set_parameters_read_only(self) -> None:
         integer_value = 42
@@ -1593,7 +1611,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -1728,7 +1746,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -1871,7 +1889,7 @@ class TestNode(unittest.TestCase):
         ]
 
         # Create rclpy.Parameter list from tuples.
-        parameters = [
+        parameters: List[Parameter[Any]] = [
             Parameter(
                 name=parameter_tuples[0][0],
                 value=integer_value
@@ -2147,19 +2165,19 @@ class TestNode(unittest.TestCase):
             ('int_value', 123, ParameterDescriptor(floating_point_range=[fp_range]))
         ]
 
-        result = self.node.declare_parameters('', parameters)
+        declared_parameters_result = self.node.declare_parameters('', parameters)
 
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], Parameter)
-        self.assertIsInstance(result[1], Parameter)
-        self.assertIsInstance(result[2], Parameter)
-        self.assertIsInstance(result[3], Parameter)
-        self.assertIsInstance(result[4], Parameter)
-        self.assertAlmostEqual(result[0].value, 0.0)
-        self.assertAlmostEqual(result[1].value, 10.0)
-        self.assertAlmostEqual(result[2].value, 4.5)
-        self.assertEqual(result[3].value, 'I am no float')
-        self.assertEqual(result[4].value, 123)
+        self.assertIsInstance(declared_parameters_result, list)
+        self.assertIsInstance(declared_parameters_result[0], Parameter)
+        self.assertIsInstance(declared_parameters_result[1], Parameter)
+        self.assertIsInstance(declared_parameters_result[2], Parameter)
+        self.assertIsInstance(declared_parameters_result[3], Parameter)
+        self.assertIsInstance(declared_parameters_result[4], Parameter)
+        self.assertAlmostEqual(declared_parameters_result[0].value, 0.0)
+        self.assertAlmostEqual(declared_parameters_result[1].value, 10.0)
+        self.assertAlmostEqual(declared_parameters_result[2].value, 4.5)
+        self.assertEqual(declared_parameters_result[3].value, 'I am no float')
+        self.assertEqual(declared_parameters_result[4].value, 123)
         self.assertEqual(self.node.get_parameter('from_value').value, 0.0)
         self.assertEqual(self.node.get_parameter('to_value').value, 10.0)
         self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
@@ -2229,19 +2247,19 @@ class TestNode(unittest.TestCase):
             ('float_value', 123.0, ParameterDescriptor(integer_range=[integer_range]))
         ]
 
-        result = self.node.declare_parameters('', parameters)
+        declared_parameters = self.node.declare_parameters('', parameters)
 
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], Parameter)
-        self.assertIsInstance(result[1], Parameter)
-        self.assertIsInstance(result[2], Parameter)
-        self.assertIsInstance(result[3], Parameter)
-        self.assertIsInstance(result[4], Parameter)
-        self.assertEqual(result[0].value, 0)
-        self.assertEqual(result[1].value, 10)
-        self.assertEqual(result[2].value, 4)
-        self.assertEqual(result[3].value, 'I am no integer')
-        self.assertAlmostEqual(result[4].value, 123.0)
+        self.assertIsInstance(declared_parameters, list)
+        self.assertIsInstance(declared_parameters[0], Parameter)
+        self.assertIsInstance(declared_parameters[1], Parameter)
+        self.assertIsInstance(declared_parameters[2], Parameter)
+        self.assertIsInstance(declared_parameters[3], Parameter)
+        self.assertIsInstance(declared_parameters[4], Parameter)
+        self.assertEqual(declared_parameters[0].value, 0)
+        self.assertEqual(declared_parameters[1].value, 10)
+        self.assertEqual(declared_parameters[2].value, 4)
+        self.assertEqual(declared_parameters[3].value, 'I am no integer')
+        self.assertAlmostEqual(declared_parameters[4].value, 123.0)
         self.assertEqual(self.node.get_parameter('from_value').value, 0)
         self.assertEqual(self.node.get_parameter('to_value').value, 10)
         self.assertEqual(self.node.get_parameter('in_range').value, 4)
@@ -2306,7 +2324,7 @@ class TestNode(unittest.TestCase):
             ('int_param_no_default', Parameter.Type.INTEGER),
             ('dynamic_param', None, ParameterDescriptor(dynamic_typing=True)),
         ]
-        result = self.node.declare_parameters('', parameters)
+        self.node.declare_parameters('', parameters)
 
         # Try getting parameters before setting values
         int_param = self.node.get_parameter('int_param')

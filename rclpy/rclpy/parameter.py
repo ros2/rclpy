@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import array
 from enum import IntEnum
@@ -20,6 +21,7 @@ from typing import Dict
 from typing import Final
 from typing import Generic
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import overload
 from typing import Tuple
@@ -78,7 +80,7 @@ class Parameter(Generic[AllowableParameterValueT]):
         @classmethod
         def from_parameter_value(cls,
                                  parameter_value: AllowableParameterValue
-                                 ) -> 'Parameter.Type':
+                                 ) -> Parameter.Type:
             """
             Get a Parameter.Type from a given variable.
 
@@ -143,7 +145,7 @@ class Parameter(Generic[AllowableParameterValueT]):
             return False
 
     @classmethod
-    def from_parameter_msg(cls, param_msg: ParameterMsg) -> 'Parameter[Any]':
+    def from_parameter_msg(cls, param_msg: ParameterMsg) -> Parameter[Any]:
         value = None
         type_ = Parameter.Type(value=param_msg.value.type)
         if Parameter.Type.BOOL == type_:
@@ -167,17 +169,65 @@ class Parameter(Generic[AllowableParameterValueT]):
         return cls(param_msg.name, type_, value)
 
     @overload
-    def __init__(self, name: str, type_: Optional['Parameter.Type'] = None,
-                 value: None = None) -> None: ...
+    def __init__(self: Parameter[None], name: str) -> None: ...
 
     @overload
-    def __init__(self, name: str, type_: 'Parameter.Type',
-                 value: AllowableParameterValueT) -> None: ...
+    def __init__(self: Parameter[None], name: str, type_: Literal[Parameter.Type.NOT_SET]
+                 ) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[bool], name: str, type_: Literal[Parameter.Type.BOOL]
+                 ) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[int], name: str, type_: Literal[Parameter.Type.INTEGER]
+                 ) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[float], name: str, type_: Literal[Parameter.Type.DOUBLE]
+                 ) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[str], name: str, type_: Literal[Parameter.Type.STRING]
+                 ) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[Union[list[bytes], Tuple[bytes, ...]]],
+                 name: str,
+                 type_: Literal[Parameter.Type.BYTE_ARRAY]) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[Union[list[bool], Tuple[bool, ...]]],
+                 name: str,
+                 type_: Literal[Parameter.Type.BOOL_ARRAY]) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[Union[list[int], Tuple[int, ...], array.array[int]]],
+                 name: str,
+                 type_: Literal[Parameter.Type.INTEGER_ARRAY]) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[Union[list[float], Tuple[float, ...], array.array[float]]],
+                 name: str,
+                 type_: Literal[Parameter.Type.DOUBLE_ARRAY]) -> None: ...
+
+    @overload
+    def __init__(self: Parameter[Union[list[str], Tuple[str, ...], array.array[str]]],
+                 name: str,
+                 type_: Literal[Parameter.Type.STRING_ARRAY]) -> None: ...
 
     @overload
     def __init__(self, name: str, *, value: AllowableParameterValueT) -> None: ...
 
-    def __init__(self, name: str, type_: Optional['Parameter.Type'] = None, value=None) -> None:
+    @overload
+    def __init__(self, name: str, type_: Optional[Parameter.Type] = None,
+                 value: None = None) -> None: ...
+
+    @overload
+    def __init__(self, name: str, type_: Parameter.Type,
+                 value: AllowableParameterValueT) -> None: ...
+
+    def __init__(self, name: str, type_: Optional[Parameter.Type] = None, value=None) -> None:
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
