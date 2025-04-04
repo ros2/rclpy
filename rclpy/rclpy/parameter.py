@@ -339,7 +339,7 @@ def parameter_dict_from_yaml_file(
         # node-namespaced parameters will override the wildcard parameters
         if use_wildcard and '/**' in param_file.keys():
             value = param_file['/**']
-            if type(value) != dict and 'ros__parameters' not in value:
+            if not isinstance(value, dict) and 'ros__parameters' not in value:
                 raise RuntimeError(
                     'YAML file is not a valid ROS parameter file for wildcard(/**)')
             param_dict.update(value['ros__parameters'])
@@ -353,7 +353,7 @@ def parameter_dict_from_yaml_file(
                 if abs_name in param_file.keys():
                     # found absolute node name w or w/o namespace
                     value = param_file[abs_name]
-                    if type(value) != dict and 'ros__parameters' not in value:
+                    if not isinstance(value, dict) and 'ros__parameters' not in value:
                         raise RuntimeError(
                             f'YAML file is not a valid ROS parameter file for node {abs_name}')
                     param_dict.update(value['ros__parameters'])
@@ -361,7 +361,7 @@ def parameter_dict_from_yaml_file(
                 if not ns and node_basename in param_file.keys():
                     # found non-absolute node name without namespace
                     value = param_file[node_basename]
-                    if type(value) != dict and 'ros__parameters' not in value:
+                    if not isinstance(value, dict) and 'ros__parameters' not in value:
                         raise RuntimeError('YAML file is not a valid ROS parameter '
                                            f'file for node {node_basename}')
                     param_dict.update(value['ros__parameters'])
@@ -369,7 +369,7 @@ def parameter_dict_from_yaml_file(
                     # found namespace
                     if node_basename in param_file[ns].keys():
                         value = param_file[ns][node_basename]
-                        if type(value) != dict and 'ros__parameters' not in value:
+                        if not isinstance(value, dict) and 'ros__parameters' not in value:
                             raise RuntimeError('YAML file is not a valid ROS parameter '
                                                f'file for namespace {ns} node {node_basename}')
                         param_dict.update(value['ros__parameters'])
