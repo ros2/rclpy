@@ -174,7 +174,6 @@ class Time:
             raise TypeError("Time object's clock type should be either ROS_TIME or SYSTEM_TIME")
         return datetime.fromtimestamp(self._time_handle.nanoseconds / 1e9)
 
-
     @classmethod
     def from_msg(
         cls, msg: builtin_interfaces.msg.Time,
