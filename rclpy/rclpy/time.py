@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import overload, Tuple, Union
+from datetime import datetime
 
 import builtin_interfaces.msg
 
@@ -162,6 +163,17 @@ class Time:
         """
         seconds, nanoseconds = self.seconds_nanoseconds()
         return builtin_interfaces.msg.Time(sec=seconds, nanosec=nanoseconds)
+    
+    def to_datetime(self) -> datetime:
+        """
+        Create a datetime object from a ``Time`` object.
+
+        :rtype: datetime
+        """
+        if self.clock_type not in (ClockType.ROS_TIME, ClockType.SYSTEM_TIME):
+            raise TypeError("Time object's clock type should be either ROS_TIME or SYSTEM_TIME")
+        return datetime.fromtimestamp(self._time_handle.nanoseconds / 1e9)
+
 
     @classmethod
     def from_msg(
