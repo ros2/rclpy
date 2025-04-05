@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import overload, Tuple, Union
 from datetime import datetime
+from typing import overload, Tuple, Union
 
 import builtin_interfaces.msg
 
@@ -163,7 +163,7 @@ class Time:
         """
         seconds, nanoseconds = self.seconds_nanoseconds()
         return builtin_interfaces.msg.Time(sec=seconds, nanosec=nanoseconds)
-    
+
     def to_datetime(self) -> datetime:
         """
         Create a datetime object from a ``Time`` object.

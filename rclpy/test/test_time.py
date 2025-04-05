@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 from datetime import datetime
+import unittest
 
 from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
@@ -255,6 +255,3 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             time4 = Time(nanoseconds=0, clock_type=ClockType.UNINITIALIZED)
             time4.to_datetime()
-       
-
-    
