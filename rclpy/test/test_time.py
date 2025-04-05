@@ -246,7 +246,7 @@ class TestTime(unittest.TestCase):
         assert time1.to_datetime() == datetime.fromtimestamp(time1.nanoseconds / 1e9)
 
         time2 = Time(nanoseconds=174893823272323, clock_type=ClockType.ROS_TIME)
-        assert (time2.to_datetime().timestamp()) == time2.seconds_nanoseconds()[0]
+        assert int(time2.to_datetime().timestamp()) == time2.seconds_nanoseconds()[0]
         assert time2.to_datetime() == datetime.fromtimestamp(time2.nanoseconds / 1e9)
 
         with self.assertRaises(TypeError):
