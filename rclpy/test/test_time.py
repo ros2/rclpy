@@ -243,11 +243,11 @@ class TestTime(unittest.TestCase):
 
     def test_time_datetime_conversions(self) -> None:
         time1 = Time(seconds=1, nanoseconds=5e8, clock_type=ClockType.SYSTEM_TIME)
-        assert (time1.to_datetime().second) == time1.seconds_nanoseconds()[0]
+        assert (time1.to_datetime().timestamp()) == time1.seconds_nanoseconds()[0]
         assert time1.to_datetime() == datetime.fromtimestamp(time1.nanoseconds / 1e9)
 
         time2 = Time(nanoseconds=174893823272323, clock_type=ClockType.ROS_TIME)
-        assert (time2.to_datetime().second) == time2.seconds_nanoseconds()[0]
+        assert (time2.to_datetime().timestamp()) == time2.seconds_nanoseconds()[0]
         assert time2.to_datetime() == datetime.fromtimestamp(time2.nanoseconds / 1e9)
 
         with self.assertRaises(TypeError):
