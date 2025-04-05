@@ -253,8 +253,8 @@ class TestTime(unittest.TestCase):
             time3.to_datetime()
 
         with self.assertRaises(TypeError):
-            time3 = Time(nanoseconds=0, clock_type=ClockType.UNINITIALIZED)
-            time3.to_datetime()
+            time4 = Time(nanoseconds=0, clock_type=ClockType.UNINITIALIZED)
+            time4.to_datetime()
        
 
     
