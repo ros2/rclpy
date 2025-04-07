@@ -172,7 +172,7 @@ class Time:
         """
         if self.clock_type not in (ClockType.ROS_TIME, ClockType.SYSTEM_TIME):
             raise TypeError("Time object's clock type should be either ROS_TIME or SYSTEM_TIME")
-        return datetime.fromtimestamp(self._time_handle.nanoseconds / 1e9)
+        return datetime.fromtimestamp(self.nanoseconds / S_TO_NS)
 
     @classmethod
     def from_msg(
