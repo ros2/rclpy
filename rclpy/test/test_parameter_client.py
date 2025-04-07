@@ -140,7 +140,7 @@ class TestParameterClient(unittest.TestCase):
         assert result.results[0].successful
 
     def test_load_parameter_file(self) -> None:
-        yaml_string = """/param_test_target:
+        yaml_string = """/test_parameter_client_target:
             ros__parameters:
                 param_1: 1
                 param_str: "string"
@@ -161,7 +161,7 @@ class TestParameterClient(unittest.TestCase):
                 os.unlink(f.name)
 
     def test_load_parameter_file_atomically(self) -> None:
-        yaml_string = """/param_test_target:
+        yaml_string = """/test_parameter_client_target:
             ros__parameters:
                 param_1: 1
                 param_str: "string"
