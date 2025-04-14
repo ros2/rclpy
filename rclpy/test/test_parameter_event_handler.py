@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
 from typing import Union
 import unittest
 
@@ -32,7 +33,7 @@ from rclpy.qos import qos_profile_parameter_events
 
 class ParameterEventHandlerTester(ParameterEventHandler):
 
-    def test_event(self, parameter_event: ParameterEvent):
+    def test_event(self, parameter_event: ParameterEvent) -> None:
         self._callbacks.event_callback(parameter_event)
 
 
@@ -41,7 +42,7 @@ class CallbackChecker:
     def __init__(self) -> None:
         self.received = False
 
-    def callback(self, _: Union[Parameter, ParameterEvent]):
+    def callback(self, _: Union[Parameter[Any], ParameterEvent]) -> None:
         self.received = True
 
 
@@ -52,11 +53,11 @@ class CallCounter:
         self.first_callback_call_order = 0
         self.second_callback_call_order = 0
 
-    def first_callback(self, _: Union[Parameter, ParameterEvent]):
+    def first_callback(self, _: Union[Parameter[Any], ParameterEvent]) -> None:
         self.counter += 1
         self.first_callback_call_order = self.counter
 
-    def second_callback(self, _: Union[Parameter, ParameterEvent]):
+    def second_callback(self, _: Union[Parameter[Any], ParameterEvent]) -> None:
         self.counter += 1
         self.second_callback_call_order = self.counter
 
@@ -102,7 +103,7 @@ class TestParameterEventHandler(unittest.TestCase):
 
         # Callback is not called in this test anyway
         handle = self.parameter_event_handler.add_parameter_callback(
-            parameter_name, node_name, lambda: None
+            parameter_name, node_name, lambda _: None
         )
 
         assert isinstance(handle, ParameterCallbackHandle)

@@ -19,10 +19,12 @@ from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Final
 from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import overload
+from typing import Sequence
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
@@ -100,9 +102,10 @@ from rclpy.validate_parameter_name import validate_parameter_name
 from rclpy.validate_topic_name import validate_topic_name
 from rclpy.waitable import Waitable
 from typing_extensions import deprecated
+from typing_extensions import TypeAlias
 
 
-HIDDEN_NODE_PREFIX = '_'
+HIDDEN_NODE_PREFIX: Final = '_'
 
 # Left to support Legacy TypeVar.
 MsgType = TypeVar('MsgType')
@@ -113,7 +116,7 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 # Re-export exception defined in _rclpy C extension.
 # `Node.get_*_names_and_types_by_node` methods may raise this error.
-NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
+NodeNameNonExistentError: TypeAlias = _rclpy.NodeNameNonExistentError
 
 
 class Node:
@@ -439,6 +442,19 @@ class Node:
             args = (name, value, descriptor)
         return self.declare_parameters('', [args], ignore_override)[0]
 
+    ParameterInput: TypeAlias = Union[AllowableParameterValue, Parameter.Type, ParameterValue]
+
+    @overload
+    def declare_parameters(
+        self,
+        namespace: str,
+        parameters: Sequence[Union[
+            Tuple[str, ParameterInput],
+            Tuple[str, ParameterInput, ParameterDescriptor],
+        ]],
+        ignore_override: bool = False
+    ) -> List[Parameter[Any]]: ...
+
     @overload
     @deprecated('when declaring a parameter only providing its name is deprecated. '
                 'You have to either:\n'
@@ -449,23 +465,10 @@ class Node:
     def declare_parameters(
         self,
         namespace: str,
-        parameters: List[Union[
+        parameters: Sequence[Union[
             Tuple[str],
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor],
-        ]],
-        ignore_override: bool = False
-    ) -> List[Parameter[Any]]: ...
-
-    @overload
-    def declare_parameters(
-        self,
-        namespace: str,
-        parameters: List[Union[
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor],
+            Tuple[str, ParameterInput],
+            Tuple[str, ParameterInput, ParameterDescriptor],
         ]],
         ignore_override: bool = False
     ) -> List[Parameter[Any]]: ...
@@ -473,15 +476,13 @@ class Node:
     def declare_parameters(
         self,
         namespace: str,
-        parameters: Union[List[Union[
+        parameters: Union[Sequence[Union[
             Tuple[str],
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor]]],
-                  List[Union[
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor]]]],
+            Tuple[str, ParameterInput],
+            Tuple[str, ParameterInput, ParameterDescriptor]]],
+                  Sequence[Union[
+            Tuple[str, ParameterInput],
+            Tuple[str, ParameterInput, ParameterDescriptor]]]],
         ignore_override: bool = False
     ) -> List[Parameter[Any]]:
         """
