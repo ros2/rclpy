@@ -13,6 +13,11 @@
 # limitations under the License.
 
 import time
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
@@ -23,6 +28,7 @@ from rclpy.action import get_action_names_and_types
 from rclpy.action import get_action_server_names_and_types_by_node
 
 from test_msgs.action import Fibonacci
+from typing_extensions import TypeAlias
 
 TEST_ACTION0 = 'foo_action'
 TEST_ACTION1 = 'bar_action'
@@ -33,11 +39,31 @@ TEST_NAMESPACE1 = '/bar_ns'
 TEST_NODE2 = 'baz_node'
 TEST_NAMESPACE2 = '/baz_ns'
 
+FibonacciActionClient: TypeAlias = ActionClient[Fibonacci.Goal,
+                                                Fibonacci.Result,
+                                                Fibonacci.Feedback]
+
+FibonacciActionServer: TypeAlias = ActionServer[Fibonacci.Goal,
+                                                Fibonacci.Result,
+                                                Fibonacci.Feedback]
+
 
 class TestActionGraph(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node0: rclpy.node.Node
+        node1: rclpy.node.Node
+        node2: rclpy.node.Node
+        action_client10: FibonacciActionClient
+        action_server10: FibonacciActionServer
+        action_client20: FibonacciActionClient
+        action_client21: FibonacciActionClient
+        action_server20: FibonacciActionServer
+        action_server21: FibonacciActionServer
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
         cls.node0 = rclpy.create_node(TEST_NODE0, namespace=TEST_NAMESPACE0, context=cls.context)
@@ -45,11 +71,11 @@ class TestActionGraph(unittest.TestCase):
         cls.node2 = rclpy.create_node(TEST_NODE2, namespace=TEST_NAMESPACE2, context=cls.context)
 
         cls.action_client10 = ActionClient(cls.node1, Fibonacci, TEST_ACTION0)
-        cls.action_server10 = ActionServer(cls.node1, Fibonacci, TEST_ACTION0, lambda: None)
+        cls.action_server10 = ActionServer(cls.node1, Fibonacci, TEST_ACTION0, lambda _: None)
         cls.action_client20 = ActionClient(cls.node2, Fibonacci, TEST_ACTION0)
         cls.action_client21 = ActionClient(cls.node2, Fibonacci, TEST_ACTION1)
-        cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0, lambda: None)
-        cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1, lambda: None)
+        cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0, lambda _: None)
+        cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1, lambda _: None)
 
         assert cls.node1.wait_for_node(cls.node0.get_fully_qualified_name(), 2.0)
         assert cls.node1.wait_for_node(cls.node2.get_fully_qualified_name(), 2.0)
@@ -57,7 +83,7 @@ class TestActionGraph(unittest.TestCase):
         assert cls.node2.wait_for_node(cls.node1.get_fully_qualified_name(), 2.0)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.action_client10.destroy()
         cls.action_server10.destroy()
         cls.action_client20.destroy()
@@ -71,11 +97,11 @@ class TestActionGraph(unittest.TestCase):
 
     def get_names_and_types(
         self,
-        get_names_and_types_func,
-        *args,
-        expected_num_names,
-        timeout=5.0
-    ):
+        get_names_and_types_func: Callable[..., List[Any]],
+        *args: Any,
+        expected_num_names: int,
+        timeout: float = 5.0
+    ) -> Optional[List[Any]]:
         # Since it can take some time for the ROS graph to update
         # keep trying to get names and types until we get the desired number or timeout
         start = time.monotonic()
@@ -86,6 +112,7 @@ class TestActionGraph(unittest.TestCase):
                 return nat
             end = time.monotonic()
         assert len(nat) == expected_num_names
+        return None
 
     def test_get_action_client_names_and_types_by_node(self) -> None:
         self.get_names_and_types(
@@ -101,6 +128,7 @@ class TestActionGraph(unittest.TestCase):
             TEST_NODE1,
             TEST_NAMESPACE1,
             expected_num_names=1)
+        assert names_and_types1
         assert isinstance(names_and_types1[0], tuple)
         name1, types1 = names_and_types1[0]
         assert name1 == TEST_NAMESPACE1 + '/' + TEST_ACTION0
@@ -114,6 +142,7 @@ class TestActionGraph(unittest.TestCase):
             TEST_NODE2,
             TEST_NAMESPACE2,
             expected_num_names=2)
+        assert names_and_types2
         assert isinstance(names_and_types2[0], tuple)
         name20, types20 = names_and_types2[0]
         assert isinstance(types20, list)
@@ -142,6 +171,7 @@ class TestActionGraph(unittest.TestCase):
             TEST_NODE1,
             TEST_NAMESPACE1,
             expected_num_names=1)
+        assert names_and_types1
         assert isinstance(names_and_types1[0], tuple)
         name1, types1 = names_and_types1[0]
         assert name1 == TEST_NAMESPACE1 + '/' + TEST_ACTION0
@@ -155,6 +185,7 @@ class TestActionGraph(unittest.TestCase):
             TEST_NODE2,
             TEST_NAMESPACE2,
             expected_num_names=2)
+        assert names_and_types2
         assert len(names_and_types2) == 2
         assert isinstance(names_and_types2[0], tuple)
         name20, types20 = names_and_types2[0]
@@ -175,6 +206,7 @@ class TestActionGraph(unittest.TestCase):
             get_action_names_and_types,
             self.node0,
             expected_num_names=3)
+        assert names_and_types
         assert isinstance(names_and_types[0], tuple)
         name0, types0 = names_and_types[0]
         assert isinstance(types0, list)
