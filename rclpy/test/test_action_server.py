@@ -315,7 +315,7 @@ class TestActionServer(unittest.TestCase):
         # Exactly one of the goals should be accepted
         future0_result = future0.result()
         assert future0_result
-        future1_result = future0.result()
+        future1_result = future1.result()
         assert future1_result
         self.assertNotEqual(future0_result.accepted, future1_result.accepted)
         action_server.destroy()
