@@ -2,6 +2,27 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.0 (2025-04-18)
+------------------
+* Update parameter types (`#1441 <https://github.com/ros2/rclpy/issues/1441>`_)
+* Add TypeError string arg for better clarity (`#1442 <https://github.com/ros2/rclpy/issues/1442>`_)
+* Fix loading parameter behavior from yaml file. (`#1193 <https://github.com/ros2/rclpy/issues/1193>`_)
+* Update `lifecycle` types (`#1440 <https://github.com/ros2/rclpy/issues/1440>`_)
+* Update _rclpy_pybind11.pyi order and add EventsExecutor (`#1436 <https://github.com/ros2/rclpy/issues/1436>`_)
+* Update Clock Types (`#1433 <https://github.com/ros2/rclpy/issues/1433>`_)
+* Introduce EventsExecutor implementation (`#1391 <https://github.com/ros2/rclpy/issues/1391>`_)
+* Fix Duration, Clock, and QoS Docs (`#1428 <https://github.com/ros2/rclpy/issues/1428>`_)
+* Add exception doc for configure_introspection. (`#1434 <https://github.com/ros2/rclpy/issues/1434>`_)
+* Fix Task constructor type bug (`#1431 <https://github.com/ros2/rclpy/issues/1431>`_)
+* Add new interfaces to enable intropsection for action (`#1413 <https://github.com/ros2/rclpy/issues/1413>`_)
+* Check parameter callback signature during registration. (`#1425 <https://github.com/ros2/rclpy/issues/1425>`_)
+* Fix function params indentation (`#1426 <https://github.com/ros2/rclpy/issues/1426>`_)
+* Update Service and Action Protocols (`#1409 <https://github.com/ros2/rclpy/issues/1409>`_)
+* Remove `SHARED` from `pybind11_add_module` (`#1305 <https://github.com/ros2/rclpy/issues/1305>`_)
+* Publish action goal status once accepted before execution. (`#1228 <https://github.com/ros2/rclpy/issues/1228>`_)
+* Add missing dependencies so that rosdoc2 shows Node (`#1408 <https://github.com/ros2/rclpy/issues/1408>`_)
+* Contributors: Barry Xu, Brad Martin, Christophe Bedard, Michael Carlstrom, R Kent James, Tomoya Fujita, Wolf Vollprecht, Zahi Kakish
+
 9.0.0 (2025-02-02)
 ------------------
 * add QoS Profile/Depth support to Node. (`#1376 <https://github.com/ros2/rclpy/issues/1376>`_)
