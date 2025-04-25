@@ -2,6 +2,9 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.2.0 (2025-04-25)
+------------------
+
 9.1.0 (2025-04-18)
 ------------------
 * Update parameter types (`#1441 <https://github.com/ros2/rclpy/issues/1441>`_)
