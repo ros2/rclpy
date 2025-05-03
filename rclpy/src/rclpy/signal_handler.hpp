@@ -28,7 +28,8 @@ namespace rclpy
 /// Register a C++ callback to be invoked when a signal is caught.  These callbacks will be invoked
 /// on an arbitrary thread.  The callback will be automatically unregistered if the object goes out
 /// of scope.
-class ScopedSignalCallback {
+class ScopedSignalCallback
+{
 public:
   explicit ScopedSignalCallback(std::function<void()>);
   ~ScopedSignalCallback();

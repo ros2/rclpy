@@ -16,7 +16,6 @@ from enum import Enum
 import inspect
 import sys
 import threading
-from typing import Callable
 import warnings
 import weakref
 
@@ -198,7 +197,7 @@ class Future:
         if invoke:
             callback(self)
 
-    def remove_done_callback(self, callback: Callable[['Future[T]'], None]) -> bool:
+    def remove_done_callback(self, callback) -> bool:
         """
         Remove a previously-added done callback.
 
