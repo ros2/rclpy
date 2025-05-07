@@ -22,7 +22,6 @@ from typing import Optional
 from typing import overload
 from typing import Type
 from typing import Union
-import warnings
 
 import rclpy
 from rclpy.callback_groups import CallbackGroup
@@ -31,7 +30,6 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
-from typing_extensions import deprecated
 from typing_extensions import TypeAlias
 
 
@@ -182,16 +180,6 @@ class EventHandler(Waitable[EventHandlerData]):
 
     def destroy(self) -> None:
         self.__event.destroy_when_not_in_use()
-
-
-@deprecated('QoSEventHandler foo is deprecated, use EventHandler instead.',
-            category=DeprecationWarning, stacklevel=2)
-class QoSEventHandler(EventHandler):
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        warnings.warn('QoSEventHandler is deprecated, use EventHandler instead.',
-                      DeprecationWarning, stacklevel=2)
-        super().__init__(*args, **kwargs)
 
 
 class SubscriptionEventCallbacks:
