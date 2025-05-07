@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from enum import Enum, IntEnum
-from typing import (Any, Callable, Iterable, List, Optional, Tuple, Type,
-                    TypeVar, Union)
+from typing import (Any, List, Optional, Tuple, TypeVar, Union)
 import warnings
 
 from rclpy.duration import Duration
