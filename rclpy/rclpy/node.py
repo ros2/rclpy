@@ -446,7 +446,6 @@ class Node:
         self,
         namespace: str,
         parameters: Union[Sequence[Union[
-            Tuple[str],
             Tuple[str, ParameterInput],
             Tuple[str, ParameterInput, ParameterDescriptor]]],
                   Sequence[Union[
