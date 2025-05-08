@@ -242,7 +242,7 @@ class SubscriptionEventCallbacks:
             # Register default callback when not specified
             def _default_incompatible_qos_callback(event: QoSRequestedIncompatibleQoSInfo) -> None:
                 policy_name = qos_policy_name_from_kind(event.last_policy_kind)
-                logger.warn(
+                logger.warning(
                     "New publisher discovered on topic '{}', offering incompatible QoS. "
                     'No messages will be received from it. '
                     'Last incompatible policy: {}'.format(topic_name, policy_name))
@@ -278,7 +278,7 @@ class SubscriptionEventCallbacks:
         elif self.use_default_callbacks:
             # Register default callback when not specified
             def _default_incompatible_type_callback(event: Any) -> None:
-                logger.warn(
+                logger.warning(
                     "Incompatible type on topic '{}', no messages will be sent to it."
                     .format(topic_name))
             incompatible_type_callback = _default_incompatible_type_callback
@@ -367,7 +367,7 @@ class PublisherEventCallbacks:
             # Register default callback when not specified
             def _default_incompatible_qos_callback(event: QoSRequestedIncompatibleQoSInfo) -> None:
                 policy_name = qos_policy_name_from_kind(event.last_policy_kind)
-                logger.warn(
+                logger.warning(
                     "New subscription discovered on topic '{}', requesting incompatible QoS. "
                     'No messages will be sent to it. '
                     'Last incompatible policy: {}'.format(topic_name, policy_name))
@@ -389,7 +389,7 @@ class PublisherEventCallbacks:
         elif self.use_default_callbacks:
             # Register default callback when not specified
             def _default_incompatible_type_callback(event: Any) -> None:
-                logger.warn(
+                logger.warning(
                     "Incompatible type on topic '{}', no messages will be sent to it."
                     .format(topic_name))
             incompatible_type_callback = _default_incompatible_type_callback
