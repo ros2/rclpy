@@ -101,7 +101,6 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_parameter_name import validate_parameter_name
 from rclpy.validate_topic_name import validate_topic_name
 from rclpy.waitable import Waitable
-from typing_extensions import deprecated
 from typing_extensions import TypeAlias
 
 
@@ -389,18 +388,6 @@ class Node:
                           ) -> Parameter[AllowableParameterValueT]: ...
 
     @overload
-    @deprecated('when declaring a parameter only providing its name is deprecated. '
-                'You have to either:\n'
-                '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
-                ' (and optionally a descriptor).\n'
-                '\t- Pass a name and a parameter type.\n'
-                '\t- Pass a name and a descriptor with `dynamic_typing=True')
-    def declare_parameter(self, name: str,
-                          value: None = None,
-                          descriptor: None = None,
-                          ignore_override: bool = False) -> Parameter[Any]: ...
-
-    @overload
     def declare_parameter(self, name: str,
                           value: Union[None, Parameter.Type, ParameterValue] = None,
                           descriptor: Optional[ParameterDescriptor] = None,
@@ -455,29 +442,10 @@ class Node:
         ignore_override: bool = False
     ) -> List[Parameter[Any]]: ...
 
-    @overload
-    @deprecated('when declaring a parameter only providing its name is deprecated. '
-                'You have to either:\n'
-                '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
-                ' (and optionally a descriptor).\n'
-                '\t- Pass a name and a parameter type.\n'
-                '\t- Pass a name and a descriptor with `dynamic_typing=True')
-    def declare_parameters(
-        self,
-        namespace: str,
-        parameters: Sequence[Union[
-            Tuple[str],
-            Tuple[str, ParameterInput],
-            Tuple[str, ParameterInput, ParameterDescriptor],
-        ]],
-        ignore_override: bool = False
-    ) -> List[Parameter[Any]]: ...
-
     def declare_parameters(
         self,
         namespace: str,
         parameters: Union[Sequence[Union[
-            Tuple[str],
             Tuple[str, ParameterInput],
             Tuple[str, ParameterInput, ParameterDescriptor]]],
                   Sequence[Union[
@@ -565,15 +533,14 @@ class Node:
                 )
 
             if len(parameter_tuple) == 1:
-                warnings.warn(
+                raise TypeError(
                     f"when declaring parameter named '{name}', "
-                    'declaring a parameter only providing its name is deprecated. '
+                    'declaring a parameter only providing its name is not allowed. '
                     'You have to either:\n'
                     '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
                     ' (and optionally a descriptor).\n'
                     '\t- Pass a name and a parameter type.\n'
                     '\t- Pass a name and a descriptor with `dynamic_typing=True')
-                descriptor.dynamic_typing = True
 
             if isinstance(second_arg, Parameter.Type):
                 if second_arg == Parameter.Type.NOT_SET:

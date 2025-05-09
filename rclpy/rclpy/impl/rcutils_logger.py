@@ -31,7 +31,7 @@ from typing import Union
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
-from typing_extensions import deprecated, Unpack
+from typing_extensions import Unpack
 
 
 SupportedFiltersKeys = Literal['throttle', 'skip_first', 'once']
@@ -422,15 +422,6 @@ class RcutilsLogger:
     def warning(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
         """Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:."""
         return self.log(message, LoggingSeverity.WARN, **kwargs)
-
-    @deprecated('Deprecated in favor of :py:classmethod:RcutilsLogger.warning:.')
-    def warn(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
-        """
-        Log a message with `WARN` severity via :py:classmethod:RcutilsLogger.log:.
-
-        Deprecated in favor of :py:classmethod:RcutilsLogger.warning:.
-        """
-        return self.warning(message, **kwargs)
 
     def error(self, message: str, **kwargs: 'Unpack[LoggingArgs]') -> bool:
         """Log a message with `ERROR` severity via :py:classmethod:RcutilsLogger.log:."""

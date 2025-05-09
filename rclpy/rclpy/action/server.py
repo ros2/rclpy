@@ -367,7 +367,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             # Catch the exception here and go on so we don't crash.
             self._handle.send_goal_response(request_header, response_msg)
         except RCLError:
-            self._logger.warn('Failed to send goal response (the client may have gone away)')
+            self._logger.warning('Failed to send goal response (the client may have gone away)')
             return
 
         if not accepted:
@@ -457,7 +457,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             # Catch the exception here and go on so we don't crash.
             self._handle.send_cancel_response(request_header, cancel_response)
         except RCLError:
-            self._logger.warn('Failed to send cancel response (the client may have gone away)')
+            self._logger.warning('Failed to send cancel response (the client may have gone away)')
 
     async def _execute_get_result_request(
         self,
@@ -472,7 +472,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         # If no goal with the requested ID exists, then return UNKNOWN status
         # or the goal with the requested ID has been already expired
         if bytes(goal_uuid) not in self._goal_handles:
-            self._logger.warn(
+            self._logger.warning(
                 'Sending result response for unknown or expired goal ID: {0}'.format(goal_uuid))
             result_response = self._action_type.Impl.GetResultService.Response()
             result_response.status = GoalStatus.STATUS_UNKNOWN

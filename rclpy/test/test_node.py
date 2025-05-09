@@ -678,11 +678,8 @@ class TestNode(unittest.TestCase):
             'bar', 'hello', ParameterDescriptor())
         result_baz = self.node.declare_parameter(
             'baz', 2.41, ParameterDescriptor())
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=UserWarning)
-            result_value_not_set = self.node.declare_parameter('value_not_set')
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
+        with self.assertRaises(TypeError):
+            self.node.declare_parameter('value_not_set')
 
         # OK cases.
         self.assertIsInstance(result_initial_foo, Parameter)
@@ -692,7 +689,6 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result_foo, Parameter)
         self.assertIsInstance(result_bar, Parameter)
         self.assertIsInstance(result_baz, Parameter)
-        self.assertIsInstance(result_value_not_set, Parameter)
         # initial_foo and initial_fizz get override values; initial_bar does not.
         self.assertEqual(result_initial_foo.value, 4321)
         self.assertEqual(result_initial_bar.value, 'ignoring_override')
@@ -704,7 +700,6 @@ class TestNode(unittest.TestCase):
         self.assertEqual(result_foo.value, 42)
         self.assertEqual(result_bar.value, 'hello')
         self.assertEqual(result_baz.value, 2.41)
-        self.assertIsNone(result_value_not_set.value)
         self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('initial_bar').value, 'ignoring_override')
         self.assertEqual(self.node.get_parameter('initial_fizz').value, 'param_file_override')
@@ -714,8 +709,6 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
-        self.assertIsNone(self.node.get_parameter('value_not_set').value)
-        self.assertTrue(self.node.has_parameter('value_not_set'))
 
         # Error cases.
         # TODO(@jubeira): add failing test cases with invalid names once name
@@ -770,8 +763,7 @@ class TestNode(unittest.TestCase):
             ('initial_foo', 0, ParameterDescriptor()),
             ('foo', 42, ParameterDescriptor()),
             ('bar', 'hello', ParameterDescriptor()),
-            ('baz', 2.41),
-            ('value_not_set',)
+            ('baz', 2.41)
         ]
 
         # Declare uninitialized parameter
@@ -785,11 +777,7 @@ class TestNode(unittest.TestCase):
             self.node.declare_parameter('initial_decl_with_type', Parameter.Type.DOUBLE).value,
             3.14)
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=UserWarning)
-            result = self.node.declare_parameters('', parameters)
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
+        result = self.node.declare_parameters('', parameters)
 
         # OK cases - using overrides.
         self.assertIsInstance(result, list)
@@ -798,31 +786,23 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result[1], Parameter)
         self.assertIsInstance(result[2], Parameter)
         self.assertIsInstance(result[3], Parameter)
-        self.assertIsInstance(result[4], Parameter)
         self.assertEqual(result[0].value, 4321)
         self.assertEqual(result[1].value, 42)
         self.assertEqual(result[2].value, 'hello')
         self.assertEqual(result[3].value, 2.41)
-        self.assertIsNone(result[4].value)
         self.assertEqual(self.node.get_parameter('initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('foo').value, 42)
         self.assertEqual(self.node.get_parameter('bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('baz').value, 2.41)
-        self.assertIsNone(self.node.get_parameter('value_not_set').value)
-        self.assertTrue(self.node.has_parameter('value_not_set'))
 
         parameters = [
             ('k_initial_foo', 0, ParameterDescriptor()),
             ('k_foo', 42, ParameterDescriptor()),
             ('k_bar', 'hello', ParameterDescriptor()),
-            ('k_baz', 2.41),
-            ('k_value_not_set',)
+            ('k_baz', 2.41)
         ]
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=UserWarning)
-            result = self.node.declare_parameters('namespace', parameters)
-            assert len(w) == 1
+        result = self.node.declare_parameters('namespace', parameters)
 
         # OK cases.
         self.assertIsInstance(result, list)
@@ -831,18 +811,14 @@ class TestNode(unittest.TestCase):
         self.assertIsInstance(result[1], Parameter)
         self.assertIsInstance(result[2], Parameter)
         self.assertIsInstance(result[3], Parameter)
-        self.assertIsInstance(result[4], Parameter)
         self.assertEqual(result[0].value, 4321)
         self.assertEqual(result[1].value, 42)
         self.assertEqual(result[2].value, 'hello')
         self.assertEqual(result[3].value, 2.41)
-        self.assertIsNone(result[4].value)
         self.assertEqual(self.node.get_parameter('namespace.k_initial_foo').value, 4321)
         self.assertEqual(self.node.get_parameter('namespace.k_foo').value, 42)
         self.assertEqual(self.node.get_parameter('namespace.k_bar').value, 'hello')
         self.assertEqual(self.node.get_parameter('namespace.k_baz').value, 2.41)
-        self.assertIsNone(self.node.get_parameter('namespace.k_value_not_set').value)
-        self.assertTrue(self.node.has_parameter('namespace.k_value_not_set'))
 
         parameters = [
             ('initial_bar', 'ignoring_override', ParameterDescriptor()),

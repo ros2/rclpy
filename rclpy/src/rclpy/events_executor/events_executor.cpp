@@ -877,7 +877,7 @@ void EventsExecutor::HandleCallbackExceptionWithLogger(
     R"(
 import traceback
 logger.fatal(f"Exception in '{node_entity_attr}' callback: {exc_value}")
-logger.warn("Error occurred at:\n" + "".join(traceback.format_tb(exc_trace)))
+logger.warning("Error occurred at:\n" + "".join(traceback.format_tb(exc_trace)))
 )",
     scope);
 }
