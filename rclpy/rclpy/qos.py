@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from enum import Enum, IntEnum
-from typing import (Any, Callable, Iterable, List, Optional, Tuple, Type,
-                    TypeVar, Union)
+from typing import (Any, List, Optional, Tuple, TypeVar, Union)
 import warnings
 
 from rclpy.duration import Duration
@@ -315,41 +314,6 @@ class QoSPolicyEnum(IntEnum):
 _T = TypeVar('_T', bound=QoSPolicyEnum)
 
 
-class _DeprecatedPolicyValueAlias:
-    """Helper to deprecate a policy value."""
-
-    def __init__(self, replacement_name: str, deprecated_name: str) -> None:
-        self.replacement_name = replacement_name
-        self.deprecated_name = deprecated_name
-
-    def __get__(self, obj: object,
-                policy_cls: Type[_T]) -> _T:
-        warnings.warn(
-            f'{policy_cls.__name__}.{self.deprecated_name} is deprecated. '
-            f'Use {policy_cls.__name__}.{self.replacement_name} instead.'
-        )
-        return policy_cls[self.replacement_name]
-
-
-def _deprecated_policy_value_aliases(pairs: Iterable[Tuple[str, str]]) \
-                                     -> Callable[[Type[_T]], Type[_T]]:
-    def decorator(policy_cls: Type[_T]) -> Type[_T]:
-        for deprecated_name, replacement_name in pairs:
-            setattr(
-                policy_cls,
-                deprecated_name,
-                _DeprecatedPolicyValueAlias(replacement_name, deprecated_name)
-            )
-        return policy_cls
-    return decorator
-
-
-@_deprecated_policy_value_aliases((
-    ('RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
-    ('RMW_QOS_POLICY_HISTORY_KEEP_LAST', 'KEEP_LAST'),
-    ('RMW_QOS_POLICY_HISTORY_KEEP_ALL', 'KEEP_ALL'),
-    ('RMW_QOS_POLICY_HISTORY_UNKNOWN', 'UNKNOWN'),
-))
 class HistoryPolicy(QoSPolicyEnum):
     """
     Enum for QoS History settings.
@@ -367,12 +331,6 @@ class HistoryPolicy(QoSPolicyEnum):
 QoSHistoryPolicy: TypeAlias = HistoryPolicy
 
 
-@_deprecated_policy_value_aliases((
-    ('RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
-    ('RMW_QOS_POLICY_RELIABILITY_RELIABLE', 'RELIABLE'),
-    ('RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT', 'BEST_EFFORT'),
-    ('RMW_QOS_POLICY_RELIABILITY_UNKNOWN', 'UNKNOWN'),
-))
 class ReliabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Reliability settings.
@@ -391,12 +349,6 @@ class ReliabilityPolicy(QoSPolicyEnum):
 QoSReliabilityPolicy: TypeAlias = ReliabilityPolicy
 
 
-@_deprecated_policy_value_aliases((
-    ('RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
-    ('RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL', 'TRANSIENT_LOCAL'),
-    ('RMW_QOS_POLICY_DURABILITY_VOLATILE', 'VOLATILE'),
-    ('RMW_QOS_POLICY_DURABILITY_UNKNOWN', 'UNKNOWN'),
-))
 class DurabilityPolicy(QoSPolicyEnum):
     """
     Enum for QoS Durability settings.
@@ -415,12 +367,6 @@ class DurabilityPolicy(QoSPolicyEnum):
 QoSDurabilityPolicy: TypeAlias = DurabilityPolicy
 
 
-@_deprecated_policy_value_aliases((
-    ('RMW_QOS_POLICY_LIVELINESS_SYSTEM_DEFAULT', 'SYSTEM_DEFAULT'),
-    ('RMW_QOS_POLICY_LIVELINESS_AUTOMATIC', 'AUTOMATIC'),
-    ('RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC', 'MANUAL_BY_TOPIC'),
-    ('RMW_QOS_POLICY_DURABILITY_UNKNOWN', 'UNKNOWN'),
-))
 class LivelinessPolicy(QoSPolicyEnum):
     """
     Enum for QoS Liveliness settings.

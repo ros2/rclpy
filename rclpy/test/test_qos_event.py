@@ -155,7 +155,7 @@ class TestQoSEvent(unittest.TestCase):
             def get_child(self, name):
                 return self
 
-            def warn(self, message, once=False):
+            def warning(self, message, once=False):
                 nonlocal pub_log_msg, sub_log_msg, log_msgs_future
 
                 if message.startswith('New subscription discovered'):
