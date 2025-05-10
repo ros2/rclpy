@@ -101,7 +101,14 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_parameter_name import validate_parameter_name
 from rclpy.validate_topic_name import validate_topic_name
 from rclpy.waitable import Waitable
-from typing_extensions import deprecated
+
+try:
+    from typing_extensions import deprecated
+except ImportError:
+    # Compatibility with Debian Bookworm
+    def deprecated(func):
+        return func
+
 from typing_extensions import TypeAlias
 
 
