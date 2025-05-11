@@ -201,11 +201,14 @@ def spin_once(node: 'Node', *, executor: 'Executor' = None, timeout_sec: float =
     :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative. Don't wait if 0.
     """
     executor = get_global_executor() if executor is None else executor
+    node_was_added = False
     try:
-        executor.add_node(node)
+
+        node_was_added = executor.add_node(node)
         executor.spin_once(timeout_sec=timeout_sec)
     finally:
-        executor.remove_node(node)
+        if node_was_added:
+            executor.remove_node(node)
 
 
 def spin(node: 'Node', executor: 'Executor' = None) -> None:
