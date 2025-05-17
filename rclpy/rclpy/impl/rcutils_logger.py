@@ -31,7 +31,15 @@ from typing import Union
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
-from typing_extensions import deprecated, Unpack
+from typing_extensions import Unpack
+
+
+try:
+    from typing_extensions import deprecated
+except ImportError:
+    # Compatibility with Debian Bookworm
+    def deprecated(func):
+        return func
 
 
 SupportedFiltersKeys = Literal['throttle', 'skip_first', 'once']
