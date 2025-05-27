@@ -38,8 +38,10 @@ try:
     from typing_extensions import deprecated
 except ImportError:
     # Compatibility with Debian Bookworm
-    def deprecated(func):
-        return func
+    def deprecated(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
 
 SupportedFiltersKeys = Literal['throttle', 'skip_first', 'once']

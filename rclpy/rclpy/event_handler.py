@@ -36,8 +36,10 @@ try:
     from typing_extensions import deprecated
 except ImportError:
     # Compatibility with Debian Bookworm
-    def deprecated(func):
-        return func
+    def deprecated(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
 from typing_extensions import TypeAlias
 
