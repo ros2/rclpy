@@ -16,13 +16,23 @@
 from enum import Enum
 import inspect
 from types import TracebackType
-from typing import Callable, Generic, Optional, Type, TypedDict, TypeVar, Union
+from typing import Callable
+from typing import Generic
+from typing import Literal
+from typing import Optional
+from typing import overload
+from typing import Type
+from typing import TypedDict
+from typing import Union
+
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
+
+from typing_extensions import TypeVar
 
 
 class MessageInfo(TypedDict):
@@ -32,22 +42,54 @@ class MessageInfo(TypedDict):
     reception_sequence_number: Optional[int]
 
 
+CallBackMsgT = TypeVar('CallBackMsgT', default=MsgT)
+
+
 # Left to support Legacy TypeVars.
 MsgType = TypeVar('MsgType')
 
 
-class Subscription(Generic[MsgT]):
+class Subscription(Generic[MsgT, CallBackMsgT]):
 
     class CallbackType(Enum):
         MessageOnly = 0
         WithMessageInfo = 1
+
+    @overload
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: Union[Callable[[CallBackMsgT], None],
+                         Callable[[CallBackMsgT, MessageInfo], None]],
+         callback_group: CallbackGroup,
+         qos_profile: QoSProfile,
+         raw: Literal[True],
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: Union[Callable[[CallBackMsgT], None],
+                         Callable[[CallBackMsgT, MessageInfo], None]],
+         callback_group: CallbackGroup,
+         qos_profile: QoSProfile,
+         raw: bool,
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
 
     def __init__(
          self,
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
+         callback: Union[Callable[[CallBackMsgT], None],
+                         Callable[[CallBackMsgT, MessageInfo], None]],
          callback_group: CallbackGroup,
          qos_profile: QoSProfile,
          raw: bool,
@@ -110,12 +152,13 @@ class Subscription(Generic[MsgT]):
             return self.__subscription.get_topic_name()
 
     @property
-    def callback(self) -> Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]]:
+    def callback(self) -> Union[Callable[[CallBackMsgT], None],
+                                Callable[[CallBackMsgT, MessageInfo], None]]:
         return self._callback
 
     @callback.setter
-    def callback(self, value: Union[Callable[[MsgT], None],
-                                    Callable[[MsgT, MessageInfo], None]]) -> None:
+    def callback(self, value: Union[Callable[[CallBackMsgT], None],
+                                    Callable[[CallBackMsgT, MessageInfo], None]]) -> None:
         self._callback = value
         self._callback_type = Subscription.CallbackType.MessageOnly
         try:
@@ -133,7 +176,7 @@ class Subscription(Generic[MsgT]):
             'Subscription.__init__(): callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
 
-    def __enter__(self) -> 'Subscription[MsgT]':
+    def __enter__(self) -> 'Subscription[MsgT, CallBackMsgT]':
         return self
 
     def __exit__(

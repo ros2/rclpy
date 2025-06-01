@@ -233,8 +233,6 @@ class TestExecutor(unittest.TestCase):
                     await asyncio.sleep(0)
                     called2 = True
 
-                # TODO(bmartin427) The type markup on Node.create_timer() says you can't pass a
-                # coroutine here.
                 tmr = self.node.create_timer(0.1, coroutine)
                 try:
                     executor.spin_once(timeout_sec=1.23)
