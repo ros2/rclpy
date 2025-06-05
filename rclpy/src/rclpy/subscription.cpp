@@ -139,12 +139,25 @@ Subscription::take_message(py::object pymsg_type, bool raw)
   if (message_info.reception_sequence_number != RMW_MESSAGE_INFO_SEQUENCE_NUMBER_UNSUPPORTED) {
     rec_seq_number = py::int_(message_info.reception_sequence_number);
   }
+
+  // Convert publisher_gid to Python dict with implementation_identifier and data
+  py::object publisher_gid = py::none();
+  if (message_info.publisher_gid.implementation_identifier != nullptr) {
+    publisher_gid = py::dict(
+      "implementation_identifier"_a = py::str(message_info.publisher_gid.implementation_identifier),
+      "data"_a = py::bytes(
+        reinterpret_cast<const char *>(message_info.publisher_gid.data),
+        RMW_GID_STORAGE_SIZE)
+    );
+  }
+
   return py::make_tuple(
     pytaken_msg, py::dict(
       "source_timestamp"_a = message_info.source_timestamp,
       "received_timestamp"_a = message_info.received_timestamp,
       "publication_sequence_number"_a = pub_seq_number,
-      "reception_sequence_number"_a = rec_seq_number));
+      "reception_sequence_number"_a = rec_seq_number,
+      "publisher_gid"_a = publisher_gid));
 }
 
 const char *
