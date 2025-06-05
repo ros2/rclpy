@@ -30,6 +30,7 @@ class MessageInfo(TypedDict):
     received_timestamp: int
     publication_sequence_number: Optional[int]
     reception_sequence_number: Optional[int]
+    publisher_gid: Optional[dict]
 
 
 # Left to support Legacy TypeVars.
