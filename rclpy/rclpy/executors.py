@@ -696,6 +696,13 @@ class Executor(ContextManager['Executor']):
             if timeout_timer is not None:
                 timers.append(timeout_timer)
 
+            with self._tasks_lock:
+                for task, _, _ in self._tasks:
+                    if task.paused():
+                        # If the task is paused, its guard condition needs to be added to the wait
+                        # set so that it can wake up the executor when it is ready to run.
+                        guards.append(task.guard)
+
             if self._guard:
                 guards.append(self._guard)
             if self._sigint_gc:

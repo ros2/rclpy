@@ -21,6 +21,8 @@ from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, Li
 import warnings
 import weakref
 
+from rclpy.guard_condition import GuardCondition
+
 if TYPE_CHECKING:
 
     from rclpy.executors import Executor
@@ -55,6 +57,8 @@ class Future(Generic[T]):
         self._callbacks: List[Callable[['Future[T]'], None]] = []
         # Lock for threadsafety
         self._lock = threading.Lock()
+        # Guard condition to wake up the executor when the future is done
+        self._guard: Optional[GuardCondition] = None
         # An executor to use when scheduling done callbacks
         self._executor: Optional[Union[weakref.ReferenceType['Executor'],
                                        Callable[[], None]]] = None
@@ -72,7 +76,23 @@ class Future(Generic[T]):
             yield self
         return self.result()
 
-    def _pending(self) -> bool:
+    @property
+    def guard(self) -> Optional[GuardCondition]:
+        return self._guard
+
+    def set_guard(self, guard: GuardCondition) -> None:
+        """
+        Set the guard condition to wake up the executor when the future is done.
+
+        :param guard_condition: The guard condition to use.
+        """
+        with self._lock:
+            self._guard = guard
+
+        # If the future is already done, trigger the guard condition immediately
+        if not self.pending():
+            guard.trigger()
+
     def pending(self) -> bool:
         return self._state == FutureState.PENDING
 
@@ -82,7 +102,11 @@ class Future(Generic[T]):
             if not self.pending():
                 return
 
-        self._state = FutureState.CANCELLED
+            self._state = FutureState.CANCELLED
+
+            if self._guard is not None:
+                self._guard.trigger()
+
         self._schedule_or_invoke_done_callbacks()
 
     def cancelled(self) -> bool:
@@ -133,6 +157,9 @@ class Future(Generic[T]):
             self._result = result
             self._state = FutureState.FINISHED
 
+            if self._guard is not None:
+                self._guard.trigger()
+
         self._schedule_or_invoke_done_callbacks()
 
     def set_exception(self, exception: Exception) -> None:
@@ -145,6 +172,9 @@ class Future(Generic[T]):
             self._exception = exception
             self._exception_fetched = False
             self._state = FutureState.FINISHED
+
+            if self._guard is not None:
+                self._guard.trigger()
 
         self._schedule_or_invoke_done_callbacks()
 
@@ -235,7 +265,7 @@ class Task(Future[T]):
 
     @overload
     def __init__(self,
-                 handler: Callable[..., Coroutine[Any, Any, T]],
+                 handler: Callable[..., Coroutine[None | Future, Any, T]],
                  args: Optional[Tuple[Any, ...]] = None,
                  kwargs: Optional[Dict[str, Any]] = None,
                  executor: Optional['Executor'] = None) -> None: ...
@@ -270,6 +300,10 @@ class Task(Future[T]):
              ] = cast(Coroutine[Any, Any, T], handler(*args, **kwargs))
             self._args = None
             self._kwargs = None
+
+            # Create a guard condition so we can wake up the executor when the task is resumed
+            if executor is not None:
+                self._guard = GuardCondition(None, None, context=executor.context)
         else:
             handler = cast(Callable[[], T], handler)
             self._handler = handler
@@ -305,6 +339,13 @@ class Task(Future[T]):
                 handler = self._handler
                 try:
                     self._yielded_future = handler.send(None)
+                    if (
+                        self._yielded_future is not None and
+                        self._guard is not None
+                    ):
+                        self._yielded_future.set_guard(self._guard)
+                        # Wake up the executor so it can add the guard condition to wait set
+                        self._executor().wake()
                 except StopIteration as e:
                     # The coroutine finished; store the result
                     self.set_result(e.value)
@@ -338,6 +379,19 @@ class Task(Future[T]):
         :return: True if the task is currently executing.
         """
         return self._executing
+
+    def paused(self) -> bool:
+        """
+        Check if the task is currently paused.
+
+        A task is paused if it is a coroutine that has yielded a future.
+
+        :return: True if the task is currently paused.
+        """
+        if self.pending() and self._yielded_future is not None:
+            return True
+
+        return False
 
     def ready(self) -> bool:
         """
