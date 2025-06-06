@@ -83,9 +83,9 @@ from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
-from rclpy.subscription import CallBackMsgT
-from rclpy.subscription import MessageInfo
+from rclpy.subscription import GenericSubscriptionCallback
 from rclpy.subscription import Subscription
+from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
@@ -1636,21 +1636,21 @@ class Node:
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: Union[Callable[[bytes], None], Callable[[bytes, MessageInfo], None]],
+        callback: GenericSubscriptionCallback[bytes],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: Literal[True]
-    ) -> Subscription[MsgT, bytes]: ...
+    ) -> Subscription[MsgT]: ...
 
     @overload
     def create_subscription(
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
+        callback: GenericSubscriptionCallback[MsgT],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
@@ -1663,15 +1663,14 @@ class Node:
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: Union[Callable[[CallBackMsgT], None],
-                        Callable[[CallBackMsgT, MessageInfo], None]],
+        callback: SubscriptionCallbackUnion[MsgT],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False
-    ) -> Subscription[MsgT, CallBackMsgT]:
+    ) -> Subscription[MsgT]:
         """
         Create a new subscription.
 
