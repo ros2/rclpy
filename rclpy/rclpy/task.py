@@ -68,17 +68,18 @@ class Future(Generic[T]):
 
     def __await__(self) -> Generator[None, None, Optional[T]]:
         # Yield if the task is not finished
-        while self._pending():
+        while self.pending():
             yield
         return self.result()
 
     def _pending(self) -> bool:
+    def pending(self) -> bool:
         return self._state == FutureState.PENDING
 
     def cancel(self) -> None:
         """Request cancellation of the running task if it is not done already."""
         with self._lock:
-            if not self._pending():
+            if not self.pending():
                 return
 
         self._state = FutureState.CANCELLED
@@ -193,7 +194,7 @@ class Future(Generic[T]):
         """
         invoke = False
         with self._lock:
-            if not self._pending():
+            if not self.pending():
                 assert self._executor is not None
                 executor = self._executor()
                 if executor is not None:
@@ -287,13 +288,13 @@ class Task(Future[T]):
         The return value of the handler is stored as the task result.
         """
         if (
-            not self._pending() or
+            not self.pending() or
             self._executing or
             not self._task_lock.acquire(blocking=False)
         ):
             return
         try:
-            if not self._pending():
+            if not self.pending():
                 return
             self._executing = True
 
@@ -337,7 +338,7 @@ class Task(Future[T]):
         return self._executing
 
     def cancel(self) -> None:
-        if self._pending() and inspect.iscoroutine(self._handler):
+        if self.pending() and inspect.iscoroutine(self._handler):
             self._handler.close()
 
         super().cancel()
