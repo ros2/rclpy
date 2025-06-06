@@ -317,6 +317,29 @@ class TestExecutor(unittest.TestCase):
                 self.assertTrue(future.cancelled())
                 self.assertEqual(None, future.result())
 
+    def test_create_task_coroutine_wake_from_another_thread(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                thread_future = Future()
+
+                async def coroutine():
+                    await thread_future
+
+                def future_thread():
+                    threading.Event().wait(0.1)  # Simulate some work
+                    thread_future.set_result(None)
+
+                t = threading.Thread(target=future_thread)
+                t.start()
+
+                coroutine_future = executor.create_task(coroutine)
+                executor.spin_until_future_complete(coroutine_future, timeout_sec=1.0)
+
+                self.assertTrue(coroutine_future.done())
+
     def test_create_task_normal_function(self) -> None:
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, EventsExecutor]:
