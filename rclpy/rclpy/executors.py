@@ -667,8 +667,7 @@ class Executor(ContextManager['Executor']):
                 tasks = list(self._tasks)
             if tasks:
                 for task, entity, node in tasks:
-                    if (not task.executing() and not task.done() and
-                            (node is None or node in nodes_to_use)):
+                    if task.ready() and (node is None or node in nodes_to_use):
                         yielded_work = True
                         yield task, entity, node
                 with self._tasks_lock:

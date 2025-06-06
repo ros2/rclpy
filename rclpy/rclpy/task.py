@@ -69,7 +69,7 @@ class Future(Generic[T]):
     def __await__(self) -> Generator[None, None, Optional[T]]:
         # Yield if the task is not finished
         while self.pending():
-            yield
+            yield self
         return self.result()
 
     def _pending(self) -> bool:
@@ -277,6 +277,8 @@ class Task(Future[T]):
         self._executing = False
         # Lock acquired to prevent task from executing in parallel with itself
         self._task_lock = threading.Lock()
+        # Last future yielded by the task handler, if it is a coroutine
+        self._yielded_future: Optional[Future] = None
 
     def __call__(self) -> None:
         """
@@ -302,7 +304,7 @@ class Task(Future[T]):
                 # Execute a coroutine
                 handler = self._handler
                 try:
-                    handler.send(None)
+                    self._yielded_future = handler.send(None)
                 except StopIteration as e:
                     # The coroutine finished; store the result
                     self.set_result(e.value)
@@ -336,6 +338,21 @@ class Task(Future[T]):
         :return: True if the task is currently executing.
         """
         return self._executing
+
+    def ready(self) -> bool:
+        """
+        Check if the task is ready to be run or resumed.
+
+        :return: True if the task is ready.
+        """
+        if self.pending() and not self._executing:
+            if self._yielded_future is not None:
+                # If the handler is a coroutine that yielded a future, check if the future is ready
+                return not self._yielded_future.pending()
+            else:
+                return True
+
+        return False
 
     def cancel(self) -> None:
         if self.pending() and inspect.iscoroutine(self._handler):
