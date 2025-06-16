@@ -17,6 +17,7 @@ import os
 import threading
 import time
 import unittest
+from unittest.mock import Mock
 import warnings
 
 import rclpy
@@ -728,6 +729,25 @@ class TestExecutor(unittest.TestCase):
                 self.node.destroy_timer(timer2)
                 self.node.destroy_timer(timer1)
                 self.node.destroy_client(cli)
+
+    def test_create_future_returns_future_with_executor_attached(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        mock = Mock()
+
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.create_task = mock
+
+        try:
+            fut = executor.create_future()
+
+            def cb(fut):
+                ...
+
+            fut.add_done_callback(cb)
+            fut.set_result('Result')
+            mock.assert_called_once_with(cb, fut)
+        finally:
+            executor.shutdown()
 
 
 if __name__ == '__main__':
