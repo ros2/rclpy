@@ -14,9 +14,9 @@
 
 import unittest
 
+from rclpy.endpoint_info import EndpointTypeEnum, TopicEndpointInfo
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.topic_endpoint_info import TopicEndpointInfo, TopicEndpointTypeEnum
 
 
 class TestQosProfile(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(test_topic_type, info_from_ctor.topic_type)
 
     def test_endpoint_type_only_constructor(self) -> None:
-        test_endpoint_type = TopicEndpointTypeEnum.SUBSCRIPTION
+        test_endpoint_type = EndpointTypeEnum.SUBSCRIPTION
 
         info_for_ref = TopicEndpointInfo()
         info_for_ref.endpoint_type = test_endpoint_type
