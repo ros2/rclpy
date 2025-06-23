@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List
+from typing import Type
+
 import pytest
 
 from rclpy.serialization import deserialize_message
 from rclpy.serialization import serialize_message
+from rclpy.type_support import Msg
 
 from test_msgs.message_fixtures import get_test_msg
 from test_msgs.msg import Arrays
@@ -48,7 +52,7 @@ test_msgs = [
 
 
 @pytest.mark.parametrize('msgs,msg_type', test_msgs)
-def test_serialize_deserialize(msgs, msg_type):
+def test_serialize_deserialize(msgs: List[Msg], msg_type: Type[Msg]) -> None:
     """Test message serialization/deserialization."""
     for msg in msgs:
         msg_serialized = serialize_message(msg)

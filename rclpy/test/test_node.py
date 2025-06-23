@@ -183,6 +183,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             if result is not None:
                 msg, info = result
                 self.assertNotEqual(0, info['source_timestamp'])
+                assert info['publisher_gid'] is not None
                 self.assertIn('data', info['publisher_gid'])
                 self.assertIsInstance(info['publisher_gid']['data'], (bytes, bytearray))
                 self.assertGreater(len(info['publisher_gid']['data']), 0)
