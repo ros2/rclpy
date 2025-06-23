@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import time
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
@@ -30,6 +31,11 @@ TEST_FQN_TOPIC_TO = '/remapped/another_ns/new_topic'
 
 
 class TestPublisher(unittest.TestCase):
+
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node: rclpy.node.Node
+        node_with_ns: rclpy.node.Node
 
     @classmethod
     def setUp(cls):
