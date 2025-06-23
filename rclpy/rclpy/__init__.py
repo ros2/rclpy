@@ -55,7 +55,7 @@ from rclpy.qos import QoSProfile
 from rclpy.signals import install_signal_handlers
 from rclpy.signals import SignalHandlerOptions
 from rclpy.signals import uninstall_signal_handlers
-from rclpy.task import Future
+from rclpy.task import Future as Future
 from rclpy.utilities import get_default_context as get_default_context
 from rclpy.utilities import get_rmw_implementation_identifier  # noqa: F401
 from rclpy.utilities import ok as ok  # noqa: F401 forwarding to this module

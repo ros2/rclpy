@@ -19,8 +19,8 @@ import unittest
 from rcl_interfaces.msg import Log
 import rclpy
 import rclpy.context
-from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.task import Future
 
 

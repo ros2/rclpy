@@ -24,6 +24,7 @@ from rclpy.publisher import Publisher
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSLivelinessPolicy
+from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.qos_overriding_options import _declare_qos_parameters
@@ -31,7 +32,6 @@ from rclpy.qos_overriding_options import _get_qos_policy_parameter
 from rclpy.qos_overriding_options import InvalidQosOverridesError
 from rclpy.qos_overriding_options import QosCallbackResult
 from rclpy.qos_overriding_options import QoSOverridingOptions
-from rclpy.qos import QoSPolicyKind
 
 
 @pytest.fixture(autouse=True)

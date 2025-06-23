@@ -20,8 +20,8 @@ from rcl_interfaces.srv import GetParameters
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
-import rclpy.context
 from rclpy.client import Client
+import rclpy.context
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.service import Service
 from rclpy.task import Future
@@ -180,13 +180,15 @@ class TestCallbackGroup(unittest.TestCase):
     def test_create_client_with_group(self) -> None:
         cli1: GetParametersClient = self.node.create_client(GetParameters, 'get/parameters')
         group = ReentrantCallbackGroup()
-        cli2: GetParametersClient = self.node.create_client(GetParameters, 'get/parameters', callback_group=group)
+        cli2: GetParametersClient = self.node.create_client(GetParameters, 'get/parameters',
+                                                            callback_group=group)
 
         self.assertFalse(group.has_entity(cli1))
         self.assertTrue(group.has_entity(cli2))
 
     def test_create_service_with_group(self) -> None:
-        srv1: GetParametersService = self.node.create_service(GetParameters, 'get/parameters', lambda req, res: None)
+        srv1: GetParametersService = self.node.create_service(GetParameters, 'get/parameters',
+                                                              lambda req, res: None)
         group = ReentrantCallbackGroup()
         srv2: GetParametersService = self.node.create_service(
             GetParameters, 'get/parameters', lambda req, res: None, callback_group=group)

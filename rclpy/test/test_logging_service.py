@@ -20,8 +20,17 @@ from rcl_interfaces.msg import LoggerLevel
 from rcl_interfaces.srv import GetLoggerLevels
 from rcl_interfaces.srv import SetLoggerLevels
 import rclpy
+from rclpy.client import Client
 import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
+from typing_extensions import TypeAlias
+
+
+ClientGetLoggerLevels: TypeAlias = Client[GetLoggerLevels.Request,
+                                          GetLoggerLevels.Response]
+
+ClientSetLoggerLevels: TypeAlias = Client[SetLoggerLevels.Request,
+                                          SetLoggerLevels.Response]
 
 
 class TestLoggingService(unittest.TestCase):
@@ -58,7 +67,7 @@ class TestLoggingService(unittest.TestCase):
         rclpy.shutdown(context=self.context)
 
     def test_connect_get_logging_service(self) -> None:
-        client = self.test_node.create_client(
+        client: ClientGetLoggerLevels = self.test_node.create_client(
             GetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/get_logger_levels')
         try:
@@ -67,7 +76,7 @@ class TestLoggingService(unittest.TestCase):
             self.test_node.destroy_client(client)
 
     def test_connect_set_logging_service(self) -> None:
-        client = self.test_node.create_client(
+        client: ClientSetLoggerLevels = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels'
         )
@@ -81,7 +90,7 @@ class TestLoggingService(unittest.TestCase):
         test_log_level = 10
 
         # Set debug level
-        set_client = self.test_node.create_client(
+        set_client: ClientSetLoggerLevels = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))
@@ -94,13 +103,14 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response is not None
         self.assertEqual(len(response.results), 1)
         self.assertTrue(response.results[0].successful)
         self.assertEqual(response.results[0].reason, '')  # reason should be empty if successful
         self.test_node.destroy_client(set_client)
 
         # Get set level
-        get_client = self.test_node.create_client(
+        get_client: ClientGetLoggerLevels = self.test_node.create_client(
             GetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/get_logger_levels')
         self.assertTrue(get_client.wait_for_service(2))
@@ -110,6 +120,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response is not None
         self.assertEqual(len(response.levels), 1)
         self.assertEqual(response.levels[0].name, test_log_name)
         self.assertEqual(response.levels[0].level, test_log_level)
@@ -140,7 +151,7 @@ class TestLoggingService(unittest.TestCase):
         set_level.level = test_log_level3
         request.levels.append(set_level)
 
-        set_client = self.test_node.create_client(
+        set_client: ClientSetLoggerLevels = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))
@@ -149,6 +160,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response is not None
         self.assertEqual(len(response.results), 3)
         for result in response.results:
             self.assertTrue(result.successful)
@@ -156,7 +168,7 @@ class TestLoggingService(unittest.TestCase):
         self.test_node.destroy_client(set_client)
 
         # Get multi log levels
-        get_client = self.test_node.create_client(
+        get_client: ClientGetLoggerLevels = self.test_node.create_client(
             GetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/get_logger_levels')
         self.assertTrue(get_client.wait_for_service(2))
@@ -166,6 +178,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response is not None
         self.assertEqual(len(response.levels), 3)
         self.assertEqual(response.levels[0].name, test_log_name1)
         self.assertEqual(response.levels[0].level, test_log_level1)
@@ -176,7 +189,7 @@ class TestLoggingService(unittest.TestCase):
         self.test_node.destroy_client(get_client)
 
     def test_set_logging_level_with_invalid_param(self) -> None:
-        set_client = self.test_node.create_client(
+        set_client: ClientSetLoggerLevels = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))
@@ -194,6 +207,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response is not None
         self.assertEqual(len(response.results), 2)
         self.assertFalse(response.results[0].successful)
         self.assertEqual(response.results[0].reason, 'Failed reason: Invalid logger level.')
@@ -202,7 +216,7 @@ class TestLoggingService(unittest.TestCase):
         self.test_node.destroy_client(set_client)
 
     def test_set_logging_level_with_partial_invalid_param(self) -> None:
-        set_client = self.test_node.create_client(
+        set_client: ClientSetLoggerLevels = self.test_node.create_client(
             SetLoggerLevels,
             '/rclpy/test_node_with_logger_service_enabled/set_logger_levels')
         self.assertTrue(set_client.wait_for_service(2))
@@ -224,6 +238,7 @@ class TestLoggingService(unittest.TestCase):
         self.executor2.spin_until_future_complete(future, 10)
         self.assertTrue(future.done())
         response = future.result()
+        assert response is not None
         self.assertEqual(len(response.results), 3)
         self.assertTrue(response.results[0].successful)
         self.assertEqual(response.results[0].reason, '')

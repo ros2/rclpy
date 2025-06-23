@@ -15,8 +15,8 @@
 import unittest
 
 import rclpy
-import rclpy.context
 from rclpy.client import Client
+import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.qos import qos_profile_services_default
 from test_msgs.msg import BasicTypes

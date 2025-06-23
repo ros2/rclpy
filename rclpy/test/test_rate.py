@@ -19,9 +19,9 @@ from typing import Optional
 
 import pytest
 import rclpy
-from rclpy.timer import Rate
 from rclpy.exceptions import ROSInterruptException
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.timer import Rate
 
 # Hz
 FREQ = 10.0
@@ -89,8 +89,10 @@ class TestRate:
         while not runner.done:
             self.executor.spin_once()
 
-        assert runner.max_jitter <= PASS_MAX_SINGLE_JITTER, str(runner)  # type: ignore[operator]
-        assert abs(runner.avg_period - PERIOD) <= PASS_MAX_AVERAGE_JITTER, str(runner)  # type: ignore[operator]
+        assert runner.max_jitter is not None
+        assert runner.max_jitter <= PASS_MAX_SINGLE_JITTER, str(runner)
+        assert runner.avg_period is not None
+        assert abs(runner.avg_period - PERIOD) <= PASS_MAX_AVERAGE_JITTER, str(runner)
 
     def test_rate_invalid_period(self) -> None:
         with pytest.raises(TypeError):

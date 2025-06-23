@@ -18,8 +18,8 @@ from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
-import rclpy.context
 from rclpy.client import Client
+import rclpy.context
 import rclpy.executors
 from rclpy.qos import qos_profile_system_default
 from rclpy.service_introspection import ServiceIntrospectionState
