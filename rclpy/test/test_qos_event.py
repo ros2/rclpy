@@ -204,7 +204,7 @@ class TestQoSEvent(unittest.TestCase):
 
     def _create_event_handle(self, parent_entity: Union[Publisher[Any], Subscription[Any]],
                              event_type: Union[QoSPublisherEventType, QoSSubscriptionEventType]
-                             ) -> _rclpy.EventHandle[Any]:
+                             ) -> '_rclpy.EventHandle[Any]':
         with parent_entity.handle:
             event: '_rclpy.EventHandle[Any]' = \
                 _rclpy.EventHandle(parent_entity.handle, event_type)  # type: ignore[arg-type]
