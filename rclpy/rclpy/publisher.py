@@ -87,17 +87,13 @@ class Publisher:
     def handle(self):
         return self.__publisher
 
-<<<<<<< HEAD
-    def destroy(self):
-=======
     @property
     def logger_name(self) -> str:
         """Get the name of the logger associated with the node of the publisher."""
         with self.handle:
             return self.__publisher.get_logger_name()
 
-    def destroy(self) -> None:
->>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))
+    def destroy(self):
         """
         Destroy a container for a ROS publisher.
 
