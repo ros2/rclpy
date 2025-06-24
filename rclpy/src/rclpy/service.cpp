@@ -211,6 +211,6 @@ define_service(py::object module)
     "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Service::get_logger_name,
-    "Get the name of the logger associated with the node of the client.");
+    "Get the name of the logger associated with the node of the service.");
 }
 }  // namespace rclpy
