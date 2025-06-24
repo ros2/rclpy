@@ -185,16 +185,9 @@ define_service(py::object module)
     "Send a response")
   .def(
     "service_take_request", &Service::service_take_request,
-<<<<<<< HEAD
-    "Take a request from a given service");
-=======
     "Take a request from a given service")
-  .def(
-    "configure_introspection", &Service::configure_introspection,
-    "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Service::get_logger_name,
     "Get the name of the logger associated with the node of the service.");
->>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))
 }
 }  // namespace rclpy

@@ -90,12 +90,6 @@ public:
   void
   destroy() override;
 
-<<<<<<< HEAD
-=======
-  /// Get the service name.
-  const char *
-  get_service_name();
-
   /// Get the name of the logger associated with the node of the client.
   /**
    *
@@ -105,7 +99,6 @@ public:
   const char *
   get_logger_name() const;
 
->>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))
 private:
   Node node_;
   std::shared_ptr<rcl_client_t> rcl_client_;
