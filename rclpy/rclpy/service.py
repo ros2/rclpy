@@ -114,6 +114,12 @@ class Service(Generic[SrvRequestT, SrvResponseT]):
         with self.handle:
             return self.__service.name
 
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the service."""
+        with self.handle:
+            return self.__service.get_logger_name()
+
     def destroy(self) -> None:
         """
         Destroy a container for a ROS service server.

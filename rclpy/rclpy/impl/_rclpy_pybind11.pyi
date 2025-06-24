@@ -188,6 +188,9 @@ class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
     ) -> None:
         """Configure whether introspection is enabled."""
 
+    def get_logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the client."""
+
 
 class Context(Destroyable):
 
@@ -275,6 +278,9 @@ class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
         introspection_state: service_introspection.ServiceIntrospectionState
     ) -> None:
         """Configure whether introspection is enabled."""
+
+    def get_logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the service."""
 
 
 class TypeDescriptionService(Destroyable):
