@@ -242,6 +242,31 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
+<<<<<<< HEAD
+=======
+    def test_sync_call_context_manager(self) -> None:
+        def _service(request, response):
+            return response
+        with self.node.create_client(GetParameters, 'get/parameters') as cli:
+            with self.node.create_service(GetParameters, 'get/parameters', _service):
+                self.assertTrue(cli.wait_for_service(timeout_sec=20))
+                executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+                executor.add_node(self.node)
+                executor_thread = threading.Thread(
+                    target=TestClient._spin_rclpy_node, args=(self.node, executor))
+                executor_thread.start()
+                # make sure thread has started to avoid exception via join()
+                self.assertTrue(executor_thread.is_alive())
+                result = cli.call(GetParameters.Request(), 0.5)
+                self.assertTrue(result is not None)
+                executor.shutdown()
+                executor_thread.join()
+
+    def test_logger_name_is_equal_to_node_name(self) -> None:
+        with self.node.create_client(GetParameters, 'get/parameters') as cli:
+            self.assertEqual(cli.logger_name, 'TestClient')
+
+>>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))
 
 if __name__ == '__main__':
     unittest.main()

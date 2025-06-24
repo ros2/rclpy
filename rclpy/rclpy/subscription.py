@@ -123,3 +123,23 @@ class Subscription:
         raise RuntimeError(
             'Subscription.__init__(): callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
+<<<<<<< HEAD
+=======
+
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the subscription."""
+        with self.handle:
+            return self.__subscription.get_logger_name()
+
+    def __enter__(self) -> 'Subscription[MsgT]':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
+>>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))

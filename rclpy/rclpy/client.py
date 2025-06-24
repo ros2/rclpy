@@ -216,7 +216,17 @@ class Client:
         with self.handle:
             return self.__client.service_name
 
+<<<<<<< HEAD
     def destroy(self):
+=======
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the client."""
+        with self.handle:
+            return self.__client.get_logger_name()
+
+    def destroy(self) -> None:
+>>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))
         """
         Destroy a container for a ROS service client.
 
