@@ -147,6 +147,44 @@ Client::take_response(py::object pyresponse_type)
 }
 
 void
+<<<<<<< HEAD
+=======
+Client::configure_introspection(
+  Clock & clock, py::object pyqos_service_event_pub,
+  rcl_service_introspection_state_t introspection_state)
+{
+  rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
+  pub_opts.qos =
+    pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
+    pyqos_service_event_pub.cast<rmw_qos_profile_t>();
+
+  rcl_ret_t ret = rcl_client_configure_service_introspection(
+    rcl_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state);
+
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to configure client introspection");
+  }
+}
+
+const char *
+Client::get_service_name()
+{
+  return rcl_client_get_service_name(rcl_client_.get());
+}
+
+const char *
+Client::get_logger_name() const
+{
+  const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
+  if (!node_logger_name) {
+    throw RCLError("Node logger name not set");
+  }
+
+  return node_logger_name;
+}
+
+void
+>>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))
 define_client(py::object module)
 {
   py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
@@ -164,6 +202,16 @@ define_client(py::object module)
     "Return true if the service server is available")
   .def(
     "take_response", &Client::take_response,
+<<<<<<< HEAD
     "Take a received response from an earlier request");
+=======
+    "Take a received response from an earlier request")
+  .def(
+    "configure_introspection", &Client::configure_introspection,
+    "Configure whether introspection is enabled")
+  .def(
+    "get_logger_name", &Client::get_logger_name,
+    "Get the name of the logger associated with the node of the client.");
+>>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))
 }
 }  // namespace rclpy

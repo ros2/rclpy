@@ -83,3 +83,46 @@ class Subscription:
     def topic_name(self):
         with self.handle:
             return self.__subscription.get_topic_name()
+<<<<<<< HEAD
+=======
+
+    @property
+    def callback(self) -> SubscriptionCallbackUnion[MsgT]:
+        return self._callback
+
+    @callback.setter
+    def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
+        self._callback = value
+        self._callback_type = Subscription.CallbackType.MessageOnly
+        try:
+            inspect.signature(value).bind(object())
+            return
+        except TypeError:
+            pass
+        try:
+            inspect.signature(value).bind(object(), object())
+            self._callback_type = Subscription.CallbackType.WithMessageInfo
+            return
+        except TypeError:
+            pass
+        raise RuntimeError(
+            'Subscription.__init__(): callback should be either be callable with one argument'
+            '(to get only the message) or two (to get message and message info)')
+
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the subscription."""
+        with self.handle:
+            return self.__subscription.get_logger_name()
+
+    def __enter__(self) -> 'Subscription[MsgT]':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
+>>>>>>> 4859c8a (Feature: add logger_name property to subscription, publisher, service and client (#1471))

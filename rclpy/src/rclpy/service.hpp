@@ -94,6 +94,15 @@ public:
   const char *
   get_service_name();
 
+  /// Get the name of the logger associated with the node of the service.
+  /**
+   *
+   * \return logger_name, or
+   * \return None on failure
+   */
+  const char *
+  get_logger_name() const;
+
   /// Get the QoS profile for this service.
   py::dict
   get_qos_profile();
