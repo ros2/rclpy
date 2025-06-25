@@ -89,6 +89,12 @@ class Publisher(Generic[MsgT]):
     def handle(self) -> '_rclpy.Publisher[MsgT]':
         return self.__publisher
 
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the publisher."""
+        with self.handle:
+            return self.__publisher.get_logger_name()
+
     def destroy(self) -> None:
         """
         Destroy a container for a ROS publisher.

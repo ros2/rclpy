@@ -155,6 +155,17 @@ Service::get_qos_profile()
   return rclpy::convert_to_qos_dict(&options->qos);
 }
 
+const char *
+Service::get_logger_name() const
+{
+  const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
+  if (!node_logger_name) {
+    throw RCLError("Node logger name not set");
+  }
+
+  return node_logger_name;
+}
+
 void
 Service::configure_introspection(
   Clock & clock, py::object pyqos_service_event_pub,
@@ -197,6 +208,9 @@ define_service(py::object module)
     "Take a request from a given service")
   .def(
     "configure_introspection", &Service::configure_introspection,
-    "Configure whether introspection is enabled");
+    "Configure whether introspection is enabled")
+  .def(
+    "get_logger_name", &Service::get_logger_name,
+    "Get the name of the logger associated with the node of the service.");
 }
 }  // namespace rclpy

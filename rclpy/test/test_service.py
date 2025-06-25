@@ -29,11 +29,31 @@ from typing_extensions import TypeAlias
 EmptyService: TypeAlias = Service[Empty.Request, Empty.Response]
 
 
+NODE_NAME = 'test_node'
+
+
 @pytest.fixture(autouse=True)
 def default_context() -> Generator[None, None, None]:
     rclpy.init()
     yield
     rclpy.shutdown()
+
+
+@pytest.fixture
+def test_node():
+    node = Node(NODE_NAME)
+    yield node
+    node.destroy_node()
+
+
+def test_logger_name_is_equal_to_node_name(test_node):
+    srv = test_node.create_service(
+        srv_type=Empty,
+        srv_name='test_srv',
+        callback=lambda _: None
+    )
+
+    assert srv.logger_name == NODE_NAME
 
 
 @pytest.mark.parametrize('service_name, namespace, expected', [
