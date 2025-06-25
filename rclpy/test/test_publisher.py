@@ -125,6 +125,10 @@ class TestPublisher(unittest.TestCase):
         pub.destroy()
         sub.destroy()
 
+    def test_logger_name_is_equal_to_node_name(self) -> None:
+        with self.node.create_publisher(BasicTypes, TEST_TOPIC, 10) as pub:
+            self.assertEqual(pub.logger_name, 'node')
+
 
 def test_publisher_context_manager() -> None:
     rclpy.init()

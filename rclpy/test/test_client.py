@@ -264,6 +264,10 @@ class TestClient(unittest.TestCase):
                 executor.shutdown()
                 executor_thread.join()
 
+    def test_logger_name_is_equal_to_node_name(self) -> None:
+        with self.node.create_client(GetParameters, 'get/parameters') as cli:
+            self.assertEqual(cli.logger_name, 'TestClient')
+
 
 if __name__ == '__main__':
     unittest.main()

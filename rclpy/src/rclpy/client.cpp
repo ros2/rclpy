@@ -170,6 +170,17 @@ Client::get_service_name()
   return rcl_client_get_service_name(rcl_client_.get());
 }
 
+const char *
+Client::get_logger_name() const
+{
+  const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
+  if (!node_logger_name) {
+    throw RCLError("Node logger name not set");
+  }
+
+  return node_logger_name;
+}
+
 void
 define_client(py::object module)
 {
@@ -194,6 +205,9 @@ define_client(py::object module)
     "Take a received response from an earlier request")
   .def(
     "configure_introspection", &Client::configure_introspection,
-    "Configure whether introspection is enabled");
+    "Configure whether introspection is enabled")
+  .def(
+    "get_logger_name", &Client::get_logger_name,
+    "Get the name of the logger associated with the node of the client.");
 }
 }  // namespace rclpy
