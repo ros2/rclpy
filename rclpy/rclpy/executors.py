@@ -990,6 +990,7 @@ class MultiThreadedExecutor(Executor):
                 'Use the SingleThreadedExecutor instead.')
         self._futures: List[Future[Any]] = []
         self._executor = ThreadPoolExecutor(num_threads)
+        self._futures_lock = Lock()
 
     def _spin_once_impl(
         self,
@@ -1010,12 +1011,11 @@ class MultiThreadedExecutor(Executor):
         else:
             self._executor.submit(handler)
             self._futures.append(handler)
-            # make a copy of the list that we iterate over while modifying it
-            # (https://stackoverflow.com/q/1207406/3753684)
-            for future in self._futures[:]:
-                if future.done():
-                    self._futures.remove(future)
-                    future.result()  # raise any exceptions
+            with self._futures_lock:
+                for future in self._futures:
+                    if future.done():
+                        self._futures.remove(future)
+                        future.result()  # raise any exceptions
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         self._spin_once_impl(timeout_sec)
