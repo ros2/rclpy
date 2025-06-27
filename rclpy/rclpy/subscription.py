@@ -83,6 +83,7 @@ class Subscription:
     def topic_name(self):
         with self.handle:
             return self.__subscription.get_topic_name()
+
     @property
     def logger_name(self) -> str:
         """Get the name of the logger associated with the node of the subscription."""
