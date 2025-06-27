@@ -109,6 +109,15 @@ public:
   const char *
   get_service_name();
 
+  /// Get the name of the logger associated with the node of the client.
+  /**
+   *
+   * \return logger_name, or
+   * \return None on failure
+   */
+  const char *
+  get_logger_name() const;
+
 private:
   Node node_;
   std::shared_ptr<rcl_client_t> rcl_client_;

@@ -242,6 +242,11 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
             self.node.destroy_service(srv)
 
+    def test_logger_name_is_equal_to_node_name(self):
+        cli = self.node.create_client(GetParameters, 'get/parameters')
+        self.assertEqual(cli.logger_name, 'TestClient')
+        self.node.destroy_client(cli)
+
 
 if __name__ == '__main__':
     unittest.main()
