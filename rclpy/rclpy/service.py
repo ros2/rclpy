@@ -83,5 +83,11 @@ class Service:
     def handle(self):
         return self.__service
 
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the service."""
+        with self.handle:
+            return self.__service.get_logger_name()
+
     def destroy(self):
         self.__service.destroy_when_not_in_use()
