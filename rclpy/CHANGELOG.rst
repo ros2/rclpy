@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+10.0.0 (2025-07-01)
+-------------------
 * Feature: add logger_name property to subscription, publisher, service and client (`#1471 <https://github.com/ros2/rclpy/issues/1471>`_)
 * Update `test_node` Types (`#1464 <https://github.com/ros2/rclpy/issues/1464>`_)
 * Add method that get datetime.datetime from Time (`#1443 <https://github.com/ros2/rclpy/issues/1443>`_)
