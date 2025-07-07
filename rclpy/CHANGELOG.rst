@@ -2,6 +2,16 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.1 (2025-07-07)
+------------------
+* Add logger_name property to subscription, publisher, service and client (`#1471 <https://github.com/ros2/rclpy/issues/1471>`_) (`#1474 <https://github.com/ros2/rclpy/issues/1474>`_)
+* Add `MessageInfo.publisher_gid` (`#1466 <https://github.com/ros2/rclpy/issues/1466>`_) (`#1468 <https://github.com/ros2/rclpy/issues/1468>`_)
+* Make no-op deprecated decorator ignore arguments (`#1463 <https://github.com/ros2/rclpy/issues/1463>`_)
+* Make deprecated decorator a no-op on Debian bookworm (`#1458 <https://github.com/ros2/rclpy/issues/1458>`_)
+* Fix spin() incorrectly removing node from executor if already attached (`#1446 <https://github.com/ros2/rclpy/issues/1446>`_) (`#1449 <https://github.com/ros2/rclpy/issues/1449>`_)
+* Revert "Fix Duration, Clock, and QoS Docs (`#1428 <https://github.com/ros2/rclpy/issues/1428>`_)" (`#1447 <https://github.com/ros2/rclpy/issues/1447>`_) (`#1457 <https://github.com/ros2/rclpy/issues/1457>`_)
+* Contributors: Alon Borenshtein, Nadav Elkabets, Shane Loretz, Tomoya Fujita
+
 9.1.0 (2025-04-18)
 ------------------
 * Update parameter types (`#1441 <https://github.com/ros2/rclpy/issues/1441>`_)
