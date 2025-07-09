@@ -624,8 +624,6 @@ class Executor(ContextManager['Executor']):
         task: Task[None] = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
-        with self._tasks_lock:
-            self._tasks.append((task, entity, node))
         return task
 
     def can_execute(self, entity: 'Entity') -> bool:
