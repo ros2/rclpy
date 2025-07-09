@@ -68,8 +68,8 @@ class Future(Generic[T]):
 
     def __await__(self) -> Generator[None, None, Optional[T]]:
         # Yield if the task is not finished
-        while self._pending():
-            yield
+        if self._pending():
+            yield self
         return self.result()
 
     def _pending(self) -> bool:
@@ -299,9 +299,21 @@ class Task(Future[T]):
 
             if inspect.iscoroutine(self._handler):
                 # Execute a coroutine
-                handler = self._handler
                 try:
-                    handler.send(None)
+                    result = self._handler.send(None)
+                    executor = self._executor()
+                    if executor is None:
+                        # If there is no executor, we can't schedule the task to resume
+                        pass
+                    elif isinstance(result, Future):
+                        # Schedule the task to resume when the future is done
+                        result.add_done_callback(lambda _: executor.call_soon(self))
+                    elif result is None:
+                        # The coroutine yielded None, schedule the task to resume
+                        executor.call_soon(self)
+                    else:
+                        raise TypeError(
+                            'Expected coroutine to yield a Future or None, got: {}'.format(result))
                 except StopIteration as e:
                     # The coroutine finished; store the result
                     self.set_result(e.value)

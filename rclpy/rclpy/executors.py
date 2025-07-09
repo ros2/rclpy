@@ -673,17 +673,12 @@ class Executor(ContextManager['Executor']):
             tasks = None
             with self._tasks_lock:
                 tasks = list(self._tasks)
-            if tasks:
-                for task, entity, node in tasks:
-                    if (not task.executing() and not task.done() and
-                            (node is None or node in nodes_to_use)):
-                        yielded_work = True
-                        yield task, entity, node
-                with self._tasks_lock:
-                    # Get rid of any tasks that are done
-                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
-                    # Get rid of any tasks that are cancelled
-                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].cancelled(), self._tasks))
+                self._tasks = []
+
+            for task, entity, node in tasks:
+                if node is None or node in nodes_to_use:
+                    yielded_work = True
+                    yield task, entity, node
 
             # Gather entities that can be waited on
             subscriptions: List[Subscription[Any, ]] = []
