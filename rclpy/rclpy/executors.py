@@ -258,7 +258,7 @@ class Executor(ContextManager['Executor']):
     def call_soon(self, task: Task) -> None:
         """
         Add a task to the executor to be executed in the next spin.
-        
+
         :param task: A task to be run in the executor.
         """
         with self._tasks_lock:
