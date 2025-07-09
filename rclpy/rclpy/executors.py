@@ -251,12 +251,20 @@ class Executor(ContextManager['Executor']):
         :param callback: A callback to be run in the executor.
         """
         task = Task(callback, args, kwargs, executor=self)
+        self.call_soon(task)
+        # Task inherits from Future
+        return task
+
+    def call_soon(self, task: Task) -> None:
+        """
+        Add a task to the executor to be executed in the next spin.
+        
+        :param task: A task to be run in the executor.
+        """
         with self._tasks_lock:
             self._tasks.append((task, None, None))
             if self._guard:
                 self._guard.trigger()
-        # Task inherits from Future
-        return task
 
     def shutdown(self, timeout_sec: Optional[float] = None) -> bool:
         """
