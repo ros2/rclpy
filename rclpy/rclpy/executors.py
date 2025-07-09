@@ -671,12 +671,17 @@ class Executor(ContextManager['Executor']):
             tasks = None
             with self._tasks_lock:
                 tasks = list(self._tasks)
+                # Tasks that need to be executed again will add themselves back to the executor
                 self._tasks = []
-
-            for task, entity, node in tasks:
+            for task_trio in tasks:
+                task, entity, node = task_trio
                 if node is None or node in nodes_to_use:
                     yielded_work = True
-                    yield task, entity, node
+                    yield task_trio
+                else:
+                    # Asked not to execute these tasks, so don't do them yet
+                    with self._tasks_lock:
+                        self._tasks.append(task_trio)
 
             # Gather entities that can be waited on
             subscriptions: List[Subscription[Any, ]] = []
