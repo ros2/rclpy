@@ -675,12 +675,15 @@ class Executor(ContextManager['Executor']):
                 tasks = list(self._tasks)
             if tasks:
                 for task, entity, node in tasks:
-                    if task.ready() and (node is None or node in nodes_to_use):
+                    if (not task.executing() and not task.done() and
+                            (node is None or node in nodes_to_use)):
                         yielded_work = True
                         yield task, entity, node
                 with self._tasks_lock:
-                    # Get rid of any tasks that are done or cancelled
-                    self._tasks = list(filter(lambda t_e_n: t_e_n[0].pending(), self._tasks))
+                    # Get rid of any tasks that are done
+                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
+                    # Get rid of any tasks that are cancelled
+                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].cancelled(), self._tasks))
 
             # Gather entities that can be waited on
             subscriptions: List[Subscription[Any, ]] = []
@@ -703,13 +706,6 @@ class Executor(ContextManager['Executor']):
                     guards.append(gc)
             if timeout_timer is not None:
                 timers.append(timeout_timer)
-
-            with self._tasks_lock:
-                for task, _, _ in self._tasks:
-                    if task.paused():
-                        # If the task is paused, its guard condition needs to be added to the wait
-                        # set so that it can wake up the executor when it is ready to run.
-                        guards.append(task.guard)
 
             if self._guard:
                 guards.append(self._guard)
