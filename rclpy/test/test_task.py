@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import asyncio
-import pytest
 from typing import Any
 from typing import Callable
 from typing import List
 from typing import Tuple
 import unittest
+
+import pytest
 
 from rclpy.task import Future
 from rclpy.task import Task
@@ -55,7 +56,7 @@ class TestTask(unittest.TestCase):
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
 
-    @pytest.mark.skip(reason="Resuming coroutine tasks is not supported without an executor")
+    @pytest.mark.skip(reason='Resuming coroutine tasks is not supported without an executor')
     def test_coroutine(self) -> None:
         called1 = False
         called2 = False
