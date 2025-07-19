@@ -69,7 +69,10 @@ class Future(Generic[T]):
     def __await__(self) -> Generator[None, None, Optional[T]]:
         # Yield if the task is not finished
         if self._pending():
+            # This tells the task to suspend until the future is done
             yield self
+        if self._pending():
+            raise RuntimeError('Future awaited a second time before it was done')
         return self.result()
 
     def _pending(self) -> bool:
