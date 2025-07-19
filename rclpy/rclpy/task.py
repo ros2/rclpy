@@ -306,8 +306,8 @@ class Task(Future[T]):
                     result = self._handler.send(None)
                     executor = self._executor()
                     if executor is None:
-                        # If there is no executor, we can't schedule the task to resume
-                        pass
+                        raise RuntimeError(
+                            'Task is a coroutine but no executor is available to resume it')
                     elif isinstance(result, Future):
                         # Schedule the task to resume when the future is done
                         result.add_done_callback(lambda _: executor.call_soon(self))
