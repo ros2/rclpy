@@ -310,10 +310,10 @@ class Task(Future[T]):
                             'Task is a coroutine but no executor is available to resume it')
                     elif isinstance(result, Future):
                         # Schedule the task to resume when the future is done
-                        result.add_done_callback(lambda _: executor.call_soon(self))
+                        result.add_done_callback(lambda _: executor._call_task_in_next_spin(self))
                     elif result is None:
                         # The coroutine yielded None, schedule the task to resume
-                        executor.call_soon(self)
+                        executor._call_task_in_next_spin(self)
                     else:
                         raise TypeError(
                             'Expected coroutine to yield a Future or None, got: {}'.format(result))

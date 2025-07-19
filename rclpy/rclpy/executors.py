@@ -251,11 +251,11 @@ class Executor(ContextManager['Executor']):
         :param callback: A callback to be run in the executor.
         """
         task = Task(callback, args, kwargs, executor=self)
-        self.call_soon(task)
+        self._call_task_in_next_spin(task)
         # Task inherits from Future
         return task
 
-    def call_soon(self, task: Task) -> None:
+    def _call_task_in_next_spin(self, task: Task) -> None:
         """
         Add a task to the executor to be executed in the next spin.
 
