@@ -310,7 +310,7 @@ class Task(Future[T]):
                             'Task is a coroutine but no executor is available to resume it')
                     elif isinstance(result, Future):
                         # Schedule the task to resume when the future is done
-                        result.add_done_callback(lambda _: executor._call_task_in_next_spin(self))
+                        self._add_resume_callback(result, executor)
                     elif result is None:
                         # The coroutine yielded None, schedule the task to resume
                         executor._call_task_in_next_spin(self)
@@ -336,6 +336,17 @@ class Task(Future[T]):
             self._executing = False
         finally:
             self._task_lock.release()
+
+    def _add_resume_callback(self, future: Future[T], executor: 'Executor') -> None:
+        future_executor = future._executor()
+        if future_executor is not None and future_executor is executor:
+            # The future is associated with the same executor, so we can resume the task directly
+            # in the done callback
+            future.add_done_callback(lambda _: self.__call__())
+        else:
+            # If the future is not associated with the same executor, we need to schedule
+            # the task to resume in the next spin of the executor.
+            future.add_done_callback(lambda _: executor._call_task_in_next_spin(self))
 
     def _complete_task(self) -> None:
         """Cleanup after task finished."""

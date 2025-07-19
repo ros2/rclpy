@@ -414,10 +414,6 @@ class TestExecutor(unittest.TestCase):
                 self.assertTrue(future2.done())
                 self.assertEqual('Sentinel Result 2', future2.result())
 
-                if cls is SingleThreadedExecutor:
-                    # Need to spin again to schedule coro1
-                    executor.spin_once(timeout_sec=1)
-
                 # Coro1 passes the await step here (timeout change forces new generator)
                 executor.spin_once(timeout_sec=1)
                 self.assertTrue(future1.done())
