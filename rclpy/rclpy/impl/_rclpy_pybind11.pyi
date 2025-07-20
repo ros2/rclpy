@@ -60,6 +60,7 @@ class ClockType(IntEnum):
     ROS_TIME = ...
     SYSTEM_TIME = ...
     STEADY_TIME = ...
+    RAW_STEADY_TIME = ...
 
 
 class GoalEvent(IntEnum):
@@ -1117,6 +1118,9 @@ class ClockEvent:
 
     def wait_until_steady(self, clock: Clock, until: rcl_time_point_t) -> None:
         """Wait for the event to be set (monotonic wait)."""
+
+    def wait_until_raw_steady(self, clock: Clock, until: rcl_time_point_t) -> None:
+        """Wait for the event to be set (monotonic slew-free wait)."""
 
     def wait_until_system(self, clock: Clock, until: rcl_time_point_t) -> None:
         """Wait for the event to be set (system timed wait)."""

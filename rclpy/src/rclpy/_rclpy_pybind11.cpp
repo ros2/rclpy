@@ -67,6 +67,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   .value("ROS_TIME", RCL_ROS_TIME)
   .value("SYSTEM_TIME", RCL_SYSTEM_TIME)
   .value("STEADY_TIME", RCL_STEADY_TIME);
+  .value("RAW_STEADY_TIME", RCL_RAW_STEADY_TIME);
 
   py::enum_<rcl_action_goal_event_t>(m, "GoalEvent")
   .value("EXECUTE", GOAL_EVENT_EXECUTE)
