@@ -327,7 +327,7 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t num
     py::object msg_info = _rclpy_sub.take_message(msg_type, raw);
     if (!msg_info.is_none()) {
       try {
-        if (callback_type == message_only) {
+        if (callback_type.is(message_only)) {
           callback(py::cast<py::tuple>(msg_info)[0]);
         } else {
           callback(msg_info);
