@@ -192,7 +192,7 @@ private:
 
   /// Cache for rcl pointers underlying each waitables_ entry, because those are harder to retrieve
   /// than the other entity types.
-  std::unordered_map<pybind11::handle, WaitableSubEntities, PythonHasher> waitable_entities_;
+  std::unordered_map<pybind11::handle, WaitableSubEntities, PythonHasher, PythonEqHandler> waitable_entities_;
 
   RclCallbackManager rcl_callback_manager_;
   TimersManager timers_manager_;

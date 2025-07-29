@@ -86,7 +86,7 @@ private:
   RclTimersManager rcl_manager_;
   const std::function<void(pybind11::handle, const rcl_timer_call_info_t &)> ready_callback_;
 
-  std::unordered_map<pybind11::handle, PyRclMapping, PythonHasher> timer_mappings_;
+  std::unordered_map<pybind11::handle, PyRclMapping, PythonHasher, PythonEqHandler> timer_mappings_;
 };
 
 }  // namespace events_executor
