@@ -14,6 +14,13 @@
 
 #include <pybind11/pybind11.h>
 
+#include <rcl/node.h>
+#include <rcl/service.h>
+
+#include <rmw/types.h>
+
+#include <type_description_interfaces/msg/type_description.h>
+
 #include "type_description_service.hpp"
 #include "utils.hpp"
 
