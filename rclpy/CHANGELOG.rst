@@ -2,6 +2,16 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Feature: add logger_name property to subscription, publisher, service and client (backport `#1471 <https://github.com/ros2/rclpy/issues/1471>`_) (`#1475 <https://github.com/ros2/rclpy/issues/1475>`_)
+  Co-authored-by: Nadav Elkabets <32939935+nadavelkabets@users.noreply.github.com>
+  Co-authored-by: Alejandro Hernandez Cordero <ahcorde@gmail.com>
+* [rclpy] Fix spin() incorrectly removing node from executor if already attached (`#1446 <https://github.com/ros2/rclpy/issues/1446>`_) (`#1450 <https://github.com/ros2/rclpy/issues/1450>`_)
+  (cherry picked from commit 3414456ddaf1163d1951d301336028c9600bd58e)
+  Co-authored-by: Alon Borenshtein <alonborn@gmail.com>
+* Contributors: mergify[bot]
+
 7.1.4 (2025-04-02)
 ------------------
 * Backport of the Events Executor (`#1391 <https://github.com/ros2/rclpy/issues/1391>`_) (`#1435 <https://github.com/ros2/rclpy/issues/1435>`_)
