@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.1.5 (2025-08-05)
+------------------
 * Feature: add logger_name property to subscription, publisher, service and client (backport `#1471 <https://github.com/ros2/rclpy/issues/1471>`_) (`#1475 <https://github.com/ros2/rclpy/issues/1475>`_)
   Co-authored-by: Nadav Elkabets <32939935+nadavelkabets@users.noreply.github.com>
   Co-authored-by: Alejandro Hernandez Cordero <ahcorde@gmail.com>
