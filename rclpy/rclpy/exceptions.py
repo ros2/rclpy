@@ -46,6 +46,7 @@ Invalid {name_type}: {error_msg}:
 
 
 InvalidHandle = _rclpy.InvalidHandle
+RCLError = _rclpy.RCLError
 
 
 class InvalidNamespaceException(NameValidationException):
