@@ -355,10 +355,16 @@ class Executor:
 
     def _take_timer(self, tmr):
         with tmr.handle:
-            tmr.handle.call_timer()
+            try:
+                tmr.handle.call_timer()
+                return True
+            except Exception:
+                # Do not execute timer
+                return False
 
-    async def _execute_timer(self, tmr, _):
-        await await_or_execute(tmr.callback)
+    async def _execute_timer(self, tmr, ready):
+        if ready:
+            await await_or_execute(tmr.callback)
 
     def _take_subscription(self, sub):
         with sub.handle:
