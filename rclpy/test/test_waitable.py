@@ -14,12 +14,14 @@
 
 import threading
 import time
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
+import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
@@ -314,6 +316,11 @@ class MutuallyExclusiveWaitable(Waitable):
 
 
 class TestWaitable(unittest.TestCase):
+
+    if TYPE_CHECKING:
+        node: rclpy.node.Node
+        context: rclpy.context.Context
+        executor: SingleThreadedExecutor
 
     @classmethod
     def setUpClass(cls):

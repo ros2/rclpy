@@ -12,17 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Optional
+from typing import Callable
+from typing import Coroutine
+from typing import Optional
+from typing import Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.context import Context
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.utilities import get_default_context
+from typing_extensions import TypeAlias
+
+GuardConditionCallbackType: TypeAlias = Callable[[], Union[Coroutine[None, None, None], None]]
 
 
 class GuardCondition:
 
-    def __init__(self, callback: Optional[Callable[[], None]],
+    def __init__(self, callback: Optional[GuardConditionCallbackType],
                  callback_group: Optional[CallbackGroup],
                  context: Optional[Context] = None) -> None:
         """

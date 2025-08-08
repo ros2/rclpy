@@ -20,11 +20,31 @@ from rclpy.node import Node
 from test_msgs.srv import Empty
 
 
+NODE_NAME = 'test_node'
+
+
 @pytest.fixture(autouse=True)
 def default_context():
     rclpy.init()
     yield
     rclpy.shutdown()
+
+
+@pytest.fixture
+def test_node():
+    node = Node(NODE_NAME)
+    yield node
+    node.destroy_node()
+
+
+def test_logger_name_is_equal_to_node_name(test_node):
+    srv = test_node.create_service(
+        srv_type=Empty,
+        srv_name='test_srv',
+        callback=lambda _: None
+    )
+
+    assert srv.logger_name == NODE_NAME
 
 
 @pytest.mark.parametrize('service_name, namespace, expected', [
@@ -45,7 +65,7 @@ def test_get_service_name(service_name, namespace, expected):
     srv = node.create_service(
         srv_type=Empty,
         srv_name=service_name,
-        callback=lambda _: None
+        callback=lambda _, _1: None
     )
 
     assert srv.service_name == expected
@@ -71,7 +91,7 @@ def test_get_service_name_after_remapping(service_name, namespace, cli_args, exp
     srv = node.create_service(
         srv_type=Empty,
         srv_name=service_name,
-        callback=lambda _: None
+        callback=lambda _, _1: None
     )
 
     assert srv.service_name == expected
@@ -83,5 +103,5 @@ def test_get_service_name_after_remapping(service_name, namespace, cli_args, exp
 def test_service_context_manager() -> None:
     with rclpy.create_node('ctx_mgr_test') as node:
         with node.create_service(
-                srv_type=Empty, srv_name='empty_service', callback=lambda _: None) as srv:
+                srv_type=Empty, srv_name='empty_service', callback=lambda _, _1: None) as srv:
             assert srv.service_name == '/empty_service'

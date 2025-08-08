@@ -13,18 +13,24 @@
 # limitations under the License.
 
 import time
+from typing import TYPE_CHECKING
 import unittest
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
+import rclpy.context
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.task import Future
 from test_msgs.msg import BasicTypes, Empty
 
 
 class TestCallbackGroup(unittest.TestCase):
+
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node: rclpy.node.Node
 
     @classmethod
     def setUpClass(cls):
@@ -172,10 +178,10 @@ class TestCallbackGroup(unittest.TestCase):
         self.assertTrue(group.has_entity(cli2))
 
     def test_create_service_with_group(self) -> None:
-        srv1 = self.node.create_service(GetParameters, 'get/parameters', lambda req: None)
+        srv1 = self.node.create_service(GetParameters, 'get/parameters', lambda req, res: None)
         group = ReentrantCallbackGroup()
         srv2 = self.node.create_service(
-            GetParameters, 'get/parameters', lambda req: None, callback_group=group)
+            GetParameters, 'get/parameters', lambda req, res: None, callback_group=group)
 
         self.assertFalse(group.has_entity(srv1))
         self.assertTrue(group.has_entity(srv2))

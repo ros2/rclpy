@@ -16,6 +16,7 @@ import threading
 
 from types import TracebackType
 from typing import Callable
+from typing import Coroutine
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -28,6 +29,7 @@ from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.time import Time
 from rclpy.utilities import get_default_context
+from typing_extensions import TypeAlias
 
 
 class TimerInfo:
@@ -63,11 +65,17 @@ class TimerInfo:
         return self._actual_call_time
 
 
+TimerCallbackType: TypeAlias = Union[Callable[[], None],
+                                     Callable[[TimerInfo], None],
+                                     Callable[[], Coroutine[None, None, None]],
+                                     None]
+
+
 class Timer:
 
     def __init__(
         self,
-        callback: Union[Callable[[], None], Callable[[TimerInfo], None], None],
+        callback: TimerCallbackType,
         callback_group: Optional[CallbackGroup],
         timer_period_ns: int,
         clock: Clock,

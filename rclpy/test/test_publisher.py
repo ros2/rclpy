@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import time
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
@@ -30,6 +31,11 @@ TEST_FQN_TOPIC_TO = '/remapped/another_ns/new_topic'
 
 
 class TestPublisher(unittest.TestCase):
+
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node: rclpy.node.Node
+        node_with_ns: rclpy.node.Node
 
     @classmethod
     def setUp(cls):
@@ -124,6 +130,10 @@ class TestPublisher(unittest.TestCase):
 
         pub.destroy()
         sub.destroy()
+
+    def test_logger_name_is_equal_to_node_name(self) -> None:
+        with self.node.create_publisher(BasicTypes, TEST_TOPIC, 10) as pub:
+            self.assertEqual(pub.logger_name, 'node')
 
 
 def test_publisher_context_manager() -> None:

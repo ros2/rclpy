@@ -16,13 +16,28 @@
 from enum import Enum
 import inspect
 from types import TracebackType
-from typing import Callable, Generic, Optional, Type, TypedDict, TypeVar, Union
+from typing import Callable
+from typing import Generic
+from typing import Literal
+from typing import Optional
+from typing import overload
+from typing import Type
+from typing import TypedDict
+from typing import TypeVar
+from typing import Union
+
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
+from typing_extensions import TypeAlias
+
+
+class PublisherGID(TypedDict):
+    implementation_identifier: str
+    data: bytes
 
 
 class MessageInfo(TypedDict):
@@ -30,11 +45,18 @@ class MessageInfo(TypedDict):
     received_timestamp: int
     publication_sequence_number: Optional[int]
     reception_sequence_number: Optional[int]
-    publisher_gid: Optional[dict]
+    publisher_gid: Optional[PublisherGID]
 
 
 # Left to support Legacy TypeVars.
 MsgType = TypeVar('MsgType')
+
+# Can be redone with TypeVar(default=MsgT) when either typing-extensions4.11.0+ or python3.13+
+T = TypeVar('T')
+GenericSubscriptionCallback: TypeAlias = Union[Callable[[T], None],
+                                               Callable[[T, MessageInfo], None]]
+SubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallback[MsgT],
+                                             GenericSubscriptionCallback[bytes]]
 
 
 class Subscription(Generic[MsgT]):
@@ -43,12 +65,51 @@ class Subscription(Generic[MsgT]):
         MessageOnly = 0
         WithMessageInfo = 1
 
+    @overload
     def __init__(
          self,
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
+         callback: GenericSubscriptionCallback[bytes],
+         callback_group: CallbackGroup,
+         qos_profile: QoSProfile,
+         raw: Literal[True],
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: GenericSubscriptionCallback[MsgT],
+         callback_group: CallbackGroup,
+         qos_profile: QoSProfile,
+         raw: Literal[False],
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: SubscriptionCallbackUnion[MsgT],
+         callback_group: CallbackGroup,
+         qos_profile: QoSProfile,
+         raw: bool,
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
+
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: SubscriptionCallbackUnion[MsgT],
          callback_group: CallbackGroup,
          qos_profile: QoSProfile,
          raw: bool,
@@ -111,12 +172,11 @@ class Subscription(Generic[MsgT]):
             return self.__subscription.get_topic_name()
 
     @property
-    def callback(self) -> Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]]:
+    def callback(self) -> SubscriptionCallbackUnion[MsgT]:
         return self._callback
 
     @callback.setter
-    def callback(self, value: Union[Callable[[MsgT], None],
-                                    Callable[[MsgT, MessageInfo], None]]) -> None:
+    def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
         self._callback = value
         self._callback_type = Subscription.CallbackType.MessageOnly
         try:
@@ -133,6 +193,12 @@ class Subscription(Generic[MsgT]):
         raise RuntimeError(
             'Subscription.__init__(): callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
+
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the subscription."""
+        with self.handle:
+            return self.__subscription.get_logger_name()
 
     def __enter__(self) -> 'Subscription[MsgT]':
         return self
