@@ -145,6 +145,10 @@ class UnsupportedEventTypeError(RCLError):
     pass
 
 
+class TimerCancelledError(RCLError):
+    pass
+
+
 class NotImplementedError(builtins.NotImplementedError):  # noqa: A001
     pass
 
