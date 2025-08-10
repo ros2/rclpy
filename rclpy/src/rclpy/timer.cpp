@@ -90,7 +90,11 @@ void Timer::call_timer()
 {
   rcl_ret_t ret = rcl_timer_call(rcl_timer_.get());
   if (ret != RCL_RET_OK) {
-    throw RCLError("failed to call timer");
+    if (ret == RCL_RET_TIMER_CANCELED) {
+      throw TimerCancelledError("Timer has been canceled");
+    } else {
+      throw RCLError("failed to call timer");
+    }
   }
 }
 

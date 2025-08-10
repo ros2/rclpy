@@ -37,7 +37,7 @@ from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock import ClockType
 from rclpy.context import Context
-from rclpy.exceptions import InvalidHandle, RCLError
+from rclpy.exceptions import InvalidHandle, TimerCancelledError
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
@@ -358,7 +358,7 @@ class Executor:
             try:
                 tmr.handle.call_timer()
                 return True
-            except RCLError:
+            except TimerCancelledError:
                 # Do not execute timer
                 return False
 
