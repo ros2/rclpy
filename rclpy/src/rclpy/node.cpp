@@ -244,6 +244,9 @@ _parameter_from_rcl_variant(
   } else if (variant->string_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING;
     value = py::str(variant->string_value);
+  } else if (variant->yaml_value) {
+    type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_YAML;
+    value = py::str(variant->yaml_value);
   } else if (variant->byte_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BYTE_ARRAY;
     value = py::bytes(

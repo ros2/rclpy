@@ -40,14 +40,14 @@ if TYPE_CHECKING:
     # Mypy does not handle string literals of array.array[int/str/float] very well
     # So if user has newer version of python can use proper array types.
     if sys.version_info > (3, 9):
-        AllowableParameterValue = Union[None, bool, int, float, str,
+        AllowableParameterValue = Union[None, bool, int, float, str, dict,
                                         list[bytes], Tuple[bytes, ...],
                                         list[bool], Tuple[bool, ...],
                                         list[int], Tuple[int, ...], array.array[int],
                                         list[float], Tuple[float, ...], array.array[float],
                                         list[str], Tuple[str, ...], array.array[str]]
     else:
-        AllowableParameterValue = Union[None, bool, int, float, str,
+        AllowableParameterValue = Union[None, bool, int, float, str, dict,
                                         List[bytes], Tuple[bytes, ...],
                                         List[bool], Tuple[bool, ...],
                                         List[int], Tuple[int, ...], 'array.array[int]',
@@ -71,6 +71,7 @@ class Parameter(Generic[AllowableParameterValueT]):
         INTEGER = ParameterType.PARAMETER_INTEGER
         DOUBLE = ParameterType.PARAMETER_DOUBLE
         STRING = ParameterType.PARAMETER_STRING
+        YAML = ParameterType.PARAMETER_YAML
         BYTE_ARRAY = ParameterType.PARAMETER_BYTE_ARRAY
         BOOL_ARRAY = ParameterType.PARAMETER_BOOL_ARRAY
         INTEGER_ARRAY = ParameterType.PARAMETER_INTEGER_ARRAY
@@ -97,6 +98,8 @@ class Parameter(Generic[AllowableParameterValueT]):
                 return Parameter.Type.DOUBLE
             elif isinstance(parameter_value, str):
                 return Parameter.Type.STRING
+            elif isinstance(parameter_value, dict): 
+                return Parameter.Type.YAML
             elif isinstance(parameter_value, (list, tuple, array.array)):
                 if all(isinstance(v, bytes) for v in parameter_value):
                     return Parameter.Type.BYTE_ARRAY
@@ -127,6 +130,8 @@ class Parameter(Generic[AllowableParameterValueT]):
                 return isinstance(parameter_value, float)
             if Parameter.Type.STRING == self:
                 return isinstance(parameter_value, str)
+            if Parameter.Type.YAML == self:
+                return isinstance(parameter_value, dict) or isinstance(parameter_value, str)
             if Parameter.Type.BYTE_ARRAY == self:
                 return isinstance(parameter_value, (list, tuple)) and \
                     all(isinstance(v, bytes) and len(v) == 1 for v in parameter_value)
@@ -192,6 +197,14 @@ class Parameter(Generic[AllowableParameterValueT]):
                  ) -> None: ...
 
     @overload
+    def __init__(self: Parameter[dict], name: str, type_: Literal[Parameter.Type.YAML]
+                 ) -> None: ...
+    
+    @overload
+    def __init__(self: Parameter[str], name: str, type_: Literal[Parameter.Type.YAML]
+                 ) -> None: ...
+
+    @overload
     def __init__(self: Parameter[Union[list[bytes], Tuple[bytes, ...]]],
                  name: str,
                  type_: Literal[Parameter.Type.BYTE_ARRAY]) -> None: ...
@@ -228,6 +241,15 @@ class Parameter(Generic[AllowableParameterValueT]):
                  value: AllowableParameterValueT) -> None: ...
 
     def __init__(self, name: str, type_: Optional[Parameter.Type] = None, value=None) -> None:
+        # If is string, try loading it
+        # If it throws an exception, its not a valid yaml string, so its probably just a normal string
+        if isinstance(value, str):
+            try:
+                value = yaml.safe_load(value)
+            except:
+                pass
+        else:
+            value = yaml.safe_load(yaml.dump(value))
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
@@ -240,6 +262,9 @@ class Parameter(Generic[AllowableParameterValueT]):
 
         self._type_ = type_
         self._name = name
+        if type_ == Parameter.Type.YAML:
+            if isinstance(value, dict):
+                value = yaml.dump(value)
         self._value = value
 
     @property
@@ -253,6 +278,11 @@ class Parameter(Generic[AllowableParameterValueT]):
     @property
     def value(self) -> AllowableParameterValueT:
         return self._value
+    
+
+    def get_yaml_parameter_as_dict(self) -> dict :
+        assert(self.type_ == Parameter.Type.YAML)
+        return yaml.safe_load(self.value)
 
     def get_parameter_value(self) -> ParameterValue:
         parameter_value = ParameterValue(type=self.type_.value)
@@ -264,6 +294,8 @@ class Parameter(Generic[AllowableParameterValueT]):
             parameter_value.double_value = self.value
         elif Parameter.Type.STRING == self.type_:
             parameter_value.string_value = self.value
+        elif Parameter.Type.YAML == self.type_:
+            parameter_value.yaml_value = self.value
         elif Parameter.Type.BYTE_ARRAY == self.type_:
             parameter_value.byte_array_value = self.value
         elif Parameter.Type.BOOL_ARRAY == self.type_:
@@ -292,7 +324,7 @@ def get_parameter_value(string_value: str) -> ParameterValue:
         yaml_value = yaml.safe_load(string_value)
     except yaml.parser.ParserError:
         yaml_value = string_value
-
+    print(type(yaml_value))
     if isinstance(yaml_value, bool):
         value.type = ParameterType.PARAMETER_BOOL
         value.bool_value = yaml_value
@@ -302,6 +334,9 @@ def get_parameter_value(string_value: str) -> ParameterValue:
     elif isinstance(yaml_value, float):
         value.type = ParameterType.PARAMETER_DOUBLE
         value.double_value = yaml_value
+    elif isinstance(yaml_value, dict):
+        value.type = ParameterType.PARAMETER_YAML
+        value.yaml_value = yaml.safe_dump(yaml_value)
     elif isinstance(yaml_value, list):
         if all((isinstance(v, bool) for v in yaml_value)):
             value.type = ParameterType.PARAMETER_BOOL_ARRAY
