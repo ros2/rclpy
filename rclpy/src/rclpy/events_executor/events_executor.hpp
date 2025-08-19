@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "events_executor/events_queue.hpp"
+#include "events_executor/python_eq_handler.hpp"
 #include "events_executor/rcl_support.hpp"
 #include "events_executor/scoped_with.hpp"
 #include "events_executor/timers_manager.hpp"
