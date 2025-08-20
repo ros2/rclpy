@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 from typing import Any
 from typing import Callable
 from typing import List
 from typing import Tuple
 import unittest
-
-import pytest
 
 from rclpy.task import Future
 from rclpy.task import Task
