@@ -26,6 +26,7 @@
 #include <unordered_map>
 
 #include "events_executor/events_queue.hpp"
+#include "events_executor/python_eq_handler.hpp"
 #include "events_executor/python_hasher.hpp"
 #include "events_executor/scoped_with.hpp"
 

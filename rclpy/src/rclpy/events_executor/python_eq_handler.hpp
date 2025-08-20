@@ -1,3 +1,5 @@
+// Copyright 2025 Open Source Robotics Foundation, Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,10 +23,10 @@ namespace events_executor
 {
 /// This is a workaround to the deprecation of `operator==` in Pybind11 >=2.2
 /// See https://pybind11.readthedocs.io/en/stable/upgrade.html#deprecation-of-some-py-object-apis
-/// It's intended to be replaced with the 
+/// It's intended to be replaced with the
 struct PythonEqHandler
 {
-  inline auto operator()(const pybind11::handle &x, const pybind11::handle &y) const
+  inline auto operator()(const pybind11::handle & x, const pybind11::handle & y) const
   {
     return x.is(y);
   }
