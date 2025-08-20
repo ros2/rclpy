@@ -295,6 +295,41 @@ class TestExecutor(unittest.TestCase):
                 self.assertTrue(future.done())
                 self.assertEqual('Sentinel Result', future.result())
 
+    def test_create_task_coroutine_yield(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        # Segfaults with EventsExecutor
+        for cls in [SingleThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+
+                called1 = False
+                called2 = False
+
+                async def coroutine() -> str:
+                    nonlocal called1
+                    nonlocal called2
+                    called1 = True
+                    await asyncio.sleep(0)
+                    called2 = True
+                    return 'Sentinel Result'
+
+                future = executor.create_task(coroutine)
+                self.assertFalse(future.done())
+                self.assertFalse(called1)
+                self.assertFalse(called2)
+
+                executor.spin_once(timeout_sec=0)
+                self.assertFalse(future.done())
+                self.assertTrue(called1)
+                self.assertFalse(called2)
+
+                executor.spin_once(timeout_sec=1)
+                self.assertTrue(future.done())
+                self.assertTrue(called1)
+                self.assertTrue(called2)
+                self.assertEqual('Sentinel Result', future.result())
+
     def test_create_task_coroutine_cancel(self) -> None:
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, EventsExecutor]:
