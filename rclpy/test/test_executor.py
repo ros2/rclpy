@@ -358,7 +358,7 @@ class TestExecutor(unittest.TestCase):
         for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
-                thread_future = Future()
+                thread_future = Future(executor=executor)
 
                 async def coroutine():
                     await thread_future
@@ -368,12 +368,21 @@ class TestExecutor(unittest.TestCase):
                     thread_future.set_result(None)
 
                 t = threading.Thread(target=future_thread)
-                t.start()
 
                 coroutine_future = executor.create_task(coroutine)
+
+                start_time = time.monotonic()
+
+                t.start()
                 executor.spin_until_future_complete(coroutine_future, timeout_sec=1.0)
 
+                end_time = time.monotonic()
+
                 self.assertTrue(coroutine_future.done())
+
+                # The coroutine should take at least 0.1 seconds to complete because it waits for
+                # the thread to set the future but nowhere near the 1 second timeout
+                assert 0.1 <= end_time - start_time < 0.2
 
     def test_create_task_normal_function(self) -> None:
         self.assertIsNotNone(self.node.handle)
