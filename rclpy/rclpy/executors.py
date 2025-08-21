@@ -438,14 +438,20 @@ class Executor:
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
-                gc.trigger()
+                try:
+                    gc.trigger()
+                except InvalidHandle:
+                    pass
                 return
             with work_tracker:
                 arg = take_from_wait_list(entity)
 
                 # Signal that this has been 'taken' and can be added back to the wait list
                 entity._executor_event = False
-                gc.trigger()
+                try:
+                    gc.trigger()
+                except InvalidHandle:
+                    pass
 
                 try:
                     await call_coroutine(entity, arg)
