@@ -459,7 +459,10 @@ class Executor:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-                    gc.trigger()
+                    try:
+                        gc.trigger()
+                    except InvalidHandle:
+                        pass
         task = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
@@ -540,7 +543,10 @@ class Executor:
                 # retrigger a guard condition that was triggered but not handled
                 for gc in node_guards:
                     if gc._executor_triggered:
-                        gc.trigger()
+                        try:
+                            gc.trigger()
+                        except InvalidHandle:
+                            pass
                     guards.append(gc)
             if timeout_timer is not None:
                 timers.append(timeout_timer)
