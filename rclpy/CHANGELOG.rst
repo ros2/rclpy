@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.0 (2025-07-01)
+-------------------
+* Feature: add logger_name property to subscription, publisher, service and client (`#1471 <https://github.com/ros2/rclpy/issues/1471>`_)
+* Update `test_node` Types (`#1464 <https://github.com/ros2/rclpy/issues/1464>`_)
+* Add method that get datetime.datetime from Time (`#1443 <https://github.com/ros2/rclpy/issues/1443>`_)
+* add `MessageInfo.publisher_gid` (`#1466 <https://github.com/ros2/rclpy/issues/1466>`_)
+* Add types to `test_action\_*.py` (`#1444 <https://github.com/ros2/rclpy/issues/1444>`_)
+* Revert "Fix Duration, Clock, and QoS Docs (`#1428 <https://github.com/ros2/rclpy/issues/1428>`_)" (`#1447 <https://github.com/ros2/rclpy/issues/1447>`_)
+* remove all deprecated classes and methods (`#1456 <https://github.com/ros2/rclpy/issues/1456>`_)
+* [rclpy] Fix spin() incorrectly removing node from executor if already attached (`#1446 <https://github.com/ros2/rclpy/issues/1446>`_)
+* Contributors: Alon Borenshtein, Jean Paul, Michael Carlstrom, Nadav Elkabets, Tomoya Fujita
+
 9.2.0 (2025-04-25)
 ------------------
 
