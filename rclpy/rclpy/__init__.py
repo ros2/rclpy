@@ -64,8 +64,8 @@ from rclpy.utilities import try_shutdown as _try_shutdown
 
 # Avoid loading extensions on module import
 if TYPE_CHECKING:
-    from rclpy.executors import Executor  # noqa: F401
-    from rclpy.node import Node  # noqa: F401
+    from rclpy.executors import Executor
+    from rclpy.node import Node
 
 
 class InitContextManager:
