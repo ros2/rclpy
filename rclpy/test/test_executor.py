@@ -727,6 +727,17 @@ class TestExecutor(unittest.TestCase):
                 self.node.destroy_timer(timer1)
                 self.node.destroy_client(cli)
 
+    def test_create_future_returns_future_with_executor_attached(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                try:
+                    fut = executor.create_future()
+                    self.assertEqual(executor, fut._executor())
+                finally:
+                    executor.shutdown()
+
 
 if __name__ == '__main__':
     unittest.main()
