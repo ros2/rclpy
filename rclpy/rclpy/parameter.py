@@ -161,6 +161,8 @@ class Parameter(Generic[AllowableParameterValueT]):
             value = param_msg.value.double_value
         elif Parameter.Type.STRING == type_:
             value = param_msg.value.string_value
+        elif Parameter.Type.YAML == type_:
+            value = param_msg.value.yaml_value
         elif Parameter.Type.BYTE_ARRAY == type_:
             value = param_msg.value.byte_array_value
         elif Parameter.Type.BOOL_ARRAY == type_:
@@ -200,9 +202,6 @@ class Parameter(Generic[AllowableParameterValueT]):
     def __init__(self: Parameter[dict], name: str, type_: Literal[Parameter.Type.YAML]
                  ) -> None: ...
     
-    @overload
-    def __init__(self: Parameter[str], name: str, type_: Literal[Parameter.Type.YAML]
-                 ) -> None: ...
 
     @overload
     def __init__(self: Parameter[Union[list[bytes], Tuple[bytes, ...]]],
@@ -241,7 +240,7 @@ class Parameter(Generic[AllowableParameterValueT]):
                  value: AllowableParameterValueT) -> None: ...
 
     def __init__(self, name: str, type_: Optional[Parameter.Type] = None, value=None) -> None:
-        # If is string, try loading it
+        # If is string, try loading as a yaml
         # If it throws an exception, its not a valid yaml string, so its probably just a normal string
         if isinstance(value, str):
             try:
@@ -249,7 +248,8 @@ class Parameter(Generic[AllowableParameterValueT]):
             except:
                 pass
         else:
-            value = yaml.safe_load(yaml.dump(value))
+            value = yaml.safe_load(yaml.safe_dump(value))
+
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
@@ -262,9 +262,9 @@ class Parameter(Generic[AllowableParameterValueT]):
 
         self._type_ = type_
         self._name = name
+
         if type_ == Parameter.Type.YAML:
-            if isinstance(value, dict):
-                value = yaml.dump(value)
+            value = yaml.safe_dump(value)
         self._value = value
 
     @property
