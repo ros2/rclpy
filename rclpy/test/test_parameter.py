@@ -16,6 +16,7 @@ from array import array
 import os
 from tempfile import NamedTemporaryFile
 import unittest
+import yaml
 
 import pytest
 from rcl_interfaces.msg import Parameter as ParameterMsg
@@ -77,6 +78,16 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(p.name, 'myparam')
         self.assertEqual(p.type_, Parameter.Type.STRING)
         self.assertEqual(p.value, 'pvalue')
+
+    def test_create_yaml_parameter(self)-> None:
+        yaml_dict = {"a":1, "b":2}
+        p = Parameter('myparam', Parameter.Type.YAML, yaml_dict)
+        self.assertEqual(p.name, 'myparam')
+        self.assertEqual(yaml.safe_load(p.value), yaml_dict)
+
+        p = Parameter('myparam', value = yaml_dict)
+        self.assertEqual(p.name, 'myparam')
+        self.assertEqual(yaml.safe_load(p.value), yaml_dict)
 
     def test_create_boolean_array_parameter(self) -> None:
         p = Parameter('myparam', Parameter.Type.BOOL_ARRAY, [True, False, True])
