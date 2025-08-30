@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 import rclpy
 from rclpy.node import Node

@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import time
-
-from numpy import cbrt
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 import rclpy
 from rclpy.node import Node
@@ -175,8 +174,9 @@ def test_subscription_publisher_count() -> None:
 
     node.destroy_node()
 
+
 def test_on_new_message_callback(test_node) -> None:
-    topic_name = "/topic"
+    topic_name = '/topic'
     cb = Mock()
     sub = test_node.create_subscription(
         msg_type=Empty,

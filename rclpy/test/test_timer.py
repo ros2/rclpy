@@ -349,6 +349,7 @@ def test_timer_info_with_partial() -> None:
             node.destroy_node()
         rclpy.shutdown(context=context)
 
+
 def test_on_reset_callback(test_node):
     tmr = test_node.create_timer(1, lambda: None)
     cb = Mock()
