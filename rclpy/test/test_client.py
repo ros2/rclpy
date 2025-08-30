@@ -287,6 +287,7 @@ class TestClient(unittest.TestCase):
                     executor.add_node(self.node)
                     cb = Mock()
                     cli.handle.set_on_new_response_callback(cb)
+                    cb.assert_not_called()
                     cli.call_async(Empty.Request())
                     executor.spin_once(0)
                     cb.assert_called_once_with(1)

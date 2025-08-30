@@ -185,6 +185,7 @@ def test_on_new_message_callback(test_node) -> None:
         callback=cb)
     pub = test_node.create_publisher(Empty, topic_name, 10)
     sub.handle.set_on_new_message_callback(cb)
+    cb.assert_not_called()
     pub.publish(Empty())
     cb.assert_called_once_with(1)
     sub.handle.clear_on_new_message_callback()
