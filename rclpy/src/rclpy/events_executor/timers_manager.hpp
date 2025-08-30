@@ -26,6 +26,7 @@
 #include <unordered_map>
 
 #include "events_executor/events_queue.hpp"
+#include "events_executor/python_eq_handler.hpp"
 #include "events_executor/python_hasher.hpp"
 #include "events_executor/scoped_with.hpp"
 
@@ -86,7 +87,7 @@ private:
   RclTimersManager rcl_manager_;
   const std::function<void(pybind11::handle, const rcl_timer_call_info_t &)> ready_callback_;
 
-  std::unordered_map<pybind11::handle, PyRclMapping, PythonHasher> timer_mappings_;
+  std::unordered_map<pybind11::handle, PyRclMapping, PythonHasher, PythonEqHandler> timer_mappings_;
 };
 
 }  // namespace events_executor

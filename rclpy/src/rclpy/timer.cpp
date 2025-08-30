@@ -101,7 +101,11 @@ Timer::call_timer_with_info()
   rcl_timer_call_info_t call_info;
   rcl_ret_t ret = rcl_timer_call_with_info(rcl_timer_.get(), &call_info);
   if (ret != RCL_RET_OK) {
-    throw RCLError("failed to call timer");
+    if (ret == RCL_RET_TIMER_CANCELED) {
+      throw TimerCancelledError("Timer has been canceled");
+    } else {
+      throw RCLError("failed to call timer");
+    }
   }
 
   timer_info["expected_call_time"] = call_info.expected_call_time;
