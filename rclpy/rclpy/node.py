@@ -14,7 +14,6 @@
 
 import math
 import time
-import yaml
 
 from types import TracebackType
 from typing import Any
@@ -1003,6 +1002,7 @@ class Node:
 
                     # Descriptors have already been applied by this point.
                     self._parameters[param.name] = param
+                    self._handle_changes_inside_yaml(parameter=param)
 
             parameter_event.stamp = self._clock.now().to_msg()
             if self._parameter_event_publisher:
@@ -1013,6 +1013,62 @@ class Node:
 
         return result
 
+
+    def _traverse_yaml_and_change_value(self, yaml_dict : dict,  parameter_path : List[str], parameter_value : ParameterValue) -> None:
+        """
+            Iteratively traverse a nested dictionary to apply a key-value pair
+        """
+        for p in parameter_path[1:-1]:
+            if (yaml_dict := yaml_dict.get(p)) is None:
+                break
+        else:
+            value_type = parameter_value.type
+            final_value = None
+            if Parameter.Type.BOOL == value_type:
+                final_value = parameter_value.bool_value
+            elif Parameter.Type.INTEGER == value_type:
+                final_value = parameter_value.integer_value
+            elif Parameter.Type.DOUBLE == value_type:
+                final_value = parameter_value.double_value
+            elif Parameter.Type.STRING == value_type:
+                final_value = parameter_value.string_value
+            elif Parameter.Type.YAML == value_type:
+                # Setting a nested yaml isnt supported yet
+                return
+            elif Parameter.Type.BYTE_ARRAY == value_type:
+                final_value= parameter_value.byte_array_value 
+            elif Parameter.Type.BOOL_ARRAY == value_type:
+                final_value = parameter_value.bool_array_value
+            elif Parameter.Type.INTEGER_ARRAY == value_type:
+                final_value = parameter_value.integer_array_value
+            elif Parameter.Type.DOUBLE_ARRAY == value_type:
+                final_value = parameter_value.double_array_value
+            elif Parameter.Type.STRING_ARRAY == value_type:
+                final_value = parameter_value.string_array_value
+            yaml_dict[parameter_path[-1]] = final_value
+        return yaml_dict
+            
+        
+        yaml_dict[parameter_path[-1]] = value.get_parameter_value()
+
+
+    def _handle_changes_inside_yaml(self, parameter : Parameter) -> None:
+        name = parameter._name
+        parameter_path = name.split(".")
+        # Handle case where the parameter is not splittable into namespaces
+        if len(parameter_path) == 1 and parameter_path[0] == name:
+            return
+        
+        if parameter_path[0] not in self._parameters.keys():
+            return
+        
+        if self._parameters[parameter_path[0]]._type_ != Parameter.Type.YAML:
+            return
+        yaml_dict = self._parameters[parameter_path[0]].get_yaml_parameter_as_dict()
+        self._traverse_yaml_and_change_value(yaml_dict, parameter_path, parameter.get_parameter_value())
+        self._parameters[parameter_path[0]] = Parameter(name, value=yaml_dict)
+
+        
     def list_parameters(
         self,
         prefixes: List[str],

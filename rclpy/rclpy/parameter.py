@@ -324,7 +324,6 @@ def get_parameter_value(string_value: str) -> ParameterValue:
         yaml_value = yaml.safe_load(string_value)
     except yaml.parser.ParserError:
         yaml_value = string_value
-    print(type(yaml_value))
     if isinstance(yaml_value, bool):
         value.type = ParameterType.PARAMETER_BOOL
         value.bool_value = yaml_value
