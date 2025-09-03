@@ -42,6 +42,7 @@ Invalid {name_type}: {error_msg}:
 
 
 InvalidHandle = _rclpy.InvalidHandle
+TimerCancelledError = _rclpy.TimerCancelledError
 
 
 class InvalidNamespaceException(NameValidationException):

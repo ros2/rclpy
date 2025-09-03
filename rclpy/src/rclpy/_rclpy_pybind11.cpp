@@ -110,6 +110,8 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     m, "NodeNameNonExistentError", rclerror.ptr());
   py::register_exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
+  py::register_exception<rclpy::TimerCancelledError>(
+    m, "TimerCancelledError", rclerror.ptr());
   py::register_exception<rclpy::NotImplementedError>(
     m, "NotImplementedError", PyExc_NotImplementedError);
   py::register_exception<rclpy::InvalidHandle>(
