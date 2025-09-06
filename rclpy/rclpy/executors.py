@@ -44,7 +44,7 @@ from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
-from rclpy.exceptions import InvalidHandle
+from rclpy.exceptions import InvalidHandle, TimerCancelledError
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
@@ -469,8 +469,11 @@ class Executor(ContextManager['Executor']):
         except InvalidHandle:
             # Timer is a Destroyable, which means that on __enter__ it can throw an
             # InvalidHandle exception if the entity has already been destroyed.  Handle that here
-            # by just returning an empty argument, which means we will skip doing any real work
-            # in _execute_timer below
+            # by just returning an empty argument, which means we will skip doing any real work.
+            pass
+        except TimerCancelledError:
+            # If TimerCancelledError exception occurs when calling call_timer_with_info(), we will
+            # skip doing any real work.
             pass
 
         return None
