@@ -337,7 +337,8 @@ class Task(Future[T]):
             executor = self._executor()
             if executor is None:
                 raise RuntimeError(
-                    'Task is a coroutine but no executor is available to resume it')
+                    'Task tried to reschedule but no executor was set: '
+                    'tasks should only be initialized through executor.create_task()')
             elif isinstance(result, Future):
                 # Schedule the task to resume when the future is done
                 self._add_resume_callback(result, executor)
@@ -346,7 +347,7 @@ class Task(Future[T]):
                 executor._call_task_in_next_spin(self)
             else:
                 raise TypeError(
-                    'Expected coroutine to yield a Future or None, got: {}'.format(result))
+                    f'Expected coroutine to yield a Future or None, got: {type(result)}')
 
     def _add_resume_callback(self, future: Future[T], executor: 'Executor') -> None:
         future_executor = future._executor()
