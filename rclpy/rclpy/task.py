@@ -21,7 +21,7 @@ from typing import (Any, Callable, cast, ClassVar, Coroutine, Dict, Generator, G
 import warnings
 import weakref
 
-from rclpy.logging import _root_logger
+from rclpy.logging import get_logger
 
 if TYPE_CHECKING:
 
@@ -238,7 +238,7 @@ class Task(Future[T]):
     This class should only be instantiated by :class:`rclpy.executors.Executor`.
     """
 
-    _logger: ClassVar['RcutilsLogger'] = _root_logger.get_child('rclpy.task.Task')
+    _logger: ClassVar['RcutilsLogger'] = get_logger('rclpy.task.Task')
 
     @overload
     def __init__(self,
