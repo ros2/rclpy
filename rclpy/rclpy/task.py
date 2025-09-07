@@ -16,17 +16,14 @@ from enum import Enum
 import inspect
 import sys
 import threading
-from typing import (Any, Callable, cast, ClassVar, Coroutine, Dict, Generator, Generic, List,
+from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, List,
                     Optional, overload, Tuple, TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
 
-from rclpy.logging import get_logger
-
 if TYPE_CHECKING:
 
     from rclpy.executors import Executor
-    from rclpy.logging import RcutilsLogger
 
 T = TypeVar('T')
 
@@ -238,8 +235,6 @@ class Task(Future[T]):
     This class should only be instantiated by :class:`rclpy.executors.Executor`.
     """
 
-    _logger: ClassVar['RcutilsLogger'] = get_logger('rclpy.task.Task')
-
     @overload
     def __init__(self,
                  handler: Callable[..., Coroutine[Any, Any, T]],
@@ -352,11 +347,10 @@ class Task(Future[T]):
     def _add_resume_callback(self, future: Future[T], executor: 'Executor') -> None:
         future_executor = future._executor()
         if future_executor is None:
-            Task._logger.warning(
+            warnings.warn(
                 'A task is awaiting a future that is not associated with an executor. '
                 'This might not be supported in the next ROS distribution. '
-                'Consider using executor.create_future().',
-                once=True)
+                'Consider using executor.create_future().', DeprecationWarning)
             future._set_executor(executor)
         elif future_executor is not executor:
             raise RuntimeError('A task can only await futures associated with the same executor')
