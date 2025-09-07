@@ -252,7 +252,6 @@ class Executor(ContextManager['Executor']):
         """
         task = Task(callback, args, kwargs, executor=self)
         self._call_task_in_next_spin(task)
-        # Task inherits from Future
         return task
 
     def _call_task_in_next_spin(self, task: Task) -> None:
