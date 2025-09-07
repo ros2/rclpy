@@ -16,14 +16,17 @@ from enum import Enum
 import inspect
 import sys
 import threading
-from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, List,
+from typing import (Any, Callable, cast, ClassVar, Coroutine, Dict, Generator, Generic, List,
                     Optional, overload, Tuple, TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
 
+from rclpy.logging import _root_logger
+
 if TYPE_CHECKING:
 
     from rclpy.executors import Executor
+    from rclpy.logging import RcutilsLogger
 
 T = TypeVar('T')
 
@@ -235,6 +238,8 @@ class Task(Future[T]):
     This class should only be instantiated by :class:`rclpy.executors.Executor`.
     """
 
+    _logger: ClassVar['RcutilsLogger'] = _root_logger.get_child('rclpy.task.Task')
+
     @overload
     def __init__(self,
                  handler: Callable[..., Coroutine[Any, Any, T]],
@@ -339,14 +344,19 @@ class Task(Future[T]):
 
     def _add_resume_callback(self, future: Future[T], executor: 'Executor') -> None:
         future_executor = future._executor()
-        if future_executor is not None and future_executor is executor:
-            # The future is associated with the same executor, so we can resume the task directly
-            # in the done callback
-            future.add_done_callback(lambda _: self.__call__())
-        else:
-            # If the future is not associated with the same executor, we need to schedule
-            # the task to resume in the next spin of the executor.
-            future.add_done_callback(lambda _: executor._call_task_in_next_spin(self))
+        if future_executor is None:
+            Task._logger.warning(
+                'A task is awaiting a future that is not associated with an executor. '
+                'This might not be supported in the next ROS distribution. '
+                'Consider using executor.create_future().',
+                once=True)
+            future._set_executor(executor)
+        elif future_executor is not executor:
+            raise RuntimeError('A task can only await futures associated with the same executor')
+
+        # The future is associated with the same executor, so we can resume the task directly
+        # in the done callback
+        future.add_done_callback(lambda _: self.__call__())
 
     def _complete_task(self) -> None:
         """Cleanup after task finished."""
