@@ -306,29 +306,7 @@ class Task(Future[T]):
             self._executing = True
 
             if inspect.iscoroutine(self._handler):
-                # Execute a coroutine
-                try:
-                    result = self._handler.send(None)
-                    executor = self._executor()
-                    if executor is None:
-                        raise RuntimeError(
-                            'Task is a coroutine but no executor is available to resume it')
-                    elif isinstance(result, Future):
-                        # Schedule the task to resume when the future is done
-                        self._add_resume_callback(result, executor)
-                    elif result is None:
-                        # The coroutine yielded None, schedule the task to resume
-                        executor._call_task_in_next_spin(self)
-                    else:
-                        raise TypeError(
-                            'Expected coroutine to yield a Future or None, got: {}'.format(result))
-                except StopIteration as e:
-                    # The coroutine finished; store the result
-                    self.set_result(e.value)
-                    self._complete_task()
-                except Exception as e:
-                    self.set_exception(e)
-                    self._complete_task()
+                self._execute_coroutine_step(self._handler)
             else:
                 # Execute a normal function
                 try:
@@ -341,6 +319,34 @@ class Task(Future[T]):
             self._executing = False
         finally:
             self._task_lock.release()
+
+    def _execute_coroutine_step(self, coro: Coroutine[Any, Any, T]) -> None:
+        """Execute or resume a coroutine task."""
+        try:
+            result = coro.send(None)
+        except StopIteration as e:
+            # The coroutine finished; store the result
+            self.set_result(e.value)
+            self._complete_task()
+        except Exception as e:
+            # The coroutine raised; store the exception
+            self.set_exception(e)
+            self._complete_task()
+        else:
+            # The coroutine yielded; suspend the task until it is resumed
+            executor = self._executor()
+            if executor is None:
+                raise RuntimeError(
+                    'Task is a coroutine but no executor is available to resume it')
+            elif isinstance(result, Future):
+                # Schedule the task to resume when the future is done
+                self._add_resume_callback(result, executor)
+            elif result is None:
+                # The coroutine yielded None, schedule the task to resume in the next spin
+                executor._call_task_in_next_spin(self)
+            else:
+                raise TypeError(
+                    'Expected coroutine to yield a Future or None, got: {}'.format(result))
 
     def _add_resume_callback(self, future: Future[T], executor: 'Executor') -> None:
         future_executor = future._executor()
