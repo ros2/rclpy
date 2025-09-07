@@ -69,7 +69,7 @@ class Future(Generic[T]):
                 'The following exception was never retrieved: ' + str(self._exception),
                 file=sys.stderr)
 
-    def __await__(self) -> Generator[None, None, Optional[T]]:
+    def __await__(self) -> Generator['Future[T]', None, Optional[T]]:
         # Yield if the task is not finished
         if self._pending():
             # This tells the task to suspend until the future is done
