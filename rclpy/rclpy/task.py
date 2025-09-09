@@ -347,10 +347,7 @@ class Task(Future[T]):
     def _add_resume_callback(self, future: Future[T], executor: 'Executor') -> None:
         future_executor = future._executor()
         if future_executor is None:
-            warnings.warn(
-                'A task is awaiting a future that is not associated with an executor. '
-                'This might not be supported in the next ROS distribution. '
-                'Consider using executor.create_future().', DeprecationWarning)
+            # The future is not associated with an executor yet, so associate it with ours
             future._set_executor(executor)
         elif future_executor is not executor:
             raise RuntimeError('A task can only await futures associated with the same executor')
