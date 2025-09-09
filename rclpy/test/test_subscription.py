@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import time
+from typing import List
+from typing import Optional
 
 import pytest
 
@@ -51,7 +53,8 @@ def test_node():
     ('/topic', 'ns', '/topic'),
     ('/example/topic', 'ns', '/example/topic'),
 ])
-def test_get_subscription_topic_name(topic_name, namespace, expected):
+def test_get_subscription_topic_name(topic_name: str, namespace: Optional[str],
+                                     expected: str) -> None:
     node = Node('node_name', namespace=namespace, cli_args=None)
     sub = node.create_subscription(
         msg_type=Empty,
@@ -85,7 +88,8 @@ def test_logger_name_is_equal_to_node_name(test_node):
     ('example/topic', 'ns', ['--ros-args', '--remap', 'example/topic:=new_topic'],
      '/ns/new_topic'),
 ])
-def test_get_subscription_topic_name_after_remapping(topic_name, namespace, cli_args, expected):
+def test_get_subscription_topic_name_after_remapping(topic_name: str, namespace: Optional[str],
+                                                     cli_args: List[str], expected: str) -> None:
     node = Node('node_name', namespace=namespace, cli_args=cli_args)
     sub = node.create_subscription(
         msg_type=Empty,

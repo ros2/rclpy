@@ -320,7 +320,7 @@ class Node:
         return None
 
     @executor.setter
-    def executor(self, new_executor: Executor) -> None:
+    def executor(self, new_executor: Optional[Executor]) -> None:
         """Set or change the executor the node belongs to."""
         current_executor = self.executor
         if current_executor == new_executor:
@@ -1826,7 +1826,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: TimerCallbackType,
+        callback: Optional[TimerCallbackType],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,

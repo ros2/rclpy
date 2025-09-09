@@ -31,7 +31,7 @@ from rclpy.qos import QoSReliabilityPolicy
 
 class TestQosProfile(unittest.TestCase):
 
-    def convert_and_assert_equality(self, qos_profile):
+    def convert_and_assert_equality(self, qos_profile: QoSProfile) -> None:
         c_qos_profile = qos_profile.get_c_qos_profile()
         converted_profile = QoSProfile(**c_qos_profile.to_dict())
         self.assertEqual(qos_profile, converted_profile)

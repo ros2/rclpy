@@ -67,15 +67,14 @@ class TimerInfo:
 
 TimerCallbackType: TypeAlias = Union[Callable[[], None],
                                      Callable[[TimerInfo], None],
-                                     Callable[[], Coroutine[None, None, None]],
-                                     None]
+                                     Callable[[], Coroutine[None, None, None]]]
 
 
 class Timer:
 
     def __init__(
         self,
-        callback: TimerCallbackType,
+        callback: Optional[TimerCallbackType],
         callback_group: Optional[CallbackGroup],
         timer_period_ns: int,
         clock: Clock,

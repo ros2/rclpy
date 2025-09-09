@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.impl.logging_severity import LoggingSeverity
+from rclpy.impl.logging_severity import LoggingSeverity as LoggingSeverity
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 
