@@ -17,7 +17,9 @@ import time
 
 import pytest
 import rclpy
+from rclpy.client import Client
 from rclpy.exceptions import InvalidHandle
+from rclpy.service import Service
 from test_msgs.msg import BasicTypes
 from test_msgs.srv import BasicTypes as BasicTypesSrv
 
@@ -204,7 +206,8 @@ def test_destroy_client_asap() -> None:
     try:
         node = rclpy.create_node('test_destroy_client_asap', context=context)
         try:
-            client = node.create_client(BasicTypesSrv, 'cli_service')
+            client: Client[BasicTypesSrv.Request, BasicTypesSrv.Response] = \
+                node.create_client(BasicTypesSrv, 'cli_service')
 
             # handle valid
             with client.handle:
@@ -229,7 +232,8 @@ def test_destroy_service_asap() -> None:
     try:
         node = rclpy.create_node('test_destroy_service_asap', context=context)
         try:
-            service = node.create_service(BasicTypesSrv, 'srv_service', lambda req, res: ...)
+            service: Service[BasicTypesSrv.Request, BasicTypesSrv.Response] = \
+                node.create_service(BasicTypesSrv, 'srv_service', lambda req, res: ...)
 
             # handle valid
             with service.handle:
