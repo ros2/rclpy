@@ -362,7 +362,7 @@ class TestExecutor(unittest.TestCase):
         for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
-                thread_future = Future(executor=executor)
+                thread_future = executor.create_future()
 
                 async def coroutine():
                     await thread_future
