@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .events_executor import EventsExecutor  # noqa: F401
+from .events_executor import EventsExecutor as EventsExecutor  # noqa: F401

@@ -175,12 +175,15 @@ def test_lifecycle_services(request: FixtureRequest) -> None:
     req = ChangeState.Request()
     req.transition.id = lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE
     resp = change_state_cli.call(req)
+    assert resp
     assert resp.success
     req = GetState.Request()
     resp = get_state_cli.call(req)
+    assert resp
     assert resp.current_state.label == 'inactive'
     req = GetAvailableStates.Request()
     resp = get_available_states_cli.call(req)
+    assert resp
     states_labels = {state.label for state in resp.available_states}
     assert states_labels == {
         'unknown', 'unconfigured', 'inactive', 'active', 'finalized', 'configuring', 'cleaningup',
@@ -188,11 +191,13 @@ def test_lifecycle_services(request: FixtureRequest) -> None:
     }
     req = GetAvailableTransitions.Request()
     resp = get_available_transitions_cli.call(req)
+    assert resp
     transitions_labels = {
         transition_def.transition.label for transition_def in resp.available_transitions}
     assert transitions_labels == {'activate', 'cleanup', 'shutdown'}
     req = GetAvailableTransitions.Request()
     resp = get_transition_graph_cli.call(req)
+    assert resp
     transitions_labels = {
         transition_def.transition.label for transition_def in resp.available_transitions}
     assert transitions_labels == {

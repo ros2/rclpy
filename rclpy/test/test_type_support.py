@@ -25,7 +25,7 @@ class MockTypeMetaclass(type):
     _TYPE_SUPPORT = None
 
     @classmethod
-    def __import_type_support__(cls):
+    def __import_type_support__(cls) -> None:
         pass
 
 
@@ -37,7 +37,7 @@ def test_check_for_type_support() -> None:
     type_support.check_for_type_support(Strings)
     type_support.check_for_type_support(Empty)
     with pytest.raises(AttributeError):
-        type_support.check_for_type_support(object())
+        type_support.check_for_type_support(object())  # type: ignore[arg-type]
     with pytest.raises(NoTypeSupportImportedException):
         type_support.check_for_type_support(MockType)
 
