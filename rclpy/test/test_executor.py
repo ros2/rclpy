@@ -222,9 +222,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_coroutine_timer(self) -> None:
         self.assertIsNotNone(self.node.handle)
-
-        # Segfaults with EventsExecutor
-        for cls in [SingleThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
@@ -301,8 +299,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_create_task_coroutine_yield(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        # Segfaults with EventsExecutor
-        for cls in [SingleThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
@@ -518,8 +515,7 @@ class TestExecutor(unittest.TestCase):
                     yield
                 return
 
-        # Segfaults with EventsExecutor
-        for cls in [SingleThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 trigger = TriggerAwait()
                 did_callback = False
@@ -768,8 +764,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_not_lose_callback(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        # Segfaults with EventsExecutor
-        for cls in [SingleThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
 
