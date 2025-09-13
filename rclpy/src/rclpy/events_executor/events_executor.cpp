@@ -69,17 +69,18 @@ pybind11::object EventsExecutor::create_task(
   // Create and return a rclpy.task.Task() object, and schedule it to be called later.
   using py::literals::operator""_a;
   py::object task = rclpy_task_(callback, args, kwargs, "executor"_a = py::cast(this));
+  // The Task needs to be owned at least until we invoke it from the callback we post, however we
+  // can't pass a bare py::object because that's going to try to do Python refcounting while
+  // preparing to go into or coming back from the callback, while the GIL is not held.  We'll do
+  // manual refcounting on it instead.
+  py::handle cb_task_handle = task;
+  cb_task_handle.inc_ref();
   call_task_in_next_spin(task);
   return task;
 }
 
 void EventsExecutor::call_task_in_next_spin(pybind11::handle task)
 {
-  // The Task needs to be owned at least until we invoke it from the callback we post, however we
-  // can't pass a bare py::object because that's going to try to do Python refcounting while
-  // preparing to go into or coming back from the callback, while the GIL is not held.  We'll do
-  // manual refcounting on it instead.
-  task.inc_ref();
   events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, task));
 }
 
@@ -169,8 +170,6 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
       throw std::runtime_error("Attempt to spin an already-spinning Executor");
     }
     stop_after_user_callback_ = stop_after_user_callback;
-    // Any blocked tasks may have become unblocked while we weren't looking.
-    PostOutstandingTasks();
     // Release the GIL while we block.  Any callbacks on the events queue that want to touch Python
     // will need to reacquire it though.
     py::gil_scoped_release gil_release;
@@ -352,8 +351,6 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t num
       got_none = true;
     }
   }
-
-  PostOutstandingTasks();
 }
 
 void EventsExecutor::HandleAddedTimer(py::handle timer) {timers_manager_.AddTimer(timer);}
@@ -395,7 +392,6 @@ void EventsExecutor::HandleTimerReady(py::handle timer, const rcl_timer_call_inf
   } else if (stop_after_user_callback_) {
     events_queue_.Stop();
   }
-  PostOutstandingTasks();
 }
 
 void EventsExecutor::HandleAddedClient(py::handle client)
@@ -466,8 +462,6 @@ void EventsExecutor::HandleClientReady(py::handle client, size_t number_of_event
       }
     }
   }
-
-  PostOutstandingTasks();
 }
 
 void EventsExecutor::HandleAddedService(py::handle service)
@@ -530,8 +524,6 @@ void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_eve
       send_response(response, header);
     }
   }
-
-  PostOutstandingTasks();
 }
 
 void EventsExecutor::HandleAddedWaitable(py::handle waitable)
@@ -797,8 +789,6 @@ void EventsExecutor::HandleWaitableReady(
     // execute() is an async method, we need a Task to run it
     create_task(execute(data));
   }
-
-  PostOutstandingTasks();
 }
 
 void EventsExecutor::IterateTask(py::handle task)
@@ -831,26 +821,7 @@ void EventsExecutor::IterateTask(py::handle task)
         throw;
       }
     }
-  } else {
-    // Task needs more iteration.  Store the handle and revisit it later after the next ready
-    // entity which may unblock it.
-    // TODO(bmartin427) This matches the behavior of SingleThreadedExecutor and avoids busy
-    // looping, but I don't love it because if the task is waiting on something other than an rcl
-    // entity (e.g. an asyncio sleep, or a Future triggered from another thread, or even another
-    // Task), there can be arbitrarily long latency before some rcl activity causes us to go
-    // revisit that Task.
-    blocked_tasks_.push_back(task);
   }
-}
-
-void EventsExecutor::PostOutstandingTasks()
-{
-  for (auto & task : blocked_tasks_) {
-    events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, task));
-  }
-  // Clear the entire outstanding tasks list.  Any tasks that need further iteration will re-add
-  // themselves during IterateTask().
-  blocked_tasks_.clear();
 }
 
 void EventsExecutor::HandleCallbackExceptionInNodeEntity(
