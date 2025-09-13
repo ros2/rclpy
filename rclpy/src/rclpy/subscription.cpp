@@ -91,6 +91,10 @@ Subscription::Subscription(
 
 void Subscription::destroy()
 {
+  try {
+    clear_on_new_message_callback();
+  } catch (RCLError) {
+  }
   rcl_subscription_.reset();
   node_.destroy();
 }
@@ -209,7 +213,8 @@ Subscription::set_callback(
     user_data);
 
   if (RCL_RET_OK != ret) {
-    throw RCLError("failed to set the on new message callback for subscription");
+    throw RCLError(std::string("Failed to set the on new message callback for subscription: ") +
+      rcl_get_error_string().str);
   }
 }
 

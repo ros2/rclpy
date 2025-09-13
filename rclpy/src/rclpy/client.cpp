@@ -40,6 +40,10 @@ using events_executor::RclEventCallbackTrampoline;
 void
 Client::destroy()
 {
+  try {
+    clear_on_new_response_callback();
+  } catch (RCLError) {
+  }
   rcl_client_.reset();
   node_.destroy();
 }
@@ -195,7 +199,8 @@ Client::set_callback(
     user_data);
 
   if (RCL_RET_OK != ret) {
-    throw RCLError("failed to set the on new message callback for subscription");
+    throw RCLError(std::string("Failed to set the on new response callback for client: ") +
+      rcl_get_error_string().str);
   }
 }
 

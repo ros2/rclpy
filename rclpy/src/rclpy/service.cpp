@@ -38,6 +38,10 @@ using events_executor::RclEventCallbackTrampoline;
 void
 Service::destroy()
 {
+  try {
+    clear_on_new_request_callback();
+  } catch (RCLError) {
+  }
   rcl_service_.reset();
   node_.destroy();
 }
@@ -198,7 +202,8 @@ Service::set_callback(
     user_data);
 
   if (RCL_RET_OK != ret) {
-    throw RCLError("failed to set the on new message callback for subscription");
+    throw RCLError(std::string("Failed to set the on new request callback for service: ") +
+      rcl_get_error_string().str);
   }
 }
 

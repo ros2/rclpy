@@ -31,7 +31,7 @@ extern "C" void RclEventCallbackTrampoline(const void * user_data, size_t number
   } catch (const std::exception & e) {
     // Catch and print any exception to avoid propagation to c code
     std::fprintf(stderr, "%s\n", e.what());
-    std::exit(EXIT_FAILURE);
+    std::terminate();
   }
 }
 

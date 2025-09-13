@@ -19,6 +19,7 @@
 #include <rcl/types.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "clock.hpp"
@@ -34,6 +35,10 @@ using events_executor::RclEventCallbackTrampoline;
 void
 Timer::destroy()
 {
+  try {
+    clear_on_reset_callback();
+  } catch (RCLError) {
+  }
   rcl_timer_.reset();
   clock_.destroy();
   context_.destroy();
@@ -190,7 +195,8 @@ Timer::set_callback(
     user_data);
 
   if (RCL_RET_OK != ret) {
-    throw RCLError("failed to set the on reset callback for timer");
+    throw RCLError(std::string("Failed to set the on reset callback for timer: ") +
+      rcl_get_error_string().str);
   }
 }
 
