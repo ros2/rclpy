@@ -67,6 +67,7 @@ public:
   pybind11::object get_context() const {return rclpy_context_;}
   pybind11::object create_task(
     pybind11::object callback, pybind11::args args = {}, const pybind11::kwargs & kwargs = {});
+  void call_task_in_next_spin(pybind11::handle task);
   pybind11::object create_future();
   bool shutdown(std::optional<double> timeout_sec = {});
   bool add_node(pybind11::object node);

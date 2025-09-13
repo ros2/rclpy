@@ -69,15 +69,20 @@ pybind11::object EventsExecutor::create_task(
   // Create and return a rclpy.task.Task() object, and schedule it to be called later.
   using py::literals::operator""_a;
   py::object task = rclpy_task_(callback, args, kwargs, "executor"_a = py::cast(this));
+  call_task_in_next_spin(task);
+  return task;
+}
+
+void EventsExecutor::call_task_in_next_spin(pybind11::handle task)
+{
   // The Task needs to be owned at least until we invoke it from the callback we post, however we
   // can't pass a bare py::object because that's going to try to do Python refcounting while
   // preparing to go into or coming back from the callback, while the GIL is not held.  We'll do
   // manual refcounting on it instead.
-  py::handle cb_task_handle = task;
-  cb_task_handle.inc_ref();
-  events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, cb_task_handle));
-  return task;
+  task.inc_ref();
+  events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, task));
 }
+
 
 pybind11::object EventsExecutor::create_future()
 {
@@ -904,6 +909,7 @@ void define_events_executor(py::object module)
   .def(py::init<py::object>(), py::arg("context"))
   .def_property_readonly("context", &EventsExecutor::get_context)
   .def("create_task", &EventsExecutor::create_task, py::arg("callback"))
+  .def("_call_task_in_next_spin", &EventsExecutor::call_task_in_next_spin, py::arg("task"))
   .def("create_future", &EventsExecutor::create_future)
   .def("shutdown", &EventsExecutor::shutdown, py::arg("timeout_sec") = py::none())
   .def("add_node", &EventsExecutor::add_node, py::arg("node"))
