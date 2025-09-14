@@ -356,7 +356,7 @@ class TestExecutor(unittest.TestCase):
     def test_create_task_coroutine_wake_from_another_thread(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 thread_future = executor.create_future()
