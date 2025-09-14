@@ -84,7 +84,6 @@ void EventsExecutor::call_task_in_next_spin(pybind11::handle task)
   events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, task));
 }
 
-
 pybind11::object EventsExecutor::create_future()
 {
   using py::literals::operator""_a;
