@@ -168,11 +168,7 @@ private:
   const pybind11::object inspect_iscoroutine_;
   const pybind11::object inspect_signature_;
   const pybind11::object rclpy_task_;
-<<<<<<< HEAD
-=======
   const pybind11::object rclpy_future_;
-  const pybind11::object rclpy_timer_timer_info_;
->>>>>>> bcdd663 (Feature: add executor.create_future() (#1495))
 
   EventsQueue events_queue_;
   ScopedSignalCallback signal_callback_;

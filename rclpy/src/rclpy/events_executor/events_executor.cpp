@@ -52,11 +52,7 @@ EventsExecutor::EventsExecutor(py::object context)
   inspect_iscoroutine_(py::module_::import("inspect").attr("iscoroutine")),
   inspect_signature_(py::module_::import("inspect").attr("signature")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
-<<<<<<< HEAD
-=======
   rclpy_future_(py::module_::import("rclpy.task").attr("Future")),
-  rclpy_timer_timer_info_(py::module_::import("rclpy.timer").attr("TimerInfo")),
->>>>>>> bcdd663 (Feature: add executor.create_future() (#1495))
   signal_callback_([this]() {events_queue_.Stop();}),
   rcl_callback_manager_(&events_queue_),
   timers_manager_(
