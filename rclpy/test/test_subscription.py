@@ -15,6 +15,7 @@
 import time
 from typing import List
 from typing import Optional
+from unittest.mock import Mock
 
 import pytest
 
@@ -176,3 +177,21 @@ def test_subscription_publisher_count() -> None:
     sub.destroy()
 
     node.destroy_node()
+
+
+def test_on_new_message_callback(test_node) -> None:
+    topic_name = '/topic'
+    cb = Mock()
+    sub = test_node.create_subscription(
+        msg_type=Empty,
+        topic=topic_name,
+        qos_profile=10,
+        callback=cb)
+    pub = test_node.create_publisher(Empty, topic_name, 10)
+    sub.handle.set_on_new_message_callback(cb)
+    cb.assert_not_called()
+    pub.publish(Empty())
+    cb.assert_called_once_with(1)
+    sub.handle.clear_on_new_message_callback()
+    pub.publish(Empty())
+    cb.assert_called_once()

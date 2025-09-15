@@ -15,6 +15,7 @@
 from typing import Generator
 from typing import List
 from typing import Optional
+from unittest.mock import Mock
 
 import pytest
 
@@ -116,3 +117,16 @@ def test_service_context_manager() -> None:
         with node.create_service(
                 srv_type=Empty, srv_name='empty_service', callback=lambda _, _1: None) as srv:
             assert srv.service_name == '/empty_service'
+
+
+def test_set_on_new_request_callback(test_node) -> None:
+    cli = test_node.create_client(Empty, '/service')
+    srv = test_node.create_service(Empty, '/service', lambda req, res: res)
+    cb = Mock()
+    srv.handle.set_on_new_request_callback(cb)
+    cb.assert_not_called()
+    cli.call_async(Empty.Request())
+    cb.assert_called_once_with(1)
+    srv.handle.clear_on_new_request_callback()
+    cli.call_async(Empty.Request())
+    cb.assert_called_once()
