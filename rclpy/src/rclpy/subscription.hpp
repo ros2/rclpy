@@ -16,6 +16,7 @@
 #define RCLPY__SUBSCRIPTION_HPP_
 
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 
 #include <rcl/subscription.h>
 
@@ -105,9 +106,19 @@ public:
   void
   destroy() override;
 
+  void
+  set_on_new_message_callback(std::function<void(size_t)> callback);
+
+  void
+  clear_on_new_message_callback();
+
 private:
   Node node_;
+  std::function<void(size_t)> on_new_message_callback_{nullptr};
   std::shared_ptr<rcl_subscription_t> rcl_subscription_;
+
+  void
+  set_callback(rcl_event_callback_t callback, const void * user_data);
 };
 /// Define a pybind11 wrapper for an rclpy::Subscription
 void define_subscription(py::object module);
