@@ -17,6 +17,7 @@ import threading
 import time
 import traceback
 import unittest
+from unittest.mock import Mock
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
@@ -246,6 +247,28 @@ class TestClient(unittest.TestCase):
         cli = self.node.create_client(GetParameters, 'get/parameters')
         self.assertEqual(cli.logger_name, 'TestClient')
         self.node.destroy_client(cli)
+
+    def test_on_new_response_callback(self) -> None:
+        def _service(request, response):
+            return response
+        with self.node.create_client(Empty, '/service') as cli:
+            with self.node.create_service(Empty, '/service', _service):
+                executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
+                try:
+                    self.assertTrue(cli.wait_for_service(timeout_sec=20))
+                    executor.add_node(self.node)
+                    cb = Mock()
+                    cli.handle.set_on_new_response_callback(cb)
+                    cb.assert_not_called()
+                    cli.call_async(Empty.Request())
+                    executor.spin_once(0)
+                    cb.assert_called_once_with(1)
+                    cli.handle.clear_on_new_response_callback()
+                    cli.call_async(Empty.Request())
+                    executor.spin_once(0)
+                    cb.assert_called_once()
+                finally:
+                    executor.shutdown()
 
 
 if __name__ == '__main__':
