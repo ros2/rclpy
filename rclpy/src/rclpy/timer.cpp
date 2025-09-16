@@ -37,7 +37,7 @@ Timer::destroy()
 {
   try {
     clear_on_reset_callback();
-  } catch (RCLError) {
+  } catch (const rclpy::RCLError &) {
   }
   rcl_timer_.reset();
   clock_.destroy();

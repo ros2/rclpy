@@ -42,7 +42,7 @@ Client::destroy()
 {
   try {
     clear_on_new_response_callback();
-  } catch (RCLError) {
+  } catch (const rclpy::RCLError &) {
   }
   rcl_client_.reset();
   node_.destroy();
