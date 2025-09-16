@@ -219,6 +219,10 @@ class Executor(ContextManager['Executor']):
         # Task inherits from Future
         return task
 
+    def create_future(self) -> Future:
+        """Create a Future object attached to the Executor."""
+        return Future(executor=self)
+
     def shutdown(self, timeout_sec: Optional[float] = None) -> bool:
         """
         Stop executing callbacks and wait for their completion.

@@ -66,6 +66,7 @@ public:
   pybind11::object get_context() const {return rclpy_context_;}
   pybind11::object create_task(
     pybind11::object callback, pybind11::args args = {}, const pybind11::kwargs & kwargs = {});
+  pybind11::object create_future();
   bool shutdown(std::optional<double> timeout_sec = {});
   bool add_node(pybind11::object node);
   void remove_node(pybind11::handle node);
@@ -167,6 +168,7 @@ private:
   const pybind11::object inspect_iscoroutine_;
   const pybind11::object inspect_signature_;
   const pybind11::object rclpy_task_;
+  const pybind11::object rclpy_future_;
 
   EventsQueue events_queue_;
   ScopedSignalCallback signal_callback_;

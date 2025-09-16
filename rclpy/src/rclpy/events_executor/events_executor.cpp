@@ -52,6 +52,7 @@ EventsExecutor::EventsExecutor(py::object context)
   inspect_iscoroutine_(py::module_::import("inspect").attr("iscoroutine")),
   inspect_signature_(py::module_::import("inspect").attr("signature")),
   rclpy_task_(py::module_::import("rclpy.task").attr("Task")),
+  rclpy_future_(py::module_::import("rclpy.task").attr("Future")),
   signal_callback_([this]() {events_queue_.Stop();}),
   rcl_callback_manager_(&events_queue_),
   timers_manager_(
@@ -75,6 +76,12 @@ pybind11::object EventsExecutor::create_task(
   cb_task_handle.inc_ref();
   events_queue_.Enqueue(std::bind(&EventsExecutor::IterateTask, this, cb_task_handle));
   return task;
+}
+
+pybind11::object EventsExecutor::create_future()
+{
+  using py::literals::operator""_a;
+  return rclpy_future_("executor"_a = py::cast(this));
 }
 
 bool EventsExecutor::shutdown(std::optional<double> timeout)
@@ -881,6 +888,7 @@ void define_events_executor(py::object module)
   .def(py::init<py::object>(), py::arg("context"))
   .def_property_readonly("context", &EventsExecutor::get_context)
   .def("create_task", &EventsExecutor::create_task, py::arg("callback"))
+  .def("create_future", &EventsExecutor::create_future)
   .def("shutdown", &EventsExecutor::shutdown, py::arg("timeout_sec") = py::none())
   .def("add_node", &EventsExecutor::add_node, py::arg("node"))
   .def("remove_node", &EventsExecutor::remove_node, py::arg("node"))

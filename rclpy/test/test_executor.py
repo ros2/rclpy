@@ -452,7 +452,7 @@ class TestExecutor(unittest.TestCase):
                 timer = self.node.create_timer(0.003, timer_callback)
 
                 # Timeout
-                future = Future()
+                future = executor.create_future()
                 self.assertFalse(future.done())
                 start = time.perf_counter()
                 executor.spin_until_future_complete(future=future, timeout_sec=0.1)
@@ -479,7 +479,7 @@ class TestExecutor(unittest.TestCase):
                     future.set_result('finished')
 
                 # Future complete timeout_sec > 0
-                future = Future()
+                future = executor.create_future()
                 self.assertFalse(future.done())
                 t = threading.Thread(target=lambda: set_future_result(future))
                 t.start()
@@ -488,7 +488,7 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(future.result(), 'finished')
 
                 # Future complete timeout_sec = None
-                future = Future()
+                future = executor.create_future()
                 self.assertFalse(future.done())
                 t = threading.Thread(target=lambda: set_future_result(future))
                 t.start()
@@ -497,7 +497,7 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(future.result(), 'finished')
 
                 # Future complete timeout < 0
-                future = Future()
+                future = executor.create_future()
                 self.assertFalse(future.done())
                 t = threading.Thread(target=lambda: set_future_result(future))
                 t.start()
@@ -519,7 +519,7 @@ class TestExecutor(unittest.TestCase):
                 timer = self.node.create_timer(0.003, timer_callback)
 
                 # Do not wait timeout_sec = 0
-                future = Future()
+                future = executor.create_future()
                 self.assertFalse(future.done())
                 executor.spin_until_future_complete(future=future, timeout_sec=0)
                 self.assertFalse(future.done())
@@ -602,7 +602,7 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
 
-                future = Future(executor=executor)
+                future = executor.create_future()
 
                 # Setup a thread to spin_once_until_future_complete, which will spin
                 # for a maximum of 10 seconds.
@@ -630,7 +630,7 @@ class TestExecutor(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(context=self.context)
 
-        future = Future(executor=executor)
+        future: Future[bool] = executor.create_future()
 
         # Setup a thread to spin_once_until_future_complete, which will spin
         # for a maximum of 10 seconds.
@@ -679,7 +679,7 @@ class TestExecutor(unittest.TestCase):
                 timer2 = self.node.create_timer(1.5, timer2_callback, callback_group)
 
                 executor.add_node(self.node)
-                future = Future(executor=executor)
+                future = executor.create_future()
                 executor.spin_until_future_complete(future, 4)
 
                 assert count == 2
@@ -688,6 +688,17 @@ class TestExecutor(unittest.TestCase):
                 self.node.destroy_timer(timer2)
                 self.node.destroy_timer(timer1)
                 self.node.destroy_client(cli)
+
+    def test_create_future_returns_future_with_executor_attached(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                try:
+                    fut = executor.create_future()
+                    self.assertEqual(executor, fut._executor())
+                finally:
+                    executor.shutdown()
 
 
 if __name__ == '__main__':
