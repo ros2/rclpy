@@ -40,7 +40,7 @@ Service::destroy()
 {
   try {
     clear_on_new_request_callback();
-  } catch (RCLError) {
+  } catch (const rclpy::RCLError &) {
   }
   rcl_service_.reset();
   node_.destroy();

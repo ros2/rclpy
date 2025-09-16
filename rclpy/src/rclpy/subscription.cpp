@@ -85,7 +85,7 @@ Subscription::Subscription(
       error_text += "'";
       throw py::value_error(error_text);
     }
-    throw RCLError("Failed to create subscription");
+    throw rclpy::RCLError("Failed to create subscription");
   }
 }
 
@@ -93,7 +93,7 @@ void Subscription::destroy()
 {
   try {
     clear_on_new_message_callback();
-  } catch (RCLError) {
+  } catch (const rclpy::RCLError &) {
   }
   rcl_subscription_.reset();
   node_.destroy();
