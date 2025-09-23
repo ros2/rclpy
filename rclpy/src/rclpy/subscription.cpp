@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/node.h>
@@ -25,6 +26,9 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
+
+#include <rcpputils/scope_exit.hpp>
 
 #include "exceptions.hpp"
 #include "node.hpp"
@@ -237,6 +241,104 @@ Subscription::clear_on_new_message_callback()
   }
 }
 
+bool
+Subscription::is_cft_enabled() const
+{
+  return rcl_subscription_is_cft_enabled(rcl_subscription_.get());
+}
+
+namespace
+{
+std::vector<const char *>
+get_c_vector_string(const std::vector<std::string> & strings_in)
+{
+  std::vector<const char *> cstrings;
+  cstrings.reserve(strings_in.size());
+
+  for (size_t i = 0; i < strings_in.size(); ++i) {
+    cstrings.push_back(strings_in[i].c_str());
+  }
+
+  return cstrings;
+}
+}  // namespace
+
+void
+Subscription::set_content_filter(
+  const std::string & filter_expression,
+  const std::vector<std::string> & expression_parameters)
+{
+  rcl_subscription_content_filter_options_t options =
+    rcl_get_zero_initialized_subscription_content_filter_options();
+  std::vector<const char *> cstrings = get_c_vector_string(expression_parameters);
+  rcl_ret_t ret = rcl_subscription_content_filter_options_init(
+    rcl_subscription_.get(),
+    filter_expression.c_str(),
+    cstrings.size(),
+    cstrings.data(),
+    &options);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to init subscription content_filtered_topic option");
+  }
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcl_ret_t ret = rcl_subscription_content_filter_options_fini(
+        rcl_subscription_.get(), &options);
+      if (RCL_RET_OK != ret) {
+        throw RCLError(
+          "Failed to fini subscription content_filtered_topic option: " +
+          std::string(rcl_get_error_string().str));
+      }
+    });
+
+  ret = rcl_subscription_set_content_filter(
+    rcl_subscription_.get(),
+    &options);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to set cft expression parameters");
+  }
+}
+
+py::object
+Subscription::get_content_filter() const
+{
+  rcl_subscription_content_filter_options_t options =
+    rcl_get_zero_initialized_subscription_content_filter_options();
+
+  rcl_ret_t ret = rcl_subscription_get_content_filter(
+    rcl_subscription_.get(),
+    &options);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Failed to get cft expression parameters");
+  }
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcl_ret_t ret = rcl_subscription_content_filter_options_fini(
+        rcl_subscription_.get(), &options);
+      if (RCL_RET_OK != ret) {
+        throw RCLError(
+          "Failed to fini subscription content_filtered_topic option: " +
+          std::string(rcl_get_error_string().str));
+      }
+    });
+
+  rmw_subscription_content_filter_options_t & content_filter_options =
+    options.rmw_subscription_content_filter_options;
+  std::vector<std::string> expression_parameters;
+  for (size_t i = 0; i < content_filter_options.expression_parameters.size; ++i) {
+    expression_parameters.push_back(content_filter_options.expression_parameters.data[i]);
+  }
+
+  py::object content_filter_options_class =
+    py::module_::import("rclpy.subscription_content_filter_options").attr("ContentFilterOptions");
+
+  return content_filter_options_class(
+    std::string(content_filter_options.filter_expression),
+    expression_parameters);
+}
+
 void
 define_subscription(py::object module)
 {
@@ -262,6 +364,14 @@ define_subscription(py::object module)
   .def(
     "set_on_new_message_callback", &Subscription::set_on_new_message_callback,
     py::arg("callback"))
-  .def("clear_on_new_message_callback", &Subscription::clear_on_new_message_callback);
+  .def("clear_on_new_message_callback", &Subscription::clear_on_new_message_callback)
+  .def("is_cft_enabled", &Subscription::is_cft_enabled,
+    "Check if content filtering is enabled for this subscription.")
+  .def(
+    "set_content_filter", &Subscription::set_content_filter,
+    "Set the filter expression and expression parameters for the subscription.")
+  .def(
+    "get_content_filter", &Subscription::get_content_filter,
+    "Get the filter expression and expression parameters for the subscription.");
 }
 }  // namespace rclpy

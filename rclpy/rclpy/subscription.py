@@ -31,6 +31,7 @@ from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
+from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.type_support import MsgT
 from typing_extensions import TypeAlias
 
@@ -199,6 +200,22 @@ class Subscription(Generic[MsgT]):
         """Get the name of the logger associated with the node of the subscription."""
         with self.handle:
             return self.__subscription.get_logger_name()
+
+    @property
+    def is_cft_enabled(self) -> bool:
+        """Check if content filtering is enabled for the subscription."""
+        with self.handle:
+            return self.__subscription.is_cft_enabled()
+
+    def set_content_filter(self, filter_expression: str, expression_parameters: list[str]) -> None:
+        """Set the filter expression and expression parameters for the subscription."""
+        with self.handle:
+            self.__subscription.set_content_filter(filter_expression, expression_parameters)
+
+    def get_content_filter(self) -> ContentFilterOptions:
+        """Get the filter expression and expression parameters for the subscription."""
+        with self.handle:
+            return self.__subscription.get_content_filter()
 
     def __enter__(self) -> 'Subscription[MsgT]':
         return self
