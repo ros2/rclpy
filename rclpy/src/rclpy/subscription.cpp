@@ -22,6 +22,7 @@
 #include <rosidl_runtime_c/message_type_support_struct.h>
 #include <rmw/types.h>
 
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
 #include <string>

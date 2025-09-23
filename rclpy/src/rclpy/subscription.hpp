@@ -20,6 +20,7 @@
 
 #include <rcl/subscription.h>
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
