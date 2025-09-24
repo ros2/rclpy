@@ -22,6 +22,7 @@ import pytest
 import rclpy
 from rclpy.node import Node
 from rclpy.subscription import Subscription
+from rclpy.subscription_content_filter_options import ContentFilterOptions
 
 from test_msgs.msg import BasicTypes
 from test_msgs.msg import Empty
@@ -415,3 +416,59 @@ def test_subscription_content_filter_reset(test_node) -> None:
     expected_msg_count = 3
     wait_msgs(timeout=2.0, expected_msg_count=expected_msg_count)
     assert len(received_msgs) == expected_msg_count
+
+
+def test_subscription_content_filter_at_create_subscription(test_node) -> None:
+
+    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
+    topic_name = '/topic'
+    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
+
+    received_msgs = []
+
+    content_filter_options = ContentFilterOptions(
+        filter_expression='int32_value > %0',
+        expression_parameters=['15'])
+
+    def sub_callback(msg):
+        received_msgs.append(msg.int32_value)
+
+    sub = test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+        callback=sub_callback,
+        content_filter_options=content_filter_options)
+
+    assert sub.is_cft_enabled is True
+
+    def wait_msgs(timeout, expected_msg_count):
+        end_time = time.time() + timeout
+        while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
+            rclpy.spin_once(test_node, timeout_sec=0.2)
+
+    # Publish 3 messages
+    def publish_messages(pub):
+        msg = BasicTypes()
+        msg.int32_value = 10
+        pub.publish(msg)
+        msg.int32_value = 20
+        pub.publish(msg)
+        msg.int32_value = 30
+        pub.publish(msg)
+
+    # Publish messages and part of messages should be received.
+    publish_messages(pub)
+
+    # Check within 2 seconds whether the desired number of messages has been received.
+    expected_msg_count = 2
+    wait_msgs(timeout=2.0, expected_msg_count=expected_msg_count)
+    assert len(received_msgs) == expected_msg_count
+    assert received_msgs[0] == 20
+    assert received_msgs[1] == 30
+
+    pub.destroy()
+    sub.destroy()
