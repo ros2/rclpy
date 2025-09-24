@@ -49,10 +49,11 @@ public:
    * \param[in] pymsg_type Message module associated with the subscriber
    * \param[in] topic The topic name
    * \param[in] pyqos_profile rmw_qos_profile_t object for this subscription
+   * \param[in] content_filter_options ContentFilterOptions object for this subscription
    */
   Subscription(
     Node & node, py::object pymsg_type, std::string topic,
-    py::object pyqos_profile);
+    py::object pyqos_profile, py::object content_filter_options = py::none());
 
   /// Take a message and its metadata from a subscription
   /**

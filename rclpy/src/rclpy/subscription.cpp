@@ -44,9 +44,25 @@ namespace rclpy
 {
 using events_executor::RclEventCallbackTrampoline;
 
+namespace
+{
+std::vector<const char *>
+get_c_vector_string(const std::vector<std::string> & strings_in)
+{
+  std::vector<const char *> cstrings;
+  cstrings.reserve(strings_in.size());
+
+  for (size_t i = 0; i < strings_in.size(); ++i) {
+    cstrings.push_back(strings_in[i].c_str());
+  }
+
+  return cstrings;
+}
+}  // namespace
+
 Subscription::Subscription(
   Node & node, py::object pymsg_type, std::string topic,
-  py::object pyqos_profile)
+  py::object pyqos_profile, py::object content_filter_options)
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
@@ -79,6 +95,24 @@ Subscription::Subscription(
     });
 
   *rcl_subscription_ = rcl_get_zero_initialized_subscription();
+
+  std::string filter_expression;
+  std::vector<std::string> expression_parameters;
+  if (!content_filter_options.is_none()) {
+    filter_expression = content_filter_options.attr("filter_expression").cast<std::string>();
+    expression_parameters =
+      content_filter_options.attr("expression_parameters").cast<std::vector<std::string>>();
+    std::vector<const char *> cstrings =
+      get_c_vector_string(expression_parameters);
+    rcl_ret_t ret = rcl_subscription_options_set_content_filter_options(
+      filter_expression.c_str(),
+      cstrings.size(),
+      cstrings.data(),
+      &subscription_ops);
+    if (RCL_RET_OK != ret) {
+      throw rclpy::RCLError("Failed to set content_filter_options");
+    }
+  }
 
   rcl_ret_t ret = rcl_subscription_init(
     rcl_subscription_.get(), node_.rcl_ptr(), msg_type,
@@ -248,22 +282,6 @@ Subscription::is_cft_enabled() const
   return rcl_subscription_is_cft_enabled(rcl_subscription_.get());
 }
 
-namespace
-{
-std::vector<const char *>
-get_c_vector_string(const std::vector<std::string> & strings_in)
-{
-  std::vector<const char *> cstrings;
-  cstrings.reserve(strings_in.size());
-
-  for (size_t i = 0; i < strings_in.size(); ++i) {
-    cstrings.push_back(strings_in[i].c_str());
-  }
-
-  return cstrings;
-}
-}  // namespace
-
 void
 Subscription::set_content_filter(
   const std::string & filter_expression,
@@ -344,7 +362,12 @@ void
 define_subscription(py::object module)
 {
   py::class_<Subscription, Destroyable, std::shared_ptr<Subscription>>(module, "Subscription")
-  .def(py::init<Node &, py::object, std::string, py::object>())
+  .def(py::init<Node &, py::object, std::string, py::object, py::object>(),
+    py::arg("node"),
+    py::arg("msg_type"),
+    py::arg("topic"),
+    py::arg("qos_profile"),
+    py::arg("content_filter_options") = py::none())
   .def_property_readonly(
     "pointer", [](const Subscription & subscription) {
       return reinterpret_cast<size_t>(subscription.rcl_ptr());

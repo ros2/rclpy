@@ -601,7 +601,8 @@ class Timer(Destroyable):
 class Subscription(Destroyable, Generic[MsgT]):
 
     def __init__(self, node: Node, pymsg_type: type[MsgT], topic: str,
-                 pyqos_profile: rmw_qos_profile_t) -> None: ...
+                 pyqos_profile: rmw_qos_profile_t,
+                 content_filter_options: Optional[ContentFilterOptions] = None) -> None: ...
 
     @property
     def pointer(self) -> int:
