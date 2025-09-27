@@ -28,7 +28,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
-from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
+from rclpy.type_support import BaseService, SrvRequestT, SrvResponseT
 
 # Left To Support Legacy TypeVars
 SrvType = TypeVar('SrvType')
@@ -41,7 +41,7 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         self,
         context: Context,
         client_impl: '_rclpy.Client[SrvRequestT, SrvResponseT]',
-        srv_type: Type[Srv],
+        srv_type: Type[BaseService[SrvRequestT, SrvResponseT]],
         srv_name: str,
         qos_profile: QoSProfile,
         callback_group: CallbackGroup

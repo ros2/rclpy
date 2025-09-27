@@ -33,9 +33,9 @@ from rclpy.parameter import Parameter
 from rclpy.subscription import MessageInfo
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.type_support import (Action, FeedbackMessage, FeedbackT, GetResultServiceRequest,
-                                GetResultServiceResponse, GoalT, Msg, MsgT, ResultT,
-                                SendGoalServiceRequest, SendGoalServiceResponse, Srv, SrvRequestT,
+from rclpy.type_support import (BaseAction, BaseService, FeedbackMessage, FeedbackT, GetResultServiceRequest,
+                                GetResultServiceResponse, GoalT, MsgT, ResultT,
+                                SendGoalServiceRequest, SendGoalServiceResponse, SrvRequestT,
                                 SrvResponseT)
 from type_description_interfaces.srv import GetTypeDescription
 
@@ -162,7 +162,7 @@ class InvalidHandle(RuntimeError):
 
 class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, srv_type: type[Srv],
+    def __init__(self, node: Node, srv_type: type[BaseService[SrvRequestT, SrvResponseT]],
                  srv_name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
@@ -258,7 +258,7 @@ class Publisher(Destroyable, Generic[MsgT]):
 
 class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, pysrv_type: type[Srv],
+    def __init__(self, node: Node, pysrv_type: type[BaseService[SrvRequestT, SrvResponseT]],
                  name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
@@ -344,7 +344,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
     def __init__(
             self,
             node: Node,
-            pyaction_type: type[Action],
+            pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT]],
             action_name: str,
             goal_service_qos: rmw_qos_profile_t,
             result_service_qos: rmw_qos_profile_t,
@@ -434,7 +434,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Destroyable):
         self,
         node: Node,
         rclpy_clock: Clock,
-        pyaction_type: type[Action],
+        pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT]],
         action_name: str,
         goal_service_qos: rmw_qos_profile_t,
         result_service_qos: rmw_qos_profile_t,
@@ -790,7 +790,7 @@ def rclpy_get_client_names_and_types_by_node(node: Node, node_name: str, node_na
     """Get service names and types for which a remote node has servers."""
 
 
-def rclpy_serialize(pymsg: Msg, py_msg_type: type[Msg]) -> bytes:
+def rclpy_serialize(pymsg: MsgT, py_msg_type: type[MsgT]) -> bytes:
     """Serialize a ROS message."""
 
 

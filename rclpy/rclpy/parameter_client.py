@@ -24,7 +24,6 @@ from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.srv import SetParametersAtomically
 from rclpy.callback_groups import CallbackGroup
-from rclpy.client import Client
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.node import Node
 from rclpy.parameter import Parameter as Parameter
@@ -79,36 +78,27 @@ class AsyncParameterClient:
         """
         self.remote_node_name = remote_node_name
         self.node = node
-        self._get_parameter_client: Client[GetParameters.Request,
-                                           GetParameters.Response] = self.node.create_client(
+        self._get_parameter_client = self.node.create_client(
             GetParameters, f'{remote_node_name}/get_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._list_parameter_client: Client[ListParameters.Request,
-                                            ListParameters.Response] = self.node.create_client(
+        self._list_parameter_client = self.node.create_client(
             ListParameters, f'{remote_node_name}/list_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._set_parameter_client: Client[SetParameters.Request,
-                                           SetParameters.Response] = self.node.create_client(
+        self._set_parameter_client = self.node.create_client(
             SetParameters, f'{remote_node_name}/set_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._get_parameter_types_client: Client[GetParameterTypes.Request,
-                                                 GetParameterTypes.Response] = \
-            self.node.create_client(
+        self._get_parameter_types_client = self.node.create_client(
             GetParameterTypes, f'{remote_node_name}/get_parameter_types',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._describe_parameters_client: Client[DescribeParameters.Request,
-                                                 DescribeParameters.Response] = \
-            self.node.create_client(
+        self._describe_parameters_client = self.node.create_client(
             DescribeParameters, f'{remote_node_name}/describe_parameters',
             qos_profile=qos_profile, callback_group=callback_group
         )
-        self._set_parameters_atomically_client: Client[SetParametersAtomically.Request,
-                                                       SetParametersAtomically.Response] = \
-            self.node.create_client(
+        self._set_parameters_atomically_client = self.node.create_client(
             SetParametersAtomically, f'{remote_node_name}/set_parameters_atomically',
             qos_profile=qos_profile, callback_group=callback_group
         )

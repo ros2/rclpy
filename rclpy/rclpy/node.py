@@ -92,10 +92,10 @@ from rclpy.timer import Timer
 from rclpy.timer import TimerCallbackType
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
+from rclpy.type_support import BaseService
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.type_support import MsgT
-from rclpy.type_support import Srv
 from rclpy.type_support import SrvRequestT
 from rclpy.type_support import SrvResponseT
 from rclpy.utilities import get_default_context
@@ -1739,7 +1739,7 @@ class Node:
 
     def create_client(
         self,
-        srv_type: Type[Srv],
+        srv_type: Type[BaseService[SrvRequestT, SrvResponseT]],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
@@ -1760,7 +1760,7 @@ class Node:
         failed = False
         try:
             with self.handle:
-                client_impl: '_rclpy.Client[SrvRequestT, SrvResponseT]' = _rclpy.Client(
+                client_impl = _rclpy.Client(
                     self.handle,
                     srv_type,
                     srv_name,
@@ -1770,7 +1770,7 @@ class Node:
         if failed:
             self._validate_topic_or_service_name(srv_name, is_service=True)
 
-        client: Client[SrvRequestT, SrvResponseT] = Client(
+        client = Client(
             self.context,
             client_impl, srv_type, srv_name, qos_profile,
             callback_group)
@@ -1781,7 +1781,7 @@ class Node:
 
     def create_service(
         self,
-        srv_type: Type[Srv],
+        srv_type: Type[BaseService[SrvRequestT, SrvResponseT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,

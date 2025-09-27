@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import threading
 import time
 from types import TracebackType
@@ -42,7 +44,7 @@ from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
-from rclpy.type_support import Action
+from rclpy.type_support import BaseAction
 from rclpy.type_support import check_for_type_support
 from rclpy.type_support import FeedbackMessage
 from rclpy.type_support import FeedbackT
@@ -84,7 +86,7 @@ class SendGoalKWargs(TypedDict):
 class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
     """Goal handle for working with Action Clients."""
 
-    def __init__(self, action_client: 'ActionClient[GoalT, ResultT, FeedbackT]',
+    def __init__(self, action_client: ActionClient[GoalT, ResultT, FeedbackT],
                  goal_id: UUID, goal_response: SendGoalServiceResponse):
         self._action_client = action_client
         self._goal_id = goal_id
@@ -169,7 +171,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[Action],
+        action_type: Type[BaseAction[GoalT, ResultT, FeedbackT]],
         action_name: str,
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
@@ -205,7 +207,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         self._action_type = action_type
         self._action_name = action_name
         with node.handle:
-            self._client_handle: '_rclpy.ActionClient[GoalT, ResultT, FeedbackT]' =  \
+            self._client_handle =  \
                 _rclpy.ActionClient(
                     node.handle,
                     action_type,

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from enum import Enum
 import functools
 import threading
@@ -34,7 +36,7 @@ from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.type_support import (Action, check_for_type_support, FeedbackMessage, FeedbackT,
+from rclpy.type_support import (BaseAction, check_for_type_support, FeedbackMessage, FeedbackT,
                                 GetResultServiceRequest, GetResultServiceResponse, GoalT, ResultT,
                                 SendGoalServiceRequest)
 from rclpy.waitable import NumberOfEntities, Waitable
@@ -85,7 +87,7 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
 
     def __init__(
         self,
-        action_server: 'ActionServer[GoalT, ResultT, FeedbackT]',
+        action_server: ActionServer[GoalT, ResultT, FeedbackT],
         goal_info: GoalInfo,
         goal_request: GoalT
     ) -> None:
@@ -231,7 +233,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[Action],
+        action_type: Type[BaseAction[GoalT, ResultT, FeedbackT]],
         action_name: str,
         execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
         *,
@@ -290,7 +292,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         self._node = node
         self._action_type = action_type
         with node.handle, node.get_clock().handle:
-            self._handle: '_rclpy.ActionServer[GoalT, ResultT, FeedbackT]' = \
+            self._handle = \
                 _rclpy.ActionServer(
                     node.handle,
                     node.get_clock().handle,
@@ -507,7 +509,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             self._logger.warning('Failed to send result response (the client may have gone away)')
 
     @property
-    def action_type(self) -> Type[Action]:
+    def action_type(self) -> Type[BaseAction[GoalT, ResultT, FeedbackT]]:
         return self._action_type
 
     # Start Waitable API

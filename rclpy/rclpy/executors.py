@@ -56,7 +56,7 @@ from rclpy.task import Task
 from rclpy.timer import Timer
 from rclpy.timer import TimerCallbackType
 from rclpy.timer import TimerInfo
-from rclpy.type_support import Msg
+from rclpy.type_support import BaseMessage
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
@@ -484,7 +484,8 @@ class Executor(ContextManager['Executor']):
                     return None
 
                 if sub._callback_type is Subscription.CallbackType.MessageOnly:
-                    msg_tuple: Union[Tuple[Msg], Tuple[Msg, MessageInfo]] = (msg_info[0], )
+                    msg_tuple: Union[tuple[BaseMessage],
+                                     tuple[BaseMessage, MessageInfo]] = (msg_info[0], )
                 else:
                     msg_tuple = msg_info
 

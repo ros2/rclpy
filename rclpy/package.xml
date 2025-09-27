@@ -51,6 +51,7 @@
   <exec_depend>rmw</exec_depend>
   <exec_depend>rmw_implementation</exec_depend>
   <exec_depend>rosgraph_msgs</exec_depend>
+  <exec_depend>rosidl_pycommon</exec_depend>
   <exec_depend>rosidl_runtime_c</exec_depend>
   <exec_depend>rpyutils</exec_depend>
   <exec_depend>service_msgs</exec_depend>
