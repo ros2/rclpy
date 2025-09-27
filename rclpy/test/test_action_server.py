@@ -26,7 +26,6 @@ import rclpy
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.client import Client
 import rclpy.context
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
@@ -45,14 +44,11 @@ class MockActionClient:
 
     def __init__(self, node: Node):
         self.reset()
-        self.goal_srv: Client[Fibonacci.Impl.SendGoalService.Request,
-                              Fibonacci.Impl.SendGoalService.Response] = node.create_client(
+        self.goal_srv = node.create_client(
             Fibonacci.Impl.SendGoalService, '/fibonacci/_action/send_goal')
-        self.cancel_srv: Client[Fibonacci.Impl.CancelGoalService.Request,
-                                Fibonacci.Impl.CancelGoalService.Response] = node.create_client(
+        self.cancel_srv = node.create_client(
             Fibonacci.Impl.CancelGoalService, '/fibonacci/_action/cancel_goal')
-        self.result_srv: Client[Fibonacci.Impl.GetResultService.Request,
-                                Fibonacci.Impl.GetResultService.Response] = node.create_client(
+        self.result_srv = node.create_client(
             Fibonacci.Impl.GetResultService, '/fibonacci/_action/get_result')
         self.feedback_sub = node.create_subscription(
             Fibonacci.Impl.FeedbackMessage,

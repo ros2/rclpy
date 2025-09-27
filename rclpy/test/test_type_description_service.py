@@ -15,7 +15,6 @@
 import unittest
 
 import rclpy
-from rclpy.client import Client
 import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.qos import qos_profile_services_default
@@ -37,10 +36,8 @@ class TestTypeDescriptionService(unittest.TestCase):
         self.test_pub = self.test_node.create_publisher(
             BasicTypes, self.test_topic, 10)
 
-        self.get_type_description_client: Client[GetTypeDescription.Request,
-                                                 GetTypeDescription.Response] = \
-            self.test_node.create_client(
-                GetTypeDescription, '/rclpy/test_parameter_service/get_type_description',
+        self.get_type_description_client = self.test_node.create_client(
+            GetTypeDescription, '/rclpy/test_parameter_service/get_type_description',
             qos_profile=qos_profile_services_default)
 
         self.executor = SingleThreadedExecutor(context=self.context)

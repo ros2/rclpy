@@ -73,7 +73,7 @@ class TestClient(unittest.TestCase):
                 namespace=ns,
                 cli_args=cli_args,
                 start_parameter_services=False)
-            client: Client[Empty.Request, Empty.Response] = node.create_client(
+            client = node.create_client(
                 srv_type=Empty,
                 srv_name=service_name
             )

@@ -18,7 +18,6 @@ from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.srv import DescribeParameters
 from rcl_interfaces.srv import GetParameters
 import rclpy
-from rclpy.client import Client
 import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.parameter import Parameter
@@ -35,14 +34,12 @@ class TestParameterService(unittest.TestCase):
             namespace='/rclpy',
             context=self.context)
 
-        self.get_parameter_client: Client[GetParameters.Request,
-                                          GetParameters.Response] = self.test_node.create_client(
+        self.get_parameter_client = self.test_node.create_client(
             GetParameters, '/rclpy/test_parameter_service/get_parameters',
             qos_profile=qos_profile_services_default
         )
 
-        self.describe_parameters_client: Client[DescribeParameters.Response,
-                                                DescribeParameters.Response] = \
+        self.describe_parameters_client = \
             self.test_node.create_client(
                 DescribeParameters,
                 '/rclpy/test_parameter_service/describe_parameters',
