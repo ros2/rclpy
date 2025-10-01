@@ -31,6 +31,7 @@ from rclpy.impl import service_introspection as service_introspection
 from rclpy.node import Node as RCLPyNode
 from rclpy.parameter import Parameter
 from rclpy.subscription import MessageInfo
+from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.type_support import (Action, FeedbackMessage, FeedbackT, GetResultServiceRequest,
@@ -600,7 +601,8 @@ class Timer(Destroyable):
 class Subscription(Destroyable, Generic[MsgT]):
 
     def __init__(self, node: Node, pymsg_type: type[MsgT], topic: str,
-                 pyqos_profile: rmw_qos_profile_t) -> None: ...
+                 pyqos_profile: rmw_qos_profile_t,
+                 content_filter_options: Optional[ContentFilterOptions] = None) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -623,6 +625,15 @@ class Subscription(Destroyable, Generic[MsgT]):
 
     def clear_on_new_message_callback(self) -> None:
         """Clear the on new message callback function for the subscription."""
+
+    def is_cft_enabled(self) -> bool:
+        """Check if content filtering is enabled for this subscription."""
+
+    def set_content_filter(self, filter_expression: str, expression_parameters: list[str]) -> None:
+        """Set the filter expression and expression parameters for the subscription."""
+
+    def get_content_filter(self) -> ContentFilterOptions:
+        """Get the filter expression and expression parameters for the subscription."""
 
 
 class rcl_time_point_t:
