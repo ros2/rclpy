@@ -31,6 +31,7 @@ from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
+from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.type_support import MsgT
 from typing_extensions import TypeAlias
 
@@ -47,6 +48,9 @@ class MessageInfo(TypedDict):
     reception_sequence_number: Optional[int]
     publisher_gid: Optional[PublisherGID]
 
+
+# Re-export exception defined in _rclpy C extension.
+RCLError = _rclpy.RCLError
 
 # Left to support Legacy TypeVars.
 MsgType = TypeVar('MsgType')
@@ -199,6 +203,34 @@ class Subscription(Generic[MsgT]):
         """Get the name of the logger associated with the node of the subscription."""
         with self.handle:
             return self.__subscription.get_logger_name()
+
+    @property
+    def is_cft_enabled(self) -> bool:
+        """Check if content filtering is enabled for the subscription."""
+        with self.handle:
+            return self.__subscription.is_cft_enabled()
+
+    def set_content_filter(self, filter_expression: str, expression_parameters: list[str]) -> None:
+        """
+        Set the filter expression and expression parameters for the subscription.
+
+        :param filter_expression: The filter expression to set.
+        :param expression_parameters: The expression parameters to set.
+        :raises: RCLError if internal error occurred when calling the rcl function.
+        """
+        with self.handle:
+            self.__subscription.set_content_filter(filter_expression, expression_parameters)
+
+    def get_content_filter(self) -> ContentFilterOptions:
+        """
+        Get the filter expression and expression parameters for the subscription.
+
+        :return: ContentFilterOptions object containing the filter expression and expression
+            parameters.
+        :raises: RCLError if internal error occurred when calling the rcl function.
+        """
+        with self.handle:
+            return self.__subscription.get_content_filter()
 
     def __enter__(self) -> 'Subscription[MsgT]':
         return self
