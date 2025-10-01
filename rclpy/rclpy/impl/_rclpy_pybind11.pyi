@@ -145,6 +145,10 @@ class UnsupportedEventTypeError(RCLError):
     pass
 
 
+class TimerCancelledError(RCLError):
+    pass
+
+
 class NotImplementedError(builtins.NotImplementedError):  # noqa: A001
     pass
 
@@ -190,6 +194,12 @@ class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
     def get_logger_name(self) -> str:
         """Get the name of the logger associated with the node of the client."""
+
+    def set_on_new_response_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on new response callback function for the client."""
+
+    def clear_on_new_response_callback(self) -> None:
+        """Clear the on new response callback function for the client."""
 
 
 class Context(Destroyable):
@@ -281,6 +291,12 @@ class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
     def get_logger_name(self) -> str:
         """Get the name of the logger associated with the node of the service."""
+
+    def set_on_new_request_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on new request callback function for the service."""
+
+    def clear_on_new_request_callback(self) -> None:
+        """Clear the on new request callback function for the service."""
 
 
 class TypeDescriptionService(Destroyable):
@@ -574,6 +590,12 @@ class Timer(Destroyable):
     def is_timer_canceled(self) -> bool:
         """Check if a timer is canceled."""
 
+    def set_on_reset_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on reset callback function for the timer."""
+
+    def clear_on_reset_callback(self) -> None:
+        """Clear the on reset callback function for the timer."""
+
 
 class Subscription(Destroyable, Generic[MsgT]):
 
@@ -595,6 +617,12 @@ class Subscription(Destroyable, Generic[MsgT]):
 
     def get_publisher_count(self) -> int:
         """Count the publishers from a subscription."""
+
+    def set_on_new_message_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on new message callback function for the subscription."""
+
+    def clear_on_new_message_callback(self) -> None:
+        """Clear the on new message callback function for the subscription."""
 
 
 class rcl_time_point_t:

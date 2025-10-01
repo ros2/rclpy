@@ -44,7 +44,7 @@ from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
-from rclpy.exceptions import InvalidHandle
+from rclpy.exceptions import InvalidHandle, TimerCancelledError
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service
@@ -53,7 +53,9 @@ from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.timer import Timer, TimerInfo
+from rclpy.timer import Timer
+from rclpy.timer import TimerCallbackType
+from rclpy.timer import TimerInfo
 from rclpy.type_support import Msg
 from rclpy.utilities import get_default_context
 from rclpy.utilities import timeout_sec_to_nsec
@@ -258,6 +260,10 @@ class Executor(ContextManager['Executor']):
         # Task inherits from Future
         return task
 
+    def create_future(self) -> Future:
+        """Create a Future object attached to the Executor."""
+        return Future(executor=self)
+
     def shutdown(self, timeout_sec: Optional[float] = None) -> bool:
         """
         Stop executing callbacks and wait for their completion.
@@ -431,8 +437,7 @@ class Executor(ContextManager['Executor']):
                     actual_call_time=info['actual_call_time'],
                     clock_type=tmr.clock.clock_type)
 
-                def check_argument_type(callback_func: Union[Callable[[], None],
-                                                             Callable[[TimerInfo], None]],
+                def check_argument_type(callback_func: TimerCallbackType,
                                         target_type: Type[TimerInfo]) -> Optional[str]:
                     sig = inspect.signature(callback_func)
                     for param in sig.parameters.values():
@@ -461,8 +466,11 @@ class Executor(ContextManager['Executor']):
         except InvalidHandle:
             # Timer is a Destroyable, which means that on __enter__ it can throw an
             # InvalidHandle exception if the entity has already been destroyed.  Handle that here
-            # by just returning an empty argument, which means we will skip doing any real work
-            # in _execute_timer below
+            # by just returning an empty argument, which means we will skip doing any real work.
+            pass
+        except TimerCancelledError:
+            # If TimerCancelledError exception occurs when calling call_timer_with_info(), we will
+            # skip doing any real work.
             pass
 
         return None

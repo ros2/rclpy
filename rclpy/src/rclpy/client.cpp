@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "client.hpp"
 #include "clock.hpp"
@@ -30,13 +31,19 @@
 #include "node.hpp"
 #include "python_allocator.hpp"
 #include "utils.hpp"
+#include "events_executor/rcl_support.hpp"
 
 namespace rclpy
 {
+using events_executor::RclEventCallbackTrampoline;
 
 void
 Client::destroy()
 {
+  try {
+    clear_on_new_response_callback();
+  } catch (const rclpy::RCLError &) {
+  }
   rcl_client_.reset();
   node_.destroy();
 }
@@ -182,6 +189,41 @@ Client::get_logger_name() const
 }
 
 void
+Client::set_callback(
+  rcl_event_callback_t callback,
+  const void * user_data)
+{
+  rcl_ret_t ret = rcl_client_set_on_new_response_callback(
+    rcl_client_.get(),
+    callback,
+    user_data);
+
+  if (RCL_RET_OK != ret) {
+    throw RCLError(std::string("Failed to set the on new response callback for client: ") +
+      rcl_get_error_string().str);
+  }
+}
+
+void
+Client::set_on_new_response_callback(std::function<void(size_t)> callback)
+{
+  clear_on_new_response_callback();
+  on_new_response_callback_ = std::move(callback);
+  set_callback(
+    RclEventCallbackTrampoline,
+    static_cast<const void *>(&on_new_response_callback_));
+}
+
+void
+Client::clear_on_new_response_callback()
+{
+  if (on_new_response_callback_) {
+    set_callback(nullptr, nullptr);
+    on_new_response_callback_ = nullptr;
+  }
+}
+
+void
 define_client(py::object module)
 {
   py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
@@ -208,6 +250,10 @@ define_client(py::object module)
     "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Client::get_logger_name,
-    "Get the name of the logger associated with the node of the client.");
+    "Get the name of the logger associated with the node of the client.")
+  .def(
+    "set_on_new_response_callback", &Client::set_on_new_response_callback,
+    py::arg("callback"))
+  .def("clear_on_new_response_callback", &Client::clear_on_new_response_callback);
 }
 }  // namespace rclpy

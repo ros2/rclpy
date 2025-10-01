@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import time
+from typing import List
+from typing import Optional
+from unittest.mock import Mock
 
 import pytest
 
@@ -51,7 +54,8 @@ def test_node():
     ('/topic', 'ns', '/topic'),
     ('/example/topic', 'ns', '/example/topic'),
 ])
-def test_get_subscription_topic_name(topic_name, namespace, expected):
+def test_get_subscription_topic_name(topic_name: str, namespace: Optional[str],
+                                     expected: str) -> None:
     node = Node('node_name', namespace=namespace, cli_args=None)
     sub = node.create_subscription(
         msg_type=Empty,
@@ -85,7 +89,8 @@ def test_logger_name_is_equal_to_node_name(test_node):
     ('example/topic', 'ns', ['--ros-args', '--remap', 'example/topic:=new_topic'],
      '/ns/new_topic'),
 ])
-def test_get_subscription_topic_name_after_remapping(topic_name, namespace, cli_args, expected):
+def test_get_subscription_topic_name_after_remapping(topic_name: str, namespace: Optional[str],
+                                                     cli_args: List[str], expected: str) -> None:
     node = Node('node_name', namespace=namespace, cli_args=cli_args)
     sub = node.create_subscription(
         msg_type=Empty,
@@ -172,3 +177,21 @@ def test_subscription_publisher_count() -> None:
     sub.destroy()
 
     node.destroy_node()
+
+
+def test_on_new_message_callback(test_node) -> None:
+    topic_name = '/topic'
+    cb = Mock()
+    sub = test_node.create_subscription(
+        msg_type=Empty,
+        topic=topic_name,
+        qos_profile=10,
+        callback=cb)
+    pub = test_node.create_publisher(Empty, topic_name, 10)
+    sub.handle.set_on_new_message_callback(cb)
+    cb.assert_not_called()
+    pub.publish(Empty())
+    cb.assert_called_once_with(1)
+    sub.handle.clear_on_new_message_callback()
+    pub.publish(Empty())
+    cb.assert_called_once()
