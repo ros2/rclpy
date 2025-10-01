@@ -22,9 +22,34 @@ from rclpy.event_handler import EventHandler
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
+<<<<<<< HEAD
 
 
 # For documentation only
+=======
+from rclpy.subscription_content_filter_options import ContentFilterOptions
+from rclpy.type_support import MsgT
+from typing_extensions import TypeAlias
+
+
+class PublisherGID(TypedDict):
+    implementation_identifier: str
+    data: bytes
+
+
+class MessageInfo(TypedDict):
+    source_timestamp: int
+    received_timestamp: int
+    publication_sequence_number: Optional[int]
+    reception_sequence_number: Optional[int]
+    publisher_gid: Optional[PublisherGID]
+
+
+# Re-export exception defined in _rclpy C extension.
+RCLError = _rclpy.RCLError
+
+# Left to support Legacy TypeVars.
+>>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 MsgType = TypeVar('MsgType')
 
 
@@ -129,3 +154,45 @@ class Subscription:
         """Get the name of the logger associated with the node of the subscription."""
         with self.handle:
             return self.__subscription.get_logger_name()
+<<<<<<< HEAD
+=======
+
+    @property
+    def is_cft_enabled(self) -> bool:
+        """Check if content filtering is enabled for the subscription."""
+        with self.handle:
+            return self.__subscription.is_cft_enabled()
+
+    def set_content_filter(self, filter_expression: str, expression_parameters: list[str]) -> None:
+        """
+        Set the filter expression and expression parameters for the subscription.
+
+        :param filter_expression: The filter expression to set.
+        :param expression_parameters: The expression parameters to set.
+        :raises: RCLError if internal error occurred when calling the rcl function.
+        """
+        with self.handle:
+            self.__subscription.set_content_filter(filter_expression, expression_parameters)
+
+    def get_content_filter(self) -> ContentFilterOptions:
+        """
+        Get the filter expression and expression parameters for the subscription.
+
+        :return: ContentFilterOptions object containing the filter expression and expression
+            parameters.
+        :raises: RCLError if internal error occurred when calling the rcl function.
+        """
+        with self.handle:
+            return self.__subscription.get_content_filter()
+
+    def __enter__(self) -> 'Subscription[MsgT]':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
+>>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))

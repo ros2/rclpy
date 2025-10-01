@@ -76,6 +76,11 @@ from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import Subscription
+<<<<<<< HEAD
+=======
+from rclpy.subscription import SubscriptionCallbackUnion
+from rclpy.subscription_content_filter_options import ContentFilterOptions
+>>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
@@ -1584,14 +1589,53 @@ class Node:
         self,
         msg_type,
         topic: str,
+<<<<<<< HEAD
         callback: Callable[[MsgType], None],
+=======
+        callback: GenericSubscriptionCallback[bytes],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: Literal[True],
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: GenericSubscriptionCallback[MsgT],
+>>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
+        qos_profile: Union[QoSProfile, int],
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+<<<<<<< HEAD
         raw: bool = False
     ) -> Subscription:
+=======
+        raw: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
+
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: SubscriptionCallbackUnion[MsgT],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]:
+>>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
         """
         Create a new subscription.
 
@@ -1608,6 +1652,7 @@ class Node:
         :param event_callbacks: User-defined callbacks for middleware events.
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
+        :param content_filter_options: The filter expression and parameters for content filtering.
         """
         qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
 
@@ -1635,7 +1680,8 @@ class Node:
         try:
             with self.handle:
                 subscription_object = _rclpy.Subscription(
-                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile(),
+                    content_filter_options)
         except ValueError:
             failed = True
         if failed:
