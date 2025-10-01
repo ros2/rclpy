@@ -87,6 +87,12 @@ class Publisher:
     def handle(self):
         return self.__publisher
 
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the publisher."""
+        with self.handle:
+            return self.__publisher.get_logger_name()
+
     def destroy(self):
         for handler in self.event_handlers:
             handler.destroy()

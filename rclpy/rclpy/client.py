@@ -185,3 +185,9 @@ class Client:
 
     def destroy(self):
         self.__client.destroy_when_not_in_use()
+
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the client."""
+        with self.handle:
+            return self.__client.get_logger_name()

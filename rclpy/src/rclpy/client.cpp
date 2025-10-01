@@ -146,6 +146,17 @@ Client::take_response(py::object pyresponse_type)
   return result_tuple;
 }
 
+const char *
+Client::get_logger_name() const
+{
+  const char * node_logger_name = rcl_node_get_logger_name(node_.rcl_ptr());
+  if (!node_logger_name) {
+    throw RCLError("Node logger name not set");
+  }
+
+  return node_logger_name;
+}
+
 void
 define_client(py::object module)
 {
@@ -164,6 +175,9 @@ define_client(py::object module)
     "Return true if the service server is available")
   .def(
     "take_response", &Client::take_response,
-    "Take a received response from an earlier request");
+    "Take a received response from an earlier request")
+  .def(
+    "get_logger_name", &Client::get_logger_name,
+    "Get the name of the logger associated with the node of the client.");
 }
 }  // namespace rclpy

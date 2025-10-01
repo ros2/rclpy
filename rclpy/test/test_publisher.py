@@ -125,6 +125,11 @@ class TestPublisher(unittest.TestCase):
         pub.destroy()
         sub.destroy()
 
+    def test_logger_name_is_equal_to_node_name(self) -> None:
+        pub = self.node.create_publisher(BasicTypes, TEST_TOPIC, 10)
+        self.assertEqual(pub.logger_name, 'node')
+        pub.destroy()
+
 
 if __name__ == '__main__':
     unittest.main()

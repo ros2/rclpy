@@ -20,9 +20,19 @@ from rclpy.node import Node
 from test_msgs.msg import Empty
 
 
+NODE_NAME = 'test_node'
+
+
 @pytest.fixture(scope='session', autouse=True)
 def setup_ros():
     rclpy.init()
+
+
+@pytest.fixture
+def test_node():
+    node = Node(NODE_NAME)
+    yield node
+    node.destroy_node()
 
 
 @pytest.mark.parametrize('topic_name, namespace, expected', [
@@ -47,6 +57,17 @@ def test_get_subscription_topic_name(topic_name, namespace, expected):
         qos_profile=10,
     )
     assert sub.topic_name == expected
+
+
+def test_logger_name_is_equal_to_node_name(test_node):
+    sub = test_node.create_subscription(
+        msg_type=Empty,
+        topic='topic',
+        callback=lambda _: None,
+        qos_profile=10,
+    )
+
+    assert sub.logger_name == NODE_NAME
 
 
 @pytest.mark.parametrize('topic_name, namespace, cli_args, expected', [

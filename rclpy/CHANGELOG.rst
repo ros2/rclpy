@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.17 (2025-07-16)
+-------------------
+* Feature: add logger_name property to subscription, publisher, service and client (backport `#1471 <https://github.com/ros2/rclpy/issues/1471>`_) (`#1476 <https://github.com/ros2/rclpy/issues/1476>`_)
+* [rclpy] Fix spin() incorrectly removing node from executor if already attached (`#1446 <https://github.com/ros2/rclpy/issues/1446>`_) (`#1451 <https://github.com/ros2/rclpy/issues/1451>`_)
+* Contributors: mergify[bot]
+
 3.3.16 (2025-03-25)
 -------------------
 * Check parameter callback signature during registration. (backport `#1425 <https://github.com/ros2/rclpy/issues/1425>`_) (`#1430 <https://github.com/ros2/rclpy/issues/1430>`_)
