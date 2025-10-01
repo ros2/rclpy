@@ -215,17 +215,17 @@ class Executor:
             timeot expires before all outstanding work is done.
         """
         with self._shutdown_lock:
-            if not self._is_shutdown:
-                self._is_shutdown = True
-                # Tell executor it's been shut down
-                try:
-                    self._guard.trigger()
-                except InvalidHandle:
-                    pass
+            if self._is_shutdown:
+                return True
+            self._is_shutdown = True
+            # Tell executor it's been shut down
+            try:
+                self._guard.trigger()
+            except InvalidHandle:
+                pass
 
-        if not self._is_shutdown:
-            if not self._work_tracker.wait(timeout_sec):
-                return False
+        if not self._work_tracker.wait(timeout_sec):
+            return False
 
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:

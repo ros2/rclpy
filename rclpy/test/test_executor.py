@@ -532,7 +532,7 @@ class TestExecutor(unittest.TestCase):
             while not shutdown_called[0] and time.monotonic() - start_time < 5.0:
                 executor.spin_once(timeout_sec=0.1)
 
-            self.assertTrue(shutdown_called[0], "Timer callback was not executed")
+            self.assertTrue(shutdown_called[0], 'Timer callback was not executed')
 
             test_node.destroy_timer(timer)
             test_node.destroy_node()
