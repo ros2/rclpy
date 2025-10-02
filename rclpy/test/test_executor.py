@@ -511,6 +511,39 @@ class TestExecutor(unittest.TestCase):
         timer1.destroy()
         cli.destroy()
 
+    def test_shutdown_from_callback_no_deadlock(self):
+        test_context = rclpy.context.Context()
+        rclpy.init(context=test_context)
+
+        try:
+            test_node = rclpy.create_node('test_shutdown_node', context=test_context)
+            shutdown_called = [False]
+
+            def timer_callback():
+                shutdown_called[0] = True
+                rclpy.shutdown(context=test_context)
+
+            timer = test_node.create_timer(0.1, timer_callback)
+
+            executor = SingleThreadedExecutor(context=test_context)
+            executor.add_node(test_node)
+
+            start_time = time.monotonic()
+            while not shutdown_called[0] and time.monotonic() - start_time < 5.0:
+                executor.spin_once(timeout_sec=0.1)
+
+            self.assertTrue(shutdown_called[0], 'Timer callback was not executed')
+
+            test_node.destroy_timer(timer)
+            test_node.destroy_node()
+            executor.shutdown()
+
+        finally:
+            try:
+                rclpy.shutdown(context=test_context)
+            except Exception:
+                pass
+
 
 if __name__ == '__main__':
     unittest.main()
