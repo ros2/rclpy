@@ -307,9 +307,6 @@ void EventsExecutor::HandleRemovedSubscription(py::handle subscription)
 
 void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t number_of_events)
 {
-  if (stop_after_user_callback_) {
-    events_queue_.Stop();
-  }
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_subscription() and _execute_subcription().
@@ -333,15 +330,25 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t num
   for (size_t i = 0; number_of_events ? i < number_of_events : !got_none; ++i) {
     py::object msg_info = _rclpy_sub.take_message(msg_type, raw);
     if (!msg_info.is_none()) {
+      py::object result;
       try {
         if (callback_type == message_only) {
-          callback(py::cast<py::tuple>(msg_info)[0]);
+          result = callback(py::cast<py::tuple>(msg_info)[0]);
         } else {
-          callback(msg_info);
+          result = callback(msg_info);
         }
       } catch (const py::error_already_set & e) {
         HandleCallbackExceptionInNodeEntity(e, subscription, "subscriptions");
         throw;
+      }
+
+      // The type markup claims the callback can't be a coroutine, but this seems to be a lie
+      // because the stock executor handles it just fine.
+      if (py::cast<bool>(inspect_iscoroutine_(result))) {
+        // Create a Task to manage iteration of this coroutine later.
+        create_task(result);
+      } else if (stop_after_user_callback_) {
+        events_queue_.Stop();
       }
     } else {
       got_none = true;
@@ -496,9 +503,6 @@ void EventsExecutor::HandleRemovedService(py::handle service)
 
 void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_events)
 {
-  if (stop_after_user_callback_) {
-    events_queue_.Stop();
-  }
   py::gil_scoped_acquire gil_acquire;
 
   // Largely based on rclpy.Executor._take_service() and _execute_service().
@@ -513,7 +517,7 @@ void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_eve
   for (size_t i = 0; i < number_of_events; ++i) {
     py::tuple request_and_header = _rclpy_service.service_take_request(req_type);
     py::handle request = request_and_header[0];
-    py::handle header = request_and_header[1];
+    py::object header = request_and_header[1];
     if (!request.is_none()) {
       py::object response;
       try {
@@ -522,7 +526,21 @@ void EventsExecutor::HandleServiceReady(py::handle service, size_t number_of_eve
         HandleCallbackExceptionInNodeEntity(e, service, "services");
         throw;
       }
-      send_response(response, header);
+
+      // The type markup claims the callback can't be a coroutine, but this seems to be a lie
+      // because the stock executor handles it just fine.
+      if (py::cast<bool>(inspect_iscoroutine_(response))) {
+        // Create a Task to manage iteration of this coroutine later.
+        create_task(response).attr("add_done_callback")(
+          py::cpp_function([send_response, header](py::object future) {
+            send_response(future.attr("result")(), header);
+          }));
+      } else {
+        send_response(response, header);
+        if (stop_after_user_callback_) {
+          events_queue_.Stop();
+        }
+      }
     }
   }
 
