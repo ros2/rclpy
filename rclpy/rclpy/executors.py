@@ -376,9 +376,11 @@ class Executor(ContextManager['Executor']):
         """Execute callbacks until shutdown."""
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
-        while self._context.ok() and not self._is_shutdown:
-            self._spin_once_impl()
-        self._exit_spin()
+        try:
+            while self._context.ok() and not self._is_shutdown:
+                self._spin_once_impl()
+        finally:
+            self._exit_spin()
 
     def spin_until_future_complete(
         self,
@@ -390,34 +392,36 @@ class Executor(ContextManager['Executor']):
         self._enter_spin()
         # Make sure the future wakes this executor when it is done
         future.add_done_callback(lambda x: self.wake())
-        if timeout_sec is None or timeout_sec < 0:
-            while (
-                self._context.ok()
-                and not future.done()
-                and not future.cancelled()
-                and not self._is_shutdown
-            ):
-                self._spin_once_until_future_complete(future, timeout_sec)
-        else:
-            start = time.monotonic()
-            end = start + timeout_sec
-            timeout_left = TimeoutObject(timeout_sec)
+        try:
+            if timeout_sec is None or timeout_sec < 0:
+                while (
+                    self._context.ok()
+                    and not future.done()
+                    and not future.cancelled()
+                    and not self._is_shutdown
+                ):
+                    self._spin_once_until_future_complete(future, timeout_sec)
+            else:
+                start = time.monotonic()
+                end = start + timeout_sec
+                timeout_left = TimeoutObject(timeout_sec)
 
-            while (
-                self._context.ok()
-                and not future.done()
-                and not future.cancelled()
-                and not self._is_shutdown
-            ):
-                self._spin_once_until_future_complete(future, timeout_left)
-                now = time.monotonic()
+                while (
+                    self._context.ok()
+                    and not future.done()
+                    and not future.cancelled()
+                    and not self._is_shutdown
+                ):
+                    self._spin_once_until_future_complete(future, timeout_left)
+                    now = time.monotonic()
 
-                if now >= end:
-                    self._exit_spin()
-                    return
+                    if now >= end:
+                        self._exit_spin()
+                        return
 
-                timeout_left.timeout = end - now
-        self._exit_spin()
+                    timeout_left.timeout = end - now
+        finally:
+            self._exit_spin()
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         """
@@ -976,8 +980,10 @@ class SingleThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
-        self._spin_once_impl(timeout_sec)
-        self._exit_spin()
+        try:
+            self._spin_once_impl(timeout_sec)
+        finally:
+            self._exit_spin()
 
     def _spin_once_until_future_complete(
         self,
@@ -994,8 +1000,10 @@ class SingleThreadedExecutor(Executor):
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
         future.add_done_callback(lambda x: self.wake())
-        self._spin_once_until_future_complete(future, timeout_sec)
-        self._exit_spin()
+        try:
+            self._spin_once_until_future_complete(future, timeout_sec)
+        finally:
+            self._exit_spin()
 
 
 class MultiThreadedExecutor(Executor):
@@ -1061,8 +1069,10 @@ class MultiThreadedExecutor(Executor):
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
-        self._spin_once_impl(timeout_sec)
-        self._exit_spin()
+        try:
+            self._spin_once_impl(timeout_sec)
+        finally:
+            self._exit_spin()
 
     def _spin_once_until_future_complete(
         self,
@@ -1079,8 +1089,10 @@ class MultiThreadedExecutor(Executor):
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
         future.add_done_callback(lambda x: self.wake())
-        self._spin_once_until_future_complete(future, timeout_sec)
-        self._exit_spin()
+        try:
+            self._spin_once_until_future_complete(future, timeout_sec)
+        finally:
+            self._exit_spin()
 
     def shutdown(
         self,
