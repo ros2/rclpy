@@ -184,6 +184,28 @@ class Executor:
         self._clock = Clock(clock_type=ClockType.STEADY_TIME)
         self._sigint_gc = SignalHandlerGuardCondition(context)
         self._context.on_shutdown(self.wake)
+        # True when the executor is spinning
+        self._is_spinning = False
+        # Protects access to _is_spinning
+        self._is_spinning_lock = Lock()
+
+    def _enter_spin(self) -> None:
+        """Mark the executor as spinning and prevent concurrent spins."""
+        with self._is_spinning_lock:
+            if self._is_spinning:
+                raise RuntimeError('Executor is already spinning')
+            self._is_spinning = True
+
+    def _exit_spin(self) -> None:
+        """Clear the spinning flag."""
+        with self._is_spinning_lock:
+            self._is_spinning = False
+
+    @property
+    def is_spinning(self) -> bool:
+        """Return whether the executor is currently spinning."""
+        with self._is_spinning_lock:
+            return self._is_spinning
 
     @property
     def context(self) -> Context:
@@ -294,14 +316,35 @@ class Executor:
 
     def spin(self) -> None:
         """Execute callbacks until shutdown."""
-        while self._context.ok() and not self._is_shutdown:
-            self.spin_once()
+        # Mark executor as spinning to prevent concurrent spins
+        self._enter_spin()
+        try:
+            while self._context.ok() and not self._is_shutdown:
+                self._spin_once_impl()
+        finally:
+            self._exit_spin()
 
     def spin_until_future_complete(self, future: Future, timeout_sec: float = None) -> None:
         """Execute callbacks until a given future is done or a timeout occurs."""
+        # Mark executor as spinning to prevent concurrent spins
+        self._enter_spin()
         # Make sure the future wakes this executor when it is done
         future.add_done_callback(lambda x: self.wake())
+        try:
+            if timeout_sec is None or timeout_sec < 0:
+                while (
+                    self._context.ok()
+                    and not future.done()
+                    and not future.cancelled()
+                    and not self._is_shutdown
+                ):
+                    self._spin_once_until_future_complete(future, timeout_sec)
+            else:
+                start = time.monotonic()
+                end = start + timeout_sec
+                timeout_left = TimeoutObject(timeout_sec)
 
+<<<<<<< HEAD
         if timeout_sec is None or timeout_sec < 0:
             while (
                 self._context.ok()
@@ -323,11 +366,24 @@ class Executor:
             ):
                 self.spin_once_until_future_complete(future, timeout_left)
                 now = time.monotonic()
+=======
+                while (
+                    self._context.ok()
+                    and not future.done()
+                    and not future.cancelled()
+                    and not self._is_shutdown
+                ):
+                    self._spin_once_until_future_complete(future, timeout_left)
+                    now = time.monotonic()
 
-                if now >= end:
-                    return
+                    if now >= end:
+                        self._exit_spin()
+                        return
+>>>>>>> cf9240a (add spinning state for the Executor classes. (#1510))
 
-                timeout_left.timeout = end - now
+                    timeout_left.timeout = end - now
+        finally:
+            self._exit_spin()
 
     def spin_once(self, timeout_sec: float = None) -> None:
         """
@@ -338,6 +394,13 @@ class Executor:
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
+        raise NotImplementedError()
+
+    def _spin_once_impl(
+        self,
+        timeout_sec: Optional[Union[float, TimeoutObject]] = None,
+        wait_condition: Callable[[], bool] = lambda: False
+    ) -> None:
         raise NotImplementedError()
 
     def spin_once_until_future_complete(
@@ -769,15 +832,37 @@ class SingleThreadedExecutor(Executor):
             if handler.exception() is not None:
                 raise handler.exception()
 
+<<<<<<< HEAD
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
+=======
+            handler.result()  # raise any exceptions
+
+    def spin_once(self, timeout_sec: Optional[float] = None) -> None:
+        # Mark executor as spinning to prevent concurrent spins
+        self._enter_spin()
+        try:
+            self._spin_once_impl(timeout_sec)
+        finally:
+            self._exit_spin()
+>>>>>>> cf9240a (add spinning state for the Executor classes. (#1510))
 
     def spin_once_until_future_complete(
         self,
         future: Future,
         timeout_sec: Optional[Union[float, TimeoutObject]] = None
     ) -> None:
+<<<<<<< HEAD
         self._spin_once_impl(timeout_sec)
+=======
+        # Mark executor as spinning to prevent concurrent spins
+        self._enter_spin()
+        future.add_done_callback(lambda x: self.wake())
+        try:
+            self._spin_once_until_future_complete(future, timeout_sec)
+        finally:
+            self._exit_spin()
+>>>>>>> cf9240a (add spinning state for the Executor classes. (#1510))
 
 
 class MultiThreadedExecutor(Executor):
@@ -824,12 +909,52 @@ class MultiThreadedExecutor(Executor):
                     self._futures.remove(future)
                     future.result()
 
+<<<<<<< HEAD
     def spin_once(self, timeout_sec: float = None) -> None:
         self._spin_once_impl(timeout_sec)
+=======
+    def spin_once(self, timeout_sec: Optional[float] = None) -> None:
+        # Mark executor as spinning to prevent concurrent spins
+        self._enter_spin()
+        try:
+            self._spin_once_impl(timeout_sec)
+        finally:
+            self._exit_spin()
+>>>>>>> cf9240a (add spinning state for the Executor classes. (#1510))
 
     def spin_once_until_future_complete(
         self,
         future: Future,
         timeout_sec: Optional[Union[float, TimeoutObject]] = None
     ) -> None:
+<<<<<<< HEAD
         self._spin_once_impl(timeout_sec, future.done)
+=======
+        # Mark executor as spinning to prevent concurrent spins
+        self._enter_spin()
+        future.add_done_callback(lambda x: self.wake())
+        try:
+            self._spin_once_until_future_complete(future, timeout_sec)
+        finally:
+            self._exit_spin()
+
+    def shutdown(
+        self,
+        timeout_sec: Optional[float] = None,
+        *,
+        wait_for_threads: bool = True
+    ) -> bool:
+        """
+        Stop executing callbacks and wait for their completion.
+
+        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        :param wait_for_threads: If true, this function will block until all executor threads
+            have joined.
+        :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
+            timeout expires before all outstanding work is done.
+        """
+        success: bool = super().shutdown(timeout_sec)
+        self._executor.shutdown(wait=wait_for_threads)
+        return success
+>>>>>>> cf9240a (add spinning state for the Executor classes. (#1510))
