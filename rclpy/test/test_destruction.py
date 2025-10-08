@@ -17,7 +17,9 @@ import time
 
 import pytest
 import rclpy
+from rclpy.client import Client
 from rclpy.exceptions import InvalidHandle
+from rclpy.service import Service
 from test_msgs.msg import BasicTypes
 from test_msgs.srv import BasicTypes as BasicTypesSrv
 
@@ -109,10 +111,10 @@ def test_destroy_entities() -> None:
             pub2  # noqa
             assert 3 == len(tuple(node.publishers))
             sub1 = node.create_subscription(
-                BasicTypes, 'sub1_topic', lambda msg: ..., 1)
+                BasicTypes, 'sub1_topic', lambda msg: None, 1)
             assert 1 == len(tuple(node.subscriptions))
             sub2 = node.create_subscription(
-                BasicTypes, 'sub2_topic', lambda msg: ..., 1)
+                BasicTypes, 'sub2_topic', lambda msg: None, 1)
             sub2  # noqa
             assert 2 == len(tuple(node.subscriptions))
 
@@ -137,7 +139,7 @@ def test_destroy_subscription_asap() -> None:
     try:
         node = rclpy.create_node('test_destroy_subscription_asap', context=context)
         try:
-            sub = node.create_subscription(BasicTypes, 'sub_topic', lambda msg: ..., 1)
+            sub = node.create_subscription(BasicTypes, 'sub_topic', lambda msg: None, 1)
 
             # handle valid
             with sub.handle:
@@ -204,7 +206,8 @@ def test_destroy_client_asap() -> None:
     try:
         node = rclpy.create_node('test_destroy_client_asap', context=context)
         try:
-            client = node.create_client(BasicTypesSrv, 'cli_service')
+            client: Client[BasicTypesSrv.Request, BasicTypesSrv.Response] = \
+                node.create_client(BasicTypesSrv, 'cli_service')
 
             # handle valid
             with client.handle:
@@ -229,7 +232,8 @@ def test_destroy_service_asap() -> None:
     try:
         node = rclpy.create_node('test_destroy_service_asap', context=context)
         try:
-            service = node.create_service(BasicTypesSrv, 'srv_service', lambda req, res: ...)
+            service: Service[BasicTypesSrv.Request, BasicTypesSrv.Response] = \
+                node.create_service(BasicTypesSrv, 'srv_service', lambda req, res: ...)
 
             # handle valid
             with service.handle:
@@ -254,7 +258,7 @@ def test_destroy_timer_asap() -> None:
     try:
         node = rclpy.create_node('test_destroy_timer_asap', context=context)
         try:
-            timer = node.create_timer(1.0, lambda: ...)
+            timer = node.create_timer(1.0, lambda: None)
 
             # handle valid
             with timer.handle:

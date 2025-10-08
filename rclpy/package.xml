@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>rclpy</name>
-  <version>9.0.0</version>
+  <version>10.0.0</version>
   <description>Package containing the Python client.</description>
 
   <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
@@ -17,33 +17,45 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <build_depend>pybind11_vendor</build_depend>
+  <build_depend>lifecycle_msgs</build_depend>
+  <build_depend>rcl</build_depend>
+  <build_depend>rcl_action</build_depend>
+  <build_depend>rcl_interfaces</build_depend>
+  <build_depend>rcl_lifecycle</build_depend>
+  <build_depend>rcl_logging_interface</build_depend>
+  <build_depend>rcl_yaml_param_parser</build_depend>
+  <build_depend>pybind11-dev</build_depend>
   <build_depend>python3-dev</build_depend>
   <build_depend>rcpputils</build_depend>
   <build_depend>rcutils</build_depend>
+  <build_depend>rmw</build_depend>
+  <build_depend>rmw_implementation</build_depend>
   <build_depend>rmw_implementation_cmake</build_depend>
-
-  <depend>lifecycle_msgs</depend>
-  <depend>rcl</depend>
-  <depend>rcl_interfaces</depend>
-  <depend>rcl_lifecycle</depend>
-  <depend>rcl_logging_interface</depend>
-  <depend>rcl_action</depend>
-  <depend>rcl_yaml_param_parser</depend>
-  <depend>rmw</depend>
-  <depend>rmw_implementation</depend>
-  <depend>rosidl_runtime_c</depend>
-  <depend>type_description_interfaces</depend>
-  <depend>unique_identifier_msgs</depend>
+  <build_depend>rosidl_runtime_c</build_depend>
+  <build_depend>type_description_interfaces</build_depend>
 
   <exec_depend>action_msgs</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>builtin_interfaces</exec_depend>
+  <exec_depend>lifecycle_msgs</exec_depend>
   <exec_depend>python3-typing-extensions</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>rcl</exec_depend>
+  <exec_depend>rcl_action</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>rcl_lifecycle</exec_depend>
+  <exec_depend>rcl_logging_interface</exec_depend>
+  <exec_depend>rcl_yaml_param_parser</exec_depend>
+  <exec_depend>rcpputils</exec_depend>
+  <exec_depend>rcutils</exec_depend>
+  <exec_depend>rmw</exec_depend>
+  <exec_depend>rmw_implementation</exec_depend>
   <exec_depend>rosgraph_msgs</exec_depend>
+  <exec_depend>rosidl_runtime_c</exec_depend>
   <exec_depend>rpyutils</exec_depend>
   <exec_depend>service_msgs</exec_depend>
+  <exec_depend>type_description_interfaces</exec_depend>
+  <exec_depend>unique_identifier_msgs</exec_depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_cmake_pytest</test_depend>
@@ -55,6 +67,13 @@
 
   <doc_depend>python3-sphinx</doc_depend>
   <doc_depend>python3-sphinx-rtd-theme</doc_depend>
+  <!-- We add these modules as doc_depends in order to include them into the
+  autodoc_mock_imports list. This prevents TypeErrors from being thrown
+  when these modules import constants from rclpy C modules.
+  TODO: Remove these depends once a better solution is found.-->
+  <doc_depend>rclpy.duration</doc_depend>
+  <doc_depend>rclpy.qos</doc_depend>
+  <doc_depend>rclpy.clock</doc_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

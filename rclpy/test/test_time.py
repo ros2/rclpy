@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import unittest
 
 from rclpy.clock_type import ClockType
@@ -239,3 +240,19 @@ class TestTime(unittest.TestCase):
     def test_infinite_duration(self) -> None:
         duration = Infinite
         assert str(duration) == 'Infinite'
+
+    def test_time_datetime_conversions(self) -> None:
+        time1 = Time(seconds=1, nanoseconds=5e8, clock_type=ClockType.SYSTEM_TIME)
+        assert time1.to_datetime() == datetime.fromtimestamp(time1.nanoseconds / 1e9)
+
+        time2 = Time(nanoseconds=174893823272323, clock_type=ClockType.ROS_TIME)
+        assert int(time2.to_datetime().timestamp()) == time2.seconds_nanoseconds()[0]
+        assert time2.to_datetime() == datetime.fromtimestamp(time2.nanoseconds / 1e9)
+
+        with self.assertRaises(TypeError):
+            time3 = Time(nanoseconds=5e8, clock_type=ClockType.STEADY_TIME)
+            time3.to_datetime()
+
+        with self.assertRaises(TypeError):
+            time4 = Time(nanoseconds=0, clock_type=ClockType.UNINITIALIZED)
+            time4.to_datetime()

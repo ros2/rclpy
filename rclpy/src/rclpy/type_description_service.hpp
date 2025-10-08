@@ -17,8 +17,6 @@
 
 #include <pybind11/pybind11.h>
 
-#include <rmw/types.h>
-
 #include <memory>
 
 #include "destroyable.hpp"

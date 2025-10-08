@@ -13,11 +13,15 @@
 # limitations under the License.
 
 import time
+from typing import List
+from typing import Tuple
+from typing import TYPE_CHECKING
 import unittest
 
 import rclpy
 from rclpy.duration import Duration
 
+import rclpy.node
 from test_msgs.msg import BasicTypes
 
 TEST_NODE_NAMESPACE = 'test_node_ns'
@@ -31,8 +35,13 @@ TEST_FQN_TOPIC_TO = '/remapped/another_ns/new_topic'
 
 class TestPublisher(unittest.TestCase):
 
+    if TYPE_CHECKING:
+        context: rclpy.context.Context
+        node: rclpy.node.Node
+        node_with_ns: rclpy.node.Node
+
     @classmethod
-    def setUp(cls):
+    def setUp(cls) -> None:
         cls.context = rclpy.context.Context()
         rclpy.init(context=cls.context)
         cls.node = rclpy.create_node(
@@ -50,13 +59,13 @@ class TestPublisher(unittest.TestCase):
         )
 
     @classmethod
-    def tearDown(cls):
+    def tearDown(cls) -> None:
         cls.node.destroy_node()
         cls.node_with_ns.destroy_node()
         rclpy.shutdown(context=cls.context)
 
     @classmethod
-    def do_test_topic_name(cls, test_topics, node):
+    def do_test_topic_name(cls, test_topics: List[Tuple[str, str]], node: rclpy.node.Node) -> None:
         """
         Test the topic names of publishers created by the given node.
 
@@ -124,6 +133,10 @@ class TestPublisher(unittest.TestCase):
 
         pub.destroy()
         sub.destroy()
+
+    def test_logger_name_is_equal_to_node_name(self) -> None:
+        with self.node.create_publisher(BasicTypes, TEST_TOPIC, 10) as pub:
+            self.assertEqual(pub.logger_name, 'node')
 
 
 def test_publisher_context_manager() -> None:

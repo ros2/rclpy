@@ -1,4 +1,4 @@
-# Copyright 2022 Open Source Robotics Foundation, Inc.
+# Copyright 2025 Sony Group Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
+from typing import NamedTuple
 
-from rclpy.event_handler import *  # noqa: F401, F403
 
-warnings.warn("importing 'qos_event' is deprecated; import 'event_handler' instead")
+class ContentFilterOptions(NamedTuple):
+    """Options to configure content filtered topic in the subscription."""
+
+    filter_expression: str
+    expression_parameters: list[str]

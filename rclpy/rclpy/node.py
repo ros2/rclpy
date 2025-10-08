@@ -19,10 +19,13 @@ from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Final
 from typing import Iterator
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import overload
+from typing import Sequence
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
@@ -64,6 +67,7 @@ from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import Executor
 from rclpy.expand_topic_name import expand_topic_name
 from rclpy.guard_condition import GuardCondition
+from rclpy.guard_condition import GuardConditionCallbackType
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.logging import get_logger
@@ -79,11 +83,14 @@ from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
-from rclpy.subscription import MessageInfo
+from rclpy.subscription import GenericSubscriptionCallback
 from rclpy.subscription import Subscription
+from rclpy.subscription import SubscriptionCallbackUnion
+from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
-from rclpy.timer import Timer, TimerInfo
+from rclpy.timer import Timer
+from rclpy.timer import TimerCallbackType
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
@@ -99,10 +106,10 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_parameter_name import validate_parameter_name
 from rclpy.validate_topic_name import validate_topic_name
 from rclpy.waitable import Waitable
-from typing_extensions import deprecated
+from typing_extensions import TypeAlias
 
 
-HIDDEN_NODE_PREFIX = '_'
+HIDDEN_NODE_PREFIX: Final = '_'
 
 # Left to support Legacy TypeVar.
 MsgType = TypeVar('MsgType')
@@ -113,7 +120,9 @@ SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 # Re-export exception defined in _rclpy C extension.
 # `Node.get_*_names_and_types_by_node` methods may raise this error.
-NodeNameNonExistentError = _rclpy.NodeNameNonExistentError
+NodeNameNonExistentError: TypeAlias = _rclpy.NodeNameNonExistentError
+
+ParameterInput: TypeAlias = Union[AllowableParameterValue, Parameter.Type, ParameterValue]
 
 
 class Node:
@@ -312,7 +321,7 @@ class Node:
         return None
 
     @executor.setter
-    def executor(self, new_executor: Executor) -> None:
+    def executor(self, new_executor: Optional[Executor]) -> None:
         """Set or change the executor the node belongs to."""
         current_executor = self.executor
         if current_executor == new_executor:
@@ -379,23 +388,10 @@ class Node:
         return self._logger
 
     @overload
-    def declare_parameter(self, name: str, value: Union[AllowableParameterValueT,
-                                                        Parameter.Type, ParameterValue],
+    def declare_parameter(self, name: str, value: AllowableParameterValueT,
                           descriptor: Optional[ParameterDescriptor] = None,
                           ignore_override: bool = False
                           ) -> Parameter[AllowableParameterValueT]: ...
-
-    @overload
-    @deprecated('when declaring a parameter only providing its name is deprecated. '
-                'You have to either:\n'
-                '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
-                ' (and optionally a descriptor).\n'
-                '\t- Pass a name and a parameter type.\n'
-                '\t- Pass a name and a descriptor with `dynamic_typing=True')
-    def declare_parameter(self, name: str,
-                          value: None = None,
-                          descriptor: None = None,
-                          ignore_override: bool = False) -> Parameter[Any]: ...
 
     @overload
     def declare_parameter(self, name: str,
@@ -431,57 +427,19 @@ class Node:
         """
         if value is None and descriptor is None:
             # Temporal patch so we get deprecation warning if only a name is provided.
-            args: Union[Tuple[str], Tuple[str, Union[AllowableParameterValue,
-                                                     Parameter.Type, ParameterValue],
-                                          ParameterDescriptor]] = (name, )
+            args: Union[Tuple[str], Tuple[str, ParameterInput, ParameterDescriptor]] = (name, )
         else:
             descriptor = ParameterDescriptor() if descriptor is None else descriptor
             args = (name, value, descriptor)
         return self.declare_parameters('', [args], ignore_override)[0]
 
-    @overload
-    @deprecated('when declaring a parameter only providing its name is deprecated. '
-                'You have to either:\n'
-                '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
-                ' (and optionally a descriptor).\n'
-                '\t- Pass a name and a parameter type.\n'
-                '\t- Pass a name and a descriptor with `dynamic_typing=True')
     def declare_parameters(
         self,
         namespace: str,
-        parameters: List[Union[
+        parameters: Sequence[Union[
             Tuple[str],
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor],
-        ]],
-        ignore_override: bool = False
-    ) -> List[Parameter[Any]]: ...
-
-    @overload
-    def declare_parameters(
-        self,
-        namespace: str,
-        parameters: List[Union[
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor],
-        ]],
-        ignore_override: bool = False
-    ) -> List[Parameter[Any]]: ...
-
-    def declare_parameters(
-        self,
-        namespace: str,
-        parameters: Union[List[Union[
-            Tuple[str],
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor]]],
-                  List[Union[
-            Tuple[str, Parameter.Type],
-            Tuple[str, Union[AllowableParameterValue, Parameter.Type, ParameterValue],
-                  ParameterDescriptor]]]],
+            Tuple[str, ParameterInput],
+            Tuple[str, ParameterInput, ParameterDescriptor]]],
         ignore_override: bool = False
     ) -> List[Parameter[Any]]:
         """
@@ -564,15 +522,14 @@ class Node:
                 )
 
             if len(parameter_tuple) == 1:
-                warnings.warn(
+                raise TypeError(
                     f"when declaring parameter named '{name}', "
-                    'declaring a parameter only providing its name is deprecated. '
+                    'declaring a parameter only providing its name is not allowed. '
                     'You have to either:\n'
                     '\t- Pass a name and a default value different to "PARAMETER NOT SET"'
                     ' (and optionally a descriptor).\n'
                     '\t- Pass a name and a parameter type.\n'
                     '\t- Pass a name and a descriptor with `dynamic_typing=True')
-                descriptor.dynamic_typing = True
 
             if isinstance(second_arg, Parameter.Type):
                 if second_arg == Parameter.Type.NOT_SET:
@@ -733,7 +690,7 @@ class Node:
             and the parameter hadn't been declared beforehand.
         """
         if self.has_parameter(name):
-            return self._parameters[name].type_.value
+            return self._parameters[name].type_
         elif self._allow_undeclared_parameters:
             return Parameter.Type.NOT_SET
         else:
@@ -1675,17 +1632,48 @@ class Node:
 
         return publisher
 
+    @overload
     def create_subscription(
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
+        callback: GenericSubscriptionCallback[bytes],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
-        raw: bool = False
+        raw: Literal[True],
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: GenericSubscriptionCallback[MsgT],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
+
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: SubscriptionCallbackUnion[MsgT],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None
     ) -> Subscription[MsgT]:
         """
         Create a new subscription.
@@ -1703,6 +1691,7 @@ class Node:
         :param event_callbacks: User-defined callbacks for middleware events.
         :param raw: If ``True``, then received messages will be stored in raw binary
             representation.
+        :param content_filter_options: The filter expression and parameters for content filtering.
         """
         qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
 
@@ -1730,7 +1719,8 @@ class Node:
         try:
             with self.handle:
                 subscription_object = _rclpy.Subscription(
-                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile(),
+                    content_filter_options)
         except ValueError:
             failed = True
         if failed:
@@ -1842,7 +1832,7 @@ class Node:
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Union[Callable[[], None], Callable[[TimerInfo], None], None],
+        callback: Optional[TimerCallbackType],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
@@ -1879,7 +1869,7 @@ class Node:
 
     def create_guard_condition(
         self,
-        callback: Callable[[], None],
+        callback: GuardConditionCallbackType,
         callback_group: Optional[CallbackGroup] = None
     ) -> GuardCondition:
         """

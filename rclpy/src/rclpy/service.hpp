@@ -16,6 +16,7 @@
 #define RCLPY__SERVICE_HPP_
 
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 
 #include <rcl/service.h>
 #include <rcl/service_introspection.h>
@@ -95,6 +96,15 @@ public:
   const char *
   get_service_name();
 
+  /// Get the name of the logger associated with the node of the service.
+  /**
+   *
+   * \return logger_name, or
+   * \return None on failure
+   */
+  const char *
+  get_logger_name() const;
+
   /// Get the QoS profile for this service.
   py::dict
   get_qos_profile();
@@ -116,10 +126,20 @@ public:
   void
   destroy() override;
 
+  void
+  set_on_new_request_callback(std::function<void(size_t)> callback);
+
+  void
+  clear_on_new_request_callback();
+
 private:
   Node node_;
+  std::function<void(size_t)> on_new_request_callback_{nullptr};
   std::shared_ptr<rcl_service_t> rcl_service_;
   rosidl_service_type_support_t * srv_type_;
+
+  void
+  set_callback(rcl_event_callback_t callback, const void * user_data);
 };
 
 /// Define a pybind11 wrapper for an rclpy::Service

@@ -31,6 +31,7 @@ from rclpy.impl import service_introspection as service_introspection
 from rclpy.node import Node as RCLPyNode
 from rclpy.parameter import Parameter
 from rclpy.subscription import MessageInfo
+from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.type_support import (Action, FeedbackMessage, FeedbackT, GetResultServiceRequest,
@@ -145,6 +146,10 @@ class UnsupportedEventTypeError(RCLError):
     pass
 
 
+class TimerCancelledError(RCLError):
+    pass
+
+
 class NotImplementedError(builtins.NotImplementedError):  # noqa: A001
     pass
 
@@ -187,6 +192,15 @@ class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
         introspection_state: service_introspection.ServiceIntrospectionState
     ) -> None:
         """Configure whether introspection is enabled."""
+
+    def get_logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the client."""
+
+    def set_on_new_response_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on new response callback function for the client."""
+
+    def clear_on_new_response_callback(self) -> None:
+        """Clear the on new response callback function for the client."""
 
 
 class Context(Destroyable):
@@ -275,6 +289,15 @@ class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
         introspection_state: service_introspection.ServiceIntrospectionState
     ) -> None:
         """Configure whether introspection is enabled."""
+
+    def get_logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the service."""
+
+    def set_on_new_request_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on new request callback function for the service."""
+
+    def clear_on_new_request_callback(self) -> None:
+        """Clear the on new request callback function for the service."""
 
 
 class TypeDescriptionService(Destroyable):
@@ -568,11 +591,18 @@ class Timer(Destroyable):
     def is_timer_canceled(self) -> bool:
         """Check if a timer is canceled."""
 
+    def set_on_reset_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on reset callback function for the timer."""
+
+    def clear_on_reset_callback(self) -> None:
+        """Clear the on reset callback function for the timer."""
+
 
 class Subscription(Destroyable, Generic[MsgT]):
 
     def __init__(self, node: Node, pymsg_type: type[MsgT], topic: str,
-                 pyqos_profile: rmw_qos_profile_t) -> None: ...
+                 pyqos_profile: rmw_qos_profile_t,
+                 content_filter_options: Optional[ContentFilterOptions] = None) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -589,6 +619,21 @@ class Subscription(Destroyable, Generic[MsgT]):
 
     def get_publisher_count(self) -> int:
         """Count the publishers from a subscription."""
+
+    def set_on_new_message_callback(self, callback: Callable[[int], None]) -> None:
+        """Set the on new message callback function for the subscription."""
+
+    def clear_on_new_message_callback(self) -> None:
+        """Clear the on new message callback function for the subscription."""
+
+    def is_cft_enabled(self) -> bool:
+        """Check if content filtering is enabled for this subscription."""
+
+    def set_content_filter(self, filter_expression: str, expression_parameters: list[str]) -> None:
+        """Set the filter expression and expression parameters for the subscription."""
+
+    def get_content_filter(self) -> ContentFilterOptions:
+        """Get the filter expression and expression parameters for the subscription."""
 
 
 class rcl_time_point_t:

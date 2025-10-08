@@ -15,9 +15,10 @@
 import unittest
 
 from rclpy.type_hash import TypeHash
+from rclpy.type_hash import TypeHashDictionary
 
 # From std_msgs/msg/String.json
-STD_MSGS_STRING_TYPE_HASH_DICT = {
+STD_MSGS_STRING_TYPE_HASH_DICT: TypeHashDictionary = {
     'version': 1,
     'value': b'\xdf\x66\x8c\x74\x04\x82\xbb\xd4\x8f\xb3\x9d\x76\xa7\x0d\xfd\x4b'
              b'\xd5\x9d\xb1\x28\x80\x21\x74\x35\x03\x25\x9e\x94\x8f\x6b\x1a\x18',
