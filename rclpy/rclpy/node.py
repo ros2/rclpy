@@ -83,11 +83,7 @@ from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.subscription import MessageInfo
 from rclpy.subscription import Subscription
-<<<<<<< HEAD
-=======
-from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer, TimerInfo
@@ -1694,40 +1690,7 @@ class Node:
         self,
         msg_type: Type[MsgT],
         topic: str,
-<<<<<<< HEAD
         callback: Union[Callable[[MsgT], None], Callable[[MsgT, MessageInfo], None]],
-=======
-        callback: GenericSubscriptionCallback[bytes],
-        qos_profile: Union[QoSProfile, int],
-        *,
-        callback_group: Optional[CallbackGroup] = None,
-        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
-        qos_overriding_options: Optional[QoSOverridingOptions] = None,
-        raw: Literal[True],
-        content_filter_options: Optional[ContentFilterOptions] = None
-    ) -> Subscription[MsgT]: ...
-
-    @overload
-    def create_subscription(
-        self,
-        msg_type: Type[MsgT],
-        topic: str,
-        callback: GenericSubscriptionCallback[MsgT],
-        qos_profile: Union[QoSProfile, int],
-        *,
-        callback_group: Optional[CallbackGroup] = None,
-        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
-        qos_overriding_options: Optional[QoSOverridingOptions] = None,
-        raw: bool = False,
-        content_filter_options: Optional[ContentFilterOptions] = None
-    ) -> Subscription[MsgT]: ...
-
-    def create_subscription(
-        self,
-        msg_type: Type[MsgT],
-        topic: str,
-        callback: SubscriptionCallbackUnion[MsgT],
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,

@@ -26,13 +26,9 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-<<<<<<< HEAD
-=======
-#include <utility>
 #include <vector>
 
 #include <rcpputils/scope_exit.hpp>
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 
 #include "exceptions.hpp"
 #include "node.hpp"
@@ -44,10 +40,6 @@ using pybind11::literals::operator""_a;
 
 namespace rclpy
 {
-<<<<<<< HEAD
-=======
-using events_executor::RclEventCallbackTrampoline;
-
 namespace
 {
 std::vector<const char *>
@@ -64,7 +56,6 @@ get_c_vector_string(const std::vector<std::string> & strings_in)
 }
 }  // namespace
 
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 Subscription::Subscription(
   Node & node, py::object pymsg_type, std::string topic,
   py::object pyqos_profile, py::object content_filter_options)
@@ -242,43 +233,6 @@ Subscription::get_publisher_count() const
   return count;
 }
 
-void
-<<<<<<< HEAD
-=======
-Subscription::set_callback(
-  rcl_event_callback_t callback,
-  const void * user_data)
-{
-  rcl_ret_t ret = rcl_subscription_set_on_new_message_callback(
-    rcl_subscription_.get(),
-    callback,
-    user_data);
-
-  if (RCL_RET_OK != ret) {
-    throw RCLError(std::string("Failed to set the on new message callback for subscription: ") +
-      rcl_get_error_string().str);
-  }
-}
-
-void
-Subscription::set_on_new_message_callback(std::function<void(size_t)> callback)
-{
-  clear_on_new_message_callback();
-  on_new_message_callback_ = std::move(callback);
-  set_callback(
-    RclEventCallbackTrampoline,
-    static_cast<const void *>(&on_new_message_callback_));
-}
-
-void
-Subscription::clear_on_new_message_callback()
-{
-  if (on_new_message_callback_) {
-    set_callback(nullptr, nullptr);
-    on_new_message_callback_ = nullptr;
-  }
-}
-
 bool
 Subscription::is_cft_enabled() const
 {
@@ -362,7 +316,6 @@ Subscription::get_content_filter() const
 }
 
 void
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 define_subscription(py::object module)
 {
   py::class_<Subscription, Destroyable, std::shared_ptr<Subscription>>(module, "Subscription")
@@ -388,14 +341,7 @@ define_subscription(py::object module)
     "Return the resolved topic name of a subscription.")
   .def(
     "get_publisher_count", &Subscription::get_publisher_count,
-<<<<<<< HEAD
-    "Count the publishers from a subscription.");
-=======
     "Count the publishers from a subscription.")
-  .def(
-    "set_on_new_message_callback", &Subscription::set_on_new_message_callback,
-    py::arg("callback"))
-  .def("clear_on_new_message_callback", &Subscription::clear_on_new_message_callback)
   .def("is_cft_enabled", &Subscription::is_cft_enabled,
     "Check if content filtering is enabled for this subscription.")
   .def(
@@ -404,6 +350,5 @@ define_subscription(py::object module)
   .def(
     "get_content_filter", &Subscription::get_content_filter,
     "Get the filter expression and expression parameters for the subscription.");
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 }
 }  // namespace rclpy

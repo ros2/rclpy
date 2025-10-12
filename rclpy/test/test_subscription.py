@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import time
+from typing import List
 
 import pytest
 
@@ -174,26 +175,6 @@ def test_subscription_publisher_count() -> None:
     sub.destroy()
 
     node.destroy_node()
-<<<<<<< HEAD
-=======
-
-
-def test_on_new_message_callback(test_node) -> None:
-    topic_name = '/topic'
-    cb = Mock()
-    sub = test_node.create_subscription(
-        msg_type=Empty,
-        topic=topic_name,
-        qos_profile=10,
-        callback=cb)
-    pub = test_node.create_publisher(Empty, topic_name, 10)
-    sub.handle.set_on_new_message_callback(cb)
-    cb.assert_not_called()
-    pub.publish(Empty())
-    cb.assert_called_once_with(1)
-    sub.handle.clear_on_new_message_callback()
-    pub.publish(Empty())
-    cb.assert_called_once()
 
 
 def test_subscription_set_content_filter(test_node) -> None:
@@ -469,4 +450,3 @@ def test_subscription_content_filter_at_create_subscription(test_node) -> None:
 
     pub.destroy()
     sub.destroy()
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))

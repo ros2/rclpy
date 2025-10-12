@@ -602,14 +602,6 @@ class Subscription(Destroyable, Generic[MsgT]):
     def get_publisher_count(self) -> int:
         """Count the publishers from a subscription."""
 
-<<<<<<< HEAD
-=======
-    def set_on_new_message_callback(self, callback: Callable[[int], None]) -> None:
-        """Set the on new message callback function for the subscription."""
-
-    def clear_on_new_message_callback(self) -> None:
-        """Clear the on new message callback function for the subscription."""
-
     def is_cft_enabled(self) -> bool:
         """Check if content filtering is enabled for this subscription."""
 
@@ -619,7 +611,6 @@ class Subscription(Destroyable, Generic[MsgT]):
     def get_content_filter(self) -> ContentFilterOptions:
         """Get the filter expression and expression parameters for the subscription."""
 
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 
 class rcl_time_point_t:
 
