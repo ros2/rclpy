@@ -108,14 +108,6 @@ public:
   void
   destroy() override;
 
-<<<<<<< HEAD
-=======
-  void
-  set_on_new_message_callback(std::function<void(size_t)> callback);
-
-  void
-  clear_on_new_message_callback();
-
   /// Check if the content filtered topic of this subscription is enabled
   bool is_cft_enabled() const;
 
@@ -139,7 +131,6 @@ public:
   py::object
   get_content_filter() const;
 
->>>>>>> 8d42eaa (Add content-filtered-topic interfaces (#1506))
 private:
   Node node_;
   std::shared_ptr<rcl_subscription_t> rcl_subscription_;
