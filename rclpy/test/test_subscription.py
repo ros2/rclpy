@@ -13,13 +13,16 @@
 # limitations under the License.
 
 import time
+from typing import List
 
 import pytest
 
 import rclpy
 from rclpy.node import Node
 from rclpy.subscription import Subscription
+from rclpy.subscription_content_filter_options import ContentFilterOptions
 
+from test_msgs.msg import BasicTypes
 from test_msgs.msg import Empty
 
 
@@ -172,3 +175,278 @@ def test_subscription_publisher_count() -> None:
     sub.destroy()
 
     node.destroy_node()
+
+
+def test_subscription_set_content_filter(test_node) -> None:
+
+    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
+    topic_name = '/topic'
+    sub = test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+        callback=lambda _: None)
+
+    filter_expression = 'int32_value > %0'
+    expression_parameters: List[str] = ['10']
+
+    # There should not be any exceptions.
+    try:
+        sub.set_content_filter(
+            filter_expression,
+            expression_parameters
+        )
+    except Exception as e:
+        pytest.fail(f'Unexpected exception raised: {e}')
+
+    sub.destroy()
+
+
+def test_subscription_is_cft_enabled(test_node) -> None:
+
+    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+        pytest.skip('Content filter is now only supported in FastDDS and Connext DDS.')
+
+    topic_name = '/topic'
+    sub = test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+        callback=lambda _: None)
+
+    sub.set_content_filter(
+        filter_expression='bool_value = %0',
+        expression_parameters=['TRUE']
+    )
+
+    # There should not be any exceptions.
+    try:
+        _ = sub.is_cft_enabled
+    except Exception as e:
+        pytest.fail(f'Unexpected exception raised: {e}')
+
+    sub.destroy()
+
+
+def test_subscription_get_content_filter(test_node) -> None:
+
+    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
+    topic_name = '/topic'
+    sub = test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+        callback=lambda _: None)
+
+    assert sub.is_cft_enabled is False
+
+    filter_expression = 'int32_value > %0'
+    expression_parameters: List[str] = ['60']
+
+    sub.set_content_filter(
+        filter_expression,
+        expression_parameters
+    )
+
+    assert sub.is_cft_enabled is True
+
+    cf_option = sub.get_content_filter()
+    assert cf_option.filter_expression == filter_expression
+    assert len(cf_option.expression_parameters) == len(expression_parameters)
+    assert cf_option.expression_parameters[0] == expression_parameters[0]
+
+    sub.destroy()
+
+
+def test_subscription_content_filter_effect(test_node) -> None:
+
+    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
+    topic_name = '/topic'
+    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
+
+    received_msgs = []
+
+    def sub_callback(msg):
+        received_msgs.append(msg.int32_value)
+
+    sub = test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+        callback=sub_callback)
+
+    assert sub.is_cft_enabled is False
+
+    def wait_msgs(timeout, expected_msg_count):
+        end_time = time.time() + timeout
+        while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
+            rclpy.spin_once(test_node, timeout_sec=0.2)
+
+    # Publish 3 messages
+    def publish_messages(pub):
+        msg = BasicTypes()
+        msg.int32_value = 10
+        pub.publish(msg)
+        msg.int32_value = 20
+        pub.publish(msg)
+        msg.int32_value = 30
+        pub.publish(msg)
+
+    # Publish messages and them should be all received.
+    publish_messages(pub)
+
+    # Check within 2 seconds whether the desired number of messages has been received.
+    expected_msg_count = 3
+    wait_msgs(timeout=2.0, expected_msg_count=expected_msg_count)
+    assert len(received_msgs) == expected_msg_count
+
+    # Set content filter to filter out messages with int32_value <= 15
+    sub.set_content_filter(
+        filter_expression='int32_value > %0',
+        expression_parameters=['15']
+    )
+    assert sub.is_cft_enabled is True
+
+    received_msgs = []
+    # Publish messages again and part of messages should be received.
+    publish_messages(pub)
+
+    # Check within 2 seconds whether the desired number of messages has been received.
+    expected_msg_count = 2
+    wait_msgs(timeout=2.0, expected_msg_count=expected_msg_count)
+    assert len(received_msgs) == expected_msg_count
+    assert received_msgs[0] == 20
+    assert received_msgs[1] == 30
+
+    pub.destroy()
+    sub.destroy()
+
+
+def test_subscription_content_filter_reset(test_node) -> None:
+
+    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
+    topic_name = '/topic'
+    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
+
+    received_msgs = []
+
+    def sub_callback(msg):
+        received_msgs.append(msg.int32_value)
+
+    sub = test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+        callback=sub_callback)
+
+    # Set content filter to filter out messages with int32_value <= 15
+    sub.set_content_filter(
+        filter_expression='int32_value > %0',
+        expression_parameters=['15']
+    )
+    assert sub.is_cft_enabled is True
+
+    def wait_msgs(timeout, expected_msg_count):
+        end_time = time.time() + timeout
+        while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
+            rclpy.spin_once(test_node, timeout_sec=0.2)
+
+    # Publish 3 messages
+    def publish_messages(pub):
+        msg = BasicTypes()
+        msg.int32_value = 10
+        pub.publish(msg)
+        msg.int32_value = 20
+        pub.publish(msg)
+        msg.int32_value = 30
+        pub.publish(msg)
+
+    publish_messages(pub)
+
+    expected_msg_count = 2
+    wait_msgs(timeout=2.0, expected_msg_count=expected_msg_count)
+    assert len(received_msgs) == expected_msg_count
+
+    received_msgs = []
+
+    # Reset content filter
+    sub.set_content_filter(
+        filter_expression='',
+        expression_parameters=[]
+    )
+    assert sub.is_cft_enabled is False
+
+    publish_messages(pub)
+
+    expected_msg_count = 3
+    wait_msgs(timeout=2.0, expected_msg_count=expected_msg_count)
+    assert len(received_msgs) == expected_msg_count
+
+
+def test_subscription_content_filter_at_create_subscription(test_node) -> None:
+
+    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
+    topic_name = '/topic'
+    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
+
+    received_msgs = []
+
+    content_filter_options = ContentFilterOptions(
+        filter_expression='int32_value > %0',
+        expression_parameters=['15'])
+
+    def sub_callback(msg):
+        received_msgs.append(msg.int32_value)
+
+    sub = test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+        callback=sub_callback,
+        content_filter_options=content_filter_options)
+
+    assert sub.is_cft_enabled is True
+
+    def wait_msgs(timeout, expected_msg_count):
+        end_time = time.time() + timeout
+        while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
+            rclpy.spin_once(test_node, timeout_sec=0.2)
+
+    # Publish 3 messages
+    def publish_messages(pub):
+        msg = BasicTypes()
+        msg.int32_value = 10
+        pub.publish(msg)
+        msg.int32_value = 20
+        pub.publish(msg)
+        msg.int32_value = 30
+        pub.publish(msg)
+
+    # Publish messages and part of messages should be received.
+    publish_messages(pub)
+
+    # Check within 2 seconds whether the desired number of messages has been received.
+    expected_msg_count = 2
+    wait_msgs(timeout=2.0, expected_msg_count=expected_msg_count)
+    assert len(received_msgs) == expected_msg_count
+    assert received_msgs[0] == 20
+    assert received_msgs[1] == 30
+
+    pub.destroy()
+    sub.destroy()
