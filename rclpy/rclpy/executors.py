@@ -24,11 +24,11 @@ from threading import Lock
 from threading import RLock
 import time
 from types import TracebackType
-from typing import Deque
 from typing import Any
 from typing import Callable
 from typing import ContextManager
 from typing import Coroutine
+from typing import Deque
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -694,7 +694,7 @@ class Executor(ContextManager['Executor']):
 
             # Yield tasks in-progress before waiting for new work
             with self._tasks_lock:
-                 # Get rid of any tasks that are done or cancelled
+                # Get rid of any tasks that are done or cancelled
                 for task in list(self._pending_tasks.keys()):
                     if task.done() or task.cancelled():
                         del self._pending_tasks[task]
