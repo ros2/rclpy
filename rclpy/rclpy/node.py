@@ -419,7 +419,6 @@ class Node:
                 )
 
             value = None
-            param_type = None
 
             # Get the values from the tuple, checking its types.
             # Use defaults if the tuple doesn't contain value and / or descriptor.
