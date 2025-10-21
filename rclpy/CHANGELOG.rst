@@ -2,6 +2,16 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.2 (2025-10-21)
+------------------
+* remove unused 'param_type' (`#1524 <https://github.com/ros2/rclpy/issues/1524>`_) (`#1525 <https://github.com/ros2/rclpy/issues/1525>`_)
+* Fixes Action.*_async futures never complete (`#1308 <https://github.com/ros2/rclpy/issues/1308>`_) (`#1514 <https://github.com/ros2/rclpy/issues/1514>`_)
+* Add content-filtered-topic interfaces (backport `#1506 <https://github.com/ros2/rclpy/issues/1506>`_) (`#1520 <https://github.com/ros2/rclpy/issues/1520>`_)
+* EventsExecutor: Handle async callbacks for services and subscriptions (`#1478 <https://github.com/ros2/rclpy/issues/1478>`_) (`#1512 <https://github.com/ros2/rclpy/issues/1512>`_)
+* Do not execute the timer if call_timer_with_info() fails (`#1488 <https://github.com/ros2/rclpy/issues/1488>`_) (`#1498 <https://github.com/ros2/rclpy/issues/1498>`_)
+* Feature: add executor.create_future() (`#1495 <https://github.com/ros2/rclpy/issues/1495>`_) (`#1499 <https://github.com/ros2/rclpy/issues/1499>`_)
+* Contributors: mergify[bot]
+
 9.1.1 (2025-07-07)
 ------------------
 * Add logger_name property to subscription, publisher, service and client (`#1471 <https://github.com/ros2/rclpy/issues/1471>`_) (`#1474 <https://github.com/ros2/rclpy/issues/1474>`_)
