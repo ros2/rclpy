@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.1.6 (2025-10-21)
+------------------
+* remove unused 'param_type' (`#1524 <https://github.com/ros2/rclpy/issues/1524>`_) (`#1526 <https://github.com/ros2/rclpy/issues/1526>`_)
+* Fixes Action.*_async futures never complete (`#1308 <https://github.com/ros2/rclpy/issues/1308>`_) (`#1517 <https://github.com/ros2/rclpy/issues/1517>`_)
+* Feature: add executor.create_future() (backport `#1495 <https://github.com/ros2/rclpy/issues/1495>`_) (`#1500 <https://github.com/ros2/rclpy/issues/1500>`_)
+* Do not execute the timer if call_timer() fails (`#1487 <https://github.com/ros2/rclpy/issues/1487>`_)
+* Contributors: Barry Xu, Jonathan, mergify[bot]
+
 7.1.5 (2025-08-05)
 ------------------
 * Feature: add logger_name property to subscription, publisher, service and client (backport `#1471 <https://github.com/ros2/rclpy/issues/1471>`_) (`#1475 <https://github.com/ros2/rclpy/issues/1475>`_)
