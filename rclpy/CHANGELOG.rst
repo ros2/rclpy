@@ -2,6 +2,24 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.1 (2025-10-21)
+-------------------
+* remove unused 'param_type' (`#1524 <https://github.com/ros2/rclpy/issues/1524>`_)
+* Fixes Action.*_async futures never complete (`#1308 <https://github.com/ros2/rclpy/issues/1308>`_)
+* add spinning state for the Executor classes. (`#1510 <https://github.com/ros2/rclpy/issues/1510>`_)
+* EventsExecutor: Handle async callbacks for services and subscriptions (`#1478 <https://github.com/ros2/rclpy/issues/1478>`_)
+* Added lock to protect futures for multithreaded executor (`#1477 <https://github.com/ros2/rclpy/issues/1477>`_)
+* Add content-filtered-topic interfaces (`#1506 <https://github.com/ros2/rclpy/issues/1506>`_)
+* Fix warnings from gcc. (`#1501 <https://github.com/ros2/rclpy/issues/1501>`_)
+* Feature: expose event callback setter in subscription, service, client and timer (`#1496 <https://github.com/ros2/rclpy/issues/1496>`_)
+* Feature: add executor.create_future() (`#1495 <https://github.com/ros2/rclpy/issues/1495>`_)
+* Add More Test Typings (`#1472 <https://github.com/ros2/rclpy/issues/1472>`_)
+* Use pybind11 from deb or pixi (`#1497 <https://github.com/ros2/rclpy/issues/1497>`_)
+* Do not execute the timer if call_timer_with_info() fails (`#1488 <https://github.com/ros2/rclpy/issues/1488>`_)
+* Fix msbuild warnings on `operator==` deprecation for pybind11 >=2.2 (`#1483 <https://github.com/ros2/rclpy/issues/1483>`_)
+* Cleanup the rclpy dependencies. (`#1482 <https://github.com/ros2/rclpy/issues/1482>`_)
+* Contributors: Alejandro Hernández Cordero, Barry Xu, Brad Martin, Brennan Miller-Klugman, Chris Lalancette, Christian Rauch, Clara Berendsen, Jonathan, Michael Carlstrom, Nadav Elkabets, Tomoya Fujita
+
 10.0.0 (2025-07-01)
 -------------------
 * Feature: add logger_name property to subscription, publisher, service and client (`#1471 <https://github.com/ros2/rclpy/issues/1471>`_)
