@@ -321,35 +321,25 @@ class Executor(ContextManager['Executor']):
         future.add_done_callback(lambda x: self.wake())
 
         if timeout_sec is None or timeout_sec < 0:
-<<<<<<< HEAD
             while (
                 self._context.ok()
                 and not future.done()
                 and not future.cancelled()
                 and not self._is_shutdown
             ):
-                self.spin_once_until_future_complete(future, timeout_sec)
-=======
-            while self._context.ok() and not future.done() and not self._is_shutdown:
                 self._spin_once_until_future_complete(future, timeout_sec)
->>>>>>> c009b0d (Avoid redundant done callbacks of the future while repeatedly calling spin_until_future_complete (#1374))
         else:
             start = time.monotonic()
             end = start + timeout_sec
             timeout_left = TimeoutObject(timeout_sec)
 
-<<<<<<< HEAD
             while (
                 self._context.ok()
                 and not future.done()
                 and not future.cancelled()
                 and not self._is_shutdown
             ):
-                self.spin_once_until_future_complete(future, timeout_left)
-=======
-            while self._context.ok() and not future.done() and not self._is_shutdown:
                 self._spin_once_until_future_complete(future, timeout_left)
->>>>>>> c009b0d (Avoid redundant done callbacks of the future while repeatedly calling spin_until_future_complete (#1374))
                 now = time.monotonic()
 
                 if now >= end:
@@ -953,28 +943,4 @@ class MultiThreadedExecutor(Executor):
         timeout_sec: Optional[Union[float, TimeoutObject]] = None
     ) -> None:
         future.add_done_callback(lambda x: self.wake())
-<<<<<<< HEAD
-        self._spin_once_impl(timeout_sec, future.done)
-=======
         self._spin_once_until_future_complete(future, timeout_sec)
-
-    def shutdown(
-        self,
-        timeout_sec: float = None,
-        *,
-        wait_for_threads: bool = True
-    ) -> bool:
-        """
-        Stop executing callbacks and wait for their completion.
-
-        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
-            Don't wait if 0.
-        :param wait_for_threads: If true, this function will block until all executor threads
-            have joined.
-        :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
-            timeout expires before all outstanding work is done.
-        """
-        success: bool = super().shutdown(timeout_sec)
-        self._executor.shutdown(wait=wait_for_threads)
-        return success
->>>>>>> c009b0d (Avoid redundant done callbacks of the future while repeatedly calling spin_until_future_complete (#1374))
