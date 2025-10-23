@@ -352,6 +352,48 @@ class ParameterEventHandler:
         """
         self._callbacks.remove_parameter_event_callback(handle)
 
+    def configure_nodes_filter(
+        self,
+        node_names: Optional[List[str]] = None,
+    ) -> bool:
+        """
+        Configure which node parameter events will be received.
+
+        This function depends on middleware support for content filtering.
+        If middleware doesn't support contentfilter, return false.
+
+        If node_names is empty, the configured node filter will be cleared.
+
+        If this function return true, only parameter events from the specified node will be
+        received.
+        It affects the behavior of the following two functions.
+        - add_parameter_event_callback()
+          The callback will only be called for parameter events from the specified nodes which are
+          configured in this function.
+        - add_parameter_callback()
+          The callback will only be called for parameter events from the specified nodes which are
+          configured in this function and add_parameter_callback().
+          If the nodes specified in this function is different from the nodes specified in
+          add_parameter_callback(), the callback will never be called.
+
+        :param node_names: Node names to filter parameter events from
+
+        :return: True if the filter was successfully applied, False otherwise.
+        """
+        if node_names is None or len(node_names) == 0:
+            # Clear content filter
+            self.parameter_event_subscription.set_content_filter('', [])
+            return True
+
+        filter_expression = ' OR '.join([f'node = %{i}' for i in range(len(node_names))])
+
+        # Enclose each node name in "'"
+        quoted_node_names = [f"'{node_name}'" for node_name in node_names]
+
+        self.parameter_event_subscription.set_content_filter(filter_expression, quoted_node_names)
+
+        return self.parameter_event_subscription.is_cft_enabled
+
     def _resolve_path(
         self,
         node_path: Optional[str] = None,
