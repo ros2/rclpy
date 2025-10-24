@@ -524,7 +524,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         request = self._action_type.Impl.SendGoalService.Request()
         request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         request.goal = goal
-        future = Future()
+        future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT]] = Future()
         with self._lock:
             sequence_number = self._client_handle.send_goal_request(request)
             if sequence_number in self._pending_goal_requests:
@@ -540,13 +540,6 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
             # TODO(jacobperron): Move conversion function to a general-use package
             goal_uuid = bytes(request.goal_id.uuid)
             self._feedback_callbacks[goal_uuid] = feedback_callback
-
-        future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT]] = Future()
-        self._pending_goal_requests[sequence_number] = future
-        self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
-        future.add_done_callback(self._remove_pending_goal_request)
-        # Add future so executor is aware
-        self.add_future(future)
 
         return future
 
