@@ -463,13 +463,6 @@ class ActionClient(Waitable):
             goal_uuid = bytes(request.goal_id.uuid)
             self._feedback_callbacks[goal_uuid] = feedback_callback
 
-        future = Future()
-        self._pending_goal_requests[sequence_number] = future
-        self._goal_sequence_number_to_goal_id[sequence_number] = request.goal_id
-        future.add_done_callback(self._remove_pending_goal_request)
-        # Add future so executor is aware
-        self.add_future(future)
-
         return future
 
     def _cancel_goal(self, goal_handle):
