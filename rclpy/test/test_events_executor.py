@@ -434,6 +434,11 @@ class TestEventsExecutor(unittest.TestCase):
         self.executor = rclpy.experimental.EventsExecutor()
 
     def tearDown(self) -> None:
+        # Clean up all nodes still in the executor before shutdown
+        for node in self.executor.get_nodes():
+            self.executor.remove_node(node)
+            node.destroy_node()
+        self.executor.shutdown()
         rclpy.shutdown()
 
     def _expect_future_done(self, future: rclpy.Future[typing.Any]) -> None:
