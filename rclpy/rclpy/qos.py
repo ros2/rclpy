@@ -36,10 +36,10 @@ class QoSPolicyKind(IntEnum):
     LIVELINESS = 1 << 3
     RELIABILITY = 1 << 4
     HISTORY = 1 << 5
-    LIFESPAN = 1 << 6,
-    DEPTH = 1 << 7,
-    LIVELINESS_LEASE_DURATION = 1 << 8,
-    AVOID_ROS_NAMESPACE_CONVENTIONS = 1 << 9,
+    LIFESPAN = 1 << 6
+    DEPTH = 1 << 7
+    LIVELINESS_LEASE_DURATION = 1 << 8
+    AVOID_ROS_NAMESPACE_CONVENTIONS = 1 << 9
 
 
 def qos_policy_name_from_kind(policy_kind: Union[QoSPolicyKind, int]):
