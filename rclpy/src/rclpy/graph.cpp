@@ -277,4 +277,70 @@ graph_get_subscriptions_info_by_topic(
     rcl_get_subscriptions_info_by_topic);
 }
 
+typedef rcl_ret_t (* rcl_get_info_by_service_func_t)(
+  const rcl_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * topic_name,
+  bool no_mangle,
+  rcl_service_endpoint_info_array_t * info_array);
+
+
+py::list
+_get_info_by_service(
+  Node & node,
+  const char * service_name,
+  bool no_mangle,
+  const char * type,
+  rcl_get_info_by_service_func_t rcl_get_info_by_service)
+{
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcl_service_endpoint_info_array_t info_array =
+    rcl_get_zero_initialized_service_endpoint_info_array();
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcl_ret_t fini_ret = rcl_service_endpoint_info_array_fini(&info_array, &allocator);
+      if (RCL_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "rcl_service_endpoint_info_array_fini failed: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  rcl_ret_t ret = rcl_get_info_by_service(
+    node.rcl_ptr(), &allocator, service_name, no_mangle, &info_array);
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_UNSUPPORTED == ret) {
+      throw NotImplementedError(
+              std::string("Failed to get information by service for ") +
+              type + ": function not supported by RMW_IMPLEMENTATION");
+    }
+    throw RCLError(
+            std::string("Failed to get information by service for ") + type);
+  }
+
+  return convert_to_py_service_endpoint_info_list(&info_array);
+}
+
+py::list
+graph_get_clients_info_by_service(
+  Node & node, const char * service_name, bool no_mangle)
+{
+  return _get_info_by_service(
+    node, service_name, no_mangle, "clients",
+    rcl_get_clients_info_by_service);
+}
+
+py::list
+graph_get_servers_info_by_service(
+  Node & node, const char * service_name, bool no_mangle)
+{
+  return _get_info_by_service(
+    node, service_name, no_mangle, "servers",
+    rcl_get_servers_info_by_service);
+}
+
 }  // namespace rclpy
