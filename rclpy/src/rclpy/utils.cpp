@@ -334,6 +334,62 @@ convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * i
   return py_info_array;
 }
 
+py::dict
+_convert_to_py_service_endpoint_info(const rmw_service_endpoint_info_t * service_endpoint_info)
+{
+  py::list py_endpoint_gids;
+  for(size_t c = 0; c < service_endpoint_info->endpoint_count; c++) {
+    py::list py_endpoint_gid = py::list(RMW_GID_STORAGE_SIZE);
+    for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
+      py_endpoint_gid[i] = py::int_(service_endpoint_info->endpoint_gids[c][i]);
+    }
+    py_endpoint_gids.append(py_endpoint_gid);
+  }
+  // Create dictionary that represents rmw_service_endpoint_info_t
+  py::dict py_endpoint_info_dict;
+  // Populate keyword arguments
+  // A success returns 0, and a failure returns -1
+  py_endpoint_info_dict["node_name"] = py::str(service_endpoint_info->node_name);
+  py_endpoint_info_dict["node_namespace"] = py::str(service_endpoint_info->node_namespace);
+  py_endpoint_info_dict["service_type"] = py::str(service_endpoint_info->service_type);
+  py_endpoint_info_dict["service_type_hash"] =
+    convert_to_type_hash_dict(&service_endpoint_info->service_type_hash);
+  py_endpoint_info_dict["qos_profiles"] = py::list();
+  py_endpoint_info_dict["endpoint_gids"] = py::list();
+
+  py::list qos_profiles_list;
+  // Append values to the lists
+  for (size_t i = 0; i < service_endpoint_info->endpoint_count; i++) {
+    qos_profiles_list.append(
+      convert_to_qos_dict(&service_endpoint_info->qos_profiles[i])
+    );
+  }
+  py_endpoint_info_dict["qos_profiles"] = qos_profiles_list;
+  py_endpoint_info_dict["endpoint_gids"] = py_endpoint_gids;
+  py_endpoint_info_dict["endpoint_type"] =
+    py::int_(static_cast<int>(service_endpoint_info->endpoint_type));
+  py_endpoint_info_dict["endpoint_count"] = py::int_(service_endpoint_info->endpoint_count);
+
+  return py_endpoint_info_dict;
+}
+
+py::list
+convert_to_py_service_endpoint_info_list(const rmw_service_endpoint_info_array_t * info_array)
+{
+  if (!info_array) {
+    throw std::runtime_error("rmw_service_endpoint_info_array_t pointer is empty");
+  }
+
+  py::list py_info_array(info_array->size);
+
+  for (size_t i = 0; i < info_array->size; ++i) {
+    rmw_service_endpoint_info_t service_endpoint_info = info_array->info_array[i];
+    // add this dict to the list
+    py_info_array[i] = _convert_to_py_service_endpoint_info(&service_endpoint_info);
+  }
+  return py_info_array;
+}
+
 static
 py::object
 _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
