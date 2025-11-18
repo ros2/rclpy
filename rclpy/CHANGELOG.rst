@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.2 (2025-11-17)
+-------------------
+* add : get clients, servers info (`#1307 <https://github.com/ros2/rclpy/issues/1307>`_)
+* Allow action servers without execute callback (`#1219 <https://github.com/ros2/rclpy/issues/1219>`_)
+* Remove accidental tuple (`#1542 <https://github.com/ros2/rclpy/issues/1542>`_)
+* fix(test_events_executor): destroy all nodes before shutdown (`#1538 <https://github.com/ros2/rclpy/issues/1538>`_)
+* Remove duplicate future handling from send_goal_async (`#1532 <https://github.com/ros2/rclpy/issues/1532>`_)
+* Contributors: Michael Carlstrom, Minju, Lee, Nathan Wiebe Neufeldt, Tim Clephas, Yuyuan Yuan
+
 10.0.1 (2025-10-21)
 -------------------
 * remove unused 'param_type' (`#1524 <https://github.com/ros2/rclpy/issues/1524>`_)
