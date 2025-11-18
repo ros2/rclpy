@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.3 (2025-11-18)
+------------------
+* Remove accidental tuple (`#1542 <https://github.com/ros2/rclpy/issues/1542>`_) (`#1543 <https://github.com/ros2/rclpy/issues/1543>`_)
+* fix(test_events_executor): destroy all nodes before shutdown (`#1538 <https://github.com/ros2/rclpy/issues/1538>`_) (`#1539 <https://github.com/ros2/rclpy/issues/1539>`_)
+* Remove duplicate future handling from send_goal_async (`#1532 <https://github.com/ros2/rclpy/issues/1532>`_) (`#1534 <https://github.com/ros2/rclpy/issues/1534>`_)
+* Contributors: mergify[bot]
+
 9.1.2 (2025-10-21)
 ------------------
 * remove unused 'param_type' (`#1524 <https://github.com/ros2/rclpy/issues/1524>`_) (`#1525 <https://github.com/ros2/rclpy/issues/1525>`_)
