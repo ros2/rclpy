@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.19 (2025-11-18)
+-------------------
+* Remove accidental tuple (`#1542 <https://github.com/ros2/rclpy/issues/1542>`_) (`#1545 <https://github.com/ros2/rclpy/issues/1545>`_)
+* Remove duplicate future handling from send_goal_async (`#1532 <https://github.com/ros2/rclpy/issues/1532>`_) (`#1537 <https://github.com/ros2/rclpy/issues/1537>`_)
+* Contributors: Nathan Wiebe Neufeldt, mergify[bot]
+
 3.3.18 (2025-10-21)
 -------------------
 * remove unused 'param_type' (`#1524 <https://github.com/ros2/rclpy/issues/1524>`_) (`#1527 <https://github.com/ros2/rclpy/issues/1527>`_)
