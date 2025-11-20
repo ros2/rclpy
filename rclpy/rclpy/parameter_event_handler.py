@@ -297,6 +297,10 @@ class ParameterEventHandler:
 
         Callbacks are called in FILO manner.
 
+        The configure_nodes_filter() function will affect the behavior of this function.
+        If the node specified in this function isn't included in the nodes specified in
+        configure_nodes_filter(), the callback will never be called.
+
         :param parameter_name: Name of a parameter to tie callback to
         :param node_name: Name of a node, that the parameter should be related to
         :param callback: A callable to be called when the parameter is modified
@@ -359,7 +363,7 @@ class ParameterEventHandler:
         """
         Configure which node parameter events will be received.
 
-        This function depends on middleware support for content filtering.
+        This function depends on rmw implementation support for content filtering.
         If middleware doesn't support contentfilter, return false.
 
         If node_names is empty, the configured node filter will be cleared.
@@ -379,10 +383,13 @@ class ParameterEventHandler:
         :param node_names: Node names to filter parameter events from
 
         :return: True if the filter was successfully applied, False otherwise.
+        :raises: RCLError if internal error occurred when calling the rcl function.
         """
         if node_names is None or len(node_names) == 0:
             # Clear content filter
             self.parameter_event_subscription.set_content_filter('', [])
+            if (self.parameter_event_subscription.is_cft_enabled is True):
+                return False
             return True
 
         filter_expression = ' OR '.join([f'node = %{i}' for i in range(len(node_names))])
