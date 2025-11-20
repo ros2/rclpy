@@ -21,9 +21,10 @@ from typing import Union
 
 from builtin_interfaces.msg import Time
 from rclpy.exceptions import NoTypeSupportImportedException
-from rosidl_pycommon.interface_base_classes import BaseAction as BaseAction
-from rosidl_pycommon.interface_base_classes import BaseMessage as BaseMessage
-from rosidl_pycommon.interface_base_classes import BaseService as BaseService
+from rosidl_pycommon.interface_base_classes import BaseAction
+from rosidl_pycommon.interface_base_classes import BaseImpl
+from rosidl_pycommon.interface_base_classes import BaseMessage
+from rosidl_pycommon.interface_base_classes import BaseService
 from service_msgs.msg import ServiceEventInfo
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
@@ -47,6 +48,7 @@ Srv: TypeAlias = BaseService[SrvRequestT, SrvResponseT]
 GoalT = TypeVar('GoalT', bound=BaseMessage)
 ResultT = TypeVar('ResultT', bound=BaseMessage)
 FeedbackT = TypeVar('FeedbackT', bound=BaseMessage)
+ImplT = TypeVar('FeedbackT', bound=BaseImpl)
 
 
 class SendGoalServiceRequest(BaseMessage, Generic[GoalT]):
@@ -79,7 +81,7 @@ class FeedbackMessage(BaseMessage, Generic[FeedbackT]):
     feedback: FeedbackT
 
 
-Action: TypeAlias = BaseAction[GoalT, ResultT, FeedbackT]
+Action: TypeAlias = BaseAction[GoalT, ResultT, FeedbackT, ImplT]
 
 
 # Can be used if https://github.com/python/typing/issues/548 ever gets approved.
@@ -89,7 +91,7 @@ ActionT = TypeVar('ActionT', bound=BaseAction)
 
 def check_for_type_support(msg_or_srv_type: Type[Union[BaseMessage,
                                                        BaseService[Any, Any],
-                                                       BaseAction[Any, Any, Any]]]) -> None:
+                                                       BaseAction[Any, Any, Any, Any]]]) -> None:
     try:
         ts = msg_or_srv_type._TYPE_SUPPORT
     except AttributeError as e:

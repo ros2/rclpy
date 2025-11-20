@@ -34,10 +34,10 @@ from rclpy.subscription import MessageInfo
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.type_support import (BaseAction, BaseService, FeedbackMessage, FeedbackT, GetResultServiceRequest,
-                                GetResultServiceResponse, GoalT, MsgT, ResultT,
-                                SendGoalServiceRequest, SendGoalServiceResponse, SrvRequestT,
-                                SrvResponseT)
+from rclpy.type_support import (BaseAction, BaseService, FeedbackMessage, FeedbackT, ImplT,
+                                GetResultServiceRequest, GetResultServiceResponse, GoalT, MsgT,
+                                ResultT, SendGoalServiceRequest, SendGoalServiceResponse,
+                                SrvRequestT, SrvResponseT)
 from type_description_interfaces.srv import GetTypeDescription
 
 T = TypeVar('T')
@@ -340,12 +340,12 @@ def rclpy_qos_check_compatible(publisher_qos_profile: rmw_qos_profile_t,
     """Check if two QoS profiles are compatible."""
 
 
-class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
+class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
 
     def __init__(
             self,
             node: Node,
-            pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT]],
+            pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
             action_name: str,
             goal_service_qos: rmw_qos_profile_t,
             result_service_qos: rmw_qos_profile_t,
@@ -429,13 +429,13 @@ class ActionGoalHandle(Destroyable):
         """Check if a goal is active."""
 
 
-class ActionServer(Generic[GoalT, ResultT, FeedbackT], Destroyable):
+class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
 
     def __init__(
         self,
         node: Node,
         rclpy_clock: Clock,
-        pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT]],
+        pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
         goal_service_qos: rmw_qos_profile_t,
         result_service_qos: rmw_qos_profile_t,

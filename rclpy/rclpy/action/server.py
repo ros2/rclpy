@@ -37,8 +37,8 @@ from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.type_support import (BaseAction, check_for_type_support, FeedbackMessage, FeedbackT,
-                                GetResultServiceRequest, GetResultServiceResponse, GoalT, ResultT,
-                                SendGoalServiceRequest)
+                                GetResultServiceRequest, GetResultServiceResponse, GoalT,
+                                ImplT, ResultT, SendGoalServiceRequest)
 from rclpy.waitable import NumberOfEntities, Waitable
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
@@ -227,13 +227,14 @@ def default_cancel_callback(cancel_request: CancelGoal.Request) -> Literal[Cance
     return CancelResponse.REJECT
 
 
-class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandleDict[GoalT]']):
+class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
+                   Waitable['ServerGoalHandleDict[GoalT]']):
     """ROS Action server."""
 
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[BaseAction[GoalT, ResultT, FeedbackT]],
+        action_type: Type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
         execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
         *,
@@ -513,7 +514,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             self._logger.warning('Failed to send result response (the client may have gone away)')
 
     @property
-    def action_type(self) -> Type[BaseAction[GoalT, ResultT, FeedbackT]]:
+    def action_type(self) -> Type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]]:
         return self._action_type
 
     # Start Waitable API

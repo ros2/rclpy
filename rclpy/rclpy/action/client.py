@@ -50,6 +50,7 @@ from rclpy.type_support import FeedbackMessage
 from rclpy.type_support import FeedbackT
 from rclpy.type_support import GetResultServiceResponse
 from rclpy.type_support import GoalT
+from rclpy.type_support import ImplT
 from rclpy.type_support import ResultT
 from rclpy.type_support import SendGoalServiceResponse
 from rclpy.waitable import NumberOfEntities, Waitable
@@ -164,14 +165,14 @@ class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
         return self._action_client._get_result_async(self)
 
 
-class ActionClient(Generic[GoalT, ResultT, FeedbackT],
+class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                    Waitable['ClientGoalHandleDict[ResultT, FeedbackT]']):
     """ROS Action client."""
 
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[BaseAction[GoalT, ResultT, FeedbackT]],
+        action_type: Type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
