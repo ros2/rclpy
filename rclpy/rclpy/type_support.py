@@ -48,7 +48,7 @@ Srv: TypeAlias = BaseService[SrvRequestT, SrvResponseT]
 GoalT = TypeVar('GoalT', bound=BaseMessage)
 ResultT = TypeVar('ResultT', bound=BaseMessage)
 FeedbackT = TypeVar('FeedbackT', bound=BaseMessage)
-ImplT = TypeVar('FeedbackT', bound=BaseImpl)
+ImplT = TypeVar('ImplT', bound=BaseImpl)
 
 
 class SendGoalServiceRequest(BaseMessage, Generic[GoalT]):

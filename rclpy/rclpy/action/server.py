@@ -82,12 +82,12 @@ class CancelResponse(Enum):
 GoalEvent: TypeAlias = _rclpy.GoalEvent
 
 
-class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
+class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
     """Goal handle for working with Action Servers."""
 
     def __init__(
         self,
-        action_server: ActionServer[GoalT, ResultT, FeedbackT],
+        action_server: ActionServer[GoalT, ResultT, FeedbackT, ImplT],
         goal_info: GoalInfo,
         goal_request: GoalT
     ) -> None:
@@ -165,7 +165,7 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
 
     def execute(
         self,
-        execute_callback: Optional[Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT]'],
+        execute_callback: Optional[Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'],
                                    ResultT]] = None
     ) -> None:
         # It's possible that there has been a request to cancel the goal prior to executing.
@@ -210,7 +210,7 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
             self._goal_handle = None
 
 
-def default_handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any]) -> None:
+def default_handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> None:
     """Execute the goal."""
     goal_handle.execute()
 
@@ -236,13 +236,13 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
         node: 'Node',
         action_type: Type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
-        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
+        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], ResultT],
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
         goal_callback: Callable[[CancelGoal.Request], GoalResponse] = default_goal_callback,
         handle_accepted_callback: Callable[[ServerGoalHandle[GoalT,
                                                              ResultT,
-                                                             FeedbackT]],
+                                                             FeedbackT, ImplT]],
                                            None] = default_handle_accepted_callback,
         cancel_callback: Callable[[CancelGoal.Request], CancelResponse] = default_cancel_callback,
         goal_service_qos_profile: QoSProfile = qos_profile_services_default,
@@ -308,7 +308,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
                 )
 
         # key: UUID in bytes, value: GoalHandle
-        self._goal_handles: Dict[bytes, ServerGoalHandle[GoalT, ResultT, FeedbackT]] = {}
+        self._goal_handles: Dict[bytes, ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]] = {}
 
         # key: UUID in bytes, value: Future
         self._result_futures: Dict[bytes, Future[GetResultServiceResponse[ResultT]]] = {}
@@ -388,8 +388,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
     async def _execute_goal(
         self,
-        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
-        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT]
+        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], ResultT],
+        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]
     ) -> None:
         goal_uuid = goal_handle.goal_id.uuid
         self._logger.debug('Executing goal with ID {0}'.format(goal_uuid))
@@ -610,8 +610,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
     def notify_execute(
         self,
-        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT],
-        execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]],
+        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT],
+        execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]],
                                             ResultT]]
     ) -> None:
         # Use provided callback, defaulting to a previously registered callback
@@ -632,7 +632,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
     def register_handle_accepted_callback(
         self,
         handle_accepted_callback: Optional[Callable[[
-            ServerGoalHandle[GoalT, ResultT, FeedbackT]], None]]
+            ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], None]]
     ) -> None:
         """
         Register a callback for handling newly accepted goals.
@@ -700,7 +700,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
     def register_execute_callback(
         self,
-        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT]
+        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], ResultT]
     ) -> None:
         """
         Register a callback for executing action goals.

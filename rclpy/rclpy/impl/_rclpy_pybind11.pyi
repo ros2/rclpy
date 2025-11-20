@@ -411,7 +411,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
 
 class ActionGoalHandle(Destroyable):
 
-    def __init__(self, action_server: ActionServer[Any, Any, Any],
+    def __init__(self, action_server: ActionServer[Any, Any, Any, Any],
                  pygoal_info_msg: GoalInfo) -> None:
         ...
 

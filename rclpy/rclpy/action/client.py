@@ -45,6 +45,7 @@ from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.type_support import BaseAction
+from rclpy.type_support import BaseMessage
 from rclpy.type_support import check_for_type_support
 from rclpy.type_support import FeedbackMessage
 from rclpy.type_support import FeedbackT
@@ -61,8 +62,8 @@ if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup
     from typing_extensions import Unpack, TypeAlias
 
-    ClientGoalHandleDictResultT = TypeVar('ClientGoalHandleDictResultT')
-    ClientGoalHandleDictFeedbackT = TypeVar('ClientGoalHandleDictFeedbackT')
+    ClientGoalHandleDictResultT = TypeVar('ClientGoalHandleDictResultT', bound=BaseMessage)
+    ClientGoalHandleDictFeedbackT = TypeVar('ClientGoalHandleDictFeedbackT', bound=BaseMessage)
 
     class ClientGoalHandleDict(TypedDict,
                                Generic[ClientGoalHandleDictResultT, ClientGoalHandleDictFeedbackT],
@@ -84,10 +85,10 @@ class SendGoalKWargs(TypedDict):
     goal_uuid: Optional[UUID]
 
 
-class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
+class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
     """Goal handle for working with Action Clients."""
 
-    def __init__(self, action_client: ActionClient[GoalT, ResultT, FeedbackT],
+    def __init__(self, action_client: ActionClient[GoalT, ResultT, FeedbackT, ImplT],
                  goal_id: UUID, goal_response: SendGoalServiceResponse):
         self._action_client = action_client
         self._goal_id = goal_id
@@ -226,11 +227,13 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         self._goal_handles: Dict[bytes,
                                  weakref.ReferenceType[ClientGoalHandle[GoalT,
                                                                         ResultT,
-                                                                        FeedbackT]]] = {}
+                                                                        FeedbackT,
+                                                                        ImplT]]] = {}
         # key: goal request sequence_number, value: Future for goal response
         self._pending_goal_requests: Dict[int, Future[ClientGoalHandle[GoalT,
                                                                        ResultT,
-                                                                       FeedbackT]]] = {}
+                                                                       FeedbackT,
+                                                                       ImplT]]] = {}
         # key: goal request sequence_number, value: UUID
         self._goal_sequence_number_to_goal_id: Dict[int, UUID] = {}
         # key: cancel request sequence number, value: Future for cancel response
@@ -277,7 +280,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         return None
 
     def _remove_pending_goal_request(self,
-                                     future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT]]
+                                     future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]]
                                      ) -> None:
         seq = self._remove_pending_request(future, self._pending_goal_requests)
         if seq in self._goal_sequence_number_to_goal_id:
@@ -499,7 +502,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         goal: GoalT,
         feedback_callback: Optional[Callable[[FeedbackT], None]] = None,
         goal_uuid: Optional[UUID] = None
-    ) -> Future[ClientGoalHandle[GoalT, ResultT, FeedbackT]]:
+    ) -> Future[ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]]:
         """
         Send a goal and asynchronously get the result.
 
@@ -527,7 +530,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         request = self._action_type.Impl.SendGoalService.Request()
         request.goal_id = self._generate_random_uuid() if goal_uuid is None else goal_uuid
         request.goal = goal
-        future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT]] = Future()
+        future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]] = Future()
         with self._lock:
             sequence_number = self._client_handle.send_goal_request(request)
             if sequence_number in self._pending_goal_requests:
@@ -546,7 +549,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
         return future
 
-    def _cancel_goal(self, goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT]
+    def _cancel_goal(self, goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]
                      ) -> Optional[CancelGoal.Response]:
         """
         Send a cancel request for an active goal and wait for the response.
@@ -574,7 +577,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
     def _cancel_goal_async(
         self,
-        goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT]
+        goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]
     ) -> Future[CancelGoal.Response]:
         """
         Send a cancel request for an active goal and asynchronously get the result.
@@ -604,7 +607,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
         return future
 
-    def _get_result(self, goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT]
+    def _get_result(self, goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]
                     ) -> Optional[GetResultServiceResponse[ResultT]]:
         """
         Request the result for an active goal and wait for the response.
@@ -630,7 +633,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
             raise exception
         return future.result()
 
-    def _get_result_async(self, goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT]
+    def _get_result_async(self, goal_handle: ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]
                           ) -> Future[GetResultServiceResponse[ResultT]]:
         """
         Request the result for an active goal asynchronously.
