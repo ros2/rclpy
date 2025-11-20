@@ -142,6 +142,16 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile);
 py::list
 convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array);
 
+/// Convert a C rmw_service_endpoint_info_array_t into a Python list.
+/**
+ * Raises RuntimeError if the rmw_profile profile is null.
+ *
+ * \param[in] info_array a pointer to a rmw_service_endpoint_info_array_t
+ * \return Python list
+ */
+py::list
+convert_to_py_service_endpoint_info_list(const rmw_service_endpoint_info_array_t * info_array);
+
 /// Convert a C rmw_qos_profile_t into a Python dictionary with qos profile args.
 /**
  * \param[in] qos_profile Pointer to a rmw_qos_profile_t to convert

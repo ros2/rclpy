@@ -40,6 +40,7 @@ import rclpy
 from rclpy.clock_type import ClockType
 import rclpy.context
 from rclpy.duration import Duration
+from rclpy.endpoint_info import EndpointTypeEnum
 from rclpy.exceptions import InvalidParameterException
 from rclpy.exceptions import InvalidParameterTypeException
 from rclpy.exceptions import InvalidParameterValueException
@@ -62,6 +63,7 @@ from rclpy.time_source import USE_SIM_TIME_NAME
 from rclpy.type_description_service import START_TYPE_DESCRIPTION_SERVICE_PARAM
 from rclpy.utilities import get_rmw_implementation_identifier
 from test_msgs.msg import BasicTypes
+from test_msgs.srv import Empty
 
 TEST_NODE = 'my_node'
 TEST_NAMESPACE = '/my_ns'
@@ -333,6 +335,79 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_subscriptions_info_by_topic('13')
             self.node.get_publishers_info_by_topic('13')
+
+    def test_get_clients_servers_info_by_service(self):
+        service_name = 'test_service_endpoint_info'
+        fq_service_name = '{namespace}/{name}'.format(namespace=TEST_NAMESPACE, name=service_name)
+        # Lists should be empty
+        self.assertFalse(self.node.get_clients_info_by_service(fq_service_name))
+        self.assertFalse(self.node.get_servers_info_by_service(fq_service_name))
+
+        # Add a client
+        qos_profile = QoSProfile(
+            depth=10,
+            history=QoSHistoryPolicy.KEEP_ALL,
+            deadline=Duration(seconds=1, nanoseconds=12345),
+            lifespan=Duration(seconds=20, nanoseconds=9887665),
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            liveliness_lease_duration=Duration(seconds=5, nanoseconds=23456),
+            liveliness=QoSLivelinessPolicy.MANUAL_BY_TOPIC)
+        self.node.create_client(Empty, service_name, qos_profile=qos_profile)
+        # List should have at least one item
+        client_list = self.node.get_clients_info_by_service(fq_service_name)
+        self.assertGreaterEqual(len(client_list), 1)
+        # Server list should be empty
+        self.assertFalse(self.node.get_servers_info_by_service(fq_service_name))
+
+        # Verify client list has the right data
+        self.assertEqual(self.node.get_name(), client_list[0].node_name)
+        self.assertEqual(self.node.get_namespace(), client_list[0].node_namespace)
+        self.assertEqual('test_msgs/srv/Empty', client_list[0].service_type)
+        self.assertTrue(client_list[0].endpoint_count == 1 or client_list[0].endpoint_count == 2)
+        self.assertEqual(client_list[0].endpoint_type, EndpointTypeEnum.CLIENT)
+        for i in range(client_list[0].endpoint_count):
+            actual_qos_profile = client_list[0].qos_profiles[i]
+            self.assert_qos_equal(qos_profile, actual_qos_profile, is_publisher=False)
+
+        # Add a server
+        qos_profile2 = QoSProfile(
+            depth=1,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            deadline=Duration(seconds=15, nanoseconds=1678),
+            lifespan=Duration(seconds=29, nanoseconds=2345),
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            liveliness_lease_duration=Duration(seconds=5, nanoseconds=23456),
+            liveliness=QoSLivelinessPolicy.AUTOMATIC)
+        self.node.create_service(
+            Empty,
+            service_name,
+            lambda msg: print(msg),
+            qos_profile=qos_profile2
+        )
+        # Both lists should have at least one item
+        client_list = self.node.get_clients_info_by_service(fq_service_name)
+        server_list = self.node.get_servers_info_by_service(fq_service_name)
+        self.assertGreaterEqual(len(client_list), 1)
+        self.assertGreaterEqual(len(server_list), 1)
+        # Verify server list has the right data
+        self.assertEqual(self.node.get_name(), server_list[0].node_name)
+        self.assertEqual(self.node.get_namespace(), server_list[0].node_namespace)
+        self.assertEqual('test_msgs/srv/Empty', server_list[0].service_type)
+        self.assertTrue(server_list[0].endpoint_count == 1 or server_list[0].endpoint_count == 2)
+        self.assertEqual(server_list[0].endpoint_type, EndpointTypeEnum.SERVER)
+        for i in range(server_list[0].endpoint_count):
+            actual_qos_profile = server_list[0].qos_profiles[i]
+            self.assert_qos_equal(qos_profile2, actual_qos_profile, is_publisher=False)
+
+        # Error cases
+        with self.assertRaises(TypeError):
+            self.node.get_clients_info_by_service(1)
+            self.node.get_servers_info_by_service(1)
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.get_clients_info_by_service('13')
+            self.node.get_servers_info_by_service('13')
 
     def test_count_publishers_subscribers(self) -> None:
         short_topic_name = 'chatter'

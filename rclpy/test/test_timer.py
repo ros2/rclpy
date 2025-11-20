@@ -18,6 +18,7 @@ import platform
 import time
 from typing import List
 from typing import Optional
+from unittest.mock import Mock
 
 import pytest
 import rclpy
@@ -25,6 +26,25 @@ from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.timer import TimerInfo
+
+
+@pytest.fixture
+def context() -> None:
+    return rclpy.context.Context()
+
+
+@pytest.fixture
+def setup_ros(context) -> None:
+    rclpy.init(context=context)
+    yield
+    rclpy.shutdown(context=context)
+
+
+@pytest.fixture
+def test_node(context, setup_ros):
+    node = rclpy.create_node('test_node', context=context)
+    yield node
+    node.destroy_node()
 
 
 TEST_PERIODS = (
@@ -328,3 +348,15 @@ def test_timer_info_with_partial() -> None:
                 node.destroy_timer(timer)
             node.destroy_node()
         rclpy.shutdown(context=context)
+
+
+def test_on_reset_callback(test_node):
+    tmr = test_node.create_timer(1, lambda: None)
+    cb = Mock()
+    tmr.handle.set_on_reset_callback(cb)
+    cb.assert_not_called()
+    tmr.reset()
+    cb.assert_called_once_with(1)
+    tmr.handle.clear_on_reset_callback()
+    tmr.reset()
+    cb.assert_called_once()

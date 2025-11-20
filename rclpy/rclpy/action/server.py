@@ -161,6 +161,16 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
             if not self._goal_handle.is_active():
                 self._action_server.notify_goal_done()
 
+    def _set_result(self, response: Optional[ResultT]) -> None:
+        # Set result
+        result_response = self._action_server._action_type.Impl.GetResultService.Response()
+        result_response.status = self.status
+        if response is not None:
+            result_response.result = response
+        else:
+            result_response.result = self._action_server._action_type.Result()
+        self._action_server._result_futures[bytes(self.goal_id.uuid)].set_result(result_response)
+
     def execute(
         self,
         execute_callback: Optional[Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT]'],
@@ -170,7 +180,7 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
         # In this case we want to avoid the illegal state transition to EXECUTING
         # but still call the users execute callback to let them handle canceling the goal.
         if not self.is_cancel_requested:
-            self._update_state(_rclpy.GoalEvent.EXECUTE)
+            self.executing()
         self._action_server.notify_execute(self, execute_callback)
 
     def publish_feedback(self, feedback: FeedbackMessage[FeedbackT]) -> None:
@@ -191,14 +201,20 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
             # Publish
             self._action_server._handle.publish_feedback(feedback_message)
 
-    def succeed(self) -> None:
+    def executing(self) -> None:
+        self._update_state(_rclpy.GoalEvent.EXECUTE)
+
+    def succeed(self, response: Optional[ResultT] = None) -> None:
         self._update_state(_rclpy.GoalEvent.SUCCEED)
+        self._set_result(response)
 
-    def abort(self) -> None:
+    def abort(self, response: Optional[ResultT] = None) -> None:
         self._update_state(_rclpy.GoalEvent.ABORT)
+        self._set_result(response)
 
-    def canceled(self) -> None:
+    def canceled(self, response: Optional[ResultT] = None) -> None:
         self._update_state(_rclpy.GoalEvent.CANCELED)
+        self._set_result(response)
 
     def destroy(self) -> None:
         with self._lock:
@@ -233,7 +249,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         node: 'Node',
         action_type: Type[Action],
         action_name: str,
-        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
+        execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]],
+                                            ResultT]] = None,
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
         goal_callback: Callable[[CancelGoal.Request], GoalResponse] = default_goal_callback,
@@ -283,7 +300,11 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         self.register_handle_accepted_callback(handle_accepted_callback)
         self.register_goal_callback(goal_callback)
         self.register_cancel_callback(cancel_callback)
-        self.register_execute_callback(execute_callback)
+        if execute_callback:
+            self.register_execute_callback(execute_callback)
+        elif handle_accepted_callback is default_handle_accepted_callback:
+            self._logger.warning(
+                'Not handling nor executing the goal, this server will do nothing')
 
         # Import the typesupport for the action module if not already done
         check_for_type_support(action_type)
@@ -365,7 +386,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         try:
             # If the client goes away anytime before this, sending the goal response may fail.
             # Catch the exception here and go on so we don't crash.
-            self._handle.send_goal_response(request_header, response_msg)
+            with self._lock:
+                self._handle.send_goal_response(request_header, response_msg)
         except RCLError:
             self._logger.warning('Failed to send goal response (the client may have gone away)')
             return
@@ -455,7 +477,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         try:
             # If the client goes away anytime before this, sending the goal response may fail.
             # Catch the exception here and go on so we don't crash.
-            self._handle.send_cancel_response(request_header, cancel_response)
+            with self._lock:
+                self._handle.send_cancel_response(request_header, cancel_response)
         except RCLError:
             self._logger.warning('Failed to send cancel response (the client may have gone away)')
 
@@ -476,7 +499,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
                 'Sending result response for unknown or expired goal ID: {0}'.format(goal_uuid))
             result_response = self._action_type.Impl.GetResultService.Response()
             result_response.status = GoalStatus.STATUS_UNKNOWN
-            self._handle.send_result_response(request_header, result_response)
+            with self._lock:
+                self._handle.send_result_response(request_header, result_response)
             return
 
         # There is an accepted goal matching the goal ID, register a callback to send the
@@ -502,7 +526,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             # Catch the exception here and go on so we don't crash.
             result = future.result()
             if result:
-                self._handle.send_result_response(request_header, result)
+                with self._lock:
+                    self._handle.send_result_response(request_header, result)
         except RCLError:
             self._logger.warning('Failed to send result response (the client may have gone away)')
 
@@ -578,7 +603,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
 
     def get_num_entities(self) -> NumberOfEntities:
         """Return number of each type of entity used in the wait set."""
-        num_entities = self._handle.get_num_entities()
+        with self._lock:
+            num_entities = self._handle.get_num_entities()
         return NumberOfEntities(
             num_entities[0],
             num_entities[1],

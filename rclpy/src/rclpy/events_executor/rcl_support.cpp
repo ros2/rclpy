@@ -26,7 +26,13 @@ namespace events_executor
 extern "C" void RclEventCallbackTrampoline(const void * user_data, size_t number_of_events)
 {
   const auto cb = reinterpret_cast<const std::function<void(size_t)> *>(user_data);
-  (*cb)(number_of_events);
+  try {
+    (*cb)(number_of_events);
+  } catch (const std::exception & e) {
+    // Catch and print any exception to avoid propagation to c code
+    std::fprintf(stderr, "%s\n", e.what());
+    std::terminate();
+  }
 }
 
 RclCallbackManager::RclCallbackManager(EventsQueue * events_queue)

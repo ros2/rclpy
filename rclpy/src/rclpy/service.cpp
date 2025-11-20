@@ -22,19 +22,26 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "clock.hpp"
 #include "exceptions.hpp"
 #include "node.hpp"
 #include "service.hpp"
 #include "utils.hpp"
+#include "events_executor/rcl_support.hpp"
 
 namespace rclpy
 {
+using events_executor::RclEventCallbackTrampoline;
 
 void
 Service::destroy()
 {
+  try {
+    clear_on_new_request_callback();
+  } catch (const rclpy::RCLError &) {
+  }
   rcl_service_.reset();
   node_.destroy();
 }
@@ -185,6 +192,41 @@ Service::configure_introspection(
 }
 
 void
+Service::set_callback(
+  rcl_event_callback_t callback,
+  const void * user_data)
+{
+  rcl_ret_t ret = rcl_service_set_on_new_request_callback(
+    rcl_service_.get(),
+    callback,
+    user_data);
+
+  if (RCL_RET_OK != ret) {
+    throw RCLError(std::string("Failed to set the on new request callback for service: ") +
+      rcl_get_error_string().str);
+  }
+}
+
+void
+Service::set_on_new_request_callback(std::function<void(size_t)> callback)
+{
+  clear_on_new_request_callback();
+  on_new_request_callback_ = std::move(callback);
+  set_callback(
+    RclEventCallbackTrampoline,
+    static_cast<const void *>(&on_new_request_callback_));
+}
+
+void
+Service::clear_on_new_request_callback()
+{
+  if (on_new_request_callback_) {
+    set_callback(nullptr, nullptr);
+    on_new_request_callback_ = nullptr;
+  }
+}
+
+void
 define_service(py::object module)
 {
   py::class_<Service, Destroyable, std::shared_ptr<Service>>(module, "Service")
@@ -211,6 +253,10 @@ define_service(py::object module)
     "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Service::get_logger_name,
-    "Get the name of the logger associated with the node of the service.");
+    "Get the name of the logger associated with the node of the service.")
+  .def(
+    "set_on_new_request_callback", &Service::set_on_new_request_callback,
+    py::arg("callback"))
+  .def("clear_on_new_request_callback", &Service::clear_on_new_request_callback);
 }
 }  // namespace rclpy
