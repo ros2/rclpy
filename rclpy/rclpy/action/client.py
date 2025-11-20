@@ -280,7 +280,8 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         return None
 
     def _remove_pending_goal_request(self,
-                                     future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]]
+                                     future: Future[ClientGoalHandle[GoalT, ResultT, FeedbackT,
+                                                                     ImplT]]
                                      ) -> None:
         seq = self._remove_pending_request(future, self._pending_goal_requests)
         if seq in self._goal_sequence_number_to_goal_id:

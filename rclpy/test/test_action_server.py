@@ -107,7 +107,7 @@ class TestActionServer(unittest.TestCase):
         while (time.time() - start_time) < duration:
             rclpy.spin_once(self.node, executor=self.executor, timeout_sec=0.1)
 
-    def execute_goal_callback(self, goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any]
+    def execute_goal_callback(self, goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any, Any]
                               ) -> Fibonacci.Result:
         goal_handle.succeed()
         return Fibonacci.Result()
@@ -169,7 +169,8 @@ class TestActionServer(unittest.TestCase):
 
         def handle_accepted_callback(goal_handle: ServerGoalHandle[Fibonacci.Goal,
                                                                    Fibonacci.Result,
-                                                                   Fibonacci.Feedback]) -> None:
+                                                                   Fibonacci.Feedback,
+                                                                   Fibonacci.Impl]) -> None:
             nonlocal goal_order
             nonlocal goal_uuid
             nonlocal handle_accepted_callback_triggered
@@ -206,7 +207,7 @@ class TestActionServer(unittest.TestCase):
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 
-        def handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any]) -> None:
+        def handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> None:
             # Since the goal is rejected, we don't expect this function to be called
             self.assertFalse(True)
 
@@ -318,7 +319,7 @@ class TestActionServer(unittest.TestCase):
 
     def test_cancel_goal_accept(self) -> None:
 
-        def execute_callback(goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any]
+        def execute_callback(goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any, Any]
                              ) -> Fibonacci.Result:
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
@@ -367,7 +368,7 @@ class TestActionServer(unittest.TestCase):
 
     def test_cancel_goal_reject(self) -> None:
 
-        def execute_callback(goal_handle: ServerGoalHandle[Any, Fibonacci.Feedback, Any]
+        def execute_callback(goal_handle: ServerGoalHandle[Any, Fibonacci.Feedback, Any, Any]
                              ) -> Fibonacci.Result:
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
@@ -418,7 +419,8 @@ class TestActionServer(unittest.TestCase):
 
         def handle_accepted_callback(gh: ServerGoalHandle[Fibonacci.Goal,
                                                           Fibonacci.Result,
-                                                          Fibonacci.Feedback]) -> None:
+                                                          Fibonacci.Feedback,
+                                                          Fibonacci.Impl]) -> None:
             nonlocal server_goal_handle
             server_goal_handle = gh
 
@@ -427,7 +429,8 @@ class TestActionServer(unittest.TestCase):
 
         def execute_callback(gh: ServerGoalHandle[Fibonacci.Goal,
                                                   Fibonacci.Result,
-                                                  Fibonacci.Feedback]
+                                                  Fibonacci.Feedback,
+                                                  Fibonacci.Impl]
                              ) -> Fibonacci.Result:
             # The goal should already be in state CANCELING
             self.assertTrue(gh.is_cancel_requested)
@@ -485,7 +488,8 @@ class TestActionServer(unittest.TestCase):
 
         def execute_callback(goal_handle: ServerGoalHandle[Fibonacci.Goal,
                                                            Fibonacci.Result,
-                                                           Fibonacci.Feedback]
+                                                           Fibonacci.Feedback,
+                                                           Fibonacci.Impl]
                              ) -> Fibonacci.Result:
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
@@ -521,7 +525,8 @@ class TestActionServer(unittest.TestCase):
 
         def execute_callback(goal_handle: ServerGoalHandle[Fibonacci.Goal,
                                                            Fibonacci.Result,
-                                                           Fibonacci.Feedback]
+                                                           Fibonacci.Feedback,
+                                                           Fibonacci.Impl]
                              ) -> Fibonacci.Result:
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_EXECUTING)
             result = Fibonacci.Result()
@@ -557,7 +562,8 @@ class TestActionServer(unittest.TestCase):
 
         def execute_callback(goal_handle: ServerGoalHandle[Fibonacci.Goal,
                                                            Fibonacci.Result,
-                                                           Fibonacci.Feedback]
+                                                           Fibonacci.Feedback,
+                                                           Fibonacci.Impl]
                              ) -> Fibonacci.Result:
             # Do not set the goal handles state
             result = Fibonacci.Result()
@@ -593,7 +599,8 @@ class TestActionServer(unittest.TestCase):
 
         def execute_callback(goal_handle: ServerGoalHandle[Fibonacci.Goal,
                                                            Fibonacci.Result,
-                                                           Fibonacci.Feedback]
+                                                           Fibonacci.Feedback,
+                                                           Fibonacci.Impl]
                              ) -> Fibonacci.Result:
             # User callback raises
             raise RuntimeError('test user callback raises')
@@ -698,7 +705,7 @@ class TestActionServer(unittest.TestCase):
 
     def test_feedback(self) -> None:
 
-        def execute_with_feedback(goal_handle: ServerGoalHandle[Any, Fibonacci.Feedback, Any]
+        def execute_with_feedback(goal_handle: ServerGoalHandle[Any, Fibonacci.Feedback, Any, Any]
                                   ) -> Fibonacci.Result:
             feedback = Fibonacci.Feedback()
             feedback.sequence = [1, 1, 2, 3]
@@ -728,7 +735,7 @@ class TestActionServer(unittest.TestCase):
 
     def test_different_feedback_type_raises(self) -> None:
 
-        def execute_with_feedback(goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any]
+        def execute_with_feedback(goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any, Any]
                                   ) -> Fibonacci.Result:
             try:
                 goal_handle.publish_feedback('different feedback type')  # type: ignore[arg-type]
@@ -769,7 +776,8 @@ class TestActionServer(unittest.TestCase):
 
         def handle_accepted_callback(goal_handle: ServerGoalHandle[Fibonacci.Goal,
                                                                    Fibonacci.Result,
-                                                                   Fibonacci.Feedback]) -> None:
+                                                                   Fibonacci.Feedback,
+                                                                   Fibonacci.Impl]) -> None:
             goal_handle.executing()
             nonlocal stored_goal_handle
             stored_goal_handle = goal_handle
@@ -822,7 +830,7 @@ class TestActionServer(unittest.TestCase):
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 
-        def handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any]) -> None:
+        def handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> None:
             # Since the goal is rejected, we don't expect this function to be called
             self.assertFalse(True)
 
@@ -881,7 +889,7 @@ class TestActionServer(unittest.TestCase):
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 
-        def handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any]) -> None:
+        def handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> None:
             # Since the goal is rejected, we don't expect this function to be called
             self.assertFalse(True)
 

@@ -40,12 +40,14 @@ from typing_extensions import TypeAlias
 
 FibonacciServerGoalHandle: TypeAlias = ServerGoalHandle[test_msgs.action.Fibonacci.Goal,
                                                         test_msgs.action.Fibonacci.Result,
-                                                        test_msgs.action.Fibonacci.Feedback]
+                                                        test_msgs.action.Fibonacci.Feedback,
+                                                        test_msgs.action.Fibonacci.Impl]
 
 
 FibonacciClientGoalHandle: TypeAlias = ClientGoalHandle[test_msgs.action.Fibonacci.Goal,
                                                         test_msgs.action.Fibonacci.Result,
-                                                        test_msgs.action.Fibonacci.Feedback]
+                                                        test_msgs.action.Fibonacci.Feedback,
+                                                        test_msgs.action.Fibonacci.Impl]
 
 
 def _get_pub_sub_qos(transient_local: bool) -> rclpy.qos.QoSProfile:
