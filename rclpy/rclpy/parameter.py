@@ -369,7 +369,9 @@ def parameter_dict_from_yaml_file(
     """
     Build a dict of parameters from a YAML file.
 
-    Will load all parameters if ``target_nodes`` is None or empty.
+    if ``target_nodes`` is None or empty,
+    - ``use_wildcard`` is False, no parameters will be loaded from the file.
+    - ``use_wildcard`` is True, parameters under the wildcard (/**) will be loaded.
 
     :raises RuntimeError: if a target node is not in the file
     :raises RuntimeError: if the is not a valid ROS parameter file
@@ -422,6 +424,55 @@ def parameter_dict_from_yaml_file(
                         if not isinstance(value, dict) and 'ros__parameters' not in value:
                             raise RuntimeError('YAML file is not a valid ROS parameter '
                                                f'file for namespace {ns} node {node_basename}')
+                        param_dict.update(value['ros__parameters'])
+
+                    # '/*' as namespace wildcard in parameter file
+                    if '/*' in param_file.keys() and '/' not in ns[1:]:
+                        # ignore namespace (e.g. /abc)
+                        # Found node_basename defined in parameter file like
+                        # /*:
+                        #   node_name:
+                        #     ros__parameters:
+                        #       ...
+                        if node_basename in param_file['/*'].keys():
+                            value = param_file['/*'][node_basename]
+                            if not isinstance(value, dict) and 'ros__parameters' not in value:
+                                raise RuntimeError('YAML file is not a valid ROS parameter '
+                                                   f'file for namespace /* node {node_basename}')
+                            param_dict.update(value['ros__parameters'])
+
+                    # '/**' in target node name and match any namespace in parameter file
+                    if ns == '/**':
+                        for k1, v1 in param_file.items():
+                            if isinstance(v1, dict):
+                                if 'ros__parameters' in v1.keys():
+                                    if '/' in k1:
+                                        # key is node_name with namespace
+                                        node_name = k1.rsplit('/', 1)[1]
+                                    else:
+                                        # key is node_name without namespace
+                                        node_name = k1
+                                    if node_name == node_basename:
+                                        param_dict.update(v1['ros__parameters'])
+                                else:
+                                    # k1 is namespace
+                                    for k2, v2 in v1.items():
+                                        if 'ros__parameters' in v2.keys():
+                                            if k2 == node_basename:
+                                                param_dict.update(v2['ros__parameters'])
+
+            # Handle cases where any namespace definition is ignored
+            # parameter file like:
+            # /**/node_name:
+            #   ros__parameters:
+            #     ...
+            for key, value in param_file.items():
+                if key.startswith('/**/'):
+                    node_basename = key.rsplit('/', 1)[1]
+                    if node_basename in [n.rsplit('/', 1)[-1] for n in target_nodes]:
+                        if not isinstance(value, dict) and 'ros__parameters' not in value:
+                            raise RuntimeError('YAML file is not a valid ROS parameter '
+                                               f'file for node {key}')
                         param_dict.update(value['ros__parameters'])
 
         if not param_dict:
