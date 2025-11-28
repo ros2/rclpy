@@ -369,7 +369,7 @@ def parameter_dict_from_yaml_file(
     """
     Build a dict of parameters from a YAML file.
 
-    if ``target_nodes`` is None or empty,
+    If ``target_nodes`` is None or empty,
     - ``use_wildcard`` is False, no parameters will be loaded from the file.
     - ``use_wildcard`` is True, parameters under the wildcard (/**) will be loaded.
 
@@ -428,7 +428,7 @@ def parameter_dict_from_yaml_file(
 
                     # '/*' as namespace wildcard in parameter file
                     if '/*' in param_file.keys() and '/' not in ns[1:]:
-                        # ignore namespace (e.g. /abc)
+                        # Match single-level namespace in node name (e.g. /abc)
                         # Found node_basename defined in parameter file like
                         # /*:
                         #   node_name:
@@ -436,7 +436,7 @@ def parameter_dict_from_yaml_file(
                         #       ...
                         if node_basename in param_file['/*'].keys():
                             value = param_file['/*'][node_basename]
-                            if not isinstance(value, dict) and 'ros__parameters' not in value:
+                            if not isinstance(value, dict) or 'ros__parameters' not in value:
                                 raise RuntimeError('YAML file is not a valid ROS parameter '
                                                    f'file for namespace /* node {node_basename}')
                             param_dict.update(value['ros__parameters'])
@@ -457,7 +457,7 @@ def parameter_dict_from_yaml_file(
                                 else:
                                     # k1 is namespace
                                     for k2, v2 in v1.items():
-                                        if 'ros__parameters' in v2.keys():
+                                        if isinstance(v2, dict) and 'ros__parameters' in v2.keys():
                                             if k2 == node_basename:
                                                 param_dict.update(v2['ros__parameters'])
 
@@ -466,11 +466,12 @@ def parameter_dict_from_yaml_file(
             # /**/node_name:
             #   ros__parameters:
             #     ...
+            target_node_basenames = [n.rsplit('/', 1)[-1] for n in target_nodes]
             for key, value in param_file.items():
                 if key.startswith('/**/'):
-                    node_basename = key.rsplit('/', 1)[1]
-                    if node_basename in [n.rsplit('/', 1)[-1] for n in target_nodes]:
-                        if not isinstance(value, dict) and 'ros__parameters' not in value:
+                    node_basename = key.rsplit('/', 1)[-1]
+                    if node_basename in target_node_basenames:
+                        if not isinstance(value, dict) or 'ros__parameters' not in value:
                             raise RuntimeError('YAML file is not a valid ROS parameter '
                                                f'file for node {key}')
                         param_dict.update(value['ros__parameters'])

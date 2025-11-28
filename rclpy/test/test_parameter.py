@@ -424,11 +424,11 @@ class TestParameter(unittest.TestCase):
                 assert parameter_dict == expected_target_node_single_ns
                 with pytest.raises(RuntimeError,
                                    match='Param file does not contain any valid parameters'):
-                    parameter_dict = parameter_dict_from_yaml_file(
+                    parameter_dict_from_yaml_file(
                         f.name, False, target_nodes=['/abc/cde/param_test_target2'])
                 with pytest.raises(RuntimeError,
                                    match='Param file does not contain any valid parameters'):
-                    parameter_dict = parameter_dict_from_yaml_file(
+                    parameter_dict_from_yaml_file(
                         f.name, False, target_nodes=['param_test_target2'])
 
                 parameter_dict = parameter_dict_from_yaml_file(
@@ -439,8 +439,6 @@ class TestParameter(unittest.TestCase):
                 assert parameter_dict == expected_target_node_specified_ns_wildcard
                 parameter_dict = parameter_dict_from_yaml_file(
                     f.name, True, target_nodes=['param_test_target3'])
-                import logging
-                logging.info(f'parameter_dict: {parameter_dict}')
                 assert parameter_dict == expected_target_node_without_ns_wildcard
                 parameter_dict = parameter_dict_from_yaml_file(
                     f.name, False, target_nodes=['/**/param_test_target3'])
