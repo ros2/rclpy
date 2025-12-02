@@ -369,9 +369,7 @@ def parameter_dict_from_yaml_file(
     """
     Build a dict of parameters from a YAML file.
 
-    If ``target_nodes`` is None or empty,
-    - ``use_wildcard`` is False, no parameters will be loaded from the file.
-    - ``use_wildcard`` is True, parameters under the wildcard (/**) will be loaded.
+    Will load all parameters if ``target_nodes`` is None or empty.
 
     :raises RuntimeError: if a target node is not in the file
     :raises RuntimeError: if the is not a valid ROS parameter file
