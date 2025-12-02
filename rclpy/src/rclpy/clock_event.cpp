@@ -23,6 +23,7 @@
 #include <mutex>
 
 #include "clock_event.hpp"
+#include "gil_utils.hpp"
 
 namespace py = pybind11;
 
@@ -48,7 +49,7 @@ void ClockEvent::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until
     std::chrono::nanoseconds(delta_t.nanoseconds));
 
   // Could be a long wait, release the gil
-  py::gil_scoped_release release;
+  gil_scoped_release release;
   std::unique_lock<std::mutex> lock(mutex_);
   cv_.wait_until(lock, chrono_until, [this]() {return state_;});
 }
@@ -58,7 +59,7 @@ void ClockEvent::wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t u
   // Check if ROS time is enabled in C++ to avoid TOCTTOU with TimeSource by holding GIL
   if (clock->get_ros_time_override_is_enabled()) {
     // Could be a long wait, release the gil
-    py::gil_scoped_release release;
+    gil_scoped_release release;
     std::unique_lock<std::mutex> lock(mutex_);
     // Caller must have setup a time jump callback to wake this event
     cv_.wait(lock, [this]() {return state_;});

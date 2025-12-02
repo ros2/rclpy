@@ -36,6 +36,7 @@
 
 #include "client.hpp"
 #include "context.hpp"
+#include "gil_utils.hpp"
 #include "service.hpp"
 #include "subscription.hpp"
 
@@ -100,7 +101,7 @@ bool EventsExecutor::shutdown(std::optional<double> timeout)
 
   // Block until spinning is done, or timeout.  Release the GIL while we block though.
   {
-    py::gil_scoped_release gil_release;
+    gil_scoped_release gil_release;
     std::unique_lock<std::timed_mutex> spin_lock(spinning_mutex_, std::defer_lock);
     if (timeout) {
       if (!spin_lock.try_lock_for(std::chrono::duration<double>(*timeout))) {
@@ -171,7 +172,7 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
     stop_after_user_callback_ = stop_after_user_callback;
     // Release the GIL while we block.  Any callbacks on the events queue that want to touch Python
     // will need to reacquire it though.
-    py::gil_scoped_release gil_release;
+    gil_scoped_release gil_release;
     if (timeout_sec) {
       const auto timeout_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::duration<double>(*timeout_sec));

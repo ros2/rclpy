@@ -24,6 +24,7 @@
 #include <string>
 
 #include "exceptions.hpp"
+#include "gil_utils.hpp"
 #include "wait_set.hpp"
 
 namespace rclpy
@@ -243,7 +244,7 @@ WaitSet::wait(int64_t timeout)
 
   // Could be a long wait, release the GIL
   {
-    py::gil_scoped_release gil_release;
+    gil_scoped_release gil_release;
     ret = rcl_wait(rcl_wait_set_.get(), timeout);
   }
 
