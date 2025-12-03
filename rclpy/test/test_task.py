@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+<<<<<<< HEAD
 import asyncio
+=======
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Tuple
+>>>>>>> 9695271 (Fix issues with resuming async tasks awaiting a future (#1469))
 import unittest
 
 from rclpy.task import Future
@@ -50,6 +57,7 @@ class TestTask(unittest.TestCase):
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
 
+<<<<<<< HEAD
     def test_coroutine(self):
         called1 = False
         called2 = False
@@ -75,6 +83,9 @@ class TestTask(unittest.TestCase):
         self.assertEqual('Sentinel Result', t.result())
 
     def test_done_callback_scheduled(self):
+=======
+    def test_done_callback_scheduled(self) -> None:
+>>>>>>> 9695271 (Fix issues with resuming async tasks awaiting a future (#1469))
         executor = DummyExecutor()
 
         t = Task(lambda: None, executor=executor)
