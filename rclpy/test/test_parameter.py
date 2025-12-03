@@ -284,37 +284,37 @@ class TestParameter(unittest.TestCase):
                 ros__parameters:
                     wildcard: true
             """
-        # target nodes isn't specified with wildcard disabled
+        # target nodes arn't specified with wildcard disabled
         expected_no_target_node_no_wildcard = {
-           'abs-bar-ns-base-nodename': Parameter(
+            'abs-bar-ns-base-nodename': Parameter(
                 'abs-bar-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
-           'abs-bar-ns-nodename': Parameter(
+            'abs-bar-ns-nodename': Parameter(
                 'abs-bar-ns-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
-           'abs-foo-ns-base-nodename': Parameter(
+            'abs-foo-ns-base-nodename': Parameter(
                 'abs-foo-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
-           'abs-foo-ns-nodename': Parameter(
+            'abs-foo-ns-nodename': Parameter(
                 'abs-foo-ns-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
-           'abs-nodename': Parameter(
+            'abs-nodename': Parameter(
                 'abs-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
-           'base-nodename': Parameter(
+            'base-nodename': Parameter(
                 'base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
 
-        # target nodes isn't specified with wildcard enabled
+        # target nodes aren't specified with wildcard enabled
         expected_no_target_node_wildcard = {
-           'abs-bar-ns-base-nodename': Parameter(
+            'abs-bar-ns-base-nodename': Parameter(
                 'abs-bar-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
-           'abs-bar-ns-nodename': Parameter(
+            'abs-bar-ns-nodename': Parameter(
                 'abs-bar-ns-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
-           'abs-foo-ns-base-nodename': Parameter(
+            'abs-foo-ns-base-nodename': Parameter(
                 'abs-foo-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
-           'abs-foo-ns-nodename': Parameter(
+            'abs-foo-ns-nodename': Parameter(
                 'abs-foo-ns-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
-           'abs-nodename': Parameter(
+            'abs-nodename': Parameter(
                 'abs-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
-           'base-nodename': Parameter(
+            'base-nodename': Parameter(
                 'base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
-           'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
         # target nodes is specified with wildcard enabled
         expected_target_node_wildcard = {
