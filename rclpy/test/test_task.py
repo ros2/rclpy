@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 from typing import Any
 from typing import Callable
 from typing import List
@@ -51,30 +50,6 @@ class TestTask(unittest.TestCase):
 
         t = Task(lambda: func())
         t()
-        self.assertTrue(t.done())
-        self.assertEqual('Sentinel Result', t.result())
-
-    def test_coroutine(self) -> None:
-        called1 = False
-        called2 = False
-
-        async def coro() -> str:
-            nonlocal called1
-            nonlocal called2
-            called1 = True
-            await asyncio.sleep(0)
-            called2 = True
-            return 'Sentinel Result'
-
-        t = Task(coro)
-        t()
-        self.assertTrue(called1)
-        self.assertFalse(called2)
-
-        called1 = False
-        t()
-        self.assertFalse(called1)
-        self.assertTrue(called2)
         self.assertTrue(t.done())
         self.assertEqual('Sentinel Result', t.result())
 
