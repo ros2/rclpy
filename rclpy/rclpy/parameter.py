@@ -461,7 +461,7 @@ def parameter_dict_from_yaml_file(
                                         param_dict.update(param_value['ros__parameters'])
                                     else:
                                         raise RuntimeError(
-                                            f'YAML file is not a valid ROS parameter file for node'
+                                            f'YAML file is not a valid ROS parameter file for node '
                                             f'{n}/{node_name}')
                                 continue
             raise RuntimeError(f'YAML file is not a valid ROS parameter file for node {n}')
