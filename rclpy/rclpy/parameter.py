@@ -367,7 +367,6 @@ def parameter_dict_from_yaml_file(
                 # /namespace/node_name:
                 #   ros__parameters:
                 #     ...
-                is_found = False
                 ns, node_name = n.rsplit('/', 1)
 
                 # If ns is single level namespace and wildcard is true
@@ -382,7 +381,6 @@ def parameter_dict_from_yaml_file(
                             'YAML file is not a valid ROS parameter file for namespace "/*"')
                     if node_name in param_file['/*']:
                         param_keys.append('/*#' + node_name)
-                        is_found = True
 
                 # If 'ns' in target node is single level or multi level namespace and
                 # wildcard is true,
@@ -392,7 +390,6 @@ def parameter_dict_from_yaml_file(
                 #     ...
                 if use_wildcard and '/**/' + node_name in param_file:
                     param_keys.append('/**/' + node_name)
-                    is_found = True
 
                 # If 'ns' in target node is single level or multi level namespace,
                 # Match definition in param file.
@@ -403,7 +400,6 @@ def parameter_dict_from_yaml_file(
                 if ns in param_file and isinstance(param_file[ns], dict):
                     if node_name in param_file[ns]:
                         param_keys.append(ns + '#' + node_name)
-                        is_found = True
 
                 # if 'ns' in target node is single level or multi level namespace,
                 # Match definition in param file.
@@ -412,13 +408,6 @@ def parameter_dict_from_yaml_file(
                 #     ...
                 if n in param_file:
                     param_keys.append(n)
-                    is_found = True
-
-                if is_found:
-                    continue
-
-                raise RuntimeError(f'Param file does not contain parameters for {n},'
-                                   f'only for nodes: {list(param_file.keys())} ')
         else:
             # wildcard key must go to the front of param_keys so that
             # node-namespaced parameters will override the wildcard parameters

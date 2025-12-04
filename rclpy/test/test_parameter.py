@@ -443,11 +443,11 @@ class TestParameter(unittest.TestCase):
                 assert parameter_dict == expected_one_target_node_with_multi_ns_and_wildcard
 
                 with pytest.raises(RuntimeError,
-                                   match='Param file does not contain parameters for'):
+                                   match='Param file does not contain selected parameters'):
                     parameter_dict = parameter_dict_from_yaml_file(
                         f.name, False, target_nodes=['/abc/cde/param_test_target3'])
                 with pytest.raises(RuntimeError,
-                                   match='Param file does not contain parameters for'):
+                                   match='Param file does not contain selected parameters'):
                     parameter_dict = parameter_dict_from_yaml_file(
                         f.name, False, target_nodes=['/abc/param_test_target2'])
 
