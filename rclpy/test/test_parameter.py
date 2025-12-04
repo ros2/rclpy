@@ -313,6 +313,9 @@ class TestParameter(unittest.TestCase):
                 param_test_target3:
                     ros__parameters:
                         deep-ns-base-nodename: false
+            /**/param_test_target3:
+                ros__parameters:
+                    abs-wildcard-deep-ns-nodename: true
             """
         # Not set target nodes and wildcard is false
         expected_no_target_nodes_and_no_wildcard = {
@@ -337,6 +340,8 @@ class TestParameter(unittest.TestCase):
                 'abs-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
             'abs-ns-nodename': Parameter(
                 'abs-ns-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-wildcard-deep-ns-nodename': Parameter(
+                'abs-wildcard-deep-ns-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'abs-wildcard-ns-base-nodename': Parameter(
                 'abs-wildcard-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'abs-wildcard-ns-nodename': Parameter(
@@ -396,6 +401,8 @@ class TestParameter(unittest.TestCase):
         }
         # Set one target node with multi level namespace and wildcard is true
         expected_one_target_node_with_multi_ns_and_wildcard = {
+            'abs-wildcard-deep-ns-nodename': Parameter(
+                'abs-wildcard-deep-ns-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'deep-ns-base-nodename': Parameter(
                 'deep-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
             'deep-ns-nodename': Parameter(
