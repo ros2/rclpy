@@ -376,8 +376,11 @@ def parameter_dict_from_yaml_file(
                 #   node_name:
                 #     ros__parameters:
                 #       ...
-                if use_wildcard and '/' not in ns[1:]:
-                    if '/*' in param_file and node_name in param_file['/*']:
+                if use_wildcard and '/' not in ns[1:] and '/*' in param_file:
+                    if not isinstance(param_file['/*'], dict):
+                        raise RuntimeError(
+                            'YAML file is not a valid ROS parameter file for namespace "/*"')
+                    if node_name in param_file['/*']:
                         param_keys.append('/*#' + node_name)
                         is_found = True
 
