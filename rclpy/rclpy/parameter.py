@@ -369,18 +369,17 @@ def parameter_dict_from_yaml_file(
                 #     ...
                 is_found = False
                 ns, node_name = n.rsplit('/', 1)
-                if '/' in n[1:]:  # single level namespace e.g. /ns1/node_name
 
-                    # If ns is single level namespace and wildcard is true
-                    # Match definition in param file
-                    # /*
-                    #   node_name:
-                    #     ros__parameters:
-                    #       ...
-                    if use_wildcard and '/' not in ns[1:]:
-                        if '/*' in param_file and node_name in param_file['/*']:
-                            param_keys.append('/*#' + node_name)
-                            is_found = True
+                # If ns is single level namespace and wildcard is true
+                # Match definition in param file
+                # /*
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                if use_wildcard and '/' not in ns[1:]:
+                    if '/*' in param_file and node_name in param_file['/*']:
+                        param_keys.append('/*#' + node_name)
+                        is_found = True
 
                 # If 'ns' in target node is single level or multi level namespace and
                 # wildcard is true,
@@ -461,8 +460,8 @@ def parameter_dict_from_yaml_file(
                                         param_dict.update(param_value['ros__parameters'])
                                     else:
                                         raise RuntimeError(
-                                            f'YAML file is not a valid ROS parameter file for node '
-                                            f'{n}/{node_name}')
+                                            f'YAML file is not a valid ROS parameter file for node'
+                                            f' {n}/{node_name}')
                                 continue
             raise RuntimeError(f'YAML file is not a valid ROS parameter file for node {n}')
 
