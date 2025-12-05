@@ -120,10 +120,7 @@ class ServerGoalHandle:
             if not self._goal_handle.is_active():
                 self._action_server.notify_goal_done()
 
-<<<<<<< HEAD
-    def execute(self, execute_callback=None):
-=======
-    def _set_result(self, response: Optional[ResultT]) -> None:
+    def _set_result(self, response):
         # Set result
         result_response = self._action_server._action_type.Impl.GetResultService.Response()
         result_response.status = self.status
@@ -133,12 +130,7 @@ class ServerGoalHandle:
             result_response.result = self._action_server._action_type.Result()
         self._action_server._result_futures[bytes(self.goal_id.uuid)].set_result(result_response)
 
-    def execute(
-        self,
-        execute_callback: Optional[Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT]'],
-                                   ResultT]] = None
-    ) -> None:
->>>>>>> c170282 (Allow action servers without execute callback (#1219))
+    def execute(self, execute_callback=None):
         # It's possible that there has been a request to cancel the goal prior to executing.
         # In this case we want to avoid the illegal state transition to EXECUTING
         # but still call the users execute callback to let them handle canceling the goal.
@@ -164,30 +156,18 @@ class ServerGoalHandle:
             # Publish
             self._action_server._handle.publish_feedback(feedback_message)
 
-<<<<<<< HEAD
-    def succeed(self):
-=======
-    def executing(self) -> None:
+    def executing(self):
         self._update_state(_rclpy.GoalEvent.EXECUTE)
 
-    def succeed(self, response: Optional[ResultT] = None) -> None:
->>>>>>> c170282 (Allow action servers without execute callback (#1219))
+    def succeed(self, response=None):
         self._update_state(_rclpy.GoalEvent.SUCCEED)
         self._set_result(response)
 
-<<<<<<< HEAD
-    def abort(self):
-=======
-    def abort(self, response: Optional[ResultT] = None) -> None:
->>>>>>> c170282 (Allow action servers without execute callback (#1219))
+    def abort(self, response=None):
         self._update_state(_rclpy.GoalEvent.ABORT)
         self._set_result(response)
 
-<<<<<<< HEAD
-    def canceled(self):
-=======
-    def canceled(self, response: Optional[ResultT] = None) -> None:
->>>>>>> c170282 (Allow action servers without execute callback (#1219))
+    def canceled(self, response=None):
         self._update_state(_rclpy.GoalEvent.CANCELED)
         self._set_result(response)
 
@@ -219,18 +199,10 @@ class ActionServer(Waitable):
 
     def __init__(
         self,
-<<<<<<< HEAD
         node,
         action_type,
         action_name,
-        execute_callback,
-=======
-        node: 'Node',
-        action_type: Type[Action],
-        action_name: str,
-        execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]],
-                                            ResultT]] = None,
->>>>>>> c170282 (Allow action servers without execute callback (#1219))
+        execute_callback=None,
         *,
         callback_group=None,
         goal_callback=default_goal_callback,
