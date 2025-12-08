@@ -731,5 +731,6 @@ class TestActionServer(unittest.TestCase):
         self.assertEqual(result_response.result.sequence.tolist(), [1, 1, 2, 3, 5])
         action_server.destroy()
 
+
 if __name__ == '__main__':
     unittest.main()
