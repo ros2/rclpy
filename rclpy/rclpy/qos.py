@@ -226,6 +226,10 @@ class QoSProfile:
     @liveliness.setter
     def liveliness(self, value: Union['QoSLivelinessPolicy', int]) -> None:
         assert isinstance(value, (QoSLivelinessPolicy, int))
+        # New fix: rcl/rmw do not support BEST_AVAILABLE liveliness enum.
+        # Treat it as AUTOMATIC (or SYSTEM_DEFAULT) before sending to C.
+        if policy == QoSLivelinessPolicy.BEST_AVAILABLE:
+            policy = QoSLivelinessPolicy.AUTOMATIC
         self._liveliness = QoSLivelinessPolicy(value)
 
     @property
