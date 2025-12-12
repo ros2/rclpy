@@ -365,19 +365,19 @@ class TestExecutor(unittest.TestCase):
                     await thread_future
 
                 def future_thread():
-                    threading.Event().wait(0.1)  # Simulate some work
+                    time.sleep(0.1)  # Simulate some work
                     thread_future.set_result(None)
 
                 t = threading.Thread(target=future_thread)
 
                 coroutine_future = executor.create_task(coroutine)
 
-                start_time = time.monotonic()
+                start_time = time.perf_counter()
 
                 t.start()
                 executor.spin_until_future_complete(coroutine_future, timeout_sec=1.0)
 
-                end_time = time.monotonic()
+                end_time = time.perf_counter()
 
                 self.assertTrue(coroutine_future.done())
 
