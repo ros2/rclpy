@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.3 (2025-12-12)
+-------------------
+* Fix issues with resuming async tasks awaiting a future (`#1469 <https://github.com/ros2/rclpy/issues/1469>`_)
+* ParameterEventHandler support ContentFiltering (`#1531 <https://github.com/ros2/rclpy/issues/1531>`_)
+* Contributors: Barry Xu, Błażej Sowa, Nadav Elkabets
+
 10.0.2 (2025-11-17)
 -------------------
 * add : get clients, servers info (`#1307 <https://github.com/ros2/rclpy/issues/1307>`_)
