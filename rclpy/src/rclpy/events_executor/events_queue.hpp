@@ -20,6 +20,7 @@
 #include <functional>
 #include <mutex>
 #include <queue>
+#include <optional>
 
 namespace rclpy
 {
@@ -37,12 +38,9 @@ public:
   /// Add an event handler to the queue to be dispatched.  Can be invoked by any thread.
   void Enqueue(std::function<void()>);
 
-  /// Run event handlers indefinitely, until stopped.
-  void Run();
-
   /// Run all ready event handlers, and any that become ready before the given deadline.  Calling
   /// Stop() will make this return immediately even if ready handlers are enqueued.
-  void RunUntil(std::chrono::steady_clock::time_point);
+  void Run(const std::optional<std::chrono::steady_clock::time_point> = {});
 
   /// Causes any Run*() methods outstanding to return immediately.  Can be invoked from any thread.
   /// The stopped condition persists (causing any *subsequent* Run*() calls to also return) until
