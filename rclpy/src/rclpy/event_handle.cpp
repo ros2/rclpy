@@ -148,9 +148,6 @@ EventHandle::take_event()
         return py::cast(data.incompatible_type);
       case RCL_SUBSCRIPTION_MATCHED:
         return py::cast(data.subscription_matched);
-      default:
-        // suggests a misalignment between C and Python interfaces
-        throw py::value_error("event type for subscriptions not understood");
     }
   } else if (auto pub_type = std::get_if<rcl_publisher_event_type_t>(&event_type_)) {
     switch (*pub_type) {
@@ -164,9 +161,6 @@ EventHandle::take_event()
         return py::cast(data.incompatible_type);
       case RCL_PUBLISHER_MATCHED:
         return py::cast(data.publisher_matched);
-      default:
-        // suggests a misalignment between C and Python interfaces
-        throw py::value_error("event type for publishers not understood");
     }
   }
   throw std::runtime_error("cannot take event that is neither a publisher or a subscription event");
