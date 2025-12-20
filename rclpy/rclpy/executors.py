@@ -185,7 +185,37 @@ class TaskData:
     source_entity: 'Optional[Entity]' = None
 
 
-class Executor(ContextManager['Executor']):
+class BaseExecutor:
+    """The base class for an executor."""
+
+    def _take_subscription(self, sub: Subscription[Any]
+                           ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
+        try:
+            with sub.handle:
+                msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
+                if msg_info is None:
+                    return None
+
+                if sub._callback_type is Subscription.CallbackType.MessageOnly:
+                    msg_tuple: Union[Tuple[Msg], Tuple[Msg, MessageInfo]] = (msg_info[0], )
+                else:
+                    msg_tuple = msg_info
+
+                async def _execute() -> None:
+                    await await_or_execute(sub.callback, *msg_tuple)
+
+                return _execute
+        except InvalidHandle:
+            # Subscription is a Destroyable, which means that on __enter__ it can throw an
+            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
+            # by just returning an empty argument, which means we will skip doing any real work
+            # in _execute_subscription below
+            pass
+
+        return None
+
+
+class Executor(ContextManager['Executor'], BaseExecutor):
     """
     The base class for an executor.
 
@@ -530,32 +560,6 @@ class Executor(ContextManager['Executor']):
         except TimerCancelledError:
             # If TimerCancelledError exception occurs when calling call_timer_with_info(), we will
             # skip doing any real work.
-            pass
-
-        return None
-
-    def _take_subscription(self, sub: Subscription[Any]
-                           ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
-        try:
-            with sub.handle:
-                msg_info = sub.handle.take_message(sub.msg_type, sub.raw)
-                if msg_info is None:
-                    return None
-
-                if sub._callback_type is Subscription.CallbackType.MessageOnly:
-                    msg_tuple: Union[Tuple[Msg], Tuple[Msg, MessageInfo]] = (msg_info[0], )
-                else:
-                    msg_tuple = msg_info
-
-                async def _execute() -> None:
-                    await await_or_execute(sub.callback, *msg_tuple)
-
-                return _execute
-        except InvalidHandle:
-            # Subscription is a Destroyable, which means that on __enter__ it can throw an
-            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
-            # by just returning an empty argument, which means we will skip doing any real work
-            # in _execute_subscription below
             pass
 
         return None
