@@ -29,15 +29,18 @@ void EventsQueue::Enqueue(std::function<void()> event_handler)
   cv_.notify_one();
 }
 
-void EventsQueue::Run() {RunUntil(std::chrono::steady_clock::time_point::max());}
-
-void EventsQueue::RunUntil(std::chrono::steady_clock::time_point deadline)
+void EventsQueue::Run(const std::optional<std::chrono::steady_clock::time_point> deadline)
 {
   while (true) {
     std::function<void()> handler;
     {
       std::unique_lock<std::mutex> lock(mutex_);
-      cv_.wait_until(lock, deadline, [this]() {return stopped_ || !queue_.empty();});
+      auto pred = [this]() {return stopped_ || !queue_.empty();};
+      if (deadline) {
+        cv_.wait_until(lock, *deadline, pred);
+      } else {
+        cv_.wait(lock, pred);
+      }
       if (stopped_ || queue_.empty()) {
         // We stopped for some reason other than being ready to run something (stopped or timeout)
         return;

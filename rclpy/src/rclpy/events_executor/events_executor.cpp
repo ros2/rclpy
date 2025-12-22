@@ -172,7 +172,7 @@ void EventsExecutor::spin(std::optional<double> timeout_sec, bool stop_after_use
       const auto timeout_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::duration<double>(*timeout_sec));
       const auto end = std::chrono::steady_clock::now() + timeout_ns;
-      events_queue_.RunUntil(end);
+      events_queue_.Run(end);
     } else {
       events_queue_.Run();
     }
