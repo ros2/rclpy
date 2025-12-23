@@ -298,30 +298,165 @@ def parameter_dict_from_yaml_file(
         param_keys = []
         param_dict = {}
 
-        if use_wildcard and '/**' in param_file:
-            param_keys.append('/**')
+        if use_wildcard:
+            if '/**' in param_file:
+                param_keys.append('/**')
+
+            if not target_nodes:
+                # /*
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                if '/*' in param_file:
+                    param_keys.append('/*')
+
+                # /**/node_name
+                #   ros__parameters:
+                #     ...
+                for k, v in param_file.items():
+                    if k.startswith('/**/'):
+                        param_keys.append(k)
 
         if target_nodes:
             for n in target_nodes:
-                if n not in param_file.keys():
+                if n is None or n == '':
+                    continue
+
+                # Get absolute node name
+                if n[0] != '/':
+                    n = '/' + n
+
+                # target node doesn't include namespace
+                # Match definition in param file
+                # /node_name:
+                #   ros__parameters:
+                #     ...
+                # or
+                # node_name:
+                #   ros__parameters:
+                #     ...
+                if '/' not in n[1:]:
+                    is_found = False
+                    # In the param file, there may be two ways to write a node_name.
+                    # So need to handle all of them.
+                    # /node_name:
+                    #   ros__parameters:
+                    #     ...
+                    # or
+                    # node_name:
+                    #   ros__parameters:
+                    #
+                    if n in param_file:
+                        param_keys.append(n)
+                        is_found = True
+                    if n[1:] in param_file:
+                        param_keys.append(n[1:])
+                        is_found = True
+                    if is_found:
+                        continue
                     raise RuntimeError(f'Param file does not contain parameters for {n},'
                                        f'only for nodes: {list(param_file.keys())} ')
-                param_keys.append(n)
+
+                # target node include namespaces, e.g. /namespace/node_name
+                # Matched definition in param file
+                # /namespace
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                # or
+                # /namespace/node_name:
+                #   ros__parameters:
+                #     ...
+                ns, node_name = n.rsplit('/', 1)
+
+                # If ns is single level namespace and wildcard is true
+                # Match definition in param file
+                # /*
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                if use_wildcard and '/' not in ns[1:] and '/*' in param_file:
+                    if not isinstance(param_file['/*'], dict):
+                        raise RuntimeError(
+                            'YAML file is not a valid ROS parameter file for namespace "/*"')
+                    if node_name in param_file['/*']:
+                        param_keys.append('/*#' + node_name)
+
+                # If 'ns' in target node is single level or multi level namespace and
+                # wildcard is true,
+                # Match definition in param file
+                # /**/node_name:
+                #   ros__parameters:
+                #     ...
+                if use_wildcard and '/**/' + node_name in param_file:
+                    param_keys.append('/**/' + node_name)
+
+                # If 'ns' in target node is single level or multi level namespace,
+                # Match definition in param file.
+                # /namespace
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                if ns in param_file and isinstance(param_file[ns], dict):
+                    if node_name in param_file[ns]:
+                        param_keys.append(ns + '#' + node_name)
+
+                # if 'ns' in target node is single level or multi level namespace,
+                # Match definition in param file.
+                # /namespace/node_name:
+                #   ros__parameters:
+                #     ...
+                if n in param_file:
+                    param_keys.append(n)
         else:
             # wildcard key must go to the front of param_keys so that
             # node-namespaced parameters will override the wildcard parameters
             keys = set(param_file.keys())
             keys.discard('/**')
+            keys.discard('/*')
+            keys_to_remove = [item for item in keys if item.startswith('/**/')]
+            for key in keys_to_remove:
+                keys.discard(key)
             param_keys.extend(keys)
 
         if len(param_keys) == 0:
             raise RuntimeError('Param file does not contain selected parameters')
 
         for n in param_keys:
-            value = param_file[n]
-            if not isinstance(value, dict) or 'ros__parameters' not in value:
-                raise RuntimeError(f'YAML file is not a valid ROS parameter file for node {n}')
-            param_dict.update(value['ros__parameters'])
+            # "namespace#node_name" means the following parameters need to be collected in
+            # the param file.
+            # namespace
+            #   node_name:
+            #     ros__parameters:
+            #       ...
+            if '#' in n:
+                ns, node_name = n.split('#', 1)
+                if (isinstance(param_file[ns][node_name], dict) and
+                        'ros__parameters' in param_file[ns][node_name]):
+                    param_dict.update(param_file[ns][node_name]['ros__parameters'])
+                    continue
+            else:
+                value = param_file[n]
+                if isinstance(value, dict):
+                    if 'ros__parameters' in value:
+                        param_dict.update(value['ros__parameters'])
+                        continue
+                    else:
+                        if n in param_file:
+                            # n is namespace (e.g. '/*'). Add all node parameters under
+                            # this namespace
+                            if isinstance(param_file[n], dict):
+                                for node_name, param_value in param_file[n].items():
+                                    if (isinstance(param_value, dict) and
+                                            'ros__parameters' in param_value):
+                                        param_dict.update(param_value['ros__parameters'])
+                                    else:
+                                        raise RuntimeError(
+                                            f'YAML file is not a valid ROS parameter file for node'
+                                            f' {n}/{node_name}')
+                                continue
+            raise RuntimeError(f'YAML file is not a valid ROS parameter file for node {n}')
+
         return _unpack_parameter_dict(namespace, param_dict)
 
 
