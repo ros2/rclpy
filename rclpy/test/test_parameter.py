@@ -286,31 +286,35 @@ class TestParameter(unittest.TestCase):
             /*:
                 param_test_target2:
                     ros__parameters:
-                        single-level-namespace1: false
+                        abs-wildcard-ns-base-nodename: false
             /**/param_test_target3:
                 ros__parameters:
-                    any-namespace1: true
+                    abs-wildcard-ns-nodename-target3: true
             /a1:
                 param_test_target2:
                     ros__parameters:
-                        single-level-namespace2: true
+                        abs-a1-ns-base-nodename: true
             /**/param_test_target2:
                 ros__parameters:
-                    single-level-namespace3: false
+                    abs-wildcard-ns-base-nodename2: false
             /a2/b2/c2/d2:
                 param_test_target3:
                     ros__parameters:
-                        any-namespace2: false
+                        abs-dep-ns-base-nodename-target3: false
             param_test_target3:
                 ros__parameters:
-                    any-namespace3: true
+                    base-nodename-target3: true
             """
         # target nodes arn't specified with wildcard disabled
         expected_no_target_node_no_wildcard = {
+            'abs-a1-ns-base-nodename': Parameter(
+                'abs-a1-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'abs-bar-ns-base-nodename': Parameter(
                 'abs-bar-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
             'abs-bar-ns-nodename': Parameter(
                 'abs-bar-ns-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-dep-ns-base-nodename-target3': Parameter(
+                'abs-dep-ns-base-nodename-target3', Parameter.Type.BOOL, False).to_parameter_msg(),
             'abs-foo-ns-base-nodename': Parameter(
                 'abs-foo-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'abs-foo-ns-nodename': Parameter(
@@ -319,22 +323,36 @@ class TestParameter(unittest.TestCase):
                 'abs-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'base-nodename': Parameter(
                 'base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'base-nodename-target3': Parameter(
+                'base-nodename-target3', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
 
         # target nodes aren't specified with wildcard enabled
         expected_no_target_node_wildcard = {
+            'abs-a1-ns-base-nodename': Parameter(
+                'abs-a1-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'abs-bar-ns-base-nodename': Parameter(
                 'abs-bar-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
             'abs-bar-ns-nodename': Parameter(
                 'abs-bar-ns-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-dep-ns-base-nodename-target3': Parameter(
+                'abs-dep-ns-base-nodename-target3', Parameter.Type.BOOL, False).to_parameter_msg(),
             'abs-foo-ns-base-nodename': Parameter(
                 'abs-foo-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'abs-foo-ns-nodename': Parameter(
                 'abs-foo-ns-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
             'abs-nodename': Parameter(
                 'abs-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-wildcard-ns-base-nodename': Parameter(
+                'abs-wildcard-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-wildcard-ns-base-nodename2': Parameter(
+                'abs-wildcard-ns-base-nodename2', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-wildcard-ns-nodename-target3': Parameter(
+                'abs-wildcard-ns-nodename-target3', Parameter.Type.BOOL, True).to_parameter_msg(),
             'base-nodename': Parameter(
                 'base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'base-nodename-target3': Parameter(
+                'base-nodename-target3', Parameter.Type.BOOL, True).to_parameter_msg(),
             'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
         # target nodes is specified with wildcard enabled
@@ -364,43 +382,41 @@ class TestParameter(unittest.TestCase):
         # target node is specified with wildcard and single-level namespace (e.g. /abc/)
         expected_target_node_single_level_ns_wildcard = {
             'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
-            'single-level-namespace1': Parameter(
-                'single-level-namespace1', Parameter.Type.BOOL, False).to_parameter_msg(),
-            'single-level-namespace2': Parameter(
-                'single-level-namespace2', Parameter.Type.BOOL, True).to_parameter_msg(),
-            'single-level-namespace3': Parameter(
-                'single-level-namespace3', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-wildcard-ns-base-nodename': Parameter(
+                'abs-wildcard-ns-base-nodename', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-a1-ns-base-nodename': Parameter(
+                'abs-a1-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-wildcard-ns-base-nodename2': Parameter(
+                'abs-wildcard-ns-base-nodename2', Parameter.Type.BOOL, False).to_parameter_msg(),
         }
         # target node is specified with single-level namespace (e.g. /abc/)
         expected_target_node_single_level_ns = {
-            'single-level-namespace2': Parameter(
-                'single-level-namespace2', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-a1-ns-base-nodename': Parameter(
+                'abs-a1-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
         # target node is specified with wildcard and any namespace /a2/b2/c2/d2/
         expected_target_node_specified_ns_wildcard = {
             'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
-            'any-namespace1': Parameter(
-                'any-namespace1', Parameter.Type.BOOL, True).to_parameter_msg(),
-            'any-namespace2': Parameter(
-                'any-namespace2', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-wildcard-ns-nodename-target3': Parameter(
+                'abs-wildcard-ns-nodename-target3', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'abs-dep-ns-base-nodename-target3': Parameter(
+                'abs-dep-ns-base-nodename-target3', Parameter.Type.BOOL, False).to_parameter_msg(),
         }
         # target node is specified with any namespace /a2/b2/c2/d2/
         expected_target_node_specified_ns = {
-            'any-namespace2': Parameter(
-                'any-namespace2', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'abs-dep-ns-base-nodename-target3': Parameter(
+                'abs-dep-ns-base-nodename-target3', Parameter.Type.BOOL, False).to_parameter_msg(),
         }
         # target node is specified with wildcard and without namespace
         expected_target_node_without_ns_wildcard = {
             'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
-            'any-namespace3': Parameter(
-                'any-namespace3', Parameter.Type.BOOL, True).to_parameter_msg(),
-            'any-namespace1': Parameter(
-                'any-namespace1', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'base-nodename-target3': Parameter(
+                'base-nodename-target3', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
         # target node is specified without namespace
         expected_target_node_without_ns = {
-            'any-namespace3': Parameter(
-                'any-namespace3', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'base-nodename-target3': Parameter(
+                'base-nodename-target3', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
 
         try:
