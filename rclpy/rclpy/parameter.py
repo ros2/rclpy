@@ -419,7 +419,7 @@ def parameter_dict_from_yaml_file(
                 #     ...
                 for k, v in param_file.items():
                     if k.startswith('/**/'):
-                        value = param_file[k]
+                        value = v
                         if not isinstance(value, dict) or 'ros__parameters' not in value:
                             raise RuntimeError(
                                 f'YAML file is not a valid ROS parameter file for wildcard {k}')
@@ -513,7 +513,7 @@ def parameter_dict_from_yaml_file(
                                 f'YAML file is not a valid ROS parameter file for node {n}')
                         param_dict.update(value['ros__parameters'])
 
-                # if 'ns' in target node is single level or multi level namespace,
+                # If 'ns' in target node is single level or multi level namespace,
                 # Match definition in param file.
                 # /namespace/node_name:
                 #   ros__parameters:

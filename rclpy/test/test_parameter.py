@@ -305,7 +305,7 @@ class TestParameter(unittest.TestCase):
                 ros__parameters:
                     base-nodename-target3: true
             """
-        # target nodes arn't specified with wildcard disabled
+        # target nodes aren't specified with wildcard disabled
         expected_no_target_node_no_wildcard = {
             'abs-a1-ns-base-nodename': Parameter(
                 'abs-a1-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
