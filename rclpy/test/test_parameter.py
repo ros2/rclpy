@@ -283,6 +283,27 @@ class TestParameter(unittest.TestCase):
             /**:
                 ros__parameters:
                     wildcard: true
+            /*:
+                param_test_target2:
+                    ros__parameters:
+                        single-level-namespace1: false
+            /**/param_test_target3:
+                ros__parameters:
+                    any-namespace1: true
+            /a1:
+                param_test_target2:
+                    ros__parameters:
+                        single-level-namespace2: true
+            /**/param_test_target2:
+                ros__parameters:
+                    single-level-namespace3: false
+            /a2/b2/c2/d2:
+                param_test_target3:
+                    ros__parameters:
+                        any-namespace2: false
+            param_test_target3:
+                ros__parameters:
+                    any-namespace3: true
             """
         # target nodes arn't specified with wildcard disabled
         expected_no_target_node_no_wildcard = {
@@ -340,6 +361,47 @@ class TestParameter(unittest.TestCase):
             'abs-foo-ns-base-nodename': Parameter(
                 'abs-foo-ns-base-nodename', Parameter.Type.BOOL, True).to_parameter_msg(),
         }
+        # target node is specified with wildcard and single-level namespace (e.g. /abc/)
+        expected_target_node_single_level_ns_wildcard = {
+            'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'single-level-namespace1': Parameter(
+                'single-level-namespace1', Parameter.Type.BOOL, False).to_parameter_msg(),
+            'single-level-namespace2': Parameter(
+                'single-level-namespace2', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'single-level-namespace3': Parameter(
+                'single-level-namespace3', Parameter.Type.BOOL, False).to_parameter_msg(),
+        }
+        # target node is specified with single-level namespace (e.g. /abc/)
+        expected_target_node_single_level_ns = {
+            'single-level-namespace2': Parameter(
+                'single-level-namespace2', Parameter.Type.BOOL, True).to_parameter_msg(),
+        }
+        # target node is specified with wildcard and any namespace /a2/b2/c2/d2/
+        expected_target_node_specified_ns_wildcard = {
+            'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'any-namespace1': Parameter(
+                'any-namespace1', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'any-namespace2': Parameter(
+                'any-namespace2', Parameter.Type.BOOL, False).to_parameter_msg(),
+        }
+        # target node is specified with any namespace /a2/b2/c2/d2/
+        expected_target_node_specified_ns = {
+            'any-namespace2': Parameter(
+                'any-namespace2', Parameter.Type.BOOL, False).to_parameter_msg(),
+        }
+        # target node is specified with wildcard and without namespace
+        expected_target_node_without_ns_wildcard = {
+            'wildcard': Parameter('wildcard', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'any-namespace3': Parameter(
+                'any-namespace3', Parameter.Type.BOOL, True).to_parameter_msg(),
+            'any-namespace1': Parameter(
+                'any-namespace1', Parameter.Type.BOOL, True).to_parameter_msg(),
+        }
+        # target node is specified without namespace
+        expected_target_node_without_ns = {
+            'any-namespace3': Parameter(
+                'any-namespace3', Parameter.Type.BOOL, True).to_parameter_msg(),
+        }
 
         try:
             with NamedTemporaryFile(mode='w', delete=False) as f:
@@ -362,6 +424,35 @@ class TestParameter(unittest.TestCase):
                 parameter_dict = parameter_dict_from_yaml_file(
                     f.name, True, target_nodes=['/foo/param_test_target'])
                 assert parameter_dict == expected_target_node_ns
+
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, True, target_nodes=['/a1/param_test_target2'])
+                assert parameter_dict == expected_target_node_single_level_ns_wildcard
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, False, target_nodes=['/a1/param_test_target2'])
+                assert parameter_dict == expected_target_node_single_level_ns
+                with pytest.raises(RuntimeError,
+                                   match='Param file does not contain any valid parameters'):
+                    parameter_dict_from_yaml_file(
+                        f.name, False, target_nodes=['/abc/cde/param_test_target2'])
+                with pytest.raises(RuntimeError,
+                                   match='Param file does not contain any valid parameters'):
+                    parameter_dict_from_yaml_file(
+                        f.name, False, target_nodes=['param_test_target2'])
+
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, True, target_nodes=['/a2/b2/c2/d2/param_test_target3'])
+                assert parameter_dict == expected_target_node_specified_ns_wildcard
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, True, target_nodes=['param_test_target3'])
+                assert parameter_dict == expected_target_node_without_ns_wildcard
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, False, target_nodes=['/a2/b2/c2/d2/param_test_target3'])
+                assert parameter_dict == expected_target_node_specified_ns
+                parameter_dict = parameter_dict_from_yaml_file(
+                    f.name, False, target_nodes=['param_test_target3'])
+                assert parameter_dict == expected_target_node_without_ns
+
         finally:
             if os.path.exists(f.name):
                 os.unlink(f.name)
