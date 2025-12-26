@@ -387,12 +387,43 @@ def parameter_dict_from_yaml_file(
         # check and add if wildcard is available in 1st keys
         # wildcard key must go to the front of param_keys so that
         # node-namespaced parameters will override the wildcard parameters
-        if use_wildcard and '/**' in param_file.keys():
-            value = param_file['/**']
-            if not isinstance(value, dict) and 'ros__parameters' not in value:
-                raise RuntimeError(
-                    'YAML file is not a valid ROS parameter file for wildcard(/**)')
-            param_dict.update(value['ros__parameters'])
+        if use_wildcard:
+            if '/**' in param_file:
+                value = param_file['/**']
+                if not isinstance(value, dict) or 'ros__parameters' not in value:
+                    raise RuntimeError(
+                        'YAML file is not a valid ROS parameter file for wildcard(/**)')
+                param_dict.update(value['ros__parameters'])
+
+            # If target_nodes is None or empty, parse '/*' and '/**/node_name' wildcards
+            if not target_nodes:
+                # /*
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                if '/*' in param_file:
+                    value = param_file['/*']
+                    if not isinstance(value, dict):
+                        raise RuntimeError(
+                            'YAML file is not a valid ROS parameter file for wildcard(/*)')
+                    # add all node_name under wildcard /*
+                    for node_name, node_value in value.items():
+                        if not isinstance(node_value, dict) or 'ros__parameters' not in node_value:
+                            raise RuntimeError(
+                                f'YAML file is not a valid ROS parameter file for wildcard(/*) '
+                                f'node {node_name}')
+                        param_dict.update(node_value['ros__parameters'])
+
+                # /**/node_name
+                #   ros__parameters:
+                #     ...
+                for k, v in param_file.items():
+                    if k.startswith('/**/'):
+                        value = v
+                        if not isinstance(value, dict) or 'ros__parameters' not in value:
+                            raise RuntimeError(
+                                f'YAML file is not a valid ROS parameter file for wildcard {k}')
+                        param_dict.update(value['ros__parameters'])
 
         # parse parameter yaml file based on target node namespace and name
         if target_nodes:
@@ -400,33 +431,103 @@ def parameter_dict_from_yaml_file(
                 abs_name = _get_absolute_node_name(n)
                 if abs_name is None:
                     continue
-                if abs_name in param_file.keys():
-                    # found absolute node name w or w/o namespace
-                    value = param_file[abs_name]
-                    if not isinstance(value, dict) and 'ros__parameters' not in value:
-                        raise RuntimeError(
-                            f'YAML file is not a valid ROS parameter file for node {abs_name}')
-                    param_dict.update(value['ros__parameters'])
-                ns, node_basename = abs_name.rsplit('/', 1)
-                if not ns and node_basename in param_file.keys():
-                    # found non-absolute node name without namespace
-                    value = param_file[node_basename]
-                    if not isinstance(value, dict) and 'ros__parameters' not in value:
-                        raise RuntimeError('YAML file is not a valid ROS parameter '
-                                           f'file for node {node_basename}')
-                    param_dict.update(value['ros__parameters'])
-                elif ns in param_file.keys():
-                    # found namespace
-                    if node_basename in param_file[ns].keys():
-                        value = param_file[ns][node_basename]
-                        if not isinstance(value, dict) and 'ros__parameters' not in value:
-                            raise RuntimeError('YAML file is not a valid ROS parameter '
-                                               f'file for namespace {ns} node {node_basename}')
+
+                # target node is '/node_name' without namespace
+                if '/' not in abs_name[1:]:
+                    # Match definition in param file
+                    # /node_name:
+                    #   ros__parameters:
+                    #     ...
+                    if abs_name in param_file:
+                        value = param_file[abs_name]
+                        if (not isinstance(value, dict) or 'ros__parameters' not in value):
+                            raise RuntimeError(
+                                f'YAML file is not a valid ROS parameter file for node {n}')
                         param_dict.update(value['ros__parameters'])
+                    # Match definition in param file
+                    # node_name:
+                    #   ros__parameters:
+                    #     ...
+                    if abs_name[1:] in param_file:
+                        value = param_file[abs_name[1:]]
+                        if (not isinstance(value, dict) or 'ros__parameters' not in value):
+                            raise RuntimeError(
+                                f'YAML file is not a valid ROS parameter file for node {n}')
+                        param_dict.update(value['ros__parameters'])
+                    continue
+
+                # target node include namespaces, e.g. /namespace/node_name
+                # Matched definition in param file
+                # /namespace
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                # or
+                # /namespace/node_name:
+                #   ros__parameters:
+                #     ...
+                ns, node_basename = abs_name.rsplit('/', 1)
+
+                # If ns is single level namespace and wildcard is true
+                # Match definition in param file
+                # /*
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                if use_wildcard and '/' not in ns[1:] and '/*' in param_file:
+                    if not isinstance(param_file['/*'], dict):
+                        raise RuntimeError(
+                            'YAML file is not a valid ROS parameter file for namespace "/*"')
+
+                    if node_basename in param_file['/*']:
+                        value = param_file['/*'][node_basename]
+                        if not isinstance(value, dict) or 'ros__parameters' not in value:
+                            raise RuntimeError(
+                                f'YAML file is not a valid ROS parameter file for node {n}')
+                        param_dict.update(value['ros__parameters'])
+
+                # If 'ns' in target node is single level or multi level namespace and
+                # wildcard is true,
+                # Match definition in param file
+                # /**/node_name:
+                #   ros__parameters:
+                #     ...
+                if use_wildcard and '/**/' + node_basename in param_file:
+                    value = param_file['/**/' + node_basename]
+                    if not isinstance(value, dict) or 'ros__parameters' not in value:
+                        raise RuntimeError(
+                            f'YAML file is not a valid ROS parameter file for node {n}')
+                    param_dict.update(value['ros__parameters'])
+
+                # If 'ns' in target node is single level or multi level namespace,
+                # Match definition in param file.
+                # /namespace
+                #   node_name:
+                #     ros__parameters:
+                #       ...
+                if ns in param_file and isinstance(param_file[ns], dict):
+                    if node_basename in param_file[ns]:
+                        value = param_file[ns][node_basename]
+                        if not isinstance(value, dict) or 'ros__parameters' not in value:
+                            raise RuntimeError(
+                                f'YAML file is not a valid ROS parameter file for node {n}')
+                        param_dict.update(value['ros__parameters'])
+
+                # If 'ns' in target node is single level or multi level namespace,
+                # Match definition in param file.
+                # /namespace/node_name:
+                #   ros__parameters:
+                #     ...
+                if abs_name in param_file:
+                    value = param_file[abs_name]
+                    if not isinstance(value, dict) or 'ros__parameters' not in value:
+                        raise RuntimeError(
+                            f'YAML file is not a valid ROS parameter file for node {n}')
+                    param_dict.update(value['ros__parameters'])
         else:
             # Except the wildcard key, add all other keys
             for k, v in param_file.items():
-                if k == '/**' or k == '/*':
+                if k == '/**' or k == '/*' or k.startswith('/**/'):
                     continue
                 if isinstance(v, dict):
                     # k is node_name or /node_name or /namespace/node_name
@@ -444,38 +545,6 @@ def parameter_dict_from_yaml_file(
                 else:
                     raise RuntimeError(
                         f'YAML file is not a valid ROS parameter file for node {k}')
-
-                    # '/*' as namespace wildcard in parameter file and single-level namespace in
-                    # target node name (e.g. /abc/node_name)
-                    if use_wildcard and '/*' in param_file.keys() and '/' not in ns[1:]:
-                        # Match single-level namespace in node name (e.g. /abc)
-                        # Found node_basename defined in parameter file like
-                        # /*:
-                        #   node_name:
-                        #     ros__parameters:
-                        #       ...
-                        if node_basename in param_file['/*'].keys():
-                            value = param_file['/*'][node_basename]
-                            if not isinstance(value, dict) or 'ros__parameters' not in value:
-                                raise RuntimeError('YAML file is not a valid ROS parameter '
-                                                   f'file for namespace /* node {node_basename}')
-                            param_dict.update(value['ros__parameters'])
-
-            # Handle cases where any namespace definition is ignored
-            # parameter file like:
-            # /**/node_name:
-            #   ros__parameters:
-            #     ...
-            if use_wildcard:
-                target_node_basenames = [n.rsplit('/', 1)[-1] for n in target_nodes]
-                for key, value in param_file.items():
-                    if key.startswith('/**/'):
-                        node_basename = key.rsplit('/', 1)[-1]
-                        if node_basename in target_node_basenames:
-                            if not isinstance(value, dict) or 'ros__parameters' not in value:
-                                raise RuntimeError('YAML file is not a valid ROS parameter '
-                                                   f'file for node {key}')
-                            param_dict.update(value['ros__parameters'])
 
         if not param_dict:
             raise RuntimeError('Param file does not contain any valid parameters')
