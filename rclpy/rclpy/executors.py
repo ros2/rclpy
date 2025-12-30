@@ -1067,7 +1067,7 @@ class MultiThreadedExecutor(Executor):
                         future.result()  # raise any exceptions
 
             # Yield GIL so executor threads have a chance to run.
-            time.sleep(0)
+            os.sched_yield() if hasattr(os, 'sched_yield') else time.sleep(0)
 
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         # Mark executor as spinning to prevent concurrent spins
