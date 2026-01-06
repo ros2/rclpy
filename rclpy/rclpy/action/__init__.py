@@ -13,6 +13,11 @@
 # limitations under the License.
 
 from .client import ActionClient as ActionClient  # noqa: F401
+# The following graph functions are deprecated.
+# Use the corresponding methods on the Node class instead:
+#   - node.get_action_client_names_and_types_by_node()
+#   - node.get_action_server_names_and_types_by_node()
+#   - node.get_action_names_and_types()
 from .graph import (  # noqa: F401
     get_action_client_names_and_types_by_node as get_action_client_names_and_types_by_node
 )

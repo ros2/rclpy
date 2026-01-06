@@ -19,10 +19,14 @@ from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 import unittest
+import warnings
 
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.action import ActionServer
+# NOTE: The following functions are deprecated in favor of node methods.
+# These tests use the deprecated API to ensure backward compatibility.
+# Deprecation warnings are expected.
 from rclpy.action import get_action_client_names_and_types_by_node
 from rclpy.action import get_action_names_and_types
 from rclpy.action import get_action_server_names_and_types_by_node
@@ -107,7 +111,10 @@ class TestActionGraph(unittest.TestCase):
         start = time.monotonic()
         end = start
         while (end - start) < timeout:
-            nat = get_names_and_types_func(*args)
+            # Suppress deprecation warnings for deprecated API tests
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                nat = get_names_and_types_func(*args)
             if len(nat) == expected_num_names:
                 return nat
             end = time.monotonic()

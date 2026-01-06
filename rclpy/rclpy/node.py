@@ -2142,6 +2142,57 @@ class Node:
             return _rclpy.rclpy_get_client_names_and_types_by_node(
                 self.handle, node_name, node_namespace)
 
+    def get_action_client_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of action names and types for action clients associated with a remote node.
+
+        :param node_name: Name of a remote node to get action clients for.
+        :param node_namespace: Namespace of the remote node.
+        :return: List of tuples.
+          The first element of each tuple is the action name and the second element is a list of
+          action types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_action_client_names_and_types_by_node(
+                self.handle, node_name, node_namespace)
+
+    def get_action_server_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of action names and types for action servers associated with a remote node.
+
+        :param node_name: Name of a remote node to get action servers for.
+        :param node_namespace: Namespace of the remote node.
+        :return: List of tuples.
+          The first element of each tuple is the action name and the second element is a list of
+          action types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_action_server_names_and_types_by_node(
+                self.handle, node_name, node_namespace)
+
+    def get_action_names_and_types(self) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of action names and types in the ROS graph.
+
+        :return: List of tuples.
+          The first element of each tuple is the action name and the second element is a list of
+          action types.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_action_names_and_types(self.handle)
+
     def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, List[str]]]:
         """
         Get a list of discovered topic names and types.

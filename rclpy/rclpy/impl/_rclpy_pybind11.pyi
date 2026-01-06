@@ -801,6 +801,22 @@ def rclpy_get_client_names_and_types_by_node(node: Node, node_name: str, node_na
     """Get service names and types for which a remote node has servers."""
 
 
+def rclpy_get_action_client_names_and_types_by_node(node: Node, node_name: str,
+                                                     node_namespace: str
+                                                     ) -> list[tuple[str, list[str]]]:
+    """Get action client names and types by node."""
+
+
+def rclpy_get_action_server_names_and_types_by_node(node: Node, node_name: str,
+                                                     node_namespace: str
+                                                     ) -> list[tuple[str, list[str]]]:
+    """Get action server names and types by node."""
+
+
+def rclpy_get_action_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
+    """Get all action names and types in the ROS graph."""
+
+
 def rclpy_serialize(pymsg: Msg, py_msg_type: type[Msg]) -> bytes:
     """Serialize a ROS message."""
 

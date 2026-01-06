@@ -226,6 +226,18 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # test that it doesn't raise
         self.node.get_client_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
 
+    def test_action_client_names_and_types_by_node(self) -> None:
+        # test that it doesn't raise
+        self.node.get_action_client_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
+
+    def test_action_server_names_and_types_by_node(self) -> None:
+        # test that it doesn't raise
+        self.node.get_action_server_names_and_types_by_node(TEST_NODE, TEST_NAMESPACE)
+
+    def test_action_names_and_types(self) -> None:
+        # test that it doesn't raise
+        self.node.get_action_names_and_types()
+
     def test_topic_names_and_types(self) -> None:
         # test that it doesn't raise
         self.node.get_topic_names_and_types(no_demangle=True)
