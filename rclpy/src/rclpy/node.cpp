@@ -23,7 +23,6 @@
 #include <rcl_interfaces/msg/parameter_type.h>
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/format_string.h>
-#include <rcutils/logging_macros.h>
 
 #include <limits>
 #include <memory>
@@ -536,12 +535,7 @@ py::list
 Node::get_action_client_names_and_types_by_node(
   const char * remote_node_name, const char * remote_node_namespace)
 {
-  // Deprecated: Use rclpy_get_action_client_names_and_types_by_node free function instead
-  RCUTILS_LOG_WARN_NAMED(
-    "rclpy",
-    "Node.get_action_client_names_and_types_by_node() is deprecated. "
-    "Use rclpy.action.get_action_client_names_and_types_by_node() instead.");
-
+  // Deprecated: Use _rclpy.rclpy_get_action_client_names_and_types_by_node function instead
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_client_names_and_types_by_node(
@@ -561,12 +555,7 @@ py::list
 Node::get_action_server_names_and_types_by_node(
   const char * remote_node_name, const char * remote_node_namespace)
 {
-  // Deprecated: Use rclpy_get_action_server_names_and_types_by_node free function instead
-  RCUTILS_LOG_WARN_NAMED(
-    "rclpy",
-    "Node.get_action_server_names_and_types_by_node() is deprecated. "
-    "Use rclpy.action.get_action_server_names_and_types_by_node() instead.");
-
+  // Deprecated: Use _rclpy.rclpy_get_action_server_names_and_types_by_node function instead
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_server_names_and_types_by_node(
@@ -585,12 +574,7 @@ Node::get_action_server_names_and_types_by_node(
 py::list
 Node::get_action_names_and_types()
 {
-  // Deprecated: Use rclpy_get_action_names_and_types free function instead
-  RCUTILS_LOG_WARN_NAMED(
-    "rclpy",
-    "Node.get_action_names_and_types() is deprecated. "
-    "Use rclpy.action.get_action_names_and_types() instead.");
-
+  // Deprecated: Use _rclpy.rclpy_get_action_names_and_types function instead
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_names_and_types(rcl_node_.get(), &allocator, &names_and_types);

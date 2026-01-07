@@ -40,7 +40,7 @@ def get_action_client_names_and_types_by_node(
     """
     warnings.warn(
         'rclpy.action.get_action_client_names_and_types_by_node() is deprecated. '
-        'Use node.get_action_client_names_and_types_by_node() instead.',
+        'Use rclpy.node.Node.get_action_client_names_and_types_by_node() instead.',
         DeprecationWarning,
         stacklevel=2
     )
@@ -69,7 +69,7 @@ def get_action_server_names_and_types_by_node(
     """
     warnings.warn(
         'rclpy.action.get_action_server_names_and_types_by_node() is deprecated. '
-        'Use node.get_action_server_names_and_types_by_node() instead.',
+        'Use rclpy.node.Node.get_action_server_names_and_types_by_node() instead.',
         DeprecationWarning,
         stacklevel=2
     )
@@ -92,7 +92,7 @@ def get_action_names_and_types(node: Node) -> List[Tuple[str, List[str]]]:
     """
     warnings.warn(
         'rclpy.action.get_action_names_and_types() is deprecated. '
-        'Use node.get_action_names_and_types() instead.',
+        'Use rclpy.node.Node.get_action_names_and_types() instead.',
         DeprecationWarning,
         stacklevel=2
     )
