@@ -221,7 +221,18 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_get_client_names_and_types_by_node",
     &rclpy::graph_get_client_names_and_types_by_node,
     "Get service names and types for which a remote node has clients.");
-
+  m.def(
+    "rclpy_get_action_client_names_and_types_by_node",
+    &rclpy::graph_get_action_client_names_and_types_by_node,
+    "Get action client names and types by node.");
+  m.def(
+    "rclpy_get_action_server_names_and_types_by_node",
+    &rclpy::graph_get_action_server_names_and_types_by_node,
+    "Get action server names and types by node.");
+  m.def(
+    "rclpy_get_action_names_and_types",
+    &rclpy::graph_get_action_names_and_types,
+    "Get all action names and types in the ROS graph.");
   m.def(
     "rclpy_serialize", &rclpy::serialize,
     "Serialize a ROS message.");
