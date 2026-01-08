@@ -17,6 +17,7 @@
 #include <rcl/allocator.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
+#include <rcl_action/graph.h>
 #include <rcutils/error_handling.h>
 
 #include <string>
@@ -341,6 +342,96 @@ graph_get_servers_info_by_service(
   return _get_info_by_service(
     node, service_name, no_mangle, "servers",
     rcl_get_servers_info_by_service);
+}
+
+py::list
+graph_get_action_client_names_and_types_by_node(
+  Node & node, std::string node_name, std::string node_namespace)
+{
+  rcl_names_and_types_t action_names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_client_names_and_types_by_node(
+    node.rcl_ptr(), &allocator, node_name.c_str(), node_namespace.c_str(),
+    &action_names_and_types);
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_NODE_NAME_NON_EXISTENT == ret) {
+      throw NodeNameNonExistentError(
+              "cannot get action client names and types for nonexistent node");
+    }
+    throw RCLError("failed to get action client names and types");
+  }
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      ret = rcl_names_and_types_fini(&action_names_and_types);
+      if (RCL_RET_OK != ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "failed to fini action client names and types during error handling: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  return convert_to_py_names_and_types(&action_names_and_types);
+}
+
+py::list
+graph_get_action_server_names_and_types_by_node(
+  Node & node, std::string node_name, std::string node_namespace)
+{
+  rcl_names_and_types_t action_names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_server_names_and_types_by_node(
+    node.rcl_ptr(), &allocator, node_name.c_str(), node_namespace.c_str(),
+    &action_names_and_types);
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_NODE_NAME_NON_EXISTENT == ret) {
+      throw NodeNameNonExistentError(
+              "cannot get action server names and types for nonexistent node");
+    }
+    throw RCLError("failed to get action server names and types");
+  }
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      ret = rcl_names_and_types_fini(&action_names_and_types);
+      if (RCL_RET_OK != ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "failed to fini action server names and types during error handling: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  return convert_to_py_names_and_types(&action_names_and_types);
+}
+
+py::list
+graph_get_action_names_and_types(Node & node)
+{
+  rcl_names_and_types_t action_names_and_types = rcl_get_zero_initialized_names_and_types();
+  rcl_allocator_t allocator = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_action_get_names_and_types(
+    node.rcl_ptr(), &allocator, &action_names_and_types);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("failed to get action names and types");
+  }
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      ret = rcl_names_and_types_fini(&action_names_and_types);
+      if (RCL_RET_OK != ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "failed to fini action names and types during error handling: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  return convert_to_py_names_and_types(&action_names_and_types);
 }
 
 }  // namespace rclpy

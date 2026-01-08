@@ -535,6 +535,7 @@ py::list
 Node::get_action_client_names_and_types_by_node(
   const char * remote_node_name, const char * remote_node_namespace)
 {
+  // Deprecated: Use _rclpy.rclpy_get_action_client_names_and_types_by_node function instead
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_client_names_and_types_by_node(
@@ -554,6 +555,7 @@ py::list
 Node::get_action_server_names_and_types_by_node(
   const char * remote_node_name, const char * remote_node_namespace)
 {
+  // Deprecated: Use _rclpy.rclpy_get_action_server_names_and_types_by_node function instead
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_server_names_and_types_by_node(
@@ -572,6 +574,7 @@ Node::get_action_server_names_and_types_by_node(
 py::list
 Node::get_action_names_and_types()
 {
+  // Deprecated: Use _rclpy.rclpy_get_action_names_and_types function instead
   rcl_names_and_types_t names_and_types = rcl_get_zero_initialized_names_and_types();
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rcl_ret_t ret = rcl_action_get_names_and_types(rcl_node_.get(), &allocator, &names_and_types);

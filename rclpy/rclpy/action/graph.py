@@ -14,7 +14,9 @@
 
 from typing import List
 from typing import Tuple
+import warnings
 
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 
 
@@ -26,6 +28,9 @@ def get_action_client_names_and_types_by_node(
     """
     Get a list of action names and types for action clients associated with a node.
 
+    .. deprecated:: (upcoming release)
+        Use :meth:`rclpy.node.Node.get_action_client_names_and_types_by_node` instead.
+
     :param node: The node used for discovery.
     :param remote_node_name: The name of a remote node to get action clients for.
     :param node_namespace: Namespace of the remote node.
@@ -33,9 +38,15 @@ def get_action_client_names_and_types_by_node(
       The first element of each tuple is the action name and the second element is a list of
       action types.
     """
+    warnings.warn(
+        'rclpy.action.get_action_client_names_and_types_by_node() is deprecated. '
+        'Use rclpy.node.Node.get_action_client_names_and_types_by_node() instead.',
+        DeprecationWarning,
+        stacklevel=2
+    )
     with node.handle:
-        return node.handle.get_action_client_names_and_types_by_node(
-            remote_node_name, remote_node_namespace)
+        return _rclpy.rclpy_get_action_client_names_and_types_by_node(
+            node.handle, remote_node_name, remote_node_namespace)
 
 
 def get_action_server_names_and_types_by_node(
@@ -46,6 +57,9 @@ def get_action_server_names_and_types_by_node(
     """
     Get a list of action names and types for action servers associated with a node.
 
+    .. deprecated:: (upcoming release)
+        Use :meth:`rclpy.node.Node.get_action_server_names_and_types_by_node` instead.
+
     :param node: The node used for discovery.
     :param remote_node_name: The name of a remote node to get action servers for.
     :param node_namespace: Namespace of the remote node.
@@ -53,19 +67,34 @@ def get_action_server_names_and_types_by_node(
       The first element of each tuple is the action name and the second element is a list of
       action types.
     """
+    warnings.warn(
+        'rclpy.action.get_action_server_names_and_types_by_node() is deprecated. '
+        'Use rclpy.node.Node.get_action_server_names_and_types_by_node() instead.',
+        DeprecationWarning,
+        stacklevel=2
+    )
     with node.handle:
-        return node.handle.get_action_server_names_and_types_by_node(
-            remote_node_name, remote_node_namespace)
+        return _rclpy.rclpy_get_action_server_names_and_types_by_node(
+            node.handle, remote_node_name, remote_node_namespace)
 
 
 def get_action_names_and_types(node: Node) -> List[Tuple[str, List[str]]]:
     """
     Get a list of action names and types.
 
+    .. deprecated:: (upcoming release)
+        Use :meth:`rclpy.node.Node.get_action_names_and_types` instead.
+
     :param node: The node used for discovery.
     :return: List of action names and types in the ROS graph as tuples.
       The first element of each tuple is the action name and the second element is a list of
       action types.
     """
+    warnings.warn(
+        'rclpy.action.get_action_names_and_types() is deprecated. '
+        'Use rclpy.node.Node.get_action_names_and_types() instead.',
+        DeprecationWarning,
+        stacklevel=2
+    )
     with node.handle:
-        return node.handle.get_action_names_and_types()
+        return _rclpy.rclpy_get_action_names_and_types(node.handle)
