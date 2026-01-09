@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.4 (2026-01-09)
+-------------------
+* Fix performance bug in MultiThreadedExecutor (hopefully) (`#1547 <https://github.com/ros2/rclpy/issues/1547>`_)
+* Expose action graph functions as Node class methods. (`#1574 <https://github.com/ros2/rclpy/issues/1574>`_)
+* Improve wildcard parsing and optimize the logic for parsing YAML para… (`#1571 <https://github.com/ros2/rclpy/issues/1571>`_)
+* Improve the compatibility of processing YAML parameter files (`#1548 <https://github.com/ros2/rclpy/issues/1548>`_)
+* Fix parameter parsing for unspecified target nodes (`#1552 <https://github.com/ros2/rclpy/issues/1552>`_)
+* Remove default from switch with enum, so that compiler warns. (`#1566 <https://github.com/ros2/rclpy/issues/1566>`_)
+* Use unconditional wait when possible. (`#1563 <https://github.com/ros2/rclpy/issues/1563>`_)
+* Increase clock accuracy (`#1564 <https://github.com/ros2/rclpy/issues/1564>`_)
+* Contributors: Barry Xu, Florian Vahl, Michael Tandy, Tomoya Fujita
+
 10.0.3 (2025-12-12)
 -------------------
 * Fix issues with resuming async tasks awaiting a future (`#1469 <https://github.com/ros2/rclpy/issues/1469>`_)
