@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.1.8 (2026-01-09)
+------------------
+* Fix a bug on adding unnecessary done callback of future while repeatedly calling spin_until_future_complete (backport `#1374 <https://github.com/ros2/rclpy/issues/1374>`_) (`#1530 <https://github.com/ros2/rclpy/issues/1530>`_)
+* [Jazzy] Improve the compatibility of processing YAML parameter files (`#1549 <https://github.com/ros2/rclpy/issues/1549>`_)
+* Use unconditional wait when possible. (`#1563 <https://github.com/ros2/rclpy/issues/1563>`_) (`#1568 <https://github.com/ros2/rclpy/issues/1568>`_)
+* Allow action servers without execute callback (backport `#1219 <https://github.com/ros2/rclpy/issues/1219>`_) (`#1556 <https://github.com/ros2/rclpy/issues/1556>`_)
+* Add content-filtered-topic interfaces (backport `#1506 <https://github.com/ros2/rclpy/issues/1506>`_) (`#1521 <https://github.com/ros2/rclpy/issues/1521>`_)
+* Contributors: Barry Xu, mergify[bot]
+
 7.1.7 (2025-11-18)
 ------------------
 * Remove accidental tuple (`#1542 <https://github.com/ros2/rclpy/issues/1542>`_) (`#1544 <https://github.com/ros2/rclpy/issues/1544>`_)
