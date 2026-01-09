@@ -2,6 +2,16 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.4 (2026-01-09)
+------------------
+* Improve wildcard parsing and optimize the logic for parsing YAML para… (`#1571 <https://github.com/ros2/rclpy/issues/1571>`_) (`#1573 <https://github.com/ros2/rclpy/issues/1573>`_)
+* Improve the compatibility of processing YAML parameter files (`#1548 <https://github.com/ros2/rclpy/issues/1548>`_) (`#1572 <https://github.com/ros2/rclpy/issues/1572>`_)
+* Fix parameter parsing for unspecified target nodes (`#1552 <https://github.com/ros2/rclpy/issues/1552>`_) (`#1569 <https://github.com/ros2/rclpy/issues/1569>`_)
+* Use unconditional wait when possible. (`#1563 <https://github.com/ros2/rclpy/issues/1563>`_) (`#1567 <https://github.com/ros2/rclpy/issues/1567>`_)
+* Allow action servers without execute callback (backport `#1219 <https://github.com/ros2/rclpy/issues/1219>`_) (`#1557 <https://github.com/ros2/rclpy/issues/1557>`_)
+* Fix issues with resuming async tasks awaiting a future (`#1469 <https://github.com/ros2/rclpy/issues/1469>`_) (`#1553 <https://github.com/ros2/rclpy/issues/1553>`_)
+* Contributors: mergify[bot]
+
 9.1.3 (2025-11-18)
 ------------------
 * Remove accidental tuple (`#1542 <https://github.com/ros2/rclpy/issues/1542>`_) (`#1543 <https://github.com/ros2/rclpy/issues/1543>`_)
