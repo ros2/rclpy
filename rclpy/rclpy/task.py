@@ -17,7 +17,8 @@ import inspect
 import sys
 import threading
 from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, List,
-                    Optional, overload, Tuple, TYPE_CHECKING, TypeVar, Union)
+                    Optional, overload, Protocol, runtime_checkable, Tuple,
+                    TYPE_CHECKING, TypeVar, Union)
 import warnings
 import weakref
 
@@ -26,6 +27,37 @@ if TYPE_CHECKING:
     from rclpy.executors import Executor
 
 T = TypeVar('T')
+T_co = TypeVar('T_co', covariant=True)
+
+
+@runtime_checkable
+class FutureLike(Protocol[T_co]):
+    """
+    Protocol for future-like objects.
+
+    This protocol defines the common interface shared by rclpy.Future and asyncio.Future,
+    enabling type-safe usage when the executor may return either type.
+    """
+
+    def done(self) -> bool:
+        """Return True if the future is done."""
+        ...
+
+    def cancelled(self) -> bool:
+        """Return True if the future was cancelled."""
+        ...
+
+    def result(self) -> T_co:
+        """Return the result of the future."""
+        ...
+
+    def exception(self) -> Optional[BaseException]:
+        """Return the exception that was set on this future."""
+        ...
+
+    def add_done_callback(self, callback: Callable[['FutureLike[T_co]'], Any]) -> None:
+        """Add a callback to be run when the future becomes done."""
+        ...
 
 
 def _fake_weakref() -> None:

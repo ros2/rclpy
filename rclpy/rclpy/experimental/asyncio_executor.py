@@ -48,6 +48,7 @@ class AsyncioExecutor(BaseExecutor):
         self._context.on_shutdown(self._sync_shutdown)
         self._nodes: Set['Node'] = set()
         self._subscription_to_node: Dict[Subscription, 'Node'] = {}
+        self._client_to_node: Dict[Client, 'Node'] = {}
         self._node_to_tasks: Dict['Node', Set[asyncio.Task]] = {}
         self._shutdown_task: Optional[asyncio.Task] = None
 
@@ -64,6 +65,10 @@ class AsyncioExecutor(BaseExecutor):
     def loop(self) -> asyncio.AbstractEventLoop:
         """Get the event loop associated with the executor."""
         return self._loop
+
+    def create_future(self) -> asyncio.Future:
+        """Create an asyncio.Future attached to this executor's event loop."""
+        return self._loop.create_future()
 
     async def __aenter__(self) -> 'AsyncioExecutor':
         return self
@@ -166,14 +171,22 @@ class AsyncioExecutor(BaseExecutor):
 
     def _update_entities_from_nodes(self) -> None:
         new_subscriptions: Dict[Subscription, Node] = {}
+        new_clients: Dict[Client, Node] = {}
         for node in self._nodes:
             new_subscriptions.update({sub: node for sub in node.subscriptions})
+            new_clients.update({cli: node for cli in node.clients})
 
         self._update_entity_set(
             self._subscription_to_node,
             new_subscriptions,
             self._handle_added_subscription,
             self._handle_removed_subscription
+        )
+        self._update_entity_set(
+            self._client_to_node,
+            new_clients,
+            self._handle_added_client,
+            self._handle_removed_client
         )
     
     def _handle_added_subscription(self, sub: Subscription, node: Node):
@@ -189,6 +202,32 @@ class AsyncioExecutor(BaseExecutor):
 
     def _handle_removed_subscription(self, sub: Subscription):
         sub.handle.clear_on_new_message_callback()
+
+    def _handle_added_client(self, client: Client, node: Node):
+        # Warn about pre-existing requests that were created before node was added to executor.
+        # Those requests returned rclpy.Future which cannot be awaited in asyncio.
+        if client._pending_requests:
+            warnings.warn(
+                f'Client "{client.srv_name}" has {len(client._pending_requests)} pending '
+                'request(s) created before being added to AsyncioExecutor. These requests '
+                'returned rclpy.Future which cannot be awaited in asyncio. Add nodes to '
+                'AsyncioExecutor before calling call_async().',
+                RuntimeWarning,
+                stacklevel=4
+            )
+
+        client.handle.set_on_new_response_callback(
+            partial(
+                self._loop.call_soon_threadsafe,
+                self._handle_ready_entity,
+                self._take_client,
+                client,
+                node,
+            )
+        )
+
+    def _handle_removed_client(self, client: Client):
+        client.handle.clear_on_new_response_callback()
 
     def _update_entity_set(
         self,

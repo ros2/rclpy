@@ -188,6 +188,42 @@ class TaskData:
 class BaseExecutor:
     """The base class for an executor."""
 
+    def create_future(self) -> Future:
+        """Create a future attached to this executor."""
+        return Future(executor=self)
+
+    def _take_client(self, client: Client[Any, Any]
+                     ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
+        try:
+            with client.handle:
+                header_and_response = client.handle.take_response(client.srv_type.Response)
+
+            async def _execute() -> None:
+                header, response = header_and_response
+                if header is None:
+                    return
+                try:
+                    sequence = header.request_id.sequence_number
+                    future = client.get_pending_request(sequence)
+                except KeyError:
+                    # The request was cancelled
+                    pass
+                else:
+                    # Only set executor for rclpy futures that don't have one yet
+                    if isinstance(future, Future) and future._executor() is None:
+                        future._set_executor(self)
+                    future.set_result(response)
+            return _execute
+
+        except InvalidHandle:
+            # Client is a Destroyable, which means that on __enter__ it can throw an
+            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
+            # by just returning an empty argument, which means we will skip doing any real work
+            # in _execute_client below
+            pass
+
+        return None
+
     def _take_subscription(self, sub: Subscription[Any]
                            ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
         try:
@@ -560,36 +596,6 @@ class Executor(ContextManager['Executor'], BaseExecutor):
         except TimerCancelledError:
             # If TimerCancelledError exception occurs when calling call_timer_with_info(), we will
             # skip doing any real work.
-            pass
-
-        return None
-
-    def _take_client(self, client: Client[Any, Any]
-                     ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
-        try:
-            with client.handle:
-                header_and_response = client.handle.take_response(client.srv_type.Response)
-
-            async def _execute() -> None:
-                header, response = header_and_response
-                if header is None:
-                    return
-                try:
-                    sequence = header.request_id.sequence_number
-                    future = client.get_pending_request(sequence)
-                except KeyError:
-                    # The request was cancelled
-                    pass
-                else:
-                    future._set_executor(self)
-                    future.set_result(response)
-            return _execute
-
-        except InvalidHandle:
-            # Client is a Destroyable, which means that on __enter__ it can throw an
-            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
-            # by just returning an empty argument, which means we will skip doing any real work
-            # in _execute_client below
             pass
 
         return None

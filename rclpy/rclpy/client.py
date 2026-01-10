@@ -14,20 +14,25 @@
 
 import threading
 import time
+import weakref
 from types import TracebackType
 from typing import Dict
 from typing import Generic
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from rclpy.callback_groups import CallbackGroup
+
+if TYPE_CHECKING:
+    from rclpy.node import Node
 from rclpy.clock import Clock
 from rclpy.context import Context
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
-from rclpy.task import Future
+from rclpy.task import Future, FutureLike
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
 # Left To Support Legacy TypeVars
@@ -44,7 +49,8 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         srv_type: Type[Srv],
         srv_name: str,
         qos_profile: QoSProfile,
-        callback_group: CallbackGroup
+        callback_group: CallbackGroup,
+        node: 'Node'
     ) -> None:
         """
         Create a container for a ROS service client.
@@ -59,17 +65,19 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         :param qos_profile: The quality of service profile to apply the service client.
         :param callback_group: The callback group for the service client. If ``None``, then the
             nodes default callback group is used.
+        :param node: The node that owns this client.
         """
         self.context = context
         self.__client = client_impl
         self.srv_type = srv_type
         self.srv_name = srv_name
         self.qos_profile = qos_profile
-        # Key is a sequence number, value is an instance of a Future
-        self._pending_requests: Dict[int, Future[SrvResponseT]] = {}
+        # Key is a sequence number, value is a future (rclpy.Future or asyncio.Future)
+        self._pending_requests: Dict[int, FutureLike[SrvResponseT]] = {}
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
+        self._node: weakref.ReferenceType['Node'] = weakref.ref(node)
 
         self._lock = threading.Lock()
 
@@ -117,12 +125,14 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
             raise exception
         return future.result()
 
-    def call_async(self, request: SrvRequestT) -> Future[SrvResponseT]:
+    def call_async(self, request: SrvRequestT) -> FutureLike[SrvResponseT]:
         """
         Make a service request and asynchronously get the result.
 
         :param request: The service request.
-        :return: A future that completes when the request does.
+        :return: A future that completes when the request does. The concrete type
+            depends on the executor: asyncio.Future when using AsyncioExecutor,
+            or rclpy.task.Future otherwise.
         :raises: TypeError if the type of the passed request isn't an instance
           of the Request type of the provided service when the client was
           constructed.
@@ -136,14 +146,19 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
             if sequence_number in self._pending_requests:
                 raise RuntimeError(f'Sequence ({sequence_number}) conflicts with pending request')
 
-            future = Future[SrvResponseT]()
-            self._pending_requests[sequence_number] = future
+            # Use executor's future factory if available
+            node = self._node()
+            if node is not None and node.executor is not None:
+                future: FutureLike[SrvResponseT] = node.executor.create_future()
+            else:
+                future = Future[SrvResponseT]()
 
+            self._pending_requests[sequence_number] = future
             future.add_done_callback(self.remove_pending_request)
 
         return future
 
-    def get_pending_request(self, sequence_number: int) -> Future[SrvResponseT]:
+    def get_pending_request(self, sequence_number: int) -> FutureLike[SrvResponseT]:
         """
         Get a future from the list of pending requests.
 
@@ -154,7 +169,7 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         with self._lock:
             return self._pending_requests[sequence_number]
 
-    def remove_pending_request(self, future: Future[SrvResponseT]) -> None:
+    def remove_pending_request(self, future: FutureLike[SrvResponseT]) -> None:
         """
         Remove a future from the list of pending requests.
 
