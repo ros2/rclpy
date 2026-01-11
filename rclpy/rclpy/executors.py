@@ -157,7 +157,7 @@ class TimeoutObject:
 @dataclass
 class TaskData:
     source_node: 'Optional[Node]' = None
-    source_entity: 'Optional[Any]' = None
+    source_entity: 'Optional[WaitableEntityType]' = None
 
 
 class Executor(ContextManager['Executor']):
