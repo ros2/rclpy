@@ -273,6 +273,44 @@ class BaseExecutor:
 
         return None
 
+    def _take_timer(self, tmr: Timer) -> Optional[Callable[[], Coroutine[None, None, None]]]:
+        try:
+            with tmr.handle:
+                info = tmr.handle.call_timer_with_info()
+                timer_info = TimerInfo(
+                    expected_call_time=info['expected_call_time'],
+                    actual_call_time=info['actual_call_time'],
+                    clock_type=tmr.clock.clock_type)
+
+                def check_argument_type(callback_func: TimerCallbackType,
+                                        target_type: Type[TimerInfo]) -> Optional[str]:
+                    sig = inspect.signature(callback_func)
+                    for param in sig.parameters.values():
+                        if param.annotation == target_type:
+                            return param.name
+                    return None
+
+                if tmr.callback:
+                    arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
+                if arg_name is not None:
+                    prefilled_arg = {arg_name: timer_info}
+
+                    async def _execute() -> None:
+                        if tmr.callback:
+                            await await_or_execute(partial(tmr.callback, **prefilled_arg))
+                    return _execute
+                else:
+                    async def _execute() -> None:
+                        if tmr.callback:
+                            await await_or_execute(tmr.callback)
+                    return _execute
+        except InvalidHandle:
+            pass
+        except TimerCancelledError:
+            pass
+
+        return None
+
 
 class Executor(ContextManager['Executor'], BaseExecutor):
     """
@@ -575,53 +613,6 @@ class Executor(ContextManager['Executor'], BaseExecutor):
         timeout_sec: Optional[Union[float, TimeoutObject]] = None
     ) -> None:
         raise NotImplementedError()
-
-    def _take_timer(self, tmr: Timer) -> Optional[Callable[[], Coroutine[None, None, None]]]:
-        try:
-            with tmr.handle:
-                info = tmr.handle.call_timer_with_info()
-                timer_info = TimerInfo(
-                    expected_call_time=info['expected_call_time'],
-                    actual_call_time=info['actual_call_time'],
-                    clock_type=tmr.clock.clock_type)
-
-                def check_argument_type(callback_func: TimerCallbackType,
-                                        target_type: Type[TimerInfo]) -> Optional[str]:
-                    sig = inspect.signature(callback_func)
-                    for param in sig.parameters.values():
-                        if param.annotation == target_type:
-                            # return 1st one immediately
-                            return param.name
-                    # We could not find the target type in the signature
-                    return None
-
-                # User might change the Timer.callback function signature at runtime,
-                # so it needs to check the signature every time.
-                if tmr.callback:
-                    arg_name = check_argument_type(tmr.callback, target_type=TimerInfo)
-                if arg_name is not None:
-                    prefilled_arg = {arg_name: timer_info}
-
-                    async def _execute() -> None:
-                        if tmr.callback:
-                            await await_or_execute(partial(tmr.callback, **prefilled_arg))
-                    return _execute
-                else:
-                    async def _execute() -> None:
-                        if tmr.callback:
-                            await await_or_execute(tmr.callback)
-                    return _execute
-        except InvalidHandle:
-            # Timer is a Destroyable, which means that on __enter__ it can throw an
-            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
-            # by just returning an empty argument, which means we will skip doing any real work.
-            pass
-        except TimerCancelledError:
-            # If TimerCancelledError exception occurs when calling call_timer_with_info(), we will
-            # skip doing any real work.
-            pass
-
-        return None
 
     def _take_guard_condition(self, gc: GuardCondition
                               ) -> Callable[[], Coroutine[None, None, None]]:
