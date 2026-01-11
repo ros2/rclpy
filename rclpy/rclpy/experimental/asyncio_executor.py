@@ -15,7 +15,6 @@
 import asyncio
 from functools import partial
 import traceback
-import warnings
 from typing import Callable
 from typing import Coroutine
 from typing import Dict
@@ -24,6 +23,7 @@ from typing import Optional
 from typing import Set
 from typing import TypeVar
 from typing import Union
+import warnings
 
 from rclpy.client import Client
 from rclpy.context import Context
@@ -85,7 +85,6 @@ class AsyncioExecutor(BaseExecutor):
         """Block and process callbacks until shutdown."""
         self._loop.run_forever()
 
-
     def _clear_entities(self) -> List[asyncio.Task]:
         self._nodes.clear()
         self._update_entities_from_nodes()
@@ -114,7 +113,7 @@ class AsyncioExecutor(BaseExecutor):
             self._loop.stop()
 
     def _sync_shutdown(self) -> None:
-        """Synchronous shutdown called by context on_shutdown."""
+        """Shut down synchronously when called by context on_shutdown."""
         all_tasks = self._clear_entities()
 
         if not all_tasks:
@@ -188,7 +187,7 @@ class AsyncioExecutor(BaseExecutor):
             self._handle_added_client,
             self._handle_removed_client
         )
-    
+
     def _handle_added_subscription(self, sub: Subscription, node: Node):
         sub.handle.set_on_new_message_callback(
             partial(
@@ -253,7 +252,7 @@ class AsyncioExecutor(BaseExecutor):
             del current_entity_to_node[entity]
 
         return bool(added_entities or removed_entities)
-    
+
     def _handle_ready_entity(
         self,
         take_entity_callback: Callable[[EntityT], Optional[Coroutine]],

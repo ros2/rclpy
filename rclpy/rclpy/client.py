@@ -14,7 +14,6 @@
 
 import threading
 import time
-import weakref
 from types import TracebackType
 from typing import Dict
 from typing import Generic
@@ -22,6 +21,7 @@ from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
+import weakref
 
 from rclpy.callback_groups import CallbackGroup
 
