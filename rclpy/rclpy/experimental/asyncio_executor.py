@@ -34,6 +34,7 @@ from rclpy.executors import BaseExecutor
 from rclpy.node import Node
 from rclpy.service import Service
 from rclpy.subscription import Subscription
+from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.utilities import get_default_context
 
@@ -58,6 +59,7 @@ class _WaitHandler:
         is_ready: Callable[[], bool],
         time_until_ready_sec: Callable[[], float],
         on_ready: Callable[[], None],
+        on_clock_change: Optional[Callable[[ClockChange], None]] = None,
     ) -> None:
         self._clock = clock
         self._loop = loop
@@ -65,6 +67,7 @@ class _WaitHandler:
         self._is_ready = is_ready
         self._time_until_ready_sec = time_until_ready_sec
         self._on_ready = on_ready
+        self._on_clock_change = on_clock_change
         self._call_later: Optional[asyncio.TimerHandle] = None
         self._jump_handle: Optional[JumpHandle] = None
         self._register_jump_handle()
@@ -117,7 +120,10 @@ class _WaitHandler:
             ClockChange.ROS_TIME_DEACTIVATED,
         ):
             self.cancel()
-            print(f'Cancelling callback due to clock change: {jump.clock_change}', file=stderr)
+            if self._on_clock_change:
+                self._on_clock_change(jump.clock_change)
+            else:
+                print(f'Cancelling due to clock change: {jump.clock_change}', file=stderr)
             return
         self._process()
 
@@ -183,6 +189,66 @@ class _TimerHandler:
         if self._waiter:
             self._waiter.cancel()
         self._build_waiter()
+
+
+class _SleepWaiter:
+    """Handler for async sleep using _WaitHandler for time-based scheduling."""
+
+    def __init__(
+        self,
+        clock: Clock,
+        until: Time,
+        loop: asyncio.AbstractEventLoop,
+        future: 'asyncio.Future[bool]',
+    ) -> None:
+        self._clock = clock
+        self._until = until
+        self._future = future
+        self._waiter: Optional[_WaitHandler] = None
+        self._build_waiter(loop)
+
+    def _build_waiter(self, loop: asyncio.AbstractEventLoop) -> None:
+        """Create a _WaitHandler for this sleep."""
+        self._waiter = _WaitHandler(
+            clock=self._clock,
+            loop=loop,
+            is_finished=self._is_finished,
+            is_ready=self._is_ready,
+            time_until_ready_sec=self._time_until_ready,
+            on_ready=self._on_ready,
+            on_clock_change=self._on_clock_change,
+        )
+
+    def _is_finished(self) -> bool:
+        """Check if the sleep has completed."""
+        return self._future.done()
+
+    def _is_ready(self) -> bool:
+        """Check if the target time has been reached."""
+        return self._clock.now() >= self._until
+
+    def _time_until_ready(self) -> float:
+        """Get time in seconds until target time."""
+        delta = self._until - self._clock.now()
+        return delta.nanoseconds / S_TO_NS
+
+    def _on_ready(self) -> None:
+        """Complete the future when target time is reached."""
+        if not self._future.done():
+            self._future.set_result(True)
+
+    def _on_clock_change(self, _clock_change: ClockChange) -> None:
+        """Complete the future with False when clock source changes."""
+        if not self._future.done():
+            self._future.set_result(False)
+
+    def cancel(self) -> None:
+        """Cancel the sleep and clean up resources."""
+        if self._waiter:
+            self._waiter.cancel()
+            self._waiter = None
+        if not self._future.done():
+            self._future.set_result(False)
 
 
 class AsyncioExecutor(BaseExecutor):
@@ -500,3 +566,23 @@ class AsyncioExecutor(BaseExecutor):
         exc = task.exception()
         if exc:
             node.get_logger().error(''.join(traceback.format_exception(exc)))
+
+    async def sleep(self, seconds: float, clock: Clock) -> bool:
+        """
+        Sleep for the specified number of seconds using the given clock.
+
+        When using a ROSClock, ROS time being activated or deactivated causes
+        this function to return False early.
+
+        :param seconds: Number of seconds to sleep.
+        :param clock: Clock to use for timing.
+        :return: True if the full duration was slept, False if interrupted
+            by clock source change (only possible with ROSClock).
+        """
+        until = clock.now() + Duration(seconds=seconds)
+        future: asyncio.Future[bool] = self._loop.create_future()
+        waiter = _SleepWaiter(clock, until, self._loop, future)
+        try:
+            return await future
+        finally:
+            waiter.cancel()
