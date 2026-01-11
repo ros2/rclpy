@@ -620,11 +620,8 @@ class Executor(ContextManager['Executor']):
                         del self._pending_tasks[task]
 
                 ready_tasks_count = len(self._ready_tasks)
-            deferred_tasks = []
             for _ in range(ready_tasks_count):
-                # We pop from the right to maintain LIFO order for backward compatibility
-                # From Kilted onwards, the order of task execution is FIFO
-                task = self._ready_tasks.pop()
+                task = self._ready_tasks.popleft()
                 task_data = self._pending_tasks[task]
                 node = task_data.source_node
                 if node is None or node in nodes_to_use:
@@ -632,13 +629,9 @@ class Executor(ContextManager['Executor']):
                     yielded_work = True
                     yield task, entity, node
                 else:
-                    # Asked not to execute these tasks, so don't do them yet.
-                    # Collect them and requeue preserving their relative order.
-                    deferred_tasks.append(task)
-            if deferred_tasks:
-                with self._tasks_lock:
-                    for t in reversed(deferred_tasks):
-                        self._ready_tasks.appendleft(t)
+                    # Asked not to execute these tasks, so don't do them yet
+                    with self._tasks_lock:
+                        self._ready_tasks.append(task)
             # Gather entities that can be waited on
             subscriptions: List[Subscription] = []
             guards: List[GuardCondition] = []
