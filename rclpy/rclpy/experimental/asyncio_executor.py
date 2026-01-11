@@ -49,6 +49,7 @@ class AsyncioExecutor(BaseExecutor):
         self._nodes: Set['Node'] = set()
         self._subscription_to_node: Dict[Subscription, 'Node'] = {}
         self._client_to_node: Dict[Client, 'Node'] = {}
+        self._service_to_node: Dict[Service, 'Node'] = {}
         self._node_to_tasks: Dict['Node', Set[asyncio.Task]] = {}
         self._shutdown_task: Optional[asyncio.Task] = None
 
@@ -171,9 +172,11 @@ class AsyncioExecutor(BaseExecutor):
     def _update_entities_from_nodes(self) -> None:
         new_subscriptions: Dict[Subscription, Node] = {}
         new_clients: Dict[Client, Node] = {}
+        new_services: Dict[Service, Node] = {}
         for node in self._nodes:
             new_subscriptions.update({sub: node for sub in node.subscriptions})
             new_clients.update({cli: node for cli in node.clients})
+            new_services.update({srv: node for srv in node.services})
 
         self._update_entity_set(
             self._subscription_to_node,
@@ -186,6 +189,12 @@ class AsyncioExecutor(BaseExecutor):
             new_clients,
             self._handle_added_client,
             self._handle_removed_client
+        )
+        self._update_entity_set(
+            self._service_to_node,
+            new_services,
+            self._handle_added_service,
+            self._handle_removed_service
         )
 
     def _handle_added_subscription(self, sub: Subscription, node: Node):
@@ -227,6 +236,20 @@ class AsyncioExecutor(BaseExecutor):
 
     def _handle_removed_client(self, client: Client):
         client.handle.clear_on_new_response_callback()
+
+    def _handle_added_service(self, service: Service, node: Node):
+        service.handle.set_on_new_request_callback(
+            partial(
+                self._loop.call_soon_threadsafe,
+                self._handle_ready_entity,
+                self._take_service,
+                service,
+                node,
+            )
+        )
+
+    def _handle_removed_service(self, service: Service):
+        service.handle.clear_on_new_request_callback()
 
     def _update_entity_set(
         self,

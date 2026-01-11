@@ -250,6 +250,29 @@ class BaseExecutor:
 
         return None
 
+    def _take_service(self, srv: Service[Any, Any]
+                      ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
+        try:
+            with srv.handle:
+                request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
+
+            async def _execute() -> None:
+                (request, header) = request_and_header
+                if header is None:
+                    return
+
+                response = await await_or_execute(srv.callback, request, srv.srv_type.Response())
+                srv.send_response(response, header)
+            return _execute
+        except InvalidHandle:
+            # Service is a Destroyable, which means that on __enter__ it can throw an
+            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
+            # by just returning an empty argument, which means we will skip doing any real work
+            # in _execute_service below
+            pass
+
+        return None
+
 
 class Executor(ContextManager['Executor'], BaseExecutor):
     """
@@ -596,29 +619,6 @@ class Executor(ContextManager['Executor'], BaseExecutor):
         except TimerCancelledError:
             # If TimerCancelledError exception occurs when calling call_timer_with_info(), we will
             # skip doing any real work.
-            pass
-
-        return None
-
-    def _take_service(self, srv: Service[Any, Any]
-                      ) -> Optional[Callable[[], Coroutine[None, None, None]]]:
-        try:
-            with srv.handle:
-                request_and_header = srv.handle.service_take_request(srv.srv_type.Request)
-
-            async def _execute() -> None:
-                (request, header) = request_and_header
-                if header is None:
-                    return
-
-                response = await await_or_execute(srv.callback, request, srv.srv_type.Response())
-                srv.send_response(response, header)
-            return _execute
-        except InvalidHandle:
-            # Service is a Destroyable, which means that on __enter__ it can throw an
-            # InvalidHandle exception if the entity has already been destroyed.  Handle that here
-            # by just returning an empty argument, which means we will skip doing any real work
-            # in _execute_service below
             pass
 
         return None
