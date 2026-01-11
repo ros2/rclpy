@@ -394,18 +394,12 @@ class TestExecutor(unittest.TestCase):
                     await future2
                     return 'Sentinel Result 1'
 
+                future1 = executor.create_task(coro1)
+
                 async def coro2():
                     return 'Sentinel Result 2'
 
-                # We need to swap the order of the coroutines depending on the executor type
-                # This is nessessary because https://github.com/ros2/rclpy/pull/1304
-                # won't be backported to jazzy
-                if cls is SingleThreadedExecutor:
-                    future2 = executor.create_task(coro2)
-                    future1 = executor.create_task(coro1)
-                else:
-                    future1 = executor.create_task(coro1)
-                    future2 = executor.create_task(coro2)
+                future2 = executor.create_task(coro2)
 
                 # Coro1 is the 1st task, so it gets to await future2 in this spin
                 executor.spin_once(timeout_sec=0)
