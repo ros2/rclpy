@@ -111,7 +111,12 @@ class _WaitHandler:
         )
 
     def _on_jump(self, jump: TimeJump) -> None:
-        """Handle ROS time jumps."""
+        """Handle ROS time jumps. Called from clock thread, dispatches to event loop."""
+        # Use call_soon_threadsafe since this callback comes from the clock thread
+        self._loop.call_soon_threadsafe(self._handle_jump, jump)
+
+    def _handle_jump(self, jump: TimeJump) -> None:
+        """Process a time jump on the event loop thread."""
         if self._is_finished():
             self.cancel()
             return
@@ -561,7 +566,9 @@ class AsyncioExecutor(BaseExecutor):
         if task.cancelled():
             return
 
-        self._node_to_tasks[node].remove(task)
+        # Guard against node being removed between task creation and done callback
+        if node in self._node_to_tasks:
+            self._node_to_tasks[node].discard(task)
 
         exc = task.exception()
         if exc:
