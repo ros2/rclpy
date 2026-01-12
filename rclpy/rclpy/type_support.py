@@ -41,7 +41,6 @@ class EventMessage(BaseMessage):
     info: ServiceEventInfo
 
 
-# TODO: Deprecate these alias when mypy supports type keyword in mypy 1.10+
 Srv: TypeAlias = BaseService[SrvRequestT, SrvResponseT]
 
 

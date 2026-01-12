@@ -45,7 +45,7 @@ from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.type_support import BaseAction
-from rclpy.type_support import BaseMessage
+from rclpy.type_support import Msg
 from rclpy.type_support import check_for_type_support
 from rclpy.type_support import FeedbackMessage
 from rclpy.type_support import FeedbackT
@@ -62,8 +62,8 @@ if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup
     from typing_extensions import Unpack, TypeAlias
 
-    ClientGoalHandleDictResultT = TypeVar('ClientGoalHandleDictResultT', bound=BaseMessage)
-    ClientGoalHandleDictFeedbackT = TypeVar('ClientGoalHandleDictFeedbackT', bound=BaseMessage)
+    ClientGoalHandleDictResultT = TypeVar('ClientGoalHandleDictResultT', bound=Msg)
+    ClientGoalHandleDictFeedbackT = TypeVar('ClientGoalHandleDictFeedbackT', bound=Msg)
 
     class ClientGoalHandleDict(TypedDict,
                                Generic[ClientGoalHandleDictResultT, ClientGoalHandleDictFeedbackT],

@@ -11,13 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Type
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.type_support import BaseMessage, check_for_type_support, MsgT
+from rclpy.type_support import Msg, check_for_type_support, MsgT
 
 
-def serialize_message(message: BaseMessage) -> bytes:
+def serialize_message(message: Msg) -> bytes:
     """
     Serialize a ROS message.
 
@@ -30,7 +29,7 @@ def serialize_message(message: BaseMessage) -> bytes:
     return _rclpy.rclpy_serialize(message, message_type)
 
 
-def deserialize_message(serialized_message: bytes, message_type: Type[MsgT]) -> MsgT:
+def deserialize_message(serialized_message: bytes, message_type: type[MsgT]) -> MsgT:
     """
     Deserialize a ROS message.
 
