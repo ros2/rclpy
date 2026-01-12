@@ -93,7 +93,7 @@ from rclpy.timer import Rate
 from rclpy.timer import Timer
 from rclpy.timer import TimerCallbackType
 from rclpy.type_description_service import TypeDescriptionService
-from rclpy.type_support import BaseService
+from rclpy.type_support import Srv
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.type_support import MsgT
@@ -1744,7 +1744,7 @@ class Node:
 
     def create_client(
         self,
-        srv_type: Type[BaseService[SrvRequestT, SrvResponseT]],
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
@@ -1786,7 +1786,7 @@ class Node:
 
     def create_service(
         self,
-        srv_type: Type[BaseService[SrvRequestT, SrvResponseT]],
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
         *,

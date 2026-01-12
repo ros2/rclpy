@@ -14,7 +14,6 @@
 
 from typing import Any
 from typing import Generic
-from typing import Type
 from typing import TypeVar
 from typing import Union
 
@@ -88,9 +87,9 @@ SrvT = TypeVar('SrvT', bound=BaseService)
 ActionT = TypeVar('ActionT', bound=BaseAction)
 
 
-def check_for_type_support(msg_or_srv_type: Type[Union[BaseMessage,
-                                                       BaseService[Any, Any],
-                                                       BaseAction[Any, Any, Any, Any]]]) -> None:
+def check_for_type_support(msg_or_srv_type: type[Union[Msg,
+                                                       Srv[Any, Any],
+                                                       Action[Any, Any, Any, Any]]]) -> None:
     try:
         ts = msg_or_srv_type._TYPE_SUPPORT
     except AttributeError as e:
@@ -106,7 +105,7 @@ def check_for_type_support(msg_or_srv_type: Type[Union[BaseMessage,
         raise NoTypeSupportImportedException()
 
 
-def check_is_valid_msg_type(msg_type: Type[BaseMessage]) -> None:
+def check_is_valid_msg_type(msg_type: type[Msg]) -> None:
     check_for_type_support(msg_type)
     try:
         assert None not in (
@@ -122,7 +121,7 @@ def check_is_valid_msg_type(msg_type: Type[BaseMessage]) -> None:
         ) from None
 
 
-def check_is_valid_srv_type(srv_type: Type[BaseService[Any, Any]]) -> None:
+def check_is_valid_srv_type(srv_type: type[Srv[Any, Any]]) -> None:
     check_for_type_support(srv_type)
     try:
         assert None not in (

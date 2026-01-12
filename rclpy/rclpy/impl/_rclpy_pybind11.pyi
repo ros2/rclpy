@@ -34,10 +34,20 @@ from rclpy.subscription import MessageInfo
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.type_support import (BaseAction, BaseService, FeedbackMessage, FeedbackT, ImplT,
-                                GetResultServiceRequest, GetResultServiceResponse, GoalT, MsgT,
-                                ResultT, SendGoalServiceRequest, SendGoalServiceResponse,
-                                SrvRequestT, SrvResponseT)
+from rclpy.type_support import Action
+from rclpy.type_support import Srv
+from rclpy.type_support import FeedbackMessage
+from rclpy.type_support import FeedbackT
+from rclpy.type_support import ImplT
+from rclpy.type_support import GetResultServiceRequest
+from rclpy.type_support import GetResultServiceResponse
+from rclpy.type_support import GoalT
+from rclpy.type_support import MsgT
+from rclpy.type_support import ResultT
+from rclpy.type_support import SendGoalServiceRequest
+from rclpy.type_support import SendGoalServiceResponse
+from rclpy.type_support import SrvRequestT
+from rclpy.type_support import SrvResponseT
 from type_description_interfaces.srv import GetTypeDescription
 
 T = TypeVar('T')
@@ -163,7 +173,7 @@ class InvalidHandle(RuntimeError):
 
 class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, srv_type: type[BaseService[SrvRequestT, SrvResponseT]],
+    def __init__(self, node: Node, srv_type: type[Srv[SrvRequestT, SrvResponseT]],
                  srv_name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
@@ -259,7 +269,7 @@ class Publisher(Destroyable, Generic[MsgT]):
 
 class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, pysrv_type: type[BaseService[SrvRequestT, SrvResponseT]],
+    def __init__(self, node: Node, pysrv_type: type[Srv[SrvRequestT, SrvResponseT]],
                  name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
