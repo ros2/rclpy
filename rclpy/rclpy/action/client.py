@@ -45,13 +45,13 @@ from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.type_support import Action
-from rclpy.type_support import Msg
 from rclpy.type_support import check_for_type_support
 from rclpy.type_support import FeedbackMessage
 from rclpy.type_support import FeedbackT
 from rclpy.type_support import GetResultServiceResponse
 from rclpy.type_support import GoalT
 from rclpy.type_support import ImplT
+from rclpy.type_support import Msg
 from rclpy.type_support import ResultT
 from rclpy.type_support import SendGoalServiceResponse
 from rclpy.waitable import NumberOfEntities, Waitable

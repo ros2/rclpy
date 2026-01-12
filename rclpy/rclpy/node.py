@@ -93,10 +93,10 @@ from rclpy.timer import Rate
 from rclpy.timer import Timer
 from rclpy.timer import TimerCallbackType
 from rclpy.type_description_service import TypeDescriptionService
-from rclpy.type_support import Srv
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.type_support import MsgT
+from rclpy.type_support import Srv
 from rclpy.type_support import SrvRequestT
 from rclpy.type_support import SrvResponseT
 from rclpy.utilities import get_default_context

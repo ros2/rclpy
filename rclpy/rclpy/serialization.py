@@ -13,7 +13,9 @@
 # limitations under the License.
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.type_support import Msg, check_for_type_support, MsgT
+from rclpy.type_support import check_for_type_support
+from rclpy.type_support import Msg
+from rclpy.type_support import MsgT
 
 
 def serialize_message(message: Msg) -> bytes:
