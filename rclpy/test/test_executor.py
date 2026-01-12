@@ -225,6 +225,39 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
 
+    def test_create_task_coroutine_yield(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+
+        executor = SingleThreadedExecutor(context=self.context)
+        executor.add_node(self.node)
+
+        called1 = False
+        called2 = False
+
+        async def coroutine() -> str:
+            nonlocal called1
+            nonlocal called2
+            called1 = True
+            await asyncio.sleep(0)
+            called2 = True
+            return 'Sentinel Result'
+
+        future = executor.create_task(coroutine)
+        self.assertFalse(future.done())
+        self.assertFalse(called1)
+        self.assertFalse(called2)
+
+        executor.spin_once(timeout_sec=0)
+        self.assertFalse(future.done())
+        self.assertTrue(called1)
+        self.assertFalse(called2)
+
+        executor.spin_once(timeout_sec=1)
+        self.assertTrue(future.done())
+        self.assertTrue(called1)
+        self.assertTrue(called2)
+        self.assertEqual('Sentinel Result', future.result())
+
     def test_create_task_coroutine_cancel(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
@@ -245,7 +278,39 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(future.cancelled())
         self.assertEqual(None, future.result())
 
-    def test_create_task_normal_function(self):
+    def test_create_task_coroutine_wake_from_another_thread(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                thread_future = Future(executor=executor)
+
+                async def coroutine():
+                    await thread_future
+
+                def future_thread():
+                    time.sleep(0.1)  # Simulate some work
+                    thread_future.set_result(None)
+
+                t = threading.Thread(target=future_thread)
+
+                coroutine_future = executor.create_task(coroutine)
+
+                start_time = time.perf_counter()
+
+                t.start()
+                executor.spin_until_future_complete(coroutine_future, timeout_sec=1.0)
+
+                end_time = time.perf_counter()
+
+                self.assertTrue(coroutine_future.done())
+
+                # The coroutine should take at least 0.1 seconds to complete because it waits for
+                # the thread to set the future but nowhere near the 1 second timeout
+                assert 0.1 <= end_time - start_time < 0.2
+
+    def test_create_task_normal_function(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
         executor.add_node(self.node)
@@ -266,29 +331,29 @@ class TestExecutor(unittest.TestCase):
         executor.add_node(self.node)
 
         async def coro1():
+            nonlocal future2
+            await future2
             return 'Sentinel Result 1'
 
         future1 = executor.create_task(coro1)
 
         async def coro2():
-            nonlocal future1
-            await future1
             return 'Sentinel Result 2'
 
         future2 = executor.create_task(coro2)
 
-        # Coro2 is newest task, so it gets to await future1 in this spin
+        # Coro1 is the 1st task, so it gets to await future2 in this spin
         executor.spin_once(timeout_sec=0)
-        # Coro1 execs in this spin
+        # Coro2 execs in this spin
         executor.spin_once(timeout_sec=0)
-        self.assertTrue(future1.done())
-        self.assertEqual('Sentinel Result 1', future1.result())
-        self.assertFalse(future2.done())
-
-        # Coro2 passes the await step here (timeout change forces new generator)
-        executor.spin_once(timeout_sec=1)
+        self.assertFalse(future1.done())
         self.assertTrue(future2.done())
         self.assertEqual('Sentinel Result 2', future2.result())
+
+        # Coro1 passes the await step here (timeout change forces new generator)
+        executor.spin_once(timeout_sec=1)
+        self.assertTrue(future1.done())
+        self.assertEqual('Sentinel Result 1', future1.result())
 
     def test_create_task_during_spin(self):
         self.assertIsNotNone(self.node.handle)
