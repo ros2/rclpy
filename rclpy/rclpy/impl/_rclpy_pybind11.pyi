@@ -355,7 +355,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
     def __init__(
             self,
             node: Node,
-            pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
+            pyaction_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]],
             action_name: str,
             goal_service_qos: rmw_qos_profile_t,
             result_service_qos: rmw_qos_profile_t,
@@ -445,7 +445,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
         self,
         node: Node,
         rclpy_clock: Clock,
-        pyaction_type: type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
+        pyaction_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
         goal_service_qos: rmw_qos_profile_t,
         result_service_qos: rmw_qos_profile_t,

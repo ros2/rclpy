@@ -44,7 +44,7 @@ from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
-from rclpy.type_support import BaseAction
+from rclpy.type_support import Action
 from rclpy.type_support import Msg
 from rclpy.type_support import check_for_type_support
 from rclpy.type_support import FeedbackMessage
@@ -173,7 +173,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[BaseAction[GoalT, ResultT, FeedbackT, ImplT]],
+        action_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
