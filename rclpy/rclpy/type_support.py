@@ -17,7 +17,6 @@ from typing import Generic
 from typing import TypeVar
 from typing import Union
 
-
 from builtin_interfaces.msg import Time
 from rclpy.exceptions import NoTypeSupportImportedException
 from rosidl_pycommon.interface_base_classes import BaseAction
