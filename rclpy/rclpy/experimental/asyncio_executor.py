@@ -16,6 +16,7 @@ import asyncio
 from functools import partial
 from sys import stderr
 import traceback
+from typing import Any
 from typing import Callable
 from typing import Coroutine
 from typing import Dict
@@ -593,3 +594,27 @@ class AsyncioExecutor(BaseExecutor):
             return await future
         finally:
             waiter.cancel()
+
+    def spin_until_future_complete(
+        self,
+        future: 'asyncio.Future[Any]',
+        timeout_sec: Optional[float] = None
+    ) -> None:
+        """
+        Execute callbacks until a given future is done or a timeout occurs.
+
+        :param future: The future to wait for.
+        :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        """
+        try:
+            if timeout_sec is None or timeout_sec < 0:
+                self._loop.run_until_complete(future)
+            else:
+                self._loop.run_until_complete(
+                    asyncio.wait_for(asyncio.shield(future), timeout=timeout_sec)
+                )
+        except asyncio.TimeoutError:
+            pass
+        except asyncio.CancelledError:
+            pass
