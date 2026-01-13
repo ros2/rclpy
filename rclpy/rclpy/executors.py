@@ -999,31 +999,7 @@ class MultiThreadedExecutor(Executor):
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
         future.add_done_callback(lambda x: self.wake())
-<<<<<<< HEAD
-        self._spin_once_until_future_complete(future, timeout_sec)
-=======
         try:
             self._spin_once_until_future_complete(future, timeout_sec)
         finally:
             self._exit_spin()
-
-    def shutdown(
-        self,
-        timeout_sec: Optional[float] = None,
-        *,
-        wait_for_threads: bool = True
-    ) -> bool:
-        """
-        Stop executing callbacks and wait for their completion.
-
-        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
-            Don't wait if 0.
-        :param wait_for_threads: If true, this function will block until all executor threads
-            have joined.
-        :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
-            timeout expires before all outstanding work is done.
-        """
-        success: bool = super().shutdown(timeout_sec)
-        self._executor.shutdown(wait=wait_for_threads)
-        return success
->>>>>>> cf9240a (add spinning state for the Executor classes. (#1510))
