@@ -2,6 +2,11 @@
 ROS Client Library for the Python language.
 
 
+## Documentation
+
+Examples and tutorials for using RCLPy can be found at [docs.ros.org](https://docs.ros.org/). 
+The latest function-level API documentation for RCLPy can be found in our [API documentation](https://docs.ros.org/en/rolling/p/rclpy/) or via searching for RCLPy on [ROS Index](https://index.ros.org/p/rclpy/). 
+
 ## Building documentation
 
 Documentation can be built for `rclpy` using [Sphinx](http://www.sphinx-doc.org/en/master/), or accessed [online](https://docs.ros.org/en/rolling/p/rclpy/).
