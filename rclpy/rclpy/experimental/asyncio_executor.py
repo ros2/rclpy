@@ -307,6 +307,11 @@ class AsyncioExecutor(BaseExecutor):
 
     def spin(self) -> None:
         """Block and process callbacks until shutdown."""
+        warnings.warn(
+            'spin() is deprecated. Use loop.run_forever() or asyncio.run() instead.',
+            DeprecationWarning,
+            stacklevel=2
+        )
         self._loop.run_forever()
 
     def _clear_entities(self) -> List[asyncio.Task]:
@@ -607,6 +612,12 @@ class AsyncioExecutor(BaseExecutor):
         :param timeout_sec: Maximum seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         """
+        warnings.warn(
+            'spin_until_future_complete() is deprecated. '
+            'Use loop.run_until_complete() or await the future directly instead.',
+            DeprecationWarning,
+            stacklevel=2
+        )
         try:
             if timeout_sec is None or timeout_sec < 0:
                 self._loop.run_until_complete(future)
