@@ -806,6 +806,122 @@ class TestExecutor(unittest.TestCase):
                 finally:
                     executor.shutdown()
 
+    def test_spinning_multiple_times_spin(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        # Test all executor types including base Executor class
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                try:
+                    executor.add_node(self.node)
+
+                    # Start spinning in a background thread
+                    def spin_thread():
+                        executor.spin()
+
+                    t = threading.Thread(target=spin_thread, daemon=True)
+                    t.start()
+                    # Give the executor time to start spinning
+                    time.sleep(1.0)
+                    # Check that executor is spinning
+                    self.assertTrue(executor.is_spinning)
+                    # Try to spin again, should raise an exception
+                    with self.assertRaises(RuntimeError):
+                        executor.spin()
+                    # Shutdown the executor to stop the background thread
+                    executor.shutdown()
+                    t.join(timeout=1.0)
+                finally:
+                    executor.shutdown()
+
+    def test_spinning_multiple_times_spin_once(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        # Test all executor types including base Executor class
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                try:
+                    executor.add_node(self.node)
+
+                    # Start spinning in a background thread
+                    def spin_thread():
+                        executor.spin_once(timeout_sec=10.0)
+
+                    t = threading.Thread(target=spin_thread, daemon=True)
+                    t.start()
+                    # Give the executor time to start spinning
+                    time.sleep(1.0)
+                    # Check that executor is spinning
+                    self.assertTrue(executor.is_spinning)
+                    # Try to spin again, should raise an exception
+                    with self.assertRaises(RuntimeError):
+                        executor.spin_once(timeout_sec=1.0)
+                    # Wait for the background thread to complete
+                    t.join(timeout=1.0)
+                    executor.shutdown()
+                finally:
+                    executor.shutdown()
+
+    def test_spinning_multiple_times_spin_until_future_complete(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        # Test all executor types including base Executor class
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                try:
+                    executor.add_node(self.node)
+                    future = executor.create_future()
+
+                    # Start spinning in a background thread
+                    def spin_thread():
+                        executor.spin_until_future_complete(future, timeout_sec=10.0)
+
+                    t = threading.Thread(target=spin_thread, daemon=True)
+                    t.start()
+                    # Give the executor time to start spinning
+                    time.sleep(1.0)
+                    # Check that executor is spinning
+                    self.assertTrue(executor.is_spinning)
+                    # Try to spin again, should raise an exception
+                    with self.assertRaises(RuntimeError):
+                        executor.spin_until_future_complete(future, timeout_sec=1.0)
+                    # Complete the future and shutdown
+                    future.set_result(True)
+                    t.join(timeout=1.0)
+                    executor.shutdown()
+                finally:
+                    executor.shutdown()
+
+    def test_spinning_multiple_times_spin_once_until_future_complete(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        # Test all executor types including base Executor class
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                try:
+                    executor.add_node(self.node)
+                    future = executor.create_future()
+
+                    # Start spinning in a background thread
+                    def spin_thread():
+                        executor.spin_once_until_future_complete(future, timeout_sec=10.0)
+
+                    t = threading.Thread(target=spin_thread, daemon=True)
+                    t.start()
+                    # Give the executor time to start spinning
+                    time.sleep(1.0)
+                    # Check that executor is spinning
+                    self.assertTrue(executor.is_spinning)
+                    # Try to spin again, should raise an exception
+                    with self.assertRaises(RuntimeError):
+                        executor.spin_once_until_future_complete(future, timeout_sec=1.0)
+                    # Complete the future and shutdown
+                    future.set_result(True)
+                    t.join(timeout=1.0)
+                    executor.shutdown()
+                finally:
+                    executor.shutdown()
+
 
 if __name__ == '__main__':
     unittest.main()
