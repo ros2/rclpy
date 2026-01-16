@@ -42,7 +42,7 @@ Source workspace and build docs:
 
 # Contributions
 
-Please read the ROS 2 Contribution Guide available on docs.ros.org](https://docs.ros.org/en/rolling/The-ROS2-Project/Contributing.html#) before contributing.
+Please read the ROS 2 Contribution Guide available on [docs.ros.org](https://docs.ros.org/en/rolling/The-ROS2-Project/Contributing.html#) before contributing.
 If you are looking for a place to start consider checking out our issues tagged [`help wanted`](https://github.com/ros2/rclpy/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22) and [`good first issue`](https://github.com/ros2/rclpy/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22)
 Pull request reviews from new community members are welcomed and encouraged!
 Please check out the pull request, build it, and run the tests, before reviewing the code.
