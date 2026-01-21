@@ -2,6 +2,17 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add spinning state for the Executor classes. (backport `#1510 <https://github.com/ros2/rclpy/issues/1510>`_) (`#1576 <https://github.com/ros2/rclpy/issues/1576>`_)
+  * add spinning state for the Executor classes. (`#1510 <https://github.com/ros2/rclpy/issues/1510>`_)
+  (cherry picked from commit cf9240affbb814573e2edb7c0e119273690823d9)
+  Co-authored-by: Tomoya Fujita <Tomoya.Fujita@sony.com>
+* Fix issues with resuming async tasks awaiting a future (backport `#1469 <https://github.com/ros2/rclpy/issues/1469>`_) (`#1560 <https://github.com/ros2/rclpy/issues/1560>`_)
+  Co-authored-by: Nadav Elkabets <32939935+nadavelkabets@users.noreply.github.com>
+  Co-authored-by: Florian Vahl <git@flova.de>
+* Contributors: Błażej Sowa, mergify[bot]
+
 7.1.8 (2026-01-09)
 ------------------
 * Fix a bug on adding unnecessary done callback of future while repeatedly calling spin_until_future_complete (backport `#1374 <https://github.com/ros2/rclpy/issues/1374>`_) (`#1530 <https://github.com/ros2/rclpy/issues/1530>`_)
