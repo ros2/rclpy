@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.1.9 (2026-01-21)
+------------------
 * add spinning state for the Executor classes. (backport `#1510 <https://github.com/ros2/rclpy/issues/1510>`_) (`#1576 <https://github.com/ros2/rclpy/issues/1576>`_)
   * add spinning state for the Executor classes. (`#1510 <https://github.com/ros2/rclpy/issues/1510>`_)
   (cherry picked from commit cf9240affbb814573e2edb7c0e119273690823d9)
