@@ -40,12 +40,14 @@ from typing_extensions import TypeAlias
 
 FibonacciServerGoalHandle: TypeAlias = ServerGoalHandle[test_msgs.action.Fibonacci.Goal,
                                                         test_msgs.action.Fibonacci.Result,
-                                                        test_msgs.action.Fibonacci.Feedback]
+                                                        test_msgs.action.Fibonacci.Feedback,
+                                                        test_msgs.action.Fibonacci.Impl]
 
 
 FibonacciClientGoalHandle: TypeAlias = ClientGoalHandle[test_msgs.action.Fibonacci.Goal,
                                                         test_msgs.action.Fibonacci.Result,
-                                                        test_msgs.action.Fibonacci.Feedback]
+                                                        test_msgs.action.Fibonacci.Feedback,
+                                                        test_msgs.action.Fibonacci.Impl]
 
 
 def _get_pub_sub_qos(transient_local: bool) -> rclpy.qos.QoSProfile:
@@ -367,11 +369,7 @@ class ActionClientTestNode(rclpy.node.Node):
 
     def __init__(self) -> None:
         super().__init__('test_action_client_node')
-        self._client = rclpy.action.ActionClient[
-            test_msgs.action.Fibonacci.Goal,
-            test_msgs.action.Fibonacci.Result,
-            test_msgs.action.Fibonacci.Feedback,
-        ](self, test_msgs.action.Fibonacci, 'test_action')
+        self._client = rclpy.action.ActionClient(self, test_msgs.action.Fibonacci, 'test_action')
         self._feedback_future: typing.Optional[
             rclpy.Future[test_msgs.action.Fibonacci.Feedback]
         ] = None

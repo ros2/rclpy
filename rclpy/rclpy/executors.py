@@ -543,7 +543,8 @@ class Executor(ContextManager['Executor']):
                     return None
 
                 if sub._callback_type is Subscription.CallbackType.MessageOnly:
-                    msg_tuple: Union[Tuple[Msg], Tuple[Msg, MessageInfo]] = (msg_info[0], )
+                    msg_tuple: Union[tuple[Msg],
+                                     tuple[Msg, MessageInfo]] = (msg_info[0], )
                 else:
                     msg_tuple = msg_info
 

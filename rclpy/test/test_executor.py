@@ -24,7 +24,6 @@ import warnings
 
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.client import Client
 from rclpy.executors import Executor
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
@@ -770,7 +769,7 @@ class TestExecutor(unittest.TestCase):
 
                 callback_group = ReentrantCallbackGroup()
 
-                cli: Client[Empty.Request, Empty.Response] = self.node.create_client(
+                cli = self.node.create_client(
                     srv_type=Empty, srv_name='test_service', callback_group=callback_group)
 
                 async def timer1_callback() -> None:

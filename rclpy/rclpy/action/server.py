@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from enum import Enum
 import functools
 import threading
@@ -34,9 +36,16 @@ from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.type_support import (Action, check_for_type_support, FeedbackMessage, FeedbackT,
-                                GetResultServiceRequest, GetResultServiceResponse, GoalT, ResultT,
-                                SendGoalServiceRequest)
+from rclpy.type_support import Action
+from rclpy.type_support import check_for_type_support
+from rclpy.type_support import FeedbackMessage
+from rclpy.type_support import FeedbackT
+from rclpy.type_support import GetResultServiceRequest
+from rclpy.type_support import GetResultServiceResponse
+from rclpy.type_support import GoalT
+from rclpy.type_support import ImplT
+from rclpy.type_support import ResultT
+from rclpy.type_support import SendGoalServiceRequest
 from rclpy.waitable import NumberOfEntities, Waitable
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
@@ -80,12 +89,12 @@ class CancelResponse(Enum):
 GoalEvent: TypeAlias = _rclpy.GoalEvent
 
 
-class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
+class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
     """Goal handle for working with Action Servers."""
 
     def __init__(
         self,
-        action_server: 'ActionServer[GoalT, ResultT, FeedbackT]',
+        action_server: ActionServer[GoalT, ResultT, FeedbackT, ImplT],
         goal_info: GoalInfo,
         goal_request: GoalT
     ) -> None:
@@ -173,7 +182,7 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
 
     def execute(
         self,
-        execute_callback: Optional[Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT]'],
+        execute_callback: Optional[Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'],
                                    ResultT]] = None
     ) -> None:
         # It's possible that there has been a request to cancel the goal prior to executing.
@@ -224,7 +233,7 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
             self._goal_handle = None
 
 
-def default_handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any]) -> None:
+def default_handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> None:
     """Execute the goal."""
     goal_handle.execute()
 
@@ -241,13 +250,14 @@ def default_cancel_callback(cancel_request: CancelGoal.Request) -> Literal[Cance
     return CancelResponse.REJECT
 
 
-class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandleDict[GoalT]']):
+class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
+                   Waitable['ServerGoalHandleDict[GoalT]']):
     """ROS Action server."""
 
     def __init__(
         self,
         node: 'Node',
-        action_type: Type[Action],
+        action_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
         execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]],
                                             ResultT]] = None,
@@ -256,7 +266,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         goal_callback: Callable[[CancelGoal.Request], GoalResponse] = default_goal_callback,
         handle_accepted_callback: Callable[[ServerGoalHandle[GoalT,
                                                              ResultT,
-                                                             FeedbackT]],
+                                                             FeedbackT, ImplT]],
                                            None] = default_handle_accepted_callback,
         cancel_callback: Callable[[CancelGoal.Request], CancelResponse] = default_cancel_callback,
         goal_service_qos_profile: QoSProfile = qos_profile_services_default,
@@ -311,7 +321,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
         self._node = node
         self._action_type = action_type
         with node.handle, node.get_clock().handle:
-            self._handle: '_rclpy.ActionServer[GoalT, ResultT, FeedbackT]' = \
+            self._handle = \
                 _rclpy.ActionServer(
                     node.handle,
                     node.get_clock().handle,
@@ -326,7 +336,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
                 )
 
         # key: UUID in bytes, value: GoalHandle
-        self._goal_handles: Dict[bytes, ServerGoalHandle[GoalT, ResultT, FeedbackT]] = {}
+        self._goal_handles: Dict[bytes, ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]] = {}
 
         # key: UUID in bytes, value: Future
         self._result_futures: Dict[bytes, Future[GetResultServiceResponse[ResultT]]] = {}
@@ -406,8 +416,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
 
     async def _execute_goal(
         self,
-        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT],
-        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT]
+        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], ResultT],
+        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]
     ) -> None:
         goal_uuid = goal_handle.goal_id.uuid
         self._logger.debug('Executing goal with ID {0}'.format(goal_uuid))
@@ -532,7 +542,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
             self._logger.warning('Failed to send result response (the client may have gone away)')
 
     @property
-    def action_type(self) -> Type[Action]:
+    def action_type(self) -> type[Action[GoalT, ResultT, FeedbackT, ImplT]]:
         return self._action_type
 
     # Start Waitable API
@@ -628,8 +638,8 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
 
     def notify_execute(
         self,
-        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT],
-        execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]],
+        goal_handle: ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT],
+        execute_callback: Optional[Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]],
                                             ResultT]]
     ) -> None:
         # Use provided callback, defaulting to a previously registered callback
@@ -650,7 +660,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
     def register_handle_accepted_callback(
         self,
         handle_accepted_callback: Optional[Callable[[
-            ServerGoalHandle[GoalT, ResultT, FeedbackT]], None]]
+            ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], None]]
     ) -> None:
         """
         Register a callback for handling newly accepted goals.
@@ -718,7 +728,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Waitable['ServerGoalHandl
 
     def register_execute_callback(
         self,
-        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT]], ResultT]
+        execute_callback: Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], ResultT]
     ) -> None:
         """
         Register a callback for executing action goals.

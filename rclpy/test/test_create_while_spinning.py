@@ -21,7 +21,6 @@ import unittest
 
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.client import Client
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.waitable import NumberOfEntities
@@ -74,8 +73,7 @@ class TestCreateWhileSpinning(unittest.TestCase):
             return resp
 
         self.node.create_service(BasicTypesSrv, 'foo', trigger_event)
-        cli: Client[BasicTypesSrv.Request, BasicTypesSrv.Response] = \
-            self.node.create_client(BasicTypesSrv, 'foo')
+        cli = self.node.create_client(BasicTypesSrv, 'foo')
         cli.wait_for_service()
         cli.call_async(BasicTypesSrv.Request())
         assert evt.wait(TIMEOUT)

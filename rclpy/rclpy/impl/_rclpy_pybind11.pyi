@@ -34,10 +34,20 @@ from rclpy.subscription import MessageInfo
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.task import Future
 from rclpy.task import Task
-from rclpy.type_support import (Action, FeedbackMessage, FeedbackT, GetResultServiceRequest,
-                                GetResultServiceResponse, GoalT, Msg, MsgT, ResultT,
-                                SendGoalServiceRequest, SendGoalServiceResponse, Srv, SrvRequestT,
-                                SrvResponseT)
+from rclpy.type_support import Action
+from rclpy.type_support import Srv
+from rclpy.type_support import FeedbackMessage
+from rclpy.type_support import FeedbackT
+from rclpy.type_support import ImplT
+from rclpy.type_support import GetResultServiceRequest
+from rclpy.type_support import GetResultServiceResponse
+from rclpy.type_support import GoalT
+from rclpy.type_support import MsgT
+from rclpy.type_support import ResultT
+from rclpy.type_support import SendGoalServiceRequest
+from rclpy.type_support import SendGoalServiceResponse
+from rclpy.type_support import SrvRequestT
+from rclpy.type_support import SrvResponseT
 from type_description_interfaces.srv import GetTypeDescription
 
 T = TypeVar('T')
@@ -163,7 +173,7 @@ class InvalidHandle(RuntimeError):
 
 class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, srv_type: type[Srv],
+    def __init__(self, node: Node, srv_type: type[Srv[SrvRequestT, SrvResponseT]],
                  srv_name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
@@ -259,7 +269,7 @@ class Publisher(Destroyable, Generic[MsgT]):
 
 class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
 
-    def __init__(self, node: Node, pysrv_type: type[Srv],
+    def __init__(self, node: Node, pysrv_type: type[Srv[SrvRequestT, SrvResponseT]],
                  name: str, pyqos_profile: rmw_qos_profile_t) -> None: ...
 
     @property
@@ -340,12 +350,12 @@ def rclpy_qos_check_compatible(publisher_qos_profile: rmw_qos_profile_t,
     """Check if two QoS profiles are compatible."""
 
 
-class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
+class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
 
     def __init__(
             self,
             node: Node,
-            pyaction_type: type[Action],
+            pyaction_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]],
             action_name: str,
             goal_service_qos: rmw_qos_profile_t,
             result_service_qos: rmw_qos_profile_t,
@@ -411,7 +421,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
 
 class ActionGoalHandle(Destroyable):
 
-    def __init__(self, action_server: ActionServer[Any, Any, Any],
+    def __init__(self, action_server: ActionServer[Any, Any, Any, Any],
                  pygoal_info_msg: GoalInfo) -> None:
         ...
 
@@ -429,13 +439,13 @@ class ActionGoalHandle(Destroyable):
         """Check if a goal is active."""
 
 
-class ActionServer(Generic[GoalT, ResultT, FeedbackT], Destroyable):
+class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
 
     def __init__(
         self,
         node: Node,
         rclpy_clock: Clock,
-        pyaction_type: type[Action],
+        pyaction_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]],
         action_name: str,
         goal_service_qos: rmw_qos_profile_t,
         result_service_qos: rmw_qos_profile_t,
@@ -817,7 +827,7 @@ def rclpy_get_action_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
     """Get all action names and types in the ROS graph."""
 
 
-def rclpy_serialize(pymsg: Msg, py_msg_type: type[Msg]) -> bytes:
+def rclpy_serialize(pymsg: MsgT, py_msg_type: type[MsgT]) -> bytes:
     """Serialize a ROS message."""
 
 

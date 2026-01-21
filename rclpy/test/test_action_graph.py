@@ -45,11 +45,13 @@ TEST_NAMESPACE2 = '/baz_ns'
 
 FibonacciActionClient: TypeAlias = ActionClient[Fibonacci.Goal,
                                                 Fibonacci.Result,
-                                                Fibonacci.Feedback]
+                                                Fibonacci.Feedback,
+                                                Fibonacci.Impl]
 
 FibonacciActionServer: TypeAlias = ActionServer[Fibonacci.Goal,
                                                 Fibonacci.Result,
-                                                Fibonacci.Feedback]
+                                                Fibonacci.Feedback,
+                                                Fibonacci.Impl]
 
 
 class TestActionGraph(unittest.TestCase):

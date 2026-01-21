@@ -27,7 +27,6 @@ import pytest
 from pytest import FixtureRequest
 
 import rclpy
-from rclpy.client import Client
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import LifecycleState
@@ -125,24 +124,19 @@ def test_lifecycle_services(request: FixtureRequest) -> None:
     lc_node_name = 'test_lifecycle_services_lifecycle'
     lc_node = LifecycleNode(lc_node_name)
     client_node = Node('test_lifecycle_services_client')
-    get_state_cli: Client[GetState.Request, GetState.Response] = client_node.create_client(
+    get_state_cli = client_node.create_client(
         GetState,
         f'/{lc_node_name}/get_state')
-    change_state_cli: Client[ChangeState.Request,
-                             ChangeState.Response] = client_node.create_client(
+    change_state_cli = client_node.create_client(
         ChangeState,
         f'/{lc_node_name}/change_state')
-    get_available_states_cli: Client[GetAvailableStates.Request,
-                                     GetAvailableStates.Response] = client_node.create_client(
+    get_available_states_cli = client_node.create_client(
         GetAvailableStates,
         f'/{lc_node_name}/get_available_states')
-    get_available_transitions_cli: Client[GetAvailableTransitions.Request,
-                                          GetAvailableTransitions.Response] = \
-        client_node.create_client(
+    get_available_transitions_cli = client_node.create_client(
             GetAvailableTransitions,
             f'/{lc_node_name}/get_available_transitions')
-    get_transition_graph_cli: Client[GetAvailableTransitions.Request,
-                                     GetAvailableTransitions.Response] = client_node.create_client(
+    get_transition_graph_cli = client_node.create_client(
         GetAvailableTransitions,
         f'/{lc_node_name}/get_transition_graph')
     for cli in (
