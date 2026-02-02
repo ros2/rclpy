@@ -825,12 +825,15 @@ class Executor(ContextManager['Executor']):
                     except InvalidHandle:
                         entity_count.num_guard_conditions -= 1
 
+                valid_waitables = []
                 for waitable in waitables:
                     try:
                         context_stack.enter_context(waitable)
                         entity_count += waitable.get_num_entities()
+                        valid_waitables.append(waitable)
                     except InvalidHandle:
                         pass
+                waitables = valid_waitables
 
                 if self._context.handle is None:
                     raise RuntimeError('Cannot enter context if context is None')
