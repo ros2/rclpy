@@ -69,7 +69,8 @@ class ParameterService:
         for name in request.names:
             try:
                 descriptor = node.describe_parameter(name)
-            except ParameterNotDeclaredException:
+            except ParameterNotDeclaredException as ex:
+                node.get_logger().warning(f'Failed to describe parameters: {ex}')
                 response.descriptors = node.describe_parameters([])
                 return response
             response.descriptors.append(descriptor)
@@ -80,7 +81,8 @@ class ParameterService:
         for name in request.names:
             try:
                 param = node.get_parameter(name)
-            except (ParameterNotDeclaredException, ParameterUninitializedException):
+            except (ParameterNotDeclaredException, ParameterUninitializedException) as ex:
+                node.get_logger().warning(f'Failed to get parameters: {ex}')
                 response.values = node.get_parameters([])
                 return response
             response.values.append(param.get_parameter_value())
@@ -91,7 +93,8 @@ class ParameterService:
         for name in request.names:
             try:
                 value = node.get_parameter_type(name)
-            except ParameterNotDeclaredException:
+            except ParameterNotDeclaredException as ex:
+                node.get_logger().warning(f'Failed to get parameter types: {ex}')
                 response.types = node.get_parameter_types([])
                 return response
             response.types.append(value)
@@ -146,6 +149,7 @@ class ParameterService:
             try:
                 result = node.set_parameters_atomically([param])
             except ParameterNotDeclaredException as e:
+                node.get_logger().warning(f'Failed to set parameter: {e}')
                 result = SetParametersResult(
                     successful=False,
                     reason=str(e)
@@ -159,6 +163,7 @@ class ParameterService:
             response.result = node.set_parameters_atomically([
                 Parameter.from_parameter_msg(p) for p in request.parameters])
         except ParameterNotDeclaredException as e:
+            node.get_logger().warning(f'Failed to set parameters atomically: {e}')
             response.result = SetParametersResult(
                     successful=False,
                     reason=str(e)
