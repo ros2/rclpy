@@ -161,15 +161,18 @@ class ServerGoalHandle:
 
     def succeed(self, response=None):
         self._update_state(_rclpy.GoalEvent.SUCCEED)
-        self._set_result(response)
+        if response is not None:
+            self._set_result(response)
 
     def abort(self, response=None):
         self._update_state(_rclpy.GoalEvent.ABORT)
-        self._set_result(response)
+        if response is not None:
+            self._set_result(response)
 
     def canceled(self, response=None):
         self._update_state(_rclpy.GoalEvent.CANCELED)
-        self._set_result(response)
+        if response is not None:
+            self._set_result(response)
 
     def destroy(self):
         with self._lock:
