@@ -126,9 +126,11 @@ class LifecycleNodeMixin(ManagedEntity):
             # this doesn't only checks, but also imports some stuff we need later
             check_is_valid_srv_type(srv_type)
 
+        clock = self.get_clock()
+
         with self.handle:
             self._state_machine: _rclpy.LifecycleStateMachine = _rclpy.LifecycleStateMachine(
-                self.handle, enable_communication_interface)
+                self.handle, clock.handle, enable_communication_interface)
         if enable_communication_interface:
             self._service_change_state = Service(
                 self._state_machine.service_change_state,
