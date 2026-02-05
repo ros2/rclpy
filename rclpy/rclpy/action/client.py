@@ -239,11 +239,11 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         # key: UUID in bytes, value: callback function
         self._feedback_callbacks: Dict[bytes, Callable[[FeedbackT], None]] = {}
 
+        self._logger = self._node.get_logger().get_child('action_client')
+        self._lock = threading.Lock()
+
         callback_group.add_entity(self)
         self._node.add_waitable(self)
-        self._logger = self._node.get_logger().get_child('action_client')
-
-        self._lock = threading.Lock()
 
     def _generate_random_uuid(self):
         return UUID(uuid=list(uuid.uuid4().bytes))
