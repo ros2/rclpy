@@ -178,10 +178,10 @@ class ActionClient(Waitable):
         # key: UUID in bytes, value: callback function
         self._feedback_callbacks = {}
 
+        self._lock = threading.Lock()
+
         callback_group.add_entity(self)
         self._node.add_waitable(self)
-
-        self._lock = threading.Lock()
 
     def _generate_random_uuid(self):
         return UUID(uuid=list(uuid.uuid4().bytes))
