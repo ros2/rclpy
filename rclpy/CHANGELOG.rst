@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.20 (2026-02-09)
+-------------------
+* Wrap up ActionClient construction before spining (backport `#1591 <https://github.com/ros2/rclpy/issues/1591>`_) (`#1602 <https://github.com/ros2/rclpy/issues/1602>`_)
+* Drop invalid waitables from wait set (`#1590 <https://github.com/ros2/rclpy/issues/1590>`_) (`#1594 <https://github.com/ros2/rclpy/issues/1594>`_)
+* print warning message on owner node if the parameter operation fails. (`#1584 <https://github.com/ros2/rclpy/issues/1584>`_) (`#1597 <https://github.com/ros2/rclpy/issues/1597>`_)
+* Contributors: mergify[bot]
+
 3.3.19 (2025-11-18)
 -------------------
 * Remove accidental tuple (`#1542 <https://github.com/ros2/rclpy/issues/1542>`_) (`#1545 <https://github.com/ros2/rclpy/issues/1545>`_)
