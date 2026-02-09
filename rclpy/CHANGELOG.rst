@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.5 (2026-02-09)
+-------------------
+* Prevents the Future result from being set twice. (`#1599 <https://github.com/ros2/rclpy/issues/1599>`_)
+* Wrap up ActionClient construction before spining (`#1591 <https://github.com/ros2/rclpy/issues/1591>`_)
+* Compatiblity with 'Populate Transitions' `ros2/rcl#1269 <https://github.com/ros2/rcl/issues/1269>`_ (`#1528 <https://github.com/ros2/rclpy/issues/1528>`_)
+* Drop invalid waitables from wait set (`#1590 <https://github.com/ros2/rclpy/issues/1590>`_)
+* give some time for the discovery for test_on_new_message_callback. (`#1585 <https://github.com/ros2/rclpy/issues/1585>`_)
+* print warning message on owner node if the parameter operation fails. (`#1584 <https://github.com/ros2/rclpy/issues/1584>`_)
+* Update release version to 10.0.4 (`#1583 <https://github.com/ros2/rclpy/issues/1583>`_)
+* Update `type_support.py` to use new message abstract base classes  (`#1509 <https://github.com/ros2/rclpy/issues/1509>`_)
+* Contributors: Jasper van Brakel, Michael Carlstrom, Tomoya Fujita, mhidalgo-rai
+
 10.0.4 (2026-01-09)
 -------------------
 * Fix performance bug in MultiThreadedExecutor (hopefully) (`#1547 <https://github.com/ros2/rclpy/issues/1547>`_)
