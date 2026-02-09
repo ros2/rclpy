@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.5 (2026-02-09)
+------------------
+* Prevents the Future result from being set twice. (`#1599 <https://github.com/ros2/rclpy/issues/1599>`_) (`#1603 <https://github.com/ros2/rclpy/issues/1603>`_)
+* Wrap up ActionClient construction before spining (`#1591 <https://github.com/ros2/rclpy/issues/1591>`_) (`#1600 <https://github.com/ros2/rclpy/issues/1600>`_)
+* Drop invalid waitables from wait set (`#1590 <https://github.com/ros2/rclpy/issues/1590>`_) (`#1592 <https://github.com/ros2/rclpy/issues/1592>`_)
+* print warning message on owner node if the parameter operation fails. (`#1584 <https://github.com/ros2/rclpy/issues/1584>`_) (`#1595 <https://github.com/ros2/rclpy/issues/1595>`_)
+* add spinning state for the Executor classes. (`#1510 <https://github.com/ros2/rclpy/issues/1510>`_) (`#1578 <https://github.com/ros2/rclpy/issues/1578>`_)
+* Contributors: mergify[bot]
+
 9.1.4 (2026-01-09)
 ------------------
 * Improve wildcard parsing and optimize the logic for parsing YAML para… (`#1571 <https://github.com/ros2/rclpy/issues/1571>`_) (`#1573 <https://github.com/ros2/rclpy/issues/1573>`_)
