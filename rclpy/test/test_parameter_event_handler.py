@@ -301,6 +301,10 @@ class TestParameterEventHandler(unittest.TestCase):
         assert '/test_node' == self.parameter_event_handler._resolve_path('/test_node')
 
     def test_configure_nodes_filter_with_check_add_parameter_event_callback(self) -> None:
+        if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+           rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+            pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
         remote_node_name1 = 'remote_node_1'
         remote_node1 = rclpy.create_node(
             remote_node_name1,
@@ -380,6 +384,10 @@ class TestParameterEventHandler(unittest.TestCase):
         remote_node2.destroy_node()
 
     def test_configure_nodes_filter_with_check_add_parameter_callback(self) -> None:
+        if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
+           rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
+            pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+
         remote_node_name1 = 'remote_node_1'
         remote_node1 = rclpy.create_node(
             remote_node_name1,
