@@ -15,7 +15,6 @@
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
-from dataclasses import dataclass
 import inspect
 import multiprocessing
 from threading import Condition
@@ -150,10 +149,14 @@ class TimeoutObject:
         self._timeout = timeout
 
 
-@dataclass
 class TaskData:
-    source_node: 'Optional[Node]' = None
-    source_entity: 'Optional[WaitableEntityType]' = None
+    def __init__(
+        self,
+        source_node: "Optional[Node]" = None,
+        source_entity: "Optional[WaitableEntityType]" = None,
+    ):
+        self.source_node = source_node
+        self.source_entity = source_entity
 
 
 class Executor:
