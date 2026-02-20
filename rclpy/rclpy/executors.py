@@ -152,8 +152,8 @@ class TimeoutObject:
 class TaskData:
     def __init__(
         self,
-        source_node: "Optional[Node]" = None,
-        source_entity: "Optional[WaitableEntityType]" = None,
+        source_node: 'Optional[Node]' = None,
+        source_entity: 'Optional[WaitableEntityType]' = None,
     ):
         self.source_node = source_node
         self.source_entity = source_entity
