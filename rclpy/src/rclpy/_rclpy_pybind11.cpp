@@ -30,6 +30,7 @@
 #include "destroyable.hpp"
 #include "duration.hpp"
 #include "clock_event.hpp"
+#include "events_executor/events_executor.hpp"
 #include "exceptions.hpp"
 #include "graph.hpp"
 #include "guard_condition.hpp"
@@ -238,4 +239,6 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_signal_handler_api(m);
   rclpy::define_clock_event(m);
   rclpy::define_lifecycle_api(m);
+
+  rclpy::events_executor::define_events_executor(m);
 }
