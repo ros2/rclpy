@@ -93,7 +93,7 @@ class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
         self._action_client = action_client
         self._goal_id = goal_id
         self._goal_response = goal_response
-        self._status = GoalStatus.STATUS_UNKNOWN
+        self._status: int = GoalStatus.STATUS_UNKNOWN
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ClientGoalHandle):
@@ -251,7 +251,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         callback_group.add_entity(self)
         self._node.add_waitable(self)
 
-    def _generate_random_uuid(self):
+    def _generate_random_uuid(self) -> UUID:
         return UUID(uuid=list(uuid.uuid4().bytes))
 
     def _remove_pending_request(self, future: Future[T], pending_requests: Dict[int, Future[T]]
@@ -545,8 +545,8 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
         if feedback_callback is not None:
             # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid = bytes(request.goal_id.uuid)
-            self._feedback_callbacks[goal_uuid] = feedback_callback
+            goal_uuid_bytes = bytes(request.goal_id.uuid)
+            self._feedback_callbacks[goal_uuid_bytes] = feedback_callback
 
         return future
 

@@ -45,7 +45,7 @@ Srv: TypeAlias = BaseService[SrvRequestT, SrvResponseT]
 GoalT = TypeVar('GoalT', bound=BaseMessage)
 ResultT = TypeVar('ResultT', bound=BaseMessage)
 FeedbackT = TypeVar('FeedbackT', bound=BaseMessage)
-ImplT = TypeVar('ImplT', bound=BaseImpl)
+ImplT = TypeVar('ImplT', bound=BaseImpl[Any, Any, Any])
 
 
 class SendGoalServiceRequest(BaseMessage, Generic[GoalT]):
@@ -58,7 +58,7 @@ class SendGoalServiceResponse(BaseMessage):
     stamp: Time
 
 
-SendGoalService: TypeAlias = BaseService
+SendGoalService: TypeAlias = BaseService[Any, Any]
 
 
 class GetResultServiceRequest(BaseMessage):
@@ -70,7 +70,7 @@ class GetResultServiceResponse(BaseMessage, Generic[ResultT]):
     result: ResultT
 
 
-GetResultService: TypeAlias = BaseService
+GetResultService: TypeAlias = BaseService[Any, Any]
 
 
 class FeedbackMessage(BaseMessage, Generic[FeedbackT]):
@@ -82,8 +82,8 @@ Action: TypeAlias = BaseAction[GoalT, ResultT, FeedbackT, ImplT]
 
 
 # Can be used if https://github.com/python/typing/issues/548 ever gets approved.
-SrvT = TypeVar('SrvT', bound=BaseService)
-ActionT = TypeVar('ActionT', bound=BaseAction)
+SrvT = TypeVar('SrvT', bound=BaseService[Any, Any])
+ActionT = TypeVar('ActionT', bound=BaseAction[Any, Any, Any, Any])
 
 
 def check_for_type_support(msg_or_srv_type: type[Union[Msg,

@@ -15,6 +15,7 @@
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Final
 from typing import List
 from typing import Literal
 from typing import NamedTuple
@@ -34,7 +35,9 @@ from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.service import Service
-from rclpy.type_support import check_is_valid_srv_type, MsgT
+from rclpy.type_support import check_is_valid_srv_type
+from rclpy.type_support import MsgT
+from rclpy.type_support import Srv
 
 from typing_extensions import TypeAlias
 from typing_extensions import Unpack
@@ -64,6 +67,14 @@ class CreateLifecyclePublisherArgs(TypedDict, total=False):
     callback_group: Optional[CallbackGroup]
     event_callbacks: 'Optional[PublisherEventCallbacks]'
     qos_overriding_options: 'Optional[QoSOverridingOptions]'
+
+
+SRV_TYPES: Final[tuple[type[Srv[Any, Any]], ...]] = (
+    lifecycle_msgs.srv.ChangeState,
+    lifecycle_msgs.srv.GetState,
+    lifecycle_msgs.srv.GetAvailableStates,
+    lifecycle_msgs.srv.GetAvailableTransitions,
+)
 
 
 class LifecycleNodeMixin(ManagedEntity):
@@ -117,19 +128,14 @@ class LifecycleNodeMixin(ManagedEntity):
         if callback_group is None:
             callback_group = self.default_callback_group
         self._managed_entities: Set[ManagedEntity] = set()
-        for srv_type in (
-            lifecycle_msgs.srv.ChangeState,
-            lifecycle_msgs.srv.GetState,
-            lifecycle_msgs.srv.GetAvailableStates,
-            lifecycle_msgs.srv.GetAvailableTransitions,
-        ):
+        for srv_type in SRV_TYPES:
             # this doesn't only checks, but also imports some stuff we need later
             check_is_valid_srv_type(srv_type)
 
         clock = self.get_clock()
 
         with self.handle:
-            self._state_machine: _rclpy.LifecycleStateMachine = _rclpy.LifecycleStateMachine(
+            self._state_machine = _rclpy.LifecycleStateMachine(
                 self.handle, clock.handle, enable_communication_interface)
         if enable_communication_interface:
             self._service_change_state = Service(

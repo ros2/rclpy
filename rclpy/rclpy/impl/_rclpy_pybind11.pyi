@@ -127,17 +127,17 @@ class QoSCheckCompatibleResult:
 
 class RCUtilsError(RuntimeError):
 
-    def __init__(self, error_text: str): ...
+    def __init__(self, error_text: str) -> None: ...
 
 
 class RMWError(RuntimeError):
 
-    def __init__(self, error_text: str): ...
+    def __init__(self, error_text: str) -> None: ...
 
 
 class RCLError(RuntimeError):
 
-    def __init__(self, error_text: str): ...
+    def __init__(self, error_text: str) -> None: ...
 
 
 class RCLInvalidROSArgsError(RCLError):
@@ -494,13 +494,13 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
     def send_cancel_response(
         self,
         header: rmw_request_id_t,
-        pyresponse: int
+        pyresponse: CancelGoal.Response
     ) -> None:
         """Send an action cancel response."""
 
     def publish_feedback(
         self,
-        pymsg: FeedbackMessage[FeedbackT]
+        pymsg: FeedbackT
     ) -> None:
         """Publish a feedback message from a given action server."""
 
@@ -787,6 +787,17 @@ class _TopicEndpointInfoDict(TypedDict):
     qos_profile: _rmw_qos_profile_dict
 
 
+class _ServiceEndpointInfoDict(TypedDict):
+    node_name: str
+    node_namespace: str
+    service_type: str
+    service_type_hash: _TypeHashDict
+    qos_profiles: list[_rmw_qos_profile_dict]
+    endpoint_gids: list[list[int]]
+    endpoint_type: int
+    endpoint_count: int
+
+
 def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: bool
                                        ) -> list[_TopicEndpointInfoDict]:
     """Get publishers info for a topic."""
@@ -795,6 +806,16 @@ def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: b
 def rclpy_get_subscriptions_info_by_topic(node: Node, topic_name: str, no_mangle: bool
                                           ) -> list[_TopicEndpointInfoDict]:
     """Get subscriptions info for a topic."""
+
+
+def rclpy_get_clients_info_by_service(node: Node, service_name: str, no_mangle: bool
+                                      ) -> list[_ServiceEndpointInfoDict]:
+    """Get clients info for a service."""
+
+
+def rclpy_get_servers_info_by_service(node: Node, service_name: str, no_mangle: bool
+                                      ) -> list[_ServiceEndpointInfoDict]:
+    """Get servers info for a service."""
 
 
 def rclpy_get_service_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
@@ -1204,7 +1225,7 @@ _LifecycleStateMachineState: TypeAlias = tuple[int, str]
 
 class LifecycleStateMachine(Destroyable):
 
-    def __init__(self, node: Node, enable_com_interface: bool) -> None: ...
+    def __init__(self, node: Node, clock: Clock, enable_com_interface: bool) -> None: ...
 
     @property
     def initialized(self) -> bool:

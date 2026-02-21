@@ -215,7 +215,7 @@ class Executor(ContextManager['Executor']):
         self._nodes: Set[Node] = set()
         self._nodes_lock = RLock()
         # all tasks that are not complete or canceled
-        self._pending_tasks: Dict[Task, TaskData] = {}
+        self._pending_tasks: Dict[Task[Any], TaskData] = {}
         # tasks that are ready to execute
         self._ready_tasks: Deque[Task[Any]] = deque()
         self._tasks_lock = Lock()
@@ -285,13 +285,13 @@ class Executor(ContextManager['Executor']):
 
         :param callback: A callback to be run in the executor.
         """
-        task = Task(callback, args, kwargs, executor=self)
+        task: Task[Any] = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
             self._pending_tasks[task] = TaskData()
         self._call_task_in_next_spin(task)
         return task
 
-    def _call_task_in_next_spin(self, task: Task) -> None:
+    def _call_task_in_next_spin(self, task: Task[Any]) -> None:
         """
         Add a task to the executor to be executed in the next spin.
 
@@ -302,7 +302,7 @@ class Executor(ContextManager['Executor']):
             if self._guard:
                 self._guard.trigger()
 
-    def create_future(self) -> Future:
+    def create_future(self) -> Future[Any]:
         """Create a Future object attached to the Executor."""
         return Future(executor=self)
 

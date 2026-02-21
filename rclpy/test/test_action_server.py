@@ -15,6 +15,7 @@
 import time
 from typing import Any
 from typing import List
+from typing import Optional
 from typing import TYPE_CHECKING
 import unittest
 import uuid
@@ -41,6 +42,10 @@ from unique_identifier_msgs.msg import UUID
 
 
 class MockActionClient:
+
+    if TYPE_CHECKING:
+        feedback_msg: Optional[Fibonacci.Impl.FeedbackMessage]
+        status_msg: Optional[Fibonacci.Impl.GoalStatusMessage]
 
     def __init__(self, node: Node):
         self.reset()
@@ -160,7 +165,7 @@ class TestActionServer(unittest.TestCase):
         goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
         goal_order = 10
 
-        def goal_callback(goal: CancelGoal.Request) -> GoalResponse:
+        def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
             nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.ACCEPT
@@ -202,7 +207,7 @@ class TestActionServer(unittest.TestCase):
     def test_single_goal_reject(self) -> None:
         goal_order = 10
 
-        def goal_callback(goal: CancelGoal.Request) -> GoalResponse:
+        def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
             nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
@@ -232,7 +237,7 @@ class TestActionServer(unittest.TestCase):
 
     def test_goal_callback_invalid_return(self) -> None:
 
-        def goal_callback(goal: CancelGoal.Request) -> str:
+        def goal_callback(goal: Fibonacci.Goal) -> str:
             return 'Invalid return type'
 
         action_server = ActionServer(
@@ -368,8 +373,10 @@ class TestActionServer(unittest.TestCase):
 
     def test_cancel_goal_reject(self) -> None:
 
-        def execute_callback(goal_handle: ServerGoalHandle[Any, Fibonacci.Feedback, Any, Any]
-                             ) -> Fibonacci.Result:
+        def execute_callback(
+            goal_handle: ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                          Fibonacci.Feedback, Fibonacci.Impl]
+        ) -> Fibonacci.Result:
             # Wait, to give the opportunity to cancel
             time.sleep(3.0)
             self.assertFalse(goal_handle.is_cancel_requested)
@@ -705,7 +712,8 @@ class TestActionServer(unittest.TestCase):
 
     def test_feedback(self) -> None:
 
-        def execute_with_feedback(goal_handle: ServerGoalHandle[Any, Fibonacci.Feedback, Any, Any]
+        def execute_with_feedback(goal_handle: ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                                                Fibonacci.Feedback, Fibonacci.Impl]
                                   ) -> Fibonacci.Result:
             feedback = Fibonacci.Feedback()
             feedback.sequence = [1, 1, 2, 3]
@@ -738,7 +746,7 @@ class TestActionServer(unittest.TestCase):
         def execute_with_feedback(goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any, Any]
                                   ) -> Fibonacci.Result:
             try:
-                goal_handle.publish_feedback('different feedback type')  # type: ignore[arg-type]
+                goal_handle.publish_feedback('different feedback type')
             except TypeError:
                 feedback = Fibonacci.Feedback()
                 feedback.sequence = [1, 1, 2, 3]
@@ -825,7 +833,7 @@ class TestActionServer(unittest.TestCase):
     def test_action_introspection_default_status(self) -> None:
         goal_order = 10
 
-        def goal_callback(goal: CancelGoal.Request) -> GoalResponse:
+        def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
             nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
@@ -884,7 +892,7 @@ class TestActionServer(unittest.TestCase):
     def test_configure_introspection_content(self) -> None:
         goal_order = 10
 
-        def goal_callback(goal: CancelGoal.Request) -> GoalResponse:
+        def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
             nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT

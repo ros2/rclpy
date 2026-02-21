@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from enum import Enum, IntEnum
-from typing import (Any, List, Optional, Tuple, TypeVar, Union)
+from typing import Annotated
+from typing import Any
+from typing import Optional
+from typing import Tuple
+from typing import TypeVar
+from typing import Union
 import warnings
 
 from rclpy.duration import Duration
@@ -122,7 +129,7 @@ class QoSProfile:
 
     # Has to be marked Any due to mypy#3004. Return type is actually QoSHistoryPolicy
     @property
-    def history(self) -> Any:
+    def history(self) -> Annotated[Any, QoSHistoryPolicy]:
         """
         Get field 'history'.
 
@@ -137,7 +144,7 @@ class QoSProfile:
 
     # Has to be marked Any due to mypy#3004. Return type is actually QoSReliabilityPolicy
     @property
-    def reliability(self) -> Any:
+    def reliability(self) -> Annotated[Any, QoSReliabilityPolicy]:
         """
         Get field 'reliability'.
 
@@ -152,7 +159,7 @@ class QoSProfile:
 
     # Has to be marked Any due to mypy#3004. Return type is actually QoSDurabilityPolicy
     @property
-    def durability(self) -> Any:
+    def durability(self) -> Annotated[Any, QoSDurabilityPolicy]:
         """
         Get field 'durability'.
 
@@ -215,7 +222,7 @@ class QoSProfile:
 
     # Has to be marked Any due to mypy#3004. Return type is actually QoSLivelinessPolicy
     @property
-    def liveliness(self) -> Any:
+    def liveliness(self) -> Annotated[Any, QoSLivelinessPolicy]:
         """
         Get field 'liveliness'.
 
@@ -290,7 +297,7 @@ class QoSPolicyEnum(IntEnum):
     """
 
     @classmethod
-    def short_keys(cls) -> List[str]:
+    def short_keys(cls) -> list[str]:
         """Return a list of shortened typing-friendly enum values."""
         return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
 
@@ -460,7 +467,7 @@ class QoSPresetProfiles(Enum):
     Our supported version of Python3 (3.5) doesn't have a fix that allows mixins on Enum.
     """
     @classmethod
-    def short_keys(cls) -> List[str]:
+    def short_keys(cls) -> list[str]:
         """Return a list of shortened typing-friendly enum values."""
         return [k.lower() for k in cls.__members__.keys() if not k.startswith('RMW')]
 
