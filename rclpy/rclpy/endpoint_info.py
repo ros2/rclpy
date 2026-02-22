@@ -13,8 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Sequence
 from enum import IntEnum
-from typing import Any, List, Union
+from typing import Annotated
+from typing import Any
+from typing import Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSHistoryPolicy, QoSPresetProfiles, QoSProfile
@@ -55,7 +58,7 @@ class TopicEndpointInfo:
         topic_type: str = '',
         topic_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
         endpoint_type: Union[EndpointTypeEnum, int] = EndpointTypeEnum.INVALID,
-        endpoint_gid: List[int] = [],
+        endpoint_gid: list[int] = [],
         qos_profile: Union[QoSProfile, '_rclpy._rmw_qos_profile_dict'] =
             QoSPresetProfiles.UNKNOWN.value
     ):
@@ -111,7 +114,7 @@ class TopicEndpointInfo:
 
     # Has to be marked Any due to mypy#3004. Return type is actually TypeHash
     @property
-    def topic_type_hash(self) -> Any:
+    def topic_type_hash(self) -> Annotated[Any, TypeHash]:
         """
         Get field 'topic_type_hash'.
 
@@ -130,7 +133,7 @@ class TopicEndpointInfo:
 
     # Has to be marked Any due to mypy#3004. Return type is actually EndpointTypeEnum
     @property
-    def endpoint_type(self) -> Any:
+    def endpoint_type(self) -> Annotated[Any, EndpointTypeEnum]:
         """
         Get field 'endpoint_type'.
 
@@ -148,7 +151,7 @@ class TopicEndpointInfo:
             assert False
 
     @property
-    def endpoint_gid(self) -> List[int]:
+    def endpoint_gid(self) -> list[int]:
         """
         Get field 'endpoint_gid'.
 
@@ -157,13 +160,13 @@ class TopicEndpointInfo:
         return self._endpoint_gid
 
     @endpoint_gid.setter
-    def endpoint_gid(self, value: List[int]) -> None:
+    def endpoint_gid(self, value: list[int]) -> None:
         assert all(isinstance(x, int) for x in value)
         self._endpoint_gid = value
 
     # Has to be marked Any due to mypy#3004. Return type is actually QoSProfile
     @property
-    def qos_profile(self) -> Any:
+    def qos_profile(self) -> Annotated[Any, QoSProfile]:
         """
         Get field 'qos_profile'.
 
@@ -231,9 +234,9 @@ class ServiceEndpointInfo:
         node_namespace: str = '',
         service_type: str = '',
         service_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
-        qos_profiles: List[Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']] = [],
-        endpoint_gids: List[List[int]] = [],
-        endpoint_type: EndpointTypeEnum = EndpointTypeEnum.INVALID,
+        qos_profiles: Sequence[Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']] = [],
+        endpoint_gids: list[list[int]] = [],
+        endpoint_type: Union[EndpointTypeEnum, int] = EndpointTypeEnum.INVALID,
         endpoint_count: int = 0
     ):
         self.node_name = node_name
@@ -287,8 +290,9 @@ class ServiceEndpointInfo:
         assert isinstance(value, str)
         self._service_type = value
 
+    # Has to be marked Any due to mypy#3004. Return type is actually TypeHash
     @property
-    def service_type_hash(self) -> Any:
+    def service_type_hash(self) -> Annotated[Any, TypeHash]:
         """
         Get field 'service_type_hash'.
 
@@ -305,8 +309,9 @@ class ServiceEndpointInfo:
         else:
             assert False
 
+    # Has to be marked Any due to mypy#3004. Return type is actually EndpointTypeEnum
     @property
-    def endpoint_type(self) -> EndpointTypeEnum:
+    def endpoint_type(self) -> Annotated[Any, EndpointTypeEnum]:
         """
         Get field 'endpoint_type'.
 
@@ -338,7 +343,7 @@ class ServiceEndpointInfo:
         self._endpoint_count = value
 
     @property
-    def endpoint_gids(self) -> List[List[int]]:
+    def endpoint_gids(self) -> list[list[int]]:
         """
         Get field 'endpoint_gids'.
 
@@ -347,13 +352,14 @@ class ServiceEndpointInfo:
         return self._endpoint_gids
 
     @endpoint_gids.setter
-    def endpoint_gids(self, value: List[List[int]]) -> None:
+    def endpoint_gids(self, value: list[list[int]]) -> None:
         assert isinstance(value, list)
         assert all(isinstance(x, list) and all(isinstance(i, int) for i in x) for x in value)
         self._endpoint_gids = value
 
+    # Has to be marked Any due to mypy#3004. Return type is actually list[QoSProfile]
     @property
-    def qos_profiles(self) -> List[QoSProfile]:
+    def qos_profiles(self) -> Annotated[Any, list[QoSProfile]]:
         """
         Get field 'qos_profile'.
 
@@ -362,7 +368,7 @@ class ServiceEndpointInfo:
         return self._qos_profiles
 
     @qos_profiles.setter
-    def qos_profiles(self, value: List[Union[QoSProfile, '_rclpy.rmw_qos_profile_dict']]) -> None:
+    def qos_profiles(self, value: list[Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']]) -> None:
         assert isinstance(value, list)
         self._qos_profiles = [v if isinstance(v, QoSProfile) else QoSProfile(**v) for v in value]
 
@@ -379,7 +385,7 @@ class ServiceEndpointInfo:
             gid = '.'.join(format(x, '02x') for x in endpoint_gid)
             gids.append(gid)
 
-        def format_qos(qos, indent='  ') -> str:
+        def format_qos(qos: QoSProfile, indent: str = '  ') -> str:
             return '\n'.join([
                 f'{indent}Reliability: {qos.reliability.name}',
                 f'{indent}History (Depth): {qos.history.name} ({qos.depth})',

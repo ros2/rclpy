@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import math
 import time
 
@@ -2423,7 +2425,7 @@ class Node:
         self,
         service_name: str,
         no_mangle: bool,
-        func: Callable[[_rclpy.Node, str, bool], List['_rclpy.ServiceEndpointInfoDict']]
+        func: Callable[[_rclpy.Node, str, bool], list[_rclpy._ServiceEndpointInfoDict]]
     ) -> List[ServiceEndpointInfo]:
         with self.handle:
             if no_mangle:
