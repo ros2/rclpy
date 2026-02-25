@@ -58,9 +58,9 @@ from rclpy.waitable import NumberOfEntities, Waitable
 from unique_identifier_msgs.msg import UUID
 
 if TYPE_CHECKING:
-    from rclpy.node import Node
     from rclpy.callback_groups import CallbackGroup
-    from typing_extensions import Unpack, TypeAlias
+    from rclpy.node import Node
+    from typing_extensions import TypeAlias, Unpack
 
     ClientGoalHandleDictResultT = TypeVar('ClientGoalHandleDictResultT', bound=Msg)
     ClientGoalHandleDictFeedbackT = TypeVar('ClientGoalHandleDictFeedbackT', bound=Msg)

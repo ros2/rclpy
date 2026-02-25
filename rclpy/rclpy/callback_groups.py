@@ -16,14 +16,13 @@ from threading import Lock
 from typing import Any, Literal, Optional, TYPE_CHECKING, Union
 import weakref
 
-
 if TYPE_CHECKING:
+    from rclpy.client import Client
+    from rclpy.guard_condition import GuardCondition
+    from rclpy.service import Service
     from rclpy.subscription import Subscription
     from rclpy.timer import Timer
-    from rclpy.client import Client
-    from rclpy.service import Service
     from rclpy.waitable import Waitable
-    from rclpy.guard_condition import GuardCondition
     Entity = Union[Subscription[Any], Timer, Client[Any, Any], Service[Any, Any],
                    GuardCondition, Waitable[Any]]
 

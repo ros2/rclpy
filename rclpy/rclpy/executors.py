@@ -65,19 +65,18 @@ from rclpy.utilities import timeout_sec_to_nsec
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
 
+if TYPE_CHECKING:  # Avoid import cycle
+    from typing import TypeAlias
+
+    from rclpy.callback_groups import Entity
+    from rclpy.node import Node  # noqa: F401
+    EntityT = TypeVar('EntityT', bound=Entity)
+
+
 # For documentation purposes
 # TODO(jacobperron): Make all entities implement the 'Waitable' interface for better type checking
 
 T = TypeVar('T')
-
-# Avoid import cycle
-if TYPE_CHECKING:
-    from typing import TypeAlias
-
-    from rclpy.node import Node  # noqa: F401
-    from .callback_groups import Entity
-    EntityT = TypeVar('EntityT', bound=Entity)
-
 
 YieldedCallback: 'TypeAlias' = Generator[Tuple[Task[None],
                                                'Optional[Entity]',

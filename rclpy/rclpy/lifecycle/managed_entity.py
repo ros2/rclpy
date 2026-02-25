@@ -19,6 +19,7 @@ from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 
 if TYPE_CHECKING:
     from typing import TypeAlias
+
     from rclpy.lifecycle.node import LifecycleState
 
 

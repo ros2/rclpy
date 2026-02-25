@@ -18,11 +18,11 @@ from typing import Any, Generic, List, Optional, Type, TYPE_CHECKING, TypeVar
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
-T = TypeVar('T')
-
 if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup
     from rclpy.task import Future
+
+T = TypeVar('T')
 
 
 class NumberOfEntities:
