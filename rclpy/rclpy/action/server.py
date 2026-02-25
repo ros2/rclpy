@@ -50,7 +50,6 @@ from rclpy.waitable import NumberOfEntities, Waitable
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
 
-
 if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup
     from rclpy.node import Node

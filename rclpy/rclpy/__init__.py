@@ -62,8 +62,7 @@ from rclpy.utilities import ok as ok  # noqa: F401 forwarding to this module
 from rclpy.utilities import shutdown as _shutdown
 from rclpy.utilities import try_shutdown as _try_shutdown
 
-# Avoid loading extensions on module import
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # Avoid loading extensions on module import
     from rclpy.executors import Executor
     from rclpy.node import Node
 

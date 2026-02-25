@@ -27,11 +27,10 @@ from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
 
 from type_description_interfaces.srv import GetTypeDescription
 
-START_TYPE_DESCRIPTION_SERVICE_PARAM = 'start_type_description_service'
-
-
 if TYPE_CHECKING:
     from rclpy.node import Node
+
+START_TYPE_DESCRIPTION_SERVICE_PARAM = 'start_type_description_service'
 
 
 class TypeDescriptionService:

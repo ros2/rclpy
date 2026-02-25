@@ -47,9 +47,9 @@ from .publisher import LifecyclePublisher
 
 if TYPE_CHECKING:
     from rclpy.context import Context
+    from rclpy.event_handler import PublisherEventCallbacks
     from rclpy.parameter import Parameter
     from rclpy.qos_overriding_options import QoSOverridingOptions
-    from rclpy.event_handler import PublisherEventCallbacks
 
 TransitionCallbackReturn: TypeAlias = _rclpy.TransitionCallbackReturnType
 

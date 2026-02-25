@@ -22,7 +22,6 @@ import warnings
 import weakref
 
 if TYPE_CHECKING:
-
     from rclpy.executors import Executor
 
 T = TypeVar('T')
