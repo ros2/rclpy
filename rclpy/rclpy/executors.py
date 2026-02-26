@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 import inspect
@@ -23,6 +24,8 @@ import time
 from typing import Any
 from typing import Callable
 from typing import Coroutine
+from typing import Deque
+from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
@@ -146,6 +149,16 @@ class TimeoutObject:
         self._timeout = timeout
 
 
+class TaskData:
+    def __init__(
+        self,
+        source_node: 'Optional[Node]' = None,
+        source_entity: 'Optional[WaitableEntityType]' = None,
+    ):
+        self.source_node = source_node
+        self.source_entity = source_entity
+
+
 class Executor:
     """
     The base class for an executor.
@@ -165,8 +178,10 @@ class Executor:
         self._context = get_default_context() if context is None else context
         self._nodes: Set[Node] = set()
         self._nodes_lock = RLock()
-        # Tasks to be executed (oldest first) 3-tuple Task, Entity, Node
-        self._tasks: List[Tuple[Task, Optional[WaitableEntityType], Optional[Node]]] = []
+        # all tasks that are not complete or canceled
+        self._pending_tasks: Dict[Task, TaskData] = {}
+        # tasks that are ready to execute
+        self._ready_tasks: Deque[Task] = deque()
         self._tasks_lock = Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         self._guard = GuardCondition(
@@ -200,10 +215,20 @@ class Executor:
         """
         task = Task(callback, args, kwargs, executor=self)
         with self._tasks_lock:
-            self._tasks.append((task, None, None))
-            self._guard.trigger()
-        # Task inherits from Future
+            self._pending_tasks[task] = TaskData()
+        self._call_task_in_next_spin(task)
         return task
+
+    def _call_task_in_next_spin(self, task: Task) -> None:
+        """
+        Add a task to the executor to be executed in the next spin.
+
+        :param task: A task to be run in the executor.
+        """
+        with self._tasks_lock:
+            self._ready_tasks.append(task)
+            if self._guard:
+                self._guard.trigger()
 
     def shutdown(self, timeout_sec: float = None) -> bool:
         """
@@ -473,7 +498,10 @@ class Executor:
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
         with self._tasks_lock:
-            self._tasks.append((task, entity, node))
+            self._pending_tasks[task] = TaskData(
+                source_entity=entity,
+                source_node=node
+            )
         return task
 
     def can_execute(self, entity: WaitableEntityType) -> bool:
@@ -517,21 +545,25 @@ class Executor:
                 nodes_to_use = self.get_nodes()
 
             # Yield tasks in-progress before waiting for new work
-            tasks = None
             with self._tasks_lock:
-                tasks = list(self._tasks)
-            if tasks:
-                for task, entity, node in reversed(tasks):
-                    if (not task.executing() and not task.done() and
-                            (node is None or node in nodes_to_use)):
-                        yielded_work = True
-                        yield task, entity, node
-                with self._tasks_lock:
-                    # Get rid of any tasks that are done
-                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].done(), self._tasks))
-                    # Get rid of any tasks that are cancelled
-                    self._tasks = list(filter(lambda t_e_n: not t_e_n[0].cancelled(), self._tasks))
+                # Get rid of any tasks that are done or cancelled
+                for task in list(self._pending_tasks.keys()):
+                    if task.done() or task.cancelled():
+                        del self._pending_tasks[task]
 
+                ready_tasks_count = len(self._ready_tasks)
+            for _ in range(ready_tasks_count):
+                task = self._ready_tasks.popleft()
+                task_data = self._pending_tasks[task]
+                node = task_data.source_node
+                if node is None or node in nodes_to_use:
+                    entity = task_data.source_entity
+                    yielded_work = True
+                    yield task, entity, node
+                else:
+                    # Asked not to execute these tasks, so don't do them yet
+                    with self._tasks_lock:
+                        self._ready_tasks.append(task)
             # Gather entities that can be waited on
             subscriptions: List[Subscription] = []
             guards: List[GuardCondition] = []
