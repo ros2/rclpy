@@ -63,6 +63,26 @@ if TYPE_CHECKING:
         cancel: Tuple['_rclpy.rmw_request_id_t', CancelGoal.Request]
         result: Tuple['_rclpy.rmw_request_id_t', GetResultServiceRequest]
         expired: Tuple[GoalInfo, ...]
+
+    ExecuteCallbackUnion: TypeAlias = Union[
+        Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'], ResultT],
+        Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'],
+                 Coroutine[Any, Any, ResultT]],
+    ]
+    GoalCallbackUnion: TypeAlias = Union[
+        Callable[[GoalT], 'GoalResponse'],
+        Callable[[GoalT], Coroutine[Any, Any, 'GoalResponse']],
+    ]
+    HandleAcceptedCallbackUnion: TypeAlias = Union[
+        Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'], None],
+        Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'],
+                 Coroutine[Any, Any, None]],
+    ]
+    CancelCallbackUnion: TypeAlias = Union[
+        Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'], 'CancelResponse'],
+        Callable[['ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]'],
+                 Coroutine[Any, Any, 'CancelResponse']],
+    ]
 else:
     ServerGoalHandleDict: TypeAlias = Dict[str, object]
 
@@ -233,25 +253,6 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
             self._goal_handle.destroy_when_not_in_use()
             self._goal_handle = None
 
-if TYPE_CHECKING:
-    ExecuteCallbackUnion: TypeAlias = Union[
-        Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], ResultT],
-        Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]],
-                 Coroutine[Any, Any, ResultT]],
-    ]
-    GoalCallbackUnion: TypeAlias = Union[
-        Callable[[GoalT], GoalResponse],
-        Callable[[GoalT], Coroutine[Any, Any, GoalResponse]],
-    ]
-    HandleAcceptedCallbackUnion: TypeAlias = Union[
-        Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], None],
-        Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], Coroutine[Any, Any, None]],
-    ]
-    CancelCallbackUnion: TypeAlias = Union[
-        Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]], CancelResponse],
-        Callable[[ServerGoalHandle[GoalT, ResultT, FeedbackT, ImplT]],
-                 Coroutine[Any, Any, CancelResponse]],
-    ]
 
 def default_handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> None:
     """Execute the goal."""
@@ -283,10 +284,10 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
         *,
         callback_group: 'Optional[CallbackGroup]' = None,
         goal_callback: GoalCallbackUnion[GoalT] = default_goal_callback,
-        handle_accepted_callback: HandleAcceptedCallbackUnion[GoalT, ResultT, FeedbackT, ImplT]
-            = default_handle_accepted_callback,
-        cancel_callback: CancelCallbackUnion[GoalT, ResultT, FeedbackT, ImplT]
-            = default_cancel_callback,
+        handle_accepted_callback: HandleAcceptedCallbackUnion[
+            GoalT, ResultT, FeedbackT, ImplT] = default_handle_accepted_callback,
+        cancel_callback: CancelCallbackUnion[
+            GoalT, ResultT, FeedbackT, ImplT] = default_cancel_callback,
         goal_service_qos_profile: QoSProfile = qos_profile_services_default,
         result_service_qos_profile: QoSProfile = qos_profile_services_default,
         cancel_service_qos_profile: QoSProfile = qos_profile_services_default,
