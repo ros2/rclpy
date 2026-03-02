@@ -75,15 +75,16 @@ if TYPE_CHECKING:
         result: Tuple[int, GetResultServiceResponse[ClientGoalHandleDictResultT]]
         feedback: FeedbackMessage[ClientGoalHandleDictFeedbackT]
         status: GoalStatusArray
+
+    FeedbackCallbackUnion: TypeAlias = Union[
+        Callable[[FeedbackMessage[FeedbackT]], None],
+        Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
+    ]
 else:
     ClientGoalHandleDict: 'TypeAlias' = Dict[str, object]
 
 
 T = TypeVar('T')
-FeedbackCallbackUnion: TypeAlias = Union[
-    Callable[[FeedbackMessage[FeedbackT]], None],
-    Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
-]
 
 
 class SendGoalKWargs(TypedDict):
