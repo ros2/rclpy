@@ -80,15 +80,14 @@ else:
 
 
 T = TypeVar('T')
+FeedbackCallbackUnion: TypeAlias = Union[
+    Callable[[FeedbackMessage[FeedbackT]], None],
+    Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
+]
 
 
 class SendGoalKWargs(TypedDict):
-    feedback_callback: Optional[
-        Union[
-            Callable[[FeedbackMessage[FeedbackT]], None],
-            Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
-        ]
-    ]
+    feedback_callback: Optional[FeedbackCallbackUnion[FeedbackT]]
     goal_uuid: Optional[UUID]
 
 
@@ -250,13 +249,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         # key: result request sequence_number, value: UUID
         self._result_sequence_number_to_goal_id: Dict[int, UUID] = {}
         # key: UUID in bytes, value: callback function
-        self._feedback_callbacks: Dict[
-            bytes,
-            Union[
-                Callable[[FeedbackMessage[FeedbackT]], None],
-                Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
-            ],
-        ] = {}
+        self._feedback_callbacks: Dict[bytes, FeedbackCallbackUnion[FeedbackT]] = {}
 
         self._logger = self._node.get_logger().get_child('action_client')
         self._lock = threading.Lock()
@@ -514,12 +507,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
     def send_goal_async(
         self,
         goal: GoalT,
-        feedback_callback: Optional[
-            Union[
-                Callable[[FeedbackMessage[FeedbackT]], None],
-                Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
-            ]
-        ] = None,
+        feedback_callback: Optional[FeedbackCallbackUnion[FeedbackT]] = None,
         goal_uuid: Optional[UUID] = None
     ) -> Future[ClientGoalHandle[GoalT, ResultT, FeedbackT, ImplT]]:
         """
