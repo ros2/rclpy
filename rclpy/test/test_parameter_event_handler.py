@@ -21,7 +21,6 @@ import unittest
 
 import pytest
 
-from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterEvent
 import rclpy.context
 from rclpy.executors import SingleThreadedExecutor
@@ -344,11 +343,11 @@ class TestParameterEventHandler(unittest.TestCase):
         def callback(param: ParameterEvent) -> None:
             nonlocal received_event_from_remote_node1, received_event_from_remote_node2
             for changed_parameter in param.changed_parameters:
-                if param.node == f'/rclpy/{remote_node_name1}' and \
-                   changed_parameter.name == remote_node1_param_name:
+                if (param.node == f'/rclpy/{remote_node_name1}'
+                        and changed_parameter.name == remote_node1_param_name):
                     received_event_from_remote_node1 = True
-                elif param.node == f'/rclpy/{remote_node_name2}' and \
-                     changed_parameter.name == remote_node2_param_name:
+                elif (param.node == f'/rclpy/{remote_node_name2}'
+                        and changed_parameter.name == remote_node2_param_name):
                     received_event_from_remote_node2 = True
 
         # Configure to only receive parameter events from remote_node_name2
@@ -426,33 +425,40 @@ class TestParameterEventHandler(unittest.TestCase):
         remote_node1.declare_parameter(remote_node1_param_name, 10)
         remote_node2.declare_parameter(remote_node2_param_name, 'Default')
 
+        # Recreate the ParameterEventHandler after declaring parameters so that
+        # its subscription starts with an empty queue. This avoids leftover
+        # declare_parameter events (new_parameters) that would trigger
+        # add_parameter_callback before the content filter takes effect.
+        self.parameter_event_handler = ParameterEventHandlerTester(
+            self.handler_node,
+            qos_profile_parameter_events,
+        )
+
         received_event_from_remote_node1 = False
         received_event_from_remote_node2 = False
 
-        # Only track changed_parameters to ignore queued declare_parameter events.
-        def callback_changed_event(event: ParameterEvent) -> None:
-            nonlocal received_event_from_remote_node1, received_event_from_remote_node2
-            for changed_parameter in event.changed_parameters:
-                if event.node == f'/rclpy/{remote_node_name1}' and \
-                   changed_parameter.name == remote_node1_param_name:
-                    received_event_from_remote_node1 = True
-                elif event.node == f'/rclpy/{remote_node_name2}' and \
-                     changed_parameter.name == remote_node2_param_name:
-                    received_event_from_remote_node2 = True
+        def callback_node1(param: Parameter) -> None:
+            nonlocal received_event_from_remote_node1
+            received_event_from_remote_node1 = True
+
+        def callback_node2(param: Parameter) -> None:
+            nonlocal received_event_from_remote_node2
+            received_event_from_remote_node2 = True
 
         # Configure to only receive parameter events from remote_node_name2
         assert self.parameter_event_handler.configure_nodes_filter(
             [f'/rclpy/{remote_node_name2}'])
 
-        # Note: add_parameter_callback internally uses get_parameter_from_event, which
-        # searches both new_parameters and changed_parameters. This means a queued
-        # declare_parameter event (new_parameters) could trigger the parameter callback
-        # before the content filter takes effect — bypassing the filter on RMW
-        # implementations that don't retroactively purge queued messages.
-        # To make this test deterministic, we use an event-level callback that only
-        # inspects changed_parameters for the assertion flags, rather than relying on
-        # parameter-level callbacks which cannot distinguish new vs changed.
-        self.parameter_event_handler.add_parameter_event_callback(callback_changed_event)
+        self.parameter_event_handler.add_parameter_callback(
+            remote_node1_param_name,
+            f'/rclpy/{remote_node_name1}',
+            callback_node1
+        )
+        self.parameter_event_handler.add_parameter_callback(
+            remote_node2_param_name,
+            f'/rclpy/{remote_node_name2}',
+            callback_node2
+        )
 
         def wait_param_event(executor: SingleThreadedExecutor, timeout: int,
                              condition: Optional[Callable[[], bool]] = None):
