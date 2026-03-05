@@ -80,16 +80,15 @@ if TYPE_CHECKING:
         Callable[[FeedbackMessage[FeedbackT]], None],
         Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
     ]
+
+    class SendGoalKWargs(TypedDict, Generic[FeedbackT]):
+        feedback_callback: Optional[FeedbackCallbackUnion[FeedbackT]]
+        goal_uuid: Optional[UUID]
 else:
     ClientGoalHandleDict: 'TypeAlias' = Dict[str, object]
 
 
 T = TypeVar('T')
-
-
-class SendGoalKWargs(TypedDict, Generic[FeedbackT]):
-    feedback_callback: Optional[FeedbackCallbackUnion[FeedbackT]]
-    goal_uuid: Optional[UUID]
 
 
 class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
