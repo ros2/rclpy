@@ -332,7 +332,7 @@ class TestActionServer(unittest.TestCase):
             goal_handle.canceled()
             return Fibonacci.Result()
 
-        def cancel_callback(request: CancelGoal.Request) -> CancelResponse:
+        def cancel_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> CancelResponse:
             return CancelResponse.ACCEPT
 
         executor = MultiThreadedExecutor(context=self.context)
@@ -383,7 +383,7 @@ class TestActionServer(unittest.TestCase):
             goal_handle.canceled()
             return Fibonacci.Result()
 
-        def cancel_callback(request: CancelGoal.Request) -> CancelResponse:
+        def cancel_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> CancelResponse:
             return CancelResponse.REJECT
 
         executor = MultiThreadedExecutor(context=self.context)
@@ -431,7 +431,7 @@ class TestActionServer(unittest.TestCase):
             nonlocal server_goal_handle
             server_goal_handle = gh
 
-        def cancel_callback(request: CancelGoal.Request) -> CancelResponse:
+        def cancel_callback(goal_handle: ServerGoalHandle[Any, Any, Any, Any]) -> CancelResponse:
             return CancelResponse.ACCEPT
 
         def execute_callback(gh: ServerGoalHandle[Fibonacci.Goal,

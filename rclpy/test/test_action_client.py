@@ -32,6 +32,9 @@ from test_msgs.action import Fibonacci
 
 from unique_identifier_msgs.msg import UUID
 
+if TYPE_CHECKING:
+    from rclpy.type_support import FeedbackMessage
+
 # TODO(jacobperron) Reduce fudge once wait_for_service uses node graph events
 TIME_FUDGE = 0.3
 
@@ -85,6 +88,7 @@ class TestActionClient(unittest.TestCase):
         executor: SingleThreadedExecutor
         node: rclpy.node.Node
         mock_action_server: MockActionServer
+        feedback: FeedbackMessage[Fibonacci.Feedback] | None
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -102,7 +106,7 @@ class TestActionClient(unittest.TestCase):
     def setUp(self) -> None:
         self.feedback = None
 
-    def feedback_callback(self, feedback: Fibonacci.Feedback) -> None:
+    def feedback_callback(self, feedback: FeedbackMessage[Fibonacci.Feedback]) -> None:
         self.feedback = feedback
 
     def timed_spin(self, duration: float) -> None:
@@ -391,9 +395,9 @@ class TestActionClient(unittest.TestCase):
         ac = ActionClient(self.node, Fibonacci, 'fibonacci')
         try:
             with self.assertRaises(TypeError):
-                ac.send_goal('different goal type')  # type: ignore[call-arg]
+                ac.send_goal('different goal type')  # type: ignore[call-arg,arg-type]
             with self.assertRaises(TypeError):
-                ac.send_goal_async('different goal type')
+                ac.send_goal_async('different goal type')  # type: ignore[arg-type]
         finally:
             ac.destroy()
 
