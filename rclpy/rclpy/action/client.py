@@ -87,7 +87,7 @@ else:
 T = TypeVar('T')
 
 
-class SendGoalKWargs(TypedDict):
+class SendGoalKWargs(TypedDict, Generic[FeedbackT]):
     feedback_callback: Optional[FeedbackCallbackUnion[FeedbackT]]
     goal_uuid: Optional[UUID]
 
@@ -458,7 +458,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
     # End Waitable API
 
-    def send_goal(self, goal: GoalT, **kwargs: 'Unpack[SendGoalKWargs]'
+    def send_goal(self, goal: GoalT, **kwargs: 'Unpack[SendGoalKWargs[FeedbackT]]'
                   ) -> Optional[GetResultServiceResponse[ResultT]]:
         """
         Send a goal and wait for the result.
