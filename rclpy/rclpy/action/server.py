@@ -266,7 +266,9 @@ def default_goal_callback(
     return GoalResponse.ACCEPT
 
 
-def default_cancel_callback(cancel_request: CancelGoal.Request) -> Literal[CancelResponse.REJECT]:
+def default_cancel_callback(
+    goal_handle: ServerGoalHandle[Any, Any, Any, Any]
+) -> Literal[CancelResponse.REJECT]:
     """No cancellations."""
     return CancelResponse.REJECT
 
