@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.3.21 (2026-03-09)
+-------------------
 * Fix issues with resuming async tasks awaiting a future (backport `#1469 <https://github.com/ros2/rclpy/issues/1469>`_) (`#1582 <https://github.com/ros2/rclpy/issues/1582>`_)
 * Contributors: Błażej Sowa
 
