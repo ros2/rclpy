@@ -2,6 +2,15 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.6 (2026-03-09)
+-------------------
+* Fix incorrect action client/server callback type hints (`#1616 <https://github.com/ros2/rclpy/issues/1616>`_)
+* avoid stale parameter events in content filter tests. (`#1615 <https://github.com/ros2/rclpy/issues/1615>`_)
+* fix violations (`#1614 <https://github.com/ros2/rclpy/issues/1614>`_)
+* Typing Regression Fixes (`#1612 <https://github.com/ros2/rclpy/issues/1612>`_)
+* CFT is only supported rmw_fastrtps and rmw_connextdds. (`#1611 <https://github.com/ros2/rclpy/issues/1611>`_)
+* Contributors: Błażej Sowa, Michael Carlstrom, Tomoya Fujita
+
 10.0.5 (2026-02-09)
 -------------------
 * Prevents the Future result from being set twice. (`#1599 <https://github.com/ros2/rclpy/issues/1599>`_)
