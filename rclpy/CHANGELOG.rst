@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix issues with resuming async tasks awaiting a future (backport `#1469 <https://github.com/ros2/rclpy/issues/1469>`_) (`#1582 <https://github.com/ros2/rclpy/issues/1582>`_)
+* Contributors: Błażej Sowa
+
 3.3.20 (2026-02-09)
 -------------------
 * Wrap up ActionClient construction before spining (backport `#1591 <https://github.com/ros2/rclpy/issues/1591>`_) (`#1602 <https://github.com/ros2/rclpy/issues/1602>`_)
