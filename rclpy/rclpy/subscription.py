@@ -205,6 +205,12 @@ class Subscription(Generic[MsgT]):
             return self.__subscription.get_logger_name()
 
     @property
+    def is_cft_supported(self) -> bool:
+        """Check if content filtering is supported for this subscription."""
+        with self.handle:
+            return self.__subscription.is_cft_supported()
+
+    @property
     def is_cft_enabled(self) -> bool:
         """Check if content filtering is enabled for the subscription."""
         with self.handle:
