@@ -421,7 +421,7 @@ class TestActionServer(unittest.TestCase):
         action_server.destroy()
         executor.shutdown()
 
-    def test_cancel_defered_goal(self) -> None:
+    def test_cancel_deferred_goal(self) -> None:
         server_goal_handle = None
 
         def handle_accepted_callback(gh: ServerGoalHandle[Fibonacci.Goal,

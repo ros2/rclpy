@@ -395,7 +395,7 @@ QoSLivelinessPolicy: TypeAlias = LivelinessPolicy
 # See `RMW_QOS_DEADLINE_BEST_AVAILABLE` in rmw/types.h for more info.
 DeadlineBestAvailable = Duration(nanoseconds=_rclpy.RMW_QOS_DEADLINE_BEST_AVAILABLE)
 
-# Liveliness lease duraiton policy to match the majority of endpoints while being as strict as
+# Liveliness lease duration policy to match the majority of endpoints while being as strict as
 # possible
 # See `RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE` in rmw/types.h for more info.
 LivelinessLeaseDurationeBestAvailable = Duration(
