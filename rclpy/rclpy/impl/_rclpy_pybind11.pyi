@@ -935,7 +935,7 @@ class EventHandle(Destroyable, Generic[T]):
     @overload
     def __init__(
         self,
-        subscription: Publisher[Any],
+        publisher: Publisher[Any],
         event_type: rcl_publisher_event_type_t
     ) -> None: ...
 
