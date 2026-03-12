@@ -368,7 +368,7 @@ class TestActionServer(unittest.TestCase):
         action_server.destroy()
         executor.shutdown()
 
-    def test_cancel_defered_goal(self):
+    def test_cancel_deferred_goal(self):
         server_goal_handle = None
 
         def handle_accepted_callback(gh):
