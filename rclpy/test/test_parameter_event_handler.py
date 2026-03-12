@@ -118,7 +118,7 @@ class TestParameterEventHandler(unittest.TestCase):
             new_parameters=[int_param, str_param]
         )
 
-        # Correct parameter name, corrent node name
+        # Correct parameter name, correct node name
         assert int_param == ParameterEventHandler.get_parameter_from_event(
             new_params_event, 'int_param', self.target_node.get_fully_qualified_name()
         )

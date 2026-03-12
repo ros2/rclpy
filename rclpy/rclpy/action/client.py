@@ -224,7 +224,7 @@ class ActionClient(Waitable):
         if seq in self._result_sequence_number_to_goal_id:
             goal_uuid = bytes(self._result_sequence_number_to_goal_id[seq].uuid)
             del self._result_sequence_number_to_goal_id[seq]
-            # remove feeback_callback if user is aware of result and it's been received
+            # remove feedback_callback if user is aware of result and it's been received
             if goal_uuid in self._feedback_callbacks:
                 del self._feedback_callbacks[goal_uuid]
 
