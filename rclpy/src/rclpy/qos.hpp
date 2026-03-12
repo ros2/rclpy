@@ -43,7 +43,7 @@ struct QoSCheckCompatibleResult
 
 /// Check if two QoS profiles are compatible.
 /**
- * Two QoS profiles are compatible if a publisher and subcription
+ * Two QoS profiles are compatible if a publisher and subscription
  * using the QoS policies can communicate with each other.
  *
  * If any policies have value "system default" or "unknown" then it is possible that

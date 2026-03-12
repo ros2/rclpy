@@ -38,7 +38,7 @@ class TimeSource:
         self._clock_sub: Optional['Subscription[rosgraph_msgs.msg.Clock]'] = None
         self._node_weak_ref: Optional[weakref.ReferenceType['Node']] = None
         self._associated_clocks: Set[ROSClock] = set()
-        # Zero time is a special value that means time is uninitialzied
+        # Zero time is a special value that means time is uninitialized
         self._last_time_set = Time(clock_type=ClockType.ROS_TIME)
         self._ros_time_is_active = False
         if node is not None:

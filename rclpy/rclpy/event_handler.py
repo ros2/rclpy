@@ -161,7 +161,7 @@ class EventHandler(Waitable[EventHandlerData]):
         return NumberOfEntities(num_events=1)
 
     def add_to_wait_set(self, wait_set: _rclpy.WaitSet) -> None:
-        """Add entites to wait set."""
+        """Add entities to wait set."""
         with self.__event:
             self._event_index = wait_set.add_event(self.__event)
 
