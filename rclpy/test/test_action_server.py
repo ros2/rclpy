@@ -369,7 +369,7 @@ class TestActionServer(unittest.TestCase):
         executor.shutdown()
 
 <<<<<<< HEAD
-    def test_cancel_defered_goal(self):
+    def test_cancel_deferred_goal(self):
 =======
     def test_cancel_deferred_goal(self) -> None:
 >>>>>>> 90c7406 (Correct typos (#1619))

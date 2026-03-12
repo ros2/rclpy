@@ -412,23 +412,7 @@ class LivelinessPolicy(QoSPolicyEnum):
 
 
 # Alias with the old name, for retrocompatibility
-<<<<<<< HEAD
 QoSLivelinessPolicy = LivelinessPolicy
-=======
-QoSLivelinessPolicy: TypeAlias = LivelinessPolicy
-
-# Deadline policy to match the majority of endpoints while being as strict as possible
-# See `RMW_QOS_DEADLINE_BEST_AVAILABLE` in rmw/types.h for more info.
-DeadlineBestAvailable = Duration(nanoseconds=_rclpy.RMW_QOS_DEADLINE_BEST_AVAILABLE)
-
-# Liveliness lease duration policy to match the majority of endpoints while being as strict as
-# possible
-# See `RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE` in rmw/types.h for more info.
-LivelinessLeaseDurationeBestAvailable = Duration(
-    nanoseconds=_rclpy.RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE
-)
-
->>>>>>> 90c7406 (Correct typos (#1619))
 
 # The details of the following profiles can be found at
 # 1. ROS QoS principles:

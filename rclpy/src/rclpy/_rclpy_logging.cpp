@@ -94,29 +94,6 @@ rclpy_logging_get_logger_effective_level(const char * name)
   return logger_level;
 }
 
-<<<<<<< HEAD
-=======
-/// Get the level of a logger
-/**
- * This considers the severity level of the specified logger only.
- *
- * \param[in] name Fully-qualified name of logger.
- * \return The level of the logger
- */
-int
-rclpy_logging_get_logger_level(const char * name)
-{
-  std::lock_guard<std::mutex> lock(g_logging_lock);
-  int logger_level = rcutils_logging_get_logger_level(name);
-
-  if (logger_level < 0) {
-    rcutils_reset_error();
-    throw std::runtime_error("Failed to get level for logger");
-  }
-  return logger_level;
-}
-
->>>>>>> 90c7406 (Correct typos (#1619))
 /// Determine if the logger is enabled for a severity.
 /**
  *

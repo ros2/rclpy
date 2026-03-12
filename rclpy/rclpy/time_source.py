@@ -29,19 +29,11 @@ USE_SIM_TIME_NAME = 'use_sim_time'
 
 class TimeSource:
 
-<<<<<<< HEAD
     def __init__(self, *, node=None):
         self._clock_sub = None
         self._node_weak_ref = None
         self._associated_clocks = []
         # Zero time is a special value that means time is uninitialzied
-=======
-    def __init__(self, *, node: Optional['Node'] = None):
-        self._clock_sub: Optional['Subscription[rosgraph_msgs.msg.Clock]'] = None
-        self._node_weak_ref: Optional[weakref.ReferenceType['Node']] = None
-        self._associated_clocks: Set[ROSClock] = set()
-        # Zero time is a special value that means time is uninitialized
->>>>>>> 90c7406 (Correct typos (#1619))
         self._last_time_set = Time(clock_type=ClockType.ROS_TIME)
         self._ros_time_is_active = False
         if node is not None:
