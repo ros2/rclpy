@@ -312,7 +312,7 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t num
 {
   py::gil_scoped_acquire gil_acquire;
 
-  // Largely based on rclpy.Executor._take_subscription() and _execute_subcription().
+  // Largely based on rclpy.Executor._take_subscription() and _execute_subscription().
   // https://github.com/ros2/rclpy/blob/06d78fb28a6d61ede793201ae75474f3e5432b47/rclpy/rclpy/executors.py#L355-L367
   //
   // NOTE: Simple object attributes we can count on to be owned by the parent object, but bound

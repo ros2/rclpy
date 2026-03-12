@@ -223,7 +223,7 @@ ActionServer::notify_goal_done()
 {
   rcl_ret_t ret = rcl_action_notify_goal_done(rcl_action_server_.get());
   if (RCL_RET_OK != ret) {
-    throw rclpy::RCLError("Failed to notfiy action server of goal done");
+    throw rclpy::RCLError("Failed to notify action server of goal done");
   }
 }
 
