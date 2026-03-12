@@ -141,7 +141,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             executor.spin_once(timeout_sec=1)
         self.assertIsNotNone(self.raw_subscription_msg, 'raw subscribe timed out')
         self.assertIs(type(self.raw_subscription_msg), bytes, 'raw subscribe did not return bytes')
-        # The length might be implementation dependant, but shouldn't be zero
+        # The length might be implementation dependent, but shouldn't be zero
         # There may be a canonical serialization in the future at which point this can be updated
         self.assertNotEqual(len(self.raw_subscription_msg), 0, 'raw subscribe invalid length')
 

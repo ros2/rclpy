@@ -135,7 +135,7 @@ def get_available_rmw_implementations() -> Set[str]:
         missing_rmw_implementations = set(rmw_implementations) - \
             available_rmw_implementations
         if missing_rmw_implementations:
-            # TODO(sloretz) function name suggets to me it would return available ones even
+            # TODO(sloretz) function name suggests to me it would return available ones even
             # if some were missing.
             raise RuntimeError(
                 f'The RMW implementations {missing_rmw_implementations} '

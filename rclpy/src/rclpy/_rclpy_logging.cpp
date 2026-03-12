@@ -109,7 +109,7 @@ rclpy_logging_get_logger_effective_level(const char * name)
 
 /// Get the level of a logger
 /**
- * This considers the severity level of the specifed logger only.
+ * This considers the severity level of the specified logger only.
  *
  * \param[in] name Fully-qualified name of logger.
  * \return The level of the logger

@@ -269,7 +269,7 @@ void define_waitset(py::object module)
     "Add a service to the wait set structure")
   .def(
     "add_subscription", &WaitSet::add_subscription,
-    "Add a subcription to the wait set structure")
+    "Add a subscription to the wait set structure")
   .def(
     "add_client", &WaitSet::add_client,
     "Add a client to the wait set structure")

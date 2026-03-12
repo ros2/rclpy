@@ -100,7 +100,7 @@ class TestParameterClient(unittest.TestCase):
         assert results.descriptors[0].type == ParameterType.PARAMETER_INTEGER_ARRAY
         assert results.descriptors[0].name == 'int_arr_param'
 
-    def test_get_paramter_types(self):
+    def test_get_parameter_types(self):
         future = self.client.get_parameter_types(['int_arr_param'])
         self.executor.spin_until_future_complete(future)
         results = future.result()
