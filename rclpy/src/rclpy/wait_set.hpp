@@ -79,7 +79,7 @@ public:
   size_t
   add_service(const Service & service);
 
-  /// Add a subcription to the wait set structure
+  /// Add a subscription to the wait set structure
   /**
    * Raises RCLError if any lower level error occurs
    *

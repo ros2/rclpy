@@ -134,7 +134,7 @@ def test_cancel_reset(period):
                         executor.spin_once(timeout_sec=period / 10)
                     assert [] == callbacks
 
-                    # Reenable timer and make sure callbacks are received again
+                    # Re-enable timer and make sure callbacks are received again
                     timer.reset()
                     assert not timer.is_canceled()
                     begin_time = time.time()
