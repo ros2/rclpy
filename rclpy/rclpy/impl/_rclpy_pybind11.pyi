@@ -351,7 +351,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT], Destroyable):
         """Take an action goal response."""
 
     def send_result_request(self, pyrequest: GetResultServiceRequest) -> int:
-        """Send an action result requst."""
+        """Send an action result request."""
 
     def take_cancel_response(self, pymsg_type: type[CancelGoal.Response]
                              ) -> tuple[int, CancelGoal.Response] | tuple[None, None]:
@@ -494,7 +494,7 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT], Destroyable):
     def process_cancel_request(
         self,
         pycancel_request: CancelGoal.Request,
-        pycancel_response_tpye: type[CancelGoal.Response]
+        pycancel_response_type: type[CancelGoal.Response]
     ) -> CancelGoal.Response:
         """Process a cancel request."""
 
@@ -670,7 +670,7 @@ class WaitSet(Destroyable):
         """Add a service to the wait set structure."""
 
     def add_subscription(self, subscription: Subscription[Any]) -> int:
-        """Add a subcription to the wait set structure."""
+        """Add a subscription to the wait set structure."""
 
     def add_client(self, client: Client[Any, Any]) -> int:
         """Add a client to the wait set structure."""
@@ -857,14 +857,14 @@ class EventHandle(Destroyable, Generic[T]):
     @overload
     def __init__(
         self,
-        subcription: Subscription[Any],
+        subscription: Subscription[Any],
         event_type: rcl_subscription_event_type_t
     ) -> None: ...
 
     @overload
     def __init__(
         self,
-        subcription: Publisher[Any],
+        publisher: Publisher[Any],
         event_type: rcl_publisher_event_type_t
     ) -> None: ...
 
