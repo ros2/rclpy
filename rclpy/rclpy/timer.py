@@ -76,7 +76,7 @@ class BaseTimer:
 
     def __init__(
         self,
-        callback: AsyncTimerCallbackType,
+        callback: Optional[TimerCallbackUnion],
         timer_period_ns: int,
         clock: Clock,
         *,
@@ -90,7 +90,6 @@ class BaseTimer:
         with self._clock.handle, self._context.handle:
             self.__timer = _rclpy.Timer(
                 self._clock.handle, self._context.handle, timer_period_ns, autostart)
-        self.timer_period_ns = timer_period_ns
         self.callback = callback
 
     @property
@@ -119,8 +118,8 @@ class BaseTimer:
     @timer_period_ns.setter
     def timer_period_ns(self, value: int) -> None:
         val = int(value)
-        with self.__timer:
-            self.__timer.change_timer_period(val)
+        with self.handle:
+            self.handle.change_timer_period(val)
 
     def is_ready(self) -> bool:
         with self.__timer:

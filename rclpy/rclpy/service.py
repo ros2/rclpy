@@ -50,7 +50,7 @@ class BaseService(Generic[SrvRequestT, SrvResponseT]):
         service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]',
         srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
-        callback: AsyncGenericServiceCallback[SrvRequestT, SrvResponseT],
+        callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         qos_profile: QoSProfile
     ) -> None:
         self.__service = service_impl

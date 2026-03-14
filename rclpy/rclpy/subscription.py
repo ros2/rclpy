@@ -62,11 +62,10 @@ GenericSubscriptionCallback: TypeAlias = Union[Callable[[T], None],
                                                Callable[[T, MessageInfo], None]]
 AsyncGenericSubscriptionCallback: TypeAlias = Union[Callable[[T], Awaitable[None]],
                                                     Callable[[T, MessageInfo], Awaitable[None]]]
-AsyncSubscriptionCallbackUnion: TypeAlias = Union[AsyncGenericSubscriptionCallback[MsgT],
-                                                  AsyncGenericSubscriptionCallback[bytes]]
-SubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallback[MsgT],
-                                             GenericSubscriptionCallback[bytes],
-                                             AsyncSubscriptionCallbackUnion[MsgT]]
+GenericSubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallback[T],
+                                                    AsyncGenericSubscriptionCallback[T]]
+SubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallbackUnion[MsgT],
+                                             GenericSubscriptionCallbackUnion[bytes]]
 
 
 class BaseSubscription(Generic[MsgT]):
@@ -81,7 +80,7 @@ class BaseSubscription(Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: AsyncGenericSubscriptionCallback[bytes],
+         callback: GenericSubscriptionCallbackUnion[bytes],
          qos_profile: QoSProfile,
          raw: Literal[True],
     ) -> None: ...
@@ -92,7 +91,7 @@ class BaseSubscription(Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: AsyncGenericSubscriptionCallback[MsgT],
+         callback: GenericSubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: Literal[False],
     ) -> None: ...
@@ -103,7 +102,7 @@ class BaseSubscription(Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: AsyncSubscriptionCallbackUnion[MsgT],
+         callback: SubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: bool,
     ) -> None: ...
@@ -113,14 +112,15 @@ class BaseSubscription(Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: AsyncSubscriptionCallbackUnion[MsgT],
+         callback: SubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: bool,
     ) -> None:
         self.__subscription = subscription_impl
         self.msg_type = msg_type
         self.topic = topic
-        self.callback = callback
+        self._callback = callback
+        self._set_callback_type(callback)
         self.qos_profile = qos_profile
         self.raw = raw
 
@@ -140,15 +140,6 @@ class BaseSubscription(Generic[MsgT]):
     def topic_name(self) -> str:
         with self.handle:
             return self.__subscription.get_topic_name()
-
-    @property
-    def callback(self) -> AsyncSubscriptionCallbackUnion[MsgT]:
-        return self._callback
-
-    @callback.setter
-    def callback(self, value: AsyncSubscriptionCallbackUnion[MsgT]) -> None:
-        self._callback = value
-        self._set_callback_type(value)
 
     def _set_callback_type(self, callback: SubscriptionCallbackUnion[MsgT]) -> None:
         try:
@@ -221,7 +212,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: GenericSubscriptionCallback[bytes],
+         callback: GenericSubscriptionCallbackUnion[bytes],
          qos_profile: QoSProfile,
          raw: Literal[True],
          callback_group: CallbackGroup,
@@ -234,7 +225,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: GenericSubscriptionCallback[MsgT],
+         callback: GenericSubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: Literal[False],
          callback_group: CallbackGroup,
@@ -300,7 +291,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
 
     @property
     def callback(self) -> SubscriptionCallbackUnion[MsgT]:
-        return super().callback
+        return self._callback
 
     @callback.setter
     def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
