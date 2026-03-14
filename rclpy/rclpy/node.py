@@ -1862,7 +1862,7 @@ class Node:
         if clock is None:
             clock = self._clock
         timer = Timer(
-            callback, callback_group, timer_period_nsec, clock, context=self.context,
+            callback, timer_period_nsec, clock, callback_group, context=self.context,
             autostart=autostart)
 
         callback_group.add_entity(timer)
