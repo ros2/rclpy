@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from types import TracebackType
-from typing import Awaitable, Callable, TypeAlias
+from typing import Awaitable, Callable
 from typing import Generic
 from typing import Optional
 from typing import Type
@@ -26,6 +26,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
+from typing_extensions import TypeAlias
 
 # Used for documentation purposes only
 SrvType = TypeVar('SrvType')
@@ -115,7 +116,7 @@ class BaseService(Generic[SrvRequestT, SrvResponseT]):
         """
         self.__service.destroy_when_not_in_use()
 
-    def __enter__(self) -> 'Service[SrvRequestT, SrvResponseT]':
+    def __enter__(self) -> 'BaseService[SrvRequestT, SrvResponseT]':
         return self
 
     def __exit__(

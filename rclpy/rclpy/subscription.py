@@ -155,7 +155,7 @@ class BaseSubscription(Generic[MsgT]):
         except TypeError:
             pass
         raise RuntimeError(
-            'Subscription.__init__(): callback should be either be callable with one argument'
+            'Subscription callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
 
     @property
@@ -192,7 +192,7 @@ class BaseSubscription(Generic[MsgT]):
         with self.handle:
             return self.__subscription.get_content_filter()
 
-    def __enter__(self) -> 'Subscription[MsgT]':
+    def __enter__(self) -> 'BaseSubscription[MsgT]':
         return self
 
     def __exit__(

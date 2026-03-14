@@ -101,7 +101,7 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
         """
         self.__client.destroy_when_not_in_use()
 
-    def __enter__(self) -> 'Client[SrvRequestT, SrvResponseT]':
+    def __enter__(self) -> 'BaseClient[SrvRequestT, SrvResponseT]':
         return self
 
     def __exit__(

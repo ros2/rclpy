@@ -145,7 +145,7 @@ class BaseTimer:
         with self.__timer:
             return self.__timer.time_until_next_call()
 
-    def __enter__(self) -> 'Timer':
+    def __enter__(self) -> 'BaseTimer':
         return self
 
     def __exit__(

@@ -89,7 +89,7 @@ class BasePublisher(Generic[MsgT]):
         with self.handle:
             _rclpy.rclpy_assert_liveliness(self.handle)
 
-    def __enter__(self) -> 'Publisher[MsgT]':
+    def __enter__(self) -> 'BasePublisher[MsgT]':
         return self
 
     def __exit__(
