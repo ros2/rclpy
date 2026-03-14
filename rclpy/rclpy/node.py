@@ -1730,7 +1730,8 @@ class Node:
         try:
             subscription = Subscription(
                 subscription_object, msg_type,
-                topic, callback, callback_group, qos_profile, raw,
+                topic, callback, qos_profile, raw,
+                callback_group=callback_group,
                 event_callbacks=event_callbacks or SubscriptionEventCallbacks())
         except Exception:
             subscription_object.destroy_when_not_in_use()
