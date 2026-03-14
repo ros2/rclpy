@@ -36,7 +36,84 @@ SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
-class Client(Generic[SrvRequestT, SrvResponseT]):
+class BaseClient(Generic[SrvRequestT, SrvResponseT]):
+    def __init__(
+        self,
+        context: Context,
+        client_impl: '_rclpy.Client[SrvRequestT, SrvResponseT]',
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+        srv_name: str,
+        qos_profile: QoSProfile,
+    ) -> None:
+        self.context = context
+        self.__client = client_impl
+        self.srv_type = srv_type
+        self.srv_name = srv_name
+        self.qos_profile = qos_profile
+
+    def service_is_ready(self) -> bool:
+        """
+        Check if there is a service server ready.
+
+        :return: ``True`` if a server is ready, ``False`` otherwise.
+        """
+        with self.handle:
+            return self.__client.service_server_is_available()
+
+    def configure_introspection(
+        self, clock: Clock,
+        service_event_qos_profile: QoSProfile,
+        introspection_state: ServiceIntrospectionState
+    ) -> None:
+        """
+        Configure client introspection.
+
+        :param clock: Clock to use for generating timestamps.
+        :param service_event_qos_profile: QoSProfile to use when creating service event publisher.
+        :param introspection_state: ServiceIntrospectionState to set introspection.
+        """
+        with self.handle:
+            self.__client.configure_introspection(clock.handle,
+                                                  service_event_qos_profile.get_c_qos_profile(),
+                                                  introspection_state)
+
+    @property
+    def handle(self) -> '_rclpy.Client[SrvRequestT, SrvResponseT]':
+        return self.__client
+
+    @property
+    def service_name(self) -> str:
+        with self.handle:
+            return self.__client.service_name
+
+    @property
+    def logger_name(self) -> str:
+        """Get the name of the logger associated with the node of the client."""
+        with self.handle:
+            return self.__client.get_logger_name()
+
+    def destroy(self) -> None:
+        """
+        Destroy a container for a ROS service client.
+
+        .. warning:: Users should not destroy a service client with this destructor, instead they
+           should call :meth:`.Node.destroy_client`.
+        """
+        self.__client.destroy_when_not_in_use()
+
+    def __enter__(self) -> 'Client[SrvRequestT, SrvResponseT]':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.destroy()
+
+
+class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResponseT]):
     def __init__(
         self,
         context: Context,
@@ -60,11 +137,13 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         :param callback_group: The callback group for the service client. If ``None``, then the
             nodes default callback group is used.
         """
-        self.context = context
-        self.__client = client_impl
-        self.srv_type = srv_type
-        self.srv_name = srv_name
-        self.qos_profile = qos_profile
+        super().__init__(
+            context=context,
+            client_impl=client_impl,
+            srv_type=srv_type,
+            srv_name=srv_name,
+            qos_profile=qos_profile
+        )
         # Key is a sequence number, value is an instance of a Future
         self._pending_requests: Dict[int, Future[SrvResponseT]] = {}
         self.callback_group = callback_group
@@ -132,7 +211,7 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
 
         with self._lock:
             with self.handle:
-                sequence_number = self.__client.send_request(request)
+                sequence_number = self.handle.send_request(request)
             if sequence_number in self._pending_requests:
                 raise RuntimeError(f'Sequence ({sequence_number}) conflicts with pending request')
 
@@ -168,15 +247,6 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
                     del self._pending_requests[seq]
                     break
 
-    def service_is_ready(self) -> bool:
-        """
-        Check if there is a service server ready.
-
-        :return: ``True`` if a server is ready, ``False`` otherwise.
-        """
-        with self.handle:
-            return self.__client.service_server_is_available()
-
     def wait_for_service(self, timeout_sec: Optional[float] = None) -> bool:
         """
         Wait for a service server to become ready.
@@ -197,55 +267,3 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
             timeout_sec -= sleep_time
 
         return self.service_is_ready()
-
-    def configure_introspection(
-        self, clock: Clock,
-        service_event_qos_profile: QoSProfile,
-        introspection_state: ServiceIntrospectionState
-    ) -> None:
-        """
-        Configure client introspection.
-
-        :param clock: Clock to use for generating timestamps.
-        :param service_event_qos_profile: QoSProfile to use when creating service event publisher.
-        :param introspection_state: ServiceIntrospectionState to set introspection.
-        """
-        with self.handle:
-            self.__client.configure_introspection(clock.handle,
-                                                  service_event_qos_profile.get_c_qos_profile(),
-                                                  introspection_state)
-
-    @property
-    def handle(self) -> '_rclpy.Client[SrvRequestT, SrvResponseT]':
-        return self.__client
-
-    @property
-    def service_name(self) -> str:
-        with self.handle:
-            return self.__client.service_name
-
-    @property
-    def logger_name(self) -> str:
-        """Get the name of the logger associated with the node of the client."""
-        with self.handle:
-            return self.__client.get_logger_name()
-
-    def destroy(self) -> None:
-        """
-        Destroy a container for a ROS service client.
-
-        .. warning:: Users should not destroy a service client with this destructor, instead they
-           should call :meth:`.Node.destroy_client`.
-        """
-        self.__client.destroy_when_not_in_use()
-
-    def __enter__(self) -> 'Client[SrvRequestT, SrvResponseT]':
-        return self
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> None:
-        self.destroy()

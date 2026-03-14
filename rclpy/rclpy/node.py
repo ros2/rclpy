@@ -1825,7 +1825,8 @@ class Node:
 
         service = Service(
             service_impl,
-            srv_type, srv_name, callback, callback_group, qos_profile)
+            srv_type, srv_name, callback, qos_profile,
+            callback_group=callback_group)
         callback_group.add_entity(service)
         self._services.append(service)
         self._wake_executor()
