@@ -57,7 +57,7 @@ class TestMessages(unittest.TestCase):
         pub = self.node.create_publisher(
             BasicTypes, 'chatter_different_message_type', 1)
         with self.assertRaises(TypeError):
-            pub.publish('different message type')
+            pub.publish('different message type')  # type: ignore[arg-type]
         self.node.destroy_publisher(pub)
 
     def test_serialized_publish(self) -> None:
