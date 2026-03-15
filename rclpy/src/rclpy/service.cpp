@@ -143,8 +143,8 @@ Service::service_take_request(py::object pyrequest_type)
     throw RCLError("service failed to take request");
   }
 
-  result_tuple[1] = header;
   result_tuple[0] = convert_to_py(taken_request.get(), pyrequest_type);
+  result_tuple[1] = header;
 
   return result_tuple;
 }

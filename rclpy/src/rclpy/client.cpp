@@ -147,7 +147,6 @@ Client::take_response(py::object pyresponse_type)
   }
 
   result_tuple[0] = header;
-
   result_tuple[1] = convert_to_py(taken_response.get(), pyresponse_type);
 
   return result_tuple;

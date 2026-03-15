@@ -290,7 +290,7 @@ class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
     def service_take_request(
         self,
         pyrequest_type: type[SrvRequestT]
-    ) -> tuple[rmw_service_info_t, SrvRequestT] | tuple[None, None]:
+    ) -> tuple[SrvRequestT, rmw_service_info_t] | tuple[None, None]:
         """Take a request from a given service."""
 
     def configure_introspection(
