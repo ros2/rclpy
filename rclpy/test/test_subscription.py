@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Generator
 import time
 from typing import List
 from typing import Optional
@@ -21,6 +22,7 @@ import pytest
 
 import rclpy
 from rclpy.node import Node
+from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 
@@ -37,7 +39,7 @@ def setup_ros() -> None:
 
 
 @pytest.fixture
-def test_node():
+def test_node() -> Generator[Node, None, None]:
     node = Node(NODE_NAME)
     yield node
     node.destroy_node()
@@ -72,7 +74,7 @@ def test_get_subscription_topic_name(topic_name: str, namespace: Optional[str],
     node.destroy_node()
 
 
-def test_logger_name_is_equal_to_node_name(test_node):
+def test_logger_name_is_equal_to_node_name(test_node: Node) -> None:
     sub = test_node.create_subscription(
         msg_type=Empty,
         topic='topic',
@@ -181,7 +183,7 @@ def test_subscription_publisher_count() -> None:
     node.destroy_node()
 
 
-def test_on_new_message_callback(test_node) -> None:
+def test_on_new_message_callback(test_node: Node) -> None:
     topic_name = '/topic'
     cb = Mock()
     sub = test_node.create_subscription(
@@ -217,7 +219,7 @@ def test_on_new_message_callback(test_node) -> None:
     cb.assert_not_called()
 
 
-def test_subscription_set_content_filter(test_node) -> None:
+def test_subscription_set_content_filter(test_node: Node) -> None:
 
     if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
        rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
@@ -245,7 +247,7 @@ def test_subscription_set_content_filter(test_node) -> None:
     sub.destroy()
 
 
-def test_subscription_is_cft_enabled(test_node) -> None:
+def test_subscription_is_cft_enabled(test_node: Node) -> None:
 
     if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
        rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
@@ -272,7 +274,7 @@ def test_subscription_is_cft_enabled(test_node) -> None:
     sub.destroy()
 
 
-def test_subscription_get_content_filter(test_node) -> None:
+def test_subscription_get_content_filter(test_node: Node) -> None:
 
     if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
        rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
@@ -305,7 +307,7 @@ def test_subscription_get_content_filter(test_node) -> None:
     sub.destroy()
 
 
-def test_subscription_content_filter_effect(test_node) -> None:
+def test_subscription_content_filter_effect(test_node: Node) -> None:
 
     if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
        rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
@@ -316,7 +318,7 @@ def test_subscription_content_filter_effect(test_node) -> None:
 
     received_msgs = []
 
-    def sub_callback(msg):
+    def sub_callback(msg: BasicTypes) -> None:
         received_msgs.append(msg.int32_value)
 
     sub = test_node.create_subscription(
@@ -327,13 +329,13 @@ def test_subscription_content_filter_effect(test_node) -> None:
 
     assert sub.is_cft_enabled is False
 
-    def wait_msgs(timeout, expected_msg_count):
+    def wait_msgs(timeout: float, expected_msg_count: int) -> None:
         end_time = time.time() + timeout
         while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
             rclpy.spin_once(test_node, timeout_sec=0.2)
 
     # Publish 3 messages
-    def publish_messages(pub):
+    def publish_messages(pub: Publisher[BasicTypes]) -> None:
         msg = BasicTypes()
         msg.int32_value = 10
         pub.publish(msg)
@@ -372,7 +374,7 @@ def test_subscription_content_filter_effect(test_node) -> None:
     sub.destroy()
 
 
-def test_subscription_content_filter_reset(test_node) -> None:
+def test_subscription_content_filter_reset(test_node: Node) -> None:
 
     if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
        rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
@@ -383,7 +385,7 @@ def test_subscription_content_filter_reset(test_node) -> None:
 
     received_msgs = []
 
-    def sub_callback(msg):
+    def sub_callback(msg: BasicTypes) -> None:
         received_msgs.append(msg.int32_value)
 
     sub = test_node.create_subscription(
@@ -399,13 +401,13 @@ def test_subscription_content_filter_reset(test_node) -> None:
     )
     assert sub.is_cft_enabled is True
 
-    def wait_msgs(timeout, expected_msg_count):
+    def wait_msgs(timeout: float, expected_msg_count: int) -> None:
         end_time = time.time() + timeout
         while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
             rclpy.spin_once(test_node, timeout_sec=0.2)
 
     # Publish 3 messages
-    def publish_messages(pub):
+    def publish_messages(pub: Publisher[BasicTypes]) -> None:
         msg = BasicTypes()
         msg.int32_value = 10
         pub.publish(msg)
@@ -436,7 +438,7 @@ def test_subscription_content_filter_reset(test_node) -> None:
     assert len(received_msgs) == expected_msg_count
 
 
-def test_subscription_content_filter_at_create_subscription(test_node) -> None:
+def test_subscription_content_filter_at_create_subscription(test_node: Node) -> None:
 
     if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
        rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
@@ -451,7 +453,7 @@ def test_subscription_content_filter_at_create_subscription(test_node) -> None:
         filter_expression='int32_value > %0',
         expression_parameters=['15'])
 
-    def sub_callback(msg):
+    def sub_callback(msg: BasicTypes) -> None:
         received_msgs.append(msg.int32_value)
 
     sub = test_node.create_subscription(
@@ -463,13 +465,13 @@ def test_subscription_content_filter_at_create_subscription(test_node) -> None:
 
     assert sub.is_cft_enabled is True
 
-    def wait_msgs(timeout, expected_msg_count):
+    def wait_msgs(timeout: float, expected_msg_count: int) -> None:
         end_time = time.time() + timeout
         while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
             rclpy.spin_once(test_node, timeout_sec=0.2)
 
     # Publish 3 messages
-    def publish_messages(pub):
+    def publish_messages(pub: Publisher[BasicTypes]) -> None:
         msg = BasicTypes()
         msg.int32_value = 10
         pub.publish(msg)

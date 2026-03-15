@@ -21,13 +21,8 @@ import pytest
 
 import rclpy
 from rclpy.node import Node
-from rclpy.service import Service
 
 from test_msgs.srv import Empty
-
-from typing_extensions import TypeAlias
-
-EmptyService: TypeAlias = Service[Empty.Request, Empty.Response]
 
 
 NODE_NAME = 'test_node'
@@ -41,17 +36,17 @@ def default_context() -> Generator[None, None, None]:
 
 
 @pytest.fixture
-def test_node():
+def test_node() -> Generator[Node, None, None]:
     node = Node(NODE_NAME)
     yield node
     node.destroy_node()
 
 
-def test_logger_name_is_equal_to_node_name(test_node):
+def test_logger_name_is_equal_to_node_name(test_node: Node) -> None:
     srv = test_node.create_service(
         srv_type=Empty,
         srv_name='test_srv',
-        callback=lambda _: None
+        callback=lambda _1, _2: Empty.Response()
     )
 
     assert srv.logger_name == NODE_NAME
@@ -72,10 +67,10 @@ def test_logger_name_is_equal_to_node_name(test_node):
 ])
 def test_get_service_name(service_name: str, namespace: Optional[str], expected: str) -> None:
     node = Node('node_name', namespace=namespace, cli_args=None, start_parameter_services=False)
-    srv: EmptyService = node.create_service(
+    srv = node.create_service(
         srv_type=Empty,
         srv_name=service_name,
-        callback=lambda _, _1: None
+        callback=lambda _1, _2: Empty.Response()
     )
 
     assert srv.service_name == expected
@@ -99,10 +94,10 @@ def test_get_service_name_after_remapping(service_name: str, namespace: Optional
         namespace=namespace,
         cli_args=cli_args,
         start_parameter_services=False)
-    srv: EmptyService = node.create_service(
+    srv = node.create_service(
         srv_type=Empty,
         srv_name=service_name,
-        callback=lambda _, _1: None
+        callback=lambda _1, _2: Empty.Response()
     )
 
     assert srv.service_name == expected
@@ -113,13 +108,14 @@ def test_get_service_name_after_remapping(service_name: str, namespace: Optional
 
 def test_service_context_manager() -> None:
     with rclpy.create_node('ctx_mgr_test') as node:
-        srv: EmptyService
         with node.create_service(
-                srv_type=Empty, srv_name='empty_service', callback=lambda _, _1: None) as srv:
+                srv_type=Empty,
+                srv_name='empty_service',
+                callback=lambda _1, _2: Empty.Response()) as srv:
             assert srv.service_name == '/empty_service'
 
 
-def test_set_on_new_request_callback(test_node) -> None:
+def test_set_on_new_request_callback(test_node: Node) -> None:
     cli = test_node.create_client(Empty, '/service')
     srv = test_node.create_service(Empty, '/service', lambda req, res: res)
     cb = Mock()
