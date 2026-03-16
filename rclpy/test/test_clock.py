@@ -75,13 +75,12 @@ class TestClock(unittest.TestCase):
         assert clock.clock_type == ClockType.STEADY_TIME
         clock = Clock(clock_type=ClockType.SYSTEM_TIME)
         assert clock.clock_type == ClockType.SYSTEM_TIME
-        # A subclass ROSClock is returned if ROS_TIME is specified.
         clock = Clock(clock_type=ClockType.ROS_TIME)
         assert clock.clock_type == ClockType.ROS_TIME
-        assert isinstance(clock, ROSClock)
 
-        # Direct instantiation of a ROSClock is also possible.
-        clock = ROSClock()
+        # Deprecated ROSClock subclass still works.
+        with self.assertWarns(DeprecationWarning):
+            clock = ROSClock()
         assert clock.clock_type == ClockType.ROS_TIME
 
     def test_clock_now(self) -> None:
@@ -108,7 +107,7 @@ class TestClock(unittest.TestCase):
             now = now2
 
     def test_ros_time_is_active(self) -> None:
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         clock._set_ros_time_is_active(True)
         assert clock.ros_time_is_active
         clock._set_ros_time_is_active(False)
@@ -130,7 +129,7 @@ class TestClock(unittest.TestCase):
         pre_callback2 = Mock()
         post_callback2 = Mock()
 
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         handler1 = clock.create_jump_callback(
             threshold1, pre_callback=pre_callback1, post_callback=post_callback1)
         handler2 = clock.create_jump_callback(
@@ -182,7 +181,7 @@ class TestClock(unittest.TestCase):
         pre_callback3 = Mock()
         post_callback3 = Mock()
 
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         handler1 = clock.create_jump_callback(
             threshold1, pre_callback=pre_callback1, post_callback=post_callback1)
         handler2 = clock.create_jump_callback(
@@ -307,7 +306,7 @@ def test_sleep_for_negative_duration(default_context: Context, clock_type: Clock
 
 @pytest.mark.parametrize('ros_time_enabled', (True, False))
 def test_sleep_until_ros_time_toggled(default_context: Context, ros_time_enabled: bool) -> None:
-    clock = ROSClock()
+    clock = Clock(clock_type=ClockType.ROS_TIME)
     clock._set_ros_time_is_active(not ros_time_enabled)
 
     retval = None
@@ -335,7 +334,7 @@ def test_sleep_until_ros_time_toggled(default_context: Context, ros_time_enabled
 
 @pytest.mark.parametrize('ros_time_enabled', (True, False))
 def test_sleep_for_ros_time_toggled(default_context: Context, ros_time_enabled: bool) -> None:
-    clock = ROSClock()
+    clock = Clock(clock_type=ClockType.ROS_TIME)
     clock._set_ros_time_is_active(not ros_time_enabled)
 
     retval = None
@@ -413,7 +412,7 @@ def test_sleep_for_context_shut_down(non_default_context: Context) -> None:
 
 
 def test_sleep_until_ros_time_enabled(default_context: Context) -> None:
-    clock = ROSClock()
+    clock = Clock(clock_type=ClockType.ROS_TIME)
     clock._set_ros_time_is_active(True)
 
     start_time = Time(seconds=1, clock_type=ClockType.ROS_TIME)
@@ -444,7 +443,7 @@ def test_sleep_until_ros_time_enabled(default_context: Context) -> None:
 
 
 def test_sleep_for_ros_time_enabled(default_context: Context) -> None:
-    clock = ROSClock()
+    clock = Clock(clock_type=ClockType.ROS_TIME)
     clock._set_ros_time_is_active(True)
 
     start_time = Time(seconds=1, clock_type=ClockType.ROS_TIME)
@@ -476,7 +475,7 @@ def test_sleep_for_ros_time_enabled(default_context: Context) -> None:
 
 
 def test_with_jump_handle() -> None:
-    clock = ROSClock()
+    clock = Clock(clock_type=ClockType.ROS_TIME)
     clock._set_ros_time_is_active(False)
 
     post_callback = Mock()
