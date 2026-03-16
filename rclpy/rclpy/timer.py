@@ -118,8 +118,8 @@ class BaseTimer:
     @timer_period_ns.setter
     def timer_period_ns(self, value: int) -> None:
         val = int(value)
-        with self.handle:
-            self.handle.change_timer_period(val)
+        with self.__timer:
+            self.__timer.change_timer_period(val)
 
     def is_ready(self) -> bool:
         with self.__timer:
