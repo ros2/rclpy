@@ -1781,7 +1781,7 @@ class Node:
         client = Client(
             self.context,
             client_impl, srv_type, srv_name, qos_profile,
-            callback_group)
+            callback_group=callback_group)
         callback_group.add_entity(client)
         self._clients.append(client)
         self._wake_executor()
@@ -1862,8 +1862,11 @@ class Node:
         if clock is None:
             clock = self._clock
         timer = Timer(
-            callback, timer_period_nsec, clock, callback_group, context=self.context,
-            autostart=autostart)
+            callback, timer_period_nsec, clock,
+            callback_group=callback_group,
+            context=self.context,
+            autostart=autostart
+        )
 
         callback_group.add_entity(timer)
         self._timers.append(timer)

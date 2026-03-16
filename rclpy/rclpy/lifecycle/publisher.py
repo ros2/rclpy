@@ -29,8 +29,7 @@ from typing_extensions import Unpack
 from .managed_entity import SimpleManagedEntity
 
 if TYPE_CHECKING:
-    LifecyclePublisherArgs: TypeAlias = Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile,
-                                              PublisherEventCallbacks, CallbackGroup]
+    LifecyclePublisherArgs: TypeAlias = Tuple[_rclpy.Publisher[MsgT], Type[MsgT], str, QoSProfile]
 
     class LifecyclePublisherKWArgs(TypedDict, Generic[MsgT]):
         publisher_impl: _rclpy.Publisher[MsgT]

@@ -136,6 +136,7 @@ class Service(BaseService[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvRe
         srv_name: str,
         callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         qos_profile: QoSProfile,
+        *,
         callback_group: CallbackGroup
     ) -> None:
         """

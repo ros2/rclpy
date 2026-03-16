@@ -223,6 +223,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          callback: GenericSubscriptionCallbackUnion[bytes],
          qos_profile: QoSProfile,
          raw: Literal[True],
+         *,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -236,6 +237,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          callback: GenericSubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: Literal[False],
+         *,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -249,6 +251,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          callback: SubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: bool,
+         *,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -261,6 +264,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          callback: SubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: bool,
+         *,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None:

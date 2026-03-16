@@ -164,10 +164,10 @@ class Timer(BaseTimer):
         callback: Optional[TimerCallbackUnion],
         timer_period_ns: int,
         clock: Clock,
-        callback_group: Optional[CallbackGroup],
         *,
         context: Optional[Context] = None,
-        autostart: bool = True
+        autostart: bool = True,
+        callback_group: Optional[CallbackGroup] = None
     ) -> None:
         """
         Create a Timer.

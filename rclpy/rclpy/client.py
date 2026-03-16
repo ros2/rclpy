@@ -121,6 +121,7 @@ class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResp
         srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         qos_profile: QoSProfile,
+        *,
         callback_group: CallbackGroup
     ) -> None:
         """

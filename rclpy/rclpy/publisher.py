@@ -109,6 +109,7 @@ class Publisher(BasePublisher[MsgT], Generic[MsgT]):
         msg_type: Type[MsgT],
         topic: str,
         qos_profile: QoSProfile,
+        *,
         event_callbacks: PublisherEventCallbacks,
         callback_group: CallbackGroup,
     ) -> None:
