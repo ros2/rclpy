@@ -295,8 +295,8 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
 
     @callback.setter
     def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
-        self._callback = value
         self._set_callback_type(value)
+        self._callback = value
 
     def destroy(self) -> None:
         """
