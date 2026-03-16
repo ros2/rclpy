@@ -184,20 +184,20 @@ class TestParameterClient(unittest.TestCase):
         self.target_node.declare_parameter('uninitialized_parameter', Parameter.Type.STRING)
 
         # The type in description should be STRING
-        future = self.client.describe_parameters(['uninitialized_parameter'])
-        self.executor.spin_until_future_complete(future)
-        results = future.result()
-        assert results is not None
-        assert len(results.descriptors) == 1
-        assert results.descriptors[0].type == ParameterType.PARAMETER_STRING
-        assert results.descriptors[0].name == 'uninitialized_parameter'
+        describe_future = self.client.describe_parameters(['uninitialized_parameter'])
+        self.executor.spin_until_future_complete(describe_future)
+        describe_results = describe_future.result()
+        assert describe_results is not None
+        assert len(describe_results.descriptors) == 1
+        assert describe_results.descriptors[0].type == ParameterType.PARAMETER_STRING
+        assert describe_results.descriptors[0].name == 'uninitialized_parameter'
 
         # The value should be empty
-        future = self.client.get_parameters(['uninitialized_parameter'])
-        self.executor.spin_until_future_complete(future)
-        results = future.result()
-        assert results is not None
-        assert results.values == []
+        get_future = self.client.get_parameters(['uninitialized_parameter'])
+        self.executor.spin_until_future_complete(get_future)
+        get_results = get_future.result()
+        assert get_results is not None
+        assert get_results.values == []
 
         self.target_node.undeclare_parameter('uninitialized_parameter')
 
