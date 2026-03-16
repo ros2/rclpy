@@ -119,8 +119,7 @@ class BaseSubscription(Generic[MsgT]):
         self.__subscription = subscription_impl
         self.msg_type = msg_type
         self.topic = topic
-        self._callback = callback
-        self._set_callback_type(callback)
+        self.callback = callback
         self.qos_profile = qos_profile
         self.raw = raw
 
@@ -140,6 +139,15 @@ class BaseSubscription(Generic[MsgT]):
     def topic_name(self) -> str:
         with self.handle:
             return self.__subscription.get_topic_name()
+
+    @property
+    def callback(self) -> SubscriptionCallbackUnion[MsgT]:
+        return self._callback
+
+    @callback.setter
+    def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
+        self._set_callback_type(value)
+        self._callback = value
 
     def _set_callback_type(self, callback: SubscriptionCallbackUnion[MsgT]) -> None:
         try:
@@ -288,15 +296,6 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
 
         self.event_handlers = event_callbacks.create_event_handlers(
             callback_group, subscription_impl, topic)
-
-    @property
-    def callback(self) -> SubscriptionCallbackUnion[MsgT]:
-        return self._callback
-
-    @callback.setter
-    def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
-        self._set_callback_type(value)
-        self._callback = value
 
     def destroy(self) -> None:
         """
