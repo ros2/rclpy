@@ -28,6 +28,7 @@ from rclpy.clock_type import ClockType
 from rclpy.context import Context
 from rclpy.duration import Duration
 from rclpy.exceptions import NotInitializedException
+from rclpy.subscription import RCLError
 from rclpy.time import Time
 from rclpy.utilities import get_default_context
 
@@ -114,6 +115,24 @@ class TestClock(unittest.TestCase):
         assert clock.ros_time_is_active
         clock._set_ros_time_is_active(False)
         assert not clock.ros_time_is_active
+
+    def test_ros_time_is_active_raises_when_clock_type_is_not_ros_time(self) -> None:
+        clock = Clock(clock_type=ClockType.SYSTEM_TIME)
+        with self.assertRaises(RCLError):
+            clock.ros_time_is_active()
+
+        clock = Clock(clock_type=ClockType.STEADY_TIME)
+        with self.assertRaises(RCLError):
+            clock.ros_time_is_active()
+
+    def test_set_ros_time_override_raises_when_clock_type_is_not_ros_time(self) -> None:
+        clock = Clock(clock_type=ClockType.SYSTEM_TIME)
+        with self.assertRaises(RCLError):
+            clock.set_ros_time_override(Time(seconds=1))
+
+        clock = Clock(clock_type=ClockType.STEADY_TIME)
+        with self.assertRaises(RCLError):
+            clock.set_ros_time_override(Time(seconds=1))
 
     def test_triggered_time_jump_callbacks(self) -> None:
         one_second = Duration(seconds=1)
