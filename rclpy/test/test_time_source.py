@@ -17,7 +17,7 @@ import unittest
 from unittest.mock import Mock
 
 import rclpy
-from rclpy.clock import Clock
+from rclpy.clock import BaseClock, Clock
 from rclpy.clock import ClockChange
 from rclpy.clock import JumpThreshold
 from rclpy.clock_type import ClockType
@@ -83,17 +83,19 @@ class TestTimeSource(unittest.TestCase):
         return use_sim_time_param.value == value
 
     def test_time_source_attach_clock(self) -> None:
-        time_source = TimeSource(node=self.node)
-        time_source.attach_clock(Clock(clock_type=ClockType.ROS_TIME))
+        for cls in [BaseClock, Clock]:
+            with self.subTest(cls=cls):
+                time_source = TimeSource(node=self.node)
+                time_source.attach_clock(cls(clock_type=ClockType.ROS_TIME))
 
-        # Other clock types are not supported.
-        with self.assertRaises(ValueError):
-            time_source.attach_clock(
-                Clock(clock_type=ClockType.SYSTEM_TIME))  # type: ignore[arg-type]
+                # Other clock types are not supported.
+                with self.assertRaises(ValueError):
+                    time_source.attach_clock(
+                        cls(clock_type=ClockType.SYSTEM_TIME))
 
-        with self.assertRaises(ValueError):
-            time_source.attach_clock(
-                Clock(clock_type=ClockType.STEADY_TIME))  # type: ignore[arg-type]
+                with self.assertRaises(ValueError):
+                    time_source.attach_clock(
+                        cls(clock_type=ClockType.STEADY_TIME))
 
     def test_time_source_not_using_sim_time(self) -> None:
         time_source = TimeSource(node=self.node)

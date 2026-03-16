@@ -20,7 +20,7 @@ from unittest.mock import Mock
 
 import pytest
 import rclpy
-from rclpy.clock import Clock
+from rclpy.clock import BaseClock, Clock
 from rclpy.clock import JumpHandle
 from rclpy.clock import JumpThreshold
 from rclpy.clock import ROSClock
@@ -66,19 +66,21 @@ def test_invalid_jump_threshold() -> None:
 class TestClock(unittest.TestCase):
 
     def test_clock_construction(self) -> None:
-        clock = Clock()
+        for cls in [BaseClock, Clock]:
+            with self.subTest(cls=cls):
+                clock = cls()
 
-        with self.assertRaises(TypeError):
-            clock = Clock(clock_type='STEADY_TIME')  # type: ignore[call-overload]
+                with self.assertRaises(TypeError):
+                    clock = cls(clock_type='STEADY_TIME')  # type: ignore[call-overload]
 
-        clock = Clock(clock_type=ClockType.STEADY_TIME)
-        assert clock.clock_type == ClockType.STEADY_TIME
-        clock = Clock(clock_type=ClockType.SYSTEM_TIME)
-        assert clock.clock_type == ClockType.SYSTEM_TIME
-        clock = Clock(clock_type=ClockType.ROS_TIME)
-        assert clock.clock_type == ClockType.ROS_TIME
+                clock = cls(clock_type=ClockType.STEADY_TIME)
+                assert clock.clock_type == ClockType.STEADY_TIME
+                clock = cls(clock_type=ClockType.SYSTEM_TIME)
+                assert clock.clock_type == ClockType.SYSTEM_TIME
+                clock = cls(clock_type=ClockType.ROS_TIME)
+                assert clock.clock_type == ClockType.ROS_TIME
 
-        # Deprecated ROSClock subclass still works.
+    def test_ros_clock_deprecation(self) -> None:
         with self.assertWarns(DeprecationWarning):
             clock = ROSClock()
         assert clock.clock_type == ClockType.ROS_TIME
