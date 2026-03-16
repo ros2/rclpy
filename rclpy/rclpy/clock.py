@@ -322,5 +322,5 @@ class Clock(BaseClock):
 @deprecated('Use Clock(clock_type=ClockType.ROS_TIME) instead')
 class ROSClock(Clock):
 
-    def __init__(self, *, clock_type: ClockType = ClockType.ROS_TIME) -> None:
-        super().__init__(clock_type=clock_type)
+    def __init__(self) -> None:
+        super().__init__(clock_type=ClockType.ROS_TIME)
