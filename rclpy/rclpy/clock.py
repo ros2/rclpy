@@ -87,7 +87,7 @@ JumpHandlePreCallbackType: TypeAlias = Callable[[], None]
 
 class JumpHandle:
 
-    def __init__(self, *, clock: 'Clock', threshold: JumpThreshold,
+    def __init__(self, *, clock: 'BaseClock', threshold: JumpThreshold,
                  pre_callback: Optional[JumpHandlePreCallbackType],
                  post_callback: Optional[Callable[[TimeJumpDictionary], None]]) -> None:
         """
@@ -106,7 +106,7 @@ class JumpHandle:
             raise ValueError('pre_callback must be callable if given')
         if post_callback is not None and not callable(post_callback):
             raise ValueError('post_callback must be callable if given')
-        self._clock: Optional[Clock] = clock
+        self._clock: Optional[BaseClock] = clock
         self._pre_callback = pre_callback
         self._post_callback = post_callback
 
@@ -159,7 +159,7 @@ class BaseClock:
         return self.__clock
 
     def __repr__(self) -> str:
-        return 'Clock(clock_type={0})'.format(self.clock_type.name)
+        return f'{type(self).__name__}(clock_type={self.clock_type.name})'
 
     def now(self) -> Time:
         """Return the current time of this clock."""
