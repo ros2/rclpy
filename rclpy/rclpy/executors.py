@@ -722,7 +722,9 @@ class Executor(ContextManager['Executor']):
         timeout_nsec = timeout_sec_to_nsec(
             timeout_sec.timeout if isinstance(timeout_sec, TimeoutObject) else timeout_sec)
         if timeout_nsec > 0:
-            timeout_timer = Timer(None, None, timeout_nsec, self._clock, context=self._context)
+            timeout_timer = Timer(
+                None, timeout_nsec, self._clock, context=self._context
+            )
 
         yielded_work = False
         while not yielded_work and not self._is_shutdown and not condition():

@@ -137,6 +137,29 @@ def test_subscription_callback_type() -> None:
     node.destroy_node()
 
 
+def test_subscription_callback_setter() -> None:
+    node = Node('test_node', namespace='test_subscription/test_subscription_callback_setter')
+    sub = node.create_subscription(
+        msg_type=Empty,
+        topic='test_subscription/test_subscription_callback_/topic',
+        qos_profile=10,
+        callback=lambda _, _2: None)
+
+    sub.callback = lambda _: None
+    assert sub._callback_type == Subscription.CallbackType.MessageOnly
+
+    sub.callback = callback = lambda _, _2: None
+    assert sub._callback_type == Subscription.CallbackType.WithMessageInfo
+
+    with pytest.raises(RuntimeError):
+        sub.callback = lambda: None
+
+    assert sub.callback is callback
+
+    sub.destroy()
+    node.destroy_node()
+
+
 def test_subscription_context_manager() -> None:
     node = Node('test_node', namespace='test_subscription/test_subscription_callback_type')
     with node.create_subscription(

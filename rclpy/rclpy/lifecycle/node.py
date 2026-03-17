@@ -143,36 +143,36 @@ class LifecycleNodeMixin(ManagedEntity):
                 lifecycle_msgs.srv.ChangeState,
                 self._state_machine.service_change_state.name,
                 self.__on_change_state,
-                callback_group,
-                QoSProfile(**self._state_machine.service_change_state.qos))
+                QoSProfile(**self._state_machine.service_change_state.qos),
+                callback_group=callback_group)
             self._service_get_state = Service(
                 self._state_machine.service_get_state,
                 lifecycle_msgs.srv.GetState,
                 self._state_machine.service_get_state.name,
                 self.__on_get_state,
-                callback_group,
-                QoSProfile(**self._state_machine.service_get_state.qos))
+                QoSProfile(**self._state_machine.service_get_state.qos),
+                callback_group=callback_group)
             self._service_get_available_states = Service(
                 self._state_machine.service_get_available_states,
                 lifecycle_msgs.srv.GetAvailableStates,
                 self._state_machine.service_get_available_states.name,
                 self.__on_get_available_states,
-                callback_group,
-                QoSProfile(**self._state_machine.service_get_available_states.qos))
+                QoSProfile(**self._state_machine.service_get_available_states.qos),
+                callback_group=callback_group)
             self._service_get_available_transitions = Service(
                 self._state_machine.service_get_available_transitions,
                 lifecycle_msgs.srv.GetAvailableTransitions,
                 self._state_machine.service_get_available_transitions.name,
                 self.__on_get_available_transitions,
-                callback_group,
-                QoSProfile(**self._state_machine.service_get_available_transitions.qos))
+                QoSProfile(**self._state_machine.service_get_available_transitions.qos),
+                callback_group=callback_group)
             self._service_get_transition_graph = Service(
                 self._state_machine.service_get_transition_graph,
                 lifecycle_msgs.srv.GetAvailableTransitions,
                 self._state_machine.service_get_transition_graph.name,
                 self.__on_get_transition_graph,
-                callback_group,
-                QoSProfile(**self._state_machine.service_get_transition_graph.qos))
+                QoSProfile(**self._state_machine.service_get_transition_graph.qos),
+                callback_group=callback_group)
 
             lifecycle_services = [
                 self._service_change_state,
