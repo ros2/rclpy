@@ -100,6 +100,9 @@ void define_clock_event(py::object module)
     "wait_until_steady", &ClockEvent::wait_until<std::chrono::steady_clock>,
     "Wait for the event to be set (monotonic wait)")
   .def(
+    "wait_until_raw_steady", &ClockEvent::wait_until<std::chrono::steady_clock>,
+    "Wait for the event to be set (monotonic slew-free wait)")
+  .def(
     "wait_until_system", &ClockEvent::wait_until<std::chrono::system_clock>,
     "Wait for the event to be set (system timed wait)")
   .def(

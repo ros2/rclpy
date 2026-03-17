@@ -75,6 +75,8 @@ class TestClock(unittest.TestCase):
         assert clock.clock_type == ClockType.STEADY_TIME
         clock = Clock(clock_type=ClockType.SYSTEM_TIME)
         assert clock.clock_type == ClockType.SYSTEM_TIME
+        clock = Clock(clock_type=ClockType.RAW_STEADY_TIME)
+        assert clock.clock_type == ClockType.RAW_STEADY_TIME
         # A subclass ROSClock is returned if ROS_TIME is specified.
         clock = Clock(clock_type=ClockType.ROS_TIME)
         assert clock.clock_type == ClockType.ROS_TIME
@@ -100,6 +102,15 @@ class TestClock(unittest.TestCase):
 
         # Steady time should always return increasing values
         clock = Clock(clock_type=ClockType.STEADY_TIME)
+        now = clock.now()
+        now2 = now
+        for i in range(10):
+            now2 = clock.now()
+            assert now2 > now
+            now = now2
+
+        # RAW Steady time should always return increasing values
+        clock = Clock(clock_type=ClockType.RAW_STEADY_TIME)
         now = clock.now()
         now2 = now
         for i in range(10):
@@ -237,6 +248,8 @@ def test_sleep_until_mismatched_clock_type(default_context: Context) -> None:
     clock = Clock(clock_type=ClockType.SYSTEM_TIME)
     with pytest.raises(ValueError, match='.*clock type does not match.*'):
         clock.sleep_until(Time(clock_type=ClockType.STEADY_TIME))
+    with pytest.raises(ValueError, match='.*clock type does not match.*'):
+        clock.sleep_until(Time(clock_type=ClockType.RAW_STEADY_TIME))
 
 
 def test_sleep_until_non_default_context(non_default_context: Context) -> None:
@@ -262,7 +275,8 @@ def test_sleep_for_invalid_context() -> None:
 
 
 @pytest.mark.parametrize(
-    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.RAW_STEADY_TIME,
+                   ClockType.ROS_TIME))
 def test_sleep_until_basic(default_context: Context, clock_type: ClockType) -> None:
     clock = Clock(clock_type=clock_type)
     sleep_duration = Duration(seconds=0.1)
@@ -273,7 +287,8 @@ def test_sleep_until_basic(default_context: Context, clock_type: ClockType) -> N
 
 
 @pytest.mark.parametrize(
-    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.RAW_STEADY_TIME,
+                   ClockType.ROS_TIME))
 def test_sleep_for_basic(default_context: Context, clock_type: ClockType) -> None:
     clock = Clock(clock_type=clock_type)
     sleep_duration = Duration(seconds=0.1)
@@ -284,7 +299,8 @@ def test_sleep_for_basic(default_context: Context, clock_type: ClockType) -> Non
 
 
 @pytest.mark.parametrize(
-    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.RAW_STEADY_TIME,
+                   ClockType.ROS_TIME))
 def test_sleep_until_time_in_past(default_context: Context, clock_type: ClockType) -> None:
     clock = Clock(clock_type=clock_type)
     sleep_duration = Duration(seconds=-1)
@@ -295,7 +311,8 @@ def test_sleep_until_time_in_past(default_context: Context, clock_type: ClockTyp
 
 
 @pytest.mark.parametrize(
-    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.ROS_TIME))
+    'clock_type', (ClockType.SYSTEM_TIME, ClockType.STEADY_TIME, ClockType.RAW_STEADY_TIME,
+                   ClockType.ROS_TIME))
 def test_sleep_for_negative_duration(default_context: Context, clock_type: ClockType) -> None:
     clock = Clock(clock_type=clock_type)
     sleep_duration = Duration(seconds=-1)

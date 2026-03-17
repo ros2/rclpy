@@ -157,6 +157,21 @@ class TestTime(unittest.TestCase):
         with self.assertRaises(TypeError):
             time1 <= time2
 
+        time1 = Time(nanoseconds=1, clock_type=ClockType.SYSTEM_TIME)
+        time2 = Time(nanoseconds=2, clock_type=ClockType.RAW_STEADY_TIME)
+        with self.assertRaises(TypeError):
+            time1 == time2
+        with self.assertRaises(TypeError):
+            time1 != time2
+        with self.assertRaises(TypeError):
+            time1 > time2
+        with self.assertRaises(TypeError):
+            time1 >= time2
+        with self.assertRaises(TypeError):
+            time1 < time2
+        with self.assertRaises(TypeError):
+            time1 <= time2
+
         # Invalid combinations
         time1 = Time(nanoseconds=1)
         self.assertFalse(time1 == 1)
@@ -254,5 +269,9 @@ class TestTime(unittest.TestCase):
             time3.to_datetime()
 
         with self.assertRaises(TypeError):
-            time4 = Time(nanoseconds=0, clock_type=ClockType.UNINITIALIZED)
+            time4 = Time(nanoseconds=5e8, clock_type=ClockType.RAW_STEADY_TIME)
             time4.to_datetime()
+
+        with self.assertRaises(TypeError):
+            time5 = Time(nanoseconds=0, clock_type=ClockType.UNINITIALIZED)
+            time5.to_datetime()

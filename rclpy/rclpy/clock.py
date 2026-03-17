@@ -279,6 +279,8 @@ class Clock:
                 event.wait_until_system(self.__clock, until._time_handle)
             elif ClockType.STEADY_TIME == self._clock_type:
                 event.wait_until_steady(self.__clock, until._time_handle)
+            elif ClockType.RAW_STEADY_TIME == self._clock_type:
+                event.wait_until_raw_steady(self.__clock, until._time_handle)
             elif ClockType.ROS_TIME == self._clock_type:
                 event.wait_until_ros(self.__clock, until._time_handle)
 
