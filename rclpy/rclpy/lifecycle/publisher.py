@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, Tuple, Type, TYPE_CHECKING, TypedDict, Union
+from typing import Callable, Generic, Optional, Tuple, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import PublisherEventCallbacks
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         msg_type: Type[MsgT]
         topic: str
         qos_profile: QoSProfile
+        on_destroy: Optional[Callable[['Publisher[MsgT]'], None]]
         event_callbacks: PublisherEventCallbacks
         callback_group: CallbackGroup
 

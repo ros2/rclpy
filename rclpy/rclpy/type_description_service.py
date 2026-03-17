@@ -94,6 +94,7 @@ class TypeDescriptionService:
             srv_type=GetTypeDescription,
             srv_name=self.service_name,
             callback=self._service_callback,
+            on_destroy=node._on_destroy_service,
             callback_group=node.default_callback_group,
             qos_profile=qos_profile_services_default)
         node.default_callback_group.add_entity(service)

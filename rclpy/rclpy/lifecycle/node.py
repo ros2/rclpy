@@ -144,6 +144,7 @@ class LifecycleNodeMixin(ManagedEntity):
                 self._state_machine.service_change_state.name,
                 self.__on_change_state,
                 QoSProfile(**self._state_machine.service_change_state.qos),
+                on_destroy=self._on_destroy_service,
                 callback_group=callback_group)
             self._service_get_state = Service(
                 self._state_machine.service_get_state,
@@ -151,6 +152,7 @@ class LifecycleNodeMixin(ManagedEntity):
                 self._state_machine.service_get_state.name,
                 self.__on_get_state,
                 QoSProfile(**self._state_machine.service_get_state.qos),
+                on_destroy=self._on_destroy_service,
                 callback_group=callback_group)
             self._service_get_available_states = Service(
                 self._state_machine.service_get_available_states,
@@ -158,6 +160,7 @@ class LifecycleNodeMixin(ManagedEntity):
                 self._state_machine.service_get_available_states.name,
                 self.__on_get_available_states,
                 QoSProfile(**self._state_machine.service_get_available_states.qos),
+                on_destroy=self._on_destroy_service,
                 callback_group=callback_group)
             self._service_get_available_transitions = Service(
                 self._state_machine.service_get_available_transitions,
@@ -165,6 +168,7 @@ class LifecycleNodeMixin(ManagedEntity):
                 self._state_machine.service_get_available_transitions.name,
                 self.__on_get_available_transitions,
                 QoSProfile(**self._state_machine.service_get_available_transitions.qos),
+                on_destroy=self._on_destroy_service,
                 callback_group=callback_group)
             self._service_get_transition_graph = Service(
                 self._state_machine.service_get_transition_graph,
@@ -172,6 +176,7 @@ class LifecycleNodeMixin(ManagedEntity):
                 self._state_machine.service_get_transition_graph.name,
                 self.__on_get_transition_graph,
                 QoSProfile(**self._state_machine.service_get_transition_graph.qos),
+                on_destroy=self._on_destroy_service,
                 callback_group=callback_group)
 
             lifecycle_services = [
