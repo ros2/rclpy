@@ -226,28 +226,26 @@ def test_subscription_set_content_filter(test_node: Node) -> None:
         pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
 
     topic_name = '/topic'
-    sub = test_node.create_subscription(
+    with test_node.create_subscription(
         msg_type=BasicTypes,
         topic=topic_name,
         qos_profile=10,
-        callback=lambda _: None)
+            callback=lambda _: None) as sub:
 
-    filter_expression = 'int32_value > %0'
-    expression_parameters: List[str] = ['10']
+        filter_expression = 'int32_value > %0'
+        expression_parameters: List[str] = ['10']
 
-    # There should not be any exceptions.
-    try:
-        sub.set_content_filter(
-            filter_expression,
-            expression_parameters
-        )
-    except Exception as e:
-        pytest.fail(f'Unexpected exception raised: {e}')
-
-    sub.destroy()
+        # There should not be any exceptions.
+        try:
+            sub.set_content_filter(
+                filter_expression,
+                expression_parameters
+            )
+        except Exception as e:
+            pytest.fail(f'Unexpected exception raised: {e}')
 
 
-def test_subscription_is_cft_supported(test_node) -> None:
+def test_subscription_is_cft_supported(test_node: Node) -> None:
 
     # The current rmw implementations for content filter support
     # rmw_fastrtps_cpp: Yes
@@ -258,83 +256,75 @@ def test_subscription_is_cft_supported(test_node) -> None:
     rmw_cft_supported = rmw_implementation in ('rmw_fastrtps_cpp', 'rmw_connextdds')
 
     topic_name = '/topic'
-    sub = test_node.create_subscription(
+    with test_node.create_subscription(
         msg_type=BasicTypes,
         topic=topic_name,
         qos_profile=10,
-        callback=lambda _: None)
+            callback=lambda _: None) as sub:
 
-    # There should not be any exceptions.
-    try:
-        is_cft_supported = sub.is_cft_supported
-    except Exception as e:
-        pytest.fail(f'Unexpected exception raised: {e}')
+        # There should not be any exceptions.
+        try:
+            is_cft_supported = sub.is_cft_supported
+        except Exception as e:
+            pytest.fail(f'Unexpected exception raised: {e}')
 
-    assert is_cft_supported == rmw_cft_supported
-
-    sub.destroy()
+        assert is_cft_supported == rmw_cft_supported
 
 
-def test_subscription_is_cft_enabled(test_node) -> None:
+def test_subscription_is_cft_enabled(test_node: Node) -> None:
 
     topic_name = '/topic'
-    sub = test_node.create_subscription(
+    with test_node.create_subscription(
         msg_type=BasicTypes,
         topic=topic_name,
         qos_profile=10,
-        callback=lambda _: None)
+            callback=lambda _: None) as sub:
 
-    if not sub.is_cft_supported:
-        sub.destroy()
-        pytest.skip(
-            f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
+        if not sub.is_cft_supported:
+            pytest.skip(
+                f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
 
-    sub.set_content_filter(
-        filter_expression='bool_value = %0',
-        expression_parameters=['TRUE']
-    )
+        sub.set_content_filter(
+            filter_expression='bool_value = %0',
+            expression_parameters=['TRUE']
+        )
 
-    # There should not be any exceptions.
-    try:
-        _ = sub.is_cft_enabled
-    except Exception as e:
-        pytest.fail(f'Unexpected exception raised: {e}')
-
-    sub.destroy()
+        # There should not be any exceptions.
+        try:
+            _ = sub.is_cft_enabled
+        except Exception as e:
+            pytest.fail(f'Unexpected exception raised: {e}')
 
 
 def test_subscription_get_content_filter(test_node: Node) -> None:
 
     topic_name = '/topic'
-    sub = test_node.create_subscription(
+    with test_node.create_subscription(
         msg_type=BasicTypes,
         topic=topic_name,
         qos_profile=10,
-        callback=lambda _: None)
+            callback=lambda _: None) as sub:
 
-    if not sub.is_cft_supported:
-        sub.destroy()
-        pytest.skip(
-            f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
+        if not sub.is_cft_supported:
+            pytest.skip(
+                f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
 
-    assert sub.is_cft_enabled is False
+        assert sub.is_cft_enabled is False
 
-    filter_expression = 'int32_value > %0'
-    expression_parameters: List[str] = ['60']
+        filter_expression = 'int32_value > %0'
+        expression_parameters: List[str] = ['60']
 
-    sub.set_content_filter(
-        filter_expression,
-        expression_parameters
-    )
+        sub.set_content_filter(
+            filter_expression,
+            expression_parameters
+        )
 
-    assert sub.is_cft_enabled is True
+        assert sub.is_cft_enabled is True
 
-    cf_option = sub.get_content_filter()
-    assert cf_option.filter_expression == filter_expression
-    assert len(cf_option.expression_parameters) == len(expression_parameters)
-    assert cf_option.expression_parameters[0] == expression_parameters[0]
-
-    sub.destroy()
+        cf_option = sub.get_content_filter()
+        assert cf_option.filter_expression == filter_expression
+        assert len(cf_option.expression_parameters) == len(expression_parameters)
+        assert cf_option.expression_parameters[0] == expression_parameters[0]
 
 
 def test_subscription_content_filter_effect(test_node: Node) -> None:
