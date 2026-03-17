@@ -115,6 +115,9 @@ public:
   void
   clear_on_new_message_callback();
 
+  /// Check if subscription instance supports content filter.
+  bool is_cft_supported() const;
+
   /// Check if the content filtered topic of this subscription is enabled
   bool is_cft_enabled() const;
 
