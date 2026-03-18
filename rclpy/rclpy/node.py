@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import math
 import time
 
@@ -51,7 +52,7 @@ from rclpy.callback_groups import CallbackGroup
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
-from rclpy.clock import Clock
+from rclpy.clock import BaseClock, Clock
 from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
@@ -78,7 +79,7 @@ from rclpy.logging_service import LoggingService
 from rclpy.parameter import (AllowableParameterValue, AllowableParameterValueT, Parameter,
                              PARAMETER_SEPARATOR_STRING)
 from rclpy.parameter_service import ParameterService
-from rclpy.publisher import Publisher
+from rclpy.publisher import BasePublisher, Publisher
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_rosout_default
 from rclpy.qos import qos_profile_services_default
@@ -127,13 +128,7 @@ NodeNameNonExistentError: TypeAlias = _rclpy.NodeNameNonExistentError
 ParameterInput: TypeAlias = Union[AllowableParameterValue, Parameter.Type, ParameterValue]
 
 
-class Node:
-    """
-    A Node in the ROS graph.
-
-    A Node is the primary entrypoint in a ROS system for communication.
-    It can be used to create ROS entities such as publishers, subscribers, services, etc.
-    """
+class BaseNode(ABC):
 
     PARAM_REL_TOL = 1e-6
     """
@@ -151,61 +146,19 @@ class Node:
         use_global_arguments: bool = True,
         enable_rosout: bool = True,
         rosout_qos_profile: Union[QoSProfile, int] = qos_profile_rosout_default,
-        start_parameter_services: bool = True,
-        parameter_overrides: Optional[List[Parameter[Any]]] = None,
         allow_undeclared_parameters: bool = False,
-        automatically_declare_parameters_from_overrides: bool = False,
-        enable_logger_service: bool = False
     ) -> None:
-        """
-        Create a Node.
-
-        :param node_name: A name to give to this node. Validated by :func:`validate_node_name`.
-        :param context: The context to be associated with, or ``None`` for the default global
-            context.
-        :param cli_args: A list of strings of command line args to be used only by this node.
-            These arguments are used to extract remappings used by the node and other ROS specific
-            settings, as well as user defined non-ROS arguments.
-        :param namespace: The namespace to which relative topic and service names will be prefixed.
-            Validated by :func:`validate_namespace`.
-        :param use_global_arguments: ``False`` if the node should ignore process-wide command line
-            args.
-        :param enable_rosout: ``False`` if the node should ignore rosout logging.
-        :param rosout_qos_profile: A QoSProfile or a history depth to apply to rosout publisher.
-            In the case that a history depth is provided, the QoS history is set to KEEP_LAST
-            the QoS history depth is set to the value of the parameter,
-            and all other QoS settings are set to their default value.
-        :param start_parameter_services: ``False`` if the node should not create parameter
-            services.
-        :param parameter_overrides: A list of overrides for initial values for parameters declared
-            on the node.
-        :param allow_undeclared_parameters: True if undeclared parameters are allowed.
-            This flag affects the behavior of parameter-related operations.
-        :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
-            will be used to implicitly declare parameters on the node during creation.
-        :param enable_logger_service: ``True`` if ROS2 services are created to allow external nodes
-            to get and set logger levels of this node. Otherwise, logger levels are only managed
-            locally. That is, logger levels cannot be changed remotely.
-        """
         self._context = get_default_context() if context is None else context
         self._parameters: Dict[str, Parameter[Any]] = {}
-        self._publishers: List[Publisher[Any]] = []
-        self._subscriptions: List[Subscription[Any]] = []
-        self._clients: List[Client[Any, Any]] = []
-        self._services: List[Service[Any, Any]] = []
-        self._timers: List[Timer] = []
-        self._guards: List[GuardCondition] = []
-        self.__waitables: List[Waitable[Any]] = []
-        self._default_callback_group = MutuallyExclusiveCallbackGroup()
         self._pre_set_parameters_callbacks: List[Callable[[List[Parameter[Any]]],
                                                           List[Parameter[Any]]]] = []
         self._on_set_parameters_callbacks: \
             List[Callable[[List[Parameter[Any]]], SetParametersResult]] = []
         self._post_set_parameters_callbacks: List[Callable[[List[Parameter[Any]]], None]] = []
-        self._rate_group = ReentrantCallbackGroup()
         self._allow_undeclared_parameters = allow_undeclared_parameters
         self._parameter_overrides: Dict[str, Parameter[Any]] = {}
         self._descriptors: Dict[str, ParameterDescriptor] = {}
+        self._parameter_event_publisher: Optional[BasePublisher[ParameterEvent]] = None
 
         namespace = namespace or ''
 
@@ -236,125 +189,16 @@ class Node:
                 validate_namespace(namespace)
                 # Should not get to this point
                 raise RuntimeError('rclpy_create_node failed for unknown reason')
+
         with self.handle:
             self._logger = get_logger(self.__node.logger_name())
 
-        self.__executor_weakref: Optional[weakref.ReferenceType[Executor]] = None
-
-        self._parameter_event_publisher: Optional[Publisher[ParameterEvent]] = \
-            self.create_publisher(ParameterEvent, '/parameter_events',
-                                  qos_profile_parameter_events)
-
-        with self.handle:
-            self._parameter_overrides = self.__node.get_parameters(Parameter)
-        # Combine parameters from params files with those from the node constructor and
-        # use the set_parameters_atomically API so a parameter event is published.
-        if parameter_overrides is not None:
-            self._parameter_overrides.update({p.name: p for p in parameter_overrides})
-
-        # Clock that has support for ROS time.
-        self._clock = Clock(clock_type=ClockType.ROS_TIME)
-
-        if automatically_declare_parameters_from_overrides:
-            self.declare_parameters(
-                '',
-                [
-                    (name, param.value, ParameterDescriptor())
-                    for name, param in self._parameter_overrides.items()],
-                ignore_override=True,
-            )
-
-        # Init a time source.
-        # Note: parameter overrides and parameter event publisher need to be ready at this point
-        # to be able to declare 'use_sim_time' if it was not declared yet.
-        self._time_source = TimeSource(node=self)
-        self._time_source.attach_clock(self._clock)
-
-        if start_parameter_services:
-            self._parameter_service = ParameterService(self)
-
-        if enable_logger_service:
-            self._logger_service = LoggingService(self)
-
-        self._type_description_service = TypeDescriptionService(self)
-
         self._context.track_node(self)
-
-    @property
-    def publishers(self) -> Iterator[Publisher[Any]]:
-        """Get publishers that have been created on this node."""
-        yield from self._publishers
-
-    @property
-    def subscriptions(self) -> Iterator[Subscription[Any]]:
-        """Get subscriptions that have been created on this node."""
-        yield from self._subscriptions
-
-    @property
-    def clients(self) -> Iterator[Client[Any, Any]]:
-        """Get clients that have been created on this node."""
-        yield from self._clients
-
-    @property
-    def services(self) -> Iterator[Service[Any, Any]]:
-        """Get services that have been created on this node."""
-        yield from self._services
-
-    @property
-    def timers(self) -> Iterator[Timer]:
-        """Get timers that have been created on this node."""
-        yield from self._timers
-
-    @property
-    def guards(self) -> Iterator[GuardCondition]:
-        """Get guards that have been created on this node."""
-        yield from self._guards
-
-    @property
-    def waitables(self) -> Iterator[Waitable[Any]]:
-        """Get waitables that have been created on this node."""
-        yield from self.__waitables
-
-    @property
-    def executor(self) -> Optional[Executor]:
-        """Get the executor if the node has been added to one, else return ``None``."""
-        if self.__executor_weakref:
-            return self.__executor_weakref()
-        return None
-
-    @executor.setter
-    def executor(self, new_executor: Optional[Executor]) -> None:
-        """Set or change the executor the node belongs to."""
-        current_executor = self.executor
-        if current_executor == new_executor:
-            return
-        if current_executor is not None:
-            current_executor.remove_node(self)
-        if new_executor is None:
-            self.__executor_weakref = None
-        else:
-            new_executor.add_node(self)
-            self.__executor_weakref = weakref.ref(new_executor)
-
-    def _wake_executor(self) -> None:
-        executor = self.executor
-        if executor:
-            executor.wake()
 
     @property
     def context(self) -> Context:
         """Get the context associated with the node."""
         return self._context
-
-    @property
-    def default_callback_group(self) -> CallbackGroup:
-        """
-        Get the default callback group.
-
-        If no other callback group is provided when the a ROS entity is created with the node,
-        then it is added to the default callback group.
-        """
-        return self._default_callback_group
 
     @property
     def handle(self) -> _rclpy.Node:
@@ -381,9 +225,9 @@ class Node:
         with self.handle:
             return self.handle.get_namespace()
 
-    def get_clock(self) -> Clock:
-        """Get the clock used by the node."""
-        return self._clock
+    @abstractmethod
+    def get_clock(self) -> BaseClock:
+        ...
 
     def get_logger(self) -> RcutilsLogger:
         """Get the nodes logger."""
@@ -1005,7 +849,7 @@ class Node:
                     # Descriptors have already been applied by this point.
                     self._parameters[param.name] = param
 
-            parameter_event.stamp = self._clock.now().to_msg()
+            parameter_event.stamp = self.get_clock().now().to_msg()
             if self._parameter_event_publisher:
                 self._parameter_event_publisher.publish(parameter_event)
 
@@ -1515,24 +1359,6 @@ class Node:
             raise TypeError(
                 'Expected QoSProfile or int, but received {!r}'.format(type(qos_or_depth)))
 
-    def add_waitable(self, waitable: Waitable[Any]) -> None:
-        """
-        Add a class that is capable of adding things to the wait set.
-
-        :param waitable: An instance of a waitable that the node will add to the waitset.
-        """
-        self.__waitables.append(waitable)
-        self._wake_executor()
-
-    def remove_waitable(self, waitable: Waitable[Any]) -> None:
-        """
-        Remove a Waitable that was previously added to the node.
-
-        :param waitable: The Waitable to remove.
-        """
-        self.__waitables.remove(waitable)
-        self._wake_executor()
-
     def resolve_topic_name(self, topic: str, *, only_expand: bool = False) -> str:
         """
         Return a topic name expanded and remapped.
@@ -1558,6 +1384,662 @@ class Node:
         """
         with self.handle:
             return _rclpy.rclpy_resolve_name(self.handle, service, only_expand, True)
+
+    def get_publisher_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str,
+        no_demangle: bool = False
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of discovered topics for publishers of a remote node.
+
+        :param node_name: Name of a remote node to get publishers for.
+        :param node_namespace: Namespace of the remote node.
+        :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
+        :return: List of tuples.
+          The first element of each tuple is the topic name and the second element is a list of
+          topic types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_publisher_names_and_types_by_node(
+                self.handle, no_demangle, node_name, node_namespace)
+
+    def get_subscriber_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str,
+        no_demangle: bool = False
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of discovered topics for subscriptions of a remote node.
+
+        :param node_name: Name of a remote node to get subscriptions for.
+        :param node_namespace: Namespace of the remote node.
+        :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
+        :return: List of tuples.
+          The first element of each tuple is the topic name and the second element is a list of
+          topic types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_subscriber_names_and_types_by_node(
+                self.handle, no_demangle, node_name, node_namespace)
+
+    def get_service_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of discovered service servers for a remote node.
+
+        :param node_name: Name of a remote node to get services for.
+        :param node_namespace: Namespace of the remote node.
+        :return: List of tuples.
+          The first element of each tuple is the service server name
+          and the second element is a list of service types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_service_names_and_types_by_node(
+                self.handle, node_name, node_namespace)
+
+    def get_client_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of discovered service clients for a remote node.
+
+        :param node_name: Name of a remote node to get service clients for.
+        :param node_namespace: Namespace of the remote node.
+        :return: List of tuples.
+          The first element of each tuple is the service client name
+          and the second element is a list of service client types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_client_names_and_types_by_node(
+                self.handle, node_name, node_namespace)
+
+    def get_action_client_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of action names and types for action clients associated with a remote node.
+
+        :param node_name: Name of a remote node to get action clients for.
+        :param node_namespace: Namespace of the remote node.
+        :return: List of tuples.
+          The first element of each tuple is the action name and the second element is a list of
+          action types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_action_client_names_and_types_by_node(
+                self.handle, node_name, node_namespace)
+
+    def get_action_server_names_and_types_by_node(
+        self,
+        node_name: str,
+        node_namespace: str
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of action names and types for action servers associated with a remote node.
+
+        :param node_name: Name of a remote node to get action servers for.
+        :param node_namespace: Namespace of the remote node.
+        :return: List of tuples.
+          The first element of each tuple is the action name and the second element is a list of
+          action types.
+        :raise NodeNameNonExistentError: If the node wasn't found.
+        :raise RuntimeError: Unexpected failure.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_action_server_names_and_types_by_node(
+                self.handle, node_name, node_namespace)
+
+    def get_action_names_and_types(self) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of action names and types in the ROS graph.
+
+        :return: List of tuples.
+          The first element of each tuple is the action name and the second element is a list of
+          action types.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_action_names_and_types(self.handle)
+
+    def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of discovered topic names and types.
+
+        :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
+        :return: List of tuples.
+          The first element of each tuple is the topic name and the second element is a list of
+          topic types.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_topic_names_and_types(self.handle, no_demangle)
+
+    def get_service_names_and_types(self) -> List[Tuple[str, List[str]]]:
+        """
+        Get a list of discovered service names and types.
+
+        :return: List of tuples.
+          The first element of each tuple is the service name and the second element is a list of
+          service types.
+        """
+        with self.handle:
+            return _rclpy.rclpy_get_service_names_and_types(self.handle)
+
+    def get_node_names(self) -> List[str]:
+        """
+        Get a list of names for discovered nodes.
+
+        :return: List of node names.
+        """
+        with self.handle:
+            names_ns = self.handle.get_node_names_and_namespaces()
+        return [n[0] for n in names_ns]
+
+    def get_fully_qualified_node_names(self) -> List[str]:
+        """
+        Get a list of fully qualified names for discovered nodes.
+
+        Similar to ``get_node_names_namespaces()``, but concatenates the names and namespaces.
+
+        :return: List of fully qualified node names.
+        """
+        names_and_namespaces = self.get_node_names_and_namespaces()
+        return [
+            ns + ('' if ns.endswith('/') else '/') + name
+            for name, ns in names_and_namespaces
+        ]
+
+    def get_node_names_and_namespaces(self) -> List[Tuple[str, str]]:
+        """
+        Get a list of names and namespaces for discovered nodes.
+
+        :return: List of tuples containing two strings: the node name and node namespace.
+        """
+        with self.handle:
+            return self.handle.get_node_names_and_namespaces()
+
+    def get_node_names_and_namespaces_with_enclaves(self) -> List[Tuple[str, str, str]]:
+        """
+        Get a list of names, namespaces and enclaves for discovered nodes.
+
+        :return: List of tuples containing three strings: the node name, node namespace
+            and enclave.
+        """
+        with self.handle:
+            return self.handle.get_node_names_and_namespaces_with_enclaves()
+
+    def get_fully_qualified_name(self) -> str:
+        """
+        Get the node's fully qualified name.
+
+        :return: Fully qualified node name.
+        """
+        with self.handle:
+            return self.handle.get_fully_qualified_name()
+
+    def _count_publishers_or_subscribers(self, topic_name: str, func: Callable[[str], int]) -> int:
+        fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
+        validate_full_topic_name(fq_topic_name)
+        with self.handle:
+            return func(fq_topic_name)
+
+    def count_publishers(self, topic_name: str) -> int:
+        """
+        Return the number of publishers on a given topic.
+
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
+        A relative or private topic is expanded using this node's namespace and name.
+        The queried topic name is not remapped.
+
+        :param topic_name: The topic name on which to count the number of publishers.
+        :return: The number of publishers on the topic.
+        """
+        with self.handle:
+            return self._count_publishers_or_subscribers(
+                topic_name, self.handle.get_count_publishers)
+
+    def count_subscribers(self, topic_name: str) -> int:
+        """
+        Return the number of subscribers on a given topic.
+
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
+        A relative or private topic is expanded using this node's namespace and name.
+        The queried topic name is not remapped.
+
+        :param topic_name: The topic name on which to count the number of subscribers.
+        :return: The number of subscribers on the topic.
+        """
+        with self.handle:
+            return self._count_publishers_or_subscribers(
+                topic_name, self.handle.get_count_subscribers)
+
+    def _count_clients_or_servers(self, service_name: str, func: Callable[[str], int]) -> int:
+        fq_service_name = expand_topic_name(service_name, self.get_name(), self.get_namespace())
+        validate_full_topic_name(fq_service_name, is_service=True)
+        with self.handle:
+            return func(fq_service_name)
+
+    def count_clients(self, service_name: str) -> int:
+        """
+        Return the number of clients on a given service.
+
+        `service_name` may be a relative, private, or fully qualified service name.
+        A relative or private service is expanded using this node's namespace and name.
+        The queried service name is not remapped.
+
+        :param service_name: the service_name on which to count the number of clients.
+        :return: the number of clients on the service.
+        """
+        with self.handle:
+            return self._count_clients_or_servers(
+                service_name, self.handle.get_count_clients)
+
+    def count_services(self, service_name: str) -> int:
+        """
+        Return the number of servers on a given service.
+
+        `service_name` may be a relative, private, or fully qualified service name.
+        A relative or private service is expanded using this node's namespace and name.
+        The queried service name is not remapped.
+
+        :param service_name: the service_name on which to count the number of clients.
+        :return: the number of servers on the service.
+        """
+        with self.handle:
+            return self._count_clients_or_servers(
+                service_name, self.handle.get_count_services)
+
+    def _get_info_by_topic(
+        self,
+        topic_name: str,
+        no_mangle: bool,
+        func: Callable[[_rclpy.Node, str, bool], List['_rclpy._TopicEndpointInfoDict']]
+    ) -> List[TopicEndpointInfo]:
+        with self.handle:
+            if no_mangle:
+                fq_topic_name = topic_name
+            else:
+                fq_topic_name = expand_topic_name(
+                    topic_name, self.get_name(), self.get_namespace())
+                validate_full_topic_name(fq_topic_name)
+                fq_topic_name = _rclpy.rclpy_remap_topic_name(self.handle, fq_topic_name)
+
+            info_dicts = func(self.handle, fq_topic_name, no_mangle)
+            infos = [TopicEndpointInfo(**x) for x in info_dicts]
+            return infos
+
+    def get_publishers_info_by_topic(
+        self,
+        topic_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
+        """
+        Return a list of publishers on a given topic.
+
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
+        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
+
+        When the ``no_mangle`` parameter is ``True``, the provided ``topic_name`` should be a valid
+        topic name for the middleware (useful when combining ROS with native middleware (e.g. DDS)
+        apps).  When the ``no_mangle`` parameter is ``False``, the provided ``topic_name`` should
+        follow ROS topic name conventions.
+
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name.
+        The queried ``topic_name`` is not remapped.
+
+        :param topic_name: The topic_name on which to find the publishers.
+        :param no_mangle: If ``True``, ``topic_name`` needs to be a valid middleware topic
+            name, otherwise it should be a valid ROS topic name. Defaults to ``False``.
+        :return: a list of TopicEndpointInfo for all the publishers on this topic.
+        """
+        return self._get_info_by_topic(
+            topic_name,
+            no_mangle,
+            _rclpy.rclpy_get_publishers_info_by_topic)
+
+    def get_subscriptions_info_by_topic(
+        self,
+        topic_name: str,
+        no_mangle: bool = False
+    ) -> List[TopicEndpointInfo]:
+        """
+        Return a list of subscriptions on a given topic.
+
+        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
+        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
+
+        When the ``no_mangle`` parameter is ``True``, the provided ``topic_name`` should be a valid
+        topic name for the middleware (useful when combining ROS with native middleware (e.g. DDS)
+        apps).  When the ``no_mangle`` parameter is ``False``, the provided ``topic_name`` should
+        follow ROS topic name conventions.
+
+        ``topic_name`` may be a relative, private, or fully qualified topic name.
+        A relative or private topic will be expanded using this node's namespace and name.
+        The queried ``topic_name`` is not remapped.
+
+        :param topic_name: The topic_name on which to find the subscriptions.
+        :param no_mangle: If ``True``, `topic_name` needs to be a valid middleware topic
+            name, otherwise it should be a valid ROS topic name. Defaults to ``False``.
+        :return: A list of TopicEndpointInfo for all the subscriptions on this topic.
+        """
+        return self._get_info_by_topic(
+            topic_name,
+            no_mangle,
+            _rclpy.rclpy_get_subscriptions_info_by_topic)
+
+    def _get_info_by_service(
+        self,
+        service_name: str,
+        no_mangle: bool,
+        func: Callable[[_rclpy.Node, str, bool], list[_rclpy._ServiceEndpointInfoDict]]
+    ) -> List[ServiceEndpointInfo]:
+        with self.handle:
+            if no_mangle:
+                fq_topic_name = service_name
+            else:
+                fq_topic_name = expand_topic_name(
+                    service_name, self.get_name(), self.get_namespace())
+                validate_full_topic_name(fq_topic_name)
+                fq_topic_name = _rclpy.rclpy_remap_topic_name(self.handle, fq_topic_name)
+            info_dicts = func(self.handle, fq_topic_name, no_mangle)
+            infos = [ServiceEndpointInfo(**x) for x in info_dicts]
+            return infos
+
+    def get_clients_info_by_service(
+        self,
+        service_name: str,
+        no_mangle: bool = False
+    ) -> List[ServiceEndpointInfo]:
+        """
+        Return a list of clients on a given service.
+
+        The returned parameter is a list of ServiceEndpointInfo objects, where each will contain
+        the node name, node namespace, service type, service endpoint's GIDs, and its QoS profiles.
+
+        When the ``no_mangle`` parameter is ``True``, the provided ``service_name`` should be a
+        valid service name for the middleware (useful when combining ROS with native middleware
+        apps). When the ``no_mangle`` parameter is ``False``,the provided
+        ``service_name`` should follow ROS service name conventions.
+        In DDS-based RMWs, services are implemented as topics with mangled
+        names (e.g., `rq/my_serviceRequest` and `rp/my_serviceReply`), so `no_mangle = true` is not
+        supported and will result in an error. Use `get_subscriptions_info_by_topic` or
+        get_publishers_info_by_topic` for unmangled topic queries in such cases. Other RMWs
+        (e.g., Zenoh) may support `no_mangle = true` if they natively handle
+        services without topic-based
+
+        ``service_name`` may be a relative, private, or fully qualified service name.
+        A relative or private service will be expanded using this node's namespace and name.
+        The queried ``service_name`` is not remapped.
+
+        :param service_name: The service_name on which to find the clients.
+        :param no_mangle: If ``True``, `service_name` needs to be a valid middleware service
+            name, otherwise it should be a valid ROS service name. Defaults to ``False``.
+        :return: A list of ServiceEndpointInfo for all the clients on this service.
+        """
+        return self._get_info_by_service(
+            service_name,
+            no_mangle,
+            _rclpy.rclpy_get_clients_info_by_service)
+
+    def get_servers_info_by_service(
+        self,
+        service_name: str,
+        no_mangle: bool = False
+    ) -> List[ServiceEndpointInfo]:
+        """
+        Return a list of servers on a given service.
+
+        The returned parameter is a list of ServiceEndpointInfo objects, where each will contain
+        the node name, node namespace, service type, service endpoint's GIDs, and its QoS profiles.
+
+        When the ``no_mangle`` parameter is ``True``, the provided ``service_name`` should be a
+        valid service name for the middleware (useful when combining ROS with native middleware
+        apps). When the ``no_mangle`` parameter is ``False``,the provided
+        ``service_name`` should follow ROS service name conventions.
+        In DDS-based RMWs, services are implemented as topics with mangled
+        names (e.g., `rq/my_serviceRequest` and `rp/my_serviceReply`), so `no_mangle = true` is not
+        supported and will result in an error. Use `get_subscriptions_info_by_topic` or
+        get_publishers_info_by_topic` for unmangled topic queries in such cases. Other RMWs
+        (e.g., Zenoh) may support `no_mangle = true` if they natively handle
+        services without topic-based
+
+        ``service_name`` may be a relative, private, or fully qualified service name.
+        A relative or private service will be expanded using this node's namespace and name.
+        The queried ``service_name`` is not remapped.
+
+        :param service_name: The service_name on which to find the servers.
+        :param no_mangle: If ``True``, `service_name` needs to be a valid middleware service
+            name, otherwise it should be a valid ROS service name. Defaults to ``False``.
+        :return: A list of ServiceEndpointInfo for all the servers on this service.
+        """
+        return self._get_info_by_service(
+            service_name,
+            no_mangle,
+            _rclpy.rclpy_get_servers_info_by_service)
+
+
+class Node(BaseNode):
+    """
+    A Node in the ROS graph.
+
+    A Node is the primary entrypoint in a ROS system for communication.
+    It can be used to create ROS entities such as publishers, subscribers, services, etc.
+    """
+
+    def __init__(
+        self,
+        node_name: str,
+        *,
+        context: Optional[Context] = None,
+        cli_args: Optional[List[str]] = None,
+        namespace: Optional[str] = None,
+        use_global_arguments: bool = True,
+        enable_rosout: bool = True,
+        rosout_qos_profile: Union[QoSProfile, int] = qos_profile_rosout_default,
+        start_parameter_services: bool = True,
+        parameter_overrides: Optional[List[Parameter[Any]]] = None,
+        allow_undeclared_parameters: bool = False,
+        automatically_declare_parameters_from_overrides: bool = False,
+        enable_logger_service: bool = False
+    ) -> None:
+        """
+        Create a Node.
+
+        :param node_name: A name to give to this node. Validated by :func:`validate_node_name`.
+        :param context: The context to be associated with, or ``None`` for the default global
+            context.
+        :param cli_args: A list of strings of command line args to be used only by this node.
+            These arguments are used to extract remappings used by the node and other ROS specific
+            settings, as well as user defined non-ROS arguments.
+        :param namespace: The namespace to which relative topic and service names will be prefixed.
+            Validated by :func:`validate_namespace`.
+        :param use_global_arguments: ``False`` if the node should ignore process-wide command line
+            args.
+        :param enable_rosout: ``False`` if the node should ignore rosout logging.
+        :param rosout_qos_profile: A QoSProfile or a history depth to apply to rosout publisher.
+            In the case that a history depth is provided, the QoS history is set to KEEP_LAST
+            the QoS history depth is set to the value of the parameter,
+            and all other QoS settings are set to their default value.
+        :param start_parameter_services: ``False`` if the node should not create parameter
+            services.
+        :param parameter_overrides: A list of overrides for initial values for parameters declared
+            on the node.
+        :param allow_undeclared_parameters: True if undeclared parameters are allowed.
+            This flag affects the behavior of parameter-related operations.
+        :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
+            will be used to implicitly declare parameters on the node during creation.
+        :param enable_logger_service: ``True`` if ROS2 services are created to allow external nodes
+            to get and set logger levels of this node. Otherwise, logger levels are only managed
+            locally. That is, logger levels cannot be changed remotely.
+        """
+        self._publishers: List[Publisher[Any]] = []
+        self._subscriptions: List[Subscription[Any]] = []
+        self._clients: List[Client[Any, Any]] = []
+        self._services: List[Service[Any, Any]] = []
+        self._timers: List[Timer] = []
+        self._guards: List[GuardCondition] = []
+        self.__waitables: List[Waitable[Any]] = []
+        self._default_callback_group = MutuallyExclusiveCallbackGroup()
+        self._rate_group = ReentrantCallbackGroup()
+        self._clock = Clock(clock_type=ClockType.ROS_TIME)
+        self.__executor_weakref: Optional[weakref.ReferenceType[Executor]] = None
+
+        super().__init__(
+            node_name=node_name,
+            context=context,
+            cli_args=cli_args,
+            namespace=namespace,
+            use_global_arguments=use_global_arguments,
+            enable_rosout=enable_rosout,
+            rosout_qos_profile=rosout_qos_profile,
+            allow_undeclared_parameters=allow_undeclared_parameters,
+        )
+
+        self._parameter_event_publisher = self.create_publisher(
+            ParameterEvent, '/parameter_events', qos_profile_parameter_events
+        )
+
+        with self.handle:
+            self._parameter_overrides = self.handle.get_parameters(Parameter)
+        # Combine parameters from params files with those from the node constructor and
+        # use the set_parameters_atomically API so a parameter event is published.
+        if parameter_overrides is not None:
+            self._parameter_overrides.update({p.name: p for p in parameter_overrides})
+
+        if automatically_declare_parameters_from_overrides:
+            self.declare_parameters(
+                '',
+                [
+                    (name, param.value, ParameterDescriptor())
+                    for name, param in self._parameter_overrides.items()],
+                ignore_override=True,
+            )
+
+        # Init a time source.
+        # Note: parameter overrides and parameter event publisher need to be ready at this point
+        # to be able to declare 'use_sim_time' if it was not declared yet.
+        self._time_source = TimeSource(node=self)
+        self._time_source.attach_clock(self._clock)
+
+        if start_parameter_services:
+            self._parameter_service = ParameterService(self)
+
+        if enable_logger_service:
+            self._logger_service = LoggingService(self)
+
+        self._type_description_service = TypeDescriptionService(self)
+
+    @property
+    def publishers(self) -> Iterator[Publisher[Any]]:
+        """Get publishers that have been created on this node."""
+        yield from self._publishers
+
+    @property
+    def subscriptions(self) -> Iterator[Subscription[Any]]:
+        """Get subscriptions that have been created on this node."""
+        yield from self._subscriptions
+
+    @property
+    def clients(self) -> Iterator[Client[Any, Any]]:
+        """Get clients that have been created on this node."""
+        yield from self._clients
+
+    @property
+    def services(self) -> Iterator[Service[Any, Any]]:
+        """Get services that have been created on this node."""
+        yield from self._services
+
+    @property
+    def timers(self) -> Iterator[Timer]:
+        """Get timers that have been created on this node."""
+        yield from self._timers
+
+    @property
+    def guards(self) -> Iterator[GuardCondition]:
+        """Get guards that have been created on this node."""
+        yield from self._guards
+
+    @property
+    def waitables(self) -> Iterator[Waitable[Any]]:
+        """Get waitables that have been created on this node."""
+        yield from self.__waitables
+
+    @property
+    def executor(self) -> Optional[Executor]:
+        """Get the executor if the node has been added to one, else return ``None``."""
+        if self.__executor_weakref:
+            return self.__executor_weakref()
+        return None
+
+    @executor.setter
+    def executor(self, new_executor: Optional[Executor]) -> None:
+        """Set or change the executor the node belongs to."""
+        current_executor = self.executor
+        if current_executor == new_executor:
+            return
+        if current_executor is not None:
+            current_executor.remove_node(self)
+        if new_executor is None:
+            self.__executor_weakref = None
+        else:
+            new_executor.add_node(self)
+            self.__executor_weakref = weakref.ref(new_executor)
+
+    def _wake_executor(self) -> None:
+        executor = self.executor
+        if executor:
+            executor.wake()
+
+    @property
+    def default_callback_group(self) -> CallbackGroup:
+        """
+        Get the default callback group.
+
+        If no other callback group is provided when the a ROS entity is created with the node,
+        then it is added to the default callback group.
+        """
+        return self._default_callback_group
+
+    def get_clock(self) -> Clock:
+        """Get the clock used by the node."""
+        return self._clock
+
+    def add_waitable(self, waitable: Waitable[Any]) -> None:
+        """
+        Add a class that is capable of adding things to the wait set.
+
+        :param waitable: An instance of a waitable that the node will add to the waitset.
+        """
+        self.__waitables.append(waitable)
+        self._wake_executor()
+
+    def remove_waitable(self, waitable: Waitable[Any]) -> None:
+        """
+        Remove a Waitable that was previously added to the node.
+
+        :param waitable: The Waitable to remove.
+        """
+        self.__waitables.remove(waitable)
+        self._wake_executor()
 
     def create_publisher(
         self,
@@ -2057,459 +2539,8 @@ class Node:
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
         self._type_description_service.destroy()
-        self.__node.destroy_when_not_in_use()
+        self.handle.destroy_when_not_in_use()
         self._wake_executor()
-
-    def get_publisher_names_and_types_by_node(
-        self,
-        node_name: str,
-        node_namespace: str,
-        no_demangle: bool = False
-    ) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of discovered topics for publishers of a remote node.
-
-        :param node_name: Name of a remote node to get publishers for.
-        :param node_namespace: Namespace of the remote node.
-        :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
-        :return: List of tuples.
-          The first element of each tuple is the topic name and the second element is a list of
-          topic types.
-        :raise NodeNameNonExistentError: If the node wasn't found.
-        :raise RuntimeError: Unexpected failure.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_publisher_names_and_types_by_node(
-                self.handle, no_demangle, node_name, node_namespace)
-
-    def get_subscriber_names_and_types_by_node(
-        self,
-        node_name: str,
-        node_namespace: str,
-        no_demangle: bool = False
-    ) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of discovered topics for subscriptions of a remote node.
-
-        :param node_name: Name of a remote node to get subscriptions for.
-        :param node_namespace: Namespace of the remote node.
-        :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
-        :return: List of tuples.
-          The first element of each tuple is the topic name and the second element is a list of
-          topic types.
-        :raise NodeNameNonExistentError: If the node wasn't found.
-        :raise RuntimeError: Unexpected failure.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_subscriber_names_and_types_by_node(
-                self.handle, no_demangle, node_name, node_namespace)
-
-    def get_service_names_and_types_by_node(
-        self,
-        node_name: str,
-        node_namespace: str
-    ) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of discovered service servers for a remote node.
-
-        :param node_name: Name of a remote node to get services for.
-        :param node_namespace: Namespace of the remote node.
-        :return: List of tuples.
-          The first element of each tuple is the service server name
-          and the second element is a list of service types.
-        :raise NodeNameNonExistentError: If the node wasn't found.
-        :raise RuntimeError: Unexpected failure.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_service_names_and_types_by_node(
-                self.handle, node_name, node_namespace)
-
-    def get_client_names_and_types_by_node(
-        self,
-        node_name: str,
-        node_namespace: str
-    ) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of discovered service clients for a remote node.
-
-        :param node_name: Name of a remote node to get service clients for.
-        :param node_namespace: Namespace of the remote node.
-        :return: List of tuples.
-          The first element of each tuple is the service client name
-          and the second element is a list of service client types.
-        :raise NodeNameNonExistentError: If the node wasn't found.
-        :raise RuntimeError: Unexpected failure.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_client_names_and_types_by_node(
-                self.handle, node_name, node_namespace)
-
-    def get_action_client_names_and_types_by_node(
-        self,
-        node_name: str,
-        node_namespace: str
-    ) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of action names and types for action clients associated with a remote node.
-
-        :param node_name: Name of a remote node to get action clients for.
-        :param node_namespace: Namespace of the remote node.
-        :return: List of tuples.
-          The first element of each tuple is the action name and the second element is a list of
-          action types.
-        :raise NodeNameNonExistentError: If the node wasn't found.
-        :raise RuntimeError: Unexpected failure.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_action_client_names_and_types_by_node(
-                self.handle, node_name, node_namespace)
-
-    def get_action_server_names_and_types_by_node(
-        self,
-        node_name: str,
-        node_namespace: str
-    ) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of action names and types for action servers associated with a remote node.
-
-        :param node_name: Name of a remote node to get action servers for.
-        :param node_namespace: Namespace of the remote node.
-        :return: List of tuples.
-          The first element of each tuple is the action name and the second element is a list of
-          action types.
-        :raise NodeNameNonExistentError: If the node wasn't found.
-        :raise RuntimeError: Unexpected failure.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_action_server_names_and_types_by_node(
-                self.handle, node_name, node_namespace)
-
-    def get_action_names_and_types(self) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of action names and types in the ROS graph.
-
-        :return: List of tuples.
-          The first element of each tuple is the action name and the second element is a list of
-          action types.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_action_names_and_types(self.handle)
-
-    def get_topic_names_and_types(self, no_demangle: bool = False) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of discovered topic names and types.
-
-        :param no_demangle: If ``True``, then topic names and types returned will not be demangled.
-        :return: List of tuples.
-          The first element of each tuple is the topic name and the second element is a list of
-          topic types.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_topic_names_and_types(self.handle, no_demangle)
-
-    def get_service_names_and_types(self) -> List[Tuple[str, List[str]]]:
-        """
-        Get a list of discovered service names and types.
-
-        :return: List of tuples.
-          The first element of each tuple is the service name and the second element is a list of
-          service types.
-        """
-        with self.handle:
-            return _rclpy.rclpy_get_service_names_and_types(self.handle)
-
-    def get_node_names(self) -> List[str]:
-        """
-        Get a list of names for discovered nodes.
-
-        :return: List of node names.
-        """
-        with self.handle:
-            names_ns = self.handle.get_node_names_and_namespaces()
-        return [n[0] for n in names_ns]
-
-    def get_fully_qualified_node_names(self) -> List[str]:
-        """
-        Get a list of fully qualified names for discovered nodes.
-
-        Similar to ``get_node_names_namespaces()``, but concatenates the names and namespaces.
-
-        :return: List of fully qualified node names.
-        """
-        names_and_namespaces = self.get_node_names_and_namespaces()
-        return [
-            ns + ('' if ns.endswith('/') else '/') + name
-            for name, ns in names_and_namespaces
-        ]
-
-    def get_node_names_and_namespaces(self) -> List[Tuple[str, str]]:
-        """
-        Get a list of names and namespaces for discovered nodes.
-
-        :return: List of tuples containing two strings: the node name and node namespace.
-        """
-        with self.handle:
-            return self.handle.get_node_names_and_namespaces()
-
-    def get_node_names_and_namespaces_with_enclaves(self) -> List[Tuple[str, str, str]]:
-        """
-        Get a list of names, namespaces and enclaves for discovered nodes.
-
-        :return: List of tuples containing three strings: the node name, node namespace
-            and enclave.
-        """
-        with self.handle:
-            return self.handle.get_node_names_and_namespaces_with_enclaves()
-
-    def get_fully_qualified_name(self) -> str:
-        """
-        Get the node's fully qualified name.
-
-        :return: Fully qualified node name.
-        """
-        with self.handle:
-            return self.handle.get_fully_qualified_name()
-
-    def _count_publishers_or_subscribers(self, topic_name: str, func: Callable[[str], int]) -> int:
-        fq_topic_name = expand_topic_name(topic_name, self.get_name(), self.get_namespace())
-        validate_full_topic_name(fq_topic_name)
-        with self.handle:
-            return func(fq_topic_name)
-
-    def count_publishers(self, topic_name: str) -> int:
-        """
-        Return the number of publishers on a given topic.
-
-        ``topic_name`` may be a relative, private, or fully qualified topic name.
-        A relative or private topic is expanded using this node's namespace and name.
-        The queried topic name is not remapped.
-
-        :param topic_name: The topic name on which to count the number of publishers.
-        :return: The number of publishers on the topic.
-        """
-        with self.handle:
-            return self._count_publishers_or_subscribers(
-                topic_name, self.handle.get_count_publishers)
-
-    def count_subscribers(self, topic_name: str) -> int:
-        """
-        Return the number of subscribers on a given topic.
-
-        ``topic_name`` may be a relative, private, or fully qualified topic name.
-        A relative or private topic is expanded using this node's namespace and name.
-        The queried topic name is not remapped.
-
-        :param topic_name: The topic name on which to count the number of subscribers.
-        :return: The number of subscribers on the topic.
-        """
-        with self.handle:
-            return self._count_publishers_or_subscribers(
-                topic_name, self.handle.get_count_subscribers)
-
-    def _count_clients_or_servers(self, service_name: str, func: Callable[[str], int]) -> int:
-        fq_service_name = expand_topic_name(service_name, self.get_name(), self.get_namespace())
-        validate_full_topic_name(fq_service_name, is_service=True)
-        with self.handle:
-            return func(fq_service_name)
-
-    def count_clients(self, service_name: str) -> int:
-        """
-        Return the number of clients on a given service.
-
-        `service_name` may be a relative, private, or fully qualified service name.
-        A relative or private service is expanded using this node's namespace and name.
-        The queried service name is not remapped.
-
-        :param service_name: the service_name on which to count the number of clients.
-        :return: the number of clients on the service.
-        """
-        with self.handle:
-            return self._count_clients_or_servers(
-                service_name, self.handle.get_count_clients)
-
-    def count_services(self, service_name: str) -> int:
-        """
-        Return the number of servers on a given service.
-
-        `service_name` may be a relative, private, or fully qualified service name.
-        A relative or private service is expanded using this node's namespace and name.
-        The queried service name is not remapped.
-
-        :param service_name: the service_name on which to count the number of clients.
-        :return: the number of servers on the service.
-        """
-        with self.handle:
-            return self._count_clients_or_servers(
-                service_name, self.handle.get_count_services)
-
-    def _get_info_by_topic(
-        self,
-        topic_name: str,
-        no_mangle: bool,
-        func: Callable[[_rclpy.Node, str, bool], List['_rclpy._TopicEndpointInfoDict']]
-    ) -> List[TopicEndpointInfo]:
-        with self.handle:
-            if no_mangle:
-                fq_topic_name = topic_name
-            else:
-                fq_topic_name = expand_topic_name(
-                    topic_name, self.get_name(), self.get_namespace())
-                validate_full_topic_name(fq_topic_name)
-                fq_topic_name = _rclpy.rclpy_remap_topic_name(self.handle, fq_topic_name)
-
-            info_dicts = func(self.handle, fq_topic_name, no_mangle)
-            infos = [TopicEndpointInfo(**x) for x in info_dicts]
-            return infos
-
-    def get_publishers_info_by_topic(
-        self,
-        topic_name: str,
-        no_mangle: bool = False
-    ) -> List[TopicEndpointInfo]:
-        """
-        Return a list of publishers on a given topic.
-
-        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
-        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
-
-        When the ``no_mangle`` parameter is ``True``, the provided ``topic_name`` should be a valid
-        topic name for the middleware (useful when combining ROS with native middleware (e.g. DDS)
-        apps).  When the ``no_mangle`` parameter is ``False``, the provided ``topic_name`` should
-        follow ROS topic name conventions.
-
-        ``topic_name`` may be a relative, private, or fully qualified topic name.
-        A relative or private topic will be expanded using this node's namespace and name.
-        The queried ``topic_name`` is not remapped.
-
-        :param topic_name: The topic_name on which to find the publishers.
-        :param no_mangle: If ``True``, ``topic_name`` needs to be a valid middleware topic
-            name, otherwise it should be a valid ROS topic name. Defaults to ``False``.
-        :return: a list of TopicEndpointInfo for all the publishers on this topic.
-        """
-        return self._get_info_by_topic(
-            topic_name,
-            no_mangle,
-            _rclpy.rclpy_get_publishers_info_by_topic)
-
-    def get_subscriptions_info_by_topic(
-        self,
-        topic_name: str,
-        no_mangle: bool = False
-    ) -> List[TopicEndpointInfo]:
-        """
-        Return a list of subscriptions on a given topic.
-
-        The returned parameter is a list of TopicEndpointInfo objects, where each will contain
-        the node name, node namespace, topic type, topic endpoint's GID, and its QoS profile.
-
-        When the ``no_mangle`` parameter is ``True``, the provided ``topic_name`` should be a valid
-        topic name for the middleware (useful when combining ROS with native middleware (e.g. DDS)
-        apps).  When the ``no_mangle`` parameter is ``False``, the provided ``topic_name`` should
-        follow ROS topic name conventions.
-
-        ``topic_name`` may be a relative, private, or fully qualified topic name.
-        A relative or private topic will be expanded using this node's namespace and name.
-        The queried ``topic_name`` is not remapped.
-
-        :param topic_name: The topic_name on which to find the subscriptions.
-        :param no_mangle: If ``True``, `topic_name` needs to be a valid middleware topic
-            name, otherwise it should be a valid ROS topic name. Defaults to ``False``.
-        :return: A list of TopicEndpointInfo for all the subscriptions on this topic.
-        """
-        return self._get_info_by_topic(
-            topic_name,
-            no_mangle,
-            _rclpy.rclpy_get_subscriptions_info_by_topic)
-
-    def _get_info_by_service(
-        self,
-        service_name: str,
-        no_mangle: bool,
-        func: Callable[[_rclpy.Node, str, bool], list[_rclpy._ServiceEndpointInfoDict]]
-    ) -> List[ServiceEndpointInfo]:
-        with self.handle:
-            if no_mangle:
-                fq_topic_name = service_name
-            else:
-                fq_topic_name = expand_topic_name(
-                    service_name, self.get_name(), self.get_namespace())
-                validate_full_topic_name(fq_topic_name)
-                fq_topic_name = _rclpy.rclpy_remap_topic_name(self.handle, fq_topic_name)
-            info_dicts = func(self.handle, fq_topic_name, no_mangle)
-            infos = [ServiceEndpointInfo(**x) for x in info_dicts]
-            return infos
-
-    def get_clients_info_by_service(
-        self,
-        service_name: str,
-        no_mangle: bool = False
-    ) -> List[ServiceEndpointInfo]:
-        """
-        Return a list of clients on a given service.
-
-        The returned parameter is a list of ServiceEndpointInfo objects, where each will contain
-        the node name, node namespace, service type, service endpoint's GIDs, and its QoS profiles.
-
-        When the ``no_mangle`` parameter is ``True``, the provided ``service_name`` should be a
-        valid service name for the middleware (useful when combining ROS with native middleware
-        apps). When the ``no_mangle`` parameter is ``False``,the provided
-        ``service_name`` should follow ROS service name conventions.
-        In DDS-based RMWs, services are implemented as topics with mangled
-        names (e.g., `rq/my_serviceRequest` and `rp/my_serviceReply`), so `no_mangle = true` is not
-        supported and will result in an error. Use `get_subscriptions_info_by_topic` or
-        get_publishers_info_by_topic` for unmangled topic queries in such cases. Other RMWs
-        (e.g., Zenoh) may support `no_mangle = true` if they natively handle
-        services without topic-based
-
-        ``service_name`` may be a relative, private, or fully qualified service name.
-        A relative or private service will be expanded using this node's namespace and name.
-        The queried ``service_name`` is not remapped.
-
-        :param service_name: The service_name on which to find the clients.
-        :param no_mangle: If ``True``, `service_name` needs to be a valid middleware service
-            name, otherwise it should be a valid ROS service name. Defaults to ``False``.
-        :return: A list of ServiceEndpointInfo for all the clients on this service.
-        """
-        return self._get_info_by_service(
-            service_name,
-            no_mangle,
-            _rclpy.rclpy_get_clients_info_by_service)
-
-    def get_servers_info_by_service(
-        self,
-        service_name: str,
-        no_mangle: bool = False
-    ) -> List[ServiceEndpointInfo]:
-        """
-        Return a list of servers on a given service.
-
-        The returned parameter is a list of ServiceEndpointInfo objects, where each will contain
-        the node name, node namespace, service type, service endpoint's GIDs, and its QoS profiles.
-
-        When the ``no_mangle`` parameter is ``True``, the provided ``service_name`` should be a
-        valid service name for the middleware (useful when combining ROS with native middleware
-        apps). When the ``no_mangle`` parameter is ``False``,the provided
-        ``service_name`` should follow ROS service name conventions.
-        In DDS-based RMWs, services are implemented as topics with mangled
-        names (e.g., `rq/my_serviceRequest` and `rp/my_serviceReply`), so `no_mangle = true` is not
-        supported and will result in an error. Use `get_subscriptions_info_by_topic` or
-        get_publishers_info_by_topic` for unmangled topic queries in such cases. Other RMWs
-        (e.g., Zenoh) may support `no_mangle = true` if they natively handle
-        services without topic-based
-
-        ``service_name`` may be a relative, private, or fully qualified service name.
-        A relative or private service will be expanded using this node's namespace and name.
-        The queried ``service_name`` is not remapped.
-
-        :param service_name: The service_name on which to find the servers.
-        :param no_mangle: If ``True``, `service_name` needs to be a valid middleware service
-            name, otherwise it should be a valid ROS service name. Defaults to ``False``.
-        :return: A list of ServiceEndpointInfo for all the servers on this service.
-        """
-        return self._get_info_by_service(
-            service_name,
-            no_mangle,
-            _rclpy.rclpy_get_servers_info_by_service)
 
     def wait_for_node(
         self,
