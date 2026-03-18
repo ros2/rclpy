@@ -119,11 +119,11 @@ class TestClock(unittest.TestCase):
     def test_ros_time_is_active_raises_when_clock_type_is_not_ros_time(self) -> None:
         clock = Clock(clock_type=ClockType.SYSTEM_TIME)
         with self.assertRaises(RCLError):
-            clock.ros_time_is_active()
+            clock.ros_time_is_active
 
         clock = Clock(clock_type=ClockType.STEADY_TIME)
         with self.assertRaises(RCLError):
-            clock.ros_time_is_active()
+            clock.ros_time_is_active
 
     def test_set_ros_time_override_raises_when_clock_type_is_not_ros_time(self) -> None:
         clock = Clock(clock_type=ClockType.SYSTEM_TIME)
