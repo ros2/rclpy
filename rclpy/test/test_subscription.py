@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Generator
 import time
 from typing import List
 from typing import Optional
@@ -21,6 +22,7 @@ import pytest
 
 import rclpy
 from rclpy.node import Node
+from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 
@@ -37,7 +39,7 @@ def setup_ros() -> None:
 
 
 @pytest.fixture
-def test_node():
+def test_node() -> Generator[Node, None, None]:
     node = Node(NODE_NAME)
     yield node
     node.destroy_node()
@@ -72,7 +74,7 @@ def test_get_subscription_topic_name(topic_name: str, namespace: Optional[str],
     node.destroy_node()
 
 
-def test_logger_name_is_equal_to_node_name(test_node):
+def test_logger_name_is_equal_to_node_name(test_node: Node) -> None:
     sub = test_node.create_subscription(
         msg_type=Empty,
         topic='topic',
@@ -135,6 +137,29 @@ def test_subscription_callback_type() -> None:
     node.destroy_node()
 
 
+def test_subscription_callback_setter() -> None:
+    node = Node('test_node', namespace='test_subscription/test_subscription_callback_setter')
+    sub = node.create_subscription(
+        msg_type=Empty,
+        topic='test_subscription/test_subscription_callback_/topic',
+        qos_profile=10,
+        callback=lambda _, _2: None)
+
+    sub.callback = lambda _: None
+    assert sub._callback_type == Subscription.CallbackType.MessageOnly
+
+    sub.callback = callback = lambda _, _2: None
+    assert sub._callback_type == Subscription.CallbackType.WithMessageInfo
+
+    with pytest.raises(RuntimeError):
+        sub.callback = lambda: None
+
+    assert sub.callback is callback
+
+    sub.destroy()
+    node.destroy_node()
+
+
 def test_subscription_context_manager() -> None:
     node = Node('test_node', namespace='test_subscription/test_subscription_callback_type')
     with node.create_subscription(
@@ -181,7 +206,7 @@ def test_subscription_publisher_count() -> None:
     node.destroy_node()
 
 
-def test_on_new_message_callback(test_node) -> None:
+def test_on_new_message_callback(test_node: Node) -> None:
     topic_name = '/topic'
     cb = Mock()
     sub = test_node.create_subscription(
@@ -217,106 +242,121 @@ def test_on_new_message_callback(test_node) -> None:
     cb.assert_not_called()
 
 
-def test_subscription_set_content_filter(test_node) -> None:
+def test_subscription_set_content_filter(test_node: Node) -> None:
 
     if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
        rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
         pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
 
     topic_name = '/topic'
-    sub = test_node.create_subscription(
+    with test_node.create_subscription(
         msg_type=BasicTypes,
         topic=topic_name,
         qos_profile=10,
-        callback=lambda _: None)
+            callback=lambda _: None) as sub:
 
-    filter_expression = 'int32_value > %0'
-    expression_parameters: List[str] = ['10']
+        filter_expression = 'int32_value > %0'
+        expression_parameters: List[str] = ['10']
 
-    # There should not be any exceptions.
-    try:
+        # There should not be any exceptions.
+        try:
+            sub.set_content_filter(
+                filter_expression,
+                expression_parameters
+            )
+        except Exception as e:
+            pytest.fail(f'Unexpected exception raised: {e}')
+
+
+def test_subscription_is_cft_supported(test_node: Node) -> None:
+
+    # The current rmw implementations for content filter support
+    # rmw_fastrtps_cpp: Yes
+    # rmw_connextdds: Yes
+    # rmw_cyclonedds: No
+    # rmw_zenoh: No
+    rmw_implementation = rclpy.get_rmw_implementation_identifier()
+    rmw_cft_supported = rmw_implementation in ('rmw_fastrtps_cpp', 'rmw_connextdds')
+
+    topic_name = '/topic'
+    with test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+            callback=lambda _: None) as sub:
+
+        # There should not be any exceptions.
+        try:
+            is_cft_supported = sub.is_cft_supported
+        except Exception as e:
+            pytest.fail(f'Unexpected exception raised: {e}')
+
+        assert is_cft_supported == rmw_cft_supported
+
+
+def test_subscription_is_cft_enabled(test_node: Node) -> None:
+
+    topic_name = '/topic'
+    with test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+            callback=lambda _: None) as sub:
+
+        if not sub.is_cft_supported:
+            pytest.skip(
+                f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
+
+        sub.set_content_filter(
+            filter_expression='bool_value = %0',
+            expression_parameters=['TRUE']
+        )
+
+        # There should not be any exceptions.
+        try:
+            _ = sub.is_cft_enabled
+        except Exception as e:
+            pytest.fail(f'Unexpected exception raised: {e}')
+
+
+def test_subscription_get_content_filter(test_node: Node) -> None:
+
+    topic_name = '/topic'
+    with test_node.create_subscription(
+        msg_type=BasicTypes,
+        topic=topic_name,
+        qos_profile=10,
+            callback=lambda _: None) as sub:
+
+        if not sub.is_cft_supported:
+            pytest.skip(
+                f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
+
+        assert sub.is_cft_enabled is False
+
+        filter_expression = 'int32_value > %0'
+        expression_parameters: List[str] = ['60']
+
         sub.set_content_filter(
             filter_expression,
             expression_parameters
         )
-    except Exception as e:
-        pytest.fail(f'Unexpected exception raised: {e}')
 
-    sub.destroy()
+        assert sub.is_cft_enabled is True
 
-
-def test_subscription_is_cft_enabled(test_node) -> None:
-
-    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
-       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
-        pytest.skip('Content filter is now only supported in FastDDS and Connext DDS.')
-
-    topic_name = '/topic'
-    sub = test_node.create_subscription(
-        msg_type=BasicTypes,
-        topic=topic_name,
-        qos_profile=10,
-        callback=lambda _: None)
-
-    sub.set_content_filter(
-        filter_expression='bool_value = %0',
-        expression_parameters=['TRUE']
-    )
-
-    # There should not be any exceptions.
-    try:
-        _ = sub.is_cft_enabled
-    except Exception as e:
-        pytest.fail(f'Unexpected exception raised: {e}')
-
-    sub.destroy()
+        cf_option = sub.get_content_filter()
+        assert cf_option.filter_expression == filter_expression
+        assert len(cf_option.expression_parameters) == len(expression_parameters)
+        assert cf_option.expression_parameters[0] == expression_parameters[0]
 
 
-def test_subscription_get_content_filter(test_node) -> None:
-
-    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
-       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
-        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+def test_subscription_content_filter_effect(test_node: Node) -> None:
 
     topic_name = '/topic'
-    sub = test_node.create_subscription(
-        msg_type=BasicTypes,
-        topic=topic_name,
-        qos_profile=10,
-        callback=lambda _: None)
-
-    assert sub.is_cft_enabled is False
-
-    filter_expression = 'int32_value > %0'
-    expression_parameters: List[str] = ['60']
-
-    sub.set_content_filter(
-        filter_expression,
-        expression_parameters
-    )
-
-    assert sub.is_cft_enabled is True
-
-    cf_option = sub.get_content_filter()
-    assert cf_option.filter_expression == filter_expression
-    assert len(cf_option.expression_parameters) == len(expression_parameters)
-    assert cf_option.expression_parameters[0] == expression_parameters[0]
-
-    sub.destroy()
-
-
-def test_subscription_content_filter_effect(test_node) -> None:
-
-    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
-       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
-        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
-
-    topic_name = '/topic'
-    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
 
     received_msgs = []
 
-    def sub_callback(msg):
+    def sub_callback(msg: BasicTypes) -> None:
         received_msgs.append(msg.int32_value)
 
     sub = test_node.create_subscription(
@@ -325,15 +365,22 @@ def test_subscription_content_filter_effect(test_node) -> None:
         qos_profile=10,
         callback=sub_callback)
 
+    if not sub.is_cft_supported:
+        sub.destroy()
+        pytest.skip(
+            f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
+
+    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
+
     assert sub.is_cft_enabled is False
 
-    def wait_msgs(timeout, expected_msg_count):
+    def wait_msgs(timeout: float, expected_msg_count: int) -> None:
         end_time = time.time() + timeout
         while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
             rclpy.spin_once(test_node, timeout_sec=0.2)
 
     # Publish 3 messages
-    def publish_messages(pub):
+    def publish_messages(pub: Publisher[BasicTypes]) -> None:
         msg = BasicTypes()
         msg.int32_value = 10
         pub.publish(msg)
@@ -372,18 +419,13 @@ def test_subscription_content_filter_effect(test_node) -> None:
     sub.destroy()
 
 
-def test_subscription_content_filter_reset(test_node) -> None:
-
-    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
-       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
-        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+def test_subscription_content_filter_reset(test_node: Node) -> None:
 
     topic_name = '/topic'
-    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
 
     received_msgs = []
 
-    def sub_callback(msg):
+    def sub_callback(msg: BasicTypes) -> None:
         received_msgs.append(msg.int32_value)
 
     sub = test_node.create_subscription(
@@ -392,6 +434,13 @@ def test_subscription_content_filter_reset(test_node) -> None:
         qos_profile=10,
         callback=sub_callback)
 
+    if not sub.is_cft_supported:
+        sub.destroy()
+        pytest.skip(
+            f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
+
+    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
+
     # Set content filter to filter out messages with int32_value <= 15
     sub.set_content_filter(
         filter_expression='int32_value > %0',
@@ -399,13 +448,13 @@ def test_subscription_content_filter_reset(test_node) -> None:
     )
     assert sub.is_cft_enabled is True
 
-    def wait_msgs(timeout, expected_msg_count):
+    def wait_msgs(timeout: float, expected_msg_count: int) -> None:
         end_time = time.time() + timeout
         while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
             rclpy.spin_once(test_node, timeout_sec=0.2)
 
     # Publish 3 messages
-    def publish_messages(pub):
+    def publish_messages(pub: Publisher[BasicTypes]) -> None:
         msg = BasicTypes()
         msg.int32_value = 10
         pub.publish(msg)
@@ -436,14 +485,9 @@ def test_subscription_content_filter_reset(test_node) -> None:
     assert len(received_msgs) == expected_msg_count
 
 
-def test_subscription_content_filter_at_create_subscription(test_node) -> None:
-
-    if rclpy.get_rmw_implementation_identifier() != 'rmw_fastrtps_cpp' and \
-       rclpy.get_rmw_implementation_identifier() != 'rmw_connextdds':
-        pytest.skip('Content filter is now only supported in FastDDS and ConnextDDS.')
+def test_subscription_content_filter_at_create_subscription(test_node: Node) -> None:
 
     topic_name = '/topic'
-    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
 
     received_msgs = []
 
@@ -451,7 +495,7 @@ def test_subscription_content_filter_at_create_subscription(test_node) -> None:
         filter_expression='int32_value > %0',
         expression_parameters=['15'])
 
-    def sub_callback(msg):
+    def sub_callback(msg: BasicTypes) -> None:
         received_msgs.append(msg.int32_value)
 
     sub = test_node.create_subscription(
@@ -461,15 +505,22 @@ def test_subscription_content_filter_at_create_subscription(test_node) -> None:
         callback=sub_callback,
         content_filter_options=content_filter_options)
 
+    if not sub.is_cft_supported:
+        sub.destroy()
+        pytest.skip(
+            f'{rclpy.get_rmw_implementation_identifier()} does not support content filter.')
+
+    pub = test_node.create_publisher(BasicTypes, topic_name, 10)
+
     assert sub.is_cft_enabled is True
 
-    def wait_msgs(timeout, expected_msg_count):
+    def wait_msgs(timeout: float, expected_msg_count: int) -> None:
         end_time = time.time() + timeout
         while rclpy.ok() and time.time() < end_time and len(received_msgs) < expected_msg_count:
             rclpy.spin_once(test_node, timeout_sec=0.2)
 
     # Publish 3 messages
-    def publish_messages(pub):
+    def publish_messages(pub: Publisher[BasicTypes]) -> None:
         msg = BasicTypes()
         msg.int32_value = 10
         pub.publish(msg)

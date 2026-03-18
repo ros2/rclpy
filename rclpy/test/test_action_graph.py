@@ -77,11 +77,14 @@ class TestActionGraph(unittest.TestCase):
         cls.node2 = rclpy.create_node(TEST_NODE2, namespace=TEST_NAMESPACE2, context=cls.context)
 
         cls.action_client10 = ActionClient(cls.node1, Fibonacci, TEST_ACTION0)
-        cls.action_server10 = ActionServer(cls.node1, Fibonacci, TEST_ACTION0, lambda _: None)
+        cls.action_server10 = ActionServer(cls.node1, Fibonacci, TEST_ACTION0,
+                                           lambda _: Fibonacci.Result())
         cls.action_client20 = ActionClient(cls.node2, Fibonacci, TEST_ACTION0)
         cls.action_client21 = ActionClient(cls.node2, Fibonacci, TEST_ACTION1)
-        cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0, lambda _: None)
-        cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1, lambda _: None)
+        cls.action_server20 = ActionServer(cls.node2, Fibonacci, TEST_ACTION0,
+                                           lambda _: Fibonacci.Result())
+        cls.action_server21 = ActionServer(cls.node2, Fibonacci, TEST_ACTION1,
+                                           lambda _: Fibonacci.Result())
 
         assert cls.node1.wait_for_node(cls.node0.get_fully_qualified_name(), 2.0)
         assert cls.node1.wait_for_node(cls.node2.get_fully_qualified_name(), 2.0)

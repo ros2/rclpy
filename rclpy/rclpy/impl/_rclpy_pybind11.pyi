@@ -290,7 +290,7 @@ class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
     def service_take_request(
         self,
         pyrequest_type: type[SrvRequestT]
-    ) -> tuple[rmw_service_info_t, SrvRequestT] | tuple[None, None]:
+    ) -> tuple[SrvRequestT, rmw_service_info_t] | tuple[None, None]:
         """Take a request from a given service."""
 
     def configure_introspection(
@@ -635,6 +635,9 @@ class Subscription(Destroyable, Generic[MsgT]):
 
     def clear_on_new_message_callback(self) -> None:
         """Clear the on new message callback function for the subscription."""
+
+    def is_cft_supported(self) -> bool:
+        """Check if content filtering is supported for this subscription."""
 
     def is_cft_enabled(self) -> bool:
         """Check if content filtering is enabled for this subscription."""

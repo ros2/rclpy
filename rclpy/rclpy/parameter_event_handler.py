@@ -385,6 +385,9 @@ class ParameterEventHandler:
         :return: True if the filter was successfully applied, False otherwise.
         :raises: RCLError if internal error occurred when calling the rcl function.
         """
+        if not self.parameter_event_subscription.is_cft_supported:
+            return False
+
         if node_names is None or len(node_names) == 0:
             # Clear content filter
             self.parameter_event_subscription.set_content_filter('', [])
