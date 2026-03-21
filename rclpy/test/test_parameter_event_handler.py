@@ -166,9 +166,10 @@ class TestParameterEventHandler(unittest.TestCase):
         res = ParameterEventHandler.get_parameters_from_event(event)
 
         # Ensure both exist
-        assert len(res) == 2
-        assert any(x == int_param for x in res)
-        assert any(x == str_param for x in res)
+        res_list = list(res)
+        assert len(res_list) == 2
+        assert int_param in res_list
+        assert str_param in res_list
 
     def test_register_parameter_event_callback(self) -> None:
         self.parameter_event_handler._callbacks.event_callbacks.clear()
