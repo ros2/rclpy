@@ -133,7 +133,7 @@ class TestParameter(unittest.TestCase):
             Parameter('illegaltype', 'mytype', 'myvalue')  # type: ignore[call-overload]
 
         with self.assertRaises(TypeError):
-            Parameter('illegaltype', value={'invalid': 'type'})  # type: ignore[call-overload]
+            Parameter('illegaltype', value={'invalid': 'type'})
 
     def test_integer_tuple_array(self) -> None:
         # list
