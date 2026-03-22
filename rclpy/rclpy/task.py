@@ -328,6 +328,7 @@ class Task(Future[T]):
             self._complete_task()
         else:
             # The coroutine yielded; suspend the task until it is resumed
+            assert self._executor
             executor = self._executor()
             if executor is None:
                 raise RuntimeError(
@@ -344,6 +345,7 @@ class Task(Future[T]):
                     f'Expected coroutine to yield a Future or None, got: {type(result)}')
 
     def _add_resume_callback(self, future: Future[T], executor: 'Executor') -> None:
+        assert future._executor
         future_executor = future._executor()
         if future_executor is None:
             # The future is not associated with an executor yet, so associate it with ours
