@@ -131,7 +131,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_subscription(BasicTypes,
                                           'chatter',
                                           lambda msg: print(msg),
-                                          'foo')  # type: ignore[arg-type]
+                                          'foo')  # type: ignore[call-overload]
 
     def raw_subscription_callback(self, msg: bytes) -> None:
         print('Raw subscription callback: %s length %d' % (msg.decode(), len(msg)))

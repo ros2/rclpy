@@ -618,7 +618,14 @@ class Subscription(Destroyable, Generic[MsgT]):
     def pointer(self) -> int:
         """Get the address of the entity as an integer."""
 
-    def take_message(self, pymsg_type: type[MsgT], raw: bool) -> tuple[MsgT, MessageInfo]:
+    @overload
+    def take_message(self, pymsg_type: type[MsgT], raw: Literal[True]) -> tuple[bytes, MessageInfo] | None: ...
+
+    @overload
+    def take_message(self, pymsg_type: type[MsgT], raw: Literal[False]) -> tuple[MsgT, MessageInfo] | None: ...
+
+    @overload
+    def take_message(self, pymsg_type: type[MsgT], raw: bool) -> tuple[MsgT | bytes, MessageInfo] | None:
         """Take a message and its metadata from a subscription."""
 
     def get_logger_name(self) -> str:

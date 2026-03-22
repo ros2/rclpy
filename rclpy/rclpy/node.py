@@ -24,6 +24,7 @@ from typing import Dict
 from typing import Final
 from typing import Iterator
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import overload
 from typing import Sequence
@@ -86,6 +87,7 @@ from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
 from rclpy.service import ServiceCallbackUnion
+from rclpy.subscription import GenericSubscriptionCallbackUnion
 from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
@@ -1632,6 +1634,51 @@ class Node:
             self.add_waitable(event_callback)
 
         return publisher
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: GenericSubscriptionCallbackUnion[bytes],
+        qos_profile: QoSProfile,
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: Literal[True],
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: GenericSubscriptionCallbackUnion[MsgT],
+        qos_profile: QoSProfile,
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: Literal[False],
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: SubscriptionCallbackUnion[MsgT],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
 
     def create_subscription(
         self,
