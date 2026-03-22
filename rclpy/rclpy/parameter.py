@@ -14,9 +14,10 @@
 from __future__ import annotations
 
 import array
+from collections.abc import Sequence
 from enum import IntEnum
-import sys
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import Final
 from typing import Generic
@@ -24,8 +25,6 @@ from typing import List
 from typing import Literal
 from typing import Optional
 from typing import overload
-from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
@@ -36,31 +35,14 @@ import yaml
 
 PARAMETER_SEPARATOR_STRING: Final = '.'
 
-if TYPE_CHECKING:
-    # Mypy does not handle string literals of array.array[int/str/float] very well
-    # So if user has newer version of python can use proper array types.
-    if sys.version_info > (3, 9):
-        AllowableParameterValue = Union[None, bool, int, float, str,
-                                        list[bytes], Tuple[bytes, ...],
-                                        list[bool], Tuple[bool, ...],
-                                        list[int], Tuple[int, ...], array.array[int],
-                                        list[float], Tuple[float, ...], array.array[float],
-                                        list[str], Tuple[str, ...], array.array[str]]
-    else:
-        AllowableParameterValue = Union[None, bool, int, float, str,
-                                        List[bytes], Tuple[bytes, ...],
-                                        List[bool], Tuple[bool, ...],
-                                        List[int], Tuple[int, ...], 'array.array[int]',
-                                        List[float], Tuple[float, ...], 'array.array[float]',
-                                        List[str], Tuple[str, ...], 'array.array[str]']
+AllowableParameterValue = Union[None, bool, int, float, str,
+                                Sequence[bytes],
+                                Sequence[bool],
+                                Sequence[int],
+                                Sequence[float],
+                                Sequence[str]]
 
-else:
-    # Done to prevent runtime errors of undefined values.
-    # after python3.13 is minimum support this could be removed.
-    AllowableParameterValue = Any
-
-AllowableParameterValueT = TypeVar('AllowableParameterValueT',
-                                   bound=AllowableParameterValue)
+AllowableParameterValueT = TypeVar('AllowableParameterValueT')
 
 
 class Parameter(Generic[AllowableParameterValueT]):
@@ -146,7 +128,7 @@ class Parameter(Generic[AllowableParameterValueT]):
 
     @classmethod
     def from_parameter_msg(cls, param_msg: ParameterMsg) -> Parameter[Any]:
-        value = None
+        value: AllowableParameterValue = None
         type_ = Parameter.Type(value=param_msg.value.type)
         if Parameter.Type.BOOL == type_:
             value = param_msg.value.bool_value
@@ -192,27 +174,27 @@ class Parameter(Generic[AllowableParameterValueT]):
                  ) -> None: ...
 
     @overload
-    def __init__(self: Parameter[Union[list[bytes], Tuple[bytes, ...]]],
+    def __init__(self: Parameter[Sequence[bytes]],
                  name: str,
                  type_: Literal[Parameter.Type.BYTE_ARRAY]) -> None: ...
 
     @overload
-    def __init__(self: Parameter[Union[list[bool], Tuple[bool, ...]]],
+    def __init__(self: Parameter[Sequence[bool]],
                  name: str,
                  type_: Literal[Parameter.Type.BOOL_ARRAY]) -> None: ...
 
     @overload
-    def __init__(self: Parameter[Union[list[int], Tuple[int, ...], array.array[int]]],
+    def __init__(self: Parameter[Sequence[int]],
                  name: str,
                  type_: Literal[Parameter.Type.INTEGER_ARRAY]) -> None: ...
 
     @overload
-    def __init__(self: Parameter[Union[list[float], Tuple[float, ...], array.array[float]]],
+    def __init__(self: Parameter[Sequence[float]],
                  name: str,
                  type_: Literal[Parameter.Type.DOUBLE_ARRAY]) -> None: ...
 
     @overload
-    def __init__(self: Parameter[Union[list[str], Tuple[str, ...], array.array[str]]],
+    def __init__(self: Parameter[Sequence[str]],
                  name: str,
                  type_: Literal[Parameter.Type.STRING_ARRAY]) -> None: ...
 
@@ -227,7 +209,9 @@ class Parameter(Generic[AllowableParameterValueT]):
     def __init__(self, name: str, type_: Parameter.Type,
                  value: AllowableParameterValueT) -> None: ...
 
-    def __init__(self, name: str, type_: Optional[Parameter.Type] = None, value=None) -> None:
+    # See mypy #3737
+    def __init__(self, name: str, type_: Optional[Parameter.Type] = None,
+                 value: Any = None) -> None:
         if type_ is None:
             # This will raise a TypeError if it is not possible to get a type from the value.
             type_ = Parameter.Type.from_parameter_value(value)
@@ -252,28 +236,28 @@ class Parameter(Generic[AllowableParameterValueT]):
 
     @property
     def value(self) -> AllowableParameterValueT:
-        return self._value
+        return cast(AllowableParameterValueT, self._value)
 
     def get_parameter_value(self) -> ParameterValue:
         parameter_value = ParameterValue(type=self.type_.value)
         if Parameter.Type.BOOL == self.type_:
-            parameter_value.bool_value = self.value
+            parameter_value.bool_value = cast(bool, self.value)
         elif Parameter.Type.INTEGER == self.type_:
-            parameter_value.integer_value = self.value
+            parameter_value.integer_value = cast(int, self.value)
         elif Parameter.Type.DOUBLE == self.type_:
-            parameter_value.double_value = self.value
+            parameter_value.double_value = cast(float, self.value)
         elif Parameter.Type.STRING == self.type_:
-            parameter_value.string_value = self.value
+            parameter_value.string_value = cast(str, self.value)
         elif Parameter.Type.BYTE_ARRAY == self.type_:
-            parameter_value.byte_array_value = self.value
+            parameter_value.byte_array_value = cast(Sequence[bytes], self.value)
         elif Parameter.Type.BOOL_ARRAY == self.type_:
-            parameter_value.bool_array_value = self.value
+            parameter_value.bool_array_value = cast(Sequence[bool], self.value)
         elif Parameter.Type.INTEGER_ARRAY == self.type_:
-            parameter_value.integer_array_value = self.value
+            parameter_value.integer_array_value = cast(Sequence[int], self.value)
         elif Parameter.Type.DOUBLE_ARRAY == self.type_:
-            parameter_value.double_array_value = self.value
+            parameter_value.double_array_value = cast(Sequence[float], self.value)
         elif Parameter.Type.STRING_ARRAY == self.type_:
-            parameter_value.string_array_value = self.value
+            parameter_value.string_array_value = cast(Sequence[str], self.value)
         return parameter_value
 
     def to_parameter_msg(self) -> ParameterMsg:
@@ -335,29 +319,27 @@ def parameter_value_to_python(parameter_value: ParameterValue) -> AllowableParam
     :raises RuntimeError: if the member ``type`` has an unexpected value.
     """
     if parameter_value.type == ParameterType.PARAMETER_BOOL:
-        value = parameter_value.bool_value
+        return parameter_value.bool_value
     elif parameter_value.type == ParameterType.PARAMETER_INTEGER:
-        value = parameter_value.integer_value
+        return parameter_value.integer_value
     elif parameter_value.type == ParameterType.PARAMETER_DOUBLE:
-        value = parameter_value.double_value
+        return parameter_value.double_value
     elif parameter_value.type == ParameterType.PARAMETER_STRING:
-        value = parameter_value.string_value
+        return parameter_value.string_value
     elif parameter_value.type == ParameterType.PARAMETER_BYTE_ARRAY:
-        value = list(parameter_value.byte_array_value)
+        return list(parameter_value.byte_array_value)
     elif parameter_value.type == ParameterType.PARAMETER_BOOL_ARRAY:
-        value = list(parameter_value.bool_array_value)
+        return list(parameter_value.bool_array_value)
     elif parameter_value.type == ParameterType.PARAMETER_INTEGER_ARRAY:
-        value = list(parameter_value.integer_array_value)
+        return list(parameter_value.integer_array_value)
     elif parameter_value.type == ParameterType.PARAMETER_DOUBLE_ARRAY:
-        value = list(parameter_value.double_array_value)
+        return list(parameter_value.double_array_value)
     elif parameter_value.type == ParameterType.PARAMETER_STRING_ARRAY:
-        value = list(parameter_value.string_array_value)
+        return list(parameter_value.string_array_value)
     elif parameter_value.type == ParameterType.PARAMETER_NOT_SET:
-        value = None
+        return None
     else:
         raise RuntimeError(f'unexpected parameter type {parameter_value.type}')
-
-    return value
 
 
 def parameter_dict_from_yaml_file(

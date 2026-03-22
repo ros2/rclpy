@@ -26,6 +26,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
+from typing_extensions import Self
 from typing_extensions import TypeAlias
 
 # Used for documentation purposes only
@@ -116,7 +117,7 @@ class BaseService(Generic[SrvRequestT, SrvResponseT]):
         """
         self.__service.destroy_when_not_in_use()
 
-    def __enter__(self) -> 'BaseService[SrvRequestT, SrvResponseT]':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

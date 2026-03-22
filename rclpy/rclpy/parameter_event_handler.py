@@ -13,9 +13,10 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterator
 from itertools import chain
 from multiprocessing import Lock
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, cast, Dict, List, Optional, Tuple
 
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
@@ -270,20 +271,22 @@ class ParameterEventHandler:
                                      Otherwise, returns None
         """
         if event.node == node_name:
-            for parameter in chain(event.new_parameters, event.changed_parameters):
+            for parameter in chain(cast(list[ParameterMsg], event.new_parameters),
+                                   cast(list[ParameterMsg], event.changed_parameters)):
                 if parameter.name == parameter_name:
                     return parameter
 
         return None
 
     @staticmethod
-    def get_parameters_from_event(event: ParameterEvent) -> Iterable[ParameterMsg]:
+    def get_parameters_from_event(event: ParameterEvent) -> Iterator[ParameterMsg]:
         """
         Get all parameters from a ParameterEvent message.
 
         :param event: ParameterEvent message to read
         """
-        for parameter in chain(event.new_parameters, event.changed_parameters):
+        for parameter in chain(cast(list[ParameterMsg], event.new_parameters),
+                               cast(list[ParameterMsg], event.changed_parameters)):
             yield parameter
 
     def add_parameter_callback(
