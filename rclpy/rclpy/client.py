@@ -30,6 +30,8 @@ from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
+from typing_extensions import Self
+
 # Left To Support Legacy TypeVars
 SrvType = TypeVar('SrvType')
 SrvTypeRequest = TypeVar('SrvTypeRequest')
@@ -101,7 +103,7 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
         """
         self.__client.destroy_when_not_in_use()
 
-    def __enter__(self) -> 'BaseClient[SrvRequestT, SrvResponseT]':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

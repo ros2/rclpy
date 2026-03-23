@@ -29,6 +29,7 @@ from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.time import Time
 from rclpy.utilities import get_default_context
+from typing_extensions import Self
 from typing_extensions import TypeAlias
 
 
@@ -145,7 +146,7 @@ class BaseTimer:
         with self.__timer:
             return self.__timer.time_until_next_call()
 
-    def __enter__(self) -> 'BaseTimer':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(
