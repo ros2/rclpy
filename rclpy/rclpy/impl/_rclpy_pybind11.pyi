@@ -361,7 +361,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
             result_service_qos: rmw_qos_profile_t,
             cancel_service_qos: rmw_qos_profile_t,
             feedback_service_qos: rmw_qos_profile_t,
-            status_topci_qos: rmw_qos_profile_t,
+            status_topic_qos: rmw_qos_profile_t,
             enable_feedback_msg_optimization: bool
         ) -> None: ...
 

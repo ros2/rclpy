@@ -489,7 +489,8 @@ class TestActionClient(unittest.TestCase):
             self.node.destroy_subscription(send_goal_service_event_sub)
             ac.destroy()
 
-    def enable_feedback_msg_optimization_does_not_affect_normal_feedback_reception(self) -> None:
+    def test_enable_feedback_msg_optimization_does_not_affect_normal_feedback_reception(  # noqa: E501
+            self) -> None:
         ac = ActionClient(
             self.node, Fibonacci, 'fibonacci', enable_feedback_msg_optimization=True)
         try:
@@ -510,7 +511,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def enable_feedback_msg_optimization_handles_multiple_goals(self) -> None:
+    def test_enable_feedback_msg_optimization_handles_multiple_goals(self) -> None:
         ac = ActionClient(
             self.node, Fibonacci, 'fibonacci', enable_feedback_msg_optimization=True)
         try:
@@ -544,7 +545,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def enable_feedback_msg_optimization_cancel_and_handle_new_goal(self) -> None:
+    def test_enable_feedback_msg_optimization_cancel_and_handle_new_goal(self) -> None:
         ac = ActionClient(
             self.node, Fibonacci, 'fibonacci', enable_feedback_msg_optimization=True)
         try:
@@ -580,7 +581,7 @@ class TestActionClient(unittest.TestCase):
         finally:
             ac.destroy()
 
-    def enable_feedback_msg_optimization_handle_more_than_6_goals(self) -> None:
+    def test_enable_feedback_msg_optimization_handle_more_than_6_goals(self) -> None:
 
         # Even if the action client is handling more than 6 goals at the same time, feedback
         # messages can still be received.

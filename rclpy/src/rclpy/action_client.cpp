@@ -300,9 +300,9 @@ ActionClient::configure_feedback_subscription_filter_add_goal_id(py::bytes goal_
   }
 
   std::string str_goal_id = static_cast<std::string>(goal_id);
-  const uint8_t * gaol_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
+  const uint8_t * goal_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
   rcl_ret_t ret = rcl_action_client_configure_feedback_subscription_filter_add_goal_id(
-    rcl_action_client_.get(), gaol_id_array, str_goal_id.size());
+    rcl_action_client_.get(), goal_id_array, str_goal_id.size());
 
   if (RCL_RET_OK != ret) {
     enable_feedback_msg_optimization_ = false;
@@ -326,9 +326,9 @@ ActionClient::configure_feedback_subscription_filter_remove_goal_id(py::bytes go
   }
 
   std::string str_goal_id = static_cast<std::string>(goal_id);
-  const uint8_t * gaol_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
+  const uint8_t * goal_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
   rcl_ret_t ret = rcl_action_client_configure_feedback_subscription_filter_remove_goal_id(
-    rcl_action_client_.get(), gaol_id_array, str_goal_id.size());
+    rcl_action_client_.get(), goal_id_array, str_goal_id.size());
 
   if (RCL_RET_OK != ret) {
     enable_feedback_msg_optimization_ = false;
@@ -349,7 +349,16 @@ define_action_client(py::object module)
   .def(
     py::init<Node &, py::object, const char *, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &,
-    const rmw_qos_profile_t &, const rmw_qos_profile_t &, bool>())
+    const rmw_qos_profile_t &, const rmw_qos_profile_t &, bool>(),
+    py::arg("node"),
+    py::arg("action_type"),
+    py::arg("action_name"),
+    py::arg("goal_service_qos_profile"),
+    py::arg("result_service_qos_profile"),
+    py::arg("cancel_service_qos_profile"),
+    py::arg("feedback_sub_qos_profile"),
+    py::arg("status_sub_qos_profile"),
+    py::arg("enable_feedback_msg_optimization") = false)
   .def_property_readonly(
     "pointer", [](const ActionClient & action_client) {
       return reinterpret_cast<size_t>(action_client.rcl_ptr());

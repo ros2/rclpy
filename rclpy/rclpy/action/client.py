@@ -467,6 +467,13 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                                 GoalStatus.STATUS_CANCELED == status or
                                 GoalStatus.STATUS_ABORTED == status):
                             del self._goal_handles[goal_uuid]
+                            if self._enable_feedback_msg_optimization:
+                                try:
+                                    _ = self._client_handle \
+                                        .configure_feedback_subscription_filter_remove_goal_id(
+                                            goal_uuid)
+                                except RCLError as e:
+                                    self._logger.warning(f'{e}')
                     else:
                         # Weak reference is None
                         del self._goal_handles[goal_uuid]
