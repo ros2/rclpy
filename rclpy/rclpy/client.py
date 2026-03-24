@@ -179,7 +179,6 @@ class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResp
         event = threading.Event()
 
         def unblock(future: Future[SrvResponseT]) -> None:
-            nonlocal event
             event.set()
 
         future = self.call_async(request)

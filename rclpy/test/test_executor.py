@@ -447,7 +447,6 @@ class TestExecutor(unittest.TestCase):
                 executor.add_node(self.node)
 
                 async def coro1() -> str:
-                    nonlocal future2  # type: ignore[misc]
                     await future2
                     return 'Sentinel Result 1'
 
@@ -481,7 +480,6 @@ class TestExecutor(unittest.TestCase):
                 future = None
 
                 def spin_until_task_done(executor: Executor) -> None:
-                    nonlocal future
                     while future is None or not future.done():
                         try:
                             executor.spin_once()
@@ -531,7 +529,7 @@ class TestExecutor(unittest.TestCase):
                 did_return = False
 
                 async def timer_callback() -> None:
-                    nonlocal trigger, did_callback, did_return
+                    nonlocal did_callback, did_return
                     did_callback = True
                     await trigger
                     did_return = True
@@ -685,7 +683,6 @@ class TestExecutor(unittest.TestCase):
         shutdown_event = threading.Event()
 
         def timer_callback() -> None:
-            nonlocal shutdown_event, executor
             executor.shutdown()
             shutdown_event.set()
 
