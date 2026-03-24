@@ -78,11 +78,14 @@ Subscription::Subscription(
     subscription_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
   }
 
-  std::string acceptable_backends_str;
   if (!acceptable_buffer_backends.is_none()) {
-    acceptable_backends_str = acceptable_buffer_backends.cast<std::string>();
-    subscription_ops.rmw_subscription_options.acceptable_buffer_backends =
-      acceptable_backends_str.c_str();
+    std::string acceptable_backends_str = acceptable_buffer_backends.cast<std::string>();
+    rcl_ret_t ret = rcl_subscription_options_set_acceptable_buffer_backends(
+      acceptable_backends_str.c_str(),
+      &subscription_ops);
+    if (RCL_RET_OK != ret) {
+      throw rclpy::RCLError("Failed to set acceptable_buffer_backends");
+    }
   }
 
   rcl_subscription_ = std::shared_ptr<rcl_subscription_t>(
