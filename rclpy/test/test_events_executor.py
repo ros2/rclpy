@@ -23,13 +23,14 @@ from rclpy.action.server import ServerGoalHandle
 import rclpy.clock_type
 import rclpy.duration
 import rclpy.event_handler
-import rclpy.executors
 import rclpy.experimental
 import rclpy.node
 import rclpy.parameter
 import rclpy.qos
 import rclpy.time
 import rclpy.timer
+from rclpy.type_support import FeedbackMessage
+from rclpy.type_support import GetResultServiceResponse
 import rosgraph_msgs.msg
 import test_msgs.action
 import test_msgs.msg
@@ -406,7 +407,7 @@ class ActionClientTestNode(rclpy.node.Node):
     def _handle_feedback(
         self,
         # If this is a private 'Impl' detail, why is rclpy handing this out??
-        fb_msg: test_msgs.action.Fibonacci.Impl.FeedbackMessage,
+        fb_msg: FeedbackMessage[test_msgs.action.Fibonacci.Feedback],
     ) -> None:
         if self._feedback_future is not None:
             self._feedback_future.set_result(fb_msg.feedback)
@@ -419,12 +420,12 @@ class ActionClientTestNode(rclpy.node.Node):
         return self._result_future
 
     def _handle_result_response(
-        self, future: rclpy.Future[test_msgs.action.Fibonacci_GetResult_Response]
+        self, future: rclpy.Future[GetResultServiceResponse[test_msgs.action.Fibonacci.Result]]
     ) -> None:
-        response: typing.Optional[test_msgs.action.Fibonacci_GetResult_Response] = future.result()
+        response = future.result()
         assert response is not None
         assert self._result_future is not None
-        result: test_msgs.action.Fibonacci.Result = response.result
+        result = response.result
         self._result_future.set_result(result)
         self._result_future = None
 
