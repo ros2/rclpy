@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.1.11 (2026-03-24)
+--------------------
+* EventsExecutor: Handle async callbacks for services and subscriptions (backport `#1478 <https://github.com/ros2/rclpy/issues/1478>`_) (`#1613 <https://github.com/ros2/rclpy/issues/1613>`_)
+* Correct typos (backport `#1619 <https://github.com/ros2/rclpy/issues/1619>`_) (`#1622 <https://github.com/ros2/rclpy/issues/1622>`_)
+* Contributors: Błażej Sowa, mergify[bot]
+
 7.1.10 (2026-02-09)
 --------------------
 * Prevents the Future result from being set twice. (`#1599 <https://github.com/ros2/rclpy/issues/1599>`_) (`#1604 <https://github.com/ros2/rclpy/issues/1604>`_)
