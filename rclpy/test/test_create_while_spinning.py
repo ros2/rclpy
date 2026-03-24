@@ -68,7 +68,6 @@ class TestCreateWhileSpinning(unittest.TestCase):
 
         def trigger_event(req: BasicTypesSrv.Request,
                           resp: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
-            nonlocal evt
             evt.set()
             return resp
 
@@ -123,7 +122,6 @@ class TestCreateWhileSpinning(unittest.TestCase):
                 return NumberOfEntities(0, 0, 0, 0, 0)
 
             def add_to_wait_set(self, wait_set: _rclpy.WaitSet) -> None:
-                nonlocal evt
                 evt.set()
                 pass
 

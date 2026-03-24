@@ -31,7 +31,6 @@ g_context_lock = threading.Lock()
 
 def get_default_context(*, shutting_down: bool = False) -> Context:
     """Return the global default context singleton."""
-    global g_context_lock
     with g_context_lock:
         global g_default_context
         if g_default_context is None:
@@ -89,7 +88,6 @@ def try_shutdown(*, context: Optional[Context] = None) -> None:
     :param context: a ``Context`` to check, else the global default context is
         used.
     """
-    global g_context_lock
     global g_default_context
     if context is None:
         # Replace the default context with a new one if shutdown was successful
