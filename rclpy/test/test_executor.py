@@ -475,7 +475,6 @@ class TestExecutor(unittest.TestCase):
                             executor.spin_once()
                         finally:
                             executor.shutdown()
-                            break
 
                 # Start spinning in a separate thread
                 thr = threading.Thread(target=spin_until_task_done, args=(executor, ), daemon=True)
