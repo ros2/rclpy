@@ -33,7 +33,7 @@ from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import LifecycleState
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.node import Node
-from rclpy.publisher import Publisher
+from rclpy.publisher import BasePublisher
 
 from test_msgs.msg import BasicTypes
 
@@ -208,7 +208,7 @@ def test_lifecycle_services(request: FixtureRequest) -> None:
 
 def test_lifecycle_publisher() -> None:
     node = LifecycleNode('test_lifecycle_publisher', enable_communication_interface=False)
-    with mock.patch.object(Publisher, 'publish') as mock_publish:
+    with mock.patch.object(BasePublisher, 'publish') as mock_publish:
         pub = node.create_lifecycle_publisher(BasicTypes, 'test_lifecycle_publisher_topic', 10)
         pub.publish(BasicTypes())
         mock_publish.assert_not_called()

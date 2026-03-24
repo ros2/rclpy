@@ -34,6 +34,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.type_support import MsgT
+from typing_extensions import Self
 from typing_extensions import TypeAlias
 
 
@@ -193,6 +194,12 @@ class BaseSubscription(Generic[MsgT]):
             return self.__subscription.get_logger_name()
 
     @property
+    def is_cft_supported(self) -> bool:
+        """Check if content filtering is supported for this subscription."""
+        with self.handle:
+            return self.__subscription.is_cft_supported()
+
+    @property
     def is_cft_enabled(self) -> bool:
         """Check if content filtering is enabled for the subscription."""
         with self.handle:
@@ -220,7 +227,7 @@ class BaseSubscription(Generic[MsgT]):
         with self.handle:
             return self.__subscription.get_content_filter()
 
-    def __enter__(self) -> 'BaseSubscription[MsgT]':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

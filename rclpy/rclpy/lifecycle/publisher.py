@@ -19,6 +19,7 @@ from typing import Callable, Generic, Optional, Tuple, Type, TYPE_CHECKING, Type
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import PublisherEventCallbacks
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.publisher import BasePublisher
 from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
@@ -59,4 +60,4 @@ class LifecyclePublisher(SimpleManagedEntity, Publisher[MsgT]):
 
         See rclpy.publisher.Publisher.publish() for more details.
         """
-        Publisher.publish(self, msg)
+        BasePublisher.publish(self, msg)
