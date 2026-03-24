@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from types import TracebackType
-from typing import Callable, Literal, Optional, overload, Type, TYPE_CHECKING, TypedDict
+from typing import Callable, Optional, Type, TypedDict
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from typing_extensions import TypeAlias
+from typing_extensions import deprecated, TypeAlias
 
 from .clock_type import ClockType
 from .context import Context
@@ -87,7 +87,7 @@ JumpHandlePreCallbackType: TypeAlias = Callable[[], None]
 
 class JumpHandle:
 
-    def __init__(self, *, clock: 'Clock', threshold: JumpThreshold,
+    def __init__(self, *, clock: 'BaseClock', threshold: JumpThreshold,
                  pre_callback: Optional[JumpHandlePreCallbackType],
                  post_callback: Optional[Callable[[TimeJumpDictionary], None]]) -> None:
         """
@@ -106,7 +106,7 @@ class JumpHandle:
             raise ValueError('pre_callback must be callable if given')
         if post_callback is not None and not callable(post_callback):
             raise ValueError('post_callback must be callable if given')
-        self._clock: Optional[Clock] = clock
+        self._clock: Optional[BaseClock] = clock
         self._pre_callback = pre_callback
         self._post_callback = post_callback
 
@@ -137,37 +137,13 @@ class JumpHandle:
         self.unregister()
 
 
-class Clock:
+class BaseClock:
 
-    if TYPE_CHECKING:
-        __clock: _rclpy.Clock
-        _clock_type: ClockType
-
-    @overload
-    def __new__(
-        cls,
-        *,
-        clock_type: Literal[ClockType.ROS_TIME]
-    ) -> 'ROSClock': ...
-
-    @overload
-    def __new__(
-        cls,
-        *,
-        clock_type: ClockType = ClockType.SYSTEM_TIME
-    ) -> 'Clock': ...
-
-    def __new__(cls, *,
-                clock_type: ClockType = ClockType.SYSTEM_TIME) -> 'Clock':
+    def __init__(self, *, clock_type: ClockType = ClockType.SYSTEM_TIME) -> None:
         if not isinstance(clock_type, ClockType):
             raise TypeError('Clock type must be a ClockType enum')
-        if clock_type is ClockType.ROS_TIME:
-            self: 'Clock' = super().__new__(ROSClock)
-        else:
-            self = super().__new__(cls)
         self.__clock = _rclpy.Clock(clock_type.value)
         self._clock_type = clock_type
-        return self
 
     @property
     def clock_type(self) -> ClockType:
@@ -183,7 +159,7 @@ class Clock:
         return self.__clock
 
     def __repr__(self) -> str:
-        return 'Clock(clock_type={0})'.format(self.clock_type.name)
+        return f'{type(self).__name__}(clock_type={self.clock_type.name})'
 
     def now(self) -> Time:
         """Return the current time of this clock."""
@@ -224,11 +200,41 @@ class Clock:
             clock=self, threshold=threshold, pre_callback=pre_callback,
             post_callback=post_callback_time_jump_dictionary)
 
+    @property
+    def ros_time_is_active(self) -> bool:
+        """
+        Return ``True`` if ROS time is currently active.
+
+        :raises RCLError: if the clock is not of type ``ROS_TIME``.
+        """
+        with self.handle:
+            return self.handle.get_ros_time_override_is_enabled()
+
+    def _set_ros_time_is_active(self, enabled: bool) -> None:
+        # This is not public because it is only to be called by a TimeSource managing the Clock
+        with self.handle:
+            self.handle.set_ros_time_override_is_enabled(enabled)
+
+    def set_ros_time_override(self, time: Time) -> None:
+        """
+        Set the next time the ROS clock will report when ROS time is active.
+
+        :raises RCLError: if the clock is not of type ``ROS_TIME``.
+        """
+        if not isinstance(time, Time):
+            raise TypeError(
+                'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
+        with self.handle:
+            self.handle.set_ros_time_override(time._time_handle)
+
+
+class Clock(BaseClock):
+
     def sleep_until(self, until: Time, context: Optional[Context] = None) -> bool:
         """
         Sleep until a specific time on this Clock is reached.
 
-        When using a ``ROSClock``, this may sleep forever if the ``TimeSource`` is misconfigured
+        When using ``ROS_TIME``, this may sleep forever if the ``TimeSource`` is misconfigured
         and the context is never shut down.
         ROS time being activated or deactivated causes this function to cease sleeping and return
         ``False``.
@@ -275,11 +281,11 @@ class Clock:
             on_clock_change=True)
         with self.create_jump_callback(threshold, post_callback=on_time_jump):
             if ClockType.SYSTEM_TIME == self._clock_type:
-                event.wait_until_system(self.__clock, until._time_handle)
+                event.wait_until_system(self.handle, until._time_handle)
             elif ClockType.STEADY_TIME == self._clock_type:
-                event.wait_until_steady(self.__clock, until._time_handle)
+                event.wait_until_steady(self.handle, until._time_handle)
             elif ClockType.ROS_TIME == self._clock_type:
-                event.wait_until_ros(self.__clock, until._time_handle)
+                event.wait_until_ros(self.handle, until._time_handle)
 
         if not context.ok() or time_source_changed:
             return False
@@ -297,7 +303,7 @@ class Clock:
             clock.sleep_until(clock.now() + rel_time, context)
 
 
-        When using a ``ROSClock``, this may sleep forever if the ``TimeSource`` is misconfigured
+        When using a ``ROS_TIME``, this may sleep forever if the ``TimeSource`` is misconfigured
         and the context is never shut down.
         ROS time being activated or deactivated causes this function to cease sleeping and return
         False.
@@ -312,28 +318,8 @@ class Clock:
         return self.sleep_until(self.now() + rel_time, context)
 
 
+@deprecated('Use Clock(clock_type=ClockType.ROS_TIME) instead')
 class ROSClock(Clock):
 
-    def __new__(cls) -> 'ROSClock':
-        self = super().__new__(Clock, clock_type=ClockType.ROS_TIME)
-        assert isinstance(self, ROSClock)
-        return self
-
-    @property
-    def ros_time_is_active(self) -> bool:
-        """Return ``True`` if ROS time is currently active."""
-        with self.handle:
-            return self.handle.get_ros_time_override_is_enabled()
-
-    def _set_ros_time_is_active(self, enabled: bool) -> None:
-        # This is not public because it is only to be called by a TimeSource managing the Clock
-        with self.handle:
-            self.handle.set_ros_time_override_is_enabled(enabled)
-
-    def set_ros_time_override(self, time: Time) -> None:
-        """Set the next time the ROS clock will report when ROS time is active."""
-        if not isinstance(time, Time):
-            raise TypeError(
-                'Time must be specified as rclpy.time.Time. Received type: {0}'.format(type(time)))
-        with self.handle:
-            self.handle.set_ros_time_override(time._time_handle)
+    def __init__(self) -> None:
+        super().__init__(clock_type=ClockType.ROS_TIME)

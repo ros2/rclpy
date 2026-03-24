@@ -17,10 +17,9 @@ import unittest
 from unittest.mock import Mock
 
 import rclpy
-from rclpy.clock import Clock
+from rclpy.clock import BaseClock, Clock
 from rclpy.clock import ClockChange
 from rclpy.clock import JumpThreshold
-from rclpy.clock import ROSClock
 from rclpy.clock_type import ClockType
 from rclpy.duration import Duration
 from rclpy.parameter import Parameter
@@ -84,23 +83,23 @@ class TestTimeSource(unittest.TestCase):
         return use_sim_time_param.value == value
 
     def test_time_source_attach_clock(self) -> None:
-        time_source = TimeSource(node=self.node)
+        for cls in [BaseClock, Clock]:
+            with self.subTest(cls=cls):
+                time_source = TimeSource(node=self.node)
+                time_source.attach_clock(cls(clock_type=ClockType.ROS_TIME))
 
-        # ROSClock is a specialization of Clock with ROS time methods.
-        time_source.attach_clock(ROSClock())
+                # Other clock types are not supported.
+                with self.assertRaises(ValueError):
+                    time_source.attach_clock(
+                        cls(clock_type=ClockType.SYSTEM_TIME))
 
-        # Other clock types are not supported.
-        with self.assertRaises(ValueError):
-            time_source.attach_clock(
-                Clock(clock_type=ClockType.SYSTEM_TIME))  # type: ignore[arg-type]
-
-        with self.assertRaises(ValueError):
-            time_source.attach_clock(
-                Clock(clock_type=ClockType.STEADY_TIME))  # type: ignore[arg-type]
+                with self.assertRaises(ValueError):
+                    time_source.attach_clock(
+                        cls(clock_type=ClockType.STEADY_TIME))
 
     def test_time_source_not_using_sim_time(self) -> None:
         time_source = TimeSource(node=self.node)
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
 
         # When not using sim time, ROS time should look like system time
@@ -118,7 +117,7 @@ class TestTimeSource(unittest.TestCase):
         # Whether or not an attached clock is using ROS time should be determined by the time
         # source managing it.
         self.assertFalse(time_source.ros_time_is_active)
-        clock2 = ROSClock()
+        clock2 = Clock(clock_type=ClockType.ROS_TIME)
         clock2._set_ros_time_is_active(True)
         time_source.attach_clock(clock2)
         self.assertFalse(clock2.ros_time_is_active)
@@ -126,7 +125,7 @@ class TestTimeSource(unittest.TestCase):
 
     def test_time_source_using_sim_time(self) -> None:
         time_source = TimeSource(node=self.node)
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
 
         # Setting ROS time active on a time source should also cause attached clocks' use of ROS
@@ -164,7 +163,7 @@ class TestTimeSource(unittest.TestCase):
 
     def test_forwards_jump(self) -> None:
         time_source = TimeSource(node=self.node)
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
         assert self.set_use_sim_time_parameter(True)
 
@@ -184,7 +183,7 @@ class TestTimeSource(unittest.TestCase):
 
     def test_backwards_jump(self) -> None:
         time_source = TimeSource(node=self.node)
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
         assert self.set_use_sim_time_parameter(True)
 
@@ -204,7 +203,7 @@ class TestTimeSource(unittest.TestCase):
 
     def test_clock_change(self) -> None:
         time_source = TimeSource(node=self.node)
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
         assert self.set_use_sim_time_parameter(True)
 
@@ -230,7 +229,7 @@ class TestTimeSource(unittest.TestCase):
 
     def test_no_pre_callback(self) -> None:
         time_source = TimeSource(node=self.node)
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
         assert self.set_use_sim_time_parameter(True)
 
@@ -246,7 +245,7 @@ class TestTimeSource(unittest.TestCase):
 
     def test_no_post_callback(self) -> None:
         time_source = TimeSource(node=self.node)
-        clock = ROSClock()
+        clock = Clock(clock_type=ClockType.ROS_TIME)
         time_source.attach_clock(clock)
         assert self.set_use_sim_time_parameter(True)
 

@@ -28,7 +28,7 @@ from typing import Type
 from typing import TypedDict
 from typing import Union
 
-from rclpy.clock import Clock
+from rclpy.clock import BaseClock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
 from typing_extensions import Unpack
@@ -102,7 +102,7 @@ class OnceContext(RcutilsLoggerContext):
 
 class ThrottleContext(RcutilsLoggerContext):
     throttle_duration_sec: float
-    throttle_time_source_type: Clock
+    throttle_time_source_type: BaseClock
     throttle_last_logged: int
 
 
@@ -113,14 +113,14 @@ class SkipFirstContext(RcutilsLoggerContext):
 class LoggingFilterArgs(TypedDict, total=False):
     once: bool
     throttle_duration_sec: float
-    throttle_time_source_type: Clock
+    throttle_time_source_type: BaseClock
     skip_first: bool
 
 
 class LoggingFilterParams(TypedDict, total=False):
     once: Optional[bool]
     throttle_duration_sec: Optional[float]
-    throttle_time_source_type: Clock
+    throttle_time_source_type: BaseClock
     skip_first: Optional[bool]
 
 
@@ -191,7 +191,7 @@ class Throttle(LoggingFilter):
 
     params: ClassVar[LoggingFilterParams] = {
         'throttle_duration_sec': None,
-        'throttle_time_source_type': Clock(),
+        'throttle_time_source_type': BaseClock(),
     }
 
     @classmethod
@@ -200,7 +200,7 @@ class Throttle(LoggingFilter):
         context = cast(ThrottleContext, context)
         super(Throttle, cls).initialize_context(context, **kwargs)
         context['throttle_last_logged'] = 0
-        if not isinstance(context['throttle_time_source_type'], Clock):
+        if not isinstance(context['throttle_time_source_type'], BaseClock):
             raise ValueError(
                 'Received throttle_time_source_type of "{0}" '
                 'is not a clock instance'

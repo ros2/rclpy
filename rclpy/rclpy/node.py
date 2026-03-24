@@ -52,7 +52,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
 from rclpy.clock import Clock
-from rclpy.clock import ROSClock
+from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
 from rclpy.endpoint_info import ServiceEndpointInfo, TopicEndpointInfo
@@ -253,7 +253,7 @@ class Node:
             self._parameter_overrides.update({p.name: p for p in parameter_overrides})
 
         # Clock that has support for ROS time.
-        self._clock = ROSClock()
+        self._clock = Clock(clock_type=ClockType.ROS_TIME)
 
         if automatically_declare_parameters_from_overrides:
             self.declare_parameters(
