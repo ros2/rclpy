@@ -484,7 +484,6 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         event = threading.Event()
 
         def unblock(future: Future[Any]) -> None:
-            nonlocal event
             event.set()
 
         send_goal_future = self.send_goal_async(goal, **kwargs)
@@ -570,7 +569,6 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         event = threading.Event()
 
         def unblock(future: Future[Any]) -> None:
-            nonlocal event
             event.set()
 
         future = self._cancel_goal_async(goal_handle)
@@ -628,7 +626,6 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         event = threading.Event()
 
         def unblock(future: Future[Any]) -> None:
-            nonlocal event
             event.set()
 
         future = self._get_result_async(goal_handle)

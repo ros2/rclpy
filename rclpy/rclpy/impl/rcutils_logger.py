@@ -45,7 +45,6 @@ _populate_internal_callers = True
 def _find_caller(frame: Optional[FrameType]) -> FrameType:
     """Get the first calling frame that is outside of rclpy."""
     global _populate_internal_callers
-    global _internal_callers
     if _populate_internal_callers:
         # Populate the list of internal filenames from which logging methods can be called.
         # This has to be done from within a function to avoid cyclic module imports.

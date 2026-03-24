@@ -81,8 +81,6 @@ class TestCallbackGroup(unittest.TestCase):
             # run in parallel to this long running one
             def long_callback(msg: Empty) -> None:
                 nonlocal received_short_callback_in_long_callback
-                nonlocal future_up
-                nonlocal future_down
                 # The following future is used to delay the publishing of
                 # the message that triggers the short callback.
                 # This is done to ensure the long running callback is being executed

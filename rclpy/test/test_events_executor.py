@@ -695,7 +695,7 @@ class TestEventsExecutor(unittest.TestCase):
         # Only one of the callbacks should be delivered, though we can't necessarily predict which
         # one.
         def handler() -> None:
-            nonlocal count, timer1, timer2  # type: ignore[misc]
+            nonlocal count
             count += 1
             timer1.cancel()
             timer2.cancel()
