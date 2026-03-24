@@ -1648,7 +1648,7 @@ class Node:
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: Literal[True],
         content_filter_options: Optional[ContentFilterOptions] = None,
-        acceptable_buffer_backends: Optional[str] = 'cpu'
+        acceptable_buffer_backends: Optional[str] = None
     ) -> Subscription[MsgT]: ...
 
     @overload
@@ -1679,7 +1679,7 @@ class Node:
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False,
         content_filter_options: Optional[ContentFilterOptions] = None,
-        acceptable_buffer_backends: Optional[str] = 'cpu'
+        acceptable_buffer_backends: Optional[str] = None
     ) -> Subscription[MsgT]: ...
 
     def create_subscription(
@@ -1694,7 +1694,7 @@ class Node:
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False,
         content_filter_options: Optional[ContentFilterOptions] = None,
-        acceptable_buffer_backends: Optional[str] = 'cpu'
+        acceptable_buffer_backends: Optional[str] = None
     ) -> Subscription[MsgT]:
         """
         Create a new subscription.
