@@ -2,6 +2,18 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.7 (2026-03-24)
+-------------------
+* Fix future flake8 (`#1634 <https://github.com/ros2/rclpy/issues/1634>`_)
+* Use new ROSIDL aggregate CMake target (`#1630 <https://github.com/ros2/rclpy/issues/1630>`_)
+* Update type hints for parameters (`#1631 <https://github.com/ros2/rclpy/issues/1631>`_)
+* Add support check for content filter feature in subscription (`#1618 <https://github.com/ros2/rclpy/issues/1618>`_)
+* Refactor: base entity classes (`#1624 <https://github.com/ros2/rclpy/issues/1624>`_)
+* Fix more test typings and remove unused type aliases (`#1626 <https://github.com/ros2/rclpy/issues/1626>`_)
+* Add types to test_waitable (`#1625 <https://github.com/ros2/rclpy/issues/1625>`_)
+* Correct typos (`#1619 <https://github.com/ros2/rclpy/issues/1619>`_)
+* Contributors: Auguste Lalande, Barry Xu, Emerson Knapp, Michael Carlstrom, Nadav Elkabets
+
 10.0.6 (2026-03-09)
 -------------------
 * Fix incorrect action client/server callback type hints (`#1616 <https://github.com/ros2/rclpy/issues/1616>`_)
