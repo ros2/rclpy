@@ -187,7 +187,7 @@ class TestExecutor(unittest.TestCase):
         try:
             self.assertTrue(self.func_execution(executor))
         finally:
-            executor.shutdown()
+            executor.shutdown(wait_for_threads=True)
 
     def test_multi_threaded_executor_closes_threads(self) -> None:
         self.assertIsNotNone(self.node.handle)
@@ -198,6 +198,15 @@ class TestExecutor(unittest.TestCase):
             return {t.name for t in threading.enumerate()
                     if t.name and t.name.startswith(executor_prefix)}
 
+        def wait_for_threads_to_stop() -> None:
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline:
+                if not get_executor_threads():
+                    break
+                time.sleep(0.1)
+
+        # Wait for any leftover threads from prior tests to finish.
+        wait_for_threads_to_stop()
         self.assertEqual(set(), get_executor_threads())
         # Explicitly specify 2_threads for single thread system failure
         executor = MultiThreadedExecutor(context=self.context, num_threads=2)
@@ -210,11 +219,7 @@ class TestExecutor(unittest.TestCase):
             executor.shutdown(wait_for_threads=True)
             # Worker threads may still be tearing down briefly after shutdown
             # returns, so poll with a timeout instead of a single-shot check.
-            deadline = time.monotonic() + 5.0
-            while time.monotonic() < deadline:
-                if not get_executor_threads():
-                    break
-                time.sleep(0.1)
+            wait_for_threads_to_stop()
             self.assertEqual(set(), get_executor_threads())
 
     def test_add_node_to_executor(self) -> None:
