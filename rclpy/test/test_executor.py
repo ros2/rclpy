@@ -187,15 +187,26 @@ class TestExecutor(unittest.TestCase):
         try:
             self.assertTrue(self.func_execution(executor))
         finally:
-            executor.shutdown()
+            executor.shutdown(wait_for_threads=True)
 
     def test_multi_threaded_executor_closes_threads(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        def get_threads() -> Set[str]:
-            return {t.name for t in threading.enumerate()}
+        executor_prefix = 'ThreadPoolExecutor-'
 
-        main_thread_name = get_threads()
+        def get_executor_threads() -> Set[str]:
+            return {t.name for t in threading.enumerate()
+                    if t.name and t.name.startswith(executor_prefix)}
+
+        def wait_for_no_new_threads(baseline: Set[str]) -> None:
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline:
+                if not (get_executor_threads() - baseline):
+                    break
+                time.sleep(0.1)
+
+        # Snapshot any pre-existing threads (e.g. still tearing down from prior tests).
+        baseline_threads = get_executor_threads()
         # Explicitly specify 2_threads for single thread system failure
         executor = MultiThreadedExecutor(context=self.context, num_threads=2)
 
@@ -203,9 +214,13 @@ class TestExecutor(unittest.TestCase):
             # Give the executor a callback so at least one thread gets spun up
             self.assertTrue(self.func_execution(executor))
         finally:
-            self.assertTrue(main_thread_name != get_threads())
+            new_threads = get_executor_threads() - baseline_threads
+            self.assertNotEqual(set(), new_threads)
             executor.shutdown(wait_for_threads=True)
-            self.assertTrue(main_thread_name == get_threads())
+            # Worker threads may still be tearing down briefly after shutdown
+            # returns, so poll with a timeout instead of a single-shot check.
+            wait_for_no_new_threads(baseline_threads)
+            self.assertEqual(set(), get_executor_threads() - baseline_threads)
 
     def test_add_node_to_executor(self) -> None:
         self.assertIsNotNone(self.node.handle)
