@@ -204,9 +204,18 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         messages internally for each action client.
 
         If `enable_feedback_msg_optimization` is set to true, an action client can handle up to
-        6 goals simultaneously. If the number of goals exceeds the limit, optimization is
-        automatically disabled. If feedback subscription doesn't support content filter,
+        6 goals simultaneously. This optimization takes advantage of the content filter feature.
+        According to the DDS specification, the maximum number of parameters supported by content
+        filter is 100. Configuring one goal ID consumes 16 parameters, so at most, 6 goal IDs can
+        be set simultaneously. If the number of goals exceeds the limit, optimization is
+        automatically disabled. If the rmw implementation doesn't support content filter,
         optimization is also automatically disabled.
+
+        Even if the RMW implementation supports the content filter feature, different RMW
+        implementations may impose restrictions on the content filter expression. For example,
+        in ConnextDDS, the `RMW_CONNEXT_CONTENTFILTER_PROPERTY_MAX_LENGTH` setting affects the
+        available length of content filter expressions. When this limit is reached, the
+        optimization will be automatically disabled.
 
         :param node: The ROS node to add the action client to.
         :param action_type: Type of the action.
