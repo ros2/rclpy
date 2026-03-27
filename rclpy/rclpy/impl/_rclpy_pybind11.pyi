@@ -361,7 +361,8 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
             result_service_qos: rmw_qos_profile_t,
             cancel_service_qos: rmw_qos_profile_t,
             feedback_service_qos: rmw_qos_profile_t,
-            status_topci_qos: rmw_qos_profile_t
+            status_topic_qos: rmw_qos_profile_t,
+            enable_feedback_msg_optimization: bool
         ) -> None: ...
 
     @property
@@ -418,6 +419,11 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT], Destroyable):
     ) -> None:
         """Configure whether internal client introspection is enabled."""
 
+    def configure_feedback_subscription_filter_add_goal_id(self, goal_id: bytes) -> bool:
+        """Configure feedback subscription content filter to add a goal ID."""
+
+    def configure_feedback_subscription_filter_remove_goal_id(self, goal_id: bytes) -> bool:
+        """Configure feedback subscription content filter to remove a goal ID."""
 
 class ActionGoalHandle(Destroyable):
 

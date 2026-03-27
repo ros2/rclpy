@@ -90,6 +90,9 @@ else:
 
 T = TypeVar('T')
 
+# Re-export exception defined in _rclpy C extension.
+RCLError = _rclpy.RCLError
+
 
 class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
     """Goal handle for working with Action Clients."""
@@ -187,10 +190,32 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         result_service_qos_profile: QoSProfile = qos_profile_services_default,
         cancel_service_qos_profile: QoSProfile = qos_profile_services_default,
         feedback_sub_qos_profile: QoSProfile = QoSProfile(depth=10),
-        status_sub_qos_profile: QoSProfile = qos_profile_action_status_default
+        status_sub_qos_profile: QoSProfile = qos_profile_action_status_default,
+        enable_feedback_msg_optimization: bool = False
     ) -> None:
         """
         Create an ActionClient.
+
+        When multiple action clients connect to the same action server, the subscription for
+        receiving feedback messages inside each action client will first receive all feedback
+        messages, and then determine which feedback belongs to itself based on goal ID. When
+        `enable_feedback_msg_optimization` is set to true, the content filter is used to configure
+        the goal ID for the subscription, which helps avoid the reception of irrelevant feedback
+        messages internally for each action client.
+
+        If `enable_feedback_msg_optimization` is set to true, an action client can handle up to
+        6 goals simultaneously. This optimization takes advantage of the content filter feature.
+        According to the DDS specification, the maximum number of parameters supported by content
+        filter is 100. Configuring one goal ID consumes 16 parameters, so at most, 6 goal IDs can
+        be set simultaneously. If the number of goals exceeds the limit, optimization is
+        automatically disabled. If the rmw implementation doesn't support content filter,
+        optimization is also automatically disabled.
+
+        Even if the RMW implementation supports the content filter feature, different RMW
+        implementations may impose restrictions on the content filter expression. For example,
+        in ConnextDDS, the `RMW_CONNEXT_CONTENTFILTER_PROPERTY_MAX_LENGTH` setting affects the
+        available length of content filter expressions. When this limit is reached, the
+        optimization will be automatically disabled.
 
         :param node: The ROS node to add the action client to.
         :param action_type: Type of the action.
@@ -203,6 +228,8 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         :param cancel_service_qos_profile: QoS profile for the cancel service.
         :param feedback_sub_qos_profile: QoS profile for the feedback subscriber.
         :param status_sub_qos_profile: QoS profile for the status subscriber.
+        :param enable_feedback_msg_optimization: Enable feedback subscription content filter to
+            optimize the handling of feedback messages.
         """
         if callback_group is None:
             callback_group = node.default_callback_group
@@ -224,7 +251,8 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                     result_service_qos_profile.get_c_qos_profile(),
                     cancel_service_qos_profile.get_c_qos_profile(),
                     feedback_sub_qos_profile.get_c_qos_profile(),
-                    status_sub_qos_profile.get_c_qos_profile()
+                    status_sub_qos_profile.get_c_qos_profile(),
+                    enable_feedback_msg_optimization
                 )
 
         self._is_ready = False
@@ -250,6 +278,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         self._result_sequence_number_to_goal_id: Dict[int, UUID] = {}
         # key: UUID in bytes, value: callback function
         self._feedback_callbacks: Dict[bytes, FeedbackCallbackUnion[FeedbackT]] = {}
+        self._enable_feedback_msg_optimization = enable_feedback_msg_optimization
 
         self._logger = self._node.get_logger().get_child('action_client')
         self._lock = threading.Lock()
@@ -305,6 +334,14 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
             # remove feedback_callback if user is aware of result and it's been received
             if goal_uuid in self._feedback_callbacks:
                 del self._feedback_callbacks[goal_uuid]
+
+            if self._enable_feedback_msg_optimization:
+                # Remove goal ID from feedback subscription content filter
+                try:
+                    _ = self._client_handle.configure_feedback_subscription_filter_remove_goal_id(
+                        goal_uuid)
+                except RCLError as e:
+                    self._logger.warning(f'{e}')
 
     # Start Waitable API
     def is_ready(self, wait_set: _rclpy.WaitSet) -> bool:
@@ -383,6 +420,12 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                         raise RuntimeError(
                             'Two goals were accepted with the same ID ({})'.format(goal_handle))
                     self._goal_handles[goal_uuid] = weakref.ref(goal_handle)
+                    if (self._enable_feedback_msg_optimization):
+                        try:
+                            _ = self._client_handle \
+                                .configure_feedback_subscription_filter_add_goal_id(goal_uuid)
+                        except RCLError as e:
+                            self._logger.warning(f'{e}')
 
                 self._pending_goal_requests[sequence_number].set_result(goal_handle)
             else:
@@ -433,6 +476,13 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                                 GoalStatus.STATUS_CANCELED == status or
                                 GoalStatus.STATUS_ABORTED == status):
                             del self._goal_handles[goal_uuid]
+                            if self._enable_feedback_msg_optimization:
+                                try:
+                                    _ = self._client_handle \
+                                        .configure_feedback_subscription_filter_remove_goal_id(
+                                            goal_uuid)
+                                except RCLError as e:
+                                    self._logger.warning(f'{e}')
                     else:
                         # Weak reference is None
                         del self._goal_handles[goal_uuid]
@@ -609,6 +659,15 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
             future.add_done_callback(self._remove_pending_cancel_request)
             # Add future so executor is aware
             self.add_future(future)
+
+        if self._enable_feedback_msg_optimization:
+            # Remove goal ID from feedback subscription content filter
+            goal_uuid = bytes(goal_handle.goal_id.uuid)
+            try:
+                _ = self._client_handle.configure_feedback_subscription_filter_remove_goal_id(
+                    goal_uuid)
+            except RCLError as e:
+                self._logger.warning(f'{e}')
 
         return future
 
