@@ -194,8 +194,6 @@ class BaseNode(ABC):
         with self.handle:
             self._logger = get_logger(self.__node.logger_name())
 
-        self._context.track_node(self)
-
     @property
     def context(self) -> Context:
         """Get the context associated with the node."""
@@ -1949,6 +1947,8 @@ class Node(BaseNode):
             self._logger_service = LoggingService(self)
 
         self._type_description_service = TypeDescriptionService(self)
+
+        self._context.track_node(self)
 
     @property
     def publishers(self) -> Iterator[Publisher[Any]]:
