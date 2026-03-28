@@ -127,7 +127,7 @@ class Publisher(BasePublisher[MsgT], Generic[MsgT]):
         topic: str,
         qos_profile: QoSProfile,
         *,
-        on_destroy: Optional[Callable[['BasePublisher[MsgT]'], None]] = None,
+        on_destroy: Optional[Callable[['Publisher[MsgT]'], None]] = None,
         event_callbacks: PublisherEventCallbacks,
         callback_group: CallbackGroup,
     ) -> None:
@@ -150,8 +150,8 @@ class Publisher(BasePublisher[MsgT], Generic[MsgT]):
             msg_type=msg_type,
             topic=topic,
             qos_profile=qos_profile,
-            on_destroy=on_destroy
         )
+        self._on_destroy = on_destroy
 
         self.event_handlers: List[EventHandler] = event_callbacks.create_event_handlers(
             callback_group, publisher_impl, topic)

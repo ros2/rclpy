@@ -251,7 +251,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: Literal[True],
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -266,7 +266,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: Literal[False],
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -281,7 +281,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: bool,
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -295,7 +295,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: bool,
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None:
@@ -324,8 +324,8 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
             callback=callback,
             qos_profile=qos_profile,
             raw=raw,
-            on_destroy=on_destroy
         )
+        self._on_destroy = on_destroy
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False

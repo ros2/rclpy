@@ -78,7 +78,7 @@ from rclpy.logging_service import LoggingService
 from rclpy.parameter import (AllowableParameterValue, AllowableParameterValueT, Parameter,
                              PARAMETER_SEPARATOR_STRING)
 from rclpy.parameter_service import ParameterService
-from rclpy.publisher import BasePublisher, Publisher
+from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_rosout_default
 from rclpy.qos import qos_profile_services_default
@@ -86,7 +86,7 @@ from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import BaseService, Service
-from rclpy.subscription import BaseSubscription, GenericSubscriptionCallback
+from rclpy.subscription import GenericSubscriptionCallback
 from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
@@ -1922,13 +1922,13 @@ class Node:
         timer = self.create_timer(period, callback, group, clock)
         return Rate(timer, context=self.context)
 
-    def _on_destroy_publisher(self, publisher: BasePublisher) -> None:
+    def _on_destroy_publisher(self, publisher: Publisher) -> None:
         self._publishers.remove(publisher)
         for event_handler in publisher.event_handlers:
             self.__waitables.remove(event_handler)
         self._wake_executor()
 
-    def _on_destroy_subscription(self, subscription: BaseSubscription) -> None:
+    def _on_destroy_subscription(self, subscription: Subscription) -> None:
         self._subscriptions.remove(subscription)
         for event_handler in subscription.event_handlers:
             self.__waitables.remove(event_handler)
@@ -2061,7 +2061,6 @@ class Node:
             self.destroy_timer(self._timers[0])
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
-        self._type_description_service.destroy()
         self.__node.destroy_when_not_in_use()
         self._wake_executor()
 
