@@ -31,6 +31,7 @@ from rclpy.service_introspection import ServiceIntrospectionState
 from service_msgs.msg import ServiceEventInfo
 
 from test_msgs.action import Fibonacci
+from test_msgs.msg import Empty
 
 from unique_identifier_msgs.msg import UUID
 
@@ -91,6 +92,7 @@ class TestActionClient(unittest.TestCase):
         node: rclpy.node.Node
         mock_action_server: MockActionServer
         feedback: FeedbackMessage[Fibonacci.Feedback] | None
+        subscription_content_filter_supported: bool
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -99,6 +101,11 @@ class TestActionClient(unittest.TestCase):
         cls.executor = SingleThreadedExecutor(context=cls.context)
         cls.node = rclpy.create_node('TestActionClient', context=cls.context)
         cls.mock_action_server = MockActionServer(cls.node)
+
+        test_subscription = cls.node.create_subscription(
+            Empty, 'test_topic', lambda msg: None, 10)
+        cls.subscription_content_filter_supported = test_subscription.is_cft_supported
+        cls.node.destroy_subscription(test_subscription)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -487,6 +494,159 @@ class TestActionClient(unittest.TestCase):
             self.assertEqual(len(self.event_messages[0].response), 0)
         finally:
             self.node.destroy_subscription(send_goal_service_event_sub)
+            ac.destroy()
+
+    def test_enable_feedback_msg_optimization_does_not_affect_normal_feedback_reception(  # noqa: E501
+            self) -> None:
+        ac = ActionClient(
+            self.node, Fibonacci, 'fibonacci', enable_feedback_msg_optimization=True)
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send a goal and then publish feedback
+            goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+            future = ac.send_goal_async(
+                Fibonacci.Goal(),
+                feedback_callback=self.feedback_callback,
+                goal_uuid=goal_uuid)
+            rclpy.spin_until_future_complete(self.node, future, self.executor)
+
+            # Publish feedback after goal has been accepted
+            self.mock_action_server.publish_feedback(goal_uuid)
+            self.timed_spin(1.0)
+            self.assertNotEqual(self.feedback, None)
+        finally:
+            ac.destroy()
+
+    def test_enable_feedback_msg_optimization_handles_multiple_goals(self) -> None:
+        if not self.subscription_content_filter_supported:
+            self.skipTest('Content filter is not supported by the RMW implementation')
+
+        # Skip the test if the RMW implementation is ConnextDDS.
+        # ConnextDDS has restrictions on the length of content filter expressions. Please refer to
+        # the definition of RMW_CONNEXT_CONTENTFILTER_PROPERTY_MAX_LENGTH. The current default
+        # value is 1024, which cannot support setting 2 goal IDs. So the test will be skipped for
+        # ConnextDDS to avoid failure. If the default value is increased in the future, this test
+        # can be enabled for ConnextDDS as well.
+        if rclpy.get_rmw_implementation_identifier() == 'rmw_connext_cpp':
+            self.skipTest('This test does not support rmw_connext_cpp.')
+
+        ac = ActionClient(
+            self.node, Fibonacci, 'fibonacci', enable_feedback_msg_optimization=True)
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send a goal and then publish feedback
+            first_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+            future = ac.send_goal_async(
+                Fibonacci.Goal(),
+                feedback_callback=self.feedback_callback,
+                goal_uuid=first_goal_uuid)
+            rclpy.spin_until_future_complete(self.node, future, self.executor)
+
+            # Send another goal, but without a feedback callback
+            second_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+            future = ac.send_goal_async(
+                Fibonacci.Goal(),
+                goal_uuid=second_goal_uuid)
+            rclpy.spin_until_future_complete(self.node, future, self.executor)
+
+            # Publish feedback for the second goal
+            self.mock_action_server.publish_feedback(second_goal_uuid)
+            self.timed_spin(1.0)
+            self.assertEqual(self.feedback, None)
+
+            self.feedback = None
+            # Publish feedback for the first goal (with callback)
+            self.mock_action_server.publish_feedback(first_goal_uuid)
+            self.timed_spin(1.0)
+            self.assertNotEqual(self.feedback, None)
+        finally:
+            ac.destroy()
+
+    def test_enable_feedback_msg_optimization_cancel_and_handle_new_goal(self) -> None:
+        if not self.subscription_content_filter_supported:
+            self.skipTest('Content filter is not supported by the RMW implementation')
+
+        ac = ActionClient(
+            self.node, Fibonacci, 'fibonacci', enable_feedback_msg_optimization=True)
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send a goal and then publish feedback
+            first_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+            future = ac.send_goal_async(
+                Fibonacci.Goal(),
+                feedback_callback=self.feedback_callback,
+                goal_uuid=first_goal_uuid)
+            rclpy.spin_until_future_complete(self.node, future, self.executor)
+
+            # Cancel the goal
+            self.assertTrue(future.done())
+            goal_handle = future.result()
+            assert goal_handle
+            cancel_future = goal_handle.cancel_goal_async()
+            rclpy.spin_until_future_complete(self.node, cancel_future, self.executor)
+            self.assertTrue(cancel_future.done())
+
+            # Send another goal, but without a feedback callback
+            second_goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+            future = ac.send_goal_async(
+                Fibonacci.Goal(),
+                goal_uuid=second_goal_uuid)
+            rclpy.spin_until_future_complete(self.node, future, self.executor)
+
+            # Publish feedback for the second goal
+            self.mock_action_server.publish_feedback(second_goal_uuid)
+            self.timed_spin(1.0)
+            self.assertEqual(self.feedback, None)
+        finally:
+            ac.destroy()
+
+    def test_enable_feedback_msg_optimization_handle_more_than_6_goals(self) -> None:
+        if not self.subscription_content_filter_supported:
+            self.skipTest('Content filter is not supported by the RMW implementation')
+
+        # Skip the test if the RMW implementation is ConnextDDS.
+        # ConnextDDS has restrictions on the length of content filter expressions. Please refer to
+        # the definition of RMW_CONNEXT_CONTENTFILTER_PROPERTY_MAX_LENGTH. The current default
+        # value is 1024, which cannot support setting 7 goal IDs. So the test will be skipped for
+        # ConnextDDS to avoid failure. If the default value is increased in the future, this test
+        # can be enabled for ConnextDDS as well.
+        if rclpy.get_rmw_implementation_identifier() == 'rmw_connext_cpp':
+            self.skipTest('This test does not support rmw_connext_cpp.')
+
+        # Even if the action client is handling more than 6 goals at the same time, feedback
+        # messages can still be received.
+
+        ac = ActionClient(
+            self.node, Fibonacci, 'fibonacci', enable_feedback_msg_optimization=True)
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            # Send 7 goals and then publish feedback for the first one
+            goal_uuids = []
+            for _ in range(7):
+                goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+                goal_uuids.append(goal_uuid)
+                future = ac.send_goal_async(
+                    Fibonacci.Goal(),
+                    feedback_callback=self.feedback_callback,
+                    goal_uuid=goal_uuid)
+                rclpy.spin_until_future_complete(self.node, future, self.executor)
+
+            # Publish feedback for the first goal
+            self.mock_action_server.publish_feedback(goal_uuids[0])
+            self.timed_spin(1.0)
+            self.assertNotEqual(self.feedback, None)
+
+            self.feedback = None
+
+            # Publish feedback for the seventh goal
+            self.mock_action_server.publish_feedback(goal_uuids[6])
+            self.timed_spin(1.0)
+            self.assertNotEqual(self.feedback, None)
+        finally:
             ac.destroy()
 
 

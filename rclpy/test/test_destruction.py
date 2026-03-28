@@ -229,7 +229,8 @@ def test_destroy_service_asap() -> None:
     try:
         node = rclpy.create_node('test_destroy_service_asap', context=context)
         try:
-            service = node.create_service(BasicTypesSrv, 'srv_service', lambda req, res: ...)
+            service = node.create_service(BasicTypesSrv, 'srv_service',
+                                          lambda req, res: BasicTypesSrv.Response())
 
             # handle valid
             with service.handle:

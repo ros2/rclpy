@@ -16,6 +16,7 @@
 from enum import Enum
 import inspect
 from types import TracebackType
+from typing import Awaitable
 from typing import Callable
 from typing import Generic
 from typing import Literal
@@ -33,6 +34,7 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.type_support import MsgT
+from typing_extensions import Self
 from typing_extensions import TypeAlias
 
 
@@ -59,11 +61,15 @@ MsgType = TypeVar('MsgType')
 T = TypeVar('T')
 GenericSubscriptionCallback: TypeAlias = Union[Callable[[T], None],
                                                Callable[[T, MessageInfo], None]]
-SubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallback[MsgT],
-                                             GenericSubscriptionCallback[bytes]]
+AsyncGenericSubscriptionCallback: TypeAlias = Union[Callable[[T], Awaitable[None]],
+                                                    Callable[[T, MessageInfo], Awaitable[None]]]
+GenericSubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallback[T],
+                                                    AsyncGenericSubscriptionCallback[T]]
+SubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallbackUnion[MsgT],
+                                             GenericSubscriptionCallbackUnion[bytes]]
 
 
-class Subscription(Generic[MsgT]):
+class BaseSubscription(Generic[MsgT]):
 
     class CallbackType(Enum):
         MessageOnly = 0
@@ -75,11 +81,9 @@ class Subscription(Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: GenericSubscriptionCallback[bytes],
-         callback_group: CallbackGroup,
+         callback: GenericSubscriptionCallbackUnion[bytes],
          qos_profile: QoSProfile,
          raw: Literal[True],
-         event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
 
     @overload
@@ -88,11 +92,9 @@ class Subscription(Generic[MsgT]):
          subscription_impl: '_rclpy.Subscription[MsgT]',
          msg_type: Type[MsgT],
          topic: str,
-         callback: GenericSubscriptionCallback[MsgT],
-         callback_group: CallbackGroup,
+         callback: GenericSubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: Literal[False],
-         event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
 
     @overload
@@ -102,10 +104,8 @@ class Subscription(Generic[MsgT]):
          msg_type: Type[MsgT],
          topic: str,
          callback: SubscriptionCallbackUnion[MsgT],
-         callback_group: CallbackGroup,
          qos_profile: QoSProfile,
          raw: bool,
-         event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
 
     def __init__(
@@ -114,41 +114,15 @@ class Subscription(Generic[MsgT]):
          msg_type: Type[MsgT],
          topic: str,
          callback: SubscriptionCallbackUnion[MsgT],
-         callback_group: CallbackGroup,
          qos_profile: QoSProfile,
          raw: bool,
-         event_callbacks: SubscriptionEventCallbacks,
     ) -> None:
-        """
-        Create a container for a ROS subscription.
-
-        .. warning:: Users should not create a subscription with this constructor, instead they
-           should call :meth:`.Node.create_subscription`.
-
-        :param subscription_impl: :class:`Subscription` wrapping the underlying
-            ``rcl_subscription_t`` object.
-        :param msg_type: The type of ROS messages the subscription will subscribe to.
-        :param topic: The name of the topic the subscription will subscribe to.
-        :param callback: A user-defined callback function that is called when a message is
-            received by the subscription.
-        :param callback_group: The callback group for the subscription. If ``None``, then the
-            nodes default callback group is used.
-        :param qos_profile: The quality of service profile to apply to the subscription.
-        :param raw: If ``True``, then received messages will be stored in raw binary
-            representation.
-        """
         self.__subscription = subscription_impl
         self.msg_type = msg_type
         self.topic = topic
         self.callback = callback
-        self.callback_group = callback_group
-        # True when the callback is ready to fire but has not been "taken" by an executor
-        self._executor_event = False
         self.qos_profile = qos_profile
         self.raw = raw
-
-        self.event_handlers = event_callbacks.create_event_handlers(
-            callback_group, subscription_impl, topic)
 
     def get_publisher_count(self) -> int:
         """Get the number of publishers that this subscription has."""
@@ -160,14 +134,6 @@ class Subscription(Generic[MsgT]):
         return self.__subscription
 
     def destroy(self) -> None:
-        """
-        Destroy a container for a ROS subscription.
-
-        .. warning:: Users should not destroy a subscription with this method, instead they
-           should call :meth:`.Node.destroy_subscription`.
-        """
-        for handler in self.event_handlers:
-            handler.destroy()
         self.handle.destroy_when_not_in_use()
 
     @property
@@ -181,21 +147,24 @@ class Subscription(Generic[MsgT]):
 
     @callback.setter
     def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
+        self._set_callback_type(value)
         self._callback = value
-        self._callback_type = Subscription.CallbackType.MessageOnly
+
+    def _set_callback_type(self, callback: SubscriptionCallbackUnion[MsgT]) -> None:
         try:
-            inspect.signature(value).bind(object())
+            inspect.signature(callback).bind(object())
+            self._callback_type = BaseSubscription.CallbackType.MessageOnly
             return
         except TypeError:
             pass
         try:
-            inspect.signature(value).bind(object(), object())
-            self._callback_type = Subscription.CallbackType.WithMessageInfo
+            inspect.signature(callback).bind(object(), object())
+            self._callback_type = BaseSubscription.CallbackType.WithMessageInfo
             return
         except TypeError:
             pass
         raise RuntimeError(
-            'Subscription.__init__(): callback should be either be callable with one argument'
+            'Subscription callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
 
     @property
@@ -203,6 +172,12 @@ class Subscription(Generic[MsgT]):
         """Get the name of the logger associated with the node of the subscription."""
         with self.handle:
             return self.__subscription.get_logger_name()
+
+    @property
+    def is_cft_supported(self) -> bool:
+        """Check if content filtering is supported for this subscription."""
+        with self.handle:
+            return self.__subscription.is_cft_supported()
 
     @property
     def is_cft_enabled(self) -> bool:
@@ -232,7 +207,7 @@ class Subscription(Generic[MsgT]):
         with self.handle:
             return self.__subscription.get_content_filter()
 
-    def __enter__(self) -> 'Subscription[MsgT]':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(
@@ -242,3 +217,104 @@ class Subscription(Generic[MsgT]):
         exc_tb: Optional[TracebackType],
     ) -> None:
         self.destroy()
+
+
+class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
+
+    @overload
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: GenericSubscriptionCallbackUnion[bytes],
+         qos_profile: QoSProfile,
+         raw: Literal[True],
+         *,
+         callback_group: CallbackGroup,
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: GenericSubscriptionCallbackUnion[MsgT],
+         qos_profile: QoSProfile,
+         raw: Literal[False],
+         *,
+         callback_group: CallbackGroup,
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: SubscriptionCallbackUnion[MsgT],
+         qos_profile: QoSProfile,
+         raw: bool,
+         *,
+         callback_group: CallbackGroup,
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None: ...
+
+    def __init__(
+         self,
+         subscription_impl: '_rclpy.Subscription[MsgT]',
+         msg_type: Type[MsgT],
+         topic: str,
+         callback: SubscriptionCallbackUnion[MsgT],
+         qos_profile: QoSProfile,
+         raw: bool,
+         *,
+         callback_group: CallbackGroup,
+         event_callbacks: SubscriptionEventCallbacks,
+    ) -> None:
+        """
+        Create a container for a ROS subscription.
+
+        .. warning:: Users should not create a subscription with this constructor, instead they
+           should call :meth:`.Node.create_subscription`.
+
+        :param subscription_impl: :class:`Subscription` wrapping the underlying
+            ``rcl_subscription_t`` object.
+        :param msg_type: The type of ROS messages the subscription will subscribe to.
+        :param topic: The name of the topic the subscription will subscribe to.
+        :param callback: A user-defined callback function that is called when a message is
+            received by the subscription.
+        :param callback_group: The callback group for the subscription. If ``None``, then the
+            nodes default callback group is used.
+        :param qos_profile: The quality of service profile to apply to the subscription.
+        :param raw: If ``True``, then received messages will be stored in raw binary
+            representation.
+        """
+        super().__init__(
+            subscription_impl=subscription_impl,
+            msg_type=msg_type,
+            topic=topic,
+            callback=callback,
+            qos_profile=qos_profile,
+            raw=raw
+        )
+        self.callback_group = callback_group
+        # True when the callback is ready to fire but has not been "taken" by an executor
+        self._executor_event = False
+
+        self.event_handlers = event_callbacks.create_event_handlers(
+            callback_group, subscription_impl, topic)
+
+    def destroy(self) -> None:
+        """
+        Destroy a container for a ROS subscription.
+
+        .. warning:: Users should not destroy a subscription with this method, instead they
+           should call :meth:`.Node.destroy_subscription`.
+        """
+        for handler in self.event_handlers:
+            handler.destroy()
+        super().destroy()

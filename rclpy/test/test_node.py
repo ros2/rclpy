@@ -206,13 +206,13 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_client(GetParameters, 'foo/{bad_sub}')
 
     def test_create_service(self) -> None:
-        self.node.create_service(GetParameters, 'get/parameters', lambda req, res: None)
+        self.node.create_service(GetParameters, 'get/parameters', lambda req, res: res)
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not contain characters'):
-            self.node.create_service(GetParameters, 'get/parameters?', lambda req, res: None)
+            self.node.create_service(GetParameters, 'get/parameters?', lambda req, res: res)
         with self.assertRaisesRegex(InvalidServiceNameException, 'must not start with a number'):
-            self.node.create_service(GetParameters, '/get/42parameters', lambda req, res: None)
+            self.node.create_service(GetParameters, '/get/42parameters', lambda req, res: res)
         with self.assertRaisesRegex(ValueError, 'unknown substitution'):
-            self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req, res: None)
+            self.node.create_service(GetParameters, 'foo/{bad_sub}', lambda req, res: res)
 
     def test_service_names_and_types(self) -> None:
         # test that it doesn't raise
@@ -348,7 +348,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.get_subscriptions_info_by_topic('13')
             self.node.get_publishers_info_by_topic('13')
 
-    def test_get_clients_servers_info_by_service(self):
+    def test_get_clients_servers_info_by_service(self) -> None:
         service_name = 'test_service_endpoint_info'
         fq_service_name = '{namespace}/{name}'.format(namespace=TEST_NAMESPACE, name=service_name)
         # Lists should be empty
@@ -395,7 +395,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.node.create_service(
             Empty,
             service_name,
-            lambda msg: print(msg),
+            lambda req, res: res,
             qos_profile=qos_profile2
         )
         # Both lists should have at least one item
@@ -415,8 +415,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         # Error cases
         with self.assertRaises(TypeError):
-            self.node.get_clients_info_by_service(1)
-            self.node.get_servers_info_by_service(1)
+            self.node.get_clients_info_by_service(1)  # type: ignore[arg-type]
+            self.node.get_servers_info_by_service(1)  # type: ignore[arg-type]
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_clients_info_by_service('13')
             self.node.get_servers_info_by_service('13')
@@ -464,7 +464,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(0, self.node.count_services(short_service_name))
         self.assertEqual(0, self.node.count_services(fq_service_name))
 
-        self.node.create_service(GetParameters, short_service_name, lambda req, res: None)
+        self.node.create_service(GetParameters, short_service_name, lambda req, res: res)
         self.assertEqual(1, self.node.count_clients(short_service_name))
         self.assertEqual(1, self.node.count_clients(fq_service_name))
         self.assertEqual(1, self.node.count_services(short_service_name))
@@ -476,7 +476,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.assertEqual(1, self.node.count_services(short_service_name))
         self.assertEqual(1, self.node.count_services(fq_service_name))
 
-        self.node.create_service(GetParameters, short_service_name, lambda req, res: None)
+        self.node.create_service(GetParameters, short_service_name, lambda req, res: res)
         self.assertEqual(2, self.node.count_clients(short_service_name))
         self.assertEqual(2, self.node.count_clients(fq_service_name))
         self.assertEqual(2, self.node.count_services(short_service_name))
@@ -840,7 +840,9 @@ class TestNode(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             self.node.declare_parameter(
-                'wrong_parameter_descriptor_type', 1, ParameterValue())
+                'wrong_parameter_descriptor_type',
+                1,
+                ParameterValue())  # type: ignore[call-overload]
 
         with self.assertRaises(ValueError):
             self.node.declare_parameter(
@@ -995,7 +997,7 @@ class TestNode(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.node.declare_parameters(
                 '',
-                [(
+                [(  # type: ignore[list-item]
                     'wrong_parameter_descriptor_type',
                     ParameterValue(),
                     ParameterValue()
@@ -1156,7 +1158,7 @@ class TestNode(unittest.TestCase):
         integer_value = 42
         string_value = 'hello'
         float_value = 2.41
-        parameter_tuples = [
+        parameter_tuples: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             (
                 'foo',
                 integer_value,
@@ -1280,7 +1282,8 @@ class TestNode(unittest.TestCase):
         )
         self.node.declare_parameter(*parameter_tuple)
         # Tries to set the parameter with a callback that returns None.
-        self.node.add_on_set_parameters_callback(self.return_none_parameter_callback)
+        self.node.add_on_set_parameters_callback(
+            self.return_none_parameter_callback)  # type: ignore[arg-type]
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always', category=UserWarning)
             result = self.node.set_parameters(
@@ -1673,7 +1676,7 @@ class TestNode(unittest.TestCase):
         integer_value = 42
         string_value = 'hello'
         float_value = 2.41
-        parameter_tuples = [
+        parameter_tuples: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             (
                 'immutable_foo',
                 integer_value,
@@ -1773,7 +1776,7 @@ class TestNode(unittest.TestCase):
         self.assertFalse(self.node.has_parameter('bar'))
 
     def test_node_set_parameters_implicit_undeclare(self) -> None:
-        parameter_tuples = [
+        parameter_tuples: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             (
                 'foo',
                 42,
@@ -1808,7 +1811,7 @@ class TestNode(unittest.TestCase):
         integer_value = 42
         string_value = 'hello'
         float_value = 2.41
-        parameter_tuples = [
+        parameter_tuples: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             (
                 'foo',
                 integer_value,
@@ -1951,7 +1954,7 @@ class TestNode(unittest.TestCase):
         integer_value = 42
         string_value = 'hello'
         float_value = 2.41
-        parameter_tuples = [
+        parameter_tuples: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             (
                 'foo',
                 integer_value,
@@ -2018,7 +2021,7 @@ class TestNode(unittest.TestCase):
         self.assertEqual(self.node.get_parameter('immutable_baz').value, 2.41)
 
     def test_node_set_parameters_atomically_implicit_undeclare(self) -> None:
-        parameter_tuples = [
+        parameter_tuples: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             (
                 'foo',
                 42,
@@ -2238,7 +2241,7 @@ class TestNode(unittest.TestCase):
     def test_floating_point_range_descriptor(self) -> None:
         # OK cases; non-floats are not affected by the range.
         fp_range = FloatingPointRange(from_value=0.0, to_value=10.0, step=0.5)
-        parameters = [
+        parameters: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             ('from_value', 0.0, ParameterDescriptor(floating_point_range=[fp_range])),
             ('to_value', 10.0, ParameterDescriptor(floating_point_range=[fp_range])),
             ('in_range', 4.5, ParameterDescriptor(floating_point_range=[fp_range])),
@@ -2266,17 +2269,17 @@ class TestNode(unittest.TestCase):
         self.assertAlmostEqual(self.node.get_parameter('int_value').value, 123)
 
         # Try to set a parameter out of range.
-        result = self.node.set_parameters([Parameter('in_range', value=12.0)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        set_result = self.node.set_parameters([Parameter('in_range', value=12.0)])
+        self.assertIsInstance(set_result, list)
+        self.assertIsInstance(set_result[0], SetParametersResult)
+        self.assertFalse(set_result[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
 
         # Try to set a parameter out of range (bad step).
-        result = self.node.set_parameters([Parameter('in_range', value=4.25)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        set_result = self.node.set_parameters([Parameter('in_range', value=4.25)])
+        self.assertIsInstance(set_result, list)
+        self.assertIsInstance(set_result[0], SetParametersResult)
+        self.assertFalse(set_result[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4.5)
 
         # From and to are always valid.
@@ -2304,15 +2307,15 @@ class TestNode(unittest.TestCase):
             ('in_range_no_step', 5.37, ParameterDescriptor(floating_point_range=[fp_range])),
         ]
 
-        result = self.node.declare_parameters('', parameters)
+        declare_result = self.node.declare_parameters('', parameters)
 
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], Parameter)
-        self.assertIsInstance(result[1], Parameter)
-        self.assertIsInstance(result[2], Parameter)
-        self.assertAlmostEqual(result[0].value, -10.0)
-        self.assertAlmostEqual(result[1].value, 10.0)
-        self.assertAlmostEqual(result[2].value, 5.37)
+        self.assertIsInstance(declare_result, list)
+        self.assertIsInstance(declare_result[0], Parameter)
+        self.assertIsInstance(declare_result[1], Parameter)
+        self.assertIsInstance(declare_result[2], Parameter)
+        self.assertAlmostEqual(declare_result[0].value, -10.0)
+        self.assertAlmostEqual(declare_result[1].value, 10.0)
+        self.assertAlmostEqual(declare_result[2].value, 5.37)
         self.assertAlmostEqual(self.node.get_parameter('from_value_no_step').value, -10.0)
         self.assertAlmostEqual(self.node.get_parameter('to_value_no_step').value, 10.0)
         self.assertAlmostEqual(self.node.get_parameter('in_range_no_step').value, 5.37)
@@ -2320,7 +2323,7 @@ class TestNode(unittest.TestCase):
     def test_integer_range_descriptor(self) -> None:
         # OK cases; non-integers are not affected by the range.
         integer_range = IntegerRange(from_value=0, to_value=10, step=2)
-        parameters = [
+        parameters: list[tuple[str, Union[int, str, float], ParameterDescriptor]] = [
             ('from_value', 0, ParameterDescriptor(integer_range=[integer_range])),
             ('to_value', 10, ParameterDescriptor(integer_range=[integer_range])),
             ('in_range', 4, ParameterDescriptor(integer_range=[integer_range])),
@@ -2348,17 +2351,17 @@ class TestNode(unittest.TestCase):
         self.assertAlmostEqual(self.node.get_parameter('float_value').value, 123.0)
 
         # Try to set a parameter out of range.
-        result = self.node.set_parameters([Parameter('in_range', value=12)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        set_result = self.node.set_parameters([Parameter('in_range', value=12)])
+        self.assertIsInstance(set_result, list)
+        self.assertIsInstance(set_result[0], SetParametersResult)
+        self.assertFalse(set_result[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4)
 
         # Try to set a parameter out of range (bad step).
-        result = self.node.set_parameters([Parameter('in_range', value=5)])
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], SetParametersResult)
-        self.assertFalse(result[0].successful)
+        set_result = self.node.set_parameters([Parameter('in_range', value=5)])
+        self.assertIsInstance(set_result, list)
+        self.assertIsInstance(set_result[0], SetParametersResult)
+        self.assertFalse(set_result[0].successful)
         self.assertEqual(self.node.get_parameter('in_range').value, 4)
 
         # From and to are always valid.
@@ -2386,15 +2389,15 @@ class TestNode(unittest.TestCase):
             ('in_range_no_step', 5, ParameterDescriptor(integer_range=[integer_range])),
         ]
 
-        result = self.node.declare_parameters('', parameters)
+        declare_result = self.node.declare_parameters('', parameters)
 
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], Parameter)
-        self.assertIsInstance(result[1], Parameter)
-        self.assertIsInstance(result[2], Parameter)
-        self.assertEqual(result[0].value, -10)
-        self.assertEqual(result[1].value, 10)
-        self.assertEqual(result[2].value, 5)
+        self.assertIsInstance(declare_result, list)
+        self.assertIsInstance(declare_result[0], Parameter)
+        self.assertIsInstance(declare_result[1], Parameter)
+        self.assertIsInstance(declare_result[2], Parameter)
+        self.assertEqual(declare_result[0].value, -10)
+        self.assertEqual(declare_result[1].value, 10)
+        self.assertEqual(declare_result[2].value, 5)
         self.assertEqual(self.node.get_parameter('from_value_no_step').value, -10)
         self.assertEqual(self.node.get_parameter('to_value_no_step').value, 10)
         self.assertEqual(self.node.get_parameter('in_range_no_step').value, 5)

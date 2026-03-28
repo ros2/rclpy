@@ -188,7 +188,6 @@ class BaseClock:
             original_callback = post_callback
 
             def callback_shim(jump_dict: TimeJumpDictionary) -> None:
-                nonlocal original_callback
                 clock_change = jump_dict['clock_change']
                 duration = Duration(nanoseconds=jump_dict['delta'])
                 original_callback(TimeJump(clock_change, duration))

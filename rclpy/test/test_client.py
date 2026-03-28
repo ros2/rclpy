@@ -25,11 +25,9 @@ from unittest.mock import Mock
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
-from rclpy.client import Client
 import rclpy.context
 import rclpy.executors
 import rclpy.node
-from rclpy.service import Service
 from rclpy.utilities import get_rmw_implementation_identifier
 from test_msgs.srv import Empty
 
@@ -37,12 +35,6 @@ from typing_extensions import TypeAlias
 
 # TODO(sloretz) Reduce fudge once wait_for_service uses node graph events
 TIME_FUDGE = 0.3
-
-ClientGetParameters: TypeAlias = Client[GetParameters.Request,
-                                        GetParameters.Response]
-
-ServiceGetParameters: TypeAlias = Service[GetParameters.Request,
-                                          GetParameters.Response]
 
 TestServiceName: TypeAlias = List[Tuple[str, Optional[str], Optional[List[str]], str]]
 
@@ -97,7 +89,7 @@ class TestClient(unittest.TestCase):
 #        rclpy_node.destroy_node()
 
     def test_wait_for_service_5sec(self) -> None:
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'get/parameters')
+        cli = self.node.create_client(GetParameters, 'get/parameters')
         try:
             start = time.monotonic()
             self.assertFalse(cli.wait_for_service(timeout_sec=5.0))
@@ -108,7 +100,7 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
 
     def test_wait_for_service_nowait(self) -> None:
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'get/parameters')
+        cli = self.node.create_client(GetParameters, 'get/parameters')
         try:
             start = time.monotonic()
             self.assertFalse(cli.wait_for_service(timeout_sec=0))
@@ -119,9 +111,9 @@ class TestClient(unittest.TestCase):
             self.node.destroy_client(cli)
 
     def test_wait_for_service_exists(self) -> None:
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'test_wfs_exists')
-        srv: ServiceGetParameters = self.node.create_service(GetParameters, 'test_wfs_exists',
-                                                             lambda request, response: None)
+        cli = self.node.create_client(GetParameters, 'test_wfs_exists')
+        srv = self.node.create_service(GetParameters, 'test_wfs_exists',
+                                       lambda request, response: GetParameters.Response())
         try:
             start = time.monotonic()
             self.assertTrue(cli.wait_for_service(timeout_sec=1.0))
@@ -133,8 +125,8 @@ class TestClient(unittest.TestCase):
             self.node.destroy_service(srv)
 
     def test_concurrent_calls_to_service(self) -> None:
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'get/parameters')
-        srv: ServiceGetParameters = self.node.create_service(
+        cli = self.node.create_client(GetParameters, 'get/parameters')
+        srv = self.node.create_service(
             GetParameters, 'get/parameters',
             lambda request, response: response)
         try:
@@ -154,8 +146,8 @@ class TestClient(unittest.TestCase):
         get_rmw_implementation_identifier() == 'rmw_connextdds' and platform.system() == 'Windows',
         reason='Source timestamp not implemented for Connext on Windows')
     def test_service_timestamps(self) -> None:
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'get/parameters')
-        srv: ServiceGetParameters = self.node.create_service(
+        cli = self.node.create_client(GetParameters, 'get/parameters')
+        srv = self.node.create_service(
             GetParameters, 'get/parameters',
             lambda request, response: response)
         try:
@@ -178,15 +170,15 @@ class TestClient(unittest.TestCase):
             self.node.destroy_service(srv)
 
     def test_different_type_raises(self) -> None:
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'get/parameters')
-        srv: ServiceGetParameters = self.node.create_service(
+        cli = self.node.create_client(GetParameters, 'get/parameters')
+        srv = self.node.create_service(
             GetParameters, 'get/parameters',
-            lambda request, response: 'different response type')
+            lambda request, response: 'different response type')  # type: ignore
         try:
             with self.assertRaises(TypeError):
-                cli.call('different request type')
+                cli.call('different request type')  # type: ignore
             with self.assertRaises(TypeError):
-                cli.call_async('different request type')
+                cli.call_async('different request type')  # type: ignore
             self.assertTrue(cli.wait_for_service(timeout_sec=20))
             future = cli.call_async(GetParameters.Request())
             executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
@@ -229,7 +221,7 @@ class TestClient(unittest.TestCase):
         def _service(request: GetParameters.Request,
                      response: GetParameters.Response) -> GetParameters.Response:
             return response
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'get/parameters')
+        cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(GetParameters, 'get/parameters', _service)
         try:
             self.assertTrue(cli.wait_for_service(timeout_sec=20))
@@ -253,7 +245,7 @@ class TestClient(unittest.TestCase):
                      response: GetParameters.Response) -> GetParameters.Response:
             time.sleep(1)
             return response
-        cli: ClientGetParameters = self.node.create_client(GetParameters, 'get/parameters')
+        cli = self.node.create_client(GetParameters, 'get/parameters')
         srv = self.node.create_service(GetParameters, 'get/parameters', _service)
         try:
             self.assertTrue(cli.wait_for_service(timeout_sec=20))
@@ -276,7 +268,6 @@ class TestClient(unittest.TestCase):
         def _service(request: GetParameters.Request,
                      response: GetParameters.Response) -> GetParameters.Response:
             return response
-        cli: ClientGetParameters
         with self.node.create_client(GetParameters, 'get/parameters') as cli:
             with self.node.create_service(GetParameters, 'get/parameters', _service):
                 self.assertTrue(cli.wait_for_service(timeout_sec=20))
@@ -297,7 +288,7 @@ class TestClient(unittest.TestCase):
             self.assertEqual(cli.logger_name, 'TestClient')
 
     def test_on_new_response_callback(self) -> None:
-        def _service(request, response):
+        def _service(request: Empty.Request, response: Empty.Response) -> Empty.Response:
             return response
         with self.node.create_client(Empty, '/service') as cli:
             with self.node.create_service(Empty, '/service', _service):

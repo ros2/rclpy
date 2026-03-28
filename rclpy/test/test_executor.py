@@ -18,12 +18,14 @@ import threading
 import time
 from typing import Generator
 from typing import Optional
+from typing import Protocol
 from typing import Set
 import unittest
 import warnings
 
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.context import Context
 from rclpy.executors import Executor
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
@@ -31,6 +33,11 @@ from rclpy.executors import SingleThreadedExecutor
 from rclpy.experimental import EventsExecutor
 from rclpy.task import Future
 from test_msgs.srv import Empty
+
+
+class ExcutorTypeLike(Protocol):
+
+    def __call__(self, *, context: Optional[Context] = None) -> Executor: ...
 
 
 class TestExecutor(unittest.TestCase):
@@ -180,15 +187,26 @@ class TestExecutor(unittest.TestCase):
         try:
             self.assertTrue(self.func_execution(executor))
         finally:
-            executor.shutdown()
+            executor.shutdown(wait_for_threads=True)
 
     def test_multi_threaded_executor_closes_threads(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        def get_threads() -> Set[str]:
-            return {t.name for t in threading.enumerate()}
+        executor_prefix = 'ThreadPoolExecutor-'
 
-        main_thread_name = get_threads()
+        def get_executor_threads() -> Set[str]:
+            return {t.name for t in threading.enumerate()
+                    if t.name and t.name.startswith(executor_prefix)}
+
+        def wait_for_no_new_threads(baseline: Set[str]) -> None:
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline:
+                if not (get_executor_threads() - baseline):
+                    break
+                time.sleep(0.1)
+
+        # Snapshot any pre-existing threads (e.g. still tearing down from prior tests).
+        baseline_threads = get_executor_threads()
         # Explicitly specify 2_threads for single thread system failure
         executor = MultiThreadedExecutor(context=self.context, num_threads=2)
 
@@ -196,9 +214,13 @@ class TestExecutor(unittest.TestCase):
             # Give the executor a callback so at least one thread gets spun up
             self.assertTrue(self.func_execution(executor))
         finally:
-            self.assertTrue(main_thread_name != get_threads())
+            new_threads = get_executor_threads() - baseline_threads
+            self.assertNotEqual(set(), new_threads)
             executor.shutdown(wait_for_threads=True)
-            self.assertTrue(main_thread_name == get_threads())
+            # Worker threads may still be tearing down briefly after shutdown
+            # returns, so poll with a timeout instead of a single-shot check.
+            wait_for_no_new_threads(baseline_threads)
+            self.assertEqual(set(), get_executor_threads() - baseline_threads)
 
     def test_add_node_to_executor(self) -> None:
         self.assertIsNotNone(self.node.handle)
@@ -355,15 +377,18 @@ class TestExecutor(unittest.TestCase):
     def test_create_task_coroutine_wake_from_another_thread(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
+        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
+                                                 MultiThreadedExecutor,
+                                                 EventsExecutor]
+        for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
-                thread_future = executor.create_future()
+                thread_future: Future[None] = executor.create_future()
 
-                async def coroutine():
+                async def coroutine() -> None:
                     await thread_future
 
-                def future_thread():
+                def future_thread() -> None:
                     time.sleep(0.1)  # Simulate some work
                     thread_future.set_result(None)
 
@@ -437,7 +462,6 @@ class TestExecutor(unittest.TestCase):
                 executor.add_node(self.node)
 
                 async def coro1() -> str:
-                    nonlocal future2  # type: ignore[misc]
                     await future2
                     return 'Sentinel Result 1'
 
@@ -471,13 +495,11 @@ class TestExecutor(unittest.TestCase):
                 future = None
 
                 def spin_until_task_done(executor: Executor) -> None:
-                    nonlocal future
                     while future is None or not future.done():
                         try:
                             executor.spin_once()
                         finally:
                             executor.shutdown()
-                            break
 
                 # Start spinning in a separate thread
                 thr = threading.Thread(target=spin_until_task_done, args=(executor, ), daemon=True)
@@ -521,7 +543,7 @@ class TestExecutor(unittest.TestCase):
                 did_return = False
 
                 async def timer_callback() -> None:
-                    nonlocal trigger, did_callback, did_return
+                    nonlocal did_callback, did_return
                     did_callback = True
                     await trigger
                     did_return = True
@@ -675,7 +697,6 @@ class TestExecutor(unittest.TestCase):
         shutdown_event = threading.Event()
 
         def timer_callback() -> None:
-            nonlocal shutdown_event, executor
             executor.shutdown()
             shutdown_event.set()
 
@@ -763,7 +784,9 @@ class TestExecutor(unittest.TestCase):
 
     def test_not_lose_callback(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        for cls in [SingleThreadedExecutor, EventsExecutor]:
+
+        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor, EventsExecutor]
+        for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
 
@@ -798,11 +821,16 @@ class TestExecutor(unittest.TestCase):
 
     def test_create_future_returns_future_with_executor_attached(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
+
+        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
+                                                 MultiThreadedExecutor,
+                                                 EventsExecutor]
+        for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 try:
                     fut = executor.create_future()
+                    assert fut._executor
                     self.assertEqual(executor, fut._executor())
                 finally:
                     executor.shutdown()
@@ -817,7 +845,7 @@ class TestExecutor(unittest.TestCase):
                     executor.add_node(self.node)
 
                     # Start spinning in a background thread
-                    def spin_thread():
+                    def spin_thread() -> None:
                         executor.spin()
 
                     t = threading.Thread(target=spin_thread, daemon=True)
@@ -845,7 +873,7 @@ class TestExecutor(unittest.TestCase):
                     executor.add_node(self.node)
 
                     # Start spinning in a background thread
-                    def spin_thread():
+                    def spin_thread() -> None:
                         executor.spin_once(timeout_sec=10.0)
 
                     t = threading.Thread(target=spin_thread, daemon=True)
@@ -874,7 +902,7 @@ class TestExecutor(unittest.TestCase):
                     future = executor.create_future()
 
                     # Start spinning in a background thread
-                    def spin_thread():
+                    def spin_thread() -> None:
                         executor.spin_until_future_complete(future, timeout_sec=10.0)
 
                     t = threading.Thread(target=spin_thread, daemon=True)
@@ -904,7 +932,7 @@ class TestExecutor(unittest.TestCase):
                     future = executor.create_future()
 
                     # Start spinning in a background thread
-                    def spin_thread():
+                    def spin_thread() -> None:
                         executor.spin_once_until_future_complete(future, timeout_sec=10.0)
 
                     t = threading.Thread(target=spin_thread, daemon=True)

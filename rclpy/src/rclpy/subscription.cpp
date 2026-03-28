@@ -277,6 +277,12 @@ Subscription::clear_on_new_message_callback()
 }
 
 bool
+Subscription::is_cft_supported() const
+{
+  return rcl_subscription_is_cft_supported(rcl_subscription_.get());
+}
+
+bool
 Subscription::is_cft_enabled() const
 {
   return rcl_subscription_is_cft_enabled(rcl_subscription_.get());
@@ -389,6 +395,8 @@ define_subscription(py::object module)
     "set_on_new_message_callback", &Subscription::set_on_new_message_callback,
     py::arg("callback"))
   .def("clear_on_new_message_callback", &Subscription::clear_on_new_message_callback)
+  .def("is_cft_supported", &Subscription::is_cft_supported,
+    "Check if subscription instance supports content filtering.")
   .def("is_cft_enabled", &Subscription::is_cft_enabled,
     "Check if content filtering is enabled for this subscription.")
   .def(

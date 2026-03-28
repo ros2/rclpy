@@ -20,7 +20,9 @@
 #include <rcl_action/action_client.h>
 #include <rmw/types.h>
 
+#include <atomic>
 #include <memory>
+#include <mutex>
 
 #include "destroyable.hpp"
 #include "node.hpp"
@@ -43,6 +45,18 @@ public:
    * Raises ValueError if action name is invalid.
    * Raises RuntimeError if the action client could not be created.
    *
+   * When multiple action clients connect to the same action server, the subscription for receiving
+   * feedback messages inside each action client will first receive all feedback messages, and then
+   * determine which feedback belongs to itself based on goal ID. When
+   * enable_feedback_msg_optimization is set to true, the content filter is used to configure
+   * the goal ID for the subscription, which helps avoid the reception of irrelevant feedback
+   * messages internally for each action client.
+   *
+   * If enable_feedback_msg_optimization is set to true, an action client can handle up to 6 goals
+   * simultaneously. If the number of goals exceeds the limit, optimization is automatically
+   * disabled. If feedback subscription doesn't support content filter, optimization is also
+   * automatically disabled.
+   *
    * \param[in] node Node to add the action client to.
    * \param[in] pyaction_type Action module associated with the action client.
    * \param[in] action_name The action name.
@@ -51,6 +65,8 @@ public:
    * \param[in] cancel_service_qos rmw_qos_profile_t object for the cancel service.
    * \param[in] feedback_topic_qos rmw_qos_profile_t object for the feedback subscriber.
    * \param[in] status_topic_qos rmw_qos_profile_t object for the status subscriber.
+   * \param[in] enable_feedback_msg_optimization Enable feedback subscription content filter to
+   *   optimize the handling of feedback messages.
    */
   ActionClient(
     Node & node,
@@ -60,7 +76,8 @@ public:
     const rmw_qos_profile_t & result_service_qos,
     const rmw_qos_profile_t & cancel_service_qos,
     const rmw_qos_profile_t & feedback_topic_qos,
-    const rmw_qos_profile_t & status_topic_qos);
+    const rmw_qos_profile_t & status_topic_qos,
+    bool enable_feedback_msg_optimization = false);
 
   /// Take an action goal response.
   /**
@@ -183,6 +200,29 @@ public:
     Clock & clock, py::object pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
+  /// Configure content filter for feedback subscription with the given goal ID.
+  /**
+    * \param[in] goal_id The goal ID to add to the feedback subscription content filter.
+    * \return true if goal id was added to feedback subscription content filter successfully.
+    * \return false if feedback message optimization is not enabled.
+    * \throws RCLError if the rcl function fails, including when the rmw implementation
+    *   doesn't support Content Filtering. Feedback message optimization is automatically disabled.
+    */
+  bool
+  configure_feedback_subscription_filter_add_goal_id(py::bytes goal_id);
+
+  /// Configure content filter for feedback subscription for removing the given goal ID.
+  /**
+    * \param[in] goal_id The goal ID to remove from the feedback subscription content filter.
+    * \return true if goal id was removed from feedback subscription content filter successfully or
+    *   goal id was not found in feedback subscription content filter.
+    * \return false if feedback message optimization is not enabled.
+    * \throws RCLError if the rcl function fails, including when the rmw implementation
+    *   doesn't support Content Filtering. Feedback message optimization is automatically disabled.
+    */
+  bool
+  configure_feedback_subscription_filter_remove_goal_id(py::bytes goal_id);
+
   /// Get the number of wait set entities that make up an action entity.
   /**
    * \return Tuple containing the number of wait set entities:
@@ -243,6 +283,15 @@ private:
   Node node_;
   std::shared_ptr<rcl_action_client_t> rcl_action_client_;
   const rosidl_action_type_support_t * action_type_support_;
+
+  // Enable feedback subscription content filter
+  // Initialization is configured by the user.
+  // When an error occurs while adding or removing a goal ID from the content filter, it will
+  // automatically be set to false.
+  std::atomic_bool enable_feedback_msg_optimization_;
+  // Mutex to protect feedback subscription content filter configuration because the related rcl
+  // function is not thread-safe.
+  std::mutex configure_feedback_sub_content_filter_mutex_;
 };
 /// Define a pybind11 wrapper for an rclpy::ActionClient
 /**

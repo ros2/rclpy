@@ -87,14 +87,15 @@ from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import Service
-from rclpy.subscription import GenericSubscriptionCallback
+from rclpy.service import ServiceCallbackUnion
+from rclpy.subscription import GenericSubscriptionCallbackUnion
 from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.time_source import TimeSource
 from rclpy.timer import Rate
 from rclpy.timer import Timer
-from rclpy.timer import TimerCallbackType
+from rclpy.timer import TimerCallbackUnion
 from rclpy.type_description_service import TypeDescriptionService
 from rclpy.type_support import check_is_valid_msg_type
 from rclpy.type_support import check_is_valid_srv_type
@@ -233,6 +234,7 @@ class BaseNode(ABC):
         """Get the nodes logger."""
         return self._logger
 
+    # Overloads needed due to mypy #3737
     @overload
     def declare_parameter(self, name: str, value: AllowableParameterValueT,
                           descriptor: Optional[ParameterDescriptor] = None,
@@ -245,7 +247,7 @@ class BaseNode(ABC):
                           descriptor: Optional[ParameterDescriptor] = None,
                           ignore_override: bool = False) -> Parameter[Any]: ...
 
-    def declare_parameter(
+    def declare_parameter(  # type: ignore[misc]
         self,
         name: str,
         value: Union[AllowableParameterValue, Parameter.Type, ParameterValue] = None,
@@ -1914,9 +1916,9 @@ class Node(BaseNode):
             allow_undeclared_parameters=allow_undeclared_parameters,
         )
 
-        self._parameter_event_publisher = self.create_publisher(
-            ParameterEvent, '/parameter_events', qos_profile_parameter_events
-        )
+        self._parameter_event_publisher: Optional[Publisher[ParameterEvent]] = \
+            self.create_publisher(ParameterEvent, '/parameter_events',
+                                  qos_profile_parameter_events)
 
         with self.handle:
             self._parameter_overrides = self.handle.get_parameters(Parameter)
@@ -2120,7 +2122,7 @@ class Node(BaseNode):
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: GenericSubscriptionCallback[bytes],
+        callback: GenericSubscriptionCallbackUnion[bytes],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
@@ -2135,7 +2137,22 @@ class Node(BaseNode):
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: GenericSubscriptionCallback[MsgT],
+        callback: GenericSubscriptionCallbackUnion[MsgT],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        callback_group: Optional[CallbackGroup] = None,
+        event_callbacks: Optional[SubscriptionEventCallbacks] = None,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        raw: Literal[False],
+        content_filter_options: Optional[ContentFilterOptions] = None
+    ) -> Subscription[MsgT]: ...
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: SubscriptionCallbackUnion[MsgT],
         qos_profile: Union[QoSProfile, int],
         *,
         callback_group: Optional[CallbackGroup] = None,
@@ -2212,7 +2229,8 @@ class Node(BaseNode):
         try:
             subscription = Subscription(
                 subscription_object, msg_type,
-                topic, callback, callback_group, qos_profile, raw,
+                topic, callback, qos_profile, raw,
+                callback_group=callback_group,
                 event_callbacks=event_callbacks or SubscriptionEventCallbacks())
         except Exception:
             subscription_object.destroy_when_not_in_use()
@@ -2262,7 +2280,7 @@ class Node(BaseNode):
         client = Client(
             self.context,
             client_impl, srv_type, srv_name, qos_profile,
-            callback_group)
+            callback_group=callback_group)
         callback_group.add_entity(client)
         self._clients.append(client)
         self._wake_executor()
@@ -2272,7 +2290,7 @@ class Node(BaseNode):
         self,
         srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
-        callback: Callable[[SrvRequestT, SrvResponseT], SrvResponseT],
+        callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         callback_group: Optional[CallbackGroup] = None
@@ -2306,7 +2324,8 @@ class Node(BaseNode):
 
         service = Service(
             service_impl,
-            srv_type, srv_name, callback, callback_group, qos_profile)
+            srv_type, srv_name, callback, qos_profile,
+            callback_group=callback_group)
         callback_group.add_entity(service)
         self._services.append(service)
         self._wake_executor()
@@ -2315,7 +2334,7 @@ class Node(BaseNode):
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Optional[TimerCallbackType],
+        callback: Optional[TimerCallbackUnion],
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
@@ -2342,8 +2361,11 @@ class Node(BaseNode):
         if clock is None:
             clock = self._clock
         timer = Timer(
-            callback, callback_group, timer_period_nsec, clock, context=self.context,
-            autostart=autostart)
+            callback, timer_period_nsec, clock,
+            callback_group=callback_group,
+            context=self.context,
+            autostart=autostart
+        )
 
         callback_group.add_entity(timer)
         self._timers.append(timer)

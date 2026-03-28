@@ -30,13 +30,15 @@ from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
+from typing_extensions import Self
+
 # Left To Support Legacy TypeVars
 SrvType = TypeVar('SrvType')
 SrvTypeRequest = TypeVar('SrvTypeRequest')
 SrvTypeResponse = TypeVar('SrvTypeResponse')
 
 
-class Client(Generic[SrvRequestT, SrvResponseT]):
+class BaseClient(Generic[SrvRequestT, SrvResponseT]):
     def __init__(
         self,
         context: Context,
@@ -44,129 +46,12 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         qos_profile: QoSProfile,
-        callback_group: CallbackGroup
     ) -> None:
-        """
-        Create a container for a ROS service client.
-
-        .. warning:: Users should not create a service client with this constructor, instead they
-           should call :meth:`.Node.create_client`.
-
-        :param context: The context associated with the service client.
-        :param client_impl: :class:`_rclpy.Client` wrapping the underlying ``rcl_client_t`` object.
-        :param srv_type: The service type.
-        :param srv_name: The name of the service.
-        :param qos_profile: The quality of service profile to apply the service client.
-        :param callback_group: The callback group for the service client. If ``None``, then the
-            nodes default callback group is used.
-        """
         self.context = context
         self.__client = client_impl
         self.srv_type = srv_type
         self.srv_name = srv_name
         self.qos_profile = qos_profile
-        # Key is a sequence number, value is an instance of a Future
-        self._pending_requests: Dict[int, Future[SrvResponseT]] = {}
-        self.callback_group = callback_group
-        # True when the callback is ready to fire but has not been "taken" by an executor
-        self._executor_event = False
-
-        self._lock = threading.Lock()
-
-    def call(
-        self,
-        request: SrvRequestT,
-        timeout_sec: Optional[float] = None
-    ) -> Optional[SrvResponseT]:
-        """
-        Make a service request and wait for the result.
-
-        .. warning:: Do not call this method in a callback, or a deadlock or timeout may occur.
-
-        :param request: The service request.
-        :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
-        :return: The service response.
-        :raises: TypeError if the type of the passed request isn't an instance
-          of the Request type of the provided service when the client was
-          constructed.
-        :raises: TimeoutError if the response is not available within the timeout.
-        """
-        if not isinstance(request, self.srv_type.Request):
-            raise TypeError()
-
-        event = threading.Event()
-
-        def unblock(future: Future[SrvResponseT]) -> None:
-            nonlocal event
-            event.set()
-
-        future = self.call_async(request)
-        future.add_done_callback(unblock)
-
-        # Check future.done() before waiting on the event.
-        # The callback might have been added after the future is completed,
-        # resulting in the event never being set.
-        if not future.done():
-            if not event.wait(timeout_sec):
-                # Timed out. remove_pending_request() to free resources
-                self.remove_pending_request(future)
-                raise TimeoutError()
-
-        exception = future.exception()
-        if exception is not None:
-            raise exception
-        return future.result()
-
-    def call_async(self, request: SrvRequestT) -> Future[SrvResponseT]:
-        """
-        Make a service request and asynchronously get the result.
-
-        :param request: The service request.
-        :return: A future that completes when the request does.
-        :raises: TypeError if the type of the passed request isn't an instance
-          of the Request type of the provided service when the client was
-          constructed.
-        """
-        if not isinstance(request, self.srv_type.Request):
-            raise TypeError()
-
-        with self._lock:
-            with self.handle:
-                sequence_number = self.__client.send_request(request)
-            if sequence_number in self._pending_requests:
-                raise RuntimeError(f'Sequence ({sequence_number}) conflicts with pending request')
-
-            future = Future[SrvResponseT]()
-            self._pending_requests[sequence_number] = future
-
-            future.add_done_callback(self.remove_pending_request)
-
-        return future
-
-    def get_pending_request(self, sequence_number: int) -> Future[SrvResponseT]:
-        """
-        Get a future from the list of pending requests.
-
-        :param sequence_number: Number identifying the pending request.
-        :return: The future corresponding to the sequence_number.
-        :raises: KeyError if the sequence_number is not in the pending requests.
-        """
-        with self._lock:
-            return self._pending_requests[sequence_number]
-
-    def remove_pending_request(self, future: Future[SrvResponseT]) -> None:
-        """
-        Remove a future from the list of pending requests.
-
-        This prevents a future from receiving a response and executing its done callbacks.
-
-        :param future: A future returned from :meth:`call_async`
-        """
-        with self._lock:
-            for seq, req_future in self._pending_requests.items():
-                if future is req_future:
-                    del self._pending_requests[seq]
-                    break
 
     def service_is_ready(self) -> bool:
         """
@@ -176,27 +61,6 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         """
         with self.handle:
             return self.__client.service_server_is_available()
-
-    def wait_for_service(self, timeout_sec: Optional[float] = None) -> bool:
-        """
-        Wait for a service server to become ready.
-
-        Returns as soon as a server becomes ready or if the timeout expires.
-
-        :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
-        :return: ``True`` if server became ready while waiting or ``False`` on a timeout.
-        """
-        # TODO(sloretz) Return as soon as the service is available
-        # This is a temporary implementation. The sleep time is arbitrary.
-        # https://github.com/ros2/rclpy/issues/58
-        sleep_time = 0.25
-        if timeout_sec is None:
-            timeout_sec = float('inf')
-        while self.context.ok() and not self.service_is_ready() and timeout_sec > 0.0:
-            time.sleep(sleep_time)
-            timeout_sec -= sleep_time
-
-        return self.service_is_ready()
 
     def configure_introspection(
         self, clock: Clock,
@@ -239,7 +103,7 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         """
         self.__client.destroy_when_not_in_use()
 
-    def __enter__(self) -> 'Client[SrvRequestT, SrvResponseT]':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(
@@ -249,3 +113,159 @@ class Client(Generic[SrvRequestT, SrvResponseT]):
         exc_tb: Optional[TracebackType],
     ) -> None:
         self.destroy()
+
+
+class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResponseT]):
+    def __init__(
+        self,
+        context: Context,
+        client_impl: '_rclpy.Client[SrvRequestT, SrvResponseT]',
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+        srv_name: str,
+        qos_profile: QoSProfile,
+        *,
+        callback_group: CallbackGroup
+    ) -> None:
+        """
+        Create a container for a ROS service client.
+
+        .. warning:: Users should not create a service client with this constructor, instead they
+           should call :meth:`.Node.create_client`.
+
+        :param context: The context associated with the service client.
+        :param client_impl: :class:`_rclpy.Client` wrapping the underlying ``rcl_client_t`` object.
+        :param srv_type: The service type.
+        :param srv_name: The name of the service.
+        :param qos_profile: The quality of service profile to apply the service client.
+        :param callback_group: The callback group for the service client. If ``None``, then the
+            nodes default callback group is used.
+        """
+        super().__init__(
+            context=context,
+            client_impl=client_impl,
+            srv_type=srv_type,
+            srv_name=srv_name,
+            qos_profile=qos_profile
+        )
+        # Key is a sequence number, value is an instance of a Future
+        self._pending_requests: Dict[int, Future[SrvResponseT]] = {}
+        self.callback_group = callback_group
+        # True when the callback is ready to fire but has not been "taken" by an executor
+        self._executor_event = False
+
+        self._lock = threading.Lock()
+
+    def call(
+        self,
+        request: SrvRequestT,
+        timeout_sec: Optional[float] = None
+    ) -> Optional[SrvResponseT]:
+        """
+        Make a service request and wait for the result.
+
+        .. warning:: Do not call this method in a callback, or a deadlock or timeout may occur.
+
+        :param request: The service request.
+        :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
+        :return: The service response.
+        :raises: TypeError if the type of the passed request isn't an instance
+          of the Request type of the provided service when the client was
+          constructed.
+        :raises: TimeoutError if the response is not available within the timeout.
+        """
+        if not isinstance(request, self.srv_type.Request):
+            raise TypeError()
+
+        event = threading.Event()
+
+        def unblock(future: Future[SrvResponseT]) -> None:
+            event.set()
+
+        future = self.call_async(request)
+        future.add_done_callback(unblock)
+
+        # Check future.done() before waiting on the event.
+        # The callback might have been added after the future is completed,
+        # resulting in the event never being set.
+        if not future.done():
+            if not event.wait(timeout_sec):
+                # Timed out. remove_pending_request() to free resources
+                self.remove_pending_request(future)
+                raise TimeoutError()
+
+        exception = future.exception()
+        if exception is not None:
+            raise exception
+        return future.result()
+
+    def call_async(self, request: SrvRequestT) -> Future[SrvResponseT]:
+        """
+        Make a service request and asynchronously get the result.
+
+        :param request: The service request.
+        :return: A future that completes when the request does.
+        :raises: TypeError if the type of the passed request isn't an instance
+          of the Request type of the provided service when the client was
+          constructed.
+        """
+        if not isinstance(request, self.srv_type.Request):
+            raise TypeError()
+
+        with self._lock:
+            with self.handle:
+                sequence_number = self.handle.send_request(request)
+            if sequence_number in self._pending_requests:
+                raise RuntimeError(f'Sequence ({sequence_number}) conflicts with pending request')
+
+            future = Future[SrvResponseT]()
+            self._pending_requests[sequence_number] = future
+
+            future.add_done_callback(self.remove_pending_request)
+
+        return future
+
+    def get_pending_request(self, sequence_number: int) -> Future[SrvResponseT]:
+        """
+        Get a future from the list of pending requests.
+
+        :param sequence_number: Number identifying the pending request.
+        :return: The future corresponding to the sequence_number.
+        :raises: KeyError if the sequence_number is not in the pending requests.
+        """
+        with self._lock:
+            return self._pending_requests[sequence_number]
+
+    def remove_pending_request(self, future: Future[SrvResponseT]) -> None:
+        """
+        Remove a future from the list of pending requests.
+
+        This prevents a future from receiving a response and executing its done callbacks.
+
+        :param future: A future returned from :meth:`call_async`
+        """
+        with self._lock:
+            for seq, req_future in self._pending_requests.items():
+                if future is req_future:
+                    del self._pending_requests[seq]
+                    break
+
+    def wait_for_service(self, timeout_sec: Optional[float] = None) -> bool:
+        """
+        Wait for a service server to become ready.
+
+        Returns as soon as a server becomes ready or if the timeout expires.
+
+        :param timeout_sec: Seconds to wait. If ``None``, then wait forever.
+        :return: ``True`` if server became ready while waiting or ``False`` on a timeout.
+        """
+        # TODO(sloretz) Return as soon as the service is available
+        # This is a temporary implementation. The sleep time is arbitrary.
+        # https://github.com/ros2/rclpy/issues/58
+        sleep_time = 0.25
+        if timeout_sec is None:
+            timeout_sec = float('inf')
+        while self.context.ok() and not self.service_is_ready() and timeout_sec > 0.0:
+            time.sleep(sleep_time)
+            timeout_sec -= sleep_time
+
+        return self.service_is_ready()
