@@ -149,7 +149,8 @@ def test_subscription_callback_setter() -> None:
     assert sub._callback_type == Subscription.CallbackType.MessageOnly
 
     sub.callback = callback = lambda _, _2: None
-    assert sub._callback_type == Subscription.CallbackType.WithMessageInfo
+    assert sub._callback_type == \
+        Subscription.CallbackType.WithMessageInfo  # type: ignore[comparison-overlap]
 
     with pytest.raises(RuntimeError):
         sub.callback = lambda: None

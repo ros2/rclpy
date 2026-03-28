@@ -210,7 +210,6 @@ class TestFuture(unittest.TestCase):
         f: Future[str] = Future()
 
         async def coro() -> Any:
-            nonlocal f
             return await f
 
         c = coro()
@@ -225,7 +224,6 @@ class TestFuture(unittest.TestCase):
         f: Future[Any] = Future()
 
         async def coro() -> Any:
-            nonlocal f
             return await f
 
         c = coro()

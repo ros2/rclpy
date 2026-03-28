@@ -47,8 +47,10 @@ ActionClient::ActionClient(
   const rmw_qos_profile_t & result_service_qos,
   const rmw_qos_profile_t & cancel_service_qos,
   const rmw_qos_profile_t & feedback_topic_qos,
-  const rmw_qos_profile_t & status_topic_qos)
-: node_(node)
+  const rmw_qos_profile_t & status_topic_qos,
+  bool enable_feedback_msg_optimization)
+: node_(node),
+  enable_feedback_msg_optimization_(enable_feedback_msg_optimization)
 {
   action_type_support_ =
     static_cast<rosidl_action_type_support_t *>(common_get_type_support(pyaction_type));
@@ -288,6 +290,58 @@ ActionClient::configure_introspection(
   }
 }
 
+bool
+ActionClient::configure_feedback_subscription_filter_add_goal_id(py::bytes goal_id)
+{
+  std::lock_guard<std::mutex> lock(configure_feedback_sub_content_filter_mutex_);
+
+  if (!enable_feedback_msg_optimization_) {
+    return false;
+  }
+
+  std::string str_goal_id = static_cast<std::string>(goal_id);
+  const uint8_t * goal_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
+  rcl_ret_t ret = rcl_action_client_configure_feedback_subscription_filter_add_goal_id(
+    rcl_action_client_.get(), goal_id_array, str_goal_id.size());
+
+  if (RCL_RET_OK != ret) {
+    enable_feedback_msg_optimization_ = false;
+    std::string error_text{"Failed to add goal id to feedback subscription content filter: "};
+    error_text += rcl_get_error_string().str;
+    rcl_reset_error();
+    error_text += "\nFeedback message optimization is automatically disabled.";
+    throw rclpy::RCLError(error_text);
+  }
+
+  return ret == RCL_RET_OK;
+}
+
+bool
+ActionClient::configure_feedback_subscription_filter_remove_goal_id(py::bytes goal_id)
+{
+  std::lock_guard<std::mutex> lock(configure_feedback_sub_content_filter_mutex_);
+
+  if (!enable_feedback_msg_optimization_) {
+    return false;
+  }
+
+  std::string str_goal_id = static_cast<std::string>(goal_id);
+  const uint8_t * goal_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
+  rcl_ret_t ret = rcl_action_client_configure_feedback_subscription_filter_remove_goal_id(
+    rcl_action_client_.get(), goal_id_array, str_goal_id.size());
+
+  if (RCL_RET_OK != ret) {
+    enable_feedback_msg_optimization_ = false;
+    std::string error_text{"Failed to remove goal id from feedback subscription content filter: "};
+    error_text += rcl_get_error_string().str;
+    rcl_reset_error();
+    error_text += "\nFeedback message optimization is automatically disabled.";
+    throw rclpy::RCLError(error_text);
+  }
+
+  return ret == RCL_RET_OK;
+}
+
 void
 define_action_client(py::object module)
 {
@@ -295,7 +349,16 @@ define_action_client(py::object module)
   .def(
     py::init<Node &, py::object, const char *, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &,
-    const rmw_qos_profile_t &, const rmw_qos_profile_t &>())
+    const rmw_qos_profile_t &, const rmw_qos_profile_t &, bool>(),
+    py::arg("node"),
+    py::arg("action_type"),
+    py::arg("action_name"),
+    py::arg("goal_service_qos_profile"),
+    py::arg("result_service_qos_profile"),
+    py::arg("cancel_service_qos_profile"),
+    py::arg("feedback_sub_qos_profile"),
+    py::arg("status_sub_qos_profile"),
+    py::arg("enable_feedback_msg_optimization") = false)
   .def_property_readonly(
     "pointer", [](const ActionClient & action_client) {
       return reinterpret_cast<size_t>(action_client.rcl_ptr());
@@ -339,6 +402,14 @@ define_action_client(py::object module)
     "Take an action status response.")
   .def(
     "configure_introspection", &ActionClient::configure_introspection,
-    "Configure whether internal client introspection is enabled");
+    "Configure whether internal client introspection is enabled")
+  .def(
+    "configure_feedback_subscription_filter_add_goal_id",
+    &ActionClient::configure_feedback_subscription_filter_add_goal_id,
+    "Configure feedback subscription content filter to add a goal ID.")
+  .def(
+    "configure_feedback_subscription_filter_remove_goal_id",
+    &ActionClient::configure_feedback_subscription_filter_remove_goal_id,
+    "Configure feedback subscription content filter to remove a goal ID.");
 }
 }  // namespace rclpy

@@ -23,7 +23,7 @@ assert 'rclpy' not in sys.modules, 'rclpy should not have been imported before r
 
 # this will make the extensions load from the build folder
 import rpyutils  # noqa
-import test_rclpy  # noqa
+import test_rclpy  # type: ignore  # noqa
 
 
 def _custom_import(name: str, package: Optional[str] = None) -> ModuleType:

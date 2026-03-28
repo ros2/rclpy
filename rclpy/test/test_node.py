@@ -348,7 +348,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.get_subscriptions_info_by_topic('13')
             self.node.get_publishers_info_by_topic('13')
 
-    def test_get_clients_servers_info_by_service(self):
+    def test_get_clients_servers_info_by_service(self) -> None:
         service_name = 'test_service_endpoint_info'
         fq_service_name = '{namespace}/{name}'.format(namespace=TEST_NAMESPACE, name=service_name)
         # Lists should be empty
@@ -395,7 +395,7 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         self.node.create_service(
             Empty,
             service_name,
-            lambda msg: print(msg),
+            lambda req, res: res,
             qos_profile=qos_profile2
         )
         # Both lists should have at least one item
@@ -415,8 +415,8 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
 
         # Error cases
         with self.assertRaises(TypeError):
-            self.node.get_clients_info_by_service(1)
-            self.node.get_servers_info_by_service(1)
+            self.node.get_clients_info_by_service(1)  # type: ignore[arg-type]
+            self.node.get_servers_info_by_service(1)  # type: ignore[arg-type]
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_clients_info_by_service('13')
             self.node.get_servers_info_by_service('13')

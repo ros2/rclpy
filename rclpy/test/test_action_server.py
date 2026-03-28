@@ -166,7 +166,6 @@ class TestActionServer(unittest.TestCase):
         goal_order = 10
 
         def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
-            nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.ACCEPT
 
@@ -176,8 +175,6 @@ class TestActionServer(unittest.TestCase):
                                                                    Fibonacci.Result,
                                                                    Fibonacci.Feedback,
                                                                    Fibonacci.Impl]) -> None:
-            nonlocal goal_order
-            nonlocal goal_uuid
             nonlocal handle_accepted_callback_triggered
             handle_accepted_callback_triggered = True
             self.assertEqual(goal_handle.status, GoalStatus.STATUS_ACCEPTED)
@@ -208,7 +205,6 @@ class TestActionServer(unittest.TestCase):
         goal_order = 10
 
         def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
-            nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 
@@ -834,7 +830,6 @@ class TestActionServer(unittest.TestCase):
         goal_order = 10
 
         def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
-            nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 
@@ -893,7 +888,6 @@ class TestActionServer(unittest.TestCase):
         goal_order = 10
 
         def goal_callback(goal: Fibonacci.Goal) -> GoalResponse:
-            nonlocal goal_order
             self.assertEqual(goal.order, goal_order)
             return GoalResponse.REJECT
 

@@ -29,7 +29,7 @@ def wait_for_message(
     *,
     qos_profile: Union[QoSProfile, int] = 1,
     time_to_wait: Union[int, float] = -1
-) -> Union[Tuple[Literal[True], MsgT], Tuple[Literal[False], None]]:
+) -> Union[Tuple[Literal[True], Union[MsgT, bytes]], Tuple[Literal[False], None]]:
     """
     Wait for the next incoming message.
 

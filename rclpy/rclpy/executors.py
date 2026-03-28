@@ -57,7 +57,7 @@ from rclpy.subscription import Subscription
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.timer import Timer
-from rclpy.timer import TimerCallbackType
+from rclpy.timer import TimerCallbackUnion
 from rclpy.timer import TimerInfo
 from rclpy.type_support import Msg
 from rclpy.utilities import get_default_context
@@ -495,7 +495,7 @@ class Executor(ContextManager['Executor']):
                     actual_call_time=info['actual_call_time'],
                     clock_type=tmr.clock.clock_type)
 
-                def check_argument_type(callback_func: TimerCallbackType,
+                def check_argument_type(callback_func: TimerCallbackUnion,
                                         target_type: Type[TimerInfo]) -> Optional[str]:
                     sig = inspect.signature(callback_func)
                     for param in sig.parameters.values():
@@ -542,8 +542,8 @@ class Executor(ContextManager['Executor']):
                     return None
 
                 if sub._callback_type is Subscription.CallbackType.MessageOnly:
-                    msg_tuple: Union[tuple[Msg],
-                                     tuple[Msg, MessageInfo]] = (msg_info[0], )
+                    msg_tuple: Union[tuple[Msg | bytes],
+                                     tuple[Msg | bytes, MessageInfo]] = (msg_info[0], )
                 else:
                     msg_tuple = msg_info
 
