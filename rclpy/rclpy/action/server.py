@@ -219,6 +219,12 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
             if self._goal_handle is None:
                 return
 
+            if self._goal_handle.get_status() != GoalStatus.STATUS_EXECUTING:
+                self._action_server._logger.warning(
+                    'publish_feedback() called on a goal handle '
+                    'not in executing state, ignoring')
+                return
+
             # Populate the feedback message with metadata about this goal
             # and the user defined message
             feedback_message = self._action_server.action_type.Impl.FeedbackMessage()
@@ -229,6 +235,11 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
             self._action_server._handle.publish_feedback(feedback_message)
 
     def executing(self) -> None:
+        with self._lock:
+            if self._goal_handle is None:
+                return
+            if self._goal_handle.get_status() == GoalStatus.STATUS_EXECUTING:
+                return
         self._update_state(_rclpy.GoalEvent.EXECUTE)
 
     def succeed(self, response: Optional[ResultT] = None) -> None:

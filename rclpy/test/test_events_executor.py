@@ -315,6 +315,7 @@ class ActionServerTestNode(rclpy.node.Node):
 
     def _handle_accepted(self, goal_handle: FibonacciServerGoalHandle) -> None:
         self._goal_handle = goal_handle
+        self._goal_handle.executing()
         self._sequence = [0, 1]
         if self._got_goal_future is not None:
             self._got_goal_future.set_result(goal_handle.request)
