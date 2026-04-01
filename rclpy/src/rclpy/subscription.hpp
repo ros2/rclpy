@@ -53,7 +53,8 @@ public:
    */
   Subscription(
     Node & node, py::object pymsg_type, std::string topic,
-    py::object pyqos_profile, py::object content_filter_options = py::none());
+    py::object pyqos_profile, py::object content_filter_options = py::none(),
+    py::object acceptable_buffer_backends = py::none());
 
   /// Take a message and its metadata from a subscription
   /**
