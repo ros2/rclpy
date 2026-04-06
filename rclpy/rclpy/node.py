@@ -1946,17 +1946,17 @@ class Node:
             self.__waitables.remove(event_handler)
         self._wake_executor()
 
-    def _on_destroy_subscription(self, subscription: Subscription) -> None:
+    def _on_destroy_subscription(self, subscription: Subscription[Any]) -> None:
         self._subscriptions.remove(subscription)
         for event_handler in subscription.event_handlers:
             self.__waitables.remove(event_handler)
         self._wake_executor()
 
-    def _on_destroy_client(self, client: BaseClient) -> None:
+    def _on_destroy_client(self, client: BaseClient[Any, Any]) -> None:
         self._clients.remove(client)
         self._wake_executor()
 
-    def _on_destroy_service(self, service: BaseService) -> None:
+    def _on_destroy_service(self, service: BaseService[Any, Any]) -> None:
         self._services.remove(service)
         self._wake_executor()
 

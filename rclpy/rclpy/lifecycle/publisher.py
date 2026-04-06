@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Generic, Optional, Tuple, Type, TYPE_CHECKING, TypedDict, Union
+from collections.abc import Callable
+from typing import Generic, Optional, Tuple, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import PublisherEventCallbacks

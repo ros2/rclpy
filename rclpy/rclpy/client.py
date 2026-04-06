@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 import threading
 import time
 from types import TracebackType
-from typing import Callable, Dict
+from typing import Dict
 from typing import Generic
 from typing import Optional
 from typing import Type

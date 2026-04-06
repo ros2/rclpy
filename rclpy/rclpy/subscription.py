@@ -323,7 +323,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
             topic=topic,
             callback=callback,
             qos_profile=qos_profile,
-            raw=raw,
+            raw=raw
         )
         self._on_destroy = on_destroy
         self.callback_group = callback_group
