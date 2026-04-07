@@ -172,6 +172,9 @@ class Future(Generic[T]):
             # No executor, call right away
             for callback in callbacks:
                 if isinstance(callback, Task):
+                    warnings.warn(
+                        'Dropping task awaiting future: '
+                        'executor reference could not be resolved')
                     continue
                 try:
                     callback(self)
@@ -222,7 +225,10 @@ class Future(Generic[T]):
                 executor = self._executor()
                 if executor is not None:
                     executor._call_task_in_next_spin(task)
-
+                else:
+                    warnings.warn(
+                        'Dropping task awaiting future: '
+                        'executor reference could not be resolved')
             else:
                 self._callbacks.append(task)
 
@@ -370,6 +376,7 @@ class Task(Future[T]):
         elif future_executor is not executor:
             raise RuntimeError('A task can only await futures associated with the same executor')
 
+        # Register the task to resume when the future is done or cancelled
         future._add_waiting_task(self)
 
     def _complete_task(self) -> None:
