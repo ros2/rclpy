@@ -489,7 +489,7 @@ class TestExecutor(unittest.TestCase):
         """Exception in a coroutine after awaiting a future must propagate."""
         self.assertIsNotNone(self.node.handle)
         # EventsExecutor excluded - segfaults on exception propagation (#1641)
-        for cls in [SingleThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
