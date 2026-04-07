@@ -525,10 +525,8 @@ class TestExecutor(unittest.TestCase):
                 first_fut = executor.create_future()
                 second_fut = executor.create_future()
                 third_fut = executor.create_future()
-                resumed = False
 
                 async def coro() -> None:
-                    nonlocal resumed
                     first_fut.set_result(None)
                     await second_fut
                     third_fut.set_result(None)
