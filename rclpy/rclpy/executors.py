@@ -743,6 +743,10 @@ class Executor(ContextManager['Executor']):
                 ready_tasks_count = len(self._ready_tasks)
             for _ in range(ready_tasks_count):
                 task = self._ready_tasks.popleft()
+                # Skip tasks that were cancelled or set done while awaiting a
+                # future and got rescheduled when the future completed
+                if task.cancelled() or task.done():
+                    continue
                 task_data = self._pending_tasks[task]
                 node = task_data.source_node
                 if node is None or node in nodes_to_use:

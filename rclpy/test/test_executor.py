@@ -485,6 +485,35 @@ class TestExecutor(unittest.TestCase):
                 self.assertTrue(future1.done())
                 self.assertEqual('Sentinel Result 1', future1.result())
 
+    def test_coroutine_exception_after_await(self) -> None:
+        """Exception in a coroutine after awaiting a future must propagate."""
+        self.assertIsNotNone(self.node.handle)
+        # EventsExecutor excluded - segfaults on exception propagation (#1641)
+        for cls in [SingleThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+
+                first_fut = executor.create_future()
+                second_fut = executor.create_future()
+
+                async def coro_that_raises() -> None:
+                    first_fut.set_result(None)
+                    await second_fut
+                    raise RuntimeError('Expected error after await')
+
+                task = executor.create_task(coro_that_raises)
+
+                executor.spin_until_future_complete(first_fut, timeout_sec=5)
+                self.assertFalse(task.done())
+                # Resolve the inner future — triggers resume
+                second_fut.set_result(None)
+
+                # The resumed coroutine should raise, and spin must propagate it
+                with self.assertRaises(RuntimeError) as cm:
+                    executor.spin_until_future_complete(task, timeout_sec=5)
+                self.assertIn('Expected error after await', str(cm.exception))
+
     def test_create_task_during_spin(self) -> None:
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, EventsExecutor]:
