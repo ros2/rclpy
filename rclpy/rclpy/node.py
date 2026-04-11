@@ -1836,6 +1836,10 @@ class BaseNode(ABC):
             no_mangle,
             _rclpy.rclpy_get_servers_info_by_service)
 
+    def destroy_node(self) -> None:
+        self._parameter_event_publisher = None
+        self.handle.destroy_when_not_in_use()
+
 
 class Node(BaseNode):
     """
@@ -2542,10 +2546,6 @@ class Node(BaseNode):
         """
         self._context.untrack_node(self)
 
-        # Drop extra reference to parameter event publisher.
-        # It will be destroyed with other publishers below.
-        self._parameter_event_publisher = None
-
         # Destroy dependent items eagerly to work around a possible hang
         # https://github.com/ros2/build_cop/issues/248
         while self._publishers:
@@ -2561,7 +2561,7 @@ class Node(BaseNode):
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
         self._type_description_service.destroy()
-        self.handle.destroy_when_not_in_use()
+        super().destroy_node()
         self._wake_executor()
 
     def wait_for_node(
