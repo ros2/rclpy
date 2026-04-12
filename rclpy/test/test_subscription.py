@@ -486,6 +486,20 @@ def test_subscription_content_filter_reset(test_node: Node) -> None:
     assert len(received_msgs) == expected_msg_count
 
 
+def test_subscription_direct_destroy(test_node: Node) -> None:
+    sub = test_node.create_subscription(
+        msg_type=Empty,
+        topic='test_direct_destroy_topic',
+        callback=lambda msg: None,
+        qos_profile=10)
+
+    assert sub in list(test_node.subscriptions)
+    sub.destroy()
+    assert sub not in list(test_node.subscriptions)
+    sub.destroy()
+    assert not test_node.destroy_subscription(sub)
+
+
 def test_subscription_content_filter_at_create_subscription(test_node: Node) -> None:
 
     topic_name = '/topic'

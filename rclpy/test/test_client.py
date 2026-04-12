@@ -309,6 +309,15 @@ class TestClient(unittest.TestCase):
                 finally:
                     executor.shutdown()
 
+    def test_client_direct_destroy(self) -> None:
+        cli = self.node.create_client(Empty, '/test_direct_destroy')
+
+        self.assertIn(cli, list(self.node.clients))
+        cli.destroy()
+        self.assertNotIn(cli, list(self.node.clients))
+        cli.destroy()
+        self.assertFalse(self.node.destroy_client(cli))
+
 
 if __name__ == '__main__':
     unittest.main()

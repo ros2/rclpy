@@ -138,6 +138,15 @@ class TestPublisher(unittest.TestCase):
         with self.node.create_publisher(BasicTypes, TEST_TOPIC, 10) as pub:
             self.assertEqual(pub.logger_name, 'node')
 
+    def test_direct_destroy(self) -> None:
+        pub = self.node.create_publisher(BasicTypes, 'topic', 1)
+
+        self.assertIn(pub, list(self.node.publishers))
+        pub.destroy()
+        self.assertNotIn(pub, list(self.node.publishers))
+        pub.destroy()
+        self.assertFalse(self.node.destroy_publisher(pub))
+
 
 def test_publisher_context_manager() -> None:
     rclpy.init()

@@ -50,7 +50,7 @@ from rcl_interfaces.srv import ListParameters
 from rclpy.callback_groups import CallbackGroup
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.client import Client
+from rclpy.client import BaseClient, Client
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
@@ -85,6 +85,7 @@ from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.qos_overriding_options import _declare_qos_parameters
 from rclpy.qos_overriding_options import QoSOverridingOptions
+from rclpy.service import BaseService
 from rclpy.service import Service
 from rclpy.service import ServiceCallbackUnion
 from rclpy.subscription import GenericSubscriptionCallbackUnion
@@ -92,7 +93,7 @@ from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.time_source import TimeSource
-from rclpy.timer import Rate
+from rclpy.timer import BaseTimer, Rate
 from rclpy.timer import Timer
 from rclpy.timer import TimerCallbackUnion
 from rclpy.type_description_service import TypeDescriptionService
@@ -1622,6 +1623,7 @@ class Node:
         try:
             publisher = publisher_class(
                 publisher_object, msg_type, topic, qos_profile,
+                on_destroy=self._on_destroy_publisher,
                 event_callbacks=event_callbacks or PublisherEventCallbacks(),
                 callback_group=callback_group)
         except Exception:
@@ -1755,6 +1757,7 @@ class Node:
             subscription = Subscription(
                 subscription_object, msg_type,
                 topic, callback, qos_profile, raw,
+                on_destroy=self._on_destroy_subscription,
                 callback_group=callback_group,
                 event_callbacks=event_callbacks or SubscriptionEventCallbacks())
         except Exception:
@@ -1805,6 +1808,7 @@ class Node:
         client = Client(
             self.context,
             client_impl, srv_type, srv_name, qos_profile,
+            on_destroy=self._on_destroy_client,
             callback_group=callback_group)
         callback_group.add_entity(client)
         self._clients.append(client)
@@ -1850,6 +1854,7 @@ class Node:
         service = Service(
             service_impl,
             srv_type, srv_name, callback, qos_profile,
+            on_destroy=self._on_destroy_service,
             callback_group=callback_group)
         callback_group.add_entity(service)
         self._services.append(service)
@@ -1888,6 +1893,7 @@ class Node:
         timer = Timer(
             callback, timer_period_nsec, clock,
             callback_group=callback_group,
+            on_destroy=self._on_destroy_timer,
             context=self.context,
             autostart=autostart
         )
@@ -1941,6 +1947,30 @@ class Node:
         timer = self.create_timer(period, callback, group, clock)
         return Rate(timer, context=self.context)
 
+    def _on_destroy_publisher(self, publisher: Publisher) -> None:
+        self._publishers.remove(publisher)
+        for event_handler in publisher.event_handlers:
+            self.__waitables.remove(event_handler)
+        self._wake_executor()
+
+    def _on_destroy_subscription(self, subscription: Subscription[Any]) -> None:
+        self._subscriptions.remove(subscription)
+        for event_handler in subscription.event_handlers:
+            self.__waitables.remove(event_handler)
+        self._wake_executor()
+
+    def _on_destroy_client(self, client: BaseClient[Any, Any]) -> None:
+        self._clients.remove(client)
+        self._wake_executor()
+
+    def _on_destroy_service(self, service: BaseService[Any, Any]) -> None:
+        self._services.remove(service)
+        self._wake_executor()
+
+    def _on_destroy_timer(self, timer: BaseTimer) -> None:
+        self._timers.remove(timer)
+        self._wake_executor()
+
     def destroy_publisher(self, publisher: Publisher[Any]) -> bool:
         """
         Destroy a publisher created by the node.
@@ -1948,14 +1978,7 @@ class Node:
         :return: ``True`` if successful, ``False`` otherwise.
         """
         if publisher in self._publishers:
-            self._publishers.remove(publisher)
-            for event_handler in publisher.event_handlers:
-                self.__waitables.remove(event_handler)
-            try:
-                publisher.destroy()
-            except InvalidHandle:
-                return False
-            self._wake_executor()
+            publisher.destroy()
             return True
         return False
 
@@ -1966,14 +1989,7 @@ class Node:
         :return: ``True`` if successful, ``False`` otherwise.
         """
         if subscription in self._subscriptions:
-            self._subscriptions.remove(subscription)
-            for event_handler in subscription.event_handlers:
-                self.__waitables.remove(event_handler)
-            try:
-                subscription.destroy()
-            except InvalidHandle:
-                return False
-            self._wake_executor()
+            subscription.destroy()
             return True
         return False
 
@@ -1984,12 +2000,7 @@ class Node:
         :return: ``True`` if successful, ``False`` otherwise.
         """
         if client in self._clients:
-            self._clients.remove(client)
-            try:
-                client.destroy()
-            except InvalidHandle:
-                return False
-            self._wake_executor()
+            client.destroy()
             return True
         return False
 
@@ -2000,12 +2011,7 @@ class Node:
         :return: ``True`` if successful, ``False`` otherwise.
         """
         if service in self._services:
-            self._services.remove(service)
-            try:
-                service.destroy()
-            except InvalidHandle:
-                return False
-            self._wake_executor()
+            service.destroy()
             return True
         return False
 
@@ -2016,12 +2022,7 @@ class Node:
         :return: ``True`` if successful, ``False`` otherwise.
         """
         if timer in self._timers:
-            self._timers.remove(timer)
-            try:
-                timer.destroy()
-            except InvalidHandle:
-                return False
-            self._wake_executor()
+            timer.destroy()
             return True
         return False
 
@@ -2085,7 +2086,6 @@ class Node:
             self.destroy_timer(self._timers[0])
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
-        self._type_description_service.destroy()
         self.__node.destroy_when_not_in_use()
         self._wake_executor()
 

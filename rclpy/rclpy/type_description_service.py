@@ -77,12 +77,6 @@ class TypeDescriptionService:
         if self.enabled:
             self._start_service()
 
-    def destroy(self) -> None:
-        # Required manual destruction because this is not managed by rclpy.Service
-        if self._type_description_srv is not None:
-            self._type_description_srv.destroy_when_not_in_use()
-            self._type_description_srv = None
-
     def _start_service(self) -> None:
         node = self._get_node()
         self._type_description_srv = _rclpy.TypeDescriptionService(node.handle)
@@ -94,6 +88,7 @@ class TypeDescriptionService:
             srv_type=GetTypeDescription,
             srv_name=self.service_name,
             callback=self._service_callback,
+            on_destroy=node._on_destroy_service,
             callback_group=node.default_callback_group,
             qos_profile=qos_profile_services_default)
         node.default_callback_group.add_entity(service)

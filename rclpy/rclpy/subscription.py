@@ -84,6 +84,8 @@ class BaseSubscription(Generic[MsgT]):
          callback: GenericSubscriptionCallbackUnion[bytes],
          qos_profile: QoSProfile,
          raw: Literal[True],
+         *,
+         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
     ) -> None: ...
 
     @overload
@@ -95,6 +97,8 @@ class BaseSubscription(Generic[MsgT]):
          callback: GenericSubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: Literal[False],
+         *,
+         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
     ) -> None: ...
 
     @overload
@@ -106,6 +110,8 @@ class BaseSubscription(Generic[MsgT]):
          callback: SubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: bool,
+         *,
+         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
     ) -> None: ...
 
     def __init__(
@@ -116,6 +122,8 @@ class BaseSubscription(Generic[MsgT]):
          callback: SubscriptionCallbackUnion[MsgT],
          qos_profile: QoSProfile,
          raw: bool,
+         *,
+         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
     ) -> None:
         self.__subscription = subscription_impl
         self.msg_type = msg_type
@@ -123,6 +131,8 @@ class BaseSubscription(Generic[MsgT]):
         self.callback = callback
         self.qos_profile = qos_profile
         self.raw = raw
+        self._on_destroy = on_destroy
+        self._destroyed = False
 
     def get_publisher_count(self) -> int:
         """Get the number of publishers that this subscription has."""
@@ -134,6 +144,16 @@ class BaseSubscription(Generic[MsgT]):
         return self.__subscription
 
     def destroy(self) -> None:
+        """Destroy the subscription, notifying the owning node and releasing the handle."""
+        if self._destroyed:
+            return
+        self._destroyed = True
+        if self._on_destroy is not None:
+            self._on_destroy(self)
+            self._on_destroy = None
+        self._destroy()
+
+    def _destroy(self) -> None:
         self.handle.destroy_when_not_in_use()
 
     @property
@@ -231,6 +251,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: Literal[True],
          *,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -245,6 +266,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: Literal[False],
          *,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -259,6 +281,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: bool,
          *,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None: ...
@@ -272,6 +295,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: bool,
          *,
+         on_destroy: Optional[Callable[['Subscription[MsgT]'], None]] = None,
          callback_group: CallbackGroup,
          event_callbacks: SubscriptionEventCallbacks,
     ) -> None:
@@ -301,6 +325,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
             qos_profile=qos_profile,
             raw=raw
         )
+        self._on_destroy = on_destroy
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor
         self._executor_event = False
@@ -308,13 +333,7 @@ class Subscription(BaseSubscription[MsgT], Generic[MsgT]):
         self.event_handlers = event_callbacks.create_event_handlers(
             callback_group, subscription_impl, topic)
 
-    def destroy(self) -> None:
-        """
-        Destroy a container for a ROS subscription.
-
-        .. warning:: Users should not destroy a subscription with this method, instead they
-           should call :meth:`.Node.destroy_subscription`.
-        """
+    def _destroy(self) -> None:
         for handler in self.event_handlers:
             handler.destroy()
-        super().destroy()
+        super()._destroy()

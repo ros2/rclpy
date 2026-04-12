@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 import threading
 import time
 from types import TracebackType
@@ -46,12 +47,16 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
         srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         qos_profile: QoSProfile,
+        *,
+        on_destroy: Optional[Callable[['BaseClient[SrvRequestT, SrvResponseT]'], None]] = None,
     ) -> None:
         self.context = context
         self.__client = client_impl
         self.srv_type = srv_type
         self.srv_name = srv_name
         self.qos_profile = qos_profile
+        self._on_destroy = on_destroy
+        self._destroyed = False
 
     def service_is_ready(self) -> bool:
         """
@@ -95,13 +100,17 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
             return self.__client.get_logger_name()
 
     def destroy(self) -> None:
-        """
-        Destroy a container for a ROS service client.
+        """Destroy the client, notifying the owning node and releasing the handle."""
+        if self._destroyed:
+            return
+        self._destroyed = True
+        if self._on_destroy is not None:
+            self._on_destroy(self)
+            self._on_destroy = None
+        self._destroy()
 
-        .. warning:: Users should not destroy a service client with this destructor, instead they
-           should call :meth:`.Node.destroy_client`.
-        """
-        self.__client.destroy_when_not_in_use()
+    def _destroy(self) -> None:
+        self.handle.destroy_when_not_in_use()
 
     def __enter__(self) -> Self:
         return self
@@ -124,6 +133,7 @@ class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResp
         srv_name: str,
         qos_profile: QoSProfile,
         *,
+        on_destroy: Optional[Callable[['BaseClient[SrvRequestT, SrvResponseT]'], None]] = None,
         callback_group: CallbackGroup
     ) -> None:
         """
@@ -145,7 +155,8 @@ class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResp
             client_impl=client_impl,
             srv_type=srv_type,
             srv_name=srv_name,
-            qos_profile=qos_profile
+            qos_profile=qos_profile,
+            on_destroy=on_destroy
         )
         # Key is a sequence number, value is an instance of a Future
         self._pending_requests: Dict[int, Future[SrvResponseT]] = {}

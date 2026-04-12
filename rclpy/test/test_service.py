@@ -115,6 +115,19 @@ def test_service_context_manager() -> None:
             assert srv.service_name == '/empty_service'
 
 
+def test_service_direct_destroy(test_node: Node) -> None:
+    srv = test_node.create_service(
+        srv_type=Empty,
+        srv_name='test_direct_destroy_srv',
+        callback=lambda _req, res: res)
+
+    assert srv in list(test_node.services)
+    srv.destroy()
+    assert srv not in list(test_node.services)
+    srv.destroy()
+    assert not test_node.destroy_service(srv)
+
+
 def test_set_on_new_request_callback(test_node: Node) -> None:
     cli = test_node.create_client(Empty, '/service')
     srv = test_node.create_service(Empty, '/service', lambda req, res: res)
