@@ -53,13 +53,17 @@ class BaseService(Generic[SrvRequestT, SrvResponseT]):
         srv_type: type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
-        qos_profile: QoSProfile
+        qos_profile: QoSProfile,
+        *,
+        on_destroy: Optional[Callable[['BaseService[SrvRequestT, SrvResponseT]'], None]] = None,
     ) -> None:
         self.__service = service_impl
         self.srv_type = srv_type
         self.srv_name = srv_name
         self.callback = callback
         self.qos_profile = qos_profile
+        self._on_destroy = on_destroy
+        self._destroyed = False
 
     def _send_response(
         self,
@@ -109,13 +113,17 @@ class BaseService(Generic[SrvRequestT, SrvResponseT]):
             return self.__service.get_logger_name()
 
     def destroy(self) -> None:
-        """
-        Destroy a container for a ROS service server.
+        """Destroy the service, notifying the owning node and releasing the handle."""
+        if self._destroyed:
+            return
+        self._destroyed = True
+        if self._on_destroy is not None:
+            self._on_destroy(self)
+            self._on_destroy = None
+        self._destroy()
 
-        .. warning:: Users should not destroy a service server with this destructor, instead they
-           should call :meth:`.Node.destroy_service`.
-        """
-        self.__service.destroy_when_not_in_use()
+    def _destroy(self) -> None:
+        self.handle.destroy_when_not_in_use()
 
     def __enter__(self) -> Self:
         return self
@@ -138,6 +146,7 @@ class Service(BaseService[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvRe
         callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         qos_profile: QoSProfile,
         *,
+        on_destroy: Optional[Callable[['Service[SrvRequestT, SrvResponseT]'], None]] = None,
         callback_group: CallbackGroup
     ) -> None:
         """
@@ -160,7 +169,8 @@ class Service(BaseService[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvRe
             srv_type=srv_type,
             srv_name=srv_name,
             callback=callback,
-            qos_profile=qos_profile
+            qos_profile=qos_profile,
+            on_destroy=on_destroy
         )
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor

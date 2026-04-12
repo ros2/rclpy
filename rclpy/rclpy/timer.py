@@ -81,6 +81,7 @@ class BaseTimer:
         timer_period_ns: int,
         clock: Clock,
         *,
+        on_destroy: Optional[Callable[['BaseTimer'], None]] = None,
         context: Optional[Context] = None,
         autostart: bool = True
     ) -> None:
@@ -92,18 +93,24 @@ class BaseTimer:
             self.__timer = _rclpy.Timer(
                 self._clock.handle, self._context.handle, timer_period_ns, autostart)
         self.callback = callback
+        self._on_destroy = on_destroy
+        self._destroyed = False
 
     @property
     def handle(self) -> _rclpy.Timer:
         return self.__timer
 
     def destroy(self) -> None:
-        """
-        Destroy a container for a ROS timer.
+        """Destroy the timer, notifying the owning node and releasing the handle."""
+        if self._destroyed:
+            return
+        self._destroyed = True
+        if self._on_destroy is not None:
+            self._on_destroy(self)
+            self._on_destroy = None
+        self._destroy()
 
-        .. warning:: Users should not destroy a timer with this method, instead they should
-           call :meth:`.Node.destroy_timer`.
-        """
+    def _destroy(self) -> None:
         self.__timer.destroy_when_not_in_use()
 
     @property
@@ -166,6 +173,7 @@ class Timer(BaseTimer):
         timer_period_ns: int,
         clock: Clock,
         *,
+        on_destroy: Optional[Callable[['BaseTimer'], None]] = None,
         context: Optional[Context] = None,
         autostart: bool = True,
         callback_group: Optional[CallbackGroup] = None
@@ -195,7 +203,8 @@ class Timer(BaseTimer):
             timer_period_ns=timer_period_ns,
             clock=clock,
             context=context,
-            autostart=autostart
+            autostart=autostart,
+            on_destroy=on_destroy
         )
         self.callback_group = callback_group
         # True when the callback is ready to fire but has not been "taken" by an executor

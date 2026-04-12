@@ -773,6 +773,127 @@ class TestActionServer(unittest.TestCase):
         finally:
             action_server.destroy()
 
+    def test_publish_feedback_not_executing(self) -> None:
+        """Calling publish_feedback on an accepted (not executing) goal should be ignored."""
+        stored_goal_handle: Optional[ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                                      Fibonacci.Feedback, Fibonacci.Impl]] = None
+
+        def handle_accepted_callback(
+            goal_handle: ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                          Fibonacci.Feedback, Fibonacci.Impl]
+        ) -> None:
+            nonlocal stored_goal_handle
+            stored_goal_handle = goal_handle
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            handle_accepted_callback=handle_accepted_callback,
+        )
+
+        goal_msg = Fibonacci.Impl.SendGoalService.Request()
+        goal_msg.goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        self.mock_action_client.send_goal(goal_msg)
+        self.timed_spin(1.0)
+
+        self.assertIsNotNone(stored_goal_handle)
+        assert stored_goal_handle is not None
+        self.assertEqual(stored_goal_handle.status, GoalStatus.STATUS_ACCEPTED)
+
+        # publish_feedback on accepted goal should not raise, just be ignored
+        feedback = Fibonacci.Feedback()
+        feedback.sequence = [1, 1, 2, 3]
+        stored_goal_handle.publish_feedback(feedback)
+        self.timed_spin(0.5)
+
+        self.assertIsNone(self.mock_action_client.feedback_msg)
+        stored_goal_handle.executing()
+        stored_goal_handle.abort()
+        action_server.destroy()
+
+    def test_publish_feedback_executing(self) -> None:
+        """Calling publish_feedback on an executing goal should publish normally."""
+        stored_goal_handle: Optional[ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                                      Fibonacci.Feedback, Fibonacci.Impl]] = None
+
+        def handle_accepted_callback(
+            goal_handle: ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                          Fibonacci.Feedback, Fibonacci.Impl]
+        ) -> None:
+            nonlocal stored_goal_handle
+            goal_handle.executing()
+            stored_goal_handle = goal_handle
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            handle_accepted_callback=handle_accepted_callback,
+        )
+
+        goal_msg = Fibonacci.Impl.SendGoalService.Request()
+        goal_msg.goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        self.mock_action_client.send_goal(goal_msg)
+        self.timed_spin(1.0)
+
+        self.assertIsNotNone(stored_goal_handle)
+        assert stored_goal_handle is not None
+        self.assertEqual(stored_goal_handle.status, GoalStatus.STATUS_EXECUTING)
+
+        feedback = Fibonacci.Feedback()
+        feedback.sequence = [1, 1, 2, 3]
+        stored_goal_handle.publish_feedback(feedback)
+        self.timed_spin(0.5)
+
+        self.assertIsNotNone(self.mock_action_client.feedback_msg)
+        assert self.mock_action_client.feedback_msg is not None
+        self.assertEqual(
+            [1, 1, 2, 3],
+            self.mock_action_client.feedback_msg.feedback.sequence.tolist())
+        stored_goal_handle.succeed()
+        action_server.destroy()
+
+    def test_publish_feedback_after_succeed(self) -> None:
+        """Calling publish_feedback after succeed should be ignored."""
+        stored_goal_handle: Optional[ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                                      Fibonacci.Feedback, Fibonacci.Impl]] = None
+
+        def handle_accepted_callback(
+            goal_handle: ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
+                                          Fibonacci.Feedback, Fibonacci.Impl]
+        ) -> None:
+            nonlocal stored_goal_handle
+            goal_handle.executing()
+            stored_goal_handle = goal_handle
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            handle_accepted_callback=handle_accepted_callback,
+        )
+
+        goal_msg = Fibonacci.Impl.SendGoalService.Request()
+        goal_msg.goal_id = UUID(uuid=list(uuid.uuid4().bytes))
+        self.mock_action_client.send_goal(goal_msg)
+        self.timed_spin(1.0)
+
+        self.assertIsNotNone(stored_goal_handle)
+        assert stored_goal_handle is not None
+
+        stored_goal_handle.succeed()
+        self.assertEqual(stored_goal_handle.status, GoalStatus.STATUS_SUCCEEDED)
+
+        # publish_feedback after terminal state should not raise, just be ignored
+        feedback = Fibonacci.Feedback()
+        feedback.sequence = [1, 1, 2, 3]
+        stored_goal_handle.publish_feedback(feedback)
+        self.timed_spin(0.5)
+
+        self.assertIsNone(self.mock_action_client.feedback_msg)
+        action_server.destroy()
+
     def test_without_execute_cb(self) -> None:
         # Just like test_execute_succeed, but without an execute callback
         # Goal handle is stored and succeeded from outside the execute callback
