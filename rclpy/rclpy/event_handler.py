@@ -37,6 +37,30 @@ QoSPublisherEventType: TypeAlias = _rclpy.rcl_publisher_event_type_t
 QoSSubscriptionEventType: TypeAlias = _rclpy.rcl_subscription_event_type_t
 
 
+def publisher_event_type_is_supported(
+    event_type: QoSPublisherEventType,
+) -> bool:
+    """
+    Check if a publisher event type is supported by the active RMW implementation.
+
+    :param event_type: The publisher event type to check.
+    :return: True if the event type is supported, False otherwise.
+    """
+    return _rclpy.publisher_event_type_is_supported(event_type)
+
+
+def subscription_event_type_is_supported(
+    event_type: QoSSubscriptionEventType,
+) -> bool:
+    """
+    Check if a subscription event type is supported by the active RMW implementation.
+
+    :param event_type: The subscription event type to check.
+    :return: True if the event type is supported, False otherwise.
+    """
+    return _rclpy.subscription_event_type_is_supported(event_type)
+
+
 # Payload type for Subscription Deadline callback.
 QoSRequestedDeadlineMissedInfo: TypeAlias = _rclpy.rmw_requested_deadline_missed_status_t
 
