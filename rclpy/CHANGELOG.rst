@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+10.0.9 (2026-04-14)
+-------------------
+
+* Streamline entity destroy (`#1629 <https://github.com/ros2/rclpy/issues/1629>`_)
+
+* Contributors: Nadav Elkabets
+
 10.0.8 (2026-04-09)
 -------------------
 * Add acceptable_buffer_backends as subscription option in rclpy (`#1628 <https://github.com/ros2/rclpy/issues/1628>`_)

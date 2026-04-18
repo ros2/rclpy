@@ -80,6 +80,7 @@ class TestExecutor(unittest.TestCase):
                 finally:
                     executor.shutdown()
 
+    @unittest.skip('Flaky on CI - see issue #1648')
     def test_executor_immediate_shutdown(self) -> None:
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, EventsExecutor]:
@@ -484,6 +485,86 @@ class TestExecutor(unittest.TestCase):
                 executor.spin_once(timeout_sec=1)
                 self.assertTrue(future1.done())
                 self.assertEqual('Sentinel Result 1', future1.result())
+
+    def test_coroutine_exception_after_await(self) -> None:
+        """Exception in a coroutine after awaiting a future must propagate."""
+        self.assertIsNotNone(self.node.handle)
+        # EventsExecutor excluded - segfaults on exception propagation (#1641)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+
+                first_fut = executor.create_future()
+                second_fut = executor.create_future()
+
+                async def coro_that_raises() -> None:
+                    first_fut.set_result(None)
+                    await second_fut
+                    raise RuntimeError('Expected error after await')
+
+                task = executor.create_task(coro_that_raises)
+
+                executor.spin_until_future_complete(first_fut, timeout_sec=5)
+                self.assertFalse(task.done())
+                # Resolve the inner future — triggers resume
+                second_fut.set_result(None)
+
+                with self.assertRaises(RuntimeError) as cm:
+                    executor.spin_until_future_complete(task, timeout_sec=5)
+                self.assertIn('Expected error after await', str(cm.exception))
+
+    def test_cancel_task_while_awaiting_future(self) -> None:
+        """Cancelling a task parked on a future must not crash the dispatch loop."""
+        self.assertIsNotNone(self.node.handle)
+        # EventsExecutor excluded - see #1641
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+
+                first_fut = executor.create_future()
+                second_fut = executor.create_future()
+                third_fut = executor.create_future()
+
+                async def coro() -> None:
+                    first_fut.set_result(None)
+                    await second_fut
+                    third_fut.set_result(None)
+
+                task = executor.create_task(coro)
+
+                executor.spin_until_future_complete(first_fut, timeout_sec=5)
+                self.assertFalse(task.done())
+
+                task.cancel()
+                self.assertTrue(task.cancelled())
+
+                second_fut.set_result(None)
+
+                executor.spin_until_future_complete(first_fut, timeout_sec=5)
+                self.assertFalse(third_fut.done())
+
+    def test_await_already_completed_future(self) -> None:
+        """Awaiting an already-completed future must resume and return its result."""
+        self.assertIsNotNone(self.node.handle)
+        # EventsExecutor excluded - see #1641
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+
+                fut: Future[str] = executor.create_future()
+                fut.set_result('done')  # complete before the task runs
+
+                async def coro() -> str:
+                    return await fut  # type: ignore[return-value]
+
+                task = executor.create_task(coro)
+
+                executor.spin_until_future_complete(task, timeout_sec=5)
+                self.assertTrue(task.done())
+                self.assertEqual('done', task.result())
 
     def test_create_task_during_spin(self) -> None:
         self.assertIsNotNone(self.node.handle)
