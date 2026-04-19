@@ -226,6 +226,13 @@ if(BUILD_TESTING)
       test/test_validate_topic_name.py
       test/test_waitable.py
       test/test_wait_for_message.py
+      test/test_async_node.py
+      test/test_async_publisher.py
+      test/test_async_subscription.py
+      test/test_async_service.py
+      test/test_async_client.py
+      test/test_async_timer.py
+      test/test_async_clock.py
     )
 
     foreach(_test_path ${_rclpy_pytest_tests})
