@@ -96,3 +96,60 @@ async def test_client_concurrent_calls():
             async with asyncio.TaskGroup() as tg:
                 for _ in range(NUM_CALLS):
                     tg.create_task(client.call(BasicTypesSrv.Request()))
+
+
+@pytest.mark.asyncio
+async def test_client_call_timeout_then_next_call_succeeds():
+    """A timed-out call does not break subsequent calls on the same client."""
+    first_call = True
+
+    async def handler(request, response):
+        nonlocal first_call
+        if first_call:
+            first_call = False
+            await asyncio.Event().wait()
+        response.bool_value = True
+        return response
+
+    async with (
+        AsyncNode('test_timeout_srv_node') as srv_node,
+        AsyncNode('test_timeout_client_node') as client_node,
+    ):
+        srv_node.create_service(
+            BasicTypesSrv, '/test_timeout_svc', handler, concurrent=True)
+        client = client_node.create_client(
+            BasicTypesSrv, '/test_timeout_svc')
+
+        async with asyncio.timeout(5):
+            await client.wait_for_service()
+
+        with pytest.raises(TimeoutError):
+            async with asyncio.timeout(0.2):
+                await client.call(BasicTypesSrv.Request())
+
+        async with asyncio.timeout(5):
+            response = await client.call(BasicTypesSrv.Request())
+        assert response.bool_value is True
+
+
+@pytest.mark.asyncio
+async def test_client_destroy_cancels_in_flight_call():
+    """destroy() from the server callback cancels the in-flight call()."""
+    async def handler(request, response):
+        client.destroy()
+        return response
+
+    async with (
+        AsyncNode('test_destroy_from_srv_node') as srv_node,
+        AsyncNode('test_destroy_from_client_node') as client_node,
+    ):
+        srv_node.create_service(
+            BasicTypesSrv, '/test_destroy_from_svc', handler)
+        client = client_node.create_client(
+            BasicTypesSrv, '/test_destroy_from_svc')
+
+        async with asyncio.timeout(5):
+            await client.wait_for_service()
+
+            with pytest.raises(asyncio.CancelledError):
+                await client.call(BasicTypesSrv.Request())

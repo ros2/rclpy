@@ -107,3 +107,63 @@ async def test_sleep_sim_time_resolves_on_jump():
 
         async with asyncio.timeout(0.1):
             await sleep_task
+
+
+@pytest.mark.asyncio
+async def test_sleep_multiple_concurrent_waiters():
+    """Multiple concurrent sleeps resolve independently on a shared clock."""
+    async with AsyncNode('test_multi_sleep_node') as node:
+        clock = node.get_clock()
+        loop = asyncio.get_running_loop()
+        t0 = loop.time()
+
+        async def timed(duration):
+            await clock.sleep(duration)
+            return loop.time() - t0
+
+        async with asyncio.timeout(5):
+            async with asyncio.TaskGroup() as tg:
+                t_long = tg.create_task(timed(0.2))
+                t_short = tg.create_task(timed(0.05))
+                t_mid = tg.create_task(timed(0.1))
+
+        # Each waiter respected its requested duration (sleep never fires early)
+        assert t_long.result() >= 0.2
+        assert t_mid.result() >= 0.1
+        assert t_short.result() >= 0.05
+        assert t_long.result() < 0.3
+
+
+@pytest.mark.asyncio
+async def test_sleep_sim_time_partial_resolution():
+    """A ROS-time jump resolves only sleepers whose target has passed."""
+    async with AsyncNode(
+        'test_sim_partial_node',
+        parameter_overrides=[
+            Parameter('use_sim_time', Parameter.Type.BOOL, True)],
+    ) as node:
+        clock = node.get_clock()
+        clock.set_ros_time_override(
+            Time(seconds=0, clock_type=ClockType.ROS_TIME))
+
+        s1 = asyncio.create_task(clock.sleep(1.0))
+        s5 = asyncio.create_task(clock.sleep(5.0))
+        s10 = asyncio.create_task(clock.sleep(10.0))
+        await asyncio.sleep(0.05)
+        assert not s1.done() and not s5.done() and not s10.done()
+
+        # Jump to t=3 — only s1's target (t=1) has passed
+        clock.set_ros_time_override(
+            Time(seconds=3, clock_type=ClockType.ROS_TIME))
+
+        async with asyncio.timeout(1):
+            await s1
+        await asyncio.sleep(0.05)
+        assert not s5.done()
+        assert not s10.done()
+
+        # Jump past the remaining targets so they resolve cleanly
+        clock.set_ros_time_override(
+            Time(seconds=11, clock_type=ClockType.ROS_TIME))
+        async with asyncio.timeout(1):
+            await asyncio.gather(s5, s10)

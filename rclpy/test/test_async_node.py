@@ -17,6 +17,7 @@ import asyncio
 import pytest
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
+from rcl_interfaces.msg import ParameterEvent
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.srv import GetLoggerLevels
@@ -26,6 +27,7 @@ from rcl_interfaces.srv import SetParameters
 import rclpy
 from rclpy.experimental import AsyncNode
 from rclpy.qos import HistoryPolicy
+from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 
@@ -465,3 +467,155 @@ async def test_aexit_destroys_on_exception():
     # Publisher should be destroyed — publishing must fail
     with pytest.raises(RuntimeError):
         pub.publish(Strings(string_value='nope'))
+
+
+@pytest.mark.asyncio
+async def test_shutdown_destroys_tracked_asyncnode():
+    """context.shutdown() destroys AsyncNodes tracked via context.track_node()."""
+    context = rclpy.Context()
+    context.init()
+    node = AsyncNode('test_safety_net_node', context=context)
+
+    # Node is functional before shutdown
+    node.create_publisher(Strings, '/test_safety_net_topic', TEST_QOS)
+
+    context.shutdown()
+
+    # Node was destroyed by the safety net — creating entities must fail
+    with pytest.raises(RuntimeError):
+        node.create_publisher(Strings, '/test_safety_net_topic2', TEST_QOS)
+
+    # destroy_node() after the safety net is idempotent
+    node.destroy_node()
+
+
+@pytest.mark.asyncio
+async def test_shutdown_destroys_running_asyncnode():
+    """context.shutdown() during an active async-with session destroys the node."""
+    context = rclpy.Context()
+    context.init()
+    callback_ran = asyncio.Event()
+
+    async def tick():
+        callback_ran.set()
+        await asyncio.sleep(10)  # sleep for a long time
+
+    node = AsyncNode('test_safety_net_running_node', context=context)
+    node.create_timer(0.05, tick)
+
+    async with asyncio.timeout(5):
+        async with node:
+            # Let the timer dispatch at least once
+            await callback_ran.wait()
+            # External shutdown fires the safety net while tasks are live
+            context.shutdown()
+
+    # Node was destroyed by the safety net mid-session
+    with pytest.raises(RuntimeError):
+        node.create_timer(0.05, tick)
+
+
+@pytest.mark.asyncio
+async def test_destroy_node_from_callback_under_async_with():
+    """destroy_node() from a subscription callback inside async-with drains cleanly."""
+    callback_ran = asyncio.Event()
+    node = AsyncNode('test_aw_cb_shutdown_node')
+
+    async def callback(msg):
+        node.destroy_node()
+        callback_ran.set()
+
+    pub = node.create_publisher(Strings, '/test_aw_cb_topic', TEST_QOS)
+    node.create_subscription(
+        Strings, '/test_aw_cb_topic', callback, TEST_QOS)
+
+    async with asyncio.timeout(5):
+        async with node:
+            pub.publish(Strings(string_value='bye'))
+            await callback_ran.wait()
+
+    with pytest.raises(RuntimeError):
+        node.create_publisher(Strings, '/test_aw_cb_topic2', TEST_QOS)
+
+
+@pytest.mark.asyncio
+async def test_client_destroy_idempotent():
+    """destroy() called twice on a client does not raise."""
+    async with AsyncNode('test_client_idem_node') as node:
+        client = node.create_client(BasicTypesSrv, '/test_client_idem_svc')
+        client.destroy()
+        client.destroy()
+
+
+@pytest.mark.asyncio
+async def test_service_destroy_idempotent():
+    """destroy() called twice on a service does not raise."""
+    async def handler(request, response):
+        return response
+
+    async with AsyncNode('test_service_idem_node') as node:
+        service = node.create_service(
+            BasicTypesSrv, '/test_service_idem_svc', handler)
+        service.destroy()
+        service.destroy()
+
+
+@pytest.mark.asyncio
+async def test_timer_destroy_idempotent():
+    """destroy() called twice on a timer does not raise."""
+    async def tick():
+        pass
+
+    async with AsyncNode('test_timer_idem_node') as node:
+        timer = node.create_timer(1.0, tick)
+        timer.destroy()
+        timer.destroy()
+
+
+@pytest.mark.asyncio
+async def test_multi_node_aexit_on_body_exception():
+    """Multi-node `async with a, b:` cleans both nodes when body raises."""
+    a = AsyncNode('test_multi_aexit_a')
+    b = AsyncNode('test_multi_aexit_b')
+
+    with pytest.raises(ExceptionGroup):
+        async with a, b:
+            raise RuntimeError('user err')
+
+    with pytest.raises(RuntimeError):
+        a.create_publisher(Strings, '/t', TEST_QOS)
+    with pytest.raises(RuntimeError):
+        b.create_publisher(Strings, '/t', TEST_QOS)
+
+
+@pytest.mark.asyncio
+async def test_parameter_events_emitted():
+    """Parameter event publisher emits on /parameter_events from AsyncNode."""
+    received = []
+    got_foo = asyncio.Event()
+
+    async def callback(msg):
+        if any(p.name == 'foo' for p in msg.new_parameters):
+            received.append(msg)
+            got_foo.set()
+
+    async with (
+        AsyncNode(
+            'test_pevt_src_node',
+            allow_undeclared_parameters=True,
+        ) as src,
+        AsyncNode('test_pevt_sink_node') as sink,
+    ):
+        sink.create_subscription(
+            ParameterEvent, '/parameter_events', callback,
+            qos_profile_parameter_events)
+
+        # Let DDS discovery complete before declaring the parameter
+        await asyncio.sleep(0.5)
+        src.declare_parameter('foo', 1)
+
+        async with asyncio.timeout(5):
+            await got_foo.wait()
+
+    assert any(
+        p.name == 'foo' for p in received[0].new_parameters)
