@@ -83,7 +83,8 @@ class AsyncClock(BaseClock):
         """
         if self._destroyed:
             raise RuntimeError('Cannot sleep on a destroyed clock')
-        if duration_sec <= 0:
+        duration_ns = int(duration_sec * 1e9)
+        if duration_ns <= 0:
             await asyncio.sleep(0)
             return
 
@@ -93,7 +94,7 @@ class AsyncClock(BaseClock):
         target: Optional[Time] = None
 
         if self.ros_time_is_active:
-            target = self.now() + Duration(nanoseconds=int(duration_sec * 1e9))
+            target = self.now() + Duration(nanoseconds=duration_ns)
         else:
             timer_handle = loop.call_later(
                 duration_sec, AsyncClock._resolve_future, future)

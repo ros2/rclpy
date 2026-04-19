@@ -17,8 +17,11 @@ import asyncio
 import pytest
 
 import rclpy
+from rclpy.clock_type import ClockType
 from rclpy.experimental import AsyncNode
 from rclpy.experimental import AsyncTimer
+from rclpy.parameter import Parameter
+from rclpy.time import Time
 from rclpy.timer import TimerInfo
 
 
@@ -220,3 +223,38 @@ async def test_timer_callback_signature_rejected():
         node.create_timer(1.0, bad_callback)
 
     node.destroy_node()
+
+
+@pytest.mark.asyncio
+async def test_timer_fires_under_sim_time():
+    """Timer fires when ROS time advances past its period under sim time."""
+    count = 0
+    fired = asyncio.Event()
+
+    async def callback():
+        nonlocal count
+        count += 1
+        fired.set()
+
+    async with AsyncNode(
+        'test_timer_sim_node',
+        parameter_overrides=[
+            Parameter('use_sim_time', Parameter.Type.BOOL, True)],
+    ) as node:
+        clock = node.get_clock()
+        assert clock.ros_time_is_active
+
+        clock.set_ros_time_override(
+            Time(seconds=0, clock_type=ClockType.ROS_TIME))
+        node.create_timer(1.0, callback)
+
+        with pytest.raises(TimeoutError):
+            async with asyncio.timeout(0.05):
+                await fired.wait()
+
+        clock.set_ros_time_override(
+            Time(seconds=1, clock_type=ClockType.ROS_TIME))
+
+        async with asyncio.timeout(0.1):
+            await fired.wait()
+        assert count == 1

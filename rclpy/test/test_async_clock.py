@@ -17,9 +17,11 @@ import asyncio
 import pytest
 
 import rclpy
+from rclpy.clock_type import ClockType
 from rclpy.exceptions import TimeSourceChangedError
 from rclpy.experimental import AsyncNode
 from rclpy.parameter import Parameter
+from rclpy.time import Time
 
 
 @pytest.fixture(autouse=True)
@@ -79,3 +81,29 @@ async def test_clock_sleep_on_destroyed_clock():
     node.destroy_node()
     with pytest.raises(RuntimeError):
         await clock.sleep(1.0)
+
+
+@pytest.mark.asyncio
+async def test_sleep_sim_time_resolves_on_jump():
+    """Sim-time sleep resolves when ROS time advances past its target."""
+    async with AsyncNode(
+        'test_sleep_sim_node',
+        parameter_overrides=[
+            Parameter('use_sim_time', Parameter.Type.BOOL, True)],
+    ) as node:
+        clock = node.get_clock()
+        assert clock.ros_time_is_active
+
+        clock.set_ros_time_override(
+            Time(seconds=10, clock_type=ClockType.ROS_TIME))
+        sleep_task = asyncio.create_task(clock.sleep(1.0))
+
+        with pytest.raises(TimeoutError):
+            async with asyncio.timeout(0.05):
+                await asyncio.shield(sleep_task)
+
+        clock.set_ros_time_override(
+            Time(seconds=11, clock_type=ClockType.ROS_TIME))
+
+        async with asyncio.timeout(0.1):
+            await sleep_task

@@ -99,6 +99,10 @@ class AsyncNode(BaseNode):
         )
 
     async def __aenter__(self) -> 'AsyncNode':
+        if self._destroyed.is_set():
+            raise RuntimeError('Node has been destroyed and cannot be reentered')
+        if self._tg is not None:
+            raise RuntimeError('Node is already running')
         tg = asyncio.TaskGroup()
         self._tg = await tg.__aenter__()
         for entity in self._entities:
@@ -112,8 +116,8 @@ class AsyncNode(BaseNode):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
-        self.destroy_node()
         try:
+            self.destroy_node()
             await self._tg.__aexit__(exc_type, exc_val, exc_tb)
         finally:
             self._tg = None
@@ -159,9 +163,6 @@ class AsyncNode(BaseNode):
         Mutually exclusive with ``async with``. Raises RuntimeError if the
         node is already running under a context manager.
         """
-        if self._tg is not None:
-            raise RuntimeError(
-                "node is already running under 'async with'")
         async with self:
             await self._destroyed.wait()
 
@@ -290,6 +291,7 @@ class AsyncNode(BaseNode):
         self,
         timer_period_sec: float,
         callback: AsyncTimerCallbackType,
+        autostart: bool = True
     ) -> AsyncTimer:
         if self._destroyed.is_set():
             raise RuntimeError('Cannot create timer on a destroyed node')
@@ -300,6 +302,7 @@ class AsyncNode(BaseNode):
             self._clock,
             self.context,
             callback,
+            autostart,
             on_destroy=self._entities.discard,
             tg=self._tg,
         )

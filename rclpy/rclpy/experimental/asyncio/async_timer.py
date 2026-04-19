@@ -41,12 +41,13 @@ class AsyncTimer(BaseTimer):
         clock: AsyncClock,
         context: Context,
         callback: TimerCallbackType,
+        autostart: bool,
         on_destroy: Callable[['AsyncTimer'], None],
         tg: Optional[asyncio.TaskGroup] = None,
     ) -> None:
         """Create an async timer."""
         super().__init__(callback, timer_period_ns, clock, context=context,
-                         on_destroy=on_destroy)
+                         on_destroy=on_destroy, autostart=autostart)
         self._pass_info = self._detect_wants_info(callback)
         self._task: Optional[asyncio.Task] = None
         self._reset_event = asyncio.Event()
@@ -146,7 +147,7 @@ class AsyncTimer(BaseTimer):
             threshold, post_callback=self._on_jump)
         self.handle.set_on_reset_callback(self._on_reset)
         try:
-            while True:
+            while not self._destroyed:
                 try:
                     await self._wait()
                 except (TimeSourceChangedError):
