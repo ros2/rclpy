@@ -89,7 +89,7 @@ from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import BaseService
 from rclpy.service import Service
 from rclpy.service import ServiceCallbackUnion
-from rclpy.subscription import GenericSubscriptionCallbackUnion
+from rclpy.subscription import BaseSubscription, GenericSubscriptionCallbackUnion
 from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
@@ -148,7 +148,11 @@ class BaseNode(ABC):
         use_global_arguments: bool = True,
         enable_rosout: bool = True,
         rosout_qos_profile: Union[QoSProfile, int] = qos_profile_rosout_default,
+        start_parameter_services: bool = True,
+        parameter_overrides: Optional[List[Parameter[Any]]] = None,
         allow_undeclared_parameters: bool = False,
+        automatically_declare_parameters_from_overrides: bool = False,
+        enable_logger_service: bool = False,
     ) -> None:
         self._context = get_default_context() if context is None else context
         self._parameters: Dict[str, Parameter[Any]] = {}
@@ -160,7 +164,6 @@ class BaseNode(ABC):
         self._allow_undeclared_parameters = allow_undeclared_parameters
         self._parameter_overrides: Dict[str, Parameter[Any]] = {}
         self._descriptors: Dict[str, ParameterDescriptor] = {}
-        self._parameter_event_publisher: Optional[BasePublisher[ParameterEvent]] = None
 
         namespace = namespace or ''
 
@@ -195,6 +198,42 @@ class BaseNode(ABC):
         with self.handle:
             self._logger = get_logger(self.__node.logger_name())
 
+        self._parameter_event_publisher: Optional[BasePublisher[ParameterEvent]] = \
+            self.create_publisher(ParameterEvent, '/parameter_events',
+                                  qos_profile_parameter_events)
+
+        with self.handle:
+            self._parameter_overrides = self.handle.get_parameters(Parameter)
+        # Combine parameters from params files with those from the node constructor and
+        # use the set_parameters_atomically API so a parameter event is published.
+        if parameter_overrides is not None:
+            self._parameter_overrides.update({p.name: p for p in parameter_overrides})
+
+        if automatically_declare_parameters_from_overrides:
+            self.declare_parameters(
+                '',
+                [
+                    (name, param.value, ParameterDescriptor())
+                    for name, param in self._parameter_overrides.items()],
+                ignore_override=True,
+            )
+
+        # Init a time source.
+        # Note: parameter overrides and parameter event publisher need to be ready at this point
+        # to be able to declare 'use_sim_time' if it was not declared yet.
+        self._time_source = TimeSource(node=self)
+        self._time_source.attach_clock(self.get_clock())
+
+        if start_parameter_services:
+            self._parameter_service = ParameterService(self)
+
+        if enable_logger_service:
+            self._logger_service = LoggingService(self)
+
+        self._type_description_service = TypeDescriptionService(self)
+
+        self._context.track_node(self)
+
     @property
     def context(self) -> Context:
         """Get the context associated with the node."""
@@ -227,6 +266,47 @@ class BaseNode(ABC):
 
     @abstractmethod
     def get_clock(self) -> BaseClock:
+        ...
+
+    @abstractmethod
+    def create_publisher(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        qos_profile: Union[QoSProfile, int],
+    ) -> BasePublisher[MsgT]:
+        ...
+
+    @abstractmethod
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: SubscriptionCallbackUnion[MsgT],
+        qos_profile: Union[QoSProfile, int],
+    ) -> BaseSubscription[MsgT]:
+        ...
+
+    @abstractmethod
+    def create_service(
+        self,
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+        srv_name: str,
+        callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
+        *,
+        qos_profile: QoSProfile = qos_profile_services_default,
+    ) -> BaseService[SrvRequestT, SrvResponseT]:
+        ...
+
+    @abstractmethod
+    def _create_service(
+        self,
+        service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]',
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+        srv_name: str,
+        callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
+        qos_profile: QoSProfile,
+    ) -> BaseService[SrvRequestT, SrvResponseT]:
         ...
 
     def get_logger(self) -> RcutilsLogger:
@@ -1837,7 +1917,133 @@ class BaseNode(ABC):
             no_mangle,
             _rclpy.rclpy_get_servers_info_by_service)
 
+    def _create_publisher_handle(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        qos_profile: Union[QoSProfile, int],
+        *,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+    ) -> '_rclpy.Publisher[MsgT]':
+        try:
+            final_topic = self.resolve_topic_name(topic)
+        except RuntimeError:
+            # if it's name validation error, raise a more appropriate exception.
+            try:
+                self._validate_topic_or_service_name(topic)
+            except InvalidTopicNameException as ex:
+                raise ex from None
+            # else reraise the previous exception
+            raise
+
+        if qos_overriding_options is None:
+            qos_overriding_options = QoSOverridingOptions([])
+        _declare_qos_parameters(
+            Publisher, self, final_topic, qos_profile, qos_overriding_options)
+
+        # this line imports the typesupport for the message module if not already done
+        failed = False
+        check_is_valid_msg_type(msg_type)
+        try:
+            with self.handle:
+                publisher_object = _rclpy.Publisher(
+                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(topic)
+
+        return publisher_object
+
+    def _create_subscription_handle(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        qos_profile: QoSProfile,
+        *,
+        qos_overriding_options: Optional[QoSOverridingOptions] = None,
+        content_filter_options: Optional[ContentFilterOptions] = None,
+        acceptable_buffer_backends: Optional[str] = None
+    ) -> '_rclpy.Subscription[MsgT]':
+        try:
+            final_topic = self.resolve_topic_name(topic)
+        except RuntimeError:
+            # if it's name validation error, raise a more appropriate exception.
+            try:
+                self._validate_topic_or_service_name(topic)
+            except InvalidTopicNameException as ex:
+                raise ex from None
+            # else reraise the previous exception
+            raise
+
+        if qos_overriding_options is None:
+            qos_overriding_options = QoSOverridingOptions([])
+        _declare_qos_parameters(
+            Subscription, self, final_topic, qos_profile, qos_overriding_options)
+
+        # this line imports the typesupport for the message module if not already done
+        failed = False
+        check_is_valid_msg_type(msg_type)
+        try:
+            with self.handle:
+                subscription_object = _rclpy.Subscription(
+                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile(),
+                    content_filter_options, acceptable_buffer_backends)
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(topic)
+
+        return subscription_object
+
+    def _create_service_handle(
+        self,
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+        srv_name: str,
+        *,
+        qos_profile: QoSProfile = qos_profile_services_default,
+    ) -> '_rclpy.Service[SrvRequestT, SrvResponseT]':
+        check_is_valid_srv_type(srv_type)
+        failed = False
+        try:
+            with self.handle:
+                service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]' = _rclpy.Service(
+                    self.handle,
+                    srv_type,
+                    srv_name,
+                    qos_profile.get_c_qos_profile())
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(srv_name, is_service=True)
+
+        return service_impl
+
+    def _create_client_handle(
+        self,
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+        srv_name: str,
+        *,
+        qos_profile: QoSProfile = qos_profile_services_default,
+    ) -> '_rclpy.Client[SrvRequestT, SrvResponseT]':
+        check_is_valid_srv_type(srv_type)
+        failed = False
+        try:
+            with self.handle:
+                client_impl = _rclpy.Client(
+                    self.handle,
+                    srv_type,
+                    srv_name,
+                    qos_profile.get_c_qos_profile())
+        except ValueError:
+            failed = True
+        if failed:
+            self._validate_topic_or_service_name(srv_name, is_service=True)
+
+        return client_impl
+
     def destroy_node(self) -> None:
+        self._context.untrack_node(self)
         self._parameter_event_publisher = None
         self.handle.destroy_when_not_in_use()
 
@@ -1916,44 +2122,13 @@ class Node(BaseNode):
             use_global_arguments=use_global_arguments,
             enable_rosout=enable_rosout,
             rosout_qos_profile=rosout_qos_profile,
+            start_parameter_services=start_parameter_services,
+            parameter_overrides=parameter_overrides,
             allow_undeclared_parameters=allow_undeclared_parameters,
+            automatically_declare_parameters_from_overrides=(
+                automatically_declare_parameters_from_overrides),
+            enable_logger_service=enable_logger_service,
         )
-
-        self._parameter_event_publisher: Optional[Publisher[ParameterEvent]] = \
-            self.create_publisher(ParameterEvent, '/parameter_events',
-                                  qos_profile_parameter_events)
-
-        with self.handle:
-            self._parameter_overrides = self.handle.get_parameters(Parameter)
-        # Combine parameters from params files with those from the node constructor and
-        # use the set_parameters_atomically API so a parameter event is published.
-        if parameter_overrides is not None:
-            self._parameter_overrides.update({p.name: p for p in parameter_overrides})
-
-        if automatically_declare_parameters_from_overrides:
-            self.declare_parameters(
-                '',
-                [
-                    (name, param.value, ParameterDescriptor())
-                    for name, param in self._parameter_overrides.items()],
-                ignore_override=True,
-            )
-
-        # Init a time source.
-        # Note: parameter overrides and parameter event publisher need to be ready at this point
-        # to be able to declare 'use_sim_time' if it was not declared yet.
-        self._time_source = TimeSource(node=self)
-        self._time_source.attach_clock(self._clock)
-
-        if start_parameter_services:
-            self._parameter_service = ParameterService(self)
-
-        if enable_logger_service:
-            self._logger_service = LoggingService(self)
-
-        self._type_description_service = TypeDescriptionService(self)
-
-        self._context.track_node(self)
 
     @property
     def publishers(self) -> Iterator[Publisher[Any]]:
@@ -2077,34 +2252,12 @@ class Node(BaseNode):
 
         callback_group = callback_group or self.default_callback_group
 
-        failed = False
-        try:
-            final_topic = self.resolve_topic_name(topic)
-        except RuntimeError:
-            # if it's name validation error, raise a more appropriate exception.
-            try:
-                self._validate_topic_or_service_name(topic)
-            except InvalidTopicNameException as ex:
-                raise ex from None
-            # else reraise the previous exception
-            raise
-
-        if qos_overriding_options is None:
-            qos_overriding_options = QoSOverridingOptions([])
-        _declare_qos_parameters(
-            Publisher, self, final_topic, qos_profile, qos_overriding_options)
-
-        # this line imports the typesupport for the message module if not already done
-        failed = False
-        check_is_valid_msg_type(msg_type)
-        try:
-            with self.handle:
-                publisher_object = _rclpy.Publisher(
-                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile())
-        except ValueError:
-            failed = True
-        if failed:
-            self._validate_topic_or_service_name(topic)
+        publisher_object = self._create_publisher_handle(
+            msg_type,
+            topic,
+            qos_profile,
+            qos_overriding_options=qos_overriding_options
+        )
 
         try:
             publisher = publisher_class(
@@ -2210,34 +2363,14 @@ class Node(BaseNode):
 
         callback_group = callback_group or self.default_callback_group
 
-        try:
-            final_topic = self.resolve_topic_name(topic)
-        except RuntimeError:
-            # if it's name validation error, raise a more appropriate exception.
-            try:
-                self._validate_topic_or_service_name(topic)
-            except InvalidTopicNameException as ex:
-                raise ex from None
-            # else reraise the previous exception
-            raise
-
-        if qos_overriding_options is None:
-            qos_overriding_options = QoSOverridingOptions([])
-        _declare_qos_parameters(
-            Subscription, self, final_topic, qos_profile, qos_overriding_options)
-
-        # this line imports the typesupport for the message module if not already done
-        failed = False
-        check_is_valid_msg_type(msg_type)
-        try:
-            with self.handle:
-                subscription_object = _rclpy.Subscription(
-                    self.handle, msg_type, topic, qos_profile.get_c_qos_profile(),
-                    content_filter_options, acceptable_buffer_backends)
-        except ValueError:
-            failed = True
-        if failed:
-            self._validate_topic_or_service_name(topic)
+        subscription_object = self._create_subscription_handle(
+            msg_type,
+            topic,
+            qos_profile,
+            qos_overriding_options=qos_overriding_options,
+            content_filter_options=content_filter_options,
+            acceptable_buffer_backends=acceptable_buffer_backends
+        )
 
         try:
             subscription = Subscription(
@@ -2277,19 +2410,12 @@ class Node(BaseNode):
         """
         if callback_group is None:
             callback_group = self.default_callback_group
-        check_is_valid_srv_type(srv_type)
-        failed = False
-        try:
-            with self.handle:
-                client_impl = _rclpy.Client(
-                    self.handle,
-                    srv_type,
-                    srv_name,
-                    qos_profile.get_c_qos_profile())
-        except ValueError:
-            failed = True
-        if failed:
-            self._validate_topic_or_service_name(srv_name, is_service=True)
+
+        client_impl = self._create_client_handle(
+            srv_type,
+            srv_name,
+            qos_profile=qos_profile
+        )
 
         client = Client(
             self.context,
@@ -2321,22 +2447,32 @@ class Node(BaseNode):
         :param callback_group: The callback group for the service server. If ``None``, then the
             default callback group for the node is used.
         """
+        service_impl = self._create_service_handle(
+            srv_type,
+            srv_name,
+            qos_profile=qos_profile
+        )
+
+        return self._create_service(
+            service_impl,
+            srv_type,
+            srv_name,
+            callback,
+            qos_profile,
+            callback_group
+            )
+
+    def _create_service(
+        self,
+        service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]',
+        srv_type: type[Srv[SrvRequestT, SrvResponseT]],
+        srv_name: str,
+        callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
+        qos_profile: QoSProfile,
+        callback_group: Optional[CallbackGroup] = None,
+    ) -> Service[SrvRequestT, SrvResponseT]:
         if callback_group is None:
             callback_group = self.default_callback_group
-        check_is_valid_srv_type(srv_type)
-        failed = False
-        try:
-            with self.handle:
-                service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]' = _rclpy.Service(
-                    self.handle,
-                    srv_type,
-                    srv_name,
-                    qos_profile.get_c_qos_profile())
-        except ValueError:
-            failed = True
-        if failed:
-            self._validate_topic_or_service_name(srv_name, is_service=True)
-
         service = Service(
             service_impl,
             srv_type, srv_name, callback, qos_profile,

@@ -25,8 +25,8 @@ from rclpy.time import Time
 import rosgraph_msgs.msg
 
 if TYPE_CHECKING:
-    from rclpy.node import Node
-    from rclpy.subscription import Subscription
+    from rclpy.node import BaseNode
+    from rclpy.subscription import BaseSubscription
 
 CLOCK_TOPIC = '/clock'
 USE_SIM_TIME_NAME = 'use_sim_time'
@@ -34,9 +34,9 @@ USE_SIM_TIME_NAME = 'use_sim_time'
 
 class TimeSource:
 
-    def __init__(self, *, node: Optional['Node'] = None):
-        self._clock_sub: Optional['Subscription[rosgraph_msgs.msg.Clock]'] = None
-        self._node_weak_ref: Optional[weakref.ReferenceType['Node']] = None
+    def __init__(self, *, node: Optional['BaseNode'] = None):
+        self._clock_sub: Optional['BaseSubscription[rosgraph_msgs.msg.Clock]'] = None
+        self._node_weak_ref: Optional[weakref.ReferenceType['BaseNode']] = None
         self._associated_clocks: Set[BaseClock] = set()
         # Zero time is a special value that means time is uninitialized
         self._last_time_set = Time(clock_type=ClockType.ROS_TIME)
@@ -59,10 +59,8 @@ class TimeSource:
             self._subscribe_to_clock_topic()
         else:
             if self._clock_sub is not None:
-                node = self._get_node()
-                if node is not None:
-                    node.destroy_subscription(self._clock_sub)
-                    self._clock_sub = None
+                self._clock_sub.destroy()
+                self._clock_sub = None
 
     def _subscribe_to_clock_topic(self) -> None:
         if self._clock_sub is None:
@@ -75,10 +73,10 @@ class TimeSource:
                     QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
                 )
 
-    def attach_node(self, node: 'Node') -> None:
-        from rclpy.node import Node
-        if not isinstance(node, Node):
-            raise TypeError('Node must be of type rclpy.node.Node')
+    def attach_node(self, node: 'BaseNode') -> None:
+        from rclpy.node import BaseNode
+        if not isinstance(node, BaseNode):
+            raise TypeError('Node must be of type rclpy.node.BaseNode')
         # Remove an existing node.
         if self._node_weak_ref is not None:
             self.detach_node()
@@ -105,10 +103,7 @@ class TimeSource:
     def detach_node(self) -> None:
         # Remove the subscription to the clock topic.
         if self._clock_sub is not None:
-            node = self._get_node()
-            if node is None:
-                raise RuntimeError('Unable to destroy previously created clock subscription')
-            node.destroy_subscription(self._clock_sub)
+            self._clock_sub.destroy()
         self._clock_sub = None
         self._node_weak_ref = None
 
@@ -147,7 +142,7 @@ class TimeSource:
 
         return SetParametersResult(successful=successful, reason=reason)
 
-    def _get_node(self) -> Optional['Node']:
+    def _get_node(self) -> Optional['BaseNode']:
         if self._node_weak_ref is not None:
             return self._node_weak_ref()
         return None

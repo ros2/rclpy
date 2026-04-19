@@ -21,14 +21,13 @@ from rcl_interfaces.msg import ParameterType
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_services_default
-from rclpy.service import Service
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
 
 from type_description_interfaces.srv import GetTypeDescription
 
 if TYPE_CHECKING:
-    from rclpy.node import Node
+    from rclpy.node import BaseNode
 
 START_TYPE_DESCRIPTION_SERVICE_PARAM = 'start_type_description_service'
 
@@ -40,10 +39,10 @@ class TypeDescriptionService:
     The service is implemented in rcl, but should be enabled via parameter and have its
     callbacks handled via end-client execution framework, such as callback groups and waitsets.
 
-    This is not intended for use by end users, rather it is a component to be used by Node.
+    This is not intended for use by end users, rather it is a component to be used by BaseNode.
     """
 
-    def __init__(self, node: 'Node'):
+    def __init__(self, node: 'BaseNode'):
         """Initialize the service, if the parameter is set to true."""
         self._node_weak_ref = weakref.ref(node)
         node_name = node.get_name()
@@ -80,20 +79,13 @@ class TypeDescriptionService:
     def _start_service(self) -> None:
         node = self._get_node()
         self._type_description_srv = _rclpy.TypeDescriptionService(node.handle)
-        # Because we are creating our own service wrapper, must manually add the service
-        # to the appropriate parts of Node because we cannot call create_service.
         check_is_valid_srv_type(GetTypeDescription)
-        service = Service(
-            service_impl=self._type_description_srv.impl,
-            srv_type=GetTypeDescription,
-            srv_name=self.service_name,
-            callback=self._service_callback,
-            on_destroy=node._on_destroy_service,
-            callback_group=node.default_callback_group,
-            qos_profile=qos_profile_services_default)
-        node.default_callback_group.add_entity(service)
-        node._services.append(service)
-        node._wake_executor()
+        node._create_service(
+            self._type_description_srv.impl,
+            GetTypeDescription,
+            self.service_name,
+            self._service_callback,
+            qos_profile_services_default)
 
     def _service_callback(
         self,
@@ -105,7 +97,7 @@ class TypeDescriptionService:
         return self._type_description_srv.handle_request(
             request, GetTypeDescription.Response, self._get_node().handle)
 
-    def _get_node(self) -> 'Node':
+    def _get_node(self) -> 'BaseNode':
         node = self._node_weak_ref()
         if node is None:
             raise ReferenceError('Expected valid node weak reference')
