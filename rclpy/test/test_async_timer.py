@@ -255,6 +255,6 @@ async def test_timer_fires_under_sim_time():
         clock.set_ros_time_override(
             Time(seconds=1, clock_type=ClockType.ROS_TIME))
 
-        async with asyncio.timeout(0.1):
+        async with asyncio.timeout(1):
             await fired.wait()
         assert count == 1

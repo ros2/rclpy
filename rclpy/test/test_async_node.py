@@ -125,6 +125,11 @@ async def test_multiple_entities_two_nodes():
         pub_b = node_b.create_publisher(Strings, '/test_multi_b', TEST_QOS)
         node_a.create_subscription(Strings, '/test_multi_b', callback_b, TEST_QOS)
 
+        async with asyncio.timeout(5):
+            while (pub_a.get_subscription_count() < 1
+                   or pub_b.get_subscription_count() < 1):
+                await asyncio.sleep(0.05)
+
         pub_a.publish(Strings(string_value='a'))
         pub_b.publish(Strings(string_value='b'))
 
@@ -610,8 +615,10 @@ async def test_parameter_events_emitted():
             ParameterEvent, '/parameter_events', callback,
             qos_profile_parameter_events)
 
-        # Let DDS discovery complete before declaring the parameter
-        await asyncio.sleep(0.5)
+        async with asyncio.timeout(5):
+            while src.count_subscribers('/parameter_events') < 1:
+                await asyncio.sleep(0.05)
+
         src.declare_parameter('foo', 1)
 
         async with asyncio.timeout(5):

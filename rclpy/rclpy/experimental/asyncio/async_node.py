@@ -130,11 +130,10 @@ class AsyncNode(BaseNode):
         if self._destroyed.is_set():
             return
         self._destroyed.set()
-        self._context.untrack_node(self)
         for entity in list(self._entities):
             entity.destroy()
         self._clock._destroy()
-        self.handle.destroy_when_not_in_use()
+        super().destroy_node()
 
     async def wait_for_node(
         self,

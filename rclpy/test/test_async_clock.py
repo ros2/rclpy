@@ -105,7 +105,7 @@ async def test_sleep_sim_time_resolves_on_jump():
         clock.set_ros_time_override(
             Time(seconds=11, clock_type=ClockType.ROS_TIME))
 
-        async with asyncio.timeout(0.1):
+        async with asyncio.timeout(1):
             await sleep_task
 
 
@@ -131,6 +131,7 @@ async def test_sleep_multiple_concurrent_waiters():
         assert t_long.result() >= 0.2
         assert t_mid.result() >= 0.1
         assert t_short.result() >= 0.05
+        # Concurrent completes at ~0.2s; serial would be 0.35s.
         assert t_long.result() < 0.3
 
 

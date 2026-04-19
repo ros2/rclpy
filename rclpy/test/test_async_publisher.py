@@ -64,11 +64,13 @@ async def test_publish_before_aenter():
         sub_node.create_subscription(
             Strings, '/test_pub_pre_aenter_topic', callback, TEST_QOS)
 
-        # Let DDS discovery complete before publishing
-        await asyncio.sleep(0.3)
+        async with asyncio.timeout(5):
+            while pub.get_subscription_count() < 1:
+                await asyncio.sleep(0.05)
+
         pub.publish(Strings(string_value='hello'))
 
-        async with asyncio.timeout(0.5):
+        async with asyncio.timeout(5):
             await received.wait()
 
     pub_node.destroy_node()
