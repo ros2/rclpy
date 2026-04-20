@@ -24,7 +24,7 @@ from rclpy.time import Time
 
 class AsyncClock(BaseClock):
     """
-    Clock with asyncio-compatible sleep support.
+    A ROS clock with async ``sleep``.
 
     .. admonition:: Experimental
 
@@ -32,7 +32,6 @@ class AsyncClock(BaseClock):
     """
 
     def __init__(self, *, clock_type: ClockType = ClockType.SYSTEM_TIME) -> None:
-        """Create an async clock."""
         super().__init__(clock_type=clock_type)
         self._pending_sleeps: Dict[asyncio.Future, Optional[Time]] = {}
         self._destroyed = False

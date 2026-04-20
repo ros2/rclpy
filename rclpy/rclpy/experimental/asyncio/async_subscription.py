@@ -23,7 +23,7 @@ from rclpy.type_support import MsgT
 
 class AsyncSubscription(BaseSubscription[MsgT]):
     """
-    Async subscription that owns its DDS bridge read loop.
+    A subscription to a ROS topic.
 
     .. admonition:: Experimental
 
@@ -42,7 +42,6 @@ class AsyncSubscription(BaseSubscription[MsgT]):
         concurrent: bool = False,
         tg: Optional[asyncio.TaskGroup] = None,
     ) -> None:
-        """Create an async subscription."""
         super().__init__(subscription_impl, msg_type, topic, callback, qos_profile, raw,
                          on_destroy=on_destroy)
         self._concurrent = concurrent

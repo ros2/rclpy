@@ -14,7 +14,7 @@
 
 import asyncio
 from types import TracebackType
-from typing import Any, Awaitable, Callable, Optional, Set, Type, Union
+from typing import Any, Literal, Optional, overload, Set, Type, Union
 
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
@@ -23,9 +23,10 @@ from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_rosout_default
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
-from rclpy.subscription import AsyncGenericSubscriptionCallback
+from rclpy.service import ServiceCallbackUnion
+from rclpy.subscription import GenericSubscriptionCallbackUnion, SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
-from rclpy.timer import AsyncTimerCallbackType
+from rclpy.timer import TimerCallbackUnion
 from rclpy.type_support import MsgT, Srv, SrvRequestT, SrvResponseT
 
 from .async_client import AsyncClient
@@ -41,23 +42,24 @@ AsyncEntity = Union[
 
 class AsyncNode(BaseNode):
     """
-    Async node with two mutually exclusive entry points.
+    A Node in the ROS graph that runs on an asyncio event loop.
+
+    Like :class:`Node`, ``AsyncNode`` is the primary entrypoint for communication — it creates
+    publishers, subscriptions, services, clients, and timers. Unlike :class:`Node`, it does not
+    require an rclpy executor: the node owns its own :class:`asyncio.TaskGroup`, and DDS callbacks
+    are dispatched directly onto the running event loop.
 
     .. admonition:: Experimental
 
        This API is experimental.
 
-    Simple reactive node::
-
-        node = AsyncNode('my_node')
-        node.create_subscription(topic, MsgType, callback, qos)
-        await node.run()
-
-    Composable with user-controlled lifetime::
+    Example::
 
         async with AsyncNode('my_node') as node:
-            node.create_subscription(topic, MsgType, callback, qos)
-            await my_foreground_task()
+            node.create_subscription(String, '/topic', callback, 10)
+            await my_async_task()
+
+    See :meth:`run` for a shorthand when the node is the only foreground task.
     """
 
     def __init__(
@@ -76,7 +78,36 @@ class AsyncNode(BaseNode):
         automatically_declare_parameters_from_overrides: bool = False,
         enable_logger_service: bool = False
     ) -> None:
-        """Create an async ROS node."""
+        """
+        Create an AsyncNode.
+
+        :param node_name: A name to give to this node. Validated by :func:`validate_node_name`.
+        :param context: The context to be associated with, or ``None`` for the default global
+            context.
+        :param cli_args: A list of strings of command line args to be used only by this node.
+            These arguments are used to extract remappings used by the node and other ROS specific
+            settings, as well as user defined non-ROS arguments.
+        :param namespace: The namespace to which relative topic and service names will be prefixed.
+            Validated by :func:`validate_namespace`.
+        :param use_global_arguments: ``False`` if the node should ignore process-wide command line
+            args.
+        :param enable_rosout: ``False`` if the node should ignore rosout logging.
+        :param rosout_qos_profile: A QoSProfile or a history depth to apply to rosout publisher.
+            In the case that a history depth is provided, the QoS history is set to KEEP_LAST,
+            the QoS history depth is set to the value of the parameter,
+            and all other QoS settings are set to their default value.
+        :param start_parameter_services: ``False`` if the node should not create parameter
+            services.
+        :param parameter_overrides: A list of overrides for initial values for parameters declared
+            on the node.
+        :param allow_undeclared_parameters: True if undeclared parameters are allowed.
+            This flag affects the behavior of parameter-related operations.
+        :param automatically_declare_parameters_from_overrides: If True, the "parameter overrides"
+            will be used to implicitly declare parameters on the node during creation.
+        :param enable_logger_service: ``True`` if ROS2 services are created to allow external nodes
+            to get and set logger levels of this node. Otherwise, logger levels are only managed
+            locally. That is, logger levels cannot be changed remotely.
+        """
         self._clock = AsyncClock(clock_type=ClockType.ROS_TIME)
         self._tg: Optional[asyncio.TaskGroup] = None
         self._entities: Set[AsyncEntity] = set()
@@ -127,6 +158,7 @@ class AsyncNode(BaseNode):
         return self._clock
 
     def destroy_node(self) -> None:
+        """Destroy the node."""
         if self._destroyed.is_set():
             return
         self._destroyed.set()
@@ -159,8 +191,9 @@ class AsyncNode(BaseNode):
         """
         Run the node until destroy_node() is called.
 
-        Mutually exclusive with ``async with``. Raises RuntimeError if the
-        node is already running under a context manager.
+        Mutually exclusive with ``async with``.
+
+        :raises RuntimeError: If the node is already running under a context manager.
         """
         async with self:
             await self._destroyed.wait()
@@ -171,6 +204,18 @@ class AsyncNode(BaseNode):
         topic: str,
         qos_profile: Union[QoSProfile, int],
     ) -> AsyncPublisher[MsgT]:
+        """
+        Create a new publisher.
+
+        :param msg_type: The type of ROS messages the publisher will publish.
+        :param topic: The name of the topic the publisher will publish to.
+        :param qos_profile: A QoSProfile or a history depth to apply to the publisher.
+            In the case that a history depth is provided, the QoS history is set to
+            KEEP_LAST, the QoS history depth is set to the value of the parameter,
+            and all other QoS settings are set to their default values.
+        :return: The new publisher.
+        :raises RuntimeError: If the node has been destroyed.
+        """
         if self._destroyed.is_set():
             raise RuntimeError('Cannot create publisher on a destroyed node')
         qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
@@ -188,17 +233,77 @@ class AsyncNode(BaseNode):
         self._entities.add(pub)
         return pub
 
+    @overload
     def create_subscription(
         self,
         msg_type: Type[MsgT],
         topic: str,
-        callback: AsyncGenericSubscriptionCallback[MsgT],
+        callback: GenericSubscriptionCallbackUnion[bytes],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        raw: Literal[True],
+        concurrent: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None,
+    ) -> AsyncSubscription[MsgT]: ...
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: GenericSubscriptionCallbackUnion[MsgT],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        raw: Literal[False],
+        concurrent: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None,
+    ) -> AsyncSubscription[MsgT]: ...
+
+    @overload
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: SubscriptionCallbackUnion[MsgT],
+        qos_profile: Union[QoSProfile, int],
+        *,
+        raw: bool = False,
+        concurrent: bool = False,
+        content_filter_options: Optional[ContentFilterOptions] = None,
+    ) -> AsyncSubscription[MsgT]: ...
+
+    def create_subscription(
+        self,
+        msg_type: Type[MsgT],
+        topic: str,
+        callback: SubscriptionCallbackUnion[MsgT],
         qos_profile: Union[QoSProfile, int],
         *,
         raw: bool = False,
         concurrent: bool = False,
         content_filter_options: Optional[ContentFilterOptions] = None,
     ) -> AsyncSubscription[MsgT]:
+        """
+        Create a new subscription.
+
+        :param msg_type: The type of ROS messages the subscription will subscribe to.
+        :param topic: The name of the topic the subscription will subscribe to.
+        :param callback: A user-defined callback invoked for each received message. May be a
+            sync ``def`` or ``async def`` function.
+        :param qos_profile: A QoSProfile or a history depth to apply to the subscription.
+            In the case that a history depth is provided, the QoS history is set to
+            KEEP_LAST, the QoS history depth is set to the value of the parameter,
+            and all other QoS settings are set to their default values.
+        :param raw: If ``True``, received messages will be delivered in raw binary
+            representation.
+        :param concurrent: If ``True``, each message is taken as soon as it arrives and its
+            callback is dispatched as an independent task, so callbacks may run concurrently.
+            If ``False`` (default), the next message is not taken from DDS until the previous
+            callback has finished — callback execution back-pressures the read loop.
+        :param content_filter_options: The filter expression and parameters for content filtering.
+        :return: The new subscription.
+        :raises RuntimeError: If the node has been destroyed.
+        """
         if self._destroyed.is_set():
             raise RuntimeError('Cannot create subscription on a destroyed node')
         qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
@@ -226,7 +331,7 @@ class AsyncNode(BaseNode):
         service_impl: object,
         srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
-        callback: Callable[[SrvRequestT, SrvResponseT], Awaitable[SrvResponseT]],
+        callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         qos_profile: QoSProfile,
         *,
         concurrent: bool = False,
@@ -248,11 +353,27 @@ class AsyncNode(BaseNode):
         self,
         srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
-        callback: Callable[[SrvRequestT, SrvResponseT], Awaitable[SrvResponseT]],
+        callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
         concurrent: bool = False,
     ) -> AsyncService[SrvRequestT, SrvResponseT]:
+        """
+        Create a new service server.
+
+        :param srv_type: The service type.
+        :param srv_name: The name of the service.
+        :param callback: A user-defined callback invoked for each received request; its
+            return value is sent as the response. May be a sync ``def`` or ``async def``
+            function.
+        :param qos_profile: The quality of service profile to apply to the service server.
+        :param concurrent: If ``True``, each request is taken as soon as it arrives and its
+            handler is dispatched as an independent task, so handlers may run concurrently.
+            If ``False`` (default), the next request is not taken from DDS until the previous
+            handler has finished — handler execution back-pressures the read loop.
+        :return: The new service.
+        :raises RuntimeError: If the node has been destroyed.
+        """
         if self._destroyed.is_set():
             raise RuntimeError('Cannot create service on a destroyed node')
         service_handle = self._create_service_handle(
@@ -268,6 +389,15 @@ class AsyncNode(BaseNode):
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
     ) -> AsyncClient[SrvRequestT, SrvResponseT]:
+        """
+        Create a new service client.
+
+        :param srv_type: The service type.
+        :param srv_name: The name of the service.
+        :param qos_profile: The quality of service profile to apply to the service client.
+        :return: The new client.
+        :raises RuntimeError: If the node has been destroyed.
+        """
         if self._destroyed.is_set():
             raise RuntimeError('Cannot create client on a destroyed node')
 
@@ -289,9 +419,25 @@ class AsyncNode(BaseNode):
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: AsyncTimerCallbackType,
+        callback: TimerCallbackUnion,
         autostart: bool = True
     ) -> AsyncTimer:
+        """
+        Create a new timer.
+
+        If autostart is ``True`` (the default), the timer will be started and every
+        ``timer_period_sec`` number of seconds the provided callback will be invoked.
+        If autostart is ``False``, the timer will be created but not started; it can
+        then be started by calling ``reset()`` on the timer object.
+
+        :param timer_period_sec: The period (in seconds) of the timer.
+        :param callback: A user-defined callback invoked when the timer expires. May be a
+            sync ``def`` or ``async def`` function.
+        :param autostart: Whether to automatically start the timer after creation; defaults to
+            ``True``.
+        :return: The new timer.
+        :raises RuntimeError: If the node has been destroyed.
+        """
         if self._destroyed.is_set():
             raise RuntimeError('Cannot create timer on a destroyed node')
 

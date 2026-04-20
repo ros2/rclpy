@@ -28,7 +28,7 @@ from .async_clock import AsyncClock
 
 class AsyncTimer(BaseTimer):
     """
-    Async timer that owns its clock-aware wait loop.
+    A periodic timer.
 
     .. admonition:: Experimental
 
@@ -45,7 +45,6 @@ class AsyncTimer(BaseTimer):
         on_destroy: Callable[['AsyncTimer'], None],
         tg: Optional[asyncio.TaskGroup] = None,
     ) -> None:
-        """Create an async timer."""
         super().__init__(callback, timer_period_ns, clock, context=context,
                          on_destroy=on_destroy, autostart=autostart)
         self._pass_info = self._detect_wants_info(callback)

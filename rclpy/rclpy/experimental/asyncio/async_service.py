@@ -23,7 +23,7 @@ from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
 class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
     """
-    Async service that owns its DDS bridge read loop.
+    A server for a ROS service.
 
     .. admonition:: Experimental
 
@@ -41,7 +41,6 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
         concurrent: bool = False,
         tg: Optional[asyncio.TaskGroup] = None,
     ) -> None:
-        """Create an async service server."""
         super().__init__(service_impl, srv_type, srv_name, callback, qos_profile,
                          on_destroy=on_destroy)
         self._concurrent = concurrent

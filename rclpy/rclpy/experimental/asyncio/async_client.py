@@ -23,7 +23,7 @@ from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
 class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
     """
-    Async client that owns its DDS bridge response loop.
+    A client of a ROS service.
 
     .. admonition:: Experimental
 
@@ -40,7 +40,6 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
         on_destroy: Callable[['AsyncClient'], None],
         tg: Optional[asyncio.TaskGroup] = None,
     ) -> None:
-        """Create an async service client."""
         super().__init__(context, client_impl, srv_type, srv_name, qos_profile,
                          on_destroy=on_destroy)
         self._pending_requests: Dict[int, asyncio.Future] = {}

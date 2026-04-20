@@ -40,11 +40,11 @@ def rclpy_context():
 
 @pytest.mark.asyncio
 async def test_subscription_receives_message():
-    """Subscription callback fires when a message is published."""
+    """Subscription callback fires when a message is published (sync callback)."""
     received = asyncio.Event()
     received_data = []
 
-    async def callback(msg):
+    def callback(msg):
         received_data.append(msg.string_value)
         received.set()
 

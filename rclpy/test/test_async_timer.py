@@ -34,11 +34,11 @@ def rclpy_context():
 
 @pytest.mark.asyncio
 async def test_timer_fires():
-    """Timer callback fires at least once within timeout."""
+    """Timer callback fires at least once within timeout (sync callback)."""
     count = 0
     fired = asyncio.Event()
 
-    async def callback():
+    def callback():
         nonlocal count
         count += 1
         fired.set()

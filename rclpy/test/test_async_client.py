@@ -31,8 +31,8 @@ def rclpy_context():
 
 @pytest.mark.asyncio
 async def test_client_calls_async_service():
-    """Client can call a service hosted by another AsyncNode."""
-    async def handler(request, response):
+    """Client can call a service hosted by another AsyncNode (sync handler)."""
+    def handler(request, response):
         response.bool_value = not request.bool_value
         response.string_value = 'inverted'
         return response
