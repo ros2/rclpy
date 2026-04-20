@@ -149,6 +149,14 @@ if(BUILD_TESTING)
   # Give cppcheck hints about macro definitions coming from outside this package
   get_target_property(ament_cmake_cppcheck_ADDITIONAL_INCLUDE_DIRS rcutils::rcutils INTERFACE_INCLUDE_DIRECTORIES)
   list(APPEND AMENT_LINT_AUTO_EXCLUDE "ament_cmake_cppcheck")
+
+  if(Python3_VERSION VERSION_LESS 3.12)
+    file(GLOB AMENT_LINT_AUTO_FILE_EXCLUDE
+      "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/experimental/async_*.py"
+      "${CMAKE_CURRENT_SOURCE_DIR}/test/test_async_*.py"
+    )
+  endif()
+
   ament_lint_auto_find_test_dependencies()
 
   find_package(ament_cmake_cppcheck REQUIRED)
