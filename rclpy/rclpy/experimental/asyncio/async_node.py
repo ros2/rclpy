@@ -14,7 +14,7 @@
 
 import asyncio
 from types import TracebackType
-from typing import Any, Literal, Optional, overload, Set, Type, Union
+from typing import Any, Literal, Optional, overload, Type, Union
 
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
@@ -110,7 +110,7 @@ class AsyncNode(BaseNode):
         """
         self._clock = AsyncClock(clock_type=ClockType.ROS_TIME)
         self._tg: Optional[asyncio.TaskGroup] = None
-        self._entities: Set[AsyncEntity] = set()
+        self._entities: set[AsyncEntity] = set()
         self._destroyed = asyncio.Event()
 
         super().__init__(

@@ -88,10 +88,10 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
             if self._concurrent:
                 async with asyncio.TaskGroup() as tg:
                     async for request, header in self._requests():
-                        tg.create_task(await_or_execute(self._handle_request, request, header))
+                        tg.create_task(self._handle_request(request, header))
             else:
                 async for request, header in self._requests():
-                    await await_or_execute(self._handle_request, request, header)
+                    await self._handle_request(request, header)
         finally:
             self._task = None
             self.destroy()
