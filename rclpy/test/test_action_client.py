@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import time
 import unittest
+from typing import TYPE_CHECKING
 import uuid
 
 import rclpy
@@ -28,6 +31,9 @@ from service_msgs.msg import ServiceEventInfo
 from test_msgs.action import Fibonacci
 
 from unique_identifier_msgs.msg import UUID
+
+if TYPE_CHECKING:
+    from rclpy.type_support import FeedbackMessage
 
 
 # TODO(jacobperron) Reduce fudge once wait_for_service uses node graph events
@@ -88,7 +94,7 @@ class TestActionClient(unittest.TestCase):
     def setUp(self) -> None:
         self.feedback = None
 
-    def feedback_callback(self, feedback):
+    def feedback_callback(self, feedback: FeedbackMessage[Fibonacci.Feedback]) -> None:
         self.feedback = feedback
 
     def timed_spin(self, duration):
