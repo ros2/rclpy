@@ -8,7 +8,7 @@ Client
    :inherited-members:
    :exclude-members: BaseClient
 
-.. automodule:: rclpy.experimental.asyncio.async_client
+.. automodule:: rclpy.experimental.async_client
    :inherited-members:
 
 Service
@@ -18,5 +18,5 @@ Service
    :inherited-members:
    :exclude-members: BaseService
 
-.. automodule:: rclpy.experimental.asyncio.async_service
+.. automodule:: rclpy.experimental.async_service
    :inherited-members:

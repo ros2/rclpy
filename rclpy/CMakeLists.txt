@@ -226,14 +226,19 @@ if(BUILD_TESTING)
       test/test_validate_topic_name.py
       test/test_waitable.py
       test/test_wait_for_message.py
-      test/test_async_node.py
-      test/test_async_publisher.py
-      test/test_async_subscription.py
-      test/test_async_service.py
-      test/test_async_client.py
-      test/test_async_timer.py
-      test/test_async_clock.py
     )
+
+    if(Python3_VERSION VERSION_GREATER_EQUAL 3.12)
+      list(APPEND _rclpy_pytest_tests
+        test/test_async_node.py
+        test/test_async_publisher.py
+        test/test_async_subscription.py
+        test/test_async_service.py
+        test/test_async_client.py
+        test/test_async_timer.py
+        test/test_async_clock.py
+      )
+    endif()
 
     foreach(_test_path ${_rclpy_pytest_tests})
       get_filename_component(_test_name ${_test_path} NAME_WE)

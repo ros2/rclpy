@@ -8,7 +8,7 @@ Publisher
    :inherited-members:
    :exclude-members: BasePublisher
 
-.. automodule:: rclpy.experimental.asyncio.async_publisher
+.. automodule:: rclpy.experimental.async_publisher
    :inherited-members:
 
 Subscription
@@ -18,6 +18,6 @@ Subscription
    :inherited-members:
    :exclude-members: BaseSubscription, CallbackType
 
-.. automodule:: rclpy.experimental.asyncio.async_subscription
+.. automodule:: rclpy.experimental.async_subscription
    :inherited-members:
    :exclude-members: CallbackType

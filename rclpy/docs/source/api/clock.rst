@@ -5,5 +5,5 @@ Clock
    :inherited-members:
    :exclude-members: BaseClock
 
-.. automodule:: rclpy.experimental.asyncio.async_clock
+.. automodule:: rclpy.experimental.async_clock
    :inherited-members:

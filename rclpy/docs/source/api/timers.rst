@@ -5,5 +5,5 @@ Timer
    :inherited-members:
    :exclude-members: BaseTimer
 
-.. automodule:: rclpy.experimental.asyncio.async_timer
+.. automodule:: rclpy.experimental.async_timer
    :inherited-members:

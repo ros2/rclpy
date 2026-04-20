@@ -5,5 +5,5 @@ Node
    :inherited-members:
    :exclude-members: BaseNode
 
-.. automodule:: rclpy.experimental.asyncio.async_node
+.. automodule:: rclpy.experimental.async_node
    :inherited-members:

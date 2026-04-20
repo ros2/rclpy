@@ -12,22 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .asyncio import AsyncClient
-from .asyncio import AsyncClock
-from .asyncio import AsyncNode
-from .asyncio import AsyncPublisher
-from .asyncio import AsyncService
-from .asyncio import AsyncSubscription
-from .asyncio import AsyncTimer
+import sys
+
 from .events_executor import EventsExecutor
 
 __all__ = [
-    'AsyncClient',
-    'AsyncClock',
-    'AsyncNode',
-    'AsyncPublisher',
-    'AsyncService',
-    'AsyncSubscription',
-    'AsyncTimer',
-    'EventsExecutor',
+    'EventsExecutor'
 ]
+
+if sys.version_info >= (3, 12):
+    from .async_client import AsyncClient
+    from .async_clock import AsyncClock
+    from .async_node import AsyncNode
+    from .async_publisher import AsyncPublisher
+    from .async_service import AsyncService
+    from .async_subscription import AsyncSubscription
+    from .async_timer import AsyncTimer
+
+    __all__ += [
+        'AsyncClient',
+        'AsyncClock',
+        'AsyncNode',
+        'AsyncPublisher',
+        'AsyncService',
+        'AsyncSubscription',
+        'AsyncTimer'
+    ]
