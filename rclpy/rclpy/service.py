@@ -57,6 +57,12 @@ class BaseService(Generic[SrvRequestT, SrvResponseT]):
         *,
         on_destroy: Optional[Callable[['BaseService[SrvRequestT, SrvResponseT]'], None]] = None,
     ) -> None:
+        """
+        Create a container for a ROS service server.
+
+        .. warning:: Users should not create a service server with this constructor, instead they
+           should call :meth:`.Node.create_service` or :meth:`.AsyncNode.create_service`.
+        """
         self.__service = service_impl
         self.srv_type = srv_type
         self.srv_name = srv_name

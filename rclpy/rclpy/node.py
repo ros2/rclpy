@@ -154,6 +154,12 @@ class BaseNode(ABC):
         automatically_declare_parameters_from_overrides: bool = False,
         enable_logger_service: bool = False,
     ) -> None:
+        """
+        Create a ROS node.
+
+        .. warning:: Users should not create a node with this constructor, instead they
+           should instantiate :class:`.Node` or :class:`.AsyncNode` directly.
+        """
         self._context = get_default_context() if context is None else context
         self._parameters: Dict[str, Parameter[Any]] = {}
         self._pre_set_parameters_callbacks: List[Callable[[List[Parameter[Any]]],

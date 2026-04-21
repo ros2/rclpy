@@ -85,6 +85,12 @@ class BaseTimer:
         context: Optional[Context] = None,
         autostart: bool = True
     ) -> None:
+        """
+        Create a timer.
+
+        .. warning:: Users should not create a timer with this constructor, instead they
+           should call :meth:`.Node.create_timer` or :meth:`.AsyncNode.create_timer`.
+        """
         self._context = get_default_context() if context is None else context
         self._clock = clock
         if self._context.handle is None:

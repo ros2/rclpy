@@ -50,6 +50,12 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
         *,
         on_destroy: Optional[Callable[['BaseClient[SrvRequestT, SrvResponseT]'], None]] = None,
     ) -> None:
+        """
+        Create a container for a ROS service client.
+
+        .. warning:: Users should not create a service client with this constructor, instead they
+           should call :meth:`.Node.create_client` or :meth:`.AsyncNode.create_client`.
+        """
         self.context = context
         self.__client = client_impl
         self.srv_type = srv_type
