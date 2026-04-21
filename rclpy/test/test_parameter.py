@@ -18,7 +18,6 @@ from tempfile import NamedTemporaryFile
 import unittest
 
 import pytest
-import yaml
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
@@ -26,6 +25,7 @@ from rclpy.parameter import get_parameter_value
 from rclpy.parameter import Parameter
 from rclpy.parameter import parameter_dict_from_yaml_file
 from rclpy.parameter import parameter_value_to_python
+import yaml
 
 
 class TestParameter(unittest.TestCase):
