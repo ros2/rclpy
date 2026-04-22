@@ -37,8 +37,8 @@ from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
 from rclpy.task import Task
 from rclpy.type_support import (Action, check_for_type_support, FeedbackMessage, FeedbackT,
-                                GetResultServiceRequest, GetResultServiceResponse, GoalT, ResultT,
-                                SendGoalServiceRequest, Msg)
+                                GetResultServiceRequest, GetResultServiceResponse, GoalT, Msg,
+                                ResultT, SendGoalServiceRequest)
 from rclpy.waitable import NumberOfEntities, Waitable
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
@@ -252,7 +252,7 @@ def default_handle_accepted_callback(goal_handle: ServerGoalHandle[Any, Any, Any
     """Execute the goal."""
     goal_handle.execute()
 
-    
+
 def default_goal_callback(
     goal_request: Msg
 ) -> Literal[GoalResponse.ACCEPT]:

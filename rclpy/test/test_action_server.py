@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import time
+from typing import Any
 import unittest
 import uuid
-from typing import Any
 
 from action_msgs.msg import GoalStatus
 from action_msgs.srv import CancelGoal

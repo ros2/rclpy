@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 import unittest
 import uuid
-from typing import TYPE_CHECKING
 
 import rclpy
 from rclpy.action import ActionClient
