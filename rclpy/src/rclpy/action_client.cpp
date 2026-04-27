@@ -76,7 +76,7 @@ ActionClient::ActionClient(
         // Warning should use line number of the current stack frame
         int stack_level = 1;
         PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini publisher: %s",
+          PyExc_RuntimeWarning, stack_level, "Failed to fini action client: %s",
           rcl_get_error_string().str);
         rcl_reset_error();
       }
