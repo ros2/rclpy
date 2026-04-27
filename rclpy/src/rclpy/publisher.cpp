@@ -53,12 +53,7 @@ Publisher::Publisher(
       // Intentionally capturing node by value so shared_ptr can be transferred to copies
       rcl_ret_t ret = rcl_publisher_fini(publisher, node.rcl_ptr());
       if (RCL_RET_OK != ret) {
-        // Warning should use line number of the current stack frame
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini publisher: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
+        warn_fini_failure("publisher");
       }
       delete publisher;
     });

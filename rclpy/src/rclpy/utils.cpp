@@ -435,4 +435,15 @@ convert_to_type_hash_dict(const rosidl_type_hash_t * type_hash)
 
   return type_hash_kwargs;
 }
+
+void
+warn_fini_failure(const char * entity_name)
+{
+  // Warning should use line number of the current stack frame
+  int stack_level = 1;
+  PyErr_WarnFormat(
+    PyExc_RuntimeWarning, stack_level, "Failed to fini %s: %s",
+    entity_name, rcl_get_error_string().str);
+  rcl_reset_error();
+}
 }  // namespace rclpy

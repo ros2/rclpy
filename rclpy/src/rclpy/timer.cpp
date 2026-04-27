@@ -26,6 +26,7 @@
 #include "context.hpp"
 #include "exceptions.hpp"
 #include "timer.hpp"
+#include "utils.hpp"
 #include "events_executor/rcl_support.hpp"
 
 namespace rclpy
@@ -55,11 +56,7 @@ Timer::Timer(
     {
       rcl_ret_t ret = rcl_timer_fini(timer);
       if (RCL_RET_OK != ret) {
-        // Warning should use line number of the current stack frame
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini timer: %s",
-          rcl_get_error_string().str);
+        warn_fini_failure("timer");
       }
       delete timer;
     });

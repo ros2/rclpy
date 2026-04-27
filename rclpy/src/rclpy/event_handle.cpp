@@ -24,6 +24,7 @@
 
 #include "event_handle.hpp"
 #include "exceptions.hpp"
+#include "utils.hpp"
 
 namespace rclpy
 {
@@ -37,12 +38,7 @@ create_zero_initialized_event()
     {
       rcl_ret_t ret = rcl_event_fini(event);
       if (RCL_RET_OK != ret) {
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level,
-          "failed to fini event: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
+        warn_fini_failure("event");
       }
       delete event;
     });
