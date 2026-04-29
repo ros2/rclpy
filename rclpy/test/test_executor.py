@@ -385,13 +385,12 @@ class TestExecutor(unittest.TestCase):
         # Create a task
         future = executor.create_task(func)
 
-<<<<<<< HEAD
         thr.join(timeout=0.5)
         # If the join timed out, remove the node to cause the spin thread to stop
         if thr.is_alive():
             executor.remove_node(self.node)
-=======
-    def test_coroutine_exception_after_await(self) -> None:
+
+    def test_coroutine_exception_after_await(self):
         """Exception in a coroutine after awaiting a future must propagate."""
         self.assertIsNotNone(self.node.handle)
         # EventsExecutor excluded - segfaults on exception propagation (#1641)
@@ -403,7 +402,7 @@ class TestExecutor(unittest.TestCase):
                 first_fut = executor.create_future()
                 second_fut = executor.create_future()
 
-                async def coro_that_raises() -> None:
+                async def coro_that_raises():
                     first_fut.set_result(None)
                     await second_fut
                     raise RuntimeError('Expected error after await')
@@ -419,7 +418,7 @@ class TestExecutor(unittest.TestCase):
                     executor.spin_until_future_complete(task, timeout_sec=5)
                 self.assertIn('Expected error after await', str(cm.exception))
 
-    def test_cancel_task_while_awaiting_future(self) -> None:
+    def test_cancel_task_while_awaiting_future(self):
         """Cancelling a task parked on a future must not crash the dispatch loop."""
         self.assertIsNotNone(self.node.handle)
         # EventsExecutor excluded - see #1641
@@ -432,7 +431,7 @@ class TestExecutor(unittest.TestCase):
                 second_fut = executor.create_future()
                 third_fut = executor.create_future()
 
-                async def coro() -> None:
+                async def coro():
                     first_fut.set_result(None)
                     await second_fut
                     third_fut.set_result(None)
@@ -450,7 +449,7 @@ class TestExecutor(unittest.TestCase):
                 executor.spin_until_future_complete(first_fut, timeout_sec=5)
                 self.assertFalse(third_fut.done())
 
-    def test_await_already_completed_future(self) -> None:
+    def test_await_already_completed_future(self):
         """Awaiting an already-completed future must resume and return its result."""
         self.assertIsNotNone(self.node.handle)
         # EventsExecutor excluded - see #1641
@@ -459,11 +458,11 @@ class TestExecutor(unittest.TestCase):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
 
-                fut: Future[str] = executor.create_future()
+                fut = executor.create_future()
                 fut.set_result('done')  # complete before the task runs
 
-                async def coro() -> str:
-                    return await fut  # type: ignore[return-value]
+                async def coro():
+                    return await fut
 
                 task = executor.create_task(coro)
 
@@ -471,13 +470,12 @@ class TestExecutor(unittest.TestCase):
                 self.assertTrue(task.done())
                 self.assertEqual('done', task.result())
 
-    def test_create_task_during_spin(self) -> None:
+    def test_create_task_during_spin(self):
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
->>>>>>> aac0ebb (Bugfix: executor doesn't propagate exception from task that awaited a future (#1643))
 
         self.assertTrue(future.done())
         self.assertEqual('Sentinel Result', future.result())
