@@ -44,13 +44,8 @@ class Future:
         # An exception raised by the handler when called
         self._exception = None
         self._exception_fetched = False
-<<<<<<< HEAD
-        # callbacks to be scheduled after this task completes
-        self._callbacks = []
-=======
         # callbacks or tasks to be scheduled after this task completes
-        self._callbacks: List[Union[Callable[['Future[T]'], None], 'Task[Any]']] = []
->>>>>>> aac0ebb (Bugfix: executor doesn't propagate exception from task that awaited a future (#1643))
+        self._callbacks = []
         # Lock for threadsafety
         self._lock = threading.Lock()
         # An executor to use when scheduling done callbacks
