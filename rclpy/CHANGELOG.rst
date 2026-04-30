@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+10.0.10 (2026-04-30)
+--------------------
 * Feature: async node (`#1620 <https://github.com/ros2/rclpy/issues/1620>`_)
 * Refactor: moved TypeDescriptionService, LoggingService, ParameterService to BaseNode (`#1645 <https://github.com/ros2/rclpy/issues/1645>`_)
 * Refactor: base node (`#1637 <https://github.com/ros2/rclpy/issues/1637>`_)
