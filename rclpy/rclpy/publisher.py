@@ -41,6 +41,12 @@ class BasePublisher(Generic[MsgT]):
         *,
         on_destroy: Optional[Callable[['BasePublisher[MsgT]'], None]] = None,
     ) -> None:
+        """
+        Create a container for a ROS publisher.
+
+        .. warning:: Users should not create a publisher with this constructor, instead they
+           should call :meth:`.Node.create_publisher` or :meth:`.AsyncNode.create_publisher`.
+        """
         self.__publisher = publisher_impl
         self.msg_type = msg_type
         self.topic = topic

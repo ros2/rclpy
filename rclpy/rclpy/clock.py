@@ -140,6 +140,12 @@ class JumpHandle:
 class BaseClock:
 
     def __init__(self, *, clock_type: ClockType = ClockType.SYSTEM_TIME) -> None:
+        """
+        Create a clock.
+
+        .. warning:: Users should not create a clock with this constructor, instead they
+           should obtain one via :meth:`.Node.get_clock` or :meth:`.AsyncNode.get_clock`.
+        """
         if not isinstance(clock_type, ClockType):
             raise TypeError('Clock type must be a ClockType enum')
         self.__clock = _rclpy.Clock(clock_type.value)

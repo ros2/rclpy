@@ -454,11 +454,7 @@ Node::Node(
   RCPPUTILS_SCOPE_EXIT(
     {
       if (RCL_RET_OK != rcl_arguments_fini(&arguments)) {
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini arguments: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
+        warn_fini_failure("arguments");
       }
     });
 
@@ -474,23 +470,13 @@ Node::Node(
         if (rcl_logging_rosout_enabled() && enable_rosout) {
           ret = rcl_logging_rosout_fini_publisher_for_node(node);
           if (ret != RCL_RET_OK) {
-            // Warning should use line number of the current stack frame
-            int stack_level = 1;
-            PyErr_WarnFormat(
-              PyExc_RuntimeWarning, stack_level, "Failed to fini rosout publisher: %s",
-              rcl_get_error_string().str);
-            rcl_reset_error();
+            warn_fini_failure("rosout publisher");
           }
         }
       }
       ret = rcl_node_fini(node);
       if (RCL_RET_OK != ret) {
-        // Warning should use line number of the current stack frame
-        int stack_level = 1;
-        PyErr_WarnFormat(
-          PyExc_RuntimeWarning, stack_level, "Failed to fini node: %s",
-          rcl_get_error_string().str);
-        rcl_reset_error();
+        warn_fini_failure("node");
       }
       delete node;
     });

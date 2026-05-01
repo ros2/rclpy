@@ -125,6 +125,12 @@ class BaseSubscription(Generic[MsgT]):
          *,
          on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
     ) -> None:
+        """
+        Create a container for a ROS subscription.
+
+        .. warning:: Users should not create a subscription with this constructor, instead they
+           should call :meth:`.Node.create_subscription` or :meth:`.AsyncNode.create_subscription`.
+        """
         self.__subscription = subscription_impl
         self.msg_type = msg_type
         self.topic = topic
