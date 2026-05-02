@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import time
 
 import pytest
 
@@ -123,16 +124,17 @@ async def test_sleep_multiple_concurrent_waiters():
 
         async with asyncio.timeout(5):
             async with asyncio.TaskGroup() as tg:
-                t_long = tg.create_task(timed(0.2))
-                t_short = tg.create_task(timed(0.05))
-                t_mid = tg.create_task(timed(0.1))
+                t_long = tg.create_task(timed(0.5))
+                t_short = tg.create_task(timed(0.1))
+                t_mid = tg.create_task(timed(0.25))
 
-        # Each waiter respected its requested duration (sleep never fires early)
-        assert t_long.result() >= 0.2
-        assert t_mid.result() >= 0.1
-        assert t_short.result() >= 0.05
-        # Concurrent completes at ~0.2s; serial would be 0.35s.
-        assert t_long.result() < 0.3
+        # asyncio loop.call_later may fire up to one clock tick early
+        tol = time.get_clock_info('monotonic').resolution
+        # allowed loop overshoot
+        slack = 0.1
+        assert 0.1 - tol <= t_short.result() < 0.1 + slack
+        assert 0.25 - tol <= t_mid.result() < 0.25 + slack
+        assert 0.5 - tol <= t_long.result() < 0.5 + slack
 
 
 @pytest.mark.asyncio
