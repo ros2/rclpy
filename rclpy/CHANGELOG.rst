@@ -2,8 +2,8 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+11.0.0 (2026-05-07)
+-------------------
 * Removed dead code (`#1657 <https://github.com/ros2/rclpy/issues/1657>`_)
 * Refactor warn_fini_failure (`#1658 <https://github.com/ros2/rclpy/issues/1658>`_)
 * Feature: async node (`#1620 <https://github.com/ros2/rclpy/issues/1620>`_)
