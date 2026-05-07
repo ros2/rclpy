@@ -2,6 +2,17 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Removed dead code (`#1657 <https://github.com/ros2/rclpy/issues/1657>`_)
+* Refactor warn_fini_failure (`#1658 <https://github.com/ros2/rclpy/issues/1658>`_)
+* Feature: async node (`#1620 <https://github.com/ros2/rclpy/issues/1620>`_)
+* Refactor: moved TypeDescriptionService, LoggingService, ParameterService to BaseNode (`#1645 <https://github.com/ros2/rclpy/issues/1645>`_)
+* Refactor: base node (`#1637 <https://github.com/ros2/rclpy/issues/1637>`_)
+* Bugfix: executor doesn't propagate exception from task that awaited a future (`#1643 <https://github.com/ros2/rclpy/issues/1643>`_)
+* Fix: disable flaky executor test (`#1648 <https://github.com/ros2/rclpy/issues/1648>`_) (`#1649 <https://github.com/ros2/rclpy/issues/1649>`_)
+* Contributors: Alejandro Hernández Cordero, Nadav Elkabets
+
 10.0.9 (2026-04-14)
 -------------------
 
