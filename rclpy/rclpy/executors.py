@@ -88,22 +88,39 @@ class _WorkTracker:
         # Number of tasks that are being executed
         self._num_work_executing = 0
         self._work_condition = threading.Condition()
+        # Per-thread reentrant counter of in-flight work, so callers can
+        # tell whether the calling thread is itself currently inside
+        # __enter__/__exit__ — used by Executor.shutdown() to avoid
+        # self-deadlock when shutdown is invoked from inside a callback.
+        self._executing_thread_counts: Dict[threading.Thread, int] = {}
 
     def __enter__(self) -> None:
         """Increment the amount of executing work by 1."""
         with self._work_condition:
             self._num_work_executing += 1
+            t = threading.current_thread()
+            self._executing_thread_counts[t] = (
+                self._executing_thread_counts.get(t, 0) + 1)
 
     def __exit__(self, exc_type: Optional[Type[BaseException]],
                  exc_val: Optional[BaseException], exctb: Optional[TracebackType]) -> None:
         """Decrement the amount of work executing by 1."""
         with self._work_condition:
             self._num_work_executing -= 1
+            t = threading.current_thread()
+            count = self._executing_thread_counts[t] - 1
+            if count == 0:
+                del self._executing_thread_counts[t]
+            else:
+                self._executing_thread_counts[t] = count
             self._work_condition.notify_all()
 
     def wait(self, timeout_sec: Optional[float] = None) -> bool:
         """
         Wait until all work completes.
+
+        Work being executed by the calling thread is excluded from the count,
+        since that work is necessarily blocked on this call returning.
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
@@ -111,10 +128,11 @@ class _WorkTracker:
         """
         if timeout_sec is not None and timeout_sec < 0.0:
             timeout_sec = None
-        # Wait for all work to complete
         with self._work_condition:
             if not self._work_condition.wait_for(
-                    lambda: self._num_work_executing == 0, timeout_sec):
+                    lambda: self._num_work_executing == self._executing_thread_counts.get(
+                        threading.current_thread(), 0),
+                    timeout_sec):
                 return False
         return True
 
@@ -317,14 +335,24 @@ class Executor(ContextManager['Executor']):
             timeout expires before all outstanding work is done.
         """
         with self._shutdown_lock:
-            if not self._is_shutdown:
+            initiated_shutdown = not self._is_shutdown
+            if initiated_shutdown:
                 self._is_shutdown = True
                 # Tell executor it's been shut down
                 if self._guard:
                     self._guard.trigger()
-        if not self._is_shutdown:
-            if not self._work_tracker.wait(timeout_sec):
-                return False
+        # Wait for any in-flight callbacks on OTHER threads to drain. Done
+        # unconditionally (not just for the initiating call) so that:
+        #   - concurrent shutdown() calls don't race past the wait and start
+        #     destroying state while callbacks are still running, and
+        #   - a caller who got False back from a timed-out shutdown() can
+        #     simply call shutdown() again (with a longer or no timeout) and
+        #     have the second call actually wait + finish cleanup.
+        # _work_tracker.wait excludes work being executed by the calling
+        # thread, so this is safe from inside a callback — it will not
+        # self-deadlock.
+        if not self._work_tracker.wait(timeout_sec):
+            return False
 
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
