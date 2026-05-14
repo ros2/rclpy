@@ -80,10 +80,9 @@ class TestExecutor(unittest.TestCase):
                 finally:
                     executor.shutdown()
 
-    @unittest.skip('Flaky on CI - see issue #1648')
     def test_executor_immediate_shutdown(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        for cls in [SingleThreadedExecutor, EventsExecutor]:
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 try:
