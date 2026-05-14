@@ -20,9 +20,7 @@ from dataclasses import dataclass
 from functools import partial
 import inspect
 import os
-from threading import Condition
-from threading import Lock
-from threading import RLock
+import threading
 import time
 from types import TracebackType
 from typing import Any
@@ -94,7 +92,7 @@ class _WorkTracker:
     def __init__(self) -> None:
         # Number of tasks that are being executed
         self._num_work_executing = 0
-        self._work_condition = Condition()
+        self._work_condition = threading.Condition()
 
     def __enter__(self) -> None:
         """Increment the amount of executing work by 1."""
@@ -212,12 +210,12 @@ class Executor(ContextManager['Executor']):
         super().__init__()
         self._context = get_default_context() if context is None else context
         self._nodes: Set[Node] = set()
-        self._nodes_lock = RLock()
+        self._nodes_lock = threading.RLock()
         # all tasks that are not complete or canceled
         self._pending_tasks: Dict[Task[Any], TaskData] = {}
         # tasks that are ready to execute
         self._ready_tasks: Deque[Task[Any]] = deque()
-        self._tasks_lock = Lock()
+        self._tasks_lock = threading.Lock()
         # This is triggered when wait_for_ready_callbacks should rebuild the wait list
         self._guard: Optional[GuardCondition] = GuardCondition(
             callback=None, callback_group=None, context=self._context)
@@ -225,7 +223,7 @@ class Executor(ContextManager['Executor']):
         self._is_shutdown = False
         self._work_tracker = _WorkTracker()
         # Protect against shutdown() being called in parallel in two threads
-        self._shutdown_lock = Lock()
+        self._shutdown_lock = threading.Lock()
         # State for wait_for_ready_callbacks to reuse generator
         self._cb_iter: Optional[YieldedCallback] = None
         self._last_args: Optional[tuple[object, ...]] = None
@@ -238,24 +236,28 @@ class Executor(ContextManager['Executor']):
         # True when the executor is spinning
         self._is_spinning = False
         # Protects access to _is_spinning
-        self._is_spinning_lock = Lock()
+        self._is_spinning_cond = threading.Condition()
+        self._spinning_thread: Optional[threading.Thread] = None
 
     def _enter_spin(self) -> None:
         """Mark the executor as spinning and prevent concurrent spins."""
-        with self._is_spinning_lock:
+        with self._is_spinning_cond:
             if self._is_spinning:
                 raise RuntimeError('Executor is already spinning')
             self._is_spinning = True
+            self._spinning_thread = threading.current_thread()
 
     def _exit_spin(self) -> None:
         """Clear the spinning flag."""
-        with self._is_spinning_lock:
+        with self._is_spinning_cond:
             self._is_spinning = False
+            self._spinning_thread = None
+            self._is_spinning_cond.notify_all()
 
     @property
     def is_spinning(self) -> bool:
         """Return whether the executor is currently spinning."""
-        with self._is_spinning_lock:
+        with self._is_spinning_cond:
             return self._is_spinning
 
     @property
@@ -327,6 +329,15 @@ class Executor(ContextManager['Executor']):
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
             self._nodes = set()
+
+        with self._is_spinning_cond:
+            if self._spinning_thread is not threading.current_thread():
+                # Cap the wait to avoid hanging the process if a spinner
+                # is stuck in a callback that never returns.
+                wait_timeout = timeout_sec if (
+                    timeout_sec is not None and timeout_sec > 0) else 5.0
+                self._is_spinning_cond.wait_for(
+                    lambda: not self._is_spinning, timeout=wait_timeout)
 
         with self._shutdown_lock:
             if self._guard:
@@ -1086,7 +1097,7 @@ class MultiThreadedExecutor(Executor):
                 'Use the SingleThreadedExecutor instead.')
         self._futures: List[Future[Any]] = []
         self._executor = ThreadPoolExecutor(num_threads)
-        self._futures_lock = Lock()
+        self._futures_lock = threading.Lock()
 
     def _spin_once_impl(
         self,
