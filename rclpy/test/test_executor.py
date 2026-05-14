@@ -1032,6 +1032,22 @@ class TestExecutor(unittest.TestCase):
                 finally:
                     executor.shutdown()
 
+    def test_spin_until_future_complete_propagates_already_done_exception(self) -> None:
+        # Test that spin_until_future_complete surfaces a future's exception even if
+        # the future was already done before the spin loop ran.
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                try:
+                    future: Future[None] = executor.create_future()
+                    future.set_exception(RuntimeError('pre-set exception'))
+
+                    with self.assertRaises(RuntimeError) as cm:
+                        executor.spin_until_future_complete(future, timeout_sec=1)
+                    self.assertIn('pre-set exception', str(cm.exception))
+                finally:
+                    executor.shutdown()
+
 
 if __name__ == '__main__':
     unittest.main()

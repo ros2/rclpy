@@ -442,6 +442,18 @@ class Executor(ContextManager['Executor']):
         finally:
             self._exit_spin()
 
+        # If the future completed with an exception, re-raise it. The
+        # SingleThreadedExecutor re-raises synchronously inside _spin_once_impl
+        # so we never reach this code in that case. The MultiThreadedExecutor
+        # runs handlers on worker threads; the outer loop above can observe
+        # future.done() == True and exit before the next _spin_once_impl
+        # iteration would have called future.result(). Surfacing the
+        # exception here keeps the contract uniform across executor types.
+        if future.done():
+            exc = future.exception()
+            if exc is not None:
+                raise exc
+
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         """
         Wait for and execute a single callback.
