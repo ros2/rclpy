@@ -787,6 +787,62 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(shutdown_event.wait(120))
         self.node.destroy_timer(tmr)
 
+    def test_shutdown_timeout_then_retry(self) -> None:
+        """
+        Verify that every shutdown() call waits for callbacks to drain.
+
+        A shutdown() call that times out while a callback is in flight
+        must leave the executor in a state where calling shutdown() again
+        will also wait for the callback. The wait must NOT be gated on
+        "this call initiated shutdown" -- otherwise a caller who got
+        False back from a timed-out shutdown() and retries will skip the
+        wait entirely on the second call and race cleanup against the
+        still-running callback.
+        """
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+
+        callback_started = threading.Event()
+        callback_should_finish = threading.Event()
+
+        def long_callback() -> None:
+            callback_started.set()
+            # Bound the wait so a broken test fails rather than hangs.
+            callback_should_finish.wait(timeout=10)
+
+        tmr = self.node.create_timer(0.1, long_callback)
+        executor.add_node(self.node)
+        spin_thread = threading.Thread(target=executor.spin, daemon=True)
+        spin_thread.start()
+
+        try:
+            # Wait for the callback to be running so the work_tracker count
+            # is guaranteed to be non-zero when shutdown's wait runs.
+            self.assertTrue(callback_started.wait(timeout=5))
+
+            # First shutdown: this is the one that flips _is_shutdown to
+            # True. Times out because the callback is still in flight.
+            self.assertFalse(executor.shutdown(timeout_sec=0.1))
+
+            # Second shutdown: _is_shutdown is already True. The callback
+            # is STILL in flight. The wait must run again (regardless of
+            # who initiated) and time out -- if it incorrectly skipped
+            # the wait, this would return True and race cleanup against
+            # the running callback.
+            self.assertFalse(executor.shutdown(timeout_sec=0.1))
+
+            # Release the callback.
+            callback_should_finish.set()
+
+            # Final shutdown: callbacks have drained (or will momentarily).
+            # The wait should now succeed and cleanup should complete.
+            self.assertTrue(executor.shutdown(timeout_sec=5))
+        finally:
+            # Guard rails in case an assertion above interrupts the flow.
+            callback_should_finish.set()
+            spin_thread.join(timeout=5)
+            self.node.destroy_timer(tmr)
+
     def test_context_manager(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
