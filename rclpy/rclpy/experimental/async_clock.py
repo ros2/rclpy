@@ -88,20 +88,35 @@ class AsyncClock(BaseClock):
             return
 
         loop = asyncio.get_running_loop()
-        future: asyncio.Future[None] = loop.create_future()
-        timer_handle: Optional[asyncio.TimerHandle] = None
-        target: Optional[Time] = None
 
         if self.ros_time_is_active:
-            target = self.now() + duration
-        else:
-            timer_handle = loop.call_later(
-                duration_sec, AsyncClock._resolve_future, future)
+            # _on_jump resolves the future only when self.now() >= target,
+            # so this branch already provides "at least duration" semantics.
+            future: asyncio.Future[None] = loop.create_future()
+            target: Time = self.now() + duration
+            self._pending_sleeps[future] = target
+            try:
+                await future
+            finally:
+                self._pending_sleeps.pop(future)
+            return
 
-        self._pending_sleeps[future] = target
-        try:
-            await future
-        finally:
-            self._pending_sleeps.pop(future)
-            if timer_handle is not None:
+        # asyncio.call_later is allowed to fire up to loop._clock_resolution
+        # early -- on Windows that window is the OS scheduler tick (~15 ms).
+        # Re-arm until the deadline is actually reached so callers get an
+        # "at least duration_sec" guarantee, matching the strict semantics
+        # of Clock.sleep_for in rclpy/rclcpp.
+        deadline = loop.time() + duration_sec
+        while True:
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                return
+            future = loop.create_future()
+            timer_handle = loop.call_later(
+                remaining, AsyncClock._resolve_future, future)
+            self._pending_sleeps[future] = None
+            try:
+                await future
+            finally:
+                self._pending_sleeps.pop(future)
                 timer_handle.cancel()
