@@ -341,6 +341,20 @@ class Executor(ContextManager['Executor']):
                 # Tell executor it's been shut down
                 if self._guard:
                     self._guard.trigger()
+        # The timeout applies to the whole shutdown operation — both the
+        # callback drain and the spinner exit — not to each wait
+        # individually. Convert it into a deadline once; each wait below
+        # gets only the time remaining against that deadline.
+        if timeout_sec is None or timeout_sec < 0:
+            deadline: Optional[float] = None  # block forever
+        else:
+            deadline = time.monotonic() + timeout_sec
+
+        def remaining_timeout() -> Optional[float]:
+            if deadline is None:
+                return None
+            return max(0.0, deadline - time.monotonic())
+
         # Wait for any in-flight callbacks on OTHER threads to drain. Done
         # unconditionally (not just for the initiating call) so that:
         #   - concurrent shutdown() calls don't race past the wait and start
@@ -351,7 +365,7 @@ class Executor(ContextManager['Executor']):
         # _work_tracker.wait excludes work being executed by the calling
         # thread, so this is safe from inside a callback — it will not
         # self-deadlock.
-        if not self._work_tracker.wait(timeout_sec):
+        if not self._work_tracker.wait(remaining_timeout()):
             return False
 
         # Clean up stuff that won't be used anymore
@@ -360,12 +374,15 @@ class Executor(ContextManager['Executor']):
 
         with self._is_spinning_cond:
             if self._spinning_thread is not threading.current_thread():
-                # Cap the wait to avoid hanging the process if a spinner
-                # is stuck in a callback that never returns.
-                wait_timeout = timeout_sec if (
-                    timeout_sec is not None and timeout_sec > 0) else 5.0
-                self._is_spinning_cond.wait_for(
-                    lambda: not self._is_spinning, timeout=wait_timeout)
+                # Wait for the spin thread to acknowledge shutdown and
+                # exit before we destroy the guards (which the spinner
+                # may still be holding in its wait_set). If the wait
+                # times out, return False per the contract — don't
+                # destroy resources that the spinner might still touch.
+                if not self._is_spinning_cond.wait_for(
+                        lambda: not self._is_spinning,
+                        timeout=remaining_timeout()):
+                    return False
 
         with self._shutdown_lock:
             if self._guard:
