@@ -106,14 +106,15 @@ class AsyncClock(BaseClock):
         # Re-arm until the deadline is actually reached so callers get an
         # "at least duration_sec" guarantee, matching the strict semantics
         # of Clock.sleep_for in rclpy/rclcpp.
-        deadline = loop.time() + duration_sec
+        deadline: Time = self.now() + duration
         while True:
-            remaining = deadline - loop.time()
-            if remaining <= 0:
+            now = self.now()
+            if now >= deadline:
                 return
+            remaining_sec = (deadline - now).nanoseconds / 1e9
             future = loop.create_future()
             timer_handle = loop.call_later(
-                remaining, AsyncClock._resolve_future, future)
+                remaining_sec, AsyncClock._resolve_future, future)
             self._pending_sleeps[future] = None
             try:
                 await future
