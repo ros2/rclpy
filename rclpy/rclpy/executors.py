@@ -435,8 +435,7 @@ class Executor(ContextManager['Executor']):
                     now = time.monotonic()
 
                     if now >= end:
-                        self._exit_spin()
-                        return
+                        break
 
                     timeout_left.timeout = end - now
         finally:
@@ -1109,10 +1108,10 @@ class MultiThreadedExecutor(Executor):
             self._executor.submit(handler)
             self._futures.append(handler)
             with self._futures_lock:
-                for future in self._futures:
-                    if future.done():
-                        self._futures.remove(future)
-                        future.result()  # raise any exceptions
+                done_futures = [f for f in self._futures if f.done()]
+                for future in done_futures:
+                    self._futures.remove(future)
+                    future.result()  # raise any exceptions
 
             # Yield GIL so executor threads have a chance to run.
             os.sched_yield() if hasattr(os, 'sched_yield') else time.sleep(0)
