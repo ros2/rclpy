@@ -499,7 +499,7 @@ class TestQoSEvent(unittest.TestCase):
         """Test publisher_event_type_is_supported returns bool for all event types."""
         from rclpy.event_handler import publisher_event_type_is_supported
 
-        for event_type in QoSPublisherEventType:
+        for event_type in QoSPublisherEventType.__members__.values():
             result = publisher_event_type_is_supported(event_type)
             self.assertIsInstance(result, bool)
 
@@ -507,7 +507,7 @@ class TestQoSEvent(unittest.TestCase):
         """Test subscription_event_type_is_supported returns bool for all event types."""
         from rclpy.event_handler import subscription_event_type_is_supported
 
-        for event_type in QoSSubscriptionEventType:
+        for event_type in QoSSubscriptionEventType.__members__.values():
             result = subscription_event_type_is_supported(event_type)
             self.assertIsInstance(result, bool)
 
