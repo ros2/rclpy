@@ -845,6 +845,47 @@ class TestExecutor(unittest.TestCase):
             spin_thread.join(timeout=5)
             self.node.destroy_timer(tmr)
 
+    def test_shutdown_from_multithreaded_executor_callback(self) -> None:
+        """
+        MultiThreadedExecutor.shutdown() called from inside a callback
+        running on one of its own worker threads must not raise.
+
+        ThreadPoolExecutor.shutdown(wait=True) joins every worker; the
+        worker that's currently executing the callback would otherwise
+        be joined to itself, raising RuntimeError("cannot join current
+        thread"). The wrapper must skip the current thread.
+        """
+        self.assertIsNotNone(self.node.handle)
+        executor = MultiThreadedExecutor(num_threads=2, context=self.context)
+
+        shutdown_returned = threading.Event()
+        shutdown_error: List[BaseException] = []
+
+        def timer_callback() -> None:
+            try:
+                # Default wait_for_threads=True is what triggers the bug.
+                executor.shutdown(timeout_sec=5)
+            except BaseException as e:
+                shutdown_error.append(e)
+            finally:
+                shutdown_returned.set()
+
+        tmr = self.node.create_timer(0.1, timer_callback)
+        executor.add_node(self.node)
+        spin_thread = threading.Thread(target=executor.spin, daemon=True)
+        spin_thread.start()
+
+        try:
+            self.assertTrue(
+                shutdown_returned.wait(timeout=15),
+                'shutdown() never returned from inside the callback')
+            self.assertFalse(
+                shutdown_error,
+                f'shutdown() raised: {shutdown_error!r}')
+        finally:
+            spin_thread.join(timeout=5)
+            self.node.destroy_timer(tmr)
+
     def test_concurrent_shutdown_from_two_callbacks(self) -> None:
         """
         Two callbacks on different MultiThreadedExecutor workers calling
