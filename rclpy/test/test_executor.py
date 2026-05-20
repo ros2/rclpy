@@ -833,6 +833,66 @@ class TestExecutor(unittest.TestCase):
             spin_thread.join(timeout=5)
             self.node.destroy_timer(tmr)
 
+    def test_work_tracker_coroutine_closed_on_different_thread(self) -> None:
+        """
+        A coroutine using _WorkTracker.track_callback() that gets closed
+        from a thread other than the one that started it must not raise.
+
+        This is the Windows GC scenario: an executor's handler coroutine
+        suspends at an inner ``await``, the executor is torn down, and
+        Python GC calls ``coro.close()`` later -- ``GeneratorExit`` is
+        raised at the suspension point and the ``with`` block unwinds
+        on whatever thread the GC ran on, not the original worker
+        thread.  The bookkeeping must still clean up correctly.
+        """
+        from rclpy.executors import _WorkTracker
+
+        class YieldOnce:
+            def __await__(self) -> Generator[None, None, None]:
+                yield None
+                return None
+
+        wt = _WorkTracker()
+
+        async def callback_like() -> None:
+            with wt.track_callback():
+                await YieldOnce()
+
+        coro = callback_like()
+
+        # Start the coroutine on thread A: runs through track_callback's
+        # __enter__ (incrementing the count for thread A) and suspends
+        # at ``await YieldOnce()``.
+        def thread_a() -> None:
+            coro.send(None)
+
+        ta = threading.Thread(target=thread_a, name='WorkerA')
+        ta.start()
+        ta.join(timeout=5)
+        self.assertFalse(ta.is_alive())
+
+        # Close the coroutine from thread B (a different thread, mimicking
+        # the GC thread).  Pre-fix this raises KeyError because the
+        # __exit__ looked up _executing_thread_counts[current_thread]
+        # and current_thread is thread B, not the thread that entered.
+        errors: List[BaseException] = []
+
+        def thread_b() -> None:
+            try:
+                coro.close()
+            except BaseException as e:
+                errors.append(e)
+
+        tb = threading.Thread(target=thread_b, name='GCThread')
+        tb.start()
+        tb.join(timeout=5)
+        self.assertFalse(tb.is_alive())
+
+        self.assertFalse(errors, f'close() raised: {errors!r}')
+        self.assertFalse(
+            wt._executing_thread_counts,
+            f'work tracker not cleaned up: {wt._executing_thread_counts!r}')
+
     def test_shutdown_from_multithreaded_executor_callback(self) -> None:
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(num_threads=2, context=self.context)
