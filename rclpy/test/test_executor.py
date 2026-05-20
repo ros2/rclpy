@@ -768,7 +768,6 @@ class TestExecutor(unittest.TestCase):
                     self.node.destroy_timer(tmr)
 
     def test_shutdown_executor_from_callback(self) -> None:
-        """https://github.com/ros2/rclpy/issues/944: allow for executor shutdown from callback."""
         self.assertIsNotNone(self.node.handle)
         timer_period = 0.1
         # TODO(bmartin427) This seems like an invalid test to me?  executor.shutdown() is
@@ -790,17 +789,6 @@ class TestExecutor(unittest.TestCase):
         self.node.destroy_timer(tmr)
 
     def test_shutdown_timeout_then_retry(self) -> None:
-        """
-        Verify that every shutdown() call waits for callbacks to drain.
-
-        A shutdown() call that times out while a callback is in flight
-        must leave the executor in a state where calling shutdown() again
-        will also wait for the callback. The wait must NOT be gated on
-        "this call initiated shutdown" -- otherwise a caller who got
-        False back from a timed-out shutdown() and retries will skip the
-        wait entirely on the second call and race cleanup against the
-        still-running callback.
-        """
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
 
@@ -846,15 +834,6 @@ class TestExecutor(unittest.TestCase):
             self.node.destroy_timer(tmr)
 
     def test_shutdown_from_multithreaded_executor_callback(self) -> None:
-        """
-        MultiThreadedExecutor.shutdown() called from inside a callback
-        running on one of its own worker threads must not raise.
-
-        ThreadPoolExecutor.shutdown(wait=True) joins every worker; the
-        worker that's currently executing the callback would otherwise
-        be joined to itself, raising RuntimeError("cannot join current
-        thread"). The wrapper must skip the current thread.
-        """
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(num_threads=2, context=self.context)
 
@@ -887,16 +866,6 @@ class TestExecutor(unittest.TestCase):
             self.node.destroy_timer(tmr)
 
     def test_concurrent_shutdown_from_two_callbacks(self) -> None:
-        """
-        Two callbacks on different MultiThreadedExecutor workers calling
-        shutdown() concurrently must not deadlock on each other.
-
-        _work_tracker.wait excludes the calling thread's own in-flight work
-        from its predicate, but if it counted other waiters' in-flight work
-        as still pending, two callbacks both inside shutdown() would each
-        wait for the other's callback to finish -- which can't happen,
-        because both callbacks are blocked in shutdown().
-        """
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(num_threads=2, context=self.context)
 
@@ -912,6 +881,7 @@ class TestExecutor(unittest.TestCase):
         barrier = threading.Barrier(2)
         results: List[bool] = []
         results_lock = threading.Lock()
+        all_done = threading.Event()
 
         def shutdown_from_callback() -> None:
             try:
@@ -921,6 +891,8 @@ class TestExecutor(unittest.TestCase):
             ok = executor.shutdown(timeout_sec=5, wait_for_threads=False)
             with results_lock:
                 results.append(ok)
+                if len(results) == 2:
+                    all_done.set()
 
         tmr_a = self.node.create_timer(
             0.05, shutdown_from_callback, callback_group=cb_group_a)
@@ -932,14 +904,16 @@ class TestExecutor(unittest.TestCase):
         spin_thread.start()
 
         try:
-            # Each shutdown() has an internal 5s timeout; allow both
-            # callbacks plus the spinner to wind down with margin.
-            spin_thread.join(timeout=15)
-            self.assertFalse(
-                spin_thread.is_alive(),
-                'spin thread did not exit -- concurrent shutdown deadlocked')
+            # Wait for both callbacks to finish their shutdown calls --
+            # don't gate on the spinner exiting, since the spinner can
+            # exit before either callback has appended its result.
+            self.assertTrue(
+                all_done.wait(timeout=15),
+                f'only {len(results)}/2 shutdowns completed -- '
+                'concurrent shutdown deadlocked')
+            spin_thread.join(timeout=5)
+            self.assertFalse(spin_thread.is_alive(), 'spin thread did not exit')
             with results_lock:
-                self.assertEqual(len(results), 2)
                 self.assertTrue(
                     all(results),
                     f'shutdown() returned False (timed out): {results}')

@@ -88,14 +88,19 @@ class _WorkTracker:
         self._work_condition = threading.Condition()
         # Per-thread reentrant counter of in-flight work. A thread has
         # an entry iff it is currently inside __enter__/__exit__; the
-        # value is the reentrance depth. The set of keys is exactly the
+        # value is the reentrance depth. The set of keys is the
         # set of threads currently running a callback.
         self._executing_thread_counts: Dict[threading.Thread, int] = {}
-        # Threads currently parked inside wait(). A thread in this set
-        # cannot be making progress on its own callback, so its
-        # in-flight work (if any) should not block other waiters --
+        # Threads whose in-flight callback (if any) is committed to
+        # finishing rather than making further progress -- i.e., the
+        # thread is parked in wait() or has already returned from
+        # wait() and is finishing the surrounding shutdown.  Their
+        # callback work should not block other waiters' drain checks;
         # otherwise two callbacks on different worker threads both
         # calling Executor.shutdown() would deadlock on each other.
+        # An entry is removed only when the owning callback ends
+        # (__exit__) or, for external callers with no in-flight
+        # callback, immediately when their wait() returns.
         self._waiting_threads: Set[threading.Thread] = set()
 
     def __enter__(self) -> None:
@@ -113,6 +118,9 @@ class _WorkTracker:
             count = self._executing_thread_counts[t] - 1
             if count == 0:
                 del self._executing_thread_counts[t]
+                # The thread's callback has ended, so it's no longer
+                # "committed to finishing" -- drop its waiter membership.
+                self._waiting_threads.discard(t)
             else:
                 self._executing_thread_counts[t] = count
             self._work_condition.notify_all()
@@ -123,10 +131,9 @@ class _WorkTracker:
 
         Work being executed by the calling thread is excluded from the wait,
         since that work is necessarily blocked on this call returning. Work
-        being executed by any other thread that is itself currently parked in
-        wait() is also excluded, so concurrent shutdown() calls from inside
-        callbacks on different worker threads don't deadlock waiting for
-        each other.
+        being executed by any other thread that has itself entered wait() is
+        also excluded, so concurrent shutdown() calls from inside callbacks
+        on different worker threads don't deadlock waiting for each other.
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
@@ -137,22 +144,34 @@ class _WorkTracker:
         current = threading.current_thread()
 
         def other_work_drained() -> bool:
-            # True once every thread with in-flight work is itself parked
-            # here in wait() and thus making no further progress on its
-            # callback. Equivalently: no thread is actively executing.
+            # True once every thread with in-flight work is itself in the
+            # waiting set, i.e., committed to finishing rather than making
+            # progress on its callback.
             return self._executing_thread_counts.keys() <= self._waiting_threads
 
         with self._work_condition:
-            self._waiting_threads.add(current)
-            # A new waiter may have just satisfied an existing waiter's
-            # condition (its in-flight work is now excluded).
-            self._work_condition.notify_all()
+            added_self = current not in self._waiting_threads
+            if added_self:
+                self._waiting_threads.add(current)
+                # A new waiter may have just satisfied an existing
+                # waiter's condition (its in-flight work is now excluded).
+                self._work_condition.notify_all()
             try:
                 if not self._work_condition.wait_for(other_work_drained, timeout_sec):
                     return False
             finally:
-                self._waiting_threads.discard(current)
-                self._work_condition.notify_all()
+                # Keep the waiter membership while a callback is still
+                # in flight on this thread -- removing it now would let
+                # other concurrent waiters' predicates flip back to
+                # False and re-block until our callback ends, even
+                # though our callback is committed to finishing (we are
+                # past wait() and the rest of shutdown is cleanup).
+                # __exit__ will drop the membership when the callback
+                # ends.  For external callers with no in-flight
+                # callback, no __exit__ will run, so discard here.
+                if added_self and current not in self._executing_thread_counts:
+                    self._waiting_threads.discard(current)
+                    self._work_condition.notify_all()
         return True
 
 
