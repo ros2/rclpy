@@ -1231,10 +1231,25 @@ class MultiThreadedExecutor(Executor):
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         :param wait_for_threads: If true, this function will block until all executor threads
-            have joined.
+            have joined. When shutdown() is called from inside a callback running on one of
+            this executor's worker threads, the *current* thread is necessarily excluded from
+            that join (Python cannot join a thread with itself) -- the rest of the callback
+            will finish after this returns and the worker will exit naturally.
         :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
             timeout expires before all outstanding work is done.
         """
         success: bool = super().shutdown(timeout_sec)
-        self._executor.shutdown(wait=wait_for_threads)
+        # Always tell the pool to shut down without waiting: if shutdown()
+        # was called from inside a callback running on one of these
+        # workers, letting ThreadPoolExecutor.shutdown(wait=True) join the
+        # current thread would raise RuntimeError. We do the joins below
+        # ourselves so we can skip the current thread.
+        self._executor.shutdown(wait=False)
+        if wait_for_threads:
+            current = threading.current_thread()
+            # Snapshot before iterating; _threads is stable post-shutdown
+            # (no new workers are spawned) but we copy defensively.
+            for t in list(self._executor._threads):
+                if t is not current:
+                    t.join()
         return success
