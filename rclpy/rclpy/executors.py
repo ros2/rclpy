@@ -240,14 +240,10 @@ class Executor:
             timeot expires before all outstanding work is done.
         """
         with self._shutdown_lock:
-            if self._is_shutdown:
-                return True
-            self._is_shutdown = True
-            # Tell executor it's been shut down
-            try:
+            if not self._is_shutdown:
+                self._is_shutdown = True
+                # Tell executor it's been shut down
                 self._guard.trigger()
-            except InvalidHandle:
-                pass
 
         if not self._work_tracker.wait(timeout_sec):
             return False
@@ -469,20 +465,14 @@ class Executor:
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
-                try:
-                    gc.trigger()
-                except InvalidHandle:
-                    pass
+                gc.trigger()
                 return
             with work_tracker:
                 arg = take_from_wait_list(entity)
 
                 # Signal that this has been 'taken' and can be added back to the wait list
                 entity._executor_event = False
-                try:
-                    gc.trigger()
-                except InvalidHandle:
-                    pass
+                gc.trigger()
 
                 try:
                     await call_coroutine(entity, arg)
@@ -490,10 +480,7 @@ class Executor:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
-                    try:
-                        gc.trigger()
-                    except InvalidHandle:
-                        pass
+                    gc.trigger()
         task = Task(
             handler, (entity, self._guard, self._is_shutdown, self._work_tracker),
             executor=self)
@@ -581,10 +568,7 @@ class Executor:
                 # retrigger a guard condition that was triggered but not handled
                 for gc in node_guards:
                     if gc._executor_triggered:
-                        try:
-                            gc.trigger()
-                        except InvalidHandle:
-                            pass
+                        gc.trigger()
                     guards.append(gc)
             if timeout_timer is not None:
                 timers.append(timeout_timer)
