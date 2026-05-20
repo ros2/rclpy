@@ -543,7 +543,6 @@ class TestExecutor(unittest.TestCase):
             executor.shutdown()
             self.node.destroy_timer(tmr)
 
-
     def test_not_lose_callback(self):
         self.assertIsNotNone(self.node.handle)
         executor = SingleThreadedExecutor(context=self.context)
