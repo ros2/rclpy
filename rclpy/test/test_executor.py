@@ -17,6 +17,7 @@ import os
 import threading
 import time
 from typing import Generator
+from typing import List
 from typing import Optional
 from typing import Protocol
 from typing import Set
@@ -24,6 +25,7 @@ import unittest
 import warnings
 
 import rclpy
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.context import Context
 from rclpy.executors import Executor
@@ -842,6 +844,69 @@ class TestExecutor(unittest.TestCase):
             callback_should_finish.set()
             spin_thread.join(timeout=5)
             self.node.destroy_timer(tmr)
+
+    def test_concurrent_shutdown_from_two_callbacks(self) -> None:
+        """
+        Two callbacks on different MultiThreadedExecutor workers calling
+        shutdown() concurrently must not deadlock on each other.
+
+        _work_tracker.wait excludes the calling thread's own in-flight work
+        from its predicate, but if it counted other waiters' in-flight work
+        as still pending, two callbacks both inside shutdown() would each
+        wait for the other's callback to finish -- which can't happen,
+        because both callbacks are blocked in shutdown().
+        """
+        self.assertIsNotNone(self.node.handle)
+        executor = MultiThreadedExecutor(num_threads=2, context=self.context)
+
+        # Distinct callback groups so the two timers can be dispatched to
+        # separate worker threads concurrently. (The default callback
+        # group is MutuallyExclusive at the node level.)
+        cb_group_a = MutuallyExclusiveCallbackGroup()
+        cb_group_b = MutuallyExclusiveCallbackGroup()
+
+        # Use a barrier to make both callbacks reach shutdown() at the
+        # same time, so they are both inside _work_tracker.wait
+        # simultaneously -- the scenario the regression guards against.
+        barrier = threading.Barrier(2)
+        results: List[bool] = []
+        results_lock = threading.Lock()
+
+        def shutdown_from_callback() -> None:
+            try:
+                barrier.wait(timeout=5)
+            except threading.BrokenBarrierError:
+                return
+            ok = executor.shutdown(timeout_sec=5, wait_for_threads=False)
+            with results_lock:
+                results.append(ok)
+
+        tmr_a = self.node.create_timer(
+            0.05, shutdown_from_callback, callback_group=cb_group_a)
+        tmr_b = self.node.create_timer(
+            0.05, shutdown_from_callback, callback_group=cb_group_b)
+
+        executor.add_node(self.node)
+        spin_thread = threading.Thread(target=executor.spin, daemon=True)
+        spin_thread.start()
+
+        try:
+            # Each shutdown() has an internal 5s timeout; allow both
+            # callbacks plus the spinner to wind down with margin.
+            spin_thread.join(timeout=15)
+            self.assertFalse(
+                spin_thread.is_alive(),
+                'spin thread did not exit -- concurrent shutdown deadlocked')
+            with results_lock:
+                self.assertEqual(len(results), 2)
+                self.assertTrue(
+                    all(results),
+                    f'shutdown() returned False (timed out): {results}')
+        finally:
+            barrier.abort()
+            spin_thread.join(timeout=5)
+            self.node.destroy_timer(tmr_a)
+            self.node.destroy_timer(tmr_b)
 
     def test_context_manager(self) -> None:
         self.assertIsNotNone(self.node.handle)
