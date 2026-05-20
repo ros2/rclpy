@@ -85,28 +85,30 @@ class _WorkTracker:
     """Track the amount of work that is in progress."""
 
     def __init__(self) -> None:
-        # Number of tasks that are being executed
-        self._num_work_executing = 0
         self._work_condition = threading.Condition()
-        # Per-thread reentrant counter of in-flight work, so callers can
-        # tell whether the calling thread is itself currently inside
-        # __enter__/__exit__ — used by Executor.shutdown() to avoid
-        # self-deadlock when shutdown is invoked from inside a callback.
+        # Per-thread reentrant counter of in-flight work. A thread has
+        # an entry iff it is currently inside __enter__/__exit__; the
+        # value is the reentrance depth. The set of keys is exactly the
+        # set of threads currently running a callback.
         self._executing_thread_counts: Dict[threading.Thread, int] = {}
+        # Threads currently parked inside wait(). A thread in this set
+        # cannot be making progress on its own callback, so its
+        # in-flight work (if any) should not block other waiters --
+        # otherwise two callbacks on different worker threads both
+        # calling Executor.shutdown() would deadlock on each other.
+        self._waiting_threads: Set[threading.Thread] = set()
 
     def __enter__(self) -> None:
-        """Increment the amount of executing work by 1."""
+        """Mark the calling thread as executing a callback."""
         with self._work_condition:
-            self._num_work_executing += 1
             t = threading.current_thread()
             self._executing_thread_counts[t] = (
                 self._executing_thread_counts.get(t, 0) + 1)
 
     def __exit__(self, exc_type: Optional[Type[BaseException]],
                  exc_val: Optional[BaseException], exctb: Optional[TracebackType]) -> None:
-        """Decrement the amount of work executing by 1."""
+        """Mark the calling thread as having finished a callback."""
         with self._work_condition:
-            self._num_work_executing -= 1
             t = threading.current_thread()
             count = self._executing_thread_counts[t] - 1
             if count == 0:
@@ -119,8 +121,12 @@ class _WorkTracker:
         """
         Wait until all work completes.
 
-        Work being executed by the calling thread is excluded from the count,
-        since that work is necessarily blocked on this call returning.
+        Work being executed by the calling thread is excluded from the wait,
+        since that work is necessarily blocked on this call returning. Work
+        being executed by any other thread that is itself currently parked in
+        wait() is also excluded, so concurrent shutdown() calls from inside
+        callbacks on different worker threads don't deadlock waiting for
+        each other.
 
         :param timeout_sec: Seconds to wait. Block forever if None or negative. Don't wait if 0
         :type timeout_sec: float or None
@@ -128,12 +134,25 @@ class _WorkTracker:
         """
         if timeout_sec is not None and timeout_sec < 0.0:
             timeout_sec = None
+        current = threading.current_thread()
+
+        def other_work_drained() -> bool:
+            # True once every thread with in-flight work is itself parked
+            # here in wait() and thus making no further progress on its
+            # callback. Equivalently: no thread is actively executing.
+            return self._executing_thread_counts.keys() <= self._waiting_threads
+
         with self._work_condition:
-            if not self._work_condition.wait_for(
-                    lambda: self._num_work_executing == self._executing_thread_counts.get(
-                        threading.current_thread(), 0),
-                    timeout_sec):
-                return False
+            self._waiting_threads.add(current)
+            # A new waiter may have just satisfied an existing waiter's
+            # condition (its in-flight work is now excluded).
+            self._work_condition.notify_all()
+            try:
+                if not self._work_condition.wait_for(other_work_drained, timeout_sec):
+                    return False
+            finally:
+                self._waiting_threads.discard(current)
+                self._work_condition.notify_all()
         return True
 
 
