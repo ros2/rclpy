@@ -14,6 +14,7 @@
 
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from contextlib import ExitStack
 from dataclasses import dataclass
 from functools import partial
@@ -103,27 +104,41 @@ class _WorkTracker:
         # callback, immediately when their wait() returns.
         self._waiting_threads: Set[threading.Thread] = set()
 
-    def __enter__(self) -> None:
-        """Mark the calling thread as executing a callback."""
-        with self._work_condition:
-            t = threading.current_thread()
-            self._executing_thread_counts[t] = (
-                self._executing_thread_counts.get(t, 0) + 1)
+    @contextmanager
+    def track_callback(self) -> Generator[None, None, None]:
+        """
+        Track an in-flight callback for the duration of the context.
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]],
-                 exc_val: Optional[BaseException], exctb: Optional[TracebackType]) -> None:
-        """Mark the calling thread as having finished a callback."""
+        The owning thread is captured at enter time and used to decrement
+        the per-thread count when the context exits -- even if the exit
+        runs on a different thread.  That happens when a coroutine using
+        this context manager is suspended at an inner ``await`` and then
+        closed via GC (e.g. during executor teardown): ``coro.close()``
+        raises ``GeneratorExit`` at the suspension point on whatever
+        thread the GC happened to run on, and the ``with`` block's
+        unwinding -- including this finally -- runs on that thread, not
+        the original worker thread.  Using ``threading.current_thread()``
+        in the finally would either lose the decrement (best case) or
+        ``KeyError`` (current case).
+        """
+        owner = threading.current_thread()
         with self._work_condition:
-            t = threading.current_thread()
-            count = self._executing_thread_counts[t] - 1
-            if count == 0:
-                del self._executing_thread_counts[t]
-                # The thread's callback has ended, so it's no longer
-                # "committed to finishing" -- drop its waiter membership.
-                self._waiting_threads.discard(t)
-            else:
-                self._executing_thread_counts[t] = count
-            self._work_condition.notify_all()
+            self._executing_thread_counts[owner] = (
+                self._executing_thread_counts.get(owner, 0) + 1)
+        try:
+            yield
+        finally:
+            with self._work_condition:
+                count = self._executing_thread_counts[owner] - 1
+                if count == 0:
+                    del self._executing_thread_counts[owner]
+                    # The thread's callback has ended, so it's no longer
+                    # "committed to finishing" -- drop its waiter
+                    # membership.
+                    self._waiting_threads.discard(owner)
+                else:
+                    self._executing_thread_counts[owner] = count
+                self._work_condition.notify_all()
 
     def wait(self, timeout_sec: Optional[float] = None) -> bool:
         """
@@ -762,7 +777,7 @@ class Executor(ContextManager['Executor']):
                 entity._executor_event = False
                 gc.trigger()
                 return
-            with work_tracker:
+            with work_tracker.track_callback():
                 # The take_from_wait_list method here is expected to return either an async def
                 # method or None if there is no work to do.
                 call_coroutine = take_from_wait_list(entity)
