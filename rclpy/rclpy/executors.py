@@ -1108,7 +1108,7 @@ class MultiThreadedExecutor(Executor):
             self._executor.submit(handler)
             self._futures.append(handler)
             with self._futures_lock:
-                done_futures = [f for f in self._futures if f.done()]
+                done_futures = [f for f in self._futures if f.done() or f.cancelled()]
                 for future in done_futures:
                     self._futures.remove(future)
                     future.result()  # raise any exceptions
