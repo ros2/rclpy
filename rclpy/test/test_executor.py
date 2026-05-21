@@ -28,6 +28,7 @@ import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.context import Context
+from rclpy.executors import _WorkTracker
 from rclpy.executors import Executor
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
@@ -834,20 +835,8 @@ class TestExecutor(unittest.TestCase):
             self.node.destroy_timer(tmr)
 
     def test_work_tracker_coroutine_closed_on_different_thread(self) -> None:
-        """
-        A coroutine using _WorkTracker.track_callback() that gets closed
-        from a thread other than the one that started it must not raise.
-
-        This is the Windows GC scenario: an executor's handler coroutine
-        suspends at an inner ``await``, the executor is torn down, and
-        Python GC calls ``coro.close()`` later -- ``GeneratorExit`` is
-        raised at the suspension point and the ``with`` block unwinds
-        on whatever thread the GC ran on, not the original worker
-        thread.  The bookkeeping must still clean up correctly.
-        """
-        from rclpy.executors import _WorkTracker
-
         class YieldOnce:
+
             def __await__(self) -> Generator[None, None, None]:
                 yield None
                 return None
