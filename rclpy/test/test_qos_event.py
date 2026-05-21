@@ -494,3 +494,30 @@ class TestQoSEvent(unittest.TestCase):
         self.assertEqual(matched_status.total_count_change, 0)
         self.assertEqual(matched_status.current_count, 0)
         self.assertEqual(matched_status.current_count_change, -1)
+
+    def test_publisher_event_type_is_supported(self) -> None:
+        """Test publisher_event_type_is_supported returns bool for all event types."""
+        from rclpy.event_handler import publisher_event_type_is_supported
+
+        for event_type in QoSPublisherEventType.__members__.values():
+            result = publisher_event_type_is_supported(event_type)
+            self.assertIsInstance(result, bool)
+
+    def test_subscription_event_type_is_supported(self) -> None:
+        """Test subscription_event_type_is_supported returns bool for all event types."""
+        from rclpy.event_handler import subscription_event_type_is_supported
+
+        for event_type in QoSSubscriptionEventType.__members__.values():
+            result = subscription_event_type_is_supported(event_type)
+            self.assertIsInstance(result, bool)
+
+    def test_event_type_is_supported_matched(self) -> None:
+        """Test that MATCHED event types are reported as supported."""
+        from rclpy.event_handler import publisher_event_type_is_supported
+        from rclpy.event_handler import subscription_event_type_is_supported
+
+        # MATCHED events should be supported across all RMW implementations.
+        self.assertTrue(publisher_event_type_is_supported(
+            QoSPublisherEventType.RCL_PUBLISHER_MATCHED))
+        self.assertTrue(subscription_event_type_is_supported(
+            QoSSubscriptionEventType.RCL_SUBSCRIPTION_MATCHED))

@@ -162,6 +162,18 @@ EventHandle::take_event()
   throw std::runtime_error("cannot take event that is neither a publisher or a subscription event");
 }
 
+bool
+publisher_event_type_is_supported(rcl_publisher_event_type_t event_type)
+{
+  return rcl_publisher_event_type_is_supported(event_type);
+}
+
+bool
+subscription_event_type_is_supported(rcl_subscription_event_type_t event_type)
+{
+  return rcl_subscription_event_type_is_supported(event_type);
+}
+
 void
 define_event_handle(py::module module)
 {
@@ -253,5 +265,14 @@ define_event_handle(py::module module)
   py::class_<rmw_incompatible_type_status_t>(module, "rmw_incompatible_type_status_t")
   .def(py::init<>())
   .def_readonly("total_count_change", &rmw_incompatible_type_status_t::total_count_change);
+
+  module.def(
+    "publisher_event_type_is_supported",
+    &rclpy::publisher_event_type_is_supported,
+    "Check if a publisher event type is supported by the active RMW implementation.");
+  module.def(
+    "subscription_event_type_is_supported",
+    &rclpy::subscription_event_type_is_supported,
+    "Check if a subscription event type is supported by the active RMW implementation.");
 }
 }  // namespace rclpy
