@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+11.0.1 (2026-05-22)
+-------------------
+* add publisher/subscription_event_type_is_supported(). (`#1647 <https://github.com/ros2/rclpy/issues/1647>`_)
+* Fix a race in the executors. (`#1662 <https://github.com/ros2/rclpy/issues/1662>`_)
+* Fix rclpy async executor sleep. (`#1661 <https://github.com/ros2/rclpy/issues/1661>`_)
+* Contributors: Chris Lalancette, Tomoya Fujita
+
 11.0.0 (2026-05-07)
 -------------------
 * Removed dead code (`#1657 <https://github.com/ros2/rclpy/issues/1657>`_)
