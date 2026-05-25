@@ -1031,17 +1031,14 @@ class MultiThreadedExecutor(Executor):
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
         future.add_done_callback(lambda x: self.wake())
-<<<<<<< HEAD
         try:
             self._spin_once_until_future_complete(future, timeout_sec)
         finally:
             self._exit_spin()
-=======
-        self._spin_once_impl(timeout_sec, future.done)
 
     def shutdown(
         self,
-        timeout_sec: float = None,
+        timeout_sec: Optional[float] = None,
         *,
         wait_for_threads: bool = True
     ) -> bool:
@@ -1058,4 +1055,3 @@ class MultiThreadedExecutor(Executor):
         success: bool = super().shutdown(timeout_sec)
         self._executor.shutdown(wait=wait_for_threads)
         return success
->>>>>>> ee79763 (shutdown ThreadPoolExecutor in MultiThreadedExecutor. (#1309))
