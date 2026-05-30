@@ -576,7 +576,7 @@ class TestExecutor(unittest.TestCase):
         timer1.destroy()
         cli.destroy()
 
-    def shutdown_executor_from_callback(self):
+    def test_shutdown_executor_from_callback(self):
         """https://github.com/ros2/rclpy/issues/944: allow for executor shutdown from callback."""
         self.assertIsNotNone(self.node.handle)
         timer_period = 0.1
