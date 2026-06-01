@@ -105,6 +105,7 @@ class LifecycleNodeMixin(ManagedEntity):
 
         self._logger: RcutilsLogger = self.get_logger()
         self._callbacks: Dict[int, Callable[[LifecycleState], TransitionCallbackReturn]] = {}
+        self._catch_callback_errors = True
         # register all state machine transition callbacks
         self.__register_callback(
             lifecycle_msgs.msg.State.TRANSITION_STATE_CONFIGURING,
@@ -190,6 +191,19 @@ class LifecycleNodeMixin(ManagedEntity):
                 callback_group.add_entity(s)
             # Extend base class list of services, so they are added to the executor when spinning.
             self._services.extend(lifecycle_services)
+
+    def catch_callback_errors(self, enable: bool):
+        """
+        Enable or disable catching errors in transition callbacks.
+
+        By default, exceptions raised in a transition callback are caught,
+        and turned into a return value of `TransitionCallbackReturn.ERROR`.
+
+        You can disable this behavior by calling `catch_callback_errors(False)`.
+        When disabled, exceptions are not caught internally,
+        and will crash the application if not caught by a higher layer.
+        """
+        self._catch_callback_errors = enable
 
     def trigger_configure(self) -> TransitionCallbackReturn:
         return self.__change_state(lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE)
@@ -397,8 +411,13 @@ class LifecycleNodeMixin(ManagedEntity):
             ret = cb(previous_state)
             return ret
         except Exception:
-            # TODO(ivanpauno): log sth here
-            return TransitionCallbackReturn.ERROR
+            # If we're configured to catch callback errors, log them.
+            if self._catch_callback_errors:
+                traceback.print_exc()
+                return TransitionCallbackReturn.ERROR
+            # Otherwise, let them bubble up to the caller.
+            else
+                raise
 
     def __change_state(self, transition_id: int) -> TransitionCallbackReturn:
         self.__check_is_initialized()
