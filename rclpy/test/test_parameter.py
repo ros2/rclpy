@@ -474,6 +474,32 @@ class TestParameter(unittest.TestCase):
                 os.unlink(f.name)
         self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
 
+    def test_parameter_dict_from_yaml_file_preserves_float_type(self) -> None:
+        # Regression test for floats whose ``str()`` representation lacks a
+        # decimal point (e.g. ``0.00001`` -> ``'1e-05'``). The previous
+        # ``get_parameter_value(str(param_value))`` round-trip caused PyYAML 1.1
+        # to reparse these as strings rather than as doubles.
+        yaml_string = """
+            node:
+                ros__parameters:
+                    tiny: 0.00001
+                    arr: [0.00001, 0.00002]
+            """
+        try:
+            with NamedTemporaryFile(mode='w', delete=False) as f:
+                f.write(yaml_string)
+                f.flush()
+                f.close()
+                parameter_dict = parameter_dict_from_yaml_file(f.name)
+                assert parameter_dict['tiny'].value.type == ParameterType.PARAMETER_DOUBLE
+                assert parameter_dict['tiny'].value.double_value == 0.00001
+                assert parameter_dict['arr'].value.type == ParameterType.PARAMETER_DOUBLE_ARRAY
+                assert list(parameter_dict['arr'].value.double_array_value) == [
+                    0.00001, 0.00002]
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
+
 
 if __name__ == '__main__':
     unittest.main()

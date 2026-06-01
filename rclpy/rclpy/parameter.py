@@ -342,6 +342,46 @@ def parameter_value_to_python(parameter_value: ParameterValue) -> AllowableParam
         raise RuntimeError(f'unexpected parameter type {parameter_value.type}')
 
 
+def _parameter_value_from_python_value(value: Any) -> ParameterValue:
+    """
+    Build a ParameterValue from an already-parsed Python value.
+
+    Mirrors the type-inference of :func:`get_parameter_value` but skips the
+    ``str(value) -> yaml.safe_load`` round-trip. That round-trip lost
+    ``float`` values whose ``str()`` representation lacks a decimal point
+    (e.g. ``0.00001`` -> ``'1e-05'`` -> reparsed as ``str`` by PyYAML 1.1).
+    """
+    pv = ParameterValue()
+    if isinstance(value, bool):
+        pv.type = ParameterType.PARAMETER_BOOL
+        pv.bool_value = value
+    elif isinstance(value, int):
+        pv.type = ParameterType.PARAMETER_INTEGER
+        pv.integer_value = value
+    elif isinstance(value, float):
+        pv.type = ParameterType.PARAMETER_DOUBLE
+        pv.double_value = value
+    elif isinstance(value, list):
+        if all(isinstance(v, bool) for v in value):
+            pv.type = ParameterType.PARAMETER_BOOL_ARRAY
+            pv.bool_array_value = value
+        elif all(isinstance(v, int) for v in value):
+            pv.type = ParameterType.PARAMETER_INTEGER_ARRAY
+            pv.integer_array_value = value
+        elif all(isinstance(v, float) for v in value):
+            pv.type = ParameterType.PARAMETER_DOUBLE_ARRAY
+            pv.double_array_value = value
+        elif all(isinstance(v, str) for v in value):
+            pv.type = ParameterType.PARAMETER_STRING_ARRAY
+            pv.string_array_value = value
+        else:
+            pv.type = ParameterType.PARAMETER_STRING
+            pv.string_value = str(value)
+    else:
+        return get_parameter_value(str(value))
+    return pv
+
+
 def parameter_dict_from_yaml_file(
     parameter_file: str,
     use_wildcard: bool = False,
@@ -562,6 +602,6 @@ def _unpack_parameter_dict(namespace: str,
         else:
             parameter = ParameterMsg()
             parameter.name = full_param_name
-            parameter.value = get_parameter_value(str(param_value))
+            parameter.value = _parameter_value_from_python_value(param_value)
             parameters[full_param_name] = parameter
     return parameters
