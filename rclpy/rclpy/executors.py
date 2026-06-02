@@ -176,9 +176,10 @@ class _WorkTracker:
                 # A new waiter may have just satisfied an existing
                 # waiter's condition (its in-flight work is now excluded).
                 self._work_condition.notify_all()
+            drained = False
             try:
-                if not self._work_condition.wait_for(other_work_drained, timeout_sec):
-                    return False
+                drained = self._work_condition.wait_for(other_work_drained, timeout_sec)
+                return drained
             finally:
                 # Keep the waiter membership while a callback is still
                 # in flight on this thread -- removing it now would let
@@ -189,10 +190,12 @@ class _WorkTracker:
                 # __exit__ will drop the membership when the callback
                 # ends.  For external callers with no in-flight
                 # callback, no __exit__ will run, so discard here.
-                if added_self and current not in self._executing_thread_counts:
-                    self._waiting_threads.discard(current)
-                    self._work_condition.notify_all()
-        return True
+                # However, if we timed out (not drained), we are NOT committed
+                # to finishing successfully, so we must discard the membership.
+                if not drained or (added_self and current not in self._executing_thread_counts):
+                    if added_self:
+                        self._waiting_threads.discard(current)
+                        self._work_condition.notify_all()
 
 
 async def await_or_execute(callback: Callable[[*Ts], Awaitable[T] | T], *args: *Ts) -> T:
