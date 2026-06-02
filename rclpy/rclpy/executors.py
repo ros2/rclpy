@@ -192,10 +192,9 @@ class _WorkTracker:
                 # callback, no __exit__ will run, so discard here.
                 # However, if we timed out (not drained), we are NOT committed
                 # to finishing successfully, so we must discard the membership.
-                if not drained or (added_self and current not in self._executing_thread_counts):
-                    if added_self:
-                        self._waiting_threads.discard(current)
-                        self._work_condition.notify_all()
+                if added_self and (not drained or current not in self._executing_thread_counts):
+                    self._waiting_threads.discard(current)
+                    self._work_condition.notify_all()
 
 
 async def await_or_execute(callback: Callable[[*Ts], Awaitable[T] | T], *args: *Ts) -> T:
