@@ -972,6 +972,68 @@ class TestExecutor(unittest.TestCase):
             self.node.destroy_timer(tmr_a)
             self.node.destroy_timer(tmr_b)
 
+    def test_work_tracker_waiter_leak_on_timeout(self) -> None:
+        wt = _WorkTracker()
+
+        worker_a_running = threading.Event()
+        worker_a_should_exit = threading.Event()
+        worker_b_running = threading.Event()
+
+        errors_a = []
+        wait_returned_a = []
+
+        def worker_a_thread():
+            try:
+                with wt.track_callback():
+                    worker_a_running.set()
+                    # Call wait with a short timeout. This times out because
+                    # Worker B is executing a callback and not waiting.
+                    res = wt.wait(timeout_sec=0.1)
+                    wait_returned_a.append(res)
+                    # Stay alive inside the callback context
+                    worker_a_should_exit.wait()
+            except Exception as e:
+                errors_a.append(e)
+
+        def worker_b_thread():
+            with wt.track_callback():
+                worker_b_running.set()
+                # Run until Worker A's wait times out
+                time.sleep(0.5)
+
+        tb = threading.Thread(target=worker_b_thread, name='WorkerB')
+        tb.start()
+
+        ta = threading.Thread(target=worker_a_thread, name='WorkerA')
+        ta.start()
+
+        self.assertTrue(worker_a_running.wait(timeout=2.0))
+        self.assertTrue(worker_b_running.wait(timeout=2.0))
+
+        # Wait for Worker B to finish
+        tb.join(timeout=2.0)
+
+        self.assertFalse(errors_a)
+        self.assertEqual(wait_returned_a, [False])
+
+        # MainThread calls wait(). Since Worker B finished, only Worker A is active.
+        # However, Worker A leaked into _waiting_threads from the timeout.
+        # MainThread's wait() will prematurely evaluate to True and exit instantly.
+        start_time = time.monotonic()
+        res_main = wt.wait(timeout_sec=0.2)
+        elapsed = time.monotonic() - start_time
+
+        try:
+            # Under the bug, res_main is True and elapsed is ~0.0s.
+            # In the corrected code, it correctly blocks/returns False after 0.2s.
+            self.assertFalse(
+                res_main,
+                'MainThread wait should have timed out because WorkerA is still running')
+            self.assertGreaterEqual(elapsed, 0.15)
+        finally:
+            worker_a_should_exit.set()
+            ta.join(timeout=2.0)
+
     def test_context_manager(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
