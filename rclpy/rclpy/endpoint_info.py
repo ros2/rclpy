@@ -48,7 +48,8 @@ class TopicEndpointInfo:
         '_topic_type_hash',
         '_endpoint_type',
         '_endpoint_gid',
-        '_qos_profile'
+        '_qos_profile',
+        '_buffer_backend_metadata'
     ]
 
     def __init__(
@@ -60,7 +61,8 @@ class TopicEndpointInfo:
         endpoint_type: Union[EndpointTypeEnum, int] = EndpointTypeEnum.INVALID,
         endpoint_gid: list[int] = [],
         qos_profile: Union[QoSProfile, '_rclpy._rmw_qos_profile_dict'] =
-            QoSPresetProfiles.UNKNOWN.value
+            QoSPresetProfiles.UNKNOWN.value,
+        buffer_backend_metadata: dict[str, str] = {}
     ):
         self.node_name = node_name
         self.node_namespace = node_namespace
@@ -69,6 +71,7 @@ class TopicEndpointInfo:
         self.endpoint_type = endpoint_type
         self.endpoint_gid = endpoint_gid
         self.qos_profile = qos_profile
+        self.buffer_backend_metadata = buffer_backend_metadata
 
     @property
     def node_name(self) -> str:
@@ -183,6 +186,21 @@ class TopicEndpointInfo:
         else:
             assert False
 
+    @property
+    def buffer_backend_metadata(self) -> dict[str, str]:
+        """
+        Get field 'buffer_backend_metadata'.
+
+        :returns: mapping from buffer backend name to backend metadata
+        """
+        return self._buffer_backend_metadata
+
+    @buffer_backend_metadata.setter
+    def buffer_backend_metadata(self, value: dict[str, str]) -> None:
+        assert isinstance(value, dict)
+        assert all(isinstance(k, str) and isinstance(v, str) for k, v in value.items())
+        self._buffer_backend_metadata = value
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TopicEndpointInfo):
             return False
@@ -196,6 +214,9 @@ class TopicEndpointInfo:
             history_depth_str = self.qos_profile.history.name
         else:
             history_depth_str = f'{self.qos_profile.history.name} ({self.qos_profile.depth})'
+        buffer_backend_str = ', '.join(sorted(self.buffer_backend_metadata.keys()))
+        if not buffer_backend_str:
+            buffer_backend_str = '<none>'
         return '\n'.join([
             f'Node name: {self.node_name}',
             f'Node namespace: {self.node_namespace}',
@@ -203,6 +224,7 @@ class TopicEndpointInfo:
             f'Topic type hash: {self.topic_type_hash}',
             f'Endpoint type: {self.endpoint_type.name}',
             f'GID: {gid}',
+            f'Buffer backends: {buffer_backend_str}',
             'QoS profile:',
             f'  Reliability: {self.qos_profile.reliability.name}',
             f'  History (Depth): {history_depth_str}',

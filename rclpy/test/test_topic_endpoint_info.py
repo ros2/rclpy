@@ -88,6 +88,19 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(info_for_ref, info_from_ctor)
         self.assertEqual(test_qos_profile, info_from_ctor.qos_profile)
 
+    def test_buffer_backend_metadata_only_constructor(self) -> None:
+        test_buffer_backend_metadata = {'cuda': 'version=1.0'}
+
+        info_for_ref = TopicEndpointInfo()
+        info_for_ref.buffer_backend_metadata = test_buffer_backend_metadata
+
+        info_from_ctor = TopicEndpointInfo(
+            buffer_backend_metadata=test_buffer_backend_metadata)
+
+        self.assertEqual(info_for_ref, info_from_ctor)
+        self.assertEqual(
+            test_buffer_backend_metadata, info_from_ctor.buffer_backend_metadata)
+
     def test_print(self) -> None:
         actual_info_str = str(TopicEndpointInfo())
         expected_info_str = 'Node name: \n' \
@@ -96,6 +109,7 @@ class TestQosProfile(unittest.TestCase):
             'Topic type hash: INVALID\n' \
             'Endpoint type: INVALID\n' \
             'GID: \n' \
+            'Buffer backends: <none>\n' \
             'QoS profile:\n' \
             '  Reliability: UNKNOWN\n' \
             '  History (Depth): UNKNOWN\n' \
