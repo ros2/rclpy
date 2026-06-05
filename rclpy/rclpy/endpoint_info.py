@@ -214,7 +214,9 @@ class TopicEndpointInfo:
             history_depth_str = self.qos_profile.history.name
         else:
             history_depth_str = f'{self.qos_profile.history.name} ({self.qos_profile.depth})'
-        buffer_backend_str = ', '.join(sorted(self.buffer_backend_metadata.keys()))
+        buffer_backend_str = ', '.join(
+            f'{backend}({metadata})' if metadata else backend
+            for backend, metadata in sorted(self.buffer_backend_metadata.items()))
         if not buffer_backend_str:
             buffer_backend_str = '<none>'
         return '\n'.join([

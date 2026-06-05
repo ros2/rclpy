@@ -89,7 +89,7 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(test_qos_profile, info_from_ctor.qos_profile)
 
     def test_buffer_backend_metadata_only_constructor(self) -> None:
-        test_buffer_backend_metadata = {'cuda': 'version=1.0'}
+        test_buffer_backend_metadata = {'cpu': ''}
 
         info_for_ref = TopicEndpointInfo()
         info_for_ref.buffer_backend_metadata = test_buffer_backend_metadata
