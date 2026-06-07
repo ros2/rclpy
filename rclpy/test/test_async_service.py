@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from collections.abc import Generator
 
 import pytest
 
@@ -23,19 +24,20 @@ from test_msgs.srv import BasicTypes as BasicTypesSrv
 
 
 @pytest.fixture(autouse=True)
-def rclpy_context():
+def rclpy_context() -> Generator[None, None, None]:
     """Initialize and shut down rclpy for each test."""
     with rclpy.init():
         yield
 
 
 @pytest.mark.asyncio
-async def test_service_concurrent_dispatch():
+async def test_service_concurrent_dispatch() -> None:
     """Concurrent service dispatch handles requests in parallel."""
     NUM_REQUESTS = 3
     barrier = asyncio.Barrier(NUM_REQUESTS)
 
-    async def handler(request, response):
+    async def handler(request: BasicTypesSrv.Request,
+                      response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         await barrier.wait()
         response.bool_value = True
         return response
@@ -57,9 +59,10 @@ async def test_service_concurrent_dispatch():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('concurrent', [False, True])
-async def test_service_callback_exception(concurrent):
+async def test_service_callback_exception(concurrent: bool) -> None:
     """Exception in service callback propagates as ExceptionGroup."""
-    async def bad_handler(request, response):
+    async def bad_handler(request: BasicTypesSrv.Request,
+                          response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         raise ValueError('service boom')
 
     node = AsyncNode('test_svc_exc_node')
@@ -79,11 +82,12 @@ async def test_service_callback_exception(concurrent):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('concurrent', [False, True])
-async def test_service_destroy_cancels_in_flight_handler(concurrent):
+async def test_service_destroy_cancels_in_flight_handler(concurrent: bool) -> None:
     """destroy_node() during an in-flight handler cancels it without crashing the node."""
     handler_started = asyncio.Event()
 
-    async def slow_handler(request, response):
+    async def slow_handler(request: BasicTypesSrv.Request,
+                           response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         handler_started.set()
         await asyncio.Event().wait()
         return response

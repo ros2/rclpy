@@ -40,7 +40,7 @@ from rclpy.subscription import Subscription
 from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
-    from rclpy.node import Node
+    from rclpy.node import BaseNode
 
 
 class InvalidQosOverridesError(Exception):
@@ -106,7 +106,7 @@ class QoSOverridingOptions:
 
 def _declare_qos_parameters(
     entity_type: Union[Type[Publisher[Any]], Type[Subscription[Any]]],
-    node: 'Node',
+    node: 'BaseNode',
     topic_name: Text,
     qos: QoSProfile,
     options: QoSOverridingOptions
@@ -115,7 +115,7 @@ def _declare_qos_parameters(
     Declare QoS parameters for a Publisher or a Subscription.
 
     :param entity_type: Either `rclpy.node.Publisher` or `rclpy.node.Subscription`.
-    :param node: Node used to declare the parameters.
+    :param node: BaseNode used to declare the parameters.
     :param topic_name: Topic name of the entity being created.
     :param qos: Default QoS settings of the entity being created, that will be overridden
         with the user provided QoS parameter overrides.

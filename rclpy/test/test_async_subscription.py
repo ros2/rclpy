@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from collections.abc import Generator
 
 import pytest
 
@@ -21,6 +22,7 @@ from rclpy.experimental import AsyncNode
 from rclpy.qos import HistoryPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
+from rclpy.subscription import MessageInfo
 
 from test_msgs.msg import Strings
 
@@ -32,19 +34,19 @@ TEST_QOS = QoSProfile(
 
 
 @pytest.fixture(autouse=True)
-def rclpy_context():
+def rclpy_context() -> Generator[None, None, None]:
     """Initialize and shut down rclpy for each test."""
     with rclpy.init():
         yield
 
 
 @pytest.mark.asyncio
-async def test_subscription_receives_message():
+async def test_subscription_receives_message() -> None:
     """Subscription callback fires when a message is published (sync callback)."""
     received = asyncio.Event()
     received_data = []
 
-    def callback(msg):
+    def callback(msg: Strings) -> None:
         received_data.append(msg.string_value)
         received.set()
 
@@ -61,9 +63,9 @@ async def test_subscription_receives_message():
 
 
 @pytest.mark.asyncio
-async def test_subscription_callback_exception_sequential():
+async def test_subscription_callback_exception_sequential() -> None:
     """Exception in sequential callback propagates as ExceptionGroup."""
-    async def bad_callback(msg):
+    async def bad_callback(msg: Strings) -> None:
         raise ValueError('boom')
 
     node = AsyncNode('test_seq_exc_node')
@@ -80,9 +82,9 @@ async def test_subscription_callback_exception_sequential():
 
 
 @pytest.mark.asyncio
-async def test_subscription_callback_exception_concurrent():
+async def test_subscription_callback_exception_concurrent() -> None:
     """Exception in concurrent callback propagates as ExceptionGroup."""
-    async def bad_callback(msg):
+    async def bad_callback(msg: Strings) -> None:
         raise ValueError('concurrent boom')
 
     node = AsyncNode('test_conc_exc_node')
@@ -101,13 +103,13 @@ async def test_subscription_callback_exception_concurrent():
 
 
 @pytest.mark.asyncio
-async def test_subscription_concurrent_dispatch():
+async def test_subscription_concurrent_dispatch() -> None:
     """Concurrent dispatch runs callbacks in parallel, not sequentially."""
     NUM_MESSAGES = 3
     barrier = asyncio.Barrier(NUM_MESSAGES)
     done = asyncio.Event()
 
-    async def callback(msg):
+    async def callback(msg: Strings) -> None:
         await barrier.wait()
         done.set()
 
@@ -126,12 +128,12 @@ async def test_subscription_concurrent_dispatch():
 
 
 @pytest.mark.asyncio
-async def test_subscription_callback_with_message_info():
+async def test_subscription_callback_with_message_info() -> None:
     """Subscription callback receives MessageInfo when it accepts two params."""
     received = asyncio.Event()
     received_info = []
 
-    async def callback(msg, info):
+    async def callback(msg: Strings, info: MessageInfo) -> None:
         received_info.append(info)
         received.set()
 

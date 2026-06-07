@@ -22,6 +22,8 @@ from rclpy.duration import Duration
 from rclpy.exceptions import TimeSourceChangedError
 from rclpy.executors import await_or_execute
 from rclpy.timer import BaseTimer, TimerCallbackUnion, TimerInfo
+from rclpy.timer import TimerInfoCallback
+from typing_extensions import TypeIs
 
 from .async_clock import AsyncClock
 
@@ -47,24 +49,15 @@ class AsyncTimer(BaseTimer):
     ) -> None:
         super().__init__(callback, timer_period_ns, clock, context=context,
                          on_destroy=on_destroy, autostart=autostart)
-        self._task: Optional[asyncio.Task] = None
+        self._task: Optional[asyncio.Task[None]] = None
         self._reset_event = asyncio.Event()
-        self._sleep_waiter: Optional[asyncio.Future] = None
+        self._sleep_waiter: Optional[asyncio.Future[None]] = None
         self._jump_handle: Optional[JumpHandle] = None
         if tg is not None:
             self._task = tg.create_task(self._run())
 
-    @property
-    def callback(self) -> TimerCallbackUnion:
-        return self._callback
-
-    @callback.setter
-    def callback(self, cb: TimerCallbackUnion) -> None:
-        self._callback = cb
-        self._pass_info = self._detect_wants_info(cb)
-
     @staticmethod
-    def _detect_wants_info(callback: Callable) -> bool:
+    def _detect_wants_info(callback: TimerCallbackUnion) -> TypeIs[TimerInfoCallback]:
         try:
             inspect.signature(callback).bind()
             return False
@@ -135,7 +128,11 @@ class AsyncTimer(BaseTimer):
 
     async def _call(self) -> None:
         info = self.handle.call_timer_with_info()
-        if self._pass_info:
+
+        if self.callback is None:
+            raise ValueError('AsyncTimer cannot run with callback=None')
+
+        if AsyncTimer._detect_wants_info(self.callback):
             timer_info = TimerInfo(
                 expected_call_time=info['expected_call_time'],
                 actual_call_time=info['actual_call_time'],

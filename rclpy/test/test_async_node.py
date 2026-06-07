@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from collections.abc import Generator
 
 import pytest
 
@@ -45,25 +46,25 @@ TEST_QOS = QoSProfile(
 
 
 @pytest.fixture(autouse=True)
-def rclpy_context():
+def rclpy_context() -> Generator[None, None, None]:
     """Initialize and shut down rclpy for each test."""
     with rclpy.init():
         yield
 
 
 @pytest.mark.asyncio
-async def test_lifecycle():
+async def test_lifecycle() -> None:
     """Node creates and destroys cleanly via async context manager."""
     async with AsyncNode('test_lifecycle_node'):
         pass
 
 
 @pytest.mark.asyncio
-async def test_direct_entity_destroy():
+async def test_direct_entity_destroy() -> None:
     """Destroying a subscription stops message delivery."""
     received = asyncio.Event()
 
-    async def callback(msg):
+    async def callback(msg: Strings) -> None:
         received.set()
 
     async with AsyncNode('test_direct_destroy_node') as node:
@@ -85,11 +86,11 @@ async def test_direct_entity_destroy():
 
 
 @pytest.mark.asyncio
-async def test_create_before_aenter():
+async def test_create_before_aenter() -> None:
     """Entities created before entering async context dispatch after entry."""
     received = asyncio.Event()
 
-    async def callback(msg):
+    async def callback(msg: Strings) -> None:
         received.set()
 
     node = AsyncNode('test_create_before_aenter_node')
@@ -104,15 +105,15 @@ async def test_create_before_aenter():
 
 
 @pytest.mark.asyncio
-async def test_multiple_entities_two_nodes():
+async def test_multiple_entities_two_nodes() -> None:
     """Two nodes each with a publisher and subscription communicate cross-node."""
     received_a = asyncio.Event()
     received_b = asyncio.Event()
 
-    async def callback_a(msg):
+    async def callback_a(msg: Strings) -> None:
         received_a.set()
 
-    async def callback_b(msg):
+    async def callback_b(msg: Strings) -> None:
         received_b.set()
 
     async with (
@@ -139,7 +140,7 @@ async def test_multiple_entities_two_nodes():
 
 
 @pytest.mark.asyncio
-async def test_enable_logger_service():
+async def test_enable_logger_service() -> None:
     """Logger service is reachable over DDS when enabled."""
     async with (
         AsyncNode(
@@ -163,7 +164,7 @@ async def test_enable_logger_service():
 
 
 @pytest.mark.asyncio
-async def test_parameter_service_over_dds():
+async def test_parameter_service_over_dds() -> None:
     """Get and set parameters over DDS between two AsyncNodes."""
     async with (
         AsyncNode(
@@ -210,7 +211,7 @@ async def test_parameter_service_over_dds():
 
 
 @pytest.mark.asyncio
-async def test_run_basic():
+async def test_run_basic() -> None:
     """run() blocks until destroy_node() is called."""
     node = AsyncNode('test_run_node')
     loop = asyncio.get_running_loop()
@@ -220,13 +221,13 @@ async def test_run_basic():
 
 
 @pytest.mark.asyncio
-async def test_run_with_callback_shutdown():
+async def test_run_with_callback_shutdown() -> None:
     """run() returns when a callback calls destroy_node()."""
     received = asyncio.Event()
 
     node = AsyncNode('test_run_cb_shutdown_node')
 
-    async def callback(msg):
+    async def callback(msg: Strings) -> None:
         received.set()
         node.destroy_node()
 
@@ -242,7 +243,7 @@ async def test_run_with_callback_shutdown():
 
 
 @pytest.mark.asyncio
-async def test_run_raises_if_already_running():
+async def test_run_raises_if_already_running() -> None:
     """run() raises if node is already under async with."""
     async with AsyncNode('test_run_conflict_node') as node:
         with pytest.raises(RuntimeError):
@@ -250,7 +251,7 @@ async def test_run_raises_if_already_running():
 
 
 @pytest.mark.asyncio
-async def test_type_description_service():
+async def test_type_description_service() -> None:
     """Verify type description service responds to requests on AsyncNode."""
     async with (
         AsyncNode('test_type_desc_srv_node') as srv_node,
@@ -283,7 +284,7 @@ async def test_type_description_service():
 
 
 @pytest.mark.asyncio
-async def test_graph_discovery_methods():
+async def test_graph_discovery_methods() -> None:
     """Graph discovery methods are accessible on AsyncNode via BaseNode."""
     async with AsyncNode('test_graph_node', namespace='/test_ns') as node:
         topics = node.get_topic_names_and_types()
@@ -313,19 +314,19 @@ async def test_graph_discovery_methods():
 
 
 @pytest.mark.asyncio
-async def test_count_methods():
+async def test_count_methods() -> None:
     """Count methods work on AsyncNode."""
     async with AsyncNode('test_count_node') as node:
         topic = '/test_count_topic'
         node.create_publisher(Strings, topic, TEST_QOS)
-        async def _noop(msg): pass
+        async def _noop(msg: Strings) -> None: pass
         node.create_subscription(Strings, topic, _noop, TEST_QOS)
         assert node.count_publishers(topic) == 1
         assert node.count_subscribers(topic) == 1
 
 
 @pytest.mark.asyncio
-async def test_endpoint_info_methods():
+async def test_endpoint_info_methods() -> None:
     """Endpoint info methods work on AsyncNode."""
     async with AsyncNode('test_endpoint_node') as node:
         node.create_publisher(BasicTypes, '/test_endpoint_topic', TEST_QOS)
@@ -334,7 +335,7 @@ async def test_endpoint_info_methods():
         assert len(pub_info) == 1
         assert pub_info[0].node_name == 'test_endpoint_node'
 
-        async def _noop(msg): pass
+        async def _noop(msg: BasicTypes) -> None: pass
         node.create_subscription(
             BasicTypes, '/test_endpoint_topic', _noop, TEST_QOS)
         sub_info = node.get_subscriptions_info_by_topic('/test_endpoint_topic')
@@ -343,7 +344,7 @@ async def test_endpoint_info_methods():
 
 
 @pytest.mark.asyncio
-async def test_remote_node_introspection():
+async def test_remote_node_introspection() -> None:
     """Remote node introspection methods work on AsyncNode."""
     async with AsyncNode('test_remote_node', namespace='/test_ns') as node:
         pubs = node.get_publisher_names_and_types_by_node(
@@ -364,7 +365,7 @@ async def test_remote_node_introspection():
 
 
 @pytest.mark.asyncio
-async def test_wait_for_node_async():
+async def test_wait_for_node_async() -> None:
     """Async wait_for_node finds an existing node."""
     async with (
         AsyncNode('test_wfn_target', namespace='/test_ns') as _,
@@ -375,7 +376,7 @@ async def test_wait_for_node_async():
 
 
 @pytest.mark.asyncio
-async def test_wait_for_node_async_timeout():
+async def test_wait_for_node_async_timeout() -> None:
     """Async wait_for_node raises TimeoutError for nonexistent node."""
     async with AsyncNode('test_wfn_timeout_node') as node:
         with pytest.raises(TimeoutError):
@@ -384,7 +385,7 @@ async def test_wait_for_node_async_timeout():
 
 
 @pytest.mark.asyncio
-async def test_create_publisher_on_destroyed_node():
+async def test_create_publisher_on_destroyed_node() -> None:
     """create_publisher raises RuntimeError on a destroyed node."""
     node = AsyncNode('test_destroyed_pub_node')
     node.destroy_node()
@@ -393,12 +394,12 @@ async def test_create_publisher_on_destroyed_node():
 
 
 @pytest.mark.asyncio
-async def test_create_subscription_on_destroyed_node():
+async def test_create_subscription_on_destroyed_node() -> None:
     """create_subscription raises RuntimeError on a destroyed node."""
     node = AsyncNode('test_destroyed_sub_node')
     node.destroy_node()
 
-    async def callback(msg):
+    async def callback(msg: Strings) -> None:
         pass
 
     with pytest.raises(RuntimeError):
@@ -406,7 +407,7 @@ async def test_create_subscription_on_destroyed_node():
 
 
 @pytest.mark.asyncio
-async def test_create_client_on_destroyed_node():
+async def test_create_client_on_destroyed_node() -> None:
     """create_client raises RuntimeError on a destroyed node."""
     node = AsyncNode('test_destroyed_client_node')
     node.destroy_node()
@@ -415,12 +416,12 @@ async def test_create_client_on_destroyed_node():
 
 
 @pytest.mark.asyncio
-async def test_create_timer_on_destroyed_node():
+async def test_create_timer_on_destroyed_node() -> None:
     """create_timer raises RuntimeError on a destroyed node."""
     node = AsyncNode('test_destroyed_timer_node')
     node.destroy_node()
 
-    async def callback():
+    async def callback() -> None:
         pass
 
     with pytest.raises(RuntimeError):
@@ -428,7 +429,7 @@ async def test_create_timer_on_destroyed_node():
 
 
 @pytest.mark.asyncio
-async def test_destroy_node_idempotent():
+async def test_destroy_node_idempotent() -> None:
     """Calling destroy_node() twice does not raise."""
     node = AsyncNode('test_double_destroy_node')
     node.destroy_node()
@@ -436,7 +437,7 @@ async def test_destroy_node_idempotent():
 
 
 @pytest.mark.asyncio
-async def test_entity_destroy_idempotent():
+async def test_entity_destroy_idempotent() -> None:
     """Calling destroy() twice on an entity does not raise."""
     async with AsyncNode('test_entity_double_destroy_node') as node:
         pub = node.create_publisher(Strings, '/topic', TEST_QOS)
@@ -444,7 +445,7 @@ async def test_entity_destroy_idempotent():
         pub.destroy()
         pub.destroy()
 
-        async def callback(msg):
+        async def callback(msg: Strings) -> None:
             pass
 
         sub = node.create_subscription(Strings, '/topic', callback, TEST_QOS)
@@ -454,7 +455,7 @@ async def test_entity_destroy_idempotent():
 
 
 @pytest.mark.asyncio
-async def test_aexit_destroys_on_exception():
+async def test_aexit_destroys_on_exception() -> None:
     """Node is properly destroyed even when async-with body raises."""
     node = AsyncNode('test_aexit_exc_node')
     pub = node.create_publisher(Strings, '/topic', TEST_QOS)
@@ -475,7 +476,7 @@ async def test_aexit_destroys_on_exception():
 
 
 @pytest.mark.asyncio
-async def test_shutdown_destroys_tracked_asyncnode():
+async def test_shutdown_destroys_tracked_asyncnode() -> None:
     """context.shutdown() destroys AsyncNodes tracked via context.track_node()."""
     context = rclpy.Context()
     context.init()
@@ -495,13 +496,13 @@ async def test_shutdown_destroys_tracked_asyncnode():
 
 
 @pytest.mark.asyncio
-async def test_shutdown_destroys_running_asyncnode():
+async def test_shutdown_destroys_running_asyncnode() -> None:
     """context.shutdown() during an active async-with session destroys the node."""
     context = rclpy.Context()
     context.init()
     callback_ran = asyncio.Event()
 
-    async def tick():
+    async def tick() -> None:
         callback_ran.set()
         await asyncio.sleep(10)  # sleep for a long time
 
@@ -521,12 +522,12 @@ async def test_shutdown_destroys_running_asyncnode():
 
 
 @pytest.mark.asyncio
-async def test_destroy_node_from_callback_under_async_with():
+async def test_destroy_node_from_callback_under_async_with() -> None:
     """destroy_node() from a subscription callback inside async-with drains cleanly."""
     callback_ran = asyncio.Event()
     node = AsyncNode('test_aw_cb_shutdown_node')
 
-    async def callback(msg):
+    async def callback(msg: Strings) -> None:
         node.destroy_node()
         callback_ran.set()
 
@@ -544,7 +545,7 @@ async def test_destroy_node_from_callback_under_async_with():
 
 
 @pytest.mark.asyncio
-async def test_client_destroy_idempotent():
+async def test_client_destroy_idempotent() -> None:
     """destroy() called twice on a client does not raise."""
     async with AsyncNode('test_client_idem_node') as node:
         client = node.create_client(BasicTypesSrv, '/test_client_idem_svc')
@@ -553,9 +554,10 @@ async def test_client_destroy_idempotent():
 
 
 @pytest.mark.asyncio
-async def test_service_destroy_idempotent():
+async def test_service_destroy_idempotent() -> None:
     """destroy() called twice on a service does not raise."""
-    async def handler(request, response):
+    async def handler(request: BasicTypesSrv.Request,
+                      response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         return response
 
     async with AsyncNode('test_service_idem_node') as node:
@@ -566,9 +568,9 @@ async def test_service_destroy_idempotent():
 
 
 @pytest.mark.asyncio
-async def test_timer_destroy_idempotent():
+async def test_timer_destroy_idempotent() -> None:
     """destroy() called twice on a timer does not raise."""
-    async def tick():
+    async def tick() -> None:
         pass
 
     async with AsyncNode('test_timer_idem_node') as node:
@@ -578,7 +580,7 @@ async def test_timer_destroy_idempotent():
 
 
 @pytest.mark.asyncio
-async def test_multi_node_aexit_on_body_exception():
+async def test_multi_node_aexit_on_body_exception() -> None:
     """Multi-node `async with a, b:` cleans both nodes when body raises."""
     a = AsyncNode('test_multi_aexit_a')
     b = AsyncNode('test_multi_aexit_b')
@@ -594,12 +596,12 @@ async def test_multi_node_aexit_on_body_exception():
 
 
 @pytest.mark.asyncio
-async def test_parameter_events_emitted():
+async def test_parameter_events_emitted() -> None:
     """Parameter event publisher emits on /parameter_events from AsyncNode."""
     received = []
     got_foo = asyncio.Event()
 
-    async def callback(msg):
+    async def callback(msg: ParameterEvent) -> None:
         if any(p.name == 'foo' for p in msg.new_parameters):
             received.append(msg)
             got_foo.set()

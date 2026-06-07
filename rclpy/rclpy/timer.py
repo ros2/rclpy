@@ -22,6 +22,7 @@ from typing import Type
 from typing import Union
 
 from rclpy.callback_groups import CallbackGroup
+from rclpy.clock import BaseClock
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
@@ -71,17 +72,19 @@ TimerCallbackType: TypeAlias = Union[Callable[[], None],
 AsyncTimerCallbackType: TypeAlias = Union[Callable[[], Awaitable[None]],
                                           Callable[[TimerInfo], Awaitable[None]]]
 TimerCallbackUnion: TypeAlias = Union[TimerCallbackType, AsyncTimerCallbackType]
+EmptyCallback: TypeAlias = Callable[[], None] | Callable[[], Awaitable[None]]
+TimerInfoCallback: TypeAlias = Callable[[TimerInfo], None] | Callable[[TimerInfo], Awaitable[None]]
 
 
 class BaseTimer:
 
     def __init__(
         self,
-        callback: Optional[TimerCallbackUnion],
+        callback: TimerCallbackUnion | None,
         timer_period_ns: int,
-        clock: Clock,
+        clock: BaseClock,
         *,
-        on_destroy: Optional[Callable[['BaseTimer'], None]] = None,
+        on_destroy: Optional[Callable[[Self], None]] = None,
         context: Optional[Context] = None,
         autostart: bool = True
     ) -> None:
@@ -106,7 +109,7 @@ class BaseTimer:
     def handle(self) -> _rclpy.Timer:
         return self.__timer
 
-    def destroy(self) -> None:
+    def destroy(self: Self) -> None:
         """Destroy the timer, notifying the owning node and releasing the handle."""
         if self._destroyed:
             return
@@ -120,7 +123,7 @@ class BaseTimer:
         self.__timer.destroy_when_not_in_use()
 
     @property
-    def clock(self) -> Clock:
+    def clock(self) -> BaseClock:
         return self._clock
 
     @property
@@ -175,11 +178,11 @@ class Timer(BaseTimer):
 
     def __init__(
         self,
-        callback: Optional[TimerCallbackUnion],
+        callback: TimerCallbackUnion | None,
         timer_period_ns: int,
         clock: Clock,
         *,
-        on_destroy: Optional[Callable[['BaseTimer'], None]] = None,
+        on_destroy: Optional[Callable[['Timer'], None]] = None,
         context: Optional[Context] = None,
         autostart: bool = True,
         callback_group: Optional[CallbackGroup] = None

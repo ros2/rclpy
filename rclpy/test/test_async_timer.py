@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import asyncio
+from collections.abc import Generator
+from typing import Any
 
 import pytest
 
@@ -26,19 +28,19 @@ from rclpy.timer import TimerInfo
 
 
 @pytest.fixture(autouse=True)
-def rclpy_context():
+def rclpy_context() -> Generator[None, None, None]:
     """Initialize and shut down rclpy for each test."""
     with rclpy.init():
         yield
 
 
 @pytest.mark.asyncio
-async def test_timer_fires():
+async def test_timer_fires() -> None:
     """Timer callback fires at least once within timeout (sync callback)."""
     count = 0
     fired = asyncio.Event()
 
-    def callback():
+    def callback() -> None:
         nonlocal count
         count += 1
         fired.set()
@@ -51,12 +53,12 @@ async def test_timer_fires():
 
 
 @pytest.mark.asyncio
-async def test_timer_fires_multiple():
+async def test_timer_fires_multiple() -> None:
     """Timer fires multiple times over a short period."""
     count = 0
     enough = asyncio.Event()
 
-    async def callback():
+    async def callback() -> None:
         nonlocal count
         count += 1
         if count >= 3:
@@ -70,12 +72,12 @@ async def test_timer_fires_multiple():
 
 
 @pytest.mark.asyncio
-async def test_timer_cancel_and_reset():
+async def test_timer_cancel_and_reset() -> None:
     """Cancelled timer stops firing; reset resumes it."""
     count = 0
     fired = asyncio.Event()
 
-    async def callback():
+    async def callback() -> None:
         nonlocal count
         count += 1
         fired.set()
@@ -103,12 +105,12 @@ async def test_timer_cancel_and_reset():
 
 
 @pytest.mark.asyncio
-async def test_timer_destroy():
+async def test_timer_destroy() -> None:
     """Destroying a timer stops it."""
     count = 0
     fired = asyncio.Event()
 
-    async def callback():
+    async def callback() -> None:
         nonlocal count
         count += 1
         fired.set()
@@ -125,9 +127,9 @@ async def test_timer_destroy():
 
 
 @pytest.mark.asyncio
-async def test_timer_callback_exception():
+async def test_timer_callback_exception() -> None:
     """Exception in timer callback propagates as ExceptionGroup."""
-    async def bad_callback():
+    async def bad_callback() -> None:
         raise ValueError('timer boom')
 
     node = AsyncNode('test_timer_exc_node')
@@ -141,11 +143,11 @@ async def test_timer_callback_exception():
 
 
 @pytest.mark.asyncio
-async def test_timer_create_before_aenter():
+async def test_timer_create_before_aenter() -> None:
     """Timer created before entering async context fires after entry."""
     fired = asyncio.Event()
 
-    async def callback():
+    async def callback() -> None:
         fired.set()
 
     node = AsyncNode('test_timer_pre_aenter_node')
@@ -157,11 +159,11 @@ async def test_timer_create_before_aenter():
 
 
 @pytest.mark.asyncio
-async def test_timer_introspection():
+async def test_timer_introspection() -> None:
     """Timer exposes period and cancel state via BaseTimer."""
     fired = asyncio.Event()
 
-    async def callback():
+    async def callback() -> None:
         fired.set()
 
     async with AsyncNode('test_timer_introspect_node') as node:
@@ -178,12 +180,12 @@ async def test_timer_introspection():
 
 
 @pytest.mark.asyncio
-async def test_timer_callback_with_info():
+async def test_timer_callback_with_info() -> None:
     """Timer callback receives TimerInfo when it accepts a parameter."""
     received_info = []
     fired = asyncio.Event()
 
-    async def callback(info: TimerInfo):
+    async def callback(info: TimerInfo) -> None:
         received_info.append(info)
         fired.set()
 
@@ -198,11 +200,11 @@ async def test_timer_callback_with_info():
 
 
 @pytest.mark.asyncio
-async def test_timer_zero_period():
+async def test_timer_zero_period() -> None:
     """Timer with zero period fires immediately."""
     fired = asyncio.Event()
 
-    async def callback():
+    async def callback() -> None:
         fired.set()
 
     async with AsyncNode('test_timer_zero_node') as node:
@@ -212,26 +214,26 @@ async def test_timer_zero_period():
 
 
 @pytest.mark.asyncio
-async def test_timer_callback_signature_rejected():
+async def test_timer_callback_signature_rejected() -> None:
     """Timer rejects callbacks with invalid signatures (2+ params)."""
     node = AsyncNode('test_timer_bad_sig_node')
 
-    async def bad_callback(a, b):
+    async def bad_callback(a: Any, b: Any) -> None:
         pass
 
     with pytest.raises(RuntimeError):
-        node.create_timer(1.0, bad_callback)
+        node.create_timer(1.0, bad_callback)  # type: ignore[arg-type]
 
     node.destroy_node()
 
 
 @pytest.mark.asyncio
-async def test_timer_fires_under_sim_time():
+async def test_timer_fires_under_sim_time() -> None:
     """Timer fires when ROS time advances past its period under sim time."""
     count = 0
     fired = asyncio.Event()
 
-    async def callback():
+    async def callback() -> None:
         nonlocal count
         count += 1
         fired.set()
