@@ -56,15 +56,24 @@ class AsyncTimer(BaseTimer):
         if tg is not None:
             self._task = tg.create_task(self._run())
 
+    @property
+    def callback(self) -> TimerCallbackUnion | None:
+        return self._callback
+
+    @callback.setter
+    def callback(self, cb: TimerCallbackUnion | None) -> None:
+        self._callback = cb
+        self._pass_info = AsyncTimer._detect_wants_info(cb)
+
     @staticmethod
     def _detect_wants_info(callback: TimerCallbackUnion | None) -> TypeIs[TimerInfoCallback]:
         try:
-            inspect.signature(callback).bind()
+            inspect.signature(callback).bind()  # type: ignore[arg-type]
             return False
         except TypeError:
             pass
         try:
-            inspect.signature(callback).bind(object())
+            inspect.signature(callback).bind(object())  # type: ignore[arg-type]
             return True
         except TypeError:
             pass
