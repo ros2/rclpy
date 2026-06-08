@@ -57,7 +57,7 @@ class AsyncTimer(BaseTimer):
             self._task = tg.create_task(self._run())
 
     @staticmethod
-    def _detect_wants_info(callback: TimerCallbackUnion) -> TypeIs[TimerInfoCallback]:
+    def _detect_wants_info(callback: TimerCallbackUnion | None) -> TypeIs[TimerInfoCallback]:
         try:
             inspect.signature(callback).bind()
             return False
@@ -130,7 +130,7 @@ class AsyncTimer(BaseTimer):
         info = self.handle.call_timer_with_info()
 
         if self.callback is None:
-            raise ValueError('AsyncTimer cannot run with callback=None')
+            raise RuntimeError('AsyncTimer cannot run with callback=None')
 
         if AsyncTimer._detect_wants_info(self.callback):
             timer_info = TimerInfo(
