@@ -56,7 +56,7 @@ from rclpy.clock import BaseClock, Clock
 from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
-from rclpy.endpoint_info import ServiceEndpointInfo, TopicEndpointInfo
+from rclpy.endpoint_info import EndpointTypeEnum, ServiceEndpointInfo, TopicEndpointInfo
 from rclpy.event_handler import PublisherEventCallbacks
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.exceptions import InvalidHandle
@@ -1832,6 +1832,42 @@ class BaseNode(ABC):
             topic_name,
             no_mangle,
             _rclpy.rclpy_get_subscriptions_info_by_topic)
+
+    def get_buffer_backend_metadata_by_topic(
+        self,
+        topic_name: str,
+        endpoint_type: EndpointTypeEnum,
+        no_mangle: bool = False
+    ) -> Dict[str, str]:
+        """
+        Return optional buffer backend metadata for endpoints on a given topic.
+
+        The returned dictionary is keyed by endpoint GID encoded as lowercase
+        hexadecimal without separators. Values are RMW-specific display strings
+        describing the advertised buffer backends for that endpoint. RMW
+        implementations that do not provide this optional data return an empty
+        dictionary.
+
+        :param topic_name: The topic_name on which to find endpoint backend metadata.
+        :param endpoint_type: Whether to query publisher or subscription endpoint metadata.
+        :param no_mangle: If ``True``, `topic_name` needs to be a valid middleware topic
+            name, otherwise it should be a valid ROS topic name. Defaults to ``False``.
+        :return: A dictionary from endpoint GID hex string to backend metadata string.
+        """
+        if endpoint_type not in (EndpointTypeEnum.PUBLISHER, EndpointTypeEnum.SUBSCRIPTION):
+            raise ValueError('endpoint_type must be PUBLISHER or SUBSCRIPTION')
+
+        with self.handle:
+            if no_mangle:
+                fq_topic_name = topic_name
+            else:
+                fq_topic_name = expand_topic_name(
+                    topic_name, self.get_name(), self.get_namespace())
+                validate_full_topic_name(fq_topic_name)
+                fq_topic_name = _rclpy.rclpy_remap_topic_name(self.handle, fq_topic_name)
+
+            return _rclpy.rclpy_get_buffer_backend_metadata_by_topic(
+                self.handle, fq_topic_name, no_mangle, int(endpoint_type))
 
     def _get_info_by_service(
         self,

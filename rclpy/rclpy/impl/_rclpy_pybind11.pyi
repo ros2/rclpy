@@ -824,6 +824,12 @@ def rclpy_get_subscriptions_info_by_topic(node: Node, topic_name: str, no_mangle
     """Get subscriptions info for a topic."""
 
 
+def rclpy_get_buffer_backend_metadata_by_topic(
+    node: Node, topic_name: str, no_mangle: bool, endpoint_type: int
+) -> dict[str, str]:
+    """Get optional buffer backend metadata keyed by endpoint GID hex."""
+
+
 def rclpy_get_clients_info_by_service(node: Node, service_name: str, no_mangle: bool
                                       ) -> list[_ServiceEndpointInfoDict]:
     """Get clients info for a service."""

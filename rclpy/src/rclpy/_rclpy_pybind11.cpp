@@ -234,6 +234,10 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     &rclpy::graph_get_action_names_and_types,
     "Get all action names and types in the ROS graph.");
   m.def(
+    "rclpy_get_buffer_backend_metadata_by_topic",
+    &rclpy::graph_get_buffer_backend_metadata_by_topic,
+    "Get optional buffer backend metadata for endpoints on a topic.");
+  m.def(
     "rclpy_serialize", &rclpy::serialize,
     "Serialize a ROS message.");
   m.def(

@@ -17,8 +17,13 @@
 #include <rcl/allocator.h>
 #include <rcl/error_handling.h>
 #include <rcl/graph.h>
+#include <rcl/node.h>
 #include <rcl_action/graph.h>
 #include <rcutils/error_handling.h>
+#include <rcutils/shared_library.h>
+#include <rcutils/types/string_map.h>
+#include <rmw/rmw.h>
+#include <rmw/types.h>
 
 #include <string>
 
@@ -276,6 +281,83 @@ graph_get_subscriptions_info_by_topic(
   return _get_info_by_topic(
     node, topic_name, no_mangle, "subscriptions",
     rcl_get_subscriptions_info_by_topic);
+}
+
+using get_buffer_backend_metadata_by_topic_func_t = rmw_ret_t (*)(
+  const rmw_node_t *,
+  rcutils_allocator_t *,
+  const char *,
+  bool,
+  rmw_endpoint_type_t,
+  rcutils_string_map_t *);
+
+py::dict
+graph_get_buffer_backend_metadata_by_topic(
+  Node & node, const char * topic_name, bool no_mangle, int endpoint_type)
+{
+  py::dict result;
+
+  const char * implementation_identifier = rmw_get_implementation_identifier();
+  if (!implementation_identifier) {
+    return result;
+  }
+
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcutils_shared_library_t library = rcutils_get_zero_initialized_shared_library();
+  rcutils_ret_t rcutils_ret = rcutils_load_shared_library(
+    &library, implementation_identifier, allocator);
+  if (rcutils_ret != RCUTILS_RET_OK) {
+    rcutils_reset_error();
+    return result;
+  }
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcutils_ret_t unload_ret = rcutils_unload_shared_library(&library);
+      if (unload_ret != RCUTILS_RET_OK) {
+        rcutils_reset_error();
+      }
+    });
+
+  std::string symbol_name = implementation_identifier;
+  symbol_name += "_get_buffer_backend_metadata_by_topic";
+  auto symbol = rcutils_get_symbol(&library, symbol_name.c_str());
+  if (!symbol) {
+    rcutils_reset_error();
+    return result;
+  }
+
+  auto get_backend_metadata =
+    reinterpret_cast<get_buffer_backend_metadata_by_topic_func_t>(symbol);
+  rcutils_string_map_t backend_metadata_by_gid = rcutils_get_zero_initialized_string_map();
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      if (backend_metadata_by_gid.impl) {
+        rcutils_ret_t fini_ret = rcutils_string_map_fini(&backend_metadata_by_gid);
+        if (fini_ret != RCUTILS_RET_OK) {
+          rcutils_reset_error();
+        }
+      }
+    });
+
+  rmw_ret_t ret = get_backend_metadata(
+    rcl_node_get_rmw_handle(node.rcl_ptr()),
+    &allocator,
+    topic_name,
+    no_mangle,
+    static_cast<rmw_endpoint_type_t>(endpoint_type),
+    &backend_metadata_by_gid);
+  if (ret != RMW_RET_OK) {
+    throw RCLError("Failed to get buffer backend metadata by topic");
+  }
+
+  const char * current_key = rcutils_string_map_get_next_key(&backend_metadata_by_gid, nullptr);
+  while (current_key) {
+    const char * current_value = rcutils_string_map_get(&backend_metadata_by_gid, current_key);
+    result[py::str(current_key)] = py::str(current_value ? current_value : "");
+    current_key = rcutils_string_map_get_next_key(&backend_metadata_by_gid, current_key);
+  }
+
+  return result;
 }
 
 typedef rcl_ret_t (* rcl_get_info_by_service_func_t)(

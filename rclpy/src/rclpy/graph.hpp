@@ -164,6 +164,21 @@ py::list
 graph_get_subscriptions_info_by_topic(
   Node & node, const char * topic_name, bool no_mangle);
 
+/// Return optional buffer backend metadata keyed by endpoint GID hex.
+/**
+ * This uses an optional RMW-specific symbol when the active RMW implementation
+ * provides one. If unsupported, an empty dictionary is returned.
+ *
+ * \param[in] node node to query.
+ * \param[in] topic_name the topic name to query.
+ * \param[in] no_mangle if `true`, `topic_name` needs to be a valid middleware topic name.
+ * \param[in] endpoint_type rmw_endpoint_type_t value for publisher or subscription.
+ * \return dict mapping endpoint GID hex strings to formatted backend metadata.
+ */
+py::dict
+graph_get_buffer_backend_metadata_by_topic(
+  Node & node, const char * topic_name, bool no_mangle, int endpoint_type);
+
 /// Return a list of clients on a given service.
 /**
  * The returned clients information includes node name, node namespace, service type,
