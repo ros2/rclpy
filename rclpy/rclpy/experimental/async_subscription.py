@@ -24,6 +24,7 @@ from rclpy.qos import QoSProfile
 from rclpy.subscription import BaseSubscription, SubscriptionCallbackUnion
 from rclpy.subscription import MessageAndInfo
 from rclpy.subscription import SubscriptionCallback
+from rclpy.subscription import SubscriptionCallbackWithMessageInfo
 from rclpy.type_support import MsgT
 
 
@@ -81,10 +82,12 @@ class AsyncSubscription(BaseSubscription[MsgT]):
 
     def _make_callback(self, msg_and_info: MessageAndInfo[MsgT]) -> Coroutine[Any, Any, None]:
         """Create a callback coroutine from a (msg, msg_info) tuple."""
-        if BaseSubscription._detect_wants_info(self.callback):
-            return await_or_execute(self.callback, *msg_and_info)
-        callback = cast(SubscriptionCallback[MsgT], self.callback)
-        return await_or_execute(callback, msg_and_info[0])
+        if self._callback_type is BaseSubscription.CallbackType.MessageOnly:
+            callback_msg = cast(SubscriptionCallback[MsgT], self.callback)
+            return await_or_execute(callback_msg, msg_and_info[0])
+        else:
+            callback_msg_and_info = cast(SubscriptionCallbackWithMessageInfo[MsgT], self.callback)
+            return await_or_execute(callback_msg_and_info, *msg_and_info)
 
     async def _run(self) -> None:
         """DDS bridge read loop for subscriptions."""
