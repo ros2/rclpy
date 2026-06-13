@@ -83,8 +83,8 @@ class AsyncSubscription(BaseSubscription[MsgT]):
         """Create a callback coroutine from a (msg, msg_info) tuple."""
         if BaseSubscription._detect_wants_info(self.callback):
             return await_or_execute(self.callback, *msg_and_info)
-        self.callback = cast(SubscriptionCallback[MsgT], self.callback)
-        return await_or_execute(self.callback, msg_and_info[0])
+        callback = cast(SubscriptionCallback[MsgT], self.callback)
+        return await_or_execute(callback, msg_and_info[0])
 
     async def _run(self) -> None:
         """DDS bridge read loop for subscriptions."""
