@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from typing import Callable, Optional
+from typing import Callable
+from typing import Optional
+from typing import TYPE_CHECKING
 
 from rclpy.clock import ClockChange, JumpHandle, JumpThreshold, TimeJump
 from rclpy.context import Context
@@ -25,9 +27,11 @@ from rclpy.exceptions import TimeSourceChangedError
 from rclpy.executors import await_or_execute
 from rclpy.timer import BaseTimer, TimerCallbackUnion, TimerInfo
 from rclpy.timer import TimerInfoCallback
-from typing_extensions import TypeIs
 
 from .async_clock import AsyncClock
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeIs
 
 
 class AsyncTimer(BaseTimer):

@@ -24,6 +24,7 @@ from typing import Literal
 from typing import Optional
 from typing import overload
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
 from typing import Union
@@ -37,7 +38,9 @@ from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.type_support import MsgT
 from typing_extensions import Self
 from typing_extensions import TypeAlias
-from typing_extensions import TypeIs
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeIs
 
 
 class PublisherGID(TypedDict):
