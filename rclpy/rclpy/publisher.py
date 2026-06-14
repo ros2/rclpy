@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from types import TracebackType
 from typing import Generic, List, Optional, Type, TypeVar, Union
@@ -39,7 +41,7 @@ class BasePublisher(Generic[MsgT]):
         topic: str,
         qos_profile: QoSProfile,
         *,
-        on_destroy: Optional[Callable[['BasePublisher[MsgT]'], None]] = None,
+        on_destroy: Optional[Callable[[Self], None]] = None,
     ) -> None:
         """
         Create a container for a ROS publisher.
@@ -90,7 +92,7 @@ class BasePublisher(Generic[MsgT]):
         with self.handle:
             return self.__publisher.get_logger_name()
 
-    def destroy(self) -> None:
+    def destroy(self: Self) -> None:
         """Destroy the publisher, notifying the owning node and releasing the handle."""
         if self._destroyed:
             return

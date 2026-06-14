@@ -33,7 +33,7 @@ class AsyncClock(BaseClock):
 
     def __init__(self, *, clock_type: ClockType = ClockType.SYSTEM_TIME) -> None:
         super().__init__(clock_type=clock_type)
-        self._pending_sleeps: Dict[asyncio.Future, Optional[Time]] = {}
+        self._pending_sleeps: Dict[asyncio.Future[None], Optional[Time]] = {}
         self._destroyed = False
 
         threshold = JumpThreshold(
@@ -45,7 +45,7 @@ class AsyncClock(BaseClock):
             threshold, post_callback=self._on_jump)
 
     @staticmethod
-    def _resolve_future(future: asyncio.Future) -> None:
+    def _resolve_future(future: asyncio.Future[None]) -> None:
         if not future.done():
             future.set_result(None)
 

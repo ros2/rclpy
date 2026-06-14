@@ -13,11 +13,18 @@
 # limitations under the License.
 
 import asyncio
-from typing import Awaitable, Callable, Optional, Type
+from collections.abc import AsyncGenerator
+from collections.abc import Coroutine
+from typing import Any, Callable, Optional, Type
+from typing import cast
 
 from rclpy.executors import await_or_execute
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.subscription import BaseSubscription, SubscriptionCallbackUnion
+from rclpy.subscription import MessageAndInfo
+from rclpy.subscription import SubscriptionCallback
+from rclpy.subscription import SubscriptionCallbackWithMessageInfo
 from rclpy.type_support import MsgT
 
 
@@ -32,12 +39,12 @@ class AsyncSubscription(BaseSubscription[MsgT]):
 
     def __init__(
         self,
-        subscription_impl: object,
+        subscription_impl: '_rclpy.Subscription[MsgT]',
         msg_type: Type[MsgT],
         topic: str,
         callback: SubscriptionCallbackUnion[MsgT],
         qos_profile: QoSProfile,
-        on_destroy: Callable[['AsyncSubscription'], None],
+        on_destroy: Callable[['AsyncSubscription[MsgT]'], None],
         raw: bool = False,
         concurrent: bool = False,
         tg: Optional[asyncio.TaskGroup] = None,
@@ -45,7 +52,7 @@ class AsyncSubscription(BaseSubscription[MsgT]):
         super().__init__(subscription_impl, msg_type, topic, callback, qos_profile, raw,
                          on_destroy=on_destroy)
         self._concurrent = concurrent
-        self._task: Optional[asyncio.Task] = None
+        self._task: Optional[asyncio.Task[None]] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._read_event = asyncio.Event()
         if tg is not None:
@@ -61,7 +68,7 @@ class AsyncSubscription(BaseSubscription[MsgT]):
         self.handle.clear_on_new_message_callback()
         super()._destroy()
 
-    async def _messages(self):
+    async def _messages(self) -> AsyncGenerator[MessageAndInfo[MsgT], None]:
         """Async generator yielding (msg, msg_info) from DDS."""
         self.handle.set_on_new_message_callback(self._on_new_message)
         while not self._destroyed:
@@ -73,11 +80,14 @@ class AsyncSubscription(BaseSubscription[MsgT]):
                 self._read_event.clear()
                 await self._read_event.wait()
 
-    def _make_callback(self, msg_and_info: tuple) -> Awaitable[None]:
+    def _make_callback(self, msg_and_info: MessageAndInfo[MsgT]) -> Coroutine[Any, Any, None]:
         """Create a callback coroutine from a (msg, msg_info) tuple."""
         if self._callback_type is BaseSubscription.CallbackType.MessageOnly:
-            return await_or_execute(self.callback, msg_and_info[0])
-        return await_or_execute(self.callback, *msg_and_info)
+            callback_msg = cast(SubscriptionCallback[MsgT], self.callback)
+            return await_or_execute(callback_msg, msg_and_info[0])
+        else:
+            callback_msg_and_info = cast(SubscriptionCallbackWithMessageInfo[MsgT], self.callback)
+            return await_or_execute(callback_msg_and_info, *msg_and_info)
 
     async def _run(self) -> None:
         """DDS bridge read loop for subscriptions."""

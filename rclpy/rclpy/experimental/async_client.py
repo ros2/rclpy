@@ -13,10 +13,13 @@
 # limitations under the License.
 
 import asyncio
+from collections.abc import AsyncGenerator
 from typing import Callable, Dict, Optional, Type
+from typing import cast
 
 from rclpy.client import BaseClient
 from rclpy.context import Context
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
@@ -33,17 +36,17 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
     def __init__(
         self,
         context: Context,
-        client_impl: object,
+        client_impl: '_rclpy.Client[SrvRequestT, SrvResponseT]',
         srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         qos_profile: QoSProfile,
-        on_destroy: Callable[['AsyncClient'], None],
+        on_destroy: Callable[['AsyncClient[SrvRequestT, SrvResponseT]'], None] | None,
         tg: Optional[asyncio.TaskGroup] = None,
     ) -> None:
         super().__init__(context, client_impl, srv_type, srv_name, qos_profile,
                          on_destroy=on_destroy)
-        self._pending_requests: Dict[int, asyncio.Future] = {}
-        self._task: Optional[asyncio.Task] = None
+        self._pending_requests: Dict[int, asyncio.Future[SrvResponseT]] = {}
+        self._task: Optional[asyncio.Task[None]] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._read_event = asyncio.Event()
         if tg is not None:
@@ -85,14 +88,16 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
         finally:
             self._pending_requests.pop(sequence_number)
 
-    async def _responses(self):
+    async def _responses(self) -> AsyncGenerator[tuple[_rclpy.rmw_service_info_t,
+                                                       SrvResponseT], None]:
         """Async generator yielding (header, response) from DDS."""
         self.handle.set_on_new_response_callback(self._on_new_response)
         while not self._destroyed:
             header_and_response = self.handle.take_response(
                 self.srv_type.Response)
             if header_and_response != (None, None):
-                yield header_and_response
+                # See https://github.com/python/mypy/issues/21598 for more info the cast
+                yield cast(tuple[_rclpy.rmw_service_info_t, SrvResponseT], header_and_response)
             else:
                 self._read_event.clear()
                 await self._read_event.wait()

@@ -48,7 +48,7 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
         srv_name: str,
         qos_profile: QoSProfile,
         *,
-        on_destroy: Optional[Callable[['BaseClient[SrvRequestT, SrvResponseT]'], None]] = None,
+        on_destroy: Callable[[Self], None] | None = None,
     ) -> None:
         """
         Create a container for a ROS service client.
@@ -105,7 +105,7 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
         with self.handle:
             return self.__client.get_logger_name()
 
-    def destroy(self) -> None:
+    def destroy(self: Self) -> None:
         """Destroy the client, notifying the owning node and releasing the handle."""
         if self._destroyed:
             return
@@ -130,7 +130,7 @@ class BaseClient(Generic[SrvRequestT, SrvResponseT]):
         self.destroy()
 
 
-class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResponseT]):
+class Client(BaseClient[SrvRequestT, SrvResponseT]):
     def __init__(
         self,
         context: Context,
@@ -139,7 +139,7 @@ class Client(BaseClient[SrvRequestT, SrvResponseT], Generic[SrvRequestT, SrvResp
         srv_name: str,
         qos_profile: QoSProfile,
         *,
-        on_destroy: Optional[Callable[['BaseClient[SrvRequestT, SrvResponseT]'], None]] = None,
+        on_destroy: Callable[[Self], None] | None = None,
         callback_group: CallbackGroup
     ) -> None:
         """

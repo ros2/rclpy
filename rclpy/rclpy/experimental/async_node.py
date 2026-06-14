@@ -18,6 +18,7 @@ from typing import Any, Literal, Optional, overload, Type, Union
 
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import BaseNode
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_rosout_default
@@ -37,7 +38,8 @@ from .async_subscription import AsyncSubscription
 from .async_timer import AsyncTimer
 
 AsyncEntity = Union[
-    AsyncPublisher, AsyncSubscription, AsyncService, AsyncClient, AsyncTimer]
+    AsyncPublisher[Any], AsyncSubscription[Any],
+    AsyncService[Any, Any], AsyncClient[Any, Any], AsyncTimer]
 
 
 class AsyncNode(BaseNode):
@@ -149,7 +151,8 @@ class AsyncNode(BaseNode):
     ) -> None:
         try:
             self.destroy_node()
-            await self._tg.__aexit__(exc_type, exc_val, exc_tb)
+            if self._tg:
+                await self._tg.__aexit__(exc_type, exc_val, exc_tb)
         finally:
             self._tg = None
 
@@ -328,7 +331,7 @@ class AsyncNode(BaseNode):
 
     def _create_service(
         self,
-        service_impl: object,
+        service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]',
         srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],

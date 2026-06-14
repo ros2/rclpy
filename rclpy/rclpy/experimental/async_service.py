@@ -13,9 +13,12 @@
 # limitations under the License.
 
 import asyncio
-from typing import Any, Callable, Optional, Type
+from collections.abc import AsyncGenerator
+from typing import Callable, Optional, Type
+from typing import cast
 
 from rclpy.executors import await_or_execute
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service import BaseService, ServiceCallbackUnion
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
@@ -32,19 +35,19 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
 
     def __init__(
         self,
-        service_impl: object,
+        service_impl: '_rclpy.Service[SrvRequestT, SrvResponseT]',
         srv_type: Type[Srv[SrvRequestT, SrvResponseT]],
         srv_name: str,
         callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         qos_profile: QoSProfile,
-        on_destroy: Callable[['AsyncService'], None],
+        on_destroy: Callable[['AsyncService[SrvRequestT, SrvResponseT]'], None],
         concurrent: bool = False,
         tg: Optional[asyncio.TaskGroup] = None,
     ) -> None:
         super().__init__(service_impl, srv_type, srv_name, callback, qos_profile,
                          on_destroy=on_destroy)
         self._concurrent = concurrent
-        self._task: Optional[asyncio.Task] = None
+        self._task: Optional[asyncio.Task[None]] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._read_event = asyncio.Event()
         if tg is not None:
@@ -63,20 +66,22 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
     async def _handle_request(
         self,
         request: SrvRequestT,
-        header: Any,
+        header: _rclpy.rmw_service_info_t,
     ) -> None:
         response = await await_or_execute(
             self.callback, request, self.srv_type.Response())
         self._send_response(response, header)
 
-    async def _requests(self):
+    async def _requests(self) -> AsyncGenerator[tuple[SrvRequestT,
+                                                      _rclpy.rmw_service_info_t], None]:
         """Async generator yielding (request, header) from DDS."""
         self.handle.set_on_new_request_callback(self._on_new_request)
         while not self._destroyed:
             request_and_header = self.handle.service_take_request(
                 self.srv_type.Request)
             if request_and_header != (None, None):
-                yield request_and_header
+                # See https://github.com/python/mypy/issues/21598 for more info the cast
+                yield cast(tuple[SrvRequestT, _rclpy.rmw_service_info_t], request_and_header)
             else:
                 self._read_event.clear()
                 await self._read_event.wait()

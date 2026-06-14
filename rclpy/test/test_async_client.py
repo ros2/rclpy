@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from collections.abc import Generator
 
 import pytest
 
@@ -23,16 +24,17 @@ from test_msgs.srv import BasicTypes as BasicTypesSrv
 
 
 @pytest.fixture(autouse=True)
-def rclpy_context():
+def rclpy_context() -> Generator[None, None, None]:
     """Initialize and shut down rclpy for each test."""
     with rclpy.init():
         yield
 
 
 @pytest.mark.asyncio
-async def test_client_calls_async_service():
+async def test_client_calls_async_service() -> None:
     """Client can call a service hosted by another AsyncNode (sync handler)."""
-    def handler(request, response):
+    def handler(request: BasicTypesSrv.Request,
+                response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         response.bool_value = not request.bool_value
         response.string_value = 'inverted'
         return response
@@ -53,7 +55,7 @@ async def test_client_calls_async_service():
 
 
 @pytest.mark.asyncio
-async def test_wait_for_service_timeout():
+async def test_wait_for_service_timeout() -> None:
     """Timeout is raised when no service server exists."""
     async with AsyncNode('test_wfs_timeout_node') as node:
         client = node.create_client(BasicTypesSrv, '/nonexistent_service')
@@ -63,7 +65,7 @@ async def test_wait_for_service_timeout():
 
 
 @pytest.mark.asyncio
-async def test_client_call_on_destroyed_client():
+async def test_client_call_on_destroyed_client() -> None:
     """Calling a destroyed client raises RuntimeError."""
     async with AsyncNode('test_destroyed_call_node') as node:
         client = node.create_client(BasicTypesSrv, '/some_service')
@@ -73,12 +75,13 @@ async def test_client_call_on_destroyed_client():
 
 
 @pytest.mark.asyncio
-async def test_client_concurrent_calls():
+async def test_client_concurrent_calls() -> None:
     """Multiple concurrent calls are correctly demuxed by sequence number."""
     NUM_CALLS = 3
     barrier = asyncio.Barrier(NUM_CALLS)
 
-    async def handler(request, response):
+    async def handler(request: BasicTypesSrv.Request,
+                      response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         await barrier.wait()
         return response
 
@@ -99,11 +102,12 @@ async def test_client_concurrent_calls():
 
 
 @pytest.mark.asyncio
-async def test_client_call_timeout_then_next_call_succeeds():
+async def test_client_call_timeout_then_next_call_succeeds() -> None:
     """A timed-out call does not break subsequent calls on the same client."""
     first_call = True
 
-    async def handler(request, response):
+    async def handler(request: BasicTypesSrv.Request,
+                      response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         nonlocal first_call
         if first_call:
             first_call = False
@@ -133,9 +137,10 @@ async def test_client_call_timeout_then_next_call_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_client_destroy_cancels_in_flight_call():
+async def test_client_destroy_cancels_in_flight_call() -> None:
     """destroy() from the server callback cancels the in-flight call()."""
-    async def handler(request, response):
+    async def handler(request: BasicTypesSrv.Request,
+                      response: BasicTypesSrv.Response) -> BasicTypesSrv.Response:
         client.destroy()
         return response
 

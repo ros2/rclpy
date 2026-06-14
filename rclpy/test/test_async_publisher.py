@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from collections.abc import Generator
 
 import pytest
 
@@ -32,14 +33,14 @@ TEST_QOS = QoSProfile(
 
 
 @pytest.fixture(autouse=True)
-def rclpy_context():
+def rclpy_context() -> Generator[None, None, None]:
     """Initialize and shut down rclpy for each test."""
     with rclpy.init():
         yield
 
 
 @pytest.mark.asyncio
-async def test_publish_on_destroyed_publisher():
+async def test_publish_on_destroyed_publisher() -> None:
     """Publishing on a destroyed publisher raises RuntimeError."""
     async with AsyncNode('test_pub_destroyed_node') as node:
         pub = node.create_publisher(Strings, '/topic', TEST_QOS)
@@ -49,11 +50,11 @@ async def test_publish_on_destroyed_publisher():
 
 
 @pytest.mark.asyncio
-async def test_publish_before_aenter():
+async def test_publish_before_aenter() -> None:
     """Publisher works on a node that has never been entered (no _run task)."""
     received = asyncio.Event()
 
-    async def callback(msg):
+    async def callback(msg: Strings) -> None:
         received.set()
 
     pub_node = AsyncNode('test_pub_pre_aenter_pub_node')

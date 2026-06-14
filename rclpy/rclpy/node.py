@@ -51,7 +51,7 @@ from rcl_interfaces.srv import ListParameters
 from rclpy.callback_groups import CallbackGroup
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.client import BaseClient, Client
+from rclpy.client import Client
 from rclpy.clock import BaseClock, Clock
 from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
@@ -94,7 +94,7 @@ from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.time_source import TimeSource
-from rclpy.timer import BaseTimer, Rate
+from rclpy.timer import Rate
 from rclpy.timer import Timer
 from rclpy.timer import TimerCallbackUnion
 from rclpy.type_description_service import TypeDescriptionService
@@ -2492,7 +2492,7 @@ class Node(BaseNode):
     def create_timer(
         self,
         timer_period_sec: float,
-        callback: Optional[TimerCallbackUnion],
+        callback: TimerCallbackUnion | None,
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
@@ -2575,7 +2575,7 @@ class Node(BaseNode):
         timer = self.create_timer(period, callback, group, clock)
         return Rate(timer, context=self.context)
 
-    def _on_destroy_publisher(self, publisher: Publisher) -> None:
+    def _on_destroy_publisher(self, publisher: Publisher[Any]) -> None:
         self._publishers.remove(publisher)
         for event_handler in publisher.event_handlers:
             self.__waitables.remove(event_handler)
@@ -2587,15 +2587,15 @@ class Node(BaseNode):
             self.__waitables.remove(event_handler)
         self._wake_executor()
 
-    def _on_destroy_client(self, client: BaseClient[Any, Any]) -> None:
+    def _on_destroy_client(self, client: Client[Any, Any]) -> None:
         self._clients.remove(client)
         self._wake_executor()
 
-    def _on_destroy_service(self, service: BaseService[Any, Any]) -> None:
+    def _on_destroy_service(self, service: Service[Any, Any]) -> None:
         self._services.remove(service)
         self._wake_executor()
 
-    def _on_destroy_timer(self, timer: BaseTimer) -> None:
+    def _on_destroy_timer(self, timer: Timer) -> None:
         self._timers.remove(timer)
         self._wake_executor()
 

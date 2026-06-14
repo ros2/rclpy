@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
 
 from enum import Enum
 import inspect
@@ -23,6 +24,7 @@ from typing import Literal
 from typing import Optional
 from typing import overload
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
 from typing import Union
@@ -36,6 +38,9 @@ from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.type_support import MsgT
 from typing_extensions import Self
 from typing_extensions import TypeAlias
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeIs
 
 
 class PublisherGID(TypedDict):
@@ -59,6 +64,7 @@ MsgType = TypeVar('MsgType')
 
 # Can be redone with TypeVar(default=MsgT) when either typing-extensions4.11.0+ or python3.13+
 T = TypeVar('T')
+
 GenericSubscriptionCallback: TypeAlias = Union[Callable[[T], None],
                                                Callable[[T, MessageInfo], None]]
 AsyncGenericSubscriptionCallback: TypeAlias = Union[Callable[[T], Awaitable[None]],
@@ -67,6 +73,12 @@ GenericSubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallback[
                                                     AsyncGenericSubscriptionCallback[T]]
 SubscriptionCallbackUnion: TypeAlias = Union[GenericSubscriptionCallbackUnion[MsgT],
                                              GenericSubscriptionCallbackUnion[bytes]]
+
+SubscriptionCallback: TypeAlias = Callable[[MsgT | bytes], None] | \
+                                  Callable[[MsgT | bytes], Awaitable[None]]
+MessageAndInfo: TypeAlias = tuple[MsgT | bytes, MessageInfo]
+SubscriptionCallbackWithMessageInfo: TypeAlias = Callable[[*MessageAndInfo[MsgT]], None] | \
+                                                 Callable[[*MessageAndInfo[MsgT]], Awaitable[None]]
 
 
 class BaseSubscription(Generic[MsgT]):
@@ -85,7 +97,7 @@ class BaseSubscription(Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: Literal[True],
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[[Self], None]] = None,
     ) -> None: ...
 
     @overload
@@ -98,7 +110,7 @@ class BaseSubscription(Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: Literal[False],
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[[Self], None]] = None,
     ) -> None: ...
 
     @overload
@@ -111,7 +123,7 @@ class BaseSubscription(Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: bool,
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[[Self], None]] = None,
     ) -> None: ...
 
     def __init__(
@@ -123,7 +135,7 @@ class BaseSubscription(Generic[MsgT]):
          qos_profile: QoSProfile,
          raw: bool,
          *,
-         on_destroy: Optional[Callable[['BaseSubscription[MsgT]'], None]] = None,
+         on_destroy: Optional[Callable[[Self], None]] = None,
     ) -> None:
         """
         Create a container for a ROS subscription.
@@ -149,7 +161,7 @@ class BaseSubscription(Generic[MsgT]):
     def handle(self) -> '_rclpy.Subscription[MsgT]':
         return self.__subscription
 
-    def destroy(self) -> None:
+    def destroy(self: Self) -> None:
         """Destroy the subscription, notifying the owning node and releasing the handle."""
         if self._destroyed:
             return
@@ -176,22 +188,28 @@ class BaseSubscription(Generic[MsgT]):
         self._set_callback_type(value)
         self._callback = value
 
-    def _set_callback_type(self, callback: SubscriptionCallbackUnion[MsgT]) -> None:
+    @staticmethod
+    def _detect_wants_info(callback: SubscriptionCallbackUnion[MsgT]
+                           ) -> TypeIs[SubscriptionCallbackWithMessageInfo[MsgT]]:
         try:
             inspect.signature(callback).bind(object())
-            self._callback_type = BaseSubscription.CallbackType.MessageOnly
-            return
+            return False
         except TypeError:
             pass
         try:
             inspect.signature(callback).bind(object(), object())
-            self._callback_type = BaseSubscription.CallbackType.WithMessageInfo
-            return
+            return True
         except TypeError:
             pass
         raise RuntimeError(
             'Subscription callback should be either be callable with one argument'
             '(to get only the message) or two (to get message and message info)')
+
+    def _set_callback_type(self, callback: SubscriptionCallbackUnion[MsgT]) -> None:
+        if BaseSubscription._detect_wants_info(callback):
+            self._callback_type = BaseSubscription.CallbackType.WithMessageInfo
+        else:
+            self._callback_type = BaseSubscription.CallbackType.MessageOnly
 
     @property
     def logger_name(self) -> str:
