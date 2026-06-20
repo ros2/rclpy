@@ -140,7 +140,7 @@ class AsyncNode(BaseNode):
         self._tg = await tg.__aenter__()
         for entity in self._entities:
             if hasattr(entity, '_run'):
-                entity._task = self._tg.create_task(entity._run())
+                entity._task = self._tg.create_task(entity._run())  # type: ignore[union-attr]
         return self
 
     async def __aexit__(

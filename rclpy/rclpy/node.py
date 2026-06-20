@@ -494,8 +494,6 @@ class BaseNode(ABC):
                                  'being included in self._parameter_overrides, and ',
                                  'ignore_override=False')
 
-            from typing import cast
-            value = cast(AllowableParameterValue, value)
             parameter_list.append(Parameter(name, value=value))
             descriptors.update({name: descriptor})
 
@@ -1941,6 +1939,8 @@ class BaseNode(ABC):
                 raise ex from None
             # else reraise the previous exception
             raise
+
+        qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
 
         if qos_overriding_options is None:
             qos_overriding_options = QoSOverridingOptions([])
