@@ -1669,8 +1669,8 @@ class TestNode(unittest.TestCase):
         self.assertTrue(self.node.has_parameter('param2'))
         self.assertEqual(self.node.get_parameter('param1').value, 1.0)
         self.assertEqual(self.node.get_parameter('param2').value, 2.0)
-        self.assertTrue(self.track_value1 == 1.0)  # type: ignore[comparison-overlap]  
-        self.assertTrue(self.track_value2 == 2.0)  # type: ignore[comparison-overlap]  
+        self.assertTrue(self.track_value1 == 1.0)  # type: ignore[comparison-overlap]
+        self.assertTrue(self.track_value2 == 2.0)  # type: ignore[comparison-overlap]
 
     def test_node_set_parameters_read_only(self) -> None:
         integer_value = 42
