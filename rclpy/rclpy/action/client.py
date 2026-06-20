@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import threading
 import time
 from types import TracebackType
 from typing import Any
 from typing import Callable
+from typing import Coroutine
 from typing import Dict
 from typing import Generic
 from typing import Optional
@@ -25,6 +28,7 @@ from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
+from typing import Union
 
 import uuid
 import weakref
@@ -69,16 +73,20 @@ if TYPE_CHECKING:
         result: Tuple[int, GetResultServiceResponse[ClientGoalHandleDictResultT]]
         feedback: FeedbackMessage[ClientGoalHandleDictFeedbackT]
         status: GoalStatusArray
+
+    FeedbackCallbackUnion: TypeAlias = Union[
+        Callable[[FeedbackMessage[FeedbackT]], None],
+        Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
+    ]
+
+    class SendGoalKWargs(TypedDict, Generic[FeedbackT]):
+        feedback_callback: Optional[FeedbackCallbackUnion[FeedbackT]]
+        goal_uuid: Optional[UUID]
 else:
     ClientGoalHandleDict: 'TypeAlias' = Dict[str, object]
 
 
 T = TypeVar('T')
-
-
-class SendGoalKWargs(TypedDict):
-    feedback_callback: Optional[Callable[[FeedbackT], None]]
-    goal_uuid: Optional[UUID]
 
 
 class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT]):
@@ -237,7 +245,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
         # key: result request sequence_number, value: UUID
         self._result_sequence_number_to_goal_id: Dict[int, UUID] = {}
         # key: UUID in bytes, value: callback function
-        self._feedback_callbacks: Dict[bytes, Callable[[FeedbackT], None]] = {}
+        self._feedback_callbacks: Dict[bytes, FeedbackCallbackUnion[FeedbackT]] = {}
 
         self._logger = self._node.get_logger().get_child('action_client')
         self._lock = threading.Lock()
@@ -444,7 +452,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
 
     # End Waitable API
 
-    def send_goal(self, goal: GoalT, **kwargs: 'Unpack[SendGoalKWargs]'
+    def send_goal(self, goal: GoalT, **kwargs: 'Unpack[SendGoalKWargs[FeedbackT]]'
                   ) -> Optional[GetResultServiceResponse[ResultT]]:
         """
         Send a goal and wait for the result.
@@ -494,7 +502,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT],
     def send_goal_async(
         self,
         goal: GoalT,
-        feedback_callback: Optional[Callable[[FeedbackT], None]] = None,
+        feedback_callback: Optional[FeedbackCallbackUnion[FeedbackT]] = None,
         goal_uuid: Optional[UUID] = None
     ) -> Future[ClientGoalHandle[GoalT, ResultT, FeedbackT]]:
         """
