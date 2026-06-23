@@ -414,9 +414,6 @@ class TestExecutor(unittest.TestCase):
                 self.assertTrue(future1.done())
                 self.assertEqual('Sentinel Result 1', future1.result())
 
-<<<<<<< HEAD
-    def test_create_task_during_spin(self):
-=======
     def test_coroutine_exception_after_await(self) -> None:
         """Exception in a coroutine after awaiting a future must propagate."""
         self.assertIsNotNone(self.node.handle)
@@ -498,7 +495,6 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual('done', task.result())
 
     def test_create_task_during_spin(self) -> None:
->>>>>>> aac0ebb (Bugfix: executor doesn't propagate exception from task that awaited a future (#1643))
         self.assertIsNotNone(self.node.handle)
         for cls in [SingleThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):

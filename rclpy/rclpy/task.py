@@ -209,9 +209,6 @@ class Future:
         if invoke:
             callback(self)
 
-<<<<<<< HEAD
-    def remove_done_callback(self, callback: Callable[['Future'], None]) -> bool:
-=======
     def _add_waiting_task(self, task: 'Task[Any]') -> None:
         """Schedule a task to resume when this future completes."""
         with self._lock:
@@ -228,7 +225,6 @@ class Future:
                 self._callbacks.append(task)
 
     def remove_done_callback(self, callback: Callable[['Future[T]'], None]) -> bool:
->>>>>>> aac0ebb (Bugfix: executor doesn't propagate exception from task that awaited a future (#1643))
         """
         Remove a previously-added done callback.
 
