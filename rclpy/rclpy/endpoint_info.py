@@ -60,8 +60,9 @@ class TopicEndpointInfo:
         topic_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
         endpoint_type: Union[EndpointTypeEnum, int] = EndpointTypeEnum.INVALID,
         endpoint_gid: list[int] = [],
-        qos_profile: Union[QoSProfile, '_rclpy._rmw_qos_profile_dict'] =
-            QoSPresetProfiles.UNKNOWN.value,
+        qos_profile: Union[QoSProfile, '_rclpy._rmw_qos_profile_dict'] = (
+            QoSPresetProfiles.UNKNOWN.value
+        ),
         buffer_backend_metadata: dict[str, str] = {}
     ):
         self.node_name = node_name

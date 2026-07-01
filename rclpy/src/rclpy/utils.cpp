@@ -32,6 +32,7 @@
 #include <vector>
 
 #include <rcpputils/scope_exit.hpp>
+#include <rmw/impl/cpp/buffer_backend_metadata.hpp>
 
 #include "exceptions.hpp"
 #include "utils.hpp"
@@ -314,14 +315,10 @@ _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpo
   py_endpoint_info_dict["qos_profile"] =
     convert_to_qos_dict(&topic_endpoint_info->qos_profile);
   py::dict py_buffer_backend_metadata;
-  const char * current_key = rcutils_string_map_get_next_key(
-    &topic_endpoint_info->buffer_backend_metadata, nullptr);
-  while (current_key) {
-    const char * current_value = rcutils_string_map_get(
-      &topic_endpoint_info->buffer_backend_metadata, current_key);
-    py_buffer_backend_metadata[py::str(current_key)] = py::str(current_value ? current_value : "");
-    current_key = rcutils_string_map_get_next_key(
-      &topic_endpoint_info->buffer_backend_metadata, current_key);
+  for (const auto & backend_pair :
+    rmw::impl::cpp::parse_buffer_backend_metadata(topic_endpoint_info->buffer_backend_metadata))
+  {
+    py_buffer_backend_metadata[py::str(backend_pair.first)] = py::str(backend_pair.second);
   }
   py_endpoint_info_dict["buffer_backend_metadata"] = py_buffer_backend_metadata;
 
