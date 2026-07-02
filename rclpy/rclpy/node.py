@@ -1114,7 +1114,7 @@ class Node:
         """
         Get the parameter descriptors of a given list of parameters.
 
-        :param name: List of fully-qualified names of the parameters to describe.
+        :param names: List of fully-qualified names of the parameters to describe.
         :return: List of ParameterDescriptors corresponding to the given parameters.
             Default ParameterDescriptors shall be returned for parameters that
             had not been declared before if undeclared parameters are allowed.
