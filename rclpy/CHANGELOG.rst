@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.6 (2026-07-02)
+------------------
+* Fix incorrect action client/server callback type hints (backport `#1616 <https://github.com/ros2/rclpy/issues/1616>`_) (`#1655 <https://github.com/ros2/rclpy/issues/1655>`_)
+* Correct typos (`#1619 <https://github.com/ros2/rclpy/issues/1619>`_) (`#1621 <https://github.com/ros2/rclpy/issues/1621>`_)
+* Contributors: Błażej Sowa, mergify[bot]
+
 9.1.5 (2026-02-09)
 ------------------
 * Prevents the Future result from being set twice. (`#1599 <https://github.com/ros2/rclpy/issues/1599>`_) (`#1603 <https://github.com/ros2/rclpy/issues/1603>`_)
