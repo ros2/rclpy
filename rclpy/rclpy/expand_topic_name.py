@@ -26,7 +26,7 @@ def expand_topic_name(topic_name: str, node_name: str, node_namespace: str) -> s
 
     :param topic_name: topic name to be expanded
     :param node_name: name of the node that this topic is associated with
-    :param namespace: namespace that the topic is within
+    :param node_namespace: namespace that the topic is within
     :returns: expanded topic name which is fully qualified
     :raises: ValueError if the topic name, node name or namespace are invalid
     """
