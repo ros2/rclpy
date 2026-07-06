@@ -106,6 +106,10 @@ class TestQosProfile(unittest.TestCase):
             # History is KEEP_LAST, but no depth is provided
             QoSProfile(history=QoSHistoryPolicy.KEEP_LAST)
 
+    def test_invalid_qos_message(self) -> None:
+        exception = InvalidQoSProfileException('some reason')
+        self.assertEqual(str(exception), 'Invalid QoSProfile: some reason')
+
     def test_policy_short_names(self) -> None:
         # Full test on History to show the mechanism works
         assert (
