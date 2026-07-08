@@ -564,8 +564,8 @@ class ActionServer(Waitable):
         There can only be one handle accepted callback per :class:`ActionServer`, therefore
         calling this function will replace any previously registered callback.
 
-        :param goal_callback: Callback function, if `None`, then unregisters any previously
-            registered callback.
+        :param handle_accepted_callback: Callback function, if `None`, then unregisters any
+            previously registered callback.
         """
         if handle_accepted_callback is None:
             handle_accepted_callback = default_handle_accepted_callback
