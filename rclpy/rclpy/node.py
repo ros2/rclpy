@@ -2288,7 +2288,7 @@ class Node:
 
         The node name should be the full name with namespace.
 
-        :param node_name: Fully qualified name of the node to wait for.
+        :param fully_qualified_node_name: Fully qualified name of the node to wait for.
         :param timeout: Seconds to wait for the node to be present. If negative, the function
                          won't timeout.
         :return: ``True`` if the node was found, ``False`` if timeout.
