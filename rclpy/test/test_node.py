@@ -37,6 +37,7 @@ from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
 import rclpy
+from rclpy.action import ActionClient, ActionServer
 from rclpy.clock_type import ClockType
 import rclpy.context
 from rclpy.duration import Duration
@@ -62,6 +63,7 @@ from rclpy.qos import QoSReliabilityPolicy
 from rclpy.time_source import USE_SIM_TIME_NAME
 from rclpy.type_description_service import START_TYPE_DESCRIPTION_SERVICE_PARAM
 from rclpy.utilities import get_rmw_implementation_identifier
+from test_msgs.action import Fibonacci
 from test_msgs.msg import BasicTypes
 from test_msgs.srv import Empty
 
@@ -420,6 +422,120 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_clients_info_by_service('13')
             self.node.get_servers_info_by_service('13')
+
+    def test_get_action_clients_servers_info_by_action(self) -> None:
+        action_name = 'test_action_endpoint_info'
+        fq_action_name = '{namespace}/{name}'.format(namespace=TEST_NAMESPACE, name=action_name)
+        # Lists should be empty
+        self.assertFalse(self.node.get_action_clients_info_by_action(fq_action_name))
+        self.assertFalse(self.node.get_action_servers_info_by_action(fq_action_name))
+
+        # Add an action client
+        action_client = ActionClient(self.node, Fibonacci, action_name)
+        # Client list should have at least one item
+        client_list = self.node.get_action_clients_info_by_action(fq_action_name)
+        self.assertGreaterEqual(len(client_list), 1)
+        # Server list should be empty
+        self.assertFalse(self.node.get_action_servers_info_by_action(fq_action_name))
+
+        # Verify client list has the right data
+        self.assertEqual(self.node.get_name(), client_list[0].node_name)
+        self.assertEqual(self.node.get_namespace(), client_list[0].node_namespace)
+        self.assertEqual('test_msgs/action/Fibonacci', client_list[0].action_type)
+        self.assertEqual(client_list[0].endpoint_type, EndpointTypeEnum.CLIENT)
+        # Verify the underlying entities of the action client
+        goal_info = client_list[0].goal_service_info
+        self.assertEqual('test_msgs/action/Fibonacci_SendGoal', goal_info.service_type)
+        self.assertEqual(EndpointTypeEnum.CLIENT, goal_info.endpoint_type)
+        self.assertTrue(goal_info.endpoint_count == 1 or goal_info.endpoint_count == 2)
+        cancel_info = client_list[0].cancel_service_info
+        self.assertEqual('action_msgs/srv/CancelGoal', cancel_info.service_type)
+        self.assertEqual(EndpointTypeEnum.CLIENT, cancel_info.endpoint_type)
+        result_info = client_list[0].result_service_info
+        self.assertEqual('test_msgs/action/Fibonacci_GetResult', result_info.service_type)
+        self.assertEqual(EndpointTypeEnum.CLIENT, result_info.endpoint_type)
+        feedback_info = client_list[0].feedback_topic_info
+        self.assertEqual('test_msgs/action/Fibonacci_FeedbackMessage', feedback_info.topic_type)
+        self.assertEqual(EndpointTypeEnum.SUBSCRIPTION, feedback_info.endpoint_type)
+        status_info = client_list[0].status_topic_info
+        self.assertEqual('action_msgs/msg/GoalStatusArray', status_info.topic_type)
+        self.assertEqual(EndpointTypeEnum.SUBSCRIPTION, status_info.endpoint_type)
+
+        # Add an action server
+        action_server = ActionServer(
+            self.node, Fibonacci, action_name, lambda goal_handle: Fibonacci.Result())
+        # Both lists should have at least one item
+        client_list = self.node.get_action_clients_info_by_action(fq_action_name)
+        server_list = self.node.get_action_servers_info_by_action(fq_action_name)
+        self.assertGreaterEqual(len(client_list), 1)
+        self.assertGreaterEqual(len(server_list), 1)
+
+        # Verify server list has the right data
+        self.assertEqual(self.node.get_name(), server_list[0].node_name)
+        self.assertEqual(self.node.get_namespace(), server_list[0].node_namespace)
+        self.assertEqual('test_msgs/action/Fibonacci', server_list[0].action_type)
+        self.assertEqual(server_list[0].endpoint_type, EndpointTypeEnum.SERVER)
+        # Verify the underlying entities of the action server
+        goal_info = server_list[0].goal_service_info
+        self.assertEqual('test_msgs/action/Fibonacci_SendGoal', goal_info.service_type)
+        self.assertEqual(EndpointTypeEnum.SERVER, goal_info.endpoint_type)
+        self.assertTrue(goal_info.endpoint_count == 1 or goal_info.endpoint_count == 2)
+        cancel_info = server_list[0].cancel_service_info
+        self.assertEqual('action_msgs/srv/CancelGoal', cancel_info.service_type)
+        self.assertEqual(EndpointTypeEnum.SERVER, cancel_info.endpoint_type)
+        result_info = server_list[0].result_service_info
+        self.assertEqual('test_msgs/action/Fibonacci_GetResult', result_info.service_type)
+        self.assertEqual(EndpointTypeEnum.SERVER, result_info.endpoint_type)
+        feedback_info = server_list[0].feedback_topic_info
+        self.assertEqual('test_msgs/action/Fibonacci_FeedbackMessage', feedback_info.topic_type)
+        self.assertEqual(EndpointTypeEnum.PUBLISHER, feedback_info.endpoint_type)
+        status_info = server_list[0].status_topic_info
+        self.assertEqual('action_msgs/msg/GoalStatusArray', status_info.topic_type)
+        self.assertEqual(EndpointTypeEnum.PUBLISHER, status_info.endpoint_type)
+
+        action_client.destroy()
+        action_server.destroy()
+
+        # Error cases
+        with self.assertRaises(TypeError):
+            self.node.get_action_clients_info_by_action(1)  # type: ignore[arg-type]
+            self.node.get_action_servers_info_by_action(1)  # type: ignore[arg-type]
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.get_action_clients_info_by_action('13')
+            self.node.get_action_servers_info_by_action('13')
+
+    def test_count_action_clients_servers(self) -> None:
+        short_action_name = 'fibonacci'
+        fq_action_name = '%s/%s' % (TEST_NAMESPACE, short_action_name)
+
+        self.assertEqual(0, self.node.count_action_clients(fq_action_name))
+        self.assertEqual(0, self.node.count_action_servers(fq_action_name))
+
+        action_client = ActionClient(self.node, Fibonacci, short_action_name)
+        self.assertEqual(1, self.node.count_action_clients(short_action_name))
+        self.assertEqual(1, self.node.count_action_clients(fq_action_name))
+        self.assertEqual(0, self.node.count_action_servers(short_action_name))
+        self.assertEqual(0, self.node.count_action_servers(fq_action_name))
+
+        action_server = ActionServer(
+            self.node, Fibonacci, short_action_name, lambda goal_handle: Fibonacci.Result())
+        self.assertEqual(1, self.node.count_action_clients(short_action_name))
+        self.assertEqual(1, self.node.count_action_clients(fq_action_name))
+        self.assertEqual(1, self.node.count_action_servers(short_action_name))
+        self.assertEqual(1, self.node.count_action_servers(fq_action_name))
+
+        action_client.destroy()
+        action_server.destroy()
+
+        # error cases
+        with self.assertRaises(TypeError):
+            self.node.count_action_clients(1)  # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
+            self.node.count_action_servers(1)  # type: ignore[arg-type]
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.count_action_clients('42')
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
+            self.node.count_action_servers('42')
 
     def test_count_publishers_subscribers(self) -> None:
         short_topic_name = 'chatter'

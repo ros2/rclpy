@@ -814,6 +814,14 @@ class _ServiceEndpointInfoDict(TypedDict):
     endpoint_count: int
 
 
+class _ActionEndpointInfoDict(TypedDict):
+    goal_service_info: Optional[_ServiceEndpointInfoDict]
+    cancel_service_info: Optional[_ServiceEndpointInfoDict]
+    result_service_info: Optional[_ServiceEndpointInfoDict]
+    feedback_topic_info: Optional[_TopicEndpointInfoDict]
+    status_topic_info: Optional[_TopicEndpointInfoDict]
+
+
 def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: bool
                                        ) -> list[_TopicEndpointInfoDict]:
     """Get publishers info for a topic."""
@@ -864,6 +872,16 @@ def rclpy_get_action_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
     """Get all action names and types in the ROS graph."""
 
 
+def rclpy_get_action_clients_info_by_action(node: Node, action_name: str
+                                            ) -> list[_ActionEndpointInfoDict]:
+    """Get action clients info for an action."""
+
+
+def rclpy_get_action_servers_info_by_action(node: Node, action_name: str
+                                            ) -> list[_ActionEndpointInfoDict]:
+    """Get action servers info for an action."""
+
+
 def rclpy_serialize(pymsg: MsgT, py_msg_type: type[MsgT]) -> bytes:
     """Serialize a ROS message."""
 
@@ -905,6 +923,12 @@ class Node(Destroyable):
 
     def get_count_services(self, service_name: str) -> int:
         """Return the count of all the servers known for that service in the entire ROS graph."""
+
+    def get_count_action_clients(self, action_name: str) -> int:
+        """Return the count of the action clients known for that action in the entire ROS graph."""
+
+    def get_count_action_servers(self, action_name: str) -> int:
+        """Return the count of the action servers known for that action in the entire ROS graph."""
 
     def get_node_names_and_namespaces(self) -> list[tuple[str, str]]:
         """Get the list of nodes discovered by the provided node."""
