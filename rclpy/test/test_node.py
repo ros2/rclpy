@@ -499,9 +499,11 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         # Error cases
         with self.assertRaises(TypeError):
             self.node.get_action_clients_info_by_action(1)  # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
             self.node.get_action_servers_info_by_action(1)  # type: ignore[arg-type]
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_action_clients_info_by_action('13')
+        with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_action_servers_info_by_action('13')
 
     def test_count_action_clients_servers(self) -> None:

@@ -494,7 +494,9 @@ class ActionEndpointInfo:
             return value
         if isinstance(value, dict):
             return ServiceEndpointInfo(**value)
-        assert False
+        raise TypeError(
+            'expected ServiceEndpointInfo, dict, or None, '
+            f'got {type(value).__name__}')
 
     @staticmethod
     def _to_topic_endpoint_info(
@@ -506,7 +508,9 @@ class ActionEndpointInfo:
             return value
         if isinstance(value, dict):
             return TopicEndpointInfo(**value)
-        assert False
+        raise TypeError(
+            'expected TopicEndpointInfo, dict, or None, '
+            f'got {type(value).__name__}')
 
     # Has to be marked Any due to mypy#3004. Return type is actually ServiceEndpointInfo
     @property
