@@ -24,6 +24,11 @@ import rclpy
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.lifecycle import LifecycleNode
+<<<<<<< HEAD
+=======
+from rclpy.lifecycle import LifecycleState
+from rclpy.lifecycle import ManagedEntity
+>>>>>>> a8d66a0 (Handle exceptions in lifecycle transition callbacks (#1696))
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -119,7 +124,41 @@ def test_lifecycle_state_transitions():
     assert node._state_machine.current_state[1] == 'finalized'
 
 
+<<<<<<< HEAD
 def test_lifecycle_services(request):
+=======
+def test_lifecycle_exception_in_managed_entity_callback() -> None:
+    class RaisingManagedEntity(ManagedEntity):
+
+        def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+            raise RuntimeError('exception in on_configure')
+
+    node = LifecycleNode(
+        'test_lifecycle_exception_in_managed_entity_callback',
+        enable_communication_interface=False)
+    node.add_managed_entity(RaisingManagedEntity())
+    assert node.trigger_configure() == TransitionCallbackReturn.ERROR
+    assert node._state_machine.current_state[1] == 'unconfigured'
+    node.destroy_node()
+
+
+def test_lifecycle_exception_in_overridden_callback() -> None:
+    class RaiseOnActivateNode(LifecycleNode):
+
+        def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+            raise RuntimeError('exception in on_activate')
+
+    node = RaiseOnActivateNode(
+        'test_lifecycle_exception_in_overridden_callback',
+        enable_communication_interface=False)
+    assert node.trigger_configure() == TransitionCallbackReturn.SUCCESS
+    assert node.trigger_activate() == TransitionCallbackReturn.ERROR
+    assert node._state_machine.current_state[1] == 'unconfigured'
+    node.destroy_node()
+
+
+def test_lifecycle_services(request: FixtureRequest) -> None:
+>>>>>>> a8d66a0 (Handle exceptions in lifecycle transition callbacks (#1696))
     lc_node_name = 'test_lifecycle_services_lifecycle'
     lc_node = LifecycleNode(lc_node_name)
     client_node = Node('test_lifecycle_services_client')

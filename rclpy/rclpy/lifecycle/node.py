@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+<<<<<<< HEAD
+=======
+import traceback
+from typing import Any
+>>>>>>> a8d66a0 (Handle exceptions in lifecycle transition callbacks (#1696))
 from typing import Callable
 from typing import Dict
 from typing import NamedTuple
@@ -178,9 +183,35 @@ class LifecycleNodeMixin(ManagedEntity):
 
     def __transition_callback_impl(self, callback_name: str, state: LifecycleState):
         for entity in self._managed_entities:
+<<<<<<< HEAD
             cb = getattr(entity, callback_name)
             ret = cb(state)
             if not isinstance(ret, TransitionCallbackReturn):
+=======
+            if callback_name == 'on_activate':
+                cb = entity.on_activate
+            elif callback_name == 'on_cleanup':
+                cb = entity.on_cleanup
+            elif callback_name == 'on_configure':
+                cb = entity.on_configure
+            elif callback_name == 'on_deactivate':
+                cb = entity.on_deactivate
+            elif callback_name == 'on_error':
+                cb = entity.on_error
+            elif callback_name == 'on_shutdown':
+                cb = entity.on_shutdown
+            else:
+                raise ValueError(f'Not valid callback name "{callback_name}" given.')
+
+            try:
+                ret = cb(state)
+            except Exception:
+                self._logger.error(
+                    f'Caught exception in {callback_name}() callback of managed entity '
+                    f'{entity}:\n{traceback.format_exc()}')
+                return TransitionCallbackReturn.ERROR
+            if not isinstance(ret, _rclpy.TransitionCallbackReturnType):
+>>>>>>> a8d66a0 (Handle exceptions in lifecycle transition callbacks (#1696))
                 raise TypeError(
                     f'{callback_name}() return value of class {type(entity)} should be'
                     ' `TransitionCallbackReturn`.\n'
@@ -316,7 +347,9 @@ class LifecycleNodeMixin(ManagedEntity):
             ret = cb(previous_state)
             return ret
         except Exception:
-            # TODO(ivanpauno): log sth here
+            self._logger.error(
+                f'Caught exception in transition callback for state {current_state_id}:\n'
+                f'{traceback.format_exc()}')
             return TransitionCallbackReturn.ERROR
 
     def __change_state(self, transition_id: int) -> TransitionCallbackReturn:
