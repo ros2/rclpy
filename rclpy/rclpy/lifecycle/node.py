@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import traceback
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -238,7 +239,13 @@ class LifecycleNodeMixin(ManagedEntity):
             else:
                 raise ValueError(f'Not valid callback name "{callback_name}" given.')
 
-            ret = cb(state)
+            try:
+                ret = cb(state)
+            except Exception:
+                self._logger.error(
+                    f'Caught exception in {callback_name}() callback of managed entity '
+                    f'{entity}:\n{traceback.format_exc()}')
+                return TransitionCallbackReturn.ERROR
             if not isinstance(ret, _rclpy.TransitionCallbackReturnType):
                 raise TypeError(
                     f'{callback_name}() return value of class {type(entity)} should be'
@@ -397,7 +404,9 @@ class LifecycleNodeMixin(ManagedEntity):
             ret = cb(previous_state)
             return ret
         except Exception:
-            # TODO(ivanpauno): log sth here
+            self._logger.error(
+                f'Caught exception in transition callback for state {current_state_id}:\n'
+                f'{traceback.format_exc()}')
             return TransitionCallbackReturn.ERROR
 
     def __change_state(self, transition_id: int) -> TransitionCallbackReturn:
