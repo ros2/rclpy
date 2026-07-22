@@ -31,6 +31,7 @@ from rclpy.client import Client
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import LifecycleState
+from rclpy.lifecycle import ManagedEntity
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -119,6 +120,36 @@ def test_lifecycle_state_transitions() -> None:
         'test_lifecycle_state_transitions_3', enable_communication_interface=False)
     assert node.trigger_configure() == TransitionCallbackReturn.ERROR
     assert node._state_machine.current_state[1] == 'finalized'
+
+
+def test_lifecycle_exception_in_managed_entity_callback() -> None:
+    class RaisingManagedEntity(ManagedEntity):
+
+        def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+            raise RuntimeError('exception in on_configure')
+
+    node = LifecycleNode(
+        'test_lifecycle_exception_in_managed_entity_callback',
+        enable_communication_interface=False)
+    node.add_managed_entity(RaisingManagedEntity())
+    assert node.trigger_configure() == TransitionCallbackReturn.ERROR
+    assert node._state_machine.current_state[1] == 'unconfigured'
+    node.destroy_node()
+
+
+def test_lifecycle_exception_in_overridden_callback() -> None:
+    class RaiseOnActivateNode(LifecycleNode):
+
+        def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+            raise RuntimeError('exception in on_activate')
+
+    node = RaiseOnActivateNode(
+        'test_lifecycle_exception_in_overridden_callback',
+        enable_communication_interface=False)
+    assert node.trigger_configure() == TransitionCallbackReturn.SUCCESS
+    assert node.trigger_activate() == TransitionCallbackReturn.ERROR
+    assert node._state_machine.current_state[1] == 'unconfigured'
+    node.destroy_node()
 
 
 def test_lifecycle_services(request: FixtureRequest) -> None:
