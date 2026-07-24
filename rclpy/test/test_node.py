@@ -16,6 +16,7 @@ import pathlib
 import platform
 import time
 from typing import Any
+from typing import Callable
 from typing import cast
 from typing import List
 from typing import Optional
@@ -506,25 +507,51 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'is invalid'):
             self.node.get_action_servers_info_by_action('13')
 
+    def assert_count_eventually_equal(
+        self,
+        expected: int,
+        count_func: Callable[[str], int],
+        name: str,
+        timeout: float = 5.0
+    ) -> None:
+        # Graph counts are discovery-based and updated asynchronously, so
+        # poll until the expected value is observed instead of asserting once.
+        deadline = time.monotonic() + timeout
+        actual = count_func(name)
+        while actual != expected and time.monotonic() < deadline:
+            time.sleep(0.1)
+            actual = count_func(name)
+        self.assertEqual(expected, actual)
+
     def test_count_action_clients_servers(self) -> None:
         short_action_name = 'fibonacci'
         fq_action_name = '%s/%s' % (TEST_NAMESPACE, short_action_name)
 
-        self.assertEqual(0, self.node.count_action_clients(fq_action_name))
-        self.assertEqual(0, self.node.count_action_servers(fq_action_name))
+        self.assert_count_eventually_equal(
+            0, self.node.count_action_clients, fq_action_name)
+        self.assert_count_eventually_equal(
+            0, self.node.count_action_servers, fq_action_name)
 
         action_client = ActionClient(self.node, Fibonacci, short_action_name)
-        self.assertEqual(1, self.node.count_action_clients(short_action_name))
-        self.assertEqual(1, self.node.count_action_clients(fq_action_name))
-        self.assertEqual(0, self.node.count_action_servers(short_action_name))
-        self.assertEqual(0, self.node.count_action_servers(fq_action_name))
+        self.assert_count_eventually_equal(
+            1, self.node.count_action_clients, short_action_name)
+        self.assert_count_eventually_equal(
+            1, self.node.count_action_clients, fq_action_name)
+        self.assert_count_eventually_equal(
+            0, self.node.count_action_servers, short_action_name)
+        self.assert_count_eventually_equal(
+            0, self.node.count_action_servers, fq_action_name)
 
         action_server = ActionServer(
             self.node, Fibonacci, short_action_name, lambda goal_handle: Fibonacci.Result())
-        self.assertEqual(1, self.node.count_action_clients(short_action_name))
-        self.assertEqual(1, self.node.count_action_clients(fq_action_name))
-        self.assertEqual(1, self.node.count_action_servers(short_action_name))
-        self.assertEqual(1, self.node.count_action_servers(fq_action_name))
+        self.assert_count_eventually_equal(
+            1, self.node.count_action_clients, short_action_name)
+        self.assert_count_eventually_equal(
+            1, self.node.count_action_clients, fq_action_name)
+        self.assert_count_eventually_equal(
+            1, self.node.count_action_servers, short_action_name)
+        self.assert_count_eventually_equal(
+            1, self.node.count_action_servers, fq_action_name)
 
         action_client.destroy()
         action_server.destroy()
