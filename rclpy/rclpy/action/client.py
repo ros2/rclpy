@@ -14,11 +14,13 @@
 
 from __future__ import annotations
 
+import inspect
 import threading
 import time
 from types import TracebackType
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Coroutine
 from typing import Dict
 from typing import Generic
@@ -39,7 +41,6 @@ from action_msgs.srv import CancelGoal
 from builtin_interfaces.msg import Time
 
 from rclpy.clock import Clock
-from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import qos_profile_action_status_default
 from rclpy.qos import qos_profile_services_default
@@ -92,6 +93,12 @@ T = TypeVar('T')
 
 # Re-export exception defined in _rclpy C extension.
 RCLError = _rclpy.RCLError
+
+_TERMINAL_STATUSES = frozenset({
+    GoalStatus.STATUS_SUCCEEDED,
+    GoalStatus.STATUS_CANCELED,
+    GoalStatus.STATUS_ABORTED,
+})
 
 
 class ClientGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
@@ -278,6 +285,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
         self._result_sequence_number_to_goal_id: Dict[int, UUID] = {}
         # key: UUID in bytes, value: callback function
         self._feedback_callbacks: Dict[bytes, FeedbackCallbackUnion[FeedbackT]] = {}
+        self._feedback_is_coroutine: Dict[FeedbackCallbackUnion[FeedbackT], bool] = {}
         self._enable_feedback_msg_optimization = enable_feedback_msg_optimization
 
         self._logger = self._node.get_logger().get_child('action_client')
@@ -456,26 +464,40 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
         if 'feedback' in taken_data:
             feedback_msg = taken_data['feedback']
-            goal_uuid = bytes(feedback_msg.goal_id.uuid)
+            goal_uuid = feedback_msg.goal_id.uuid.tobytes()
             # Call a registered callback if there is one
-            if goal_uuid in self._feedback_callbacks:
-                await await_or_execute(self._feedback_callbacks[goal_uuid], feedback_msg)
+            callback = self._feedback_callbacks.get(goal_uuid)
+            if callback is not None:
+                is_coroutine = self._feedback_is_coroutine.get(callback)
+                if is_coroutine is None:
+                    is_coroutine = inspect.iscoroutinefunction(callback)
+                    self._feedback_is_coroutine[callback] = is_coroutine
+                if is_coroutine:
+                    # See https://github.com/python/typeshed/issues/15529
+                    coro_callback = cast(
+                        Callable[[FeedbackMessage[FeedbackT]], Coroutine[Any, Any, None]],
+                        callback)
+                    await coro_callback(feedback_msg)
+                else:
+                    sync_callback = cast(
+                        Callable[[FeedbackMessage[FeedbackT]], None], callback)
+                    sync_callback(feedback_msg)
 
         if 'status' in taken_data:
             # Update the status of all goal handles maintained by this Action Client
+            goal_handles = self._goal_handles
             for status_msg in taken_data['status'].status_list:
-                goal_uuid = bytes(status_msg.goal_info.goal_id.uuid)
-                status = status_msg.status
+                goal_uuid = status_msg.goal_info.goal_id.uuid.tobytes()
 
-                if goal_uuid in self._goal_handles:
-                    status_goal_handle = self._goal_handles[goal_uuid]()
+                goal_handle_ref = goal_handles.get(goal_uuid)
+                if goal_handle_ref is not None:
+                    status_goal_handle = goal_handle_ref()
                     if status_goal_handle is not None:
+                        status = status_msg.status
                         status_goal_handle._status = status
                         # Remove "done" goals from the list
-                        if (GoalStatus.STATUS_SUCCEEDED == status or
-                                GoalStatus.STATUS_CANCELED == status or
-                                GoalStatus.STATUS_ABORTED == status):
-                            del self._goal_handles[goal_uuid]
+                        if status in _TERMINAL_STATUSES:
+                            del goal_handles[goal_uuid]
                             if self._enable_feedback_msg_optimization:
                                 try:
                                     _ = self._client_handle \
@@ -485,7 +507,7 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                                     self._logger.warning(f'{e}')
                     else:
                         # Weak reference is None
-                        del self._goal_handles[goal_uuid]
+                        del goal_handles[goal_uuid]
 
     def get_num_entities(self) -> NumberOfEntities:
         """Return number of each type of entity used in the wait set."""
