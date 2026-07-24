@@ -58,6 +58,9 @@ class Future(Generic[T]):
         self._executor: Optional[Union[weakref.ReferenceType['Executor'],
                                        Callable[[], None]]] = None
         self._set_executor(executor)
+        # Used by Client to remove this future from its pending-requests dict in O(1)
+        # instead of scanning it by identity; unused/None outside that context.
+        self._sequence_number: Optional[int] = None
 
     def __del__(self) -> None:
         if self._exception is not None and not self._exception_fetched:

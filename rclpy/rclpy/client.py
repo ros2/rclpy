@@ -236,6 +236,9 @@ class Client(BaseClient[SrvRequestT, SrvResponseT]):
 
             future = Future[SrvResponseT]()
             self._pending_requests[sequence_number] = future
+            # Stash the sequence number on the future so remove_pending_request() is O(1)
+            # instead of scanning _pending_requests to find it by identity.
+            future._sequence_number = sequence_number
 
             future.add_done_callback(self.remove_pending_request)
 
@@ -261,10 +264,10 @@ class Client(BaseClient[SrvRequestT, SrvResponseT]):
         :param future: A future returned from :meth:`call_async`
         """
         with self._lock:
-            for seq, req_future in self._pending_requests.items():
-                if future is req_future:
-                    del self._pending_requests[seq]
-                    break
+            # O(1): the sequence number was stashed on the future by call_async, so drop it
+            # directly instead of scanning _pending_requests to find it by identity.
+            if future._sequence_number is not None:
+                self._pending_requests.pop(future._sequence_number, None)
 
     def wait_for_service(self, timeout_sec: Optional[float] = None) -> bool:
         """
