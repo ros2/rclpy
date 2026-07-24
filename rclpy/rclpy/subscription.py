@@ -186,6 +186,8 @@ class BaseSubscription(Generic[MsgT]):
     @callback.setter
     def callback(self, value: SubscriptionCallbackUnion[MsgT]) -> None:
         self._set_callback_type(value)
+        # cache coroutine-ness once; per-message dispatch skips inspect entirely
+        self._callback_is_coroutine = inspect.iscoroutinefunction(value)
         self._callback = value
 
     @staticmethod

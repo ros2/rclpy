@@ -560,7 +560,14 @@ class Executor(ContextManager['Executor']):
                     msg_tuple = msg_info
 
                 async def _execute() -> None:
-                    await await_or_execute(sub.callback, *msg_tuple)
+                    # cached coroutine flag + direct call: no iscoroutinefunction,
+                    # no await_or_execute wrapper, on every message
+                    if sub._callback_is_coroutine:
+                        coro_callback = cast(Callable[..., Awaitable[None]], sub.callback)
+                        await coro_callback(*msg_tuple)
+                    else:
+                        sync_callback = cast(Callable[..., None], sub.callback)
+                        sync_callback(*msg_tuple)
 
                 return _execute
         except InvalidHandle:
