@@ -211,6 +211,9 @@ class Executor(ContextManager['Executor']):
     def __init__(self, *, context: Optional[Context] = None) -> None:
         super().__init__()
         self._context = get_default_context() if context is None else context
+        # A single stable wake-on-done callback, registered at most once per future (see
+        # _add_wake_on_done), so repeated spins on the same future never accumulate callbacks.
+        self._wake_on_done_cb: Callable[[Future[Any]], None] = lambda future: self.wake()
         self._nodes: Set[Node] = set()
         self._nodes_lock = RLock()
         # all tasks that are not complete or canceled
@@ -401,6 +404,20 @@ class Executor(ContextManager['Executor']):
         finally:
             self._exit_spin()
 
+    def _add_wake_on_done(self, future: Future[Any]) -> None:
+        """
+        Register a stable wake-on-done callback on a future, at most once.
+
+        future.add_done_callback() appends unconditionally, so calling it fresh on every
+        spin attempt (as every caller here used to) accumulates one callback per spin for
+        a future that takes many spins to complete: O(N) callbacks, each becoming its own
+        Task when the future finally completes. Reusing one callback instance and checking
+        it isn't already registered keeps this at O(1) regardless of how many times a
+        caller spins while waiting on the same future.
+        """
+        if self._wake_on_done_cb not in future._callbacks:
+            future.add_done_callback(self._wake_on_done_cb)
+
     def spin_until_future_complete(
         self,
         future: Future[Any],
@@ -410,7 +427,7 @@ class Executor(ContextManager['Executor']):
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
         # Make sure the future wakes this executor when it is done
-        future.add_done_callback(lambda x: self.wake())
+        self._add_wake_on_done(future)
         try:
             if timeout_sec is None or timeout_sec < 0:
                 while (
@@ -1052,7 +1069,7 @@ class SingleThreadedExecutor(Executor):
     ) -> None:
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
-        future.add_done_callback(lambda x: self.wake())
+        self._add_wake_on_done(future)
         try:
             self._spin_once_until_future_complete(future, timeout_sec)
         finally:
@@ -1144,7 +1161,7 @@ class MultiThreadedExecutor(Executor):
     ) -> None:
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
-        future.add_done_callback(lambda x: self.wake())
+        self._add_wake_on_done(future)
         try:
             self._spin_once_until_future_complete(future, timeout_sec)
         finally:
