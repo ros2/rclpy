@@ -16,12 +16,12 @@
 #define RCLPY__CLIENT_HPP_
 
 #include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
 
 #include <rcl/client.h>
 #include <rcl/service_introspection.h>
 #include <rmw/types.h>
 
+#include <functional>
 #include <memory>
 #include <string>
 
