@@ -16,12 +16,14 @@
 #define RCLPY__ACTION_SERVER_HPP_
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/shared_ptr.h>
 
 #include <rcl_action/action_server.h>
 #include <rmw/types.h>
 
 #include <memory>
+#include <optional>
 
 #include "clock.hpp"
 #include "destroyable.hpp"
@@ -259,7 +261,7 @@ public:
    */
   void
   configure_introspection(
-    Clock & clock, nb::object pyqos_service_event_pub,
+    Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
   /// Force an early destruction of this object

@@ -50,10 +50,10 @@ convert_to_py_names_and_types(const rcl_names_and_types_t * names_and_types)
   for (size_t i = 0u; i < names_and_types->names.size; ++i) {
     nb::list py_types = create_sized_list(names_and_types->types[i].size);
     for (size_t j = 0u; j < names_and_types->types[i].size; ++j) {
-      py_types[j] = nb::str(names_and_types->types[i].data[j]);
+      py_types[j] = names_and_types->types[i].data[j];
     }
     py_names_and_types[i] = nb::make_tuple(
-      nb::str(names_and_types->names.data[i]), py_types);
+      names_and_types->names.data[i], py_types);
   }
   return py_names_and_types;
 }
@@ -156,7 +156,7 @@ assert_liveliness(rclpy::Publisher * publisher)
 }
 
 nb::list
-remove_ros_args(nb::object pycli_args)
+remove_ros_args(std::optional<nb::list> pycli_args)
 {
   rcl_ret_t ret;
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -165,8 +165,8 @@ remove_ros_args(nb::object pycli_args)
   std::vector<const char *> arg_values;
   const char ** const_arg_values = NULL;
   nb::list pyargs;
-  if (!pycli_args.is_none()) {
-    pyargs = nb::cast<nb::list>(pycli_args);
+  if (pycli_args) {
+    pyargs = *pycli_args;
     if (!pyargs.empty()) {
       arg_values.resize(pyargs.size());
       for (size_t i = 0; i < pyargs.size(); ++i) {
@@ -298,20 +298,20 @@ _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpo
 {
   nb::list py_endpoint_gid = create_sized_list(RMW_GID_STORAGE_SIZE);
   for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
-    py_endpoint_gid[i] = nb::int_(topic_endpoint_info->endpoint_gid[i]);
+    py_endpoint_gid[i] = topic_endpoint_info->endpoint_gid[i];
   }
 
   // Create dictionary that represents rmw_topic_endpoint_info_t
   nb::dict py_endpoint_info_dict;
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
-  py_endpoint_info_dict["node_name"] = nb::str(topic_endpoint_info->node_name);
-  py_endpoint_info_dict["node_namespace"] = nb::str(topic_endpoint_info->node_namespace);
-  py_endpoint_info_dict["topic_type"] = nb::str(topic_endpoint_info->topic_type);
+  py_endpoint_info_dict["node_name"] = topic_endpoint_info->node_name;
+  py_endpoint_info_dict["node_namespace"] = topic_endpoint_info->node_namespace;
+  py_endpoint_info_dict["topic_type"] = topic_endpoint_info->topic_type;
   py_endpoint_info_dict["topic_type_hash"] =
     convert_to_type_hash_dict(&topic_endpoint_info->topic_type_hash);
   py_endpoint_info_dict["endpoint_type"] =
-    nb::int_(static_cast<int>(topic_endpoint_info->endpoint_type));
+    static_cast<int>(topic_endpoint_info->endpoint_type);
   py_endpoint_info_dict["endpoint_gid"] = py_endpoint_gid;
   py_endpoint_info_dict["qos_profile"] =
     convert_to_qos_dict(&topic_endpoint_info->qos_profile);
@@ -343,7 +343,7 @@ _convert_to_py_service_endpoint_info(const rmw_service_endpoint_info_t * service
   for(size_t c = 0; c < service_endpoint_info->endpoint_count; c++) {
     nb::list py_endpoint_gid = create_sized_list(RMW_GID_STORAGE_SIZE);
     for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
-      py_endpoint_gid[i] = nb::int_(service_endpoint_info->endpoint_gids[c][i]);
+      py_endpoint_gid[i] = service_endpoint_info->endpoint_gids[c][i];
     }
     py_endpoint_gids.append(py_endpoint_gid);
   }
@@ -351,9 +351,9 @@ _convert_to_py_service_endpoint_info(const rmw_service_endpoint_info_t * service
   nb::dict py_endpoint_info_dict;
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
-  py_endpoint_info_dict["node_name"] = nb::str(service_endpoint_info->node_name);
-  py_endpoint_info_dict["node_namespace"] = nb::str(service_endpoint_info->node_namespace);
-  py_endpoint_info_dict["service_type"] = nb::str(service_endpoint_info->service_type);
+  py_endpoint_info_dict["node_name"] = service_endpoint_info->node_name;
+  py_endpoint_info_dict["node_namespace"] = service_endpoint_info->node_namespace;
+  py_endpoint_info_dict["service_type"] = service_endpoint_info->service_type;
   py_endpoint_info_dict["service_type_hash"] =
     convert_to_type_hash_dict(&service_endpoint_info->service_type_hash);
   py_endpoint_info_dict["qos_profiles"] = nb::list();
@@ -369,8 +369,8 @@ _convert_to_py_service_endpoint_info(const rmw_service_endpoint_info_t * service
   py_endpoint_info_dict["qos_profiles"] = qos_profiles_list;
   py_endpoint_info_dict["endpoint_gids"] = py_endpoint_gids;
   py_endpoint_info_dict["endpoint_type"] =
-    nb::int_(static_cast<int>(service_endpoint_info->endpoint_type));
-  py_endpoint_info_dict["endpoint_count"] = nb::int_(service_endpoint_info->endpoint_count);
+    static_cast<int>(service_endpoint_info->endpoint_type);
+  py_endpoint_info_dict["endpoint_count"] = service_endpoint_info->endpoint_count;
 
   return py_endpoint_info_dict;
 }
@@ -456,17 +456,17 @@ convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
   // Create dictionary and populate arguments with QoSProfile object
   nb::dict pyqos_kwargs;
 
-  pyqos_kwargs["depth"] = nb::int_(qos_profile->depth);
-  pyqos_kwargs["history"] = nb::int_(static_cast<int>(qos_profile->history));
-  pyqos_kwargs["reliability"] = nb::int_(static_cast<int>(qos_profile->reliability));
-  pyqos_kwargs["durability"] = nb::int_(static_cast<int>(qos_profile->durability));
+  pyqos_kwargs["depth"] = qos_profile->depth;
+  pyqos_kwargs["history"] = static_cast<int>(qos_profile->history);
+  pyqos_kwargs["reliability"] = static_cast<int>(qos_profile->reliability);
+  pyqos_kwargs["durability"] = static_cast<int>(qos_profile->durability);
   pyqos_kwargs["lifespan"] = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
   pyqos_kwargs["deadline"] = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
-  pyqos_kwargs["liveliness"] = nb::int_(static_cast<int>(qos_profile->liveliness));
+  pyqos_kwargs["liveliness"] = static_cast<int>(qos_profile->liveliness);
   pyqos_kwargs["liveliness_lease_duration"] = _convert_rmw_time_to_py_duration(
     &qos_profile->liveliness_lease_duration);
   pyqos_kwargs["avoid_ros_namespace_conventions"] =
-    nb::bool_(qos_profile->avoid_ros_namespace_conventions);
+    qos_profile->avoid_ros_namespace_conventions;
 
   return pyqos_kwargs;
 }
@@ -477,7 +477,7 @@ convert_to_type_hash_dict(const rosidl_type_hash_t * type_hash)
   // Create dictionary and populate arguments with type hash object
   nb::dict type_hash_kwargs;
 
-  type_hash_kwargs["version"] = nb::int_(type_hash->version);
+  type_hash_kwargs["version"] = type_hash->version;
   type_hash_kwargs["value"] = nb::bytes(
     reinterpret_cast<const char *>(type_hash->value),
     ROSIDL_TYPE_HASH_SIZE);

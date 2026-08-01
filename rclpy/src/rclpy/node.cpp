@@ -219,13 +219,13 @@ Node::get_names_impl(bool get_enclaves)
   for (size_t idx = 0; idx < node_names.size; ++idx) {
     if (get_enclaves) {
       pynode_names_and_namespaces[idx] = nb::make_tuple(
-        nb::str(node_names.data[idx]),
-        nb::str(node_namespaces.data[idx]),
-        nb::str(enclaves.data[idx]));
+        node_names.data[idx],
+        node_namespaces.data[idx],
+        enclaves.data[idx]);
     } else {
       pynode_names_and_namespaces[idx] = nb::make_tuple(
-        nb::str(node_names.data[idx]),
-        nb::str(node_namespaces.data[idx]));
+        node_names.data[idx],
+        node_namespaces.data[idx]);
     }
   }
 
@@ -280,33 +280,33 @@ _parameter_from_rcl_variant(
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL_ARRAY;
     nb::list list_value = create_sized_list(variant->bool_array_value->size);
     for (size_t i = 0; i < variant->bool_array_value->size; ++i) {
-      list_value[i] = nb::bool_(variant->bool_array_value->values[i]);
+      list_value[i] = variant->bool_array_value->values[i];
     }
     value = list_value;
   } else if (variant->integer_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER_ARRAY;
     nb::list list_value = create_sized_list(variant->integer_array_value->size);
     for (size_t i = 0; i < variant->integer_array_value->size; ++i) {
-      list_value[i] = nb::int_(variant->integer_array_value->values[i]);
+      list_value[i] = variant->integer_array_value->values[i];
     }
     value = list_value;
   } else if (variant->double_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE_ARRAY;
     nb::list list_value = create_sized_list(variant->double_array_value->size);
     for (size_t i = 0; i < variant->double_array_value->size; ++i) {
-      list_value[i] = nb::float_(variant->double_array_value->values[i]);
+      list_value[i] = variant->double_array_value->values[i];
     }
     value = list_value;
   } else if (variant->string_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING_ARRAY;
     nb::list list_value = create_sized_list(variant->string_array_value->size);
     for (size_t i = 0; i < variant->string_array_value->size; ++i) {
-      list_value[i] = nb::str(variant->string_array_value->data[i]);
+      list_value[i] = variant->string_array_value->data[i];
     }
     value = list_value;
   }
 
-  nb::object type = pyparameter_type_cls(nb::int_(type_enum_value));
+  nb::object type = pyparameter_type_cls(type_enum_value);
   return pyparameter_cls(pyname, type, value);
 }
 
@@ -433,10 +433,10 @@ Node::Node(
   const char * node_name,
   const char * namespace_,
   Context & context,
-  nb::object pycli_args,
+  std::optional<nb::list> pycli_args,
   bool use_global_arguments,
   bool enable_rosout,
-  nb::object rosout_qos_profile)
+  std::optional<rmw_qos_profile_t> rosout_qos_profile)
 : context_(context)
 {
   rcl_ret_t ret;
@@ -446,8 +446,8 @@ Node::Node(
   std::vector<const char *> arg_values;
   const char ** const_arg_values = nullptr;
   nb::list pyargs;
-  if (!pycli_args.is_none()) {
-    pyargs = nb::cast<nb::list>(pycli_args);
+  if (pycli_args) {
+    pyargs = *pycli_args;
     if (!pyargs.empty()) {
       arg_values.resize(pyargs.size());
       for (size_t i = 0; i < pyargs.size(); ++i) {
@@ -514,8 +514,8 @@ Node::Node(
   options.arguments = arguments;
   options.enable_rosout = enable_rosout;
 
-  if (!rosout_qos_profile.is_none()) {
-    options.rosout_qos = nb::cast<rmw_qos_profile_t>(rosout_qos_profile);
+  if (rosout_qos_profile) {
+    options.rosout_qos = *rosout_qos_profile;
   }
 
   ret = rcl_node_init(
@@ -603,9 +603,9 @@ define_node(nb::object module)
 {
   nb::class_<Node, Destroyable>(module, "Node")
   .def(
-    nb::init<const char *, const char *, Context &, nb::object, bool, bool, nb::object>(),
-    nb::arg(), nb::arg(), nb::arg(), nb::arg().none(), nb::arg(), nb::arg(),
-    nb::arg().none())
+    nb::init<
+      const char *, const char *, Context &, std::optional<nb::list>, bool, bool,
+      std::optional<rmw_qos_profile_t>>())
   .def_prop_ro(
     "pointer", [](const Node & node) {
       return reinterpret_cast<size_t>(node.rcl_ptr());

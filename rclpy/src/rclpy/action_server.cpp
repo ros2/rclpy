@@ -365,13 +365,13 @@ ActionServer::expire_goals(int64_t max_num_goals)
 
 void
 ActionServer::configure_introspection(
-  Clock & clock, nb::object pyqos_service_event_pub,
+  Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
   rcl_service_introspection_state_t introspection_state)
 {
   rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
-  pub_opts.qos =
-    pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
-    nb::cast<rmw_qos_profile_t>(pyqos_service_event_pub);
+  if (pyqos_service_event_pub) {
+    pub_opts.qos = *pyqos_service_event_pub;
+  }
 
   rcl_ret_t ret = rcl_action_server_configure_action_introspection(
     rcl_action_server_.get(), node_.rcl_ptr(), clock.rcl_ptr(),
@@ -442,7 +442,6 @@ define_action_server(nb::object module)
     "Add an action entity to a wait set.")
   .def(
     "configure_introspection", &ActionServer::configure_introspection,
-    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether internal service introspection is enabled");
 }
 
