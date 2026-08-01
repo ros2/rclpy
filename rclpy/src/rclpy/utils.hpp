@@ -16,6 +16,7 @@
 #define RCLPY__UTILS_HPP_
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 
 #include <rcl/arguments.h>
 #include <rcl/graph.h>  // rcl_names_and_types_t
@@ -24,6 +25,7 @@
 #include <rmw/types.h>
 
 #include <memory>
+#include <optional>
 
 #include "publisher.hpp"
 
@@ -137,7 +139,7 @@ assert_liveliness(rclpy::Publisher * publisher);
  * \return Parsed list of strings
  */
 nb::list
-remove_ros_args(nb::object pycli_args);
+remove_ros_args(std::optional<nb::list> pycli_args);
 
 /// Throw UnparsedROSArgsError with a message saying which args are unparsed.
 void

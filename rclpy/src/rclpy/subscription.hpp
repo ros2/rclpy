@@ -16,6 +16,7 @@
 #define RCLPY__SUBSCRIPTION_HPP_
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
@@ -26,6 +27,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -57,8 +59,9 @@ public:
    */
   Subscription(
     Node & node, nb::object pymsg_type, std::string topic,
-    nb::object pyqos_profile, nb::object content_filter_options = nb::none(),
-    nb::object acceptable_buffer_backends = nb::none());
+    std::optional<rmw_qos_profile_t> pyqos_profile,
+    nb::object content_filter_options = nb::none(),
+    std::optional<std::string> acceptable_buffer_backends = std::nullopt);
 
   /// Take a message and its metadata from a subscription
   /**

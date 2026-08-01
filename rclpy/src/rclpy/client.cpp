@@ -54,7 +54,8 @@ Client::destroy()
 }
 
 Client::Client(
-  Node & node, nb::object pysrv_type, const std::string & service_name, nb::object pyqos_profile)
+  Node & node, nb::object pysrv_type, const std::string & service_name,
+  std::optional<rmw_qos_profile_t> pyqos_profile)
 : node_(node)
 {
   srv_type_ = static_cast<rosidl_service_type_support_t *>(common_get_type_support(pysrv_type));
@@ -64,8 +65,8 @@ Client::Client(
 
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
-  if (!pyqos_profile.is_none()) {
-    client_ops.qos = nb::cast<rmw_qos_profile_t>(pyqos_profile);
+  if (pyqos_profile) {
+    client_ops.qos = *pyqos_profile;
   }
 
   // Create a client
@@ -148,13 +149,13 @@ Client::take_response(nb::object pyresponse_type)
 
 void
 Client::configure_introspection(
-  Clock & clock, nb::object pyqos_service_event_pub,
+  Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
   rcl_service_introspection_state_t introspection_state)
 {
   rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
-  pub_opts.qos =
-    pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
-    nb::cast<rmw_qos_profile_t>(pyqos_service_event_pub);
+  if (pyqos_service_event_pub) {
+    pub_opts.qos = *pyqos_service_event_pub;
+  }
 
   rcl_ret_t ret = rcl_client_configure_service_introspection(
     rcl_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state);
@@ -220,9 +221,7 @@ void
 define_client(nb::object module)
 {
   nb::class_<Client, Destroyable>(module, "Client")
-  .def(
-    nb::init<Node &, nb::object, const std::string &, nb::object>(),
-    nb::arg(), nb::arg(), nb::arg(), nb::arg().none())
+  .def(nb::init<Node &, nb::object, const std::string &, std::optional<rmw_qos_profile_t>>())
   .def_prop_ro(
     "service_name", &Client::get_service_name,
     "Get the name of the service")
@@ -242,7 +241,6 @@ define_client(nb::object module)
     "Take a received response from an earlier request")
   .def(
     "configure_introspection", &Client::configure_introspection,
-    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Client::get_logger_name,

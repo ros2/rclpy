@@ -271,13 +271,13 @@ ActionClient::is_ready(WaitSet & wait_set)
 
 void
 ActionClient::configure_introspection(
-  Clock & clock, nb::object pyqos_service_event_pub,
+  Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
   rcl_service_introspection_state_t introspection_state)
 {
   rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
-  pub_opts.qos =
-    pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
-    nb::cast<rmw_qos_profile_t>(pyqos_service_event_pub);
+  if (pyqos_service_event_pub) {
+    pub_opts.qos = *pyqos_service_event_pub;
+  }
 
   rcl_ret_t ret = rcl_action_client_configure_action_introspection(
     rcl_action_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(),
@@ -400,7 +400,6 @@ define_action_client(nb::object module)
     "Take an action status response.")
   .def(
     "configure_introspection", &ActionClient::configure_introspection,
-    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether internal client introspection is enabled")
   .def(
     "configure_feedback_subscription_filter_add_goal_id",

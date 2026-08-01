@@ -66,8 +66,8 @@ get_c_vector_string(const std::vector<std::string> & strings_in)
 
 Subscription::Subscription(
   Node & node, nb::object pymsg_type, std::string topic,
-  nb::object pyqos_profile, nb::object content_filter_options,
-  nb::object acceptable_buffer_backends)
+  std::optional<rmw_qos_profile_t> pyqos_profile, nb::object content_filter_options,
+  std::optional<std::string> acceptable_buffer_backends)
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
@@ -78,14 +78,13 @@ Subscription::Subscription(
 
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
-  if (!pyqos_profile.is_none()) {
-    subscription_ops.qos = nb::cast<rmw_qos_profile_t>(pyqos_profile);
+  if (pyqos_profile) {
+    subscription_ops.qos = *pyqos_profile;
   }
 
-  if (!acceptable_buffer_backends.is_none()) {
-    std::string acceptable_backends_str = nb::cast<std::string>(acceptable_buffer_backends);
+  if (acceptable_buffer_backends) {
     rcl_ret_t ret = rcl_subscription_options_set_acceptable_buffer_backends(
-      acceptable_backends_str.c_str(),
+      acceptable_buffer_backends->c_str(),
       &subscription_ops);
     if (RCL_RET_OK != ret) {
       throw rclpy::RCLError("Failed to set acceptable_buffer_backends");
@@ -383,11 +382,12 @@ void
 define_subscription(nb::object module)
 {
   nb::class_<Subscription, Destroyable>(module, "Subscription")
-  .def(nb::init<Node &, nb::object, std::string, nb::object, nb::object, nb::object>(),
+  .def(nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>,
+    nb::object, std::optional<std::string>>(),
     "node"_a,
     "msg_type"_a,
     "topic"_a,
-    "qos_profile"_a.none(),
+    "qos_profile"_a,
     "content_filter_options"_a = nb::none(),
     "acceptable_buffer_backends"_a = nb::none())
   .def_prop_ro(

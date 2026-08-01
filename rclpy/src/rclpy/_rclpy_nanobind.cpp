@@ -75,12 +75,11 @@ NB_MODULE(_rclpy_nanobind, m) {
   .value("ABORT", GOAL_EVENT_ABORT)
   .value("CANCELED", GOAL_EVENT_CANCELED);
 
-  m.attr("RCL_DEFAULT_DOMAIN_ID") = nb::int_(RCL_DEFAULT_DOMAIN_ID);
-  m.attr("RMW_DURATION_INFINITE") = nb::int_(rmw_time_total_nsec(RMW_DURATION_INFINITE));
-  m.attr("RMW_QOS_DEADLINE_BEST_AVAILABLE") = nb::int_(
-    rmw_time_total_nsec(RMW_QOS_DEADLINE_BEST_AVAILABLE));
-  m.attr("RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE") = nb::int_(
-    rmw_time_total_nsec(RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE));
+  m.attr("RCL_DEFAULT_DOMAIN_ID") = RCL_DEFAULT_DOMAIN_ID;
+  m.attr("RMW_DURATION_INFINITE") = rmw_time_total_nsec(RMW_DURATION_INFINITE);
+  m.attr("RMW_QOS_DEADLINE_BEST_AVAILABLE") = rmw_time_total_nsec(RMW_QOS_DEADLINE_BEST_AVAILABLE);
+  m.attr("RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE") =
+    rmw_time_total_nsec(RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE);
 
   nb::enum_<rcl_clock_change_t>(m, "ClockChange", nb::is_arithmetic())
   .value(
@@ -261,7 +260,7 @@ NB_MODULE(_rclpy_nanobind, m) {
     "Assert the liveliness of an entity.");
 
   m.def(
-    "rclpy_remove_ros_args", &rclpy::remove_ros_args, nb::arg().none(),
+    "rclpy_remove_ros_args", &rclpy::remove_ros_args,
     "Remove ROS-specific arguments from argument vector.");
 
   rclpy::define_rmw_qos_profile(m);

@@ -16,6 +16,7 @@
 #define RCLPY__PUBLISHER_HPP_
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
@@ -23,6 +24,7 @@
 #include <rcl/time.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "destroyable.hpp"
@@ -53,7 +55,7 @@ public:
    */
   Publisher(
     Node & node, nb::object pymsg_type, std::string topic,
-    nb::object pyqos_profile);
+    std::optional<rmw_qos_profile_t> pyqos_profile);
 
   /// Get the name of the logger associated with the node of the publisher.
   /**

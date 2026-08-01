@@ -93,17 +93,9 @@ deserialize(nb::bytes pybuffer, nb::object pymsg_type)
   // Create a serialized message object
   rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
   // Just copy pointer to avoid extra allocation and copy
-  char * serialized_buffer;
-  Py_ssize_t length;
-  if (PyBytes_AsStringAndSize(pybuffer.ptr(), &serialized_buffer, &length)) {
-    throw nb::python_error();
-  }
-  if (length < 0) {
-    throw nb::python_error();
-  }
-  serialized_msg.buffer_capacity = length;
-  serialized_msg.buffer_length = length;
-  serialized_msg.buffer = reinterpret_cast<uint8_t *>(serialized_buffer);
+  serialized_msg.buffer_capacity = pybuffer.size();
+  serialized_msg.buffer_length = pybuffer.size();
+  serialized_msg.buffer = reinterpret_cast<uint8_t *>(const_cast<char *>(pybuffer.c_str()));
 
   auto deserialized_ros_msg = create_from_py(pymsg_type);
   if (!deserialized_ros_msg) {

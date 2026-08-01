@@ -16,11 +16,13 @@
 #define RCLPY__NODE_HPP_
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/node.h>
 
 #include <memory>
+#include <optional>
 
 #include "context.hpp"
 #include "destroyable.hpp"
@@ -52,10 +54,10 @@ public:
     const char * node_name,
     const char * namespace_,
     Context & context,
-    nb::object pycli_args,
+    std::optional<nb::list> pycli_args,
     bool use_global_arguments,
     bool enable_rosout,
-    nb::object rosout_qos_profile);
+    std::optional<rmw_qos_profile_t> rosout_qos_profile);
 
   /// Get the fully qualified name of the node.
   /**

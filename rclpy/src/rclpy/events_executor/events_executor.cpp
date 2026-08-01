@@ -819,8 +819,7 @@ void EventsExecutor::IterateTask(nb::handle task)
     task.dec_ref();
 
     if (!ex.is_none()) {
-      // It's not clear how to easily turn a Python exception into a C++ one, so let's just throw
-      // it again and let nanobind translate it normally.
+      // Raise() converts the Python exception instance into a C++ nb::python_error.
       try {
         Raise(ex);
       } catch (nb::python_error & cpp_ex) {
@@ -828,7 +827,7 @@ void EventsExecutor::IterateTask(nb::handle task)
         // can use the logger from that, otherwise we'll have to leave it undefined.
         nb::object logger = nb::none();
         if (nodes_.size() == 1) {
-          logger = nodes_[0].attr("get_logger")();
+          logger = (*nodes_.begin()).attr("get_logger")();
         }
         HandleCallbackExceptionWithLogger(cpp_ex, logger, "task");
         throw;
@@ -881,9 +880,8 @@ logger.warning("Error occurred at:\n" + "".join(traceback.format_tb(exc_trace)))
 
 void EventsExecutor::Raise(nb::object ex)
 {
-  nb::dict scope;
-  scope["ex"] = ex;
-  nb::exec(nb::str("raise ex"), scope);
+  PyErr_SetObject(reinterpret_cast<PyObject *>(Py_TYPE(ex.ptr())), ex.ptr());
+  throw nb::python_error();
 }
 
 // nanobind module bindings

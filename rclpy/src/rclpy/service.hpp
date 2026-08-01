@@ -16,6 +16,7 @@
 #define RCLPY__SERVICE_HPP_
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
@@ -26,6 +27,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "clock.hpp"
@@ -57,7 +59,7 @@ public:
    */
   Service(
     Node & node, nb::object pysrv_type, const std::string & service_name,
-    nb::object pyqos_profile);
+    std::optional<rmw_qos_profile_t> pyqos_profile);
 
   Service(
     Node & node, std::shared_ptr<rcl_service_t> rcl_service);
@@ -122,7 +124,7 @@ public:
    */
   void
   configure_introspection(
-    Clock & clock, nb::object pyqos_service_event_pub,
+    Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
   /// Force an early destruction of this object

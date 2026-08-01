@@ -16,6 +16,7 @@
 #define RCLPY__ACTION_CLIENT_HPP_
 
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/shared_ptr.h>
 
 #include <rcl_action/action_client.h>
@@ -23,6 +24,7 @@
 
 #include <atomic>
 #include <memory>
+#include <optional>
 #include <mutex>
 
 #include "destroyable.hpp"
@@ -198,7 +200,7 @@ public:
    */
   void
   configure_introspection(
-    Clock & clock, nb::object pyqos_service_event_pub,
+    Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
   /// Configure content filter for feedback subscription with the given goal ID.

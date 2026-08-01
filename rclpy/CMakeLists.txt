@@ -138,6 +138,21 @@ target_link_libraries(_rclpy_nanobind PRIVATE
 )
 configure_build_install_location(_rclpy_nanobind)
 
+# Generate the type stubs for the extension module into the source tree,
+# so that they stay committed alongside the bindings.
+nanobind_add_stub(_rclpy_nanobind_stub
+  MODULE _rclpy_nanobind
+  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/_rclpy_nanobind.pyi"
+  PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
+  DEPENDS _rclpy_nanobind
+)
+nanobind_add_stub(_rclpy_nanobind_service_introspection_stub
+  MODULE _rclpy_nanobind.service_introspection
+  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/service_introspection.pyi"
+  PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
+  DEPENDS _rclpy_nanobind
+)
+
 if(NOT WIN32)
   ament_environment_hooks(
     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"

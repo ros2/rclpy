@@ -33,7 +33,7 @@ namespace rclpy
 {
 Publisher::Publisher(
   Node & node, nb::object pymsg_type, std::string topic,
-  nb::object pyqos_profile)
+  std::optional<rmw_qos_profile_t> pyqos_profile)
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
@@ -44,8 +44,8 @@ Publisher::Publisher(
 
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
 
-  if (!pyqos_profile.is_none()) {
-    publisher_ops.qos = nb::cast<rmw_qos_profile_t>(pyqos_profile);
+  if (pyqos_profile) {
+    publisher_ops.qos = *pyqos_profile;
   }
 
   rcl_publisher_ = std::shared_ptr<rcl_publisher_t>(
@@ -160,9 +160,7 @@ void
 define_publisher(nb::object module)
 {
   nb::class_<Publisher, Destroyable>(module, "Publisher")
-  .def(
-    nb::init<Node &, nb::object, std::string, nb::object>(),
-    nb::arg(), nb::arg(), nb::arg(), nb::arg().none())
+  .def(nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>>())
   .def_prop_ro(
     "pointer", [](const Publisher & publisher) {
       return reinterpret_cast<size_t>(publisher.rcl_ptr());

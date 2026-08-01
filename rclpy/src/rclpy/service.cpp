@@ -53,7 +53,7 @@ Service::destroy()
 
 Service::Service(
   Node & node, nb::object pysrv_type, const std::string & service_name,
-  nb::object pyqos_profile)
+  std::optional<rmw_qos_profile_t> pyqos_profile)
 : node_(node)
 {
   srv_type_ = static_cast<rosidl_service_type_support_t *>(
@@ -64,8 +64,8 @@ Service::Service(
 
   rcl_service_options_t service_ops = rcl_service_get_default_options();
 
-  if (!pyqos_profile.is_none()) {
-    service_ops.qos = nb::cast<rmw_qos_profile_t>(pyqos_profile);
+  if (pyqos_profile) {
+    service_ops.qos = *pyqos_profile;
   }
 
   // Create a service
@@ -169,13 +169,13 @@ Service::get_logger_name() const
 
 void
 Service::configure_introspection(
-  Clock & clock, nb::object pyqos_service_event_pub,
+  Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
   rcl_service_introspection_state_t introspection_state)
 {
   rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
-  pub_opts.qos =
-    pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
-    nb::cast<rmw_qos_profile_t>(pyqos_service_event_pub);
+  if (pyqos_service_event_pub) {
+    pub_opts.qos = *pyqos_service_event_pub;
+  }
 
   rcl_ret_t ret = rcl_service_configure_service_introspection(
     rcl_service_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state);
@@ -224,9 +224,7 @@ void
 define_service(nb::object module)
 {
   nb::class_<Service, Destroyable>(module, "Service")
-  .def(
-    nb::init<Node &, nb::object, const std::string &, nb::object>(),
-    nb::arg(), nb::arg(), nb::arg(), nb::arg().none())
+  .def(nb::init<Node &, nb::object, const std::string &, std::optional<rmw_qos_profile_t>>())
   .def_prop_ro(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());
@@ -246,7 +244,6 @@ define_service(nb::object module)
     "Take a request from a given service")
   .def(
     "configure_introspection", &Service::configure_introspection,
-    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Service::get_logger_name,
