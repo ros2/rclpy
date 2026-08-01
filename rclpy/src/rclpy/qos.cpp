@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/time.h>
 #include <rmw/error_handling.h>
@@ -164,10 +165,10 @@ predefined_qos_profile_from_name(const char * qos_profile_name)
 }  // namespace
 
 void
-define_rmw_qos_profile(py::object module)
+define_rmw_qos_profile(nb::object module)
 {
-  py::class_<rmw_qos_profile_t>(module, "rmw_qos_profile_t")
-  .def(py::init<>(&create_qos_profile))
+  nb::class_<rmw_qos_profile_t>(module, "rmw_qos_profile_t")
+  .def(nb::new_(&create_qos_profile))
   .def("to_dict", &convert_to_qos_dict)
   .def_static("predefined", &predefined_qos_profile_from_name);
 }

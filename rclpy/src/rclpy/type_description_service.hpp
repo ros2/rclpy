@@ -15,14 +15,15 @@
 #ifndef RCLPY__TYPE_DESCRIPTION_SERVICE_HPP_
 #define RCLPY__TYPE_DESCRIPTION_SERVICE_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <memory>
 
 #include "destroyable.hpp"
 #include "service.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -53,8 +54,8 @@ public:
    * \param[in] node The node that this service belongs to
    * \return response message to send
    */
-  py::object
-  handle_request(py::object pyrequest, py::object pyresponse_type, Node & node);
+  nb::object
+  handle_request(nb::object pyrequest, nb::object pyresponse_type, Node & node);
 
   /// Force early cleanup of object
   void
@@ -64,9 +65,9 @@ private:
   std::shared_ptr<Service> service_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::TypeDescriptionService
+/// Define a nanobind wrapper for an rclpy::TypeDescriptionService
 void
-define_type_description_service(py::object module);
+define_type_description_service(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__TYPE_DESCRIPTION_SERVICE_HPP_

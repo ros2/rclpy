@@ -52,7 +52,7 @@ from type_description_interfaces.srv import GetTypeDescription
 
 T = TypeVar('T')
 
-# All things are defined in same order as defined in _rclpy_pybind11.cpp
+# All things are defined in same order as defined in _rclpy_nanobind.cpp
 
 
 class Destroyable:

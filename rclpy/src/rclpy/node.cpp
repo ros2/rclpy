@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
@@ -158,7 +161,7 @@ Node::get_count_action_servers(const char * action_name)
   return count;
 }
 
-py::list
+nb::list
 Node::get_names_impl(bool get_enclaves)
 {
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -212,30 +215,30 @@ Node::get_names_impl(bool get_enclaves)
       }
     });
 
-  py::list pynode_names_and_namespaces(node_names.size);
+  nb::list pynode_names_and_namespaces = create_sized_list(node_names.size);
   for (size_t idx = 0; idx < node_names.size; ++idx) {
     if (get_enclaves) {
-      pynode_names_and_namespaces[idx] = py::make_tuple(
-        py::str(node_names.data[idx]),
-        py::str(node_namespaces.data[idx]),
-        py::str(enclaves.data[idx]));
+      pynode_names_and_namespaces[idx] = nb::make_tuple(
+        nb::str(node_names.data[idx]),
+        nb::str(node_namespaces.data[idx]),
+        nb::str(enclaves.data[idx]));
     } else {
-      pynode_names_and_namespaces[idx] = py::make_tuple(
-        py::str(node_names.data[idx]),
-        py::str(node_namespaces.data[idx]));
+      pynode_names_and_namespaces[idx] = nb::make_tuple(
+        nb::str(node_names.data[idx]),
+        nb::str(node_namespaces.data[idx]));
     }
   }
 
   return pynode_names_and_namespaces;
 }
 
-py::list
+nb::list
 Node::get_node_names_and_namespaces()
 {
   return get_names_impl(false);
 }
 
-py::list
+nb::list
 Node::get_node_names_and_namespaces_with_enclaves()
 {
   return get_names_impl(true);
@@ -249,61 +252,61 @@ Node::get_node_names_and_namespaces_with_enclaves()
  * \param[in] pyparameter_type_cls the Parameter.Type class
  * \return an instance of pyparameter_cls
  */
-py::object
+nb::object
 _parameter_from_rcl_variant(
-  py::str pyname, rcl_variant_t * variant, py::object pyparameter_cls,
-  py::object pyparameter_type_cls)
+  nb::str pyname, rcl_variant_t * variant, nb::object pyparameter_cls,
+  nb::object pyparameter_type_cls)
 {
   int type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_NOT_SET;
-  py::object value = py::none();
+  nb::object value = nb::none();
   if (variant->bool_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL;
-    value = py::bool_(*(variant->bool_value));
+    value = nb::bool_(*(variant->bool_value));
   } else if (variant->integer_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER;
-    value = py::int_(*(variant->integer_value));
+    value = nb::int_(*(variant->integer_value));
   } else if (variant->double_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE;
-    value = py::float_(*(variant->double_value));
+    value = nb::float_(*(variant->double_value));
   } else if (variant->string_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING;
-    value = py::str(variant->string_value);
+    value = nb::str(variant->string_value);
   } else if (variant->byte_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BYTE_ARRAY;
-    value = py::bytes(
+    value = nb::bytes(
       reinterpret_cast<char *>(variant->byte_array_value->values),
       variant->byte_array_value->size);
   } else if (variant->bool_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_BOOL_ARRAY;
-    py::list list_value = py::list(variant->bool_array_value->size);
+    nb::list list_value = create_sized_list(variant->bool_array_value->size);
     for (size_t i = 0; i < variant->bool_array_value->size; ++i) {
-      list_value[i] = py::bool_(variant->bool_array_value->values[i]);
+      list_value[i] = nb::bool_(variant->bool_array_value->values[i]);
     }
     value = list_value;
   } else if (variant->integer_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_INTEGER_ARRAY;
-    py::list list_value = py::list(variant->integer_array_value->size);
+    nb::list list_value = create_sized_list(variant->integer_array_value->size);
     for (size_t i = 0; i < variant->integer_array_value->size; ++i) {
-      list_value[i] = py::int_(variant->integer_array_value->values[i]);
+      list_value[i] = nb::int_(variant->integer_array_value->values[i]);
     }
     value = list_value;
   } else if (variant->double_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_DOUBLE_ARRAY;
-    py::list list_value = py::list(variant->double_array_value->size);
+    nb::list list_value = create_sized_list(variant->double_array_value->size);
     for (size_t i = 0; i < variant->double_array_value->size; ++i) {
-      list_value[i] = py::float_(variant->double_array_value->values[i]);
+      list_value[i] = nb::float_(variant->double_array_value->values[i]);
     }
     value = list_value;
   } else if (variant->string_array_value) {
     type_enum_value = rcl_interfaces__msg__ParameterType__PARAMETER_STRING_ARRAY;
-    py::list list_value = py::list(variant->string_array_value->size);
+    nb::list list_value = create_sized_list(variant->string_array_value->size);
     for (size_t i = 0; i < variant->string_array_value->size; ++i) {
-      list_value[i] = py::str(variant->string_array_value->data[i]);
+      list_value[i] = nb::str(variant->string_array_value->data[i]);
     }
     value = list_value;
   }
 
-  py::object type = pyparameter_type_cls(py::int_(type_enum_value));
+  nb::object type = pyparameter_type_cls(nb::int_(type_enum_value));
   return pyparameter_cls(pyname, type, value);
 }
 
@@ -317,8 +320,8 @@ _parameter_from_rcl_variant(
  */
 void
 _populate_node_parameters_from_rcl_params(
-  const rcl_params_t * params, py::object pyparameter_cls,
-  py::object pyparameter_type_cls, py::dict pynode_params,
+  const rcl_params_t * params, nb::object pyparameter_cls,
+  nb::object pyparameter_type_cls, nb::dict pynode_params,
   const char * node_fqn)
 {
   for (size_t i = 0; i < params->num_nodes; ++i) {
@@ -343,17 +346,17 @@ _populate_node_parameters_from_rcl_params(
       node_name = node_fqn;
     }
 
-    auto pynode_name = py::str(node_name);
+    auto pynode_name = nb::str(node_name.c_str());
 
     // make a dictionary for the parameters belonging to this specific node name
     if (!pynode_params.contains(pynode_name)) {
-      pynode_params[pynode_name] = py::dict();
+      pynode_params[pynode_name] = nb::dict();
     }
-    py::dict parameter_dict = pynode_params[pynode_name];
+    nb::dict parameter_dict = pynode_params[pynode_name];
 
     rcl_node_params_t node_params = params->params[i];
     for (size_t j = 0; j < node_params.num_params; ++j) {
-      auto pyparam_name = py::str(node_params.parameter_names[j]);
+      auto pyparam_name = nb::str(node_params.parameter_names[j]);
 
       parameter_dict[pyparam_name] = _parameter_from_rcl_variant(
         pyparam_name, &node_params.parameter_values[j], pyparameter_cls, pyparameter_type_cls);
@@ -371,8 +374,8 @@ _populate_node_parameters_from_rcl_params(
  */
 void
 _parse_param_overrides(
-  const rcl_arguments_t * args, py::object pyparameter_cls,
-  py::object pyparameter_type_cls, py::dict pyparams_by_node_name,
+  const rcl_arguments_t * args, nb::object pyparameter_cls,
+  nb::object pyparameter_type_cls, nb::dict pyparams_by_node_name,
   const char * node_fqn)
 {
   rcl_params_t * params = nullptr;
@@ -386,11 +389,11 @@ _parse_param_overrides(
   }
 }
 
-py::dict
-Node::get_parameters(py::object pyparameter_cls)
+nb::dict
+Node::get_parameters(nb::object pyparameter_cls)
 {
-  py::dict params_by_node_name;
-  py::object parameter_type_cls = pyparameter_cls.attr("Type");
+  nb::dict params_by_node_name;
+  nb::object parameter_type_cls = pyparameter_cls.attr("Type");
 
   const rcl_node_options_t * node_options = rcl_node_get_options(rcl_node_.get());
 
@@ -410,8 +413,8 @@ Node::get_parameters(py::object pyparameter_cls)
     parameter_type_cls, params_by_node_name, node_fqn);
 
 
-  py::str pynode_fqn(node_fqn);
-  py::dict node_params;
+  nb::str pynode_fqn(node_fqn);
+  nb::dict node_params;
 
   if (params_by_node_name.contains(pynode_fqn)) {
     node_params = params_by_node_name[pynode_fqn];
@@ -430,10 +433,10 @@ Node::Node(
   const char * node_name,
   const char * namespace_,
   Context & context,
-  py::object pycli_args,
+  nb::object pycli_args,
   bool use_global_arguments,
   bool enable_rosout,
-  py::object rosout_qos_profile)
+  nb::object rosout_qos_profile)
 : context_(context)
 {
   rcl_ret_t ret;
@@ -442,16 +445,16 @@ Node::Node(
   // turn the arguments into an array of C-style strings
   std::vector<const char *> arg_values;
   const char ** const_arg_values = nullptr;
-  py::list pyargs;
+  nb::list pyargs;
   if (!pycli_args.is_none()) {
-    pyargs = pycli_args;
+    pyargs = nb::cast<nb::list>(pycli_args);
     if (!pyargs.empty()) {
       arg_values.resize(pyargs.size());
       for (size_t i = 0; i < pyargs.size(); ++i) {
         // CPython owns const char * memory - no need to free it
         arg_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
         if (!arg_values[i]) {
-          throw py::error_already_set();
+          throw nb::python_error();
         }
       }
       const_arg_values = &(arg_values[0]);
@@ -463,7 +466,7 @@ Node::Node(
   // use_global_arguments to False.
   rcl_allocator_t allocator = rcl_get_default_allocator();
   if (arg_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
-    throw py::value_error("too many cli arguments given to node");
+    throw nb::value_error("too many cli arguments given to node");
   }
   int num_args = static_cast<int>(arg_values.size());
   ret = rcl_parse_arguments(num_args, const_arg_values, allocator, &arguments);
@@ -512,7 +515,7 @@ Node::Node(
   options.enable_rosout = enable_rosout;
 
   if (!rosout_qos_profile.is_none()) {
-    options.rosout_qos = rosout_qos_profile.cast<rmw_qos_profile_t>();
+    options.rosout_qos = nb::cast<rmw_qos_profile_t>(rosout_qos_profile);
   }
 
   ret = rcl_node_init(
@@ -523,10 +526,10 @@ Node::Node(
     throw std::bad_alloc();
   }
   if (RCL_RET_NODE_INVALID_NAME == ret) {
-    throw py::value_error(append_rcl_error("invalid node name"));
+    throw nb::value_error(append_rcl_error("invalid node name").c_str());
   }
   if (RCL_RET_NODE_INVALID_NAMESPACE == ret) {
-    throw py::value_error(append_rcl_error("invalid node namespace"));
+    throw nb::value_error(append_rcl_error("invalid node namespace").c_str());
   }
   if (RCL_RET_OK != ret) {
     throw RCLError("error creating node");
@@ -541,7 +544,7 @@ Node::Node(
   }
 }
 
-py::list
+nb::list
 Node::get_action_client_names_and_types_by_node(
   const char * remote_node_name, const char * remote_node_namespace)
 {
@@ -561,7 +564,7 @@ Node::get_action_client_names_and_types_by_node(
   return convert_to_py_names_and_types(&names_and_types);
 }
 
-py::list
+nb::list
 Node::get_action_server_names_and_types_by_node(
   const char * remote_node_name, const char * remote_node_namespace)
 {
@@ -581,7 +584,7 @@ Node::get_action_server_names_and_types_by_node(
   return convert_to_py_names_and_types(&names_and_types);
 }
 
-py::list
+nb::list
 Node::get_action_names_and_types()
 {
   // Deprecated: Use _rclpy.rclpy_get_action_names_and_types function instead
@@ -596,11 +599,14 @@ Node::get_action_names_and_types()
 }
 
 void
-define_node(py::object module)
+define_node(nb::object module)
 {
-  py::class_<Node, Destroyable, std::shared_ptr<Node>>(module, "Node")
-  .def(py::init<const char *, const char *, Context &, py::object, bool, bool, py::object>())
-  .def_property_readonly(
+  nb::class_<Node, Destroyable>(module, "Node")
+  .def(
+    nb::init<const char *, const char *, Context &, nb::object, bool, bool, nb::object>(),
+    nb::arg(), nb::arg(), nb::arg(), nb::arg().none(), nb::arg(), nb::arg(),
+    nb::arg().none())
+  .def_prop_ro(
     "pointer", [](const Node & node) {
       return reinterpret_cast<size_t>(node.rcl_ptr());
     },

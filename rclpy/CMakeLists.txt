@@ -38,10 +38,16 @@ find_package(rosidl_runtime_c REQUIRED)
 cmake_policy(SET CMP0094 NEW)
 set(Python3_FIND_UNVERSIONED_NAMES FIRST)
 
-# Find python before pybind11
+# Find python before nanobind
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
-find_package(pybind11 REQUIRED)
+# nanobind's CMake config requires the new-style FindPython module with the
+# Python::Module target defined. Reuse the interpreter found above so both
+# find_package calls agree on the same Python installation.
+set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+
+find_package(nanobind REQUIRED)
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
@@ -69,10 +75,10 @@ function(configure_build_install_location _library_name)
   )
 endfunction()
 
-# Split from main extension and converted to pybind11
-pybind11_add_module(_rclpy_pybind11
+# Split from main extension and converted to nanobind
+nanobind_add_module(_rclpy_nanobind
   src/rclpy/_rclpy_logging.cpp
-  src/rclpy/_rclpy_pybind11.cpp
+  src/rclpy/_rclpy_nanobind.cpp
   src/rclpy/action_client.cpp
   src/rclpy/action_goal_handle.cpp
   src/rclpy/action_server.cpp
@@ -112,17 +118,17 @@ pybind11_add_module(_rclpy_pybind11
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT APPLE)
-  target_link_libraries(_rclpy_pybind11 PRIVATE atomic)
+  target_link_libraries(_rclpy_nanobind PRIVATE atomic)
 endif()
 
 if(WIN32)
-  target_link_libraries(_rclpy_pybind11 PRIVATE ws2_32)
+  target_link_libraries(_rclpy_nanobind PRIVATE ws2_32)
 endif()
 
-target_include_directories(_rclpy_pybind11 PRIVATE
+target_include_directories(_rclpy_nanobind PRIVATE
   src/rclpy/
 )
-target_link_libraries(_rclpy_pybind11 PRIVATE
+target_link_libraries(_rclpy_nanobind PRIVATE
   ament_cmake_ros_core::ament_ros_cxx_standard
   lifecycle_msgs::lifecycle_msgs__rosidl_generator_c
   lifecycle_msgs::lifecycle_msgs__rosidl_typesupport_c
@@ -135,7 +141,7 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rcutils::rcutils
   rosidl_runtime_c::rosidl_runtime_c
 )
-configure_build_install_location(_rclpy_pybind11)
+configure_build_install_location(_rclpy_nanobind)
 
 if(NOT WIN32)
   ament_environment_hooks(
@@ -184,7 +190,7 @@ if(BUILD_TESTING)
   target_include_directories(test_python_allocator PRIVATE src/rclpy)
   target_link_libraries(test_python_allocator
     ament_cmake_ros_core::ament_ros_cxx_standard
-    pybind11::embed)
+    Python3::Python)
 
   ament_add_gtest(test_rcl_callback_manager
     test/test_rcl_callback_manager.cpp

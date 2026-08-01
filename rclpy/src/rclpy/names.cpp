@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/context.h>
 #include <rcl/error_handling.h>
@@ -36,7 +37,7 @@
 
 namespace rclpy
 {
-py::object
+nb::object
 get_validation_error_for_topic_name(const char * topic_name)
 {
   int validation_result;
@@ -50,15 +51,15 @@ get_validation_error_for_topic_name(const char * topic_name)
   }
 
   if (RCL_TOPIC_NAME_VALID == validation_result) {
-    return py::none();
+    return nb::none();
   }
 
   const char * validation_message = rcl_topic_name_validation_result_string(validation_result);
 
-  return py::make_tuple(validation_message, invalid_index);
+  return nb::make_tuple(validation_message, invalid_index);
 }
 
-py::object
+nb::object
 get_validation_error_for_full_topic_name(const char * topic_name)
 {
   int validation_result;
@@ -72,15 +73,15 @@ get_validation_error_for_full_topic_name(const char * topic_name)
   }
 
   if (validation_result == RMW_NAMESPACE_VALID) {
-    return py::none();
+    return nb::none();
   }
 
   const char * validation_message = rmw_full_topic_name_validation_result_string(validation_result);
 
-  return py::make_tuple(validation_message, invalid_index);
+  return nb::make_tuple(validation_message, invalid_index);
 }
 
-py::object
+nb::object
 get_validation_error_for_namespace(const char * namespace_)
 {
   int validation_result;
@@ -94,15 +95,15 @@ get_validation_error_for_namespace(const char * namespace_)
   }
 
   if (RMW_NAMESPACE_VALID == validation_result) {
-    return py::none();
+    return nb::none();
   }
 
   const char * validation_message = rmw_namespace_validation_result_string(validation_result);
 
-  return py::make_tuple(validation_message, invalid_index);
+  return nb::make_tuple(validation_message, invalid_index);
 }
 
-py::object
+nb::object
 get_validation_error_for_node_name(const char * node_name)
 {
   int validation_result;
@@ -116,12 +117,12 @@ get_validation_error_for_node_name(const char * node_name)
   }
 
   if (RMW_NODE_NAME_VALID == validation_result) {
-    return py::none();
+    return nb::none();
   }
 
   const char * validation_message = rmw_node_name_validation_result_string(validation_result);
 
-  return py::make_tuple(validation_message, invalid_index);
+  return nb::make_tuple(validation_message, invalid_index);
 }
 
 std::string
@@ -186,17 +187,17 @@ expand_topic_name(const char * topic, const char * node_name, const char * node_
     std::string error_text{"topic name '"};
     error_text += topic;
     error_text += "' is invalid";
-    throw py::value_error(append_rcl_error(error_text));
+    throw nb::value_error(append_rcl_error(error_text).c_str());
   } else if (RCL_RET_NODE_INVALID_NAME == ret) {
     std::string error_text{"node name '"};
     error_text += node_name;
     error_text += "' is invalid";
-    throw py::value_error(append_rcl_error(error_text));
+    throw nb::value_error(append_rcl_error(error_text).c_str());
   } else if (RCL_RET_NODE_INVALID_NAMESPACE == ret) {
     std::string error_text{"node namespace '"};
     error_text += node_namespace;
     error_text += "' is invalid";
-    throw py::value_error(append_rcl_error(error_text));
+    throw nb::value_error(append_rcl_error(error_text).c_str());
   } else if (RCL_RET_OK != ret) {
     throw RCLError("failed to do name expansion");
   }
