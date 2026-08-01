@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/types.h>
@@ -50,19 +50,19 @@ SerializedMessage::~SerializedMessage()
   }
 }
 
-py::bytes
-serialize(py::object pymsg, py::object pymsg_type)
+nb::bytes
+serialize(nb::object pymsg, nb::object pymsg_type)
 {
   // Get type support
   auto ts = static_cast<rosidl_message_type_support_t *>(
     common_get_type_support(pymsg_type));
   if (!ts) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   auto ros_msg = convert_from_py(pymsg);
   if (!ros_msg) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   // Create a serialized message object
@@ -75,19 +75,19 @@ serialize(py::object pymsg, py::object pymsg_type)
   }
 
   // Bundle serialized message in a bytes object
-  return py::bytes(
+  return nb::bytes(
     reinterpret_cast<const char *>(serialized_msg.rcl_msg.buffer),
     serialized_msg.rcl_msg.buffer_length);
 }
 
-py::object
-deserialize(py::bytes pybuffer, py::object pymsg_type)
+nb::object
+deserialize(nb::bytes pybuffer, nb::object pymsg_type)
 {
   // Get type support
   auto ts = static_cast<rosidl_message_type_support_t *>(
     common_get_type_support(pymsg_type));
   if (!ts) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   // Create a serialized message object
@@ -95,11 +95,11 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
   // Just copy pointer to avoid extra allocation and copy
   char * serialized_buffer;
   Py_ssize_t length;
-  if (PYBIND11_BYTES_AS_STRING_AND_SIZE(pybuffer.ptr(), &serialized_buffer, &length)) {
-    throw py::error_already_set();
+  if (PyBytes_AsStringAndSize(pybuffer.ptr(), &serialized_buffer, &length)) {
+    throw nb::python_error();
   }
   if (length < 0) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
   serialized_msg.buffer_capacity = length;
   serialized_msg.buffer_length = length;
@@ -107,7 +107,7 @@ deserialize(py::bytes pybuffer, py::object pymsg_type)
 
   auto deserialized_ros_msg = create_from_py(pymsg_type);
   if (!deserialized_ros_msg) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   // Deserialize

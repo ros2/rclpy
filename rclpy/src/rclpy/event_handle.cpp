@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/event.h>
@@ -114,7 +115,7 @@ typedef union event_callback_data {
   rmw_incompatible_type_status_t incompatible_type;
 } event_callback_data_t;
 
-py::object
+nb::object
 EventHandle::take_event()
 {
   event_callback_data_t data;
@@ -124,7 +125,7 @@ EventHandle::take_event()
     throw std::bad_alloc();
   }
   if (RCL_RET_EVENT_TAKE_FAILED == ret) {
-    return py::none();
+    return nb::none();
   }
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to take event");
@@ -133,30 +134,30 @@ EventHandle::take_event()
   if (auto sub_type = std::get_if<rcl_subscription_event_type_t>(&event_type_)) {
     switch (*sub_type) {
       case RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED:
-        return py::cast(data.requested_deadline_missed);
+        return nb::cast(data.requested_deadline_missed);
       case RCL_SUBSCRIPTION_LIVELINESS_CHANGED:
-        return py::cast(data.liveliness_changed);
+        return nb::cast(data.liveliness_changed);
       case RCL_SUBSCRIPTION_MESSAGE_LOST:
-        return py::cast(data.message_lost);
+        return nb::cast(data.message_lost);
       case RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS:
-        return py::cast(data.requested_incompatible_qos);
+        return nb::cast(data.requested_incompatible_qos);
       case RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE:
-        return py::cast(data.incompatible_type);
+        return nb::cast(data.incompatible_type);
       case RCL_SUBSCRIPTION_MATCHED:
-        return py::cast(data.subscription_matched);
+        return nb::cast(data.subscription_matched);
     }
   } else if (auto pub_type = std::get_if<rcl_publisher_event_type_t>(&event_type_)) {
     switch (*pub_type) {
       case RCL_PUBLISHER_OFFERED_DEADLINE_MISSED:
-        return py::cast(data.offered_deadline_missed);
+        return nb::cast(data.offered_deadline_missed);
       case RCL_PUBLISHER_LIVELINESS_LOST:
-        return py::cast(data.liveliness_lost);
+        return nb::cast(data.liveliness_lost);
       case RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS:
-        return py::cast(data.offered_incompatible_qos);
+        return nb::cast(data.offered_incompatible_qos);
       case RCL_PUBLISHER_INCOMPATIBLE_TYPE:
-        return py::cast(data.incompatible_type);
+        return nb::cast(data.incompatible_type);
       case RCL_PUBLISHER_MATCHED:
-        return py::cast(data.publisher_matched);
+        return nb::cast(data.publisher_matched);
     }
   }
   throw std::runtime_error("cannot take event that is neither a publisher or a subscription event");
@@ -175,12 +176,12 @@ subscription_event_type_is_supported(rcl_subscription_event_type_t event_type)
 }
 
 void
-define_event_handle(py::module module)
+define_event_handle(nb::module_ module)
 {
-  py::class_<EventHandle, Destroyable, std::shared_ptr<EventHandle>>(module, "EventHandle")
-  .def(py::init<rclpy::Subscription &, rcl_subscription_event_type_t>())
-  .def(py::init<rclpy::Publisher &, rcl_publisher_event_type_t>())
-  .def_property_readonly(
+  nb::class_<EventHandle, Destroyable>(module, "EventHandle")
+  .def(nb::init<rclpy::Subscription &, rcl_subscription_event_type_t>())
+  .def(nb::init<rclpy::Publisher &, rcl_publisher_event_type_t>())
+  .def_prop_ro(
     "pointer", [](const EventHandle & event) {
       return reinterpret_cast<size_t>(event.rcl_ptr());
     },
@@ -189,7 +190,8 @@ define_event_handle(py::module module)
     "take_event", &EventHandle::take_event,
     "Get pending data from a ready event");
 
-  py::enum_<rcl_subscription_event_type_t>(module, "rcl_subscription_event_type_t")
+  nb::enum_<rcl_subscription_event_type_t>(
+    module, "rcl_subscription_event_type_t", nb::is_arithmetic())
   .value("RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED", RCL_SUBSCRIPTION_REQUESTED_DEADLINE_MISSED)
   .value("RCL_SUBSCRIPTION_LIVELINESS_CHANGED", RCL_SUBSCRIPTION_LIVELINESS_CHANGED)
   .value("RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS", RCL_SUBSCRIPTION_REQUESTED_INCOMPATIBLE_QOS)
@@ -197,58 +199,59 @@ define_event_handle(py::module module)
   .value("RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE", RCL_SUBSCRIPTION_INCOMPATIBLE_TYPE)
   .value("RCL_SUBSCRIPTION_MATCHED", RCL_SUBSCRIPTION_MATCHED);
 
-  py::enum_<rcl_publisher_event_type_t>(module, "rcl_publisher_event_type_t")
+  nb::enum_<rcl_publisher_event_type_t>(
+    module, "rcl_publisher_event_type_t", nb::is_arithmetic())
   .value("RCL_PUBLISHER_OFFERED_DEADLINE_MISSED", RCL_PUBLISHER_OFFERED_DEADLINE_MISSED)
   .value("RCL_PUBLISHER_LIVELINESS_LOST", RCL_PUBLISHER_LIVELINESS_LOST)
   .value("RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS", RCL_PUBLISHER_OFFERED_INCOMPATIBLE_QOS)
   .value("RCL_PUBLISHER_INCOMPATIBLE_TYPE", RCL_PUBLISHER_INCOMPATIBLE_TYPE)
   .value("RCL_PUBLISHER_MATCHED", RCL_PUBLISHER_MATCHED);
 
-  py::class_<rmw_requested_deadline_missed_status_t>(
+  nb::class_<rmw_requested_deadline_missed_status_t>(
     module, "rmw_requested_deadline_missed_status_t")
-  .def(py::init<>())
-  .def_readonly("total_count", &rmw_requested_deadline_missed_status_t::total_count)
-  .def_readonly("total_count_change", &rmw_requested_deadline_missed_status_t::total_count_change);
+  .def(nb::init<>())
+  .def_ro("total_count", &rmw_requested_deadline_missed_status_t::total_count)
+  .def_ro("total_count_change", &rmw_requested_deadline_missed_status_t::total_count_change);
 
-  py::class_<rmw_liveliness_changed_status_t>(module, "rmw_liveliness_changed_status_t")
-  .def(py::init<>())
-  .def_readonly("alive_count", &rmw_liveliness_changed_status_t::alive_count)
-  .def_readonly("not_alive_count", &rmw_liveliness_changed_status_t::not_alive_count)
-  .def_readonly("alive_count_change", &rmw_liveliness_changed_status_t::alive_count_change)
-  .def_readonly("not_alive_count_change", &rmw_liveliness_changed_status_t::not_alive_count_change);
+  nb::class_<rmw_liveliness_changed_status_t>(module, "rmw_liveliness_changed_status_t")
+  .def(nb::init<>())
+  .def_ro("alive_count", &rmw_liveliness_changed_status_t::alive_count)
+  .def_ro("not_alive_count", &rmw_liveliness_changed_status_t::not_alive_count)
+  .def_ro("alive_count_change", &rmw_liveliness_changed_status_t::alive_count_change)
+  .def_ro("not_alive_count_change", &rmw_liveliness_changed_status_t::not_alive_count_change);
 
-  py::class_<rmw_message_lost_status_t>(module, "rmw_message_lost_status_t")
-  .def(py::init<>())
-  .def_readonly("total_count", &rmw_message_lost_status_t::total_count)
-  .def_readonly("total_count_change", &rmw_message_lost_status_t::total_count_change);
+  nb::class_<rmw_message_lost_status_t>(module, "rmw_message_lost_status_t")
+  .def(nb::init<>())
+  .def_ro("total_count", &rmw_message_lost_status_t::total_count)
+  .def_ro("total_count_change", &rmw_message_lost_status_t::total_count_change);
 
-  py::class_<rmw_requested_qos_incompatible_event_status_t>(
+  nb::class_<rmw_requested_qos_incompatible_event_status_t>(
     module, "rmw_requested_qos_incompatible_event_status_t")
-  .def(py::init<>())
-  .def_readonly("total_count", &rmw_requested_qos_incompatible_event_status_t::total_count)
-  .def_readonly(
+  .def(nb::init<>())
+  .def_ro("total_count", &rmw_requested_qos_incompatible_event_status_t::total_count)
+  .def_ro(
     "total_count_change", &rmw_requested_qos_incompatible_event_status_t::total_count_change)
-  .def_readonly(
+  .def_ro(
     "last_policy_kind", &rmw_requested_qos_incompatible_event_status_t::last_policy_kind);
 
-  py::class_<rmw_offered_deadline_missed_status_t>(module, "rmw_offered_deadline_missed_status_t")
-  .def(py::init<>())
-  .def_readonly("total_count", &rmw_offered_deadline_missed_status_t::total_count)
-  .def_readonly("total_count_change", &rmw_offered_deadline_missed_status_t::total_count_change);
+  nb::class_<rmw_offered_deadline_missed_status_t>(module, "rmw_offered_deadline_missed_status_t")
+  .def(nb::init<>())
+  .def_ro("total_count", &rmw_offered_deadline_missed_status_t::total_count)
+  .def_ro("total_count_change", &rmw_offered_deadline_missed_status_t::total_count_change);
 
-  py::class_<rmw_liveliness_lost_status_t>(module, "rmw_liveliness_lost_status_t")
-  .def(py::init<>())
-  .def_readonly("total_count", &rmw_liveliness_lost_status_t::total_count)
-  .def_readonly("total_count_change", &rmw_liveliness_lost_status_t::total_count_change);
+  nb::class_<rmw_liveliness_lost_status_t>(module, "rmw_liveliness_lost_status_t")
+  .def(nb::init<>())
+  .def_ro("total_count", &rmw_liveliness_lost_status_t::total_count)
+  .def_ro("total_count_change", &rmw_liveliness_lost_status_t::total_count_change);
 
-  py::class_<rmw_matched_status_t>(module, "rmw_matched_status_t")
-  .def(py::init<>())
-  .def_readonly("total_count", &rmw_matched_status_t::total_count)
-  .def_readonly("total_count_change", &rmw_matched_status_t::total_count_change)
-  .def_readonly("current_count", &rmw_matched_status_t::current_count)
-  .def_readonly("current_count_change", &rmw_matched_status_t::current_count_change);
+  nb::class_<rmw_matched_status_t>(module, "rmw_matched_status_t")
+  .def(nb::init<>())
+  .def_ro("total_count", &rmw_matched_status_t::total_count)
+  .def_ro("total_count_change", &rmw_matched_status_t::total_count_change)
+  .def_ro("current_count", &rmw_matched_status_t::current_count)
+  .def_ro("current_count_change", &rmw_matched_status_t::current_count_change);
 
-  py::enum_<rmw_qos_policy_kind_t>(module, "rmw_qos_policy_kind_t")
+  nb::enum_<rmw_qos_policy_kind_t>(module, "rmw_qos_policy_kind_t", nb::is_arithmetic())
   .value("RMW_QOS_POLICY_INVALID", RMW_QOS_POLICY_INVALID)
   .value("RMW_QOS_POLICY_DURABILITY", RMW_QOS_POLICY_DURABILITY)
   .value("RMW_QOS_POLICY_DEADLINE", RMW_QOS_POLICY_DEADLINE)
@@ -262,9 +265,9 @@ define_event_handle(py::module module)
     "RMW_QOS_POLICY_AVOID_ROS_NAMESPACE_CONVENTIONS",
     RMW_QOS_POLICY_AVOID_ROS_NAMESPACE_CONVENTIONS);
 
-  py::class_<rmw_incompatible_type_status_t>(module, "rmw_incompatible_type_status_t")
-  .def(py::init<>())
-  .def_readonly("total_count_change", &rmw_incompatible_type_status_t::total_count_change);
+  nb::class_<rmw_incompatible_type_status_t>(module, "rmw_incompatible_type_status_t")
+  .def(nb::init<>())
+  .def_ro("total_count_change", &rmw_incompatible_type_status_t::total_count_change);
 
   module.def(
     "publisher_event_type_is_supported",

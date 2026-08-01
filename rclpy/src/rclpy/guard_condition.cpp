@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/guard_condition.h>
@@ -67,11 +68,11 @@ GuardCondition::trigger_guard_condition()
   }
 }
 
-void define_guard_condition(py::object module)
+void define_guard_condition(nb::object module)
 {
-  py::class_<GuardCondition, Destroyable, std::shared_ptr<GuardCondition>>(module, "GuardCondition")
-  .def(py::init<Context &>())
-  .def_property_readonly(
+  nb::class_<GuardCondition, Destroyable>(module, "GuardCondition")
+  .def(nb::init<Context &>())
+  .def_prop_ro(
     "pointer", [](const GuardCondition & guard_condition) {
       return reinterpret_cast<size_t>(guard_condition.rcl_ptr());
     },

@@ -15,18 +15,21 @@
 #ifndef RCLPY__EVENTS_EXECUTOR__PYTHON_EQ_HANDLER_HPP_
 #define RCLPY__EVENTS_EXECUTOR__PYTHON_EQ_HANDLER_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 namespace rclpy
 {
 namespace events_executor
 {
-/// This is a workaround to the deprecation of `operator==` in Pybind11 >=2.2
-/// See https://pybind11.readthedocs.io/en/stable/upgrade.html#deprecation-of-some-py-object-apis
-/// It's intended to be replaced with the
+/// This is intended to be used as the KeyEqual template arg to STL containers using a
+/// nb::handle as a Key, comparing keys by Python object identity.  nanobind defines no
+/// `operator==` for handles (callers must pick identity or equality explicitly via
+/// `.is()` or `.equal()`), so the default std::equal_to<nb::handle> would not compile.
 struct PythonEqHandler
 {
-  inline auto operator()(const pybind11::handle & x, const pybind11::handle & y) const
+  inline auto operator()(const nb::handle & x, const nb::handle & y) const
   {
     return x.is(y);
   }

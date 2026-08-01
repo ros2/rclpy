@@ -15,17 +15,17 @@
 #ifndef RCLPY__LIFECYCLE_HPP_
 #define RCLPY__LIFECYCLE_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
 /// Define methods on a module for the lifecycle API
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
 void
-define_lifecycle_api(py::module module);
+define_lifecycle_api(nb::module_ module);
 }  // namespace rclpy
 #endif  // RCLPY__LIFECYCLE_HPP_

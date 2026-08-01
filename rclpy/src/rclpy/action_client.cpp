@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/types.h>
@@ -29,6 +31,8 @@
 #include "node.hpp"
 #include "utils.hpp"
 
+using nb::literals::operator""_a;
+
 namespace rclpy
 {
 
@@ -41,7 +45,7 @@ ActionClient::destroy()
 
 ActionClient::ActionClient(
   Node & node,
-  py::object pyaction_type,
+  nb::object pyaction_type,
   const char * action_name,
   const rmw_qos_profile_t & goal_service_qos,
   const rmw_qos_profile_t & result_service_qos,
@@ -55,7 +59,7 @@ ActionClient::ActionClient(
   action_type_support_ =
     static_cast<rosidl_action_type_support_t *>(common_get_type_support(pyaction_type));
   if (!action_type_support_) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   rcl_action_client_options_t action_client_ops = rcl_action_client_get_default_options();
@@ -92,13 +96,13 @@ ActionClient::ActionClient(
     error_text += "' : ";
     error_text += rcl_get_error_string().str;
     rcl_reset_error();
-    throw py::value_error(error_text);
+    throw nb::value_error(error_text.c_str());
   }
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to create action client: "};
     error_text += rcl_get_error_string().str;
     rcl_reset_error();
-    throw py::value_error(error_text);
+    throw nb::value_error(error_text.c_str());
   }
 }
 
@@ -111,14 +115,14 @@ ActionClient::ActionClient(
   int64_t sequence = header.sequence_number; \
   /* Create the tuple to return */ \
   if (RCL_RET_ACTION_CLIENT_TAKE_FAILED == ret || RCL_RET_ACTION_SERVER_TAKE_FAILED == ret) { \
-    return py::make_tuple(py::none(), py::none()); \
+    return nb::make_tuple(nb::none(), nb::none()); \
   } else if (RCL_RET_OK != ret) { \
     throw rclpy::RCLError("Failed to take " #Type); \
   } \
-  return py::make_tuple(sequence, convert_to_py(taken_msg.get(), pymsg_type)); \
+  return nb::make_tuple(sequence, convert_to_py(taken_msg.get(), pymsg_type)); \
 
-py::tuple
-ActionClient::take_goal_response(py::object pymsg_type)
+nb::tuple
+ActionClient::take_goal_response(nb::object pymsg_type)
 {
   TAKE_SERVICE_RESPONSE(goal)
 }
@@ -134,13 +138,13 @@ ActionClient::take_goal_response(py::object pymsg_type)
   return sequence_number;
 
 int64_t
-ActionClient::send_result_request(py::object pyrequest)
+ActionClient::send_result_request(nb::object pyrequest)
 {
   SEND_SERVICE_REQUEST(result);
 }
 
-py::tuple
-ActionClient::take_cancel_response(py::object pymsg_type)
+nb::tuple
+ActionClient::take_cancel_response(nb::object pymsg_type)
 {
   TAKE_SERVICE_RESPONSE(cancel)
 }
@@ -151,43 +155,43 @@ ActionClient::take_cancel_response(py::object pymsg_type)
   if (RCL_RET_OK != ret) { \
     if (RCL_RET_ACTION_CLIENT_TAKE_FAILED == ret) { \
       /* if take failed, just do nothing */ \
-      return py::none(); \
+      return nb::none(); \
     } \
     throw rclpy::RCLError("Failed to take " #Type " with an action client"); \
   } \
   return convert_to_py(taken_msg.get(), pymsg_type);
 
-py::object
-ActionClient::take_feedback(py::object pymsg_type)
+nb::object
+ActionClient::take_feedback(nb::object pymsg_type)
 {
   TAKE_MESSAGE(feedback)
 }
 
-py::object
-ActionClient::take_status(py::object pymsg_type)
+nb::object
+ActionClient::take_status(nb::object pymsg_type)
 {
   TAKE_MESSAGE(status)
 }
 
 int64_t
-ActionClient::send_cancel_request(py::object pyrequest)
+ActionClient::send_cancel_request(nb::object pyrequest)
 {
   SEND_SERVICE_REQUEST(cancel)
 }
 
 int64_t
-ActionClient::send_goal_request(py::object pyrequest)
+ActionClient::send_goal_request(nb::object pyrequest)
 {
   SEND_SERVICE_REQUEST(goal)
 }
 
-py::tuple
-ActionClient::take_result_response(py::object pymsg_type)
+nb::tuple
+ActionClient::take_result_response(nb::object pymsg_type)
 {
   TAKE_SERVICE_RESPONSE(result);
 }
 
-py::tuple
+nb::tuple
 ActionClient::get_num_entities()
 {
   size_t num_subscriptions = 0u;
@@ -209,7 +213,7 @@ ActionClient::get_num_entities()
     throw rclpy::RCLError(error_text);
   }
 
-  return py::make_tuple(
+  return nb::make_tuple(
     num_subscriptions, num_guard_conditions, num_timers,
     num_clients, num_services);
 }
@@ -237,7 +241,7 @@ ActionClient::add_to_waitset(WaitSet & wait_set)
   }
 }
 
-py::tuple
+nb::tuple
 ActionClient::is_ready(WaitSet & wait_set)
 {
   bool is_feedback_ready = false;
@@ -257,24 +261,23 @@ ActionClient::is_ready(WaitSet & wait_set)
     throw rclpy::RCLError("Failed to get number of ready entities for action client");
   }
 
-  py::tuple result_tuple(5);
-  result_tuple[0] = py::bool_(is_feedback_ready);
-  result_tuple[1] = py::bool_(is_status_ready);
-  result_tuple[2] = py::bool_(is_goal_response_ready);
-  result_tuple[3] = py::bool_(is_cancel_response_ready);
-  result_tuple[4] = py::bool_(is_result_response_ready);
-  return result_tuple;
+  return nb::make_tuple(
+    is_feedback_ready,
+    is_status_ready,
+    is_goal_response_ready,
+    is_cancel_response_ready,
+    is_result_response_ready);
 }
 
 void
 ActionClient::configure_introspection(
-  Clock & clock, py::object pyqos_service_event_pub,
+  Clock & clock, nb::object pyqos_service_event_pub,
   rcl_service_introspection_state_t introspection_state)
 {
   rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
   pub_opts.qos =
     pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
-    pyqos_service_event_pub.cast<rmw_qos_profile_t>();
+    nb::cast<rmw_qos_profile_t>(pyqos_service_event_pub);
 
   rcl_ret_t ret = rcl_action_client_configure_action_introspection(
     rcl_action_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(),
@@ -286,7 +289,7 @@ ActionClient::configure_introspection(
 }
 
 bool
-ActionClient::configure_feedback_subscription_filter_add_goal_id(py::bytes goal_id)
+ActionClient::configure_feedback_subscription_filter_add_goal_id(nb::bytes goal_id)
 {
   std::lock_guard<std::mutex> lock(configure_feedback_sub_content_filter_mutex_);
 
@@ -294,7 +297,7 @@ ActionClient::configure_feedback_subscription_filter_add_goal_id(py::bytes goal_
     return false;
   }
 
-  std::string str_goal_id = static_cast<std::string>(goal_id);
+  std::string str_goal_id(goal_id.c_str(), goal_id.size());
   const uint8_t * goal_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
   rcl_ret_t ret = rcl_action_client_configure_feedback_subscription_filter_add_goal_id(
     rcl_action_client_.get(), goal_id_array, str_goal_id.size());
@@ -312,7 +315,7 @@ ActionClient::configure_feedback_subscription_filter_add_goal_id(py::bytes goal_
 }
 
 bool
-ActionClient::configure_feedback_subscription_filter_remove_goal_id(py::bytes goal_id)
+ActionClient::configure_feedback_subscription_filter_remove_goal_id(nb::bytes goal_id)
 {
   std::lock_guard<std::mutex> lock(configure_feedback_sub_content_filter_mutex_);
 
@@ -320,7 +323,7 @@ ActionClient::configure_feedback_subscription_filter_remove_goal_id(py::bytes go
     return false;
   }
 
-  std::string str_goal_id = static_cast<std::string>(goal_id);
+  std::string str_goal_id(goal_id.c_str(), goal_id.size());
   const uint8_t * goal_id_array = reinterpret_cast<const uint8_t *>(str_goal_id.data());
   rcl_ret_t ret = rcl_action_client_configure_feedback_subscription_filter_remove_goal_id(
     rcl_action_client_.get(), goal_id_array, str_goal_id.size());
@@ -338,23 +341,23 @@ ActionClient::configure_feedback_subscription_filter_remove_goal_id(py::bytes go
 }
 
 void
-define_action_client(py::object module)
+define_action_client(nb::object module)
 {
-  py::class_<ActionClient, Destroyable, std::shared_ptr<ActionClient>>(module, "ActionClient")
+  nb::class_<ActionClient, Destroyable>(module, "ActionClient")
   .def(
-    py::init<Node &, py::object, const char *, const rmw_qos_profile_t &,
+    nb::init<Node &, nb::object, const char *, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &, bool>(),
-    py::arg("node"),
-    py::arg("action_type"),
-    py::arg("action_name"),
-    py::arg("goal_service_qos_profile"),
-    py::arg("result_service_qos_profile"),
-    py::arg("cancel_service_qos_profile"),
-    py::arg("feedback_sub_qos_profile"),
-    py::arg("status_sub_qos_profile"),
-    py::arg("enable_feedback_msg_optimization") = false)
-  .def_property_readonly(
+    "node"_a,
+    "action_type"_a,
+    "action_name"_a,
+    "goal_service_qos_profile"_a,
+    "result_service_qos_profile"_a,
+    "cancel_service_qos_profile"_a,
+    "feedback_sub_qos_profile"_a,
+    "status_sub_qos_profile"_a,
+    "enable_feedback_msg_optimization"_a = false)
+  .def_prop_ro(
     "pointer", [](const ActionClient & action_client) {
       return reinterpret_cast<size_t>(action_client.rcl_ptr());
     },
@@ -397,6 +400,7 @@ define_action_client(py::object module)
     "Take an action status response.")
   .def(
     "configure_introspection", &ActionClient::configure_introspection,
+    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether internal client introspection is enabled")
   .def(
     "configure_feedback_subscription_filter_add_goal_id",

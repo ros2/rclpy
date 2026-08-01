@@ -16,7 +16,9 @@
 #ifndef RCLPY__EVENTS_EXECUTOR__TIMERS_MANAGER_HPP_
 #define RCLPY__EVENTS_EXECUTOR__TIMERS_MANAGER_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/time.h>
 #include <rcl/timer.h>
@@ -29,6 +31,8 @@
 #include "events_executor/python_eq_handler.hpp"
 #include "events_executor/python_hasher.hpp"
 #include "events_executor/scoped_with.hpp"
+
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -63,15 +67,15 @@ public:
   /// timer is ready for servicing.
   TimersManager(
     EventsQueue * events_queue,
-    std::function<void(pybind11::handle, const rcl_timer_call_info_t &)> timer_ready_callback);
+    std::function<void(nb::handle, const rcl_timer_call_info_t &)> timer_ready_callback);
   ~TimersManager();
 
   /// Accessor for underlying rcl timer manager, for management of non-Python timers.
   RclTimersManager & rcl_manager() {return rcl_manager_;}
 
   // Both of these methods expect the GIL to be held when they are called.
-  void AddTimer(pybind11::handle timer);
-  void RemoveTimer(pybind11::handle timer);
+  void AddTimer(nb::handle timer);
+  void RemoveTimer(nb::handle timer);
 
 private:
   struct PyRclMapping
@@ -85,9 +89,9 @@ private:
   };
 
   RclTimersManager rcl_manager_;
-  const std::function<void(pybind11::handle, const rcl_timer_call_info_t &)> ready_callback_;
+  const std::function<void(nb::handle, const rcl_timer_call_info_t &)> ready_callback_;
 
-  std::unordered_map<pybind11::handle, PyRclMapping, PythonHasher, PythonEqHandler> timer_mappings_;
+  std::unordered_map<nb::handle, PyRclMapping, PythonHasher, PythonEqHandler> timer_mappings_;
 };
 
 }  // namespace events_executor

@@ -15,7 +15,11 @@
 #ifndef RCLPY__SUBSCRIPTION_HPP_
 #define RCLPY__SUBSCRIPTION_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <rcl/subscription.h>
 
@@ -28,7 +32,7 @@
 #include "destroyable.hpp"
 #include "node.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -52,9 +56,9 @@ public:
    * \param[in] content_filter_options ContentFilterOptions object for this subscription
    */
   Subscription(
-    Node & node, py::object pymsg_type, std::string topic,
-    py::object pyqos_profile, py::object content_filter_options = py::none(),
-    py::object acceptable_buffer_backends = py::none());
+    Node & node, nb::object pymsg_type, std::string topic,
+    nb::object pyqos_profile, nb::object content_filter_options = nb::none(),
+    nb::object acceptable_buffer_backends = nb::none());
 
   /// Take a message and its metadata from a subscription
   /**
@@ -67,8 +71,8 @@ public:
    *   Message is a \p pymsg_type instance if \p raw is True, otherwise a byte string.
    *   Metadata is a plain dictionary.
    */
-  py::object
-  take_message(py::object pymsg_type, bool raw);
+  nb::object
+  take_message(nb::object pymsg_type, bool raw);
 
   /// Get the name of the logger associated with the node of the subscription.
   /**
@@ -139,7 +143,7 @@ public:
    * \return The content filter options to get.
    * \throws RCLError if an unexpected error occurs
    */
-  py::object
+  nb::object
   get_content_filter() const;
 
 private:
@@ -150,8 +154,8 @@ private:
   void
   set_callback(rcl_event_callback_t callback, const void * user_data);
 };
-/// Define a pybind11 wrapper for an rclpy::Subscription
-void define_subscription(py::object module);
+/// Define a nanobind wrapper for an rclpy::Subscription
+void define_subscription(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__SUBSCRIPTION_HPP_

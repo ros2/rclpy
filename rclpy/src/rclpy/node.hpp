@@ -15,7 +15,8 @@
 #ifndef RCLPY__NODE_HPP_
 #define RCLPY__NODE_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/node.h>
 
@@ -24,7 +25,7 @@
 #include "context.hpp"
 #include "destroyable.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -51,10 +52,10 @@ public:
     const char * node_name,
     const char * namespace_,
     Context & context,
-    py::object pycli_args,
+    nb::object pycli_args,
     bool use_global_arguments,
     bool enable_rosout,
-    py::object rosout_qos_profile);
+    nb::object rosout_qos_profile);
 
   /// Get the fully qualified name of the node.
   /**
@@ -159,7 +160,7 @@ public:
    * \return Python list of tuples where each tuple contains the two strings:
    *   the node name and node namespace
    */
-  py::list
+  nb::list
   get_node_names_and_namespaces();
 
   /// Get the list of nodes discovered by the provided node, with their respective enclaves.
@@ -169,7 +170,7 @@ public:
    * \return Python list of tuples where each tuple contains three strings:
    *   node name, node namespace, and enclave.
    */
-  py::list
+  nb::list
   get_node_names_and_namespaces_with_enclaves();
 
   /// Get a list of parameters for the current node
@@ -181,8 +182,8 @@ public:
    * \param[in] pyparameter_cls The rclpy.parameter.Parameter class object.
    * \return A dict mapping parameter names to rclpy.parameter.Parameter (may be empty).
    */
-  py::dict
-  get_parameters(py::object pyparameter_cls);
+  nb::dict
+  get_parameters(nb::object pyparameter_cls);
 
   /// Get action client names and types by node.
   /**
@@ -190,7 +191,7 @@ public:
    * \param[in] remote_node_namespace the node namespace of the actions to return
    * \return list of action client names and their types
    */
-  py::list
+  nb::list
   get_action_client_names_and_types_by_node(
     const char * remote_node_name, const char * remote_node_namespace);
 
@@ -200,7 +201,7 @@ public:
    * \param[in] remote_node_namespace the node namespace of the actions to return
    * \return list of action server names and their types
    */
-  py::list
+  nb::list
   get_action_server_names_and_types_by_node(
     const char * remote_node_name, const char * remote_node_namespace);
 
@@ -208,7 +209,7 @@ public:
   /**
    * \return list of action names and types
    */
-  py::list
+  nb::list
   get_action_names_and_types();
 
   /// Get rcl_node_t pointer
@@ -232,7 +233,7 @@ private:
    *  node name, node namespace, and
    *  enclave if `get_enclaves` is true.
    */
-  py::list
+  nb::list
   get_names_impl(bool get_enclaves);
 
   Context context_;
@@ -240,6 +241,6 @@ private:
 };
 
 void
-define_node(py::object module);
+define_node(nb::object module);
 }  // namespace rclpy
 #endif  // RCLPY__NODE_HPP_

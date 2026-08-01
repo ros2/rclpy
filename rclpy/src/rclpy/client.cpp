@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/client.h>
 #include <rcl/error_handling.h>
@@ -34,6 +36,8 @@
 #include "utils.hpp"
 #include "events_executor/rcl_support.hpp"
 
+using nb::literals::operator""_a;
+
 namespace rclpy
 {
 using events_executor::RclEventCallbackTrampoline;
@@ -50,18 +54,18 @@ Client::destroy()
 }
 
 Client::Client(
-  Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos_profile)
+  Node & node, nb::object pysrv_type, const std::string & service_name, nb::object pyqos_profile)
 : node_(node)
 {
   srv_type_ = static_cast<rosidl_service_type_support_t *>(common_get_type_support(pysrv_type));
   if (nullptr == srv_type_) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   rcl_client_options_t client_ops = rcl_client_get_default_options();
 
   if (!pyqos_profile.is_none()) {
-    client_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
+    client_ops.qos = nb::cast<rmw_qos_profile_t>(pyqos_profile);
   }
 
   // Create a client
@@ -88,18 +92,18 @@ Client::Client(
       error_text += "': ";
       error_text += rcl_get_error_string().str;
       rcl_reset_error();
-      throw py::value_error(error_text);
+      throw nb::value_error(error_text.c_str());
     }
     throw RCLError("failed to create client");
   }
 }
 
 int64_t
-Client::send_request(py::object pyrequest)
+Client::send_request(nb::object pyrequest)
 {
   auto raw_ros_request = convert_from_py(pyrequest);
   if (!raw_ros_request) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   int64_t sequence_number;
@@ -123,40 +127,34 @@ Client::service_server_is_available()
   return is_ready;
 }
 
-py::tuple
-Client::take_response(py::object pyresponse_type)
+nb::tuple
+Client::take_response(nb::object pyresponse_type)
 {
   auto taken_response = create_from_py(pyresponse_type);
 
   rmw_service_info_t header;
 
-  py::tuple result_tuple(2);
   rcl_ret_t ret = rcl_take_response_with_info(
     rcl_client_.get(), &header, taken_response.get());
   if (ret == RCL_RET_CLIENT_TAKE_FAILED) {
-    result_tuple[0] = py::none();
-    result_tuple[1] = py::none();
-    return result_tuple;
+    return nb::make_tuple(nb::none(), nb::none());
   }
   if (RCL_RET_OK != ret) {
     throw RCLError("encountered error when taking client response");
   }
 
-  result_tuple[0] = header;
-  result_tuple[1] = convert_to_py(taken_response.get(), pyresponse_type);
-
-  return result_tuple;
+  return nb::make_tuple(header, convert_to_py(taken_response.get(), pyresponse_type));
 }
 
 void
 Client::configure_introspection(
-  Clock & clock, py::object pyqos_service_event_pub,
+  Clock & clock, nb::object pyqos_service_event_pub,
   rcl_service_introspection_state_t introspection_state)
 {
   rcl_publisher_options_t pub_opts = rcl_publisher_get_default_options();
   pub_opts.qos =
     pyqos_service_event_pub.is_none() ? rcl_publisher_get_default_options().qos :
-    pyqos_service_event_pub.cast<rmw_qos_profile_t>();
+    nb::cast<rmw_qos_profile_t>(pyqos_service_event_pub);
 
   rcl_ret_t ret = rcl_client_configure_service_introspection(
     rcl_client_.get(), node_.rcl_ptr(), clock.rcl_ptr(), srv_type_, pub_opts, introspection_state);
@@ -219,14 +217,16 @@ Client::clear_on_new_response_callback()
 }
 
 void
-define_client(py::object module)
+define_client(nb::object module)
 {
-  py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
-  .def(py::init<Node &, py::object, const std::string &, py::object>())
-  .def_property_readonly(
+  nb::class_<Client, Destroyable>(module, "Client")
+  .def(
+    nb::init<Node &, nb::object, const std::string &, nb::object>(),
+    nb::arg(), nb::arg(), nb::arg(), nb::arg().none())
+  .def_prop_ro(
     "service_name", &Client::get_service_name,
     "Get the name of the service")
-  .def_property_readonly(
+  .def_prop_ro(
     "pointer", [](const Client & client) {
       return reinterpret_cast<size_t>(client.rcl_ptr());
     },
@@ -242,13 +242,14 @@ define_client(py::object module)
     "Take a received response from an earlier request")
   .def(
     "configure_introspection", &Client::configure_introspection,
+    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Client::get_logger_name,
     "Get the name of the logger associated with the node of the client.")
   .def(
     "set_on_new_response_callback", &Client::set_on_new_response_callback,
-    py::arg("callback"))
+    "callback"_a)
   .def("clear_on_new_response_callback", &Client::clear_on_new_response_callback);
 }
 }  // namespace rclpy
