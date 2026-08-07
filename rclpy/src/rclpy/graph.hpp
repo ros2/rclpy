@@ -247,6 +247,44 @@ graph_get_action_server_names_and_types_by_node(
 py::list
 graph_get_action_names_and_types(Node & node);
 
+/// Return a list of action clients on a given action.
+/**
+ * Each entry of the returned list aggregates the endpoint information of all
+ * the underlying entities of one action client, i.e. the clients of the
+ * goal, cancel, and result services and the subscriptions on the feedback
+ * and status topics.
+ *
+ * Raises NotImplementedError if the call is not supported by RMW
+ * Raises RCLError if there is an rcl error
+ *
+ * \param[in] node node to get action clients info
+ * \param[in] action_name the fully qualified action name to get the action clients for.
+ * \return list of action clients.
+ * \see rcl_action_get_clients_info_by_action
+ */
+py::list
+graph_get_action_clients_info_by_action(
+  Node & node, const char * action_name);
+
+/// Return a list of action servers on a given action.
+/**
+ * Each entry of the returned list aggregates the endpoint information of all
+ * the underlying entities of one action server, i.e. the servers of the
+ * goal, cancel, and result services and the publishers on the feedback and
+ * status topics.
+ *
+ * Raises NotImplementedError if the call is not supported by RMW
+ * Raises RCLError if there is an rcl error
+ *
+ * \param[in] node node to get action servers info
+ * \param[in] action_name the fully qualified action name to get the action servers for.
+ * \return list of action servers.
+ * \see rcl_action_get_servers_info_by_action
+ */
+py::list
+graph_get_action_servers_info_by_action(
+  Node & node, const char * action_name);
+
 }  // namespace rclpy
 
 #endif  // RCLPY__GRAPH_HPP_
