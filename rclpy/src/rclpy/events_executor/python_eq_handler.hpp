@@ -23,10 +23,9 @@ namespace rclpy
 {
 namespace events_executor
 {
-/// This is intended to be used as the KeyEqual template arg to STL containers using a
-/// nb::handle as a Key, comparing keys by Python object identity.  nanobind defines no
-/// `operator==` for handles (callers must pick identity or equality explicitly via
-/// `.is()` or `.equal()`), so the default std::equal_to<nb::handle> would not compile.
+/// This is intended to be used as the KeyEqual template arg to STL containers
+/// using a nb::handle as a Key, comparing keys by Python object identity.
+/// nanobind defines no `operator==` for handles.
 struct PythonEqHandler
 {
   inline auto operator()(const nb::handle & x, const nb::handle & y) const
