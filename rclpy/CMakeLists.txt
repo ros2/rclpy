@@ -225,6 +225,7 @@ if(BUILD_TESTING)
       test/test_timer.py
       test/test_topic_or_service_is_hidden.py
       test/test_topic_endpoint_info.py
+      test/test_type_description_service.py
       test/test_type_support.py
       test/test_type_hash.py
       test/test_utilities.py

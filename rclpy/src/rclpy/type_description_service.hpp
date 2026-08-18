@@ -43,7 +43,7 @@ public:
   /**
    * \return The capsule containing the Service
    */
-  Service
+  std::shared_ptr<Service>
   get_impl();
 
   /// Handle an incoming request to the service

@@ -2051,8 +2051,6 @@ class BaseNode(ABC):
     def destroy_node(self) -> None:
         self._context.untrack_node(self)
         self._parameter_event_publisher = None
-        # Not owned by self._services, so Node.destroy_node() doesn't destroy it
-        self._type_description_service.destroy()
         self.handle.destroy_when_not_in_use()
 
 
