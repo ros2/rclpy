@@ -76,13 +76,6 @@ class TypeDescriptionService:
         if self.enabled:
             self._start_service()
 
-    def destroy(self) -> None:
-        # Required manual destruction because this is not managed by rclpy.Service.
-        # The underlying C++ holds a shared node handle, so leaving this alive keeps node alive.
-        if self._type_description_srv is not None:
-            self._type_description_srv.destroy_when_not_in_use()
-            self._type_description_srv = None
-
     def _start_service(self) -> None:
         node = self._get_node()
         self._type_description_srv = _rclpy.TypeDescriptionService(node.handle)
