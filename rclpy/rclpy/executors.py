@@ -421,7 +421,13 @@ class Executor(ContextManager['Executor']):
                 ):
                     self._spin_once_until_future_complete(future, timeout_sec)
             else:
-                start = time.monotonic()
+                # Use perf_counter() rather than monotonic(): on Windows with
+                # CPython < 3.13, monotonic() is based on GetTickCount64() with
+                # ~15.6ms resolution, which can quantize the start time such
+                # that this loop exits up to one tick earlier than timeout_sec
+                # in real time. perf_counter() is monotonic on all supported
+                # platforms and has sub-microsecond resolution.
+                start = time.perf_counter()
                 end = start + timeout_sec
                 timeout_left = TimeoutObject(timeout_sec)
 
@@ -432,7 +438,7 @@ class Executor(ContextManager['Executor']):
                     and not self._is_shutdown
                 ):
                     self._spin_once_until_future_complete(future, timeout_left)
-                    now = time.monotonic()
+                    now = time.perf_counter()
 
                     if now >= end:
                         break
