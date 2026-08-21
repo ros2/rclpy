@@ -399,8 +399,8 @@ class TestExecutor(unittest.TestCase):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
 
-                first_fut = executor.create_future()
-                second_fut = executor.create_future()
+                first_fut = Future(executor=executor)
+                second_fut = Future(executor=executor)
 
                 async def coro_that_raises():
                     first_fut.set_result(None)
@@ -427,9 +427,9 @@ class TestExecutor(unittest.TestCase):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
 
-                first_fut = executor.create_future()
-                second_fut = executor.create_future()
-                third_fut = executor.create_future()
+                first_fut = Future(executor=executor)
+                second_fut = Future(executor=executor)
+                third_fut = Future(executor=executor)
 
                 async def coro():
                     first_fut.set_result(None)
@@ -458,7 +458,7 @@ class TestExecutor(unittest.TestCase):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
 
-                fut = executor.create_future()
+                fut = Future(executor=executor)
                 fut.set_result('done')  # complete before the task runs
 
                 async def coro():
@@ -469,16 +469,6 @@ class TestExecutor(unittest.TestCase):
                 executor.spin_until_future_complete(task, timeout_sec=5)
                 self.assertTrue(task.done())
                 self.assertEqual('done', task.result())
-
-    def test_create_task_during_spin(self):
-        self.assertIsNotNone(self.node.handle)
-        for cls in [SingleThreadedExecutor, EventsExecutor]:
-            with self.subTest(cls=cls):
-                executor = cls(context=self.context)
-                executor.add_node(self.node)
-
-        self.assertTrue(future.done())
-        self.assertEqual('Sentinel Result', future.result())
 
     def test_global_executor_completes_async_task(self):
         self.assertIsNotNone(self.node.handle)
