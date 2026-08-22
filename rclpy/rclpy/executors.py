@@ -405,18 +405,8 @@ class Executor(ContextManager['Executor']):
             self._exit_spin()
 
     def _add_wake_on_done(self, future: Future[Any]) -> None:
-        """
-        Register a stable wake-on-done callback on a future, at most once.
-
-        future.add_done_callback() appends unconditionally, so calling it fresh on every
-        spin attempt (as every caller here used to) accumulates one callback per spin for
-        a future that takes many spins to complete: O(N) callbacks, each becoming its own
-        Task when the future finally completes. Reusing one callback instance and checking
-        it isn't already registered keeps this at O(1) regardless of how many times a
-        caller spins while waiting on the same future.
-        """
-        if self._wake_on_done_cb not in future._callbacks:
-            future.add_done_callback(self._wake_on_done_cb)
+        """Register the wake-on-done callback at most once per future."""
+        future.add_done_callback(self._wake_on_done_cb, unique=True)
 
     def spin_until_future_complete(
         self,
