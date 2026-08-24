@@ -190,7 +190,12 @@ class Future(Generic[T]):
             else:
                 self._executor = weakref.ref(executor)
 
-    def add_done_callback(self, callback: Callable[['Future[T]'], None]) -> None:
+    def add_done_callback(
+        self,
+        callback: Callable[['Future[T]'], None],
+        *,
+        unique: bool = False,
+    ) -> None:
         """
         Add a callback to be executed when the task is done.
 
@@ -200,9 +205,12 @@ class Future(Generic[T]):
         If this happens and the callback raises, the exception will be raised by this method.
 
         :param callback: a callback taking the future as an argument to be run when completed
+        :param unique: only add the callback if it is not already pending
         """
         invoke = False
         with self._lock:
+            if unique and callback in self._callbacks:
+                return
             if not self._pending():
                 assert self._executor is not None
                 executor = self._executor()
