@@ -197,7 +197,11 @@ class ServerGoalHandle(Generic[GoalT, ResultT, FeedbackT, ImplT]):
             result_response.result = response
         else:
             result_response.result = self._action_server._action_type.Result()
-        self._action_server._result_futures[bytes(self.goal_id.uuid)].set_result(result_response)
+        key = bytes(self.goal_id.uuid)
+        with self._action_server._goal_registry_lock:
+            result_future = self._action_server._result_futures.get(key)
+        if result_future is not None:
+            result_future.set_result(result_response)
 
     def execute(
         self,
@@ -376,6 +380,14 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
         # key: UUID in bytes, value: Future
         self._result_futures: Dict[bytes, Future[GetResultServiceResponse[ResultT]]] = {}
 
+        # Serializes mutations and reads of the (`_goal_handles`, `_result_futures`)
+        # pair so a reader never observes one dict updated without the other. Needed
+        # because `_execute_goal` runs as its own executor task (see `notify_execute`)
+        # and can race with the waitable's `_execute_expire_goals` under the
+        # MultiThreadedExecutor. Only ever held across synchronous sections — never
+        # across an `await` or a user-callback invocation.
+        self._goal_registry_lock = threading.Lock()
+
         callback_group.add_entity(self)
         self._node.add_waitable(self)
 
@@ -418,9 +430,12 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
                     'Failed to accept new goal with ID {0}: {1}'.format(goal_uuid.uuid, e))
                 accepted = False
             else:
-                self._goal_handles[bytes(goal_uuid.uuid)] = goal_handle
-                self._result_futures[bytes(goal_uuid.uuid)] = Future()
-                self.add_future(self._result_futures[bytes(goal_uuid.uuid)])
+                key = bytes(goal_uuid.uuid)
+                result_future: Future[GetResultServiceResponse[ResultT]] = Future()
+                with self._goal_registry_lock:
+                    self._goal_handles[key] = goal_handle
+                    self._result_futures[key] = result_future
+                self.add_future(result_future)
 
         # Send response
         response_msg = self._action_type.Impl.SendGoalService.Response()
@@ -478,7 +493,15 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
         result_response = self._action_type.Impl.GetResultService.Response()
         result_response.status = goal_handle.status
         result_response.result = execute_result
-        self._result_futures[bytes(goal_uuid)].set_result(result_response)
+        with self._goal_registry_lock:
+            result_future = self._result_futures.get(bytes(goal_uuid))
+        if result_future is not None:
+            result_future.set_result(result_response)
+        else:
+            # Goal expired before the callback finished; an expected outcome
+            # under load with a short result_timeout, so log at debug level.
+            self._logger.debug(
+                'Goal with ID {0} expired before its result could be set'.format(goal_uuid))
 
     async def _execute_cancel_request(
         self,
@@ -495,12 +518,13 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
         for goal_info in cancel_response.goals_canceling:
             goal_uuid = bytes(goal_info.goal_id.uuid)
-            if goal_uuid not in self._goal_handles:
+            with self._goal_registry_lock:
+                goal_handle = self._goal_handles.get(goal_uuid)
+            if goal_handle is None:
                 # Possibly the user doesn't care to track the goal handle
                 # Remove from response
                 cancel_response.goals_canceling.remove(goal_info)
                 continue
-            goal_handle = self._goal_handles[goal_uuid]
             response = await await_or_execute(self._cancel_callback, goal_handle)
 
             if CancelResponse.ACCEPT == response:
@@ -536,9 +560,17 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
         self._logger.debug(
             'Result request received for goal with ID: {0}'.format(goal_uuid))
 
+        # Atomically check whether the goal is still tracked and grab its result
+        # future. `_execute_expire_goals` removes the goal handle and result future
+        # as a pair, so taking the lock here keeps the membership check and the
+        # future lookup consistent with each other.
+        key = bytes(goal_uuid)
+        with self._goal_registry_lock:
+            result_future = self._result_futures.get(key) if key in self._goal_handles else None
+
         # If no goal with the requested ID exists, then return UNKNOWN status
         # or the goal with the requested ID has been already expired
-        if bytes(goal_uuid) not in self._goal_handles:
+        if result_future is None:
             self._logger.warning(
                 'Sending result response for unknown or expired goal ID: {0}'.format(goal_uuid))
             result_response = self._action_type.Impl.GetResultService.Response()
@@ -549,16 +581,21 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
         # There is an accepted goal matching the goal ID, register a callback to send the
         # response as soon as it's ready
-        self._result_futures[bytes(goal_uuid)].add_done_callback(
+        result_future.add_done_callback(
             functools.partial(self._send_result_response, request_header))
 
     async def _execute_expire_goals(self, expired_goals: Tuple[GoalInfo, ...]) -> None:
         for goal in expired_goals:
             goal_uuid = bytes(goal.goal_id.uuid)
-            self._goal_handles[goal_uuid].destroy()
-            del self._goal_handles[goal_uuid]
-            self.remove_future(self._result_futures[goal_uuid])
-            del self._result_futures[goal_uuid]
+            # Remove the goal handle and result future as a single unit so that
+            # concurrent readers never see one without the other.
+            with self._goal_registry_lock:
+                goal_handle = self._goal_handles.pop(goal_uuid, None)
+                result_future = self._result_futures.pop(goal_uuid, None)
+            if goal_handle is not None:
+                goal_handle.destroy()
+            if result_future is not None:
+                self.remove_future(result_future)
 
     def _send_result_response(
         self,
@@ -800,11 +837,16 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
 
     def destroy(self) -> None:
         """Destroy the underlying action server handle."""
-        for goal_handle in self._goal_handles.values():
+        # Snapshot the goal registry under the lock so teardown does not race
+        # with `_execute_expire_goals` mutating the dicts.
+        with self._goal_registry_lock:
+            goal_handles = list(self._goal_handles.values())
+            result_futures = list(self._result_futures.values())
+
+        for goal_handle in goal_handles:
             goal_handle.destroy()
 
-        """Remove the underlying result future."""
-        for result_future in self._result_futures.values():
+        for result_future in result_futures:
             self.remove_future(result_future)
 
         self._handle.destroy_when_not_in_use()
