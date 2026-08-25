@@ -16,6 +16,7 @@ import pathlib
 import platform
 import time
 from typing import Any
+from typing import Callable
 from typing import cast
 from typing import List
 from typing import Optional
@@ -69,6 +70,16 @@ TEST_NODE = 'my_node'
 TEST_NAMESPACE = '/my_ns'
 
 TEST_RESOURCES_DIR = pathlib.Path(__file__).resolve().parent / 'resources' / 'test_node'
+
+
+def _wait_until(predicate: Callable[[], bool], timeout: float = 10.0) -> bool:
+    """Poll ``predicate`` until it is true, returning whether it became true within ``timeout``."""
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        if predicate():
+            return True
+        time.sleep(0.05)
+    return predicate()
 
 
 class TestNodeAllowUndeclaredParameters(unittest.TestCase):
@@ -254,6 +265,26 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
     def test_node_names_and_namespaces_with_enclaves(self) -> None:
         # test that it doesn't raise
         self.node.get_node_names_and_namespaces_with_enclaves()
+
+    def test_destroyed_node_leaves_the_graph(self) -> None:
+        # destroy_node() must release every reference to the node handle so rcl_node_fini() runs.
+        # Any surviving reference leaves the node advertised in the graph until its process exits.
+        doomed = rclpy.create_node('doomed_node', context=self.context)
+
+        def in_graph() -> bool:
+            return any(
+                name == 'doomed_node'
+                for name, _ in self.node.get_node_names_and_namespaces()
+            )
+
+        self.assertTrue(
+            _wait_until(in_graph), 'node under test never appeared in the graph')
+
+        doomed.destroy_node()
+
+        self.assertTrue(
+            _wait_until(lambda: not in_graph()),
+            'destroyed node is still in the graph, so its handle was never finalized')
 
     def assert_qos_equal(self, expected_qos_profile: QoSProfile,
                          actual_qos_profile: QoSProfile, *, is_publisher: bool) -> None:
