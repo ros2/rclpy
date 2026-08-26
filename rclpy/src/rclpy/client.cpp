@@ -220,8 +220,14 @@ Client::clear_on_new_response_callback()
 void
 define_client(nb::object module)
 {
-  nb::class_<Client, Destroyable>(module, "Client")
-  .def(nb::init<Node &, nb::object, const std::string &, std::optional<rmw_qos_profile_t>>())
+  nb::class_<Client, Destroyable>(
+    module, "Client", nb::is_generic(),
+    nb::sig("class Client(Destroyable, typing.Generic[SrvRequestT, SrvResponseT])"))
+  .def(
+    nb::init<Node &, nb::object, const std::string &, std::optional<rmw_qos_profile_t>>(),
+    nb::sig(
+      "def __init__(self, node: Node, srv_type: type[Srv[SrvRequestT, SrvResponseT]], "
+      "srv_name: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None"))
   .def_prop_ro(
     "service_name", &Client::get_service_name,
     "Get the name of the service")
@@ -232,13 +238,17 @@ define_client(nb::object module)
     "Get the address of the entity as an integer")
   .def(
     "send_request", &Client::send_request,
-    "Send a request")
+    "Send a request",
+    nb::sig("def send_request(self, pyrequest: SrvRequestT, /) -> int"))
   .def(
     "service_server_is_available", &Client::service_server_is_available,
     "Return true if the service server is available")
   .def(
     "take_response", &Client::take_response,
-    "Take a received response from an earlier request")
+    "Take a received response from an earlier request",
+    nb::sig(
+      "def take_response(self, pyresponse_type: type[SrvResponseT], /)"
+      " -> tuple[rmw_service_info_t, SrvResponseT] | tuple[None, None]"))
   .def(
     "configure_introspection", &Client::configure_introspection,
     "Configure whether introspection is enabled")

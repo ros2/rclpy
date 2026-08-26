@@ -385,11 +385,20 @@ ActionServer::configure_introspection(
 void
 define_action_server(nb::object module)
 {
-  nb::class_<ActionServer, Destroyable>(module, "ActionServer")
+  nb::class_<ActionServer, Destroyable>(
+    module, "ActionServer", nb::is_generic(),
+    nb::sig("class ActionServer(Destroyable, typing.Generic[GoalT, ResultT, FeedbackT, ImplT])"))
   .def(
     nb::init<Node &, const rclpy::Clock &, nb::object, const char *,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &, const rmw_qos_profile_t &,
-    const rmw_qos_profile_t &, const rmw_qos_profile_t &, double>())
+    const rmw_qos_profile_t &, const rmw_qos_profile_t &, double>(),
+    nb::sig(
+      "def __init__(self, node: Node, rclpy_clock: Clock, "
+      "pyaction_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]], "
+      "action_name: str, goal_service_qos: rmw_qos_profile_t, "
+      "result_service_qos: rmw_qos_profile_t, cancel_service_qos: rmw_qos_profile_t, "
+      "feedback_topic_qos: rmw_qos_profile_t, status_topic_qos: rmw_qos_profile_t, "
+      "result_timeout: float, /) -> None"))
   .def_prop_ro(
     "pointer", [](const ActionServer & action_server) {
       return reinterpret_cast<size_t>(action_server.rcl_ptr());
@@ -397,25 +406,44 @@ define_action_server(nb::object module)
     "Get the address of the entity as an integer")
   .def(
     "take_goal_request", &ActionServer::take_goal_request,
-    "Take an action goal request.")
+    "Take an action goal request.",
+    nb::sig(
+      "def take_goal_request(self, pymsg_type: type[SendGoalServiceRequest[GoalT]], /)"
+      " -> tuple[rmw_request_id_t, SendGoalServiceRequest[GoalT]] | tuple[None, None]"))
   .def(
     "send_goal_response", &ActionServer::send_goal_response,
-    "Send an action goal response.")
+    "Send an action goal response.",
+    nb::sig(
+      "def send_goal_response(self, header: rmw_request_id_t, "
+      "pyresponse: SendGoalServiceResponse, /) -> None"))
   .def(
     "send_result_response", &ActionServer::send_result_response,
-    "Send an action result response.")
+    "Send an action result response.",
+    nb::sig(
+      "def send_result_response(self, header: rmw_request_id_t, "
+      "pyresponse: GetResultServiceResponse[ResultT], /) -> None"))
   .def(
     "take_cancel_request", &ActionServer::take_cancel_request,
-    "Take an action cancel request.")
+    "Take an action cancel request.",
+    nb::sig(
+      "def take_cancel_request(self, pymsg_type: type[CancelGoal_Request], /)"
+      " -> tuple[rmw_request_id_t, CancelGoal_Request] | tuple[None, None]"))
   .def(
     "take_result_request", &ActionServer::take_result_request,
-    "Take an action result request.")
+    "Take an action result request.",
+    nb::sig(
+      "def take_result_request(self, pymsg_type: type[GetResultServiceRequest], /)"
+      " -> tuple[rmw_request_id_t, GetResultServiceRequest] | tuple[None, None]"))
   .def(
     "send_cancel_response", &ActionServer::send_cancel_response,
-    "Send an action cancel response.")
+    "Send an action cancel response.",
+    nb::sig(
+      "def send_cancel_response(self, header: rmw_request_id_t, "
+      "pyresponse: CancelGoal_Response, /) -> None"))
   .def(
     "publish_feedback", &ActionServer::publish_feedback,
-    "Publish a feedback message from a given action server.")
+    "Publish a feedback message from a given action server.",
+    nb::sig("def publish_feedback(self, pymsg: FeedbackT, /) -> None"))
   .def(
     "publish_status", &ActionServer::publish_status,
     "Publish a status message from a given action server.")
@@ -424,13 +452,18 @@ define_action_server(nb::object module)
     "Notify goal is done.")
   .def(
     "goal_exists", &ActionServer::goal_exists,
-    "Check is a goal exists in the server.")
+    "Check is a goal exists in the server.",
+    nb::sig("def goal_exists(self, pygoal_info: GoalInfo, /) -> bool"))
   .def(
     "process_cancel_request", &ActionServer::process_cancel_request,
-    "Process a cancel request")
+    "Process a cancel request",
+    nb::sig(
+      "def process_cancel_request(self, pycancel_request: CancelGoal_Request, "
+      "pycancel_response_type: type[CancelGoal_Response], /) -> CancelGoal_Response"))
   .def(
     "expire_goals", &ActionServer::expire_goals,
-    "Expired goals.")
+    "Expired goals.",
+    nb::sig("def expire_goals(self, max_num_goals: int, /) -> tuple[GoalInfo, ...]"))
   .def(
     "get_num_entities", &ActionServer::get_num_entities,
     "Get the number of wait set entities that make up an action entity.")

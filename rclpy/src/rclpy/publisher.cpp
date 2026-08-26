@@ -159,8 +159,14 @@ Publisher::wait_for_all_acked(rcl_duration_t pytimeout)
 void
 define_publisher(nb::object module)
 {
-  nb::class_<Publisher, Destroyable>(module, "Publisher")
-  .def(nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>>())
+  nb::class_<Publisher, Destroyable>(
+    module, "Publisher", nb::is_generic(),
+    nb::sig("class Publisher(Destroyable, typing.Generic[MsgT])"))
+  .def(
+    nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>>(),
+    nb::sig(
+      "def __init__(self, node: Node, msg_type: type[MsgT], "
+      "topic: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None"))
   .def_prop_ro(
     "pointer", [](const Publisher & publisher) {
       return reinterpret_cast<size_t>(publisher.rcl_ptr());
@@ -177,7 +183,8 @@ define_publisher(nb::object module)
     "Retrieve the topic name from a Publisher.")
   .def(
     "publish", &Publisher::publish,
-    "Publish a message")
+    "Publish a message",
+    nb::sig("def publish(self, msg: MsgT, /) -> None"))
   .def(
     "publish_raw", &Publisher::publish_raw,
     "Publish a serialized message.")

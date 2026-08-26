@@ -178,9 +178,19 @@ subscription_event_type_is_supported(rcl_subscription_event_type_t event_type)
 void
 define_event_handle(nb::module_ module)
 {
-  nb::class_<EventHandle, Destroyable>(module, "EventHandle")
-  .def(nb::init<rclpy::Subscription &, rcl_subscription_event_type_t>())
-  .def(nb::init<rclpy::Publisher &, rcl_publisher_event_type_t>())
+  nb::class_<EventHandle, Destroyable>(
+    module, "EventHandle", nb::is_generic(),
+    nb::sig("class EventHandle(Destroyable, typing.Generic[T])"))
+  .def(
+    nb::init<rclpy::Subscription &, rcl_subscription_event_type_t>(),
+    nb::sig(
+      "def __init__(self, subscription: Subscription[typing.Any], "
+      "event_type: rcl_subscription_event_type_t, /) -> None"))
+  .def(
+    nb::init<rclpy::Publisher &, rcl_publisher_event_type_t>(),
+    nb::sig(
+      "def __init__(self, publisher: Publisher[typing.Any], "
+      "event_type: rcl_publisher_event_type_t, /) -> None"))
   .def_prop_ro(
     "pointer", [](const EventHandle & event) {
       return reinterpret_cast<size_t>(event.rcl_ptr());
@@ -188,7 +198,8 @@ define_event_handle(nb::module_ module)
     "Get the address of the entity as an integer")
   .def(
     "take_event", &EventHandle::take_event,
-    "Get pending data from a ready event");
+    "Get pending data from a ready event",
+    nb::sig("def take_event(self) -> T | None"));
 
   nb::enum_<rcl_subscription_event_type_t>(
     module, "rcl_subscription_event_type_t", nb::is_arithmetic())

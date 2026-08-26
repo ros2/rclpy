@@ -381,7 +381,9 @@ Subscription::get_content_filter() const
 void
 define_subscription(nb::object module)
 {
-  nb::class_<Subscription, Destroyable>(module, "Subscription")
+  nb::class_<Subscription, Destroyable>(
+    module, "Subscription", nb::is_generic(),
+    nb::sig("class Subscription(Destroyable, typing.Generic[MsgT])"))
   .def(nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>,
     nb::object, std::optional<std::string>>(),
     "node"_a,
@@ -389,7 +391,12 @@ define_subscription(nb::object module)
     "topic"_a,
     "qos_profile"_a,
     "content_filter_options"_a = nb::none(),
-    "acceptable_buffer_backends"_a = nb::none())
+    "acceptable_buffer_backends"_a = nb::none(),
+    nb::sig(
+      "def __init__(self, node: Node, msg_type: type[MsgT], topic: str, "
+      "qos_profile: rmw_qos_profile_t | None, "
+      "content_filter_options: ContentFilterOptions | None = None, "
+      "acceptable_buffer_backends: str | None = None) -> None"))
   .def_prop_ro(
     "pointer", [](const Subscription & subscription) {
       return reinterpret_cast<size_t>(subscription.rcl_ptr());
@@ -397,7 +404,10 @@ define_subscription(nb::object module)
     "Get the address of the entity as an integer")
   .def(
     "take_message", &Subscription::take_message,
-    "Take a message and its metadata from a subscription")
+    "Take a message and its metadata from a subscription",
+    nb::sig(
+      "def take_message(self, pymsg_type: type[MsgT], raw: bool, /)"
+      " -> tuple[MsgT | bytes, MessageInfo] | None"))
   .def(
     "get_logger_name", &Subscription::get_logger_name,
     "Get the name of the logger associated with the node of the subscription.")
@@ -420,6 +430,7 @@ define_subscription(nb::object module)
     "Set the filter expression and expression parameters for the subscription.")
   .def(
     "get_content_filter", &Subscription::get_content_filter,
-    "Get the filter expression and expression parameters for the subscription.");
+    "Get the filter expression and expression parameters for the subscription.",
+    nb::sig("def get_content_filter(self) -> ContentFilterOptions"));
 }
 }  // namespace rclpy

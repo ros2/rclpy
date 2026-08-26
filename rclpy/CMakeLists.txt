@@ -144,7 +144,8 @@ nanobind_add_stub(_rclpy_nanobind_stub
   MODULE _rclpy_nanobind
   OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/_rclpy_nanobind.pyi"
   PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
-  DEPENDS _rclpy_nanobind
+  PATTERN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
+  DEPENDS _rclpy_nanobind "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
 )
 nanobind_add_stub(_rclpy_nanobind_service_introspection_stub
   MODULE _rclpy_nanobind.service_introspection

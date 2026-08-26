@@ -223,8 +223,14 @@ Service::clear_on_new_request_callback()
 void
 define_service(nb::object module)
 {
-  nb::class_<Service, Destroyable>(module, "Service")
-  .def(nb::init<Node &, nb::object, const std::string &, std::optional<rmw_qos_profile_t>>())
+  nb::class_<Service, Destroyable>(
+    module, "Service", nb::is_generic(),
+    nb::sig("class Service(Destroyable, typing.Generic[SrvRequestT, SrvResponseT])"))
+  .def(
+    nb::init<Node &, nb::object, const std::string &, std::optional<rmw_qos_profile_t>>(),
+    nb::sig(
+      "def __init__(self, node: Node, pysrv_type: type[Srv[SrvRequestT, SrvResponseT]], "
+      "name: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None"))
   .def_prop_ro(
     "pointer", [](const Service & service) {
       return reinterpret_cast<size_t>(service.rcl_ptr());
@@ -238,10 +244,16 @@ define_service(nb::object module)
     "Get the qos profile of the service")
   .def(
     "service_send_response", &Service::service_send_response,
-    "Send a response")
+    "Send a response",
+    nb::sig(
+      "def service_send_response(self, pyresponse: SrvResponseT, "
+      "header: rmw_request_id_t, /) -> None"))
   .def(
     "service_take_request", &Service::service_take_request,
-    "Take a request from a given service")
+    "Take a request from a given service",
+    nb::sig(
+      "def service_take_request(self, pyrequest_type: type[SrvRequestT], /)"
+      " -> tuple[SrvRequestT, rmw_service_info_t] | tuple[None, None]"))
   .def(
     "configure_introspection", &Service::configure_introspection,
     "Configure whether introspection is enabled")
