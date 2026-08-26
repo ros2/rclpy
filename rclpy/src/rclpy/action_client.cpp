@@ -343,7 +343,9 @@ ActionClient::configure_feedback_subscription_filter_remove_goal_id(nb::bytes go
 void
 define_action_client(nb::object module)
 {
-  nb::class_<ActionClient, Destroyable>(module, "ActionClient")
+  nb::class_<ActionClient, Destroyable>(
+    module, "ActionClient", nb::is_generic(),
+    nb::sig("class ActionClient(Destroyable, typing.Generic[GoalT, ResultT, FeedbackT, ImplT])"))
   .def(
     nb::init<Node &, nb::object, const char *, const rmw_qos_profile_t &,
     const rmw_qos_profile_t &, const rmw_qos_profile_t &,
@@ -356,7 +358,16 @@ define_action_client(nb::object module)
     "cancel_service_qos_profile"_a,
     "feedback_sub_qos_profile"_a,
     "status_sub_qos_profile"_a,
-    "enable_feedback_msg_optimization"_a = false)
+    "enable_feedback_msg_optimization"_a = false,
+    nb::sig(
+      "def __init__(self, node: Node, "
+      "action_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]], "
+      "action_name: str, goal_service_qos_profile: rmw_qos_profile_t, "
+      "result_service_qos_profile: rmw_qos_profile_t, "
+      "cancel_service_qos_profile: rmw_qos_profile_t, "
+      "feedback_sub_qos_profile: rmw_qos_profile_t, "
+      "status_sub_qos_profile: rmw_qos_profile_t, "
+      "enable_feedback_msg_optimization: bool = False) -> None"))
   .def_prop_ro(
     "pointer", [](const ActionClient & action_client) {
       return reinterpret_cast<size_t>(action_client.rcl_ptr());
@@ -364,25 +375,41 @@ define_action_client(nb::object module)
     "Get the address of the entity as an integer")
   .def(
     "take_goal_response", &ActionClient::take_goal_response,
-    "Take an action goal response.")
+    "Take an action goal response.",
+    nb::sig(
+      "def take_goal_response(self, pymsg_type: type[SendGoalServiceResponse], /)"
+      " -> tuple[int, SendGoalServiceResponse] | tuple[None, None]"))
   .def(
     "send_result_request", &ActionClient::send_result_request,
-    "Send an action result request.")
+    "Send an action result request.",
+    nb::sig("def send_result_request(self, pyrequest: GetResultServiceRequest, /) -> int"))
   .def(
     "take_cancel_response", &ActionClient::take_cancel_response,
-    "Take an action cancel response.")
+    "Take an action cancel response.",
+    nb::sig(
+      "def take_cancel_response(self, pymsg_type: type[CancelGoal_Response], /)"
+      " -> tuple[int, CancelGoal_Response] | tuple[None, None]"))
   .def(
     "take_feedback", &ActionClient::take_feedback,
-    "Take a feedback message from a given action client.")
+    "Take a feedback message from a given action client.",
+    nb::sig(
+      "def take_feedback(self, pymsg_type: type[FeedbackMessage[FeedbackT]], /)"
+      " -> FeedbackMessage[FeedbackT] | None"))
   .def(
     "send_cancel_request", &ActionClient::send_cancel_request,
-    "Send an action cancel request.")
+    "Send an action cancel request.",
+    nb::sig(
+      "def send_cancel_request(self, pyrequest: CancelGoal_Request, /) -> int"))
   .def(
     "send_goal_request", &ActionClient::send_goal_request,
-    "Send an action goal request.")
+    "Send an action goal request.",
+    nb::sig("def send_goal_request(self, pyrequest: SendGoalServiceRequest[GoalT], /) -> int"))
   .def(
     "take_result_response", &ActionClient::take_result_response,
-    "Take an action result response.")
+    "Take an action result response.",
+    nb::sig(
+      "def take_result_response(self, pymsg_type: type[GetResultServiceResponse[ResultT]], /)"
+      " -> tuple[int, GetResultServiceResponse[ResultT]] | tuple[None, None]"))
   .def(
     "get_num_entities", &ActionClient::get_num_entities,
     "Get the number of wait set entities that make up an action entity.")
@@ -397,7 +424,9 @@ define_action_client(nb::object module)
     "Check if an action entity has any ready wait set entities.")
   .def(
     "take_status", &ActionClient::take_status,
-    "Take an action status response.")
+    "Take an action status response.",
+    nb::sig(
+      "def take_status(self, pymsg_type: type[GoalStatusArray], /) -> GoalStatusArray | None"))
   .def(
     "configure_introspection", &ActionClient::configure_introspection,
     "Configure whether internal client introspection is enabled")

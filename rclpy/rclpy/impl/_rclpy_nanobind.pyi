@@ -2,10 +2,38 @@
 
 from collections.abc import Callable, Sequence
 import enum
-from typing import overload
+from typing import Any, Generic, TypeVar, overload
+
+from action_msgs.msg import GoalInfo, GoalStatusArray
+from action_msgs.srv._cancel_goal import (
+    CancelGoal_Request,
+    CancelGoal_Response
+)
+from rclpy.subscription import MessageInfo
+from rclpy.subscription_content_filter_options import (
+    ContentFilterOptions
+)
+from rclpy.type_support import (
+    Action,
+    FeedbackMessage,
+    FeedbackT,
+    GetResultServiceRequest,
+    GetResultServiceResponse,
+    GoalT,
+    ImplT,
+    MsgT,
+    ResultT,
+    SendGoalServiceRequest,
+    SendGoalServiceResponse,
+    Srv,
+    SrvRequestT,
+    SrvResponseT
+)
 
 from . import service_introspection as service_introspection
 
+
+T = TypeVar("T")
 
 class Destroyable:
     def __enter__(self) -> None: ...
@@ -108,8 +136,8 @@ class NotImplementedError(NotImplementedError):
 class InvalidHandle(RuntimeError):
     pass
 
-class Client(Destroyable):
-    def __init__(self, arg0: Node, arg1: object, arg2: str, arg3: rmw_qos_profile_t | None) -> None: ...
+class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
+    def __init__(self, node: Node, srv_type: type[Srv[SrvRequestT, SrvResponseT]], srv_name: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None: ...
 
     @property
     def service_name(self) -> str:
@@ -119,13 +147,13 @@ class Client(Destroyable):
     def pointer(self) -> int:
         """Get the address of the entity as an integer"""
 
-    def send_request(self, arg: object, /) -> int:
+    def send_request(self, pyrequest: SrvRequestT, /) -> int:
         """Send a request"""
 
     def service_server_is_available(self) -> bool:
         """Return true if the service server is available"""
 
-    def take_response(self, arg: object, /) -> tuple:
+    def take_response(self, pyresponse_type: type[SrvResponseT], /) -> tuple[rmw_service_info_t, SrvResponseT] | tuple[None, None]:
         """Take a received response from an earlier request"""
 
     def configure_introspection(self, arg0: Clock, arg1: rmw_qos_profile_t | None, arg2: service_introspection.ServiceIntrospectionState) -> None:
@@ -160,8 +188,8 @@ class rcl_duration_t:
     @property
     def nanoseconds(self) -> int: ...
 
-class Publisher(Destroyable):
-    def __init__(self, arg0: Node, arg1: object, arg2: str, arg3: rmw_qos_profile_t | None) -> None: ...
+class Publisher(Destroyable, Generic[MsgT]):
+    def __init__(self, node: Node, msg_type: type[MsgT], topic: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -176,7 +204,7 @@ class Publisher(Destroyable):
     def get_topic_name(self) -> str:
         """Retrieve the topic name from a Publisher."""
 
-    def publish(self, arg: object, /) -> None:
+    def publish(self, msg: MsgT, /) -> None:
         """Publish a message"""
 
     def publish_raw(self, arg: bytes, /) -> None:
@@ -185,8 +213,8 @@ class Publisher(Destroyable):
     def wait_for_all_acked(self, arg: rcl_duration_t, /) -> bool:
         """Wait until all published message data is acknowledged"""
 
-class Service(Destroyable):
-    def __init__(self, arg0: Node, arg1: object, arg2: str, arg3: rmw_qos_profile_t | None) -> None: ...
+class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
+    def __init__(self, node: Node, pysrv_type: type[Srv[SrvRequestT, SrvResponseT]], name: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -200,10 +228,10 @@ class Service(Destroyable):
     def qos(self) -> dict:
         """Get the qos profile of the service"""
 
-    def service_send_response(self, arg0: object, arg1: rmw_request_id_t, /) -> None:
+    def service_send_response(self, pyresponse: SrvResponseT, header: rmw_request_id_t, /) -> None:
         """Send a response"""
 
-    def service_take_request(self, arg: object, /) -> tuple:
+    def service_take_request(self, pyrequest_type: type[SrvRequestT], /) -> tuple[SrvRequestT, rmw_service_info_t] | tuple[None, None]:
         """Take a request from a given service"""
 
     def configure_introspection(self, arg0: Clock, arg1: rmw_qos_profile_t | None, arg2: service_introspection.ServiceIntrospectionState) -> None:
@@ -243,32 +271,32 @@ class rmw_request_id_t:
 def rclpy_qos_check_compatible(arg0: rmw_qos_profile_t, arg1: rmw_qos_profile_t, /) -> QoSCheckCompatibleResult:
     """Check if two QoS profiles are compatible."""
 
-class ActionClient(Destroyable):
-    def __init__(self, node: Node, action_type: object, action_name: str, goal_service_qos_profile: rmw_qos_profile_t, result_service_qos_profile: rmw_qos_profile_t, cancel_service_qos_profile: rmw_qos_profile_t, feedback_sub_qos_profile: rmw_qos_profile_t, status_sub_qos_profile: rmw_qos_profile_t, enable_feedback_msg_optimization: bool = False) -> None: ...
+class ActionClient(Destroyable, Generic[GoalT, ResultT, FeedbackT, ImplT]):
+    def __init__(self, node: Node, action_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]], action_name: str, goal_service_qos_profile: rmw_qos_profile_t, result_service_qos_profile: rmw_qos_profile_t, cancel_service_qos_profile: rmw_qos_profile_t, feedback_sub_qos_profile: rmw_qos_profile_t, status_sub_qos_profile: rmw_qos_profile_t, enable_feedback_msg_optimization: bool = False) -> None: ...
 
     @property
     def pointer(self) -> int:
         """Get the address of the entity as an integer"""
 
-    def take_goal_response(self, arg: object, /) -> tuple:
+    def take_goal_response(self, pymsg_type: type[SendGoalServiceResponse], /) -> tuple[int, SendGoalServiceResponse] | tuple[None, None]:
         """Take an action goal response."""
 
-    def send_result_request(self, arg: object, /) -> int:
+    def send_result_request(self, pyrequest: GetResultServiceRequest, /) -> int:
         """Send an action result request."""
 
-    def take_cancel_response(self, arg: object, /) -> tuple:
+    def take_cancel_response(self, pymsg_type: type[CancelGoal_Response], /) -> tuple[int, CancelGoal_Response] | tuple[None, None]:
         """Take an action cancel response."""
 
-    def take_feedback(self, arg: object, /) -> object:
+    def take_feedback(self, pymsg_type: type[FeedbackMessage[FeedbackT]], /) -> FeedbackMessage[FeedbackT] | None:
         """Take a feedback message from a given action client."""
 
-    def send_cancel_request(self, arg: object, /) -> int:
+    def send_cancel_request(self, pyrequest: CancelGoal_Request, /) -> int:
         """Send an action cancel request."""
 
-    def send_goal_request(self, arg: object, /) -> int:
+    def send_goal_request(self, pyrequest: SendGoalServiceRequest[GoalT], /) -> int:
         """Send an action goal request."""
 
-    def take_result_response(self, arg: object, /) -> tuple:
+    def take_result_response(self, pymsg_type: type[GetResultServiceResponse[ResultT]], /) -> tuple[int, GetResultServiceResponse[ResultT]] | tuple[None, None]:
         """Take an action result response."""
 
     def get_num_entities(self) -> tuple:
@@ -283,7 +311,7 @@ class ActionClient(Destroyable):
     def is_ready(self, arg: WaitSet, /) -> tuple:
         """Check if an action entity has any ready wait set entities."""
 
-    def take_status(self, arg: object, /) -> object:
+    def take_status(self, pymsg_type: type[GoalStatusArray], /) -> GoalStatusArray | None:
         """Take an action status response."""
 
     def configure_introspection(self, arg0: Clock, arg1: rmw_qos_profile_t | None, arg2: service_introspection.ServiceIntrospectionState) -> None:
@@ -311,32 +339,32 @@ class ActionGoalHandle(Destroyable):
     def is_active(self) -> bool:
         """Check if a goal is active."""
 
-class ActionServer(Destroyable):
-    def __init__(self, arg0: Node, arg1: Clock, arg2: object, arg3: str, arg4: rmw_qos_profile_t, arg5: rmw_qos_profile_t, arg6: rmw_qos_profile_t, arg7: rmw_qos_profile_t, arg8: rmw_qos_profile_t, arg9: float, /) -> None: ...
+class ActionServer(Destroyable, Generic[GoalT, ResultT, FeedbackT, ImplT]):
+    def __init__(self, node: Node, rclpy_clock: Clock, pyaction_type: type[Action[GoalT, ResultT, FeedbackT, ImplT]], action_name: str, goal_service_qos: rmw_qos_profile_t, result_service_qos: rmw_qos_profile_t, cancel_service_qos: rmw_qos_profile_t, feedback_topic_qos: rmw_qos_profile_t, status_topic_qos: rmw_qos_profile_t, result_timeout: float, /) -> None: ...
 
     @property
     def pointer(self) -> int:
         """Get the address of the entity as an integer"""
 
-    def take_goal_request(self, arg: object, /) -> tuple:
+    def take_goal_request(self, pymsg_type: type[SendGoalServiceRequest[GoalT]], /) -> tuple[rmw_request_id_t, SendGoalServiceRequest[GoalT]] | tuple[None, None]:
         """Take an action goal request."""
 
-    def send_goal_response(self, arg0: rmw_request_id_t, arg1: object, /) -> None:
+    def send_goal_response(self, header: rmw_request_id_t, pyresponse: SendGoalServiceResponse, /) -> None:
         """Send an action goal response."""
 
-    def send_result_response(self, arg0: rmw_request_id_t, arg1: object, /) -> None:
+    def send_result_response(self, header: rmw_request_id_t, pyresponse: GetResultServiceResponse[ResultT], /) -> None:
         """Send an action result response."""
 
-    def take_cancel_request(self, arg: object, /) -> tuple:
+    def take_cancel_request(self, pymsg_type: type[CancelGoal_Request], /) -> tuple[rmw_request_id_t, CancelGoal_Request] | tuple[None, None]:
         """Take an action cancel request."""
 
-    def take_result_request(self, arg: object, /) -> tuple:
+    def take_result_request(self, pymsg_type: type[GetResultServiceRequest], /) -> tuple[rmw_request_id_t, GetResultServiceRequest] | tuple[None, None]:
         """Take an action result request."""
 
-    def send_cancel_response(self, arg0: rmw_request_id_t, arg1: object, /) -> None:
+    def send_cancel_response(self, header: rmw_request_id_t, pyresponse: CancelGoal_Response, /) -> None:
         """Send an action cancel response."""
 
-    def publish_feedback(self, arg: object, /) -> None:
+    def publish_feedback(self, pymsg: FeedbackT, /) -> None:
         """Publish a feedback message from a given action server."""
 
     def publish_status(self) -> None:
@@ -345,13 +373,13 @@ class ActionServer(Destroyable):
     def notify_goal_done(self) -> None:
         """Notify goal is done."""
 
-    def goal_exists(self, arg: object, /) -> bool:
+    def goal_exists(self, pygoal_info: GoalInfo, /) -> bool:
         """Check is a goal exists in the server."""
 
-    def process_cancel_request(self, arg0: object, arg1: object, /) -> object:
+    def process_cancel_request(self, pycancel_request: CancelGoal_Request, pycancel_response_type: type[CancelGoal_Response], /) -> CancelGoal_Response:
         """Process a cancel request"""
 
-    def expire_goals(self, arg: int, /) -> tuple:
+    def expire_goals(self, max_num_goals: int, /) -> tuple[GoalInfo, ...]:
         """Expired goals."""
 
     def get_num_entities(self) -> tuple:
@@ -422,14 +450,14 @@ class Timer(Destroyable):
 
     def clear_on_reset_callback(self) -> None: ...
 
-class Subscription(Destroyable):
-    def __init__(self, node: Node, msg_type: object, topic: str, qos_profile: rmw_qos_profile_t | None, content_filter_options: object | None = None, acceptable_buffer_backends: str | None = None) -> None: ...
+class Subscription(Destroyable, Generic[MsgT]):
+    def __init__(self, node: Node, msg_type: type[MsgT], topic: str, qos_profile: rmw_qos_profile_t | None, content_filter_options: ContentFilterOptions | None = None, acceptable_buffer_backends: str | None = None) -> None: ...
 
     @property
     def pointer(self) -> int:
         """Get the address of the entity as an integer"""
 
-    def take_message(self, arg0: object, arg1: bool, /) -> object:
+    def take_message(self, pymsg_type: type[MsgT], raw: bool, /) -> tuple[MsgT | bytes, MessageInfo] | None:
         """Take a message and its metadata from a subscription"""
 
     def get_logger_name(self) -> str:
@@ -458,7 +486,7 @@ class Subscription(Destroyable):
         Set the filter expression and expression parameters for the subscription.
         """
 
-    def get_content_filter(self) -> object:
+    def get_content_filter(self) -> ContentFilterOptions:
         """
         Get the filter expression and expression parameters for the subscription.
         """
@@ -683,18 +711,18 @@ class Node(Destroyable):
     def get_parameters(self, arg: object, /) -> dict:
         """Get a list of parameters for the current node"""
 
-class EventHandle(Destroyable):
+class EventHandle(Destroyable, Generic[T]):
     @overload
-    def __init__(self, arg0: Subscription, arg1: rcl_subscription_event_type_t, /) -> None: ...
+    def __init__(self, subscription: Subscription[Any], event_type: rcl_subscription_event_type_t, /) -> None: ...
 
     @overload
-    def __init__(self, arg0: Publisher, arg1: rcl_publisher_event_type_t, /) -> None: ...
+    def __init__(self, publisher: Publisher[Any], event_type: rcl_publisher_event_type_t, /) -> None: ...
 
     @property
     def pointer(self) -> int:
         """Get the address of the entity as an integer"""
 
-    def take_event(self) -> object:
+    def take_event(self) -> T | None:
         """Get pending data from a ready event"""
 
 class rcl_subscription_event_type_t(enum.IntEnum):

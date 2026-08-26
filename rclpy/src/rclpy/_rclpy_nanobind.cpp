@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <nanobind/nanobind.h>
+#include <nanobind/typing.h>
 
 #include <rcl/domain_id.h>
 #include <rcl/service_introspection.h>
@@ -59,6 +60,18 @@ namespace nb = nanobind;
 
 NB_MODULE(_rclpy_nanobind, m) {
   m.doc() = "ROS 2 Python client library.";
+
+  // rclpy imports this extension as "rclpy._rclpy_nanobind", but the stub
+  // generator loads it as the top-level module "_rclpy_nanobind". Register the
+  // canonical name too, so that importing rclpy afterwards reuses this already
+  // initialized module instead of loading the extension a second time.
+  nb::module_::import_("sys").attr("modules")["rclpy._rclpy_nanobind"] = m;
+
+  // Type variable for the generic classes in the generated stubs.
+  // The other type variables from rclpy.type_support that nb::sig()
+  // strings reference are imported into the stub by stubgen_pattern.pat.
+  // ``T`` has no equivalent there, so it is declared as a module attribute.
+  m.attr("T") = nb::type_var("T");
 
   rclpy::define_destroyable(m);
 
