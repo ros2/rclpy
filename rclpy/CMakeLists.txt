@@ -2,20 +2,13 @@ cmake_minimum_required(VERSION 3.20)
 
 project(rclpy)
 
-# Default to C++17
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
-# Default to C11
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 11)
-endif()
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra)
 endif()
 
 find_package(ament_cmake REQUIRED)
+# Provides the ament_cmake_ros_core::ament_ros_cxx_standard target (C++20)
+find_package(ament_cmake_ros_core REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rcl REQUIRED)
@@ -125,6 +118,7 @@ target_include_directories(_rclpy_pybind11 PRIVATE
   src/rclpy/
 )
 target_link_libraries(_rclpy_pybind11 PRIVATE
+  ament_cmake_ros_core::ament_ros_cxx_standard
   lifecycle_msgs::lifecycle_msgs__rosidl_generator_c
   lifecycle_msgs::lifecycle_msgs__rosidl_typesupport_c
   rcl::rcl
@@ -183,7 +177,9 @@ if(BUILD_TESTING)
   ament_add_gtest(test_python_allocator
     test/test_python_allocator.cpp)
   target_include_directories(test_python_allocator PRIVATE src/rclpy)
-  target_link_libraries(test_python_allocator pybind11::embed)
+  target_link_libraries(test_python_allocator
+    ament_cmake_ros_core::ament_ros_cxx_standard
+    pybind11::embed)
 
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
@@ -229,6 +225,7 @@ if(BUILD_TESTING)
       test/test_timer.py
       test/test_topic_or_service_is_hidden.py
       test/test_topic_endpoint_info.py
+      test/test_type_description_service.py
       test/test_type_support.py
       test/test_type_hash.py
       test/test_utilities.py

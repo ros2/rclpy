@@ -134,6 +134,30 @@ Node::get_count_services(const char * service_name)
   return count;
 }
 
+size_t
+Node::get_count_action_clients(const char * action_name)
+{
+  size_t count = 0;
+  rcl_ret_t ret = rcl_action_count_clients(rcl_node_.get(), action_name, &count);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_action_count_clients");
+  }
+
+  return count;
+}
+
+size_t
+Node::get_count_action_servers(const char * action_name)
+{
+  size_t count = 0;
+  rcl_ret_t ret = rcl_action_count_servers(rcl_node_.get(), action_name, &count);
+  if (RCL_RET_OK != ret) {
+    throw RCLError("Error in rcl_action_count_servers");
+  }
+
+  return count;
+}
+
 py::list
 Node::get_names_impl(bool get_enclaves)
 {
@@ -605,6 +629,12 @@ define_node(py::object module)
   .def(
     "get_count_services", &Node::get_count_services,
     "Returns the count of all the servers known for that service in the entire ROS graph.")
+  .def(
+    "get_count_action_clients", &Node::get_count_action_clients,
+    "Returns the count of all the action clients known for that action in the entire ROS graph.")
+  .def(
+    "get_count_action_servers", &Node::get_count_action_servers,
+    "Returns the count of all the action servers known for that action in the entire ROS graph.")
   .def(
     "get_node_names_and_namespaces", &Node::get_node_names_and_namespaces,
     "Get the list of nodes discovered by the provided node")

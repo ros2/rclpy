@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+11.0.2 (2026-07-02)
+-------------------
+* Fix async type bugs (`#1679 <https://github.com/ros2/rclpy/issues/1679>`_)
+* Added tolerance based on clock resolution to prevent test failure on windows (`#1660 <https://github.com/ros2/rclpy/issues/1660>`_)
+* Contributors: Michael Carlstrom, Nadav Elkabets
+
 11.0.1 (2026-05-22)
 -------------------
 * add publisher/subscription_event_type_is_supported(). (`#1647 <https://github.com/ros2/rclpy/issues/1647>`_)
