@@ -801,6 +801,7 @@ class _TopicEndpointInfoDict(TypedDict):
     endpoint_type: int
     endpoint_gid: list[int]
     qos_profile: _rmw_qos_profile_dict
+    buffer_backend_metadata: dict[str, str]
 
 
 class _ServiceEndpointInfoDict(TypedDict):
