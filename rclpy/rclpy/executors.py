@@ -572,7 +572,7 @@ class Executor(ContextManager['Executor']):
                     msg_tuple = msg_info
 
                 async def _execute() -> None:
-                    await await_or_execute(sub.callback, *msg_tuple)
+                    await await_or_execute(sub.callback, *msg_tuple)  # type: ignore [arg-type]
 
                 return _execute
         except InvalidHandle:

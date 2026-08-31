@@ -12,12 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
+from collections.abc import Generator
 from enum import Enum
 import inspect
 import sys
 import threading
-from typing import (Any, Callable, cast, Coroutine, Dict, Generator, Generic, List,
-                    Optional, overload, Tuple, TYPE_CHECKING, TypeVar, Union)
+from typing import Any
+from typing import Coroutine
+from typing import Generic
+from typing import Optional
+from typing import overload
+from typing import TYPE_CHECKING
+from typing import TypeVar
+from typing import Union
+
 import warnings
 import weakref
 
@@ -51,7 +60,7 @@ class Future(Generic[T]):
         self._exception: Optional[Exception] = None
         self._exception_fetched = False
         # callbacks or tasks to be scheduled after this task completes
-        self._callbacks: List[Union[Callable[['Future[T]'], None], 'Task[Any]']] = []
+        self._callbacks: list[Union[Callable[['Future[T]'], None], 'Task[Any]']] = []
         # Lock for threadsafety
         self._lock = threading.Lock()
         # An executor to use when scheduling done callbacks
@@ -268,42 +277,41 @@ class Task(Future[T]):
     @overload
     def __init__(self,
                  handler: Callable[..., Coroutine[Any, Any, T]],
-                 args: Optional[Tuple[Any, ...]] = None,
-                 kwargs: Optional[Dict[str, Any]] = None,
+                 args: Optional[tuple[Any, ...]] = None,
+                 kwargs: Optional[dict[str, Any]] = None,
                  executor: Optional['Executor'] = None) -> None: ...
 
     @overload
     def __init__(self,
                  handler: Callable[..., T],
-                 args: Optional[Tuple[Any, ...]] = None,
-                 kwargs: Optional[Dict[str, Any]] = None,
+                 args: Optional[tuple[Any, ...]] = None,
+                 kwargs: Optional[dict[str, Any]] = None,
                  executor: Optional['Executor'] = None) -> None: ...
 
     def __init__(self,
                  handler: Callable[..., Any],
-                 args: Optional[Tuple[Any, ...]] = None,
-                 kwargs: Optional[Dict[str, Any]] = None,
+                 args: Optional[tuple[Any, ...]] = None,
+                 kwargs: Optional[dict[str, Any]] = None,
                  executor: Optional['Executor'] = None) -> None:
         super().__init__(executor=executor)
         # Arguments passed into the function
         if args is None:
             args = ()
-        self._args: Optional[Tuple[Any, ...]] = args
+        self._args: Optional[tuple[Any, ...]] = args
         if kwargs is None:
             kwargs = {}
-        self._kwargs: Optional[Dict[str, Any]] = kwargs
+        self._kwargs: Optional[dict[str, Any]] = kwargs
 
         # _handler is either a normal function or a coroutine
         if inspect.iscoroutinefunction(handler):
             self._handler: Union[
                 Coroutine[Any, Any, T],
-                Callable[[], T],
+                Callable[..., T],
                 None
-             ] = cast(Coroutine[Any, Any, T], handler(*args, **kwargs))
+             ] = handler(*args, **kwargs)
             self._args = None
             self._kwargs = None
         else:
-            handler = cast(Callable[[], T], handler)
             self._handler = handler
         # True while the task is being executed
         self._executing = False
@@ -336,6 +344,7 @@ class Task(Future[T]):
                 # Execute a normal function
                 try:
                     assert self._handler is not None and callable(self._handler)
+                    assert self._args is not None and self._kwargs is not None
                     self.set_result(self._handler(*self._args, **self._kwargs))
                 except Exception as e:
                     self.set_exception(e)

@@ -618,7 +618,8 @@ class Subscription(Destroyable, Generic[MsgT]):
 
     def __init__(self, node: Node, pymsg_type: type[MsgT], topic: str,
                  pyqos_profile: rmw_qos_profile_t,
-                 content_filter_options: Optional[ContentFilterOptions] = None) -> None: ...
+                 content_filter_options: Optional[ContentFilterOptions] = None,
+                 acceptable_buffer_backends: str | None = None) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -1099,6 +1100,13 @@ class rmw_incompatible_type_status_t:
 
     @property
     def total_count_change(self) -> int: ...
+
+
+def publisher_event_type_is_supported(event_type: rcl_publisher_event_type_t) -> bool:
+    """Check if a publisher event type is supported by the active RMW implementation."""
+
+def subscription_event_type_is_supported(event_type: rcl_subscription_event_type_t) -> bool:
+    """Check if a subscription event type is supported by the active RMW implementation."""
 
 
 def rclpy_get_rmw_implementation_identifier() -> str:
