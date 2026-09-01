@@ -2,6 +2,13 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.1.12 (2026-09-01)
+--------------------
+* Fix incorrect parameter names in docstrings (`#1685 <https://github.com/ros2/rclpy/issues/1685>`_) (`#1693 <https://github.com/ros2/rclpy/issues/1693>`_)
+* shutdown ThreadPoolExecutor in MultiThreadedExecutor. (backport `#1309 <https://github.com/ros2/rclpy/issues/1309>`_) (`#1670 <https://github.com/ros2/rclpy/issues/1670>`_)
+* Fix incorrect parameter names in docstrings (`#1683 <https://github.com/ros2/rclpy/issues/1683>`_) (`#1688 <https://github.com/ros2/rclpy/issues/1688>`_)
+* Contributors: mergify[bot]
+
 7.1.11 (2026-03-24)
 --------------------
 * EventsExecutor: Handle async callbacks for services and subscriptions (backport `#1478 <https://github.com/ros2/rclpy/issues/1478>`_) (`#1613 <https://github.com/ros2/rclpy/issues/1613>`_)
