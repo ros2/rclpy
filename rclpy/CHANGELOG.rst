@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.22 (2026-09-01)
+-------------------
+* Bugfix: executor doesn't propagate exception from task that awaited a future (backport `#1643 <https://github.com/ros2/rclpy/issues/1643>`_) (`#1653 <https://github.com/ros2/rclpy/issues/1653>`_)
+* Fix incorrect parameter names in docstrings (backport `#1685 <https://github.com/ros2/rclpy/issues/1685>`_) (`#1695 <https://github.com/ros2/rclpy/issues/1695>`_)
+* Fix incorrect parameter names in docstrings (backport `#1683 <https://github.com/ros2/rclpy/issues/1683>`_) (`#1689 <https://github.com/ros2/rclpy/issues/1689>`_)
+* Correct typos (backport `#1619 <https://github.com/ros2/rclpy/issues/1619>`_) (`#1623 <https://github.com/ros2/rclpy/issues/1623>`_)
+* Contributors: mergify[bot]
+
 3.3.21 (2026-03-09)
 -------------------
 * Fix issues with resuming async tasks awaiting a future (backport `#1469 <https://github.com/ros2/rclpy/issues/1469>`_) (`#1582 <https://github.com/ros2/rclpy/issues/1582>`_)
