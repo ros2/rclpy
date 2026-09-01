@@ -2,6 +2,14 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.7 (2026-09-01)
+------------------
+* Handle exceptions in lifecycle transition callbacks (`#1696 <https://github.com/ros2/rclpy/issues/1696>`_) (`#1699 <https://github.com/ros2/rclpy/issues/1699>`_)
+* Bugfix: executor doesn't propagate exception from task that awaited a future (`#1643 <https://github.com/ros2/rclpy/issues/1643>`_) (`#1651 <https://github.com/ros2/rclpy/issues/1651>`_)
+* Fix incorrect parameter names in docstrings (`#1685 <https://github.com/ros2/rclpy/issues/1685>`_) (`#1692 <https://github.com/ros2/rclpy/issues/1692>`_)
+* Fix incorrect parameter names in docstrings (`#1683 <https://github.com/ros2/rclpy/issues/1683>`_) (`#1687 <https://github.com/ros2/rclpy/issues/1687>`_)
+* Contributors: mergify[bot]
+
 9.1.6 (2026-07-02)
 ------------------
 * Fix incorrect action client/server callback type hints (backport `#1616 <https://github.com/ros2/rclpy/issues/1616>`_) (`#1655 <https://github.com/ros2/rclpy/issues/1655>`_)
