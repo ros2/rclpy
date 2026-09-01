@@ -474,6 +474,40 @@ class TestParameter(unittest.TestCase):
                 os.unlink(f.name)
         self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
 
+    def test_parameter_dict_from_yaml_file_preserves_exponent_doubles(self) -> None:
+        yaml_string = """
+            /parameter_blackboard:
+                ros__parameters:
+                    a_small: 0.00001
+                    b_sci: 5e-06
+                    c_large: 1.0e+20
+                    d_normal: 3.14
+                    e_arr: [1.0e-5, 2.0e-5]
+            """
+        expected_parameter_dict = {
+            'a_small': Parameter(
+                'a_small', Parameter.Type.DOUBLE, 0.00001).to_parameter_msg(),
+            'b_sci': Parameter(
+                'b_sci', Parameter.Type.DOUBLE, 5e-06).to_parameter_msg(),
+            'c_large': Parameter(
+                'c_large', Parameter.Type.DOUBLE, 1.0e+20).to_parameter_msg(),
+            'd_normal': Parameter(
+                'd_normal', Parameter.Type.DOUBLE, 3.14).to_parameter_msg(),
+            'e_arr': Parameter(
+                'e_arr', Parameter.Type.DOUBLE_ARRAY, [1.0e-5, 2.0e-5]).to_parameter_msg(),
+        }
+
+        try:
+            with NamedTemporaryFile(mode='w', delete=False) as f:
+                f.write(yaml_string)
+                f.flush()
+                f.close()
+                parameter_dict = parameter_dict_from_yaml_file(f.name, False)
+                assert parameter_dict == expected_parameter_dict
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
+
 
 if __name__ == '__main__':
     unittest.main()

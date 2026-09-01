@@ -16,6 +16,7 @@ from __future__ import annotations
 import array
 from collections.abc import Sequence
 from enum import IntEnum
+import re
 from typing import Any
 from typing import cast
 from typing import Dict
@@ -34,6 +35,25 @@ from rcl_interfaces.msg import ParameterValue
 import yaml
 
 PARAMETER_SEPARATOR_STRING: Final = '.'
+
+
+class _ParameterFileLoader(yaml.SafeLoader):
+    """YAML loader for ROS parameter files."""
+
+
+_ParameterFileLoader.add_implicit_resolver(
+    'tag:yaml.org,2002:float',
+    re.compile(
+        r'''^(?:[-+]?(?:[0-9][0-9_]*)\.[0-9_]*(?:[eE][-+]?[0-9]+)?
+             |\.[0-9][0-9_]*(?:[eE][-+]?[0-9]+)?
+             |[-+]?(?:[0-9][0-9_]*)(?:[eE][-+]?[0-9]+)
+             |[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*
+             |[-+]?\.(?:inf|Inf|INF)
+             |\.(?:nan|NaN|NAN))$''',
+        re.X,
+    ),
+    list('-+0123456789.'),
+)
 
 AllowableParameterValue = Union[None, bool, int, float, str,
                                 Sequence[bytes],
@@ -308,6 +328,44 @@ def get_parameter_value(string_value: str) -> ParameterValue:
     return value
 
 
+def _parameter_value_from_python_value(python_value: Any) -> ParameterValue:
+    """Build a ParameterValue from an already-parsed Python value."""
+    value = ParameterValue()
+
+    if isinstance(python_value, bool):
+        value.type = ParameterType.PARAMETER_BOOL
+        value.bool_value = python_value
+    elif isinstance(python_value, int):
+        value.type = ParameterType.PARAMETER_INTEGER
+        value.integer_value = python_value
+    elif isinstance(python_value, float):
+        value.type = ParameterType.PARAMETER_DOUBLE
+        value.double_value = python_value
+    elif isinstance(python_value, str):
+        value.type = ParameterType.PARAMETER_STRING
+        value.string_value = python_value
+    elif isinstance(python_value, (list, tuple, array.array)):
+        if all((isinstance(v, bool) for v in python_value)):
+            value.type = ParameterType.PARAMETER_BOOL_ARRAY
+            value.bool_array_value = python_value
+        elif all((isinstance(v, int) for v in python_value)):
+            value.type = ParameterType.PARAMETER_INTEGER_ARRAY
+            value.integer_array_value = python_value
+        elif all((isinstance(v, float) for v in python_value)):
+            value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
+            value.double_array_value = python_value
+        elif all((isinstance(v, str) for v in python_value)):
+            value.type = ParameterType.PARAMETER_STRING_ARRAY
+            value.string_array_value = python_value
+        else:
+            value.type = ParameterType.PARAMETER_STRING
+            value.string_value = str(python_value)
+    else:
+        value.type = ParameterType.PARAMETER_STRING
+        value.string_value = str(python_value)
+    return value
+
+
 def parameter_value_to_python(parameter_value: ParameterValue) -> AllowableParameterValue:
     """
     Get the value for the Python builtin type from a rcl_interfaces/msg/ParameterValue object.
@@ -363,7 +421,7 @@ def parameter_dict_from_yaml_file(
     :return: A dict of Parameter messages keyed by the parameter names
     """
     with open(parameter_file, 'r') as f:
-        param_file = yaml.safe_load(f)
+        param_file = yaml.load(f, Loader=_ParameterFileLoader)
         param_dict = {}
 
         # check and add if wildcard is available in 1st keys
@@ -562,6 +620,6 @@ def _unpack_parameter_dict(namespace: str,
         else:
             parameter = ParameterMsg()
             parameter.name = full_param_name
-            parameter.value = get_parameter_value(str(param_value))
+            parameter.value = _parameter_value_from_python_value(param_value)
             parameters[full_param_name] = parameter
     return parameters
