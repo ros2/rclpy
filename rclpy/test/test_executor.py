@@ -17,6 +17,7 @@ import os
 import threading
 import time
 from typing import Generator
+from typing import List
 from typing import Optional
 from typing import Protocol
 from typing import Set
@@ -24,8 +25,10 @@ import unittest
 import warnings
 
 import rclpy
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.context import Context
+from rclpy.executors import _WorkTracker
 from rclpy.executors import Executor
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
@@ -80,10 +83,9 @@ class TestExecutor(unittest.TestCase):
                 finally:
                     executor.shutdown()
 
-    @unittest.skip('Flaky on CI - see issue #1648')
     def test_executor_immediate_shutdown(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        for cls in [SingleThreadedExecutor, EventsExecutor]:
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 try:
@@ -767,7 +769,6 @@ class TestExecutor(unittest.TestCase):
                     self.node.destroy_timer(tmr)
 
     def test_shutdown_executor_from_callback(self) -> None:
-        """https://github.com/ros2/rclpy/issues/944: allow for executor shutdown from callback."""
         self.assertIsNotNone(self.node.handle)
         timer_period = 0.1
         # TODO(bmartin427) This seems like an invalid test to me?  executor.shutdown() is
@@ -787,6 +788,251 @@ class TestExecutor(unittest.TestCase):
         t.start()
         self.assertTrue(shutdown_event.wait(120))
         self.node.destroy_timer(tmr)
+
+    def test_shutdown_timeout_then_retry(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        executor = SingleThreadedExecutor(context=self.context)
+
+        callback_started = threading.Event()
+        callback_should_finish = threading.Event()
+
+        def long_callback() -> None:
+            callback_started.set()
+            # Bound the wait so a broken test fails rather than hangs.
+            callback_should_finish.wait(timeout=10)
+
+        tmr = self.node.create_timer(0.1, long_callback)
+        executor.add_node(self.node)
+        spin_thread = threading.Thread(target=executor.spin, daemon=True)
+        spin_thread.start()
+
+        try:
+            # Wait for the callback to be running so the work_tracker count
+            # is guaranteed to be non-zero when shutdown's wait runs.
+            self.assertTrue(callback_started.wait(timeout=5))
+
+            # First shutdown: this is the one that flips _is_shutdown to
+            # True. Times out because the callback is still in flight.
+            self.assertFalse(executor.shutdown(timeout_sec=0.1))
+
+            # Second shutdown: _is_shutdown is already True. The callback
+            # is STILL in flight. The wait must run again (regardless of
+            # who initiated) and time out -- if it incorrectly skipped
+            # the wait, this would return True and race cleanup against
+            # the running callback.
+            self.assertFalse(executor.shutdown(timeout_sec=0.1))
+
+            # Release the callback.
+            callback_should_finish.set()
+
+            # Final shutdown: callbacks have drained (or will momentarily).
+            # The wait should now succeed and cleanup should complete.
+            self.assertTrue(executor.shutdown(timeout_sec=5))
+        finally:
+            # Guard rails in case an assertion above interrupts the flow.
+            callback_should_finish.set()
+            spin_thread.join(timeout=5)
+            self.node.destroy_timer(tmr)
+
+    def test_work_tracker_coroutine_closed_on_different_thread(self) -> None:
+        class YieldOnce:
+
+            def __await__(self) -> Generator[None, None, None]:
+                yield None
+                return None
+
+        wt = _WorkTracker()
+
+        async def callback_like() -> None:
+            with wt.track_callback():
+                await YieldOnce()
+
+        coro = callback_like()
+
+        # Start the coroutine on thread A: runs through track_callback's
+        # __enter__ (incrementing the count for thread A) and suspends
+        # at ``await YieldOnce()``.
+        def thread_a() -> None:
+            coro.send(None)
+
+        ta = threading.Thread(target=thread_a, name='WorkerA')
+        ta.start()
+        ta.join(timeout=5)
+        self.assertFalse(ta.is_alive())
+
+        # Close the coroutine from thread B (a different thread, mimicking
+        # the GC thread).  Pre-fix this raises KeyError because the
+        # __exit__ looked up _executing_thread_counts[current_thread]
+        # and current_thread is thread B, not the thread that entered.
+        errors: List[BaseException] = []
+
+        def thread_b() -> None:
+            try:
+                coro.close()
+            except BaseException as e:
+                errors.append(e)
+
+        tb = threading.Thread(target=thread_b, name='GCThread')
+        tb.start()
+        tb.join(timeout=5)
+        self.assertFalse(tb.is_alive())
+
+        self.assertFalse(errors, f'close() raised: {errors!r}')
+        self.assertFalse(
+            wt._executing_thread_counts,
+            f'work tracker not cleaned up: {wt._executing_thread_counts!r}')
+
+    def test_shutdown_from_multithreaded_executor_callback(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        executor = MultiThreadedExecutor(num_threads=2, context=self.context)
+
+        shutdown_returned = threading.Event()
+        shutdown_error: List[BaseException] = []
+
+        def timer_callback() -> None:
+            try:
+                # Default wait_for_threads=True is what triggers the bug.
+                executor.shutdown(timeout_sec=5)
+            except BaseException as e:
+                shutdown_error.append(e)
+            finally:
+                shutdown_returned.set()
+
+        tmr = self.node.create_timer(0.1, timer_callback)
+        executor.add_node(self.node)
+        spin_thread = threading.Thread(target=executor.spin, daemon=True)
+        spin_thread.start()
+
+        try:
+            self.assertTrue(
+                shutdown_returned.wait(timeout=15),
+                'shutdown() never returned from inside the callback')
+            self.assertFalse(
+                shutdown_error,
+                f'shutdown() raised: {shutdown_error!r}')
+        finally:
+            spin_thread.join(timeout=5)
+            self.node.destroy_timer(tmr)
+
+    def test_concurrent_shutdown_from_two_callbacks(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        executor = MultiThreadedExecutor(num_threads=2, context=self.context)
+
+        # Distinct callback groups so the two timers can be dispatched to
+        # separate worker threads concurrently. (The default callback
+        # group is MutuallyExclusive at the node level.)
+        cb_group_a = MutuallyExclusiveCallbackGroup()
+        cb_group_b = MutuallyExclusiveCallbackGroup()
+
+        # Use a barrier to make both callbacks reach shutdown() at the
+        # same time, so they are both inside _work_tracker.wait
+        # simultaneously -- the scenario the regression guards against.
+        barrier = threading.Barrier(2)
+        results: List[bool] = []
+        results_lock = threading.Lock()
+        all_done = threading.Event()
+
+        def shutdown_from_callback() -> None:
+            try:
+                barrier.wait(timeout=5)
+            except threading.BrokenBarrierError:
+                return
+            ok = executor.shutdown(timeout_sec=5, wait_for_threads=False)
+            with results_lock:
+                results.append(ok)
+                if len(results) == 2:
+                    all_done.set()
+
+        tmr_a = self.node.create_timer(
+            0.05, shutdown_from_callback, callback_group=cb_group_a)
+        tmr_b = self.node.create_timer(
+            0.05, shutdown_from_callback, callback_group=cb_group_b)
+
+        executor.add_node(self.node)
+        spin_thread = threading.Thread(target=executor.spin, daemon=True)
+        spin_thread.start()
+
+        try:
+            # Wait for both callbacks to finish their shutdown calls --
+            # don't gate on the spinner exiting, since the spinner can
+            # exit before either callback has appended its result.
+            self.assertTrue(
+                all_done.wait(timeout=15),
+                f'only {len(results)}/2 shutdowns completed -- '
+                'concurrent shutdown deadlocked')
+            spin_thread.join(timeout=5)
+            self.assertFalse(spin_thread.is_alive(), 'spin thread did not exit')
+            with results_lock:
+                self.assertTrue(
+                    all(results),
+                    f'shutdown() returned False (timed out): {results}')
+        finally:
+            barrier.abort()
+            spin_thread.join(timeout=5)
+            self.node.destroy_timer(tmr_a)
+            self.node.destroy_timer(tmr_b)
+
+    def test_work_tracker_waiter_leak_on_timeout(self) -> None:
+        wt = _WorkTracker()
+
+        worker_a_running = threading.Event()
+        worker_a_should_exit = threading.Event()
+        worker_b_running = threading.Event()
+
+        errors_a = []
+        wait_returned_a = []
+
+        def worker_a_thread():
+            try:
+                with wt.track_callback():
+                    worker_a_running.set()
+                    # Call wait with a short timeout. This times out because
+                    # Worker B is executing a callback and not waiting.
+                    res = wt.wait(timeout_sec=0.1)
+                    wait_returned_a.append(res)
+                    # Stay alive inside the callback context
+                    worker_a_should_exit.wait()
+            except Exception as e:
+                errors_a.append(e)
+
+        def worker_b_thread():
+            with wt.track_callback():
+                worker_b_running.set()
+                # Run until Worker A's wait times out
+                time.sleep(0.5)
+
+        tb = threading.Thread(target=worker_b_thread, name='WorkerB')
+        tb.start()
+
+        ta = threading.Thread(target=worker_a_thread, name='WorkerA')
+        ta.start()
+
+        self.assertTrue(worker_a_running.wait(timeout=2.0))
+        self.assertTrue(worker_b_running.wait(timeout=2.0))
+
+        # Wait for Worker B to finish
+        tb.join(timeout=2.0)
+
+        self.assertFalse(errors_a)
+        self.assertEqual(wait_returned_a, [False])
+
+        # MainThread calls wait(). Since Worker B finished, only Worker A is active.
+        # However, Worker A leaked into _waiting_threads from the timeout.
+        # MainThread's wait() will prematurely evaluate to True and exit instantly.
+        start_time = time.monotonic()
+        res_main = wt.wait(timeout_sec=0.2)
+        elapsed = time.monotonic() - start_time
+
+        try:
+            # Under the bug, res_main is True and elapsed is ~0.0s.
+            # In the corrected code, it correctly blocks/returns False after 0.2s.
+            self.assertFalse(
+                res_main,
+                'MainThread wait should have timed out because WorkerA is still running')
+            self.assertGreaterEqual(elapsed, 0.15)
+        finally:
+            worker_a_should_exit.set()
+            ta.join(timeout=2.0)
 
     def test_context_manager(self) -> None:
         self.assertIsNotNone(self.node.handle)
