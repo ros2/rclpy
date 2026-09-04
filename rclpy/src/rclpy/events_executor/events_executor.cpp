@@ -832,7 +832,7 @@ void EventsExecutor::IterateTask(py::handle task)
         // can use the logger from that, otherwise we'll have to leave it undefined.
         py::object logger = py::none();
         if (nodes_.size() == 1) {
-          logger = nodes_[0].attr("get_logger")();
+          logger = py::list(nodes_)[0].attr("get_logger")();
         }
         HandleCallbackExceptionWithLogger(cpp_ex, logger, "task");
         throw;

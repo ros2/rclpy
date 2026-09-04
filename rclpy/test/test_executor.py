@@ -489,8 +489,7 @@ class TestExecutor(unittest.TestCase):
     def test_coroutine_exception_after_await(self) -> None:
         """Exception in a coroutine after awaiting a future must propagate."""
         self.assertIsNotNone(self.node.handle)
-        # EventsExecutor excluded - segfaults on exception propagation (#1641)
-        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
@@ -517,8 +516,7 @@ class TestExecutor(unittest.TestCase):
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""
         self.assertIsNotNone(self.node.handle)
-        # EventsExecutor excluded - see #1641
-        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
@@ -548,8 +546,7 @@ class TestExecutor(unittest.TestCase):
     def test_await_already_completed_future(self) -> None:
         """Awaiting an already-completed future must resume and return its result."""
         self.assertIsNotNone(self.node.handle)
-        # EventsExecutor excluded - see #1641
-        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
