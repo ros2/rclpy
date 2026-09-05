@@ -235,7 +235,7 @@ class ServiceEndpointInfo:
         node_namespace: str = '',
         service_type: str = '',
         service_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
-        qos_profiles: Sequence[Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']] = [],
+        qos_profiles: list[QoSProfile] | list['_rclpy._rmw_qos_profile_dict'] = [],
         endpoint_gids: list[list[int]] = [],
         endpoint_type: Union[EndpointTypeEnum, int] = EndpointTypeEnum.INVALID,
         endpoint_count: int = 0
@@ -369,8 +369,8 @@ class ServiceEndpointInfo:
         return self._qos_profiles
 
     @qos_profiles.setter
-    def qos_profiles(self, value: list[Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']]) -> None:
-        assert isinstance(value, list)
+    def qos_profiles(self, value: Sequence[Union[QoSProfile,
+                                                 '_rclpy._rmw_qos_profile_dict']]) -> None:
         self._qos_profiles = [v if isinstance(v, QoSProfile) else QoSProfile(**v) for v in value]
 
     def __eq__(self, other: object) -> bool:

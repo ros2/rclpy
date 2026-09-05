@@ -38,9 +38,9 @@ TypeDescriptionService::TypeDescriptionService(Node & node)
   service_ = std::make_shared<Service>(node, srv_ptr);
 }
 
-Service TypeDescriptionService::get_impl()
+std::shared_ptr<Service> TypeDescriptionService::get_impl()
 {
-  return *service_;
+  return service_;
 }
 
 nb::object TypeDescriptionService::handle_request(
