@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
+using nb::literals::operator""_a;
 
 #include <rcutils/allocator.h>
 #include <rcutils/error_handling.h>
@@ -237,9 +239,9 @@ rclpy_logging_rosout_remove_sublogger(const char * logger_name, const char * sub
 namespace rclpy
 {
 void
-define_logging_api(py::module m)
+define_logging_api(nb::module_ m)
 {
-  py::enum_<RCUTILS_LOG_SEVERITY>(m, "RCUTILS_LOG_SEVERITY")
+  nb::enum_<RCUTILS_LOG_SEVERITY>(m, "RCUTILS_LOG_SEVERITY", nb::is_arithmetic())
   .value("RCUTILS_LOG_SEVERITY_UNSET", RCUTILS_LOG_SEVERITY_UNSET)
   .value("RCUTILS_LOG_SEVERITY_DEBUG", RCUTILS_LOG_SEVERITY_DEBUG)
   .value("RCUTILS_LOG_SEVERITY_INFO", RCUTILS_LOG_SEVERITY_INFO)
@@ -252,7 +254,7 @@ define_logging_api(py::module m)
   m.def("rclpy_logging_shutdown", &rclpy_logging_shutdown);
   m.def(
     "rclpy_logging_set_logger_level", &rclpy_logging_set_logger_level,
-    py::arg("name"), py::arg("level"), py::arg("detailed_error") = false);
+    "name"_a, "level"_a, "detailed_error"_a = false);
   m.def("rclpy_logging_get_logger_effective_level", &rclpy_logging_get_logger_effective_level);
   m.def("rclpy_logging_logger_is_enabled_for", &rclpy_logging_logger_is_enabled_for);
   m.def("rclpy_logging_rcutils_log", &rclpy_logging_rcutils_log);

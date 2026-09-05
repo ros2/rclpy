@@ -15,17 +15,17 @@
 #ifndef RCLPY__SERVICE_INFO_HPP_
 #define RCLPY__SERVICE_INFO_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
-/// Define a pybind11 wrapper for an rmw_service_info_t and rmw_request_id_t
+/// Define a nanobind wrapper for an rmw_service_info_t and rmw_request_id_t
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
-void define_service_info(py::object module);
+void define_service_info(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__SERVICE_INFO_HPP_

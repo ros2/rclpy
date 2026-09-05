@@ -15,7 +15,9 @@
 #ifndef RCLPY__WAIT_SET_HPP_
 #define RCLPY__WAIT_SET_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/wait.h>
 
@@ -31,7 +33,7 @@
 #include "subscription.hpp"
 #include "timer.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -149,7 +151,7 @@ public:
    * \param[in] entity_type String defining the entity ["subscription, client, service"]
    * \return List of wait set entities pointers ready for take
    */
-  py::list
+  nb::list
   get_ready_entities(const std::string & entity_type);
 
   /// Wait until timeout is reached or event happened
@@ -177,8 +179,8 @@ private:
   std::shared_ptr<rcl_wait_set_t> rcl_wait_set_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::WaitSet
-void define_waitset(py::object module);
+/// Define a nanobind wrapper for an rclpy::WaitSet
+void define_waitset(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__WAIT_SET_HPP_

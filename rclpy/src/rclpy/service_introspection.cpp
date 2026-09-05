@@ -19,13 +19,13 @@ namespace rclpy
 {
 
 void
-define_service_introspection(py::module module)
+define_service_introspection(nb::module_ module)
 {
-  py::module m2 = module.def_submodule(
+  nb::module_ m2 = module.def_submodule(
     "service_introspection",
     "utilities for introspecting services");
 
-  py::enum_<rcl_service_introspection_state_t>(m2, "ServiceIntrospectionState")
+  nb::enum_<rcl_service_introspection_state_t>(m2, "ServiceIntrospectionState", nb::is_arithmetic())
   .value("OFF", RCL_SERVICE_INTROSPECTION_OFF)
   .value("METADATA", RCL_SERVICE_INTROSPECTION_METADATA)
   .value("CONTENTS", RCL_SERVICE_INTROSPECTION_CONTENTS);

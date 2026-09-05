@@ -1,7 +1,11 @@
-from enum import IntEnum
+"""utilities for introspecting services"""
+
+import enum
 
 
-class ServiceIntrospectionState(IntEnum):
-    OFF = ...
-    METADATA = ...
-    CONTENTS = ...
+class ServiceIntrospectionState(enum.IntEnum):
+    OFF = 0
+
+    METADATA = 1
+
+    CONTENTS = 2

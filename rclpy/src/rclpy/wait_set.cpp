@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/types.h>
@@ -193,10 +195,10 @@ WaitSet::is_ready(const std::string & entity_type, size_t index)
 }
 
 template<typename EntityArray>
-py::list
+nb::list
 _get_ready_entities(const EntityArray ** entities, const size_t num_entities)
 {
-  py::list entity_list;
+  nb::list entity_list;
   for (size_t i = 0; i < num_entities; ++i) {
     auto address = reinterpret_cast<size_t>(entities[i]);
     if (address) {
@@ -206,7 +208,7 @@ _get_ready_entities(const EntityArray ** entities, const size_t num_entities)
   return entity_list;
 }
 
-py::list
+nb::list
 WaitSet::get_ready_entities(const std::string & entity_type)
 {
   if ("subscription" == entity_type) {
@@ -239,7 +241,7 @@ WaitSet::wait(int64_t timeout)
 
   // Could be a long wait, release the GIL
   {
-    py::gil_scoped_release gil_release;
+    nb::gil_scoped_release gil_release;
     ret = rcl_wait(rcl_wait_set_.get(), timeout);
   }
 
@@ -248,11 +250,11 @@ WaitSet::wait(int64_t timeout)
   }
 }
 
-void define_waitset(py::object module)
+void define_waitset(nb::object module)
 {
-  py::class_<WaitSet, Destroyable, std::shared_ptr<WaitSet>>(module, "WaitSet")
-  .def(py::init<size_t, size_t, size_t, size_t, size_t, size_t, Context &>())
-  .def_property_readonly(
+  nb::class_<WaitSet, Destroyable>(module, "WaitSet")
+  .def(nb::init<size_t, size_t, size_t, size_t, size_t, size_t, Context &>())
+  .def_prop_ro(
     "pointer", [](const WaitSet & waitset) {
       return reinterpret_cast<size_t>(waitset.rcl_ptr());
     },

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <rcl/time.h>
 
@@ -31,11 +31,11 @@ create_time_point(int64_t nanoseconds, int clock_type)
 }
 
 void
-define_time_point(py::object module)
+define_time_point(nb::object module)
 {
-  py::class_<rcl_time_point_t>(module, "rcl_time_point_t")
-  .def(py::init<>(&create_time_point))
-  .def_readonly("nanoseconds", &rcl_time_point_t::nanoseconds)
-  .def_readonly("clock_type", &rcl_time_point_t::clock_type);
+  nb::class_<rcl_time_point_t>(module, "rcl_time_point_t")
+  .def(nb::new_(&create_time_point))
+  .def_ro("nanoseconds", &rcl_time_point_t::nanoseconds)
+  .def_ro("clock_type", &rcl_time_point_t::clock_type);
 }
 }  // namespace rclpy

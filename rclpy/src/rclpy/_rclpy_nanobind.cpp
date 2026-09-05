@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/typing.h>
 
 #include <rcl/domain_id.h>
 #include <rcl/service_introspection.h>
@@ -55,34 +56,45 @@
 #include "utils.hpp"
 #include "wait_set.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
-PYBIND11_MODULE(_rclpy_pybind11, m) {
+NB_MODULE(_rclpy_nanobind, m) {
   m.doc() = "ROS 2 Python client library.";
+
+  // rclpy imports this extension as "rclpy._rclpy_nanobind", but the stub
+  // generator loads it as the top-level module "_rclpy_nanobind". Register the
+  // canonical name too, so that importing rclpy afterwards reuses this already
+  // initialized module instead of loading the extension a second time.
+  nb::module_::import_("sys").attr("modules")["rclpy._rclpy_nanobind"] = m;
+
+  // Type variable for the generic classes in the generated stubs.
+  // The other type variables from rclpy.type_support that nb::sig()
+  // strings reference are imported into the stub by stubgen_pattern.pat.
+  // ``T`` has no equivalent there, so it is declared as a module attribute.
+  m.attr("T") = nb::type_var("T");
 
   rclpy::define_destroyable(m);
 
-  py::enum_<rcl_clock_type_t>(m, "ClockType")
+  nb::enum_<rcl_clock_type_t>(m, "ClockType", nb::is_arithmetic())
   .value("UNINITIALIZED", RCL_CLOCK_UNINITIALIZED)
   .value("ROS_TIME", RCL_ROS_TIME)
   .value("SYSTEM_TIME", RCL_SYSTEM_TIME)
   .value("STEADY_TIME", RCL_STEADY_TIME);
 
-  py::enum_<rcl_action_goal_event_t>(m, "GoalEvent")
+  nb::enum_<rcl_action_goal_event_t>(m, "GoalEvent", nb::is_arithmetic())
   .value("EXECUTE", GOAL_EVENT_EXECUTE)
   .value("CANCEL_GOAL", GOAL_EVENT_CANCEL_GOAL)
   .value("SUCCEED", GOAL_EVENT_SUCCEED)
   .value("ABORT", GOAL_EVENT_ABORT)
   .value("CANCELED", GOAL_EVENT_CANCELED);
 
-  m.attr("RCL_DEFAULT_DOMAIN_ID") = py::int_(RCL_DEFAULT_DOMAIN_ID);
-  m.attr("RMW_DURATION_INFINITE") = py::int_(rmw_time_total_nsec(RMW_DURATION_INFINITE));
-  m.attr("RMW_QOS_DEADLINE_BEST_AVAILABLE") = py::int_(
-    rmw_time_total_nsec(RMW_QOS_DEADLINE_BEST_AVAILABLE));
-  m.attr("RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE") = py::int_(
-    rmw_time_total_nsec(RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE));
+  m.attr("RCL_DEFAULT_DOMAIN_ID") = RCL_DEFAULT_DOMAIN_ID;
+  m.attr("RMW_DURATION_INFINITE") = rmw_time_total_nsec(RMW_DURATION_INFINITE);
+  m.attr("RMW_QOS_DEADLINE_BEST_AVAILABLE") = rmw_time_total_nsec(RMW_QOS_DEADLINE_BEST_AVAILABLE);
+  m.attr("RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE") =
+    rmw_time_total_nsec(RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE);
 
-  py::enum_<rcl_clock_change_t>(m, "ClockChange")
+  nb::enum_<rcl_clock_change_t>(m, "ClockChange", nb::is_arithmetic())
   .value(
     "ROS_TIME_NO_CHANGE", RCL_ROS_TIME_NO_CHANGE,
     "ROS time is active and will continue to be active")
@@ -96,33 +108,33 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "SYSTEM_TIME_NO_CHANGE", RCL_SYSTEM_TIME_NO_CHANGE,
     "ROS time is inactive and the clock will keep reporting system time");
 
-  py::enum_<rmw_qos_compatibility_type_t>(m, "QoSCompatibility")
+  nb::enum_<rmw_qos_compatibility_type_t>(m, "QoSCompatibility", nb::is_arithmetic())
   .value("OK", RMW_QOS_COMPATIBILITY_OK)
   .value("WARNING", RMW_QOS_COMPATIBILITY_WARNING)
   .value("ERROR", RMW_QOS_COMPATIBILITY_ERROR);
 
-  py::class_<rclpy::QoSCheckCompatibleResult>(
+  nb::class_<rclpy::QoSCheckCompatibleResult>(
     m, "QoSCheckCompatibleResult",
     "Result type for checking QoS compatibility with result")
-  .def(py::init<>())
-  .def_readonly("compatibility", &rclpy::QoSCheckCompatibleResult::compatibility)
-  .def_readonly("reason", &rclpy::QoSCheckCompatibleResult::reason);
+  .def(nb::init<>())
+  .def_ro("compatibility", &rclpy::QoSCheckCompatibleResult::compatibility)
+  .def_ro("reason", &rclpy::QoSCheckCompatibleResult::reason);
 
-  py::register_exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
-  py::register_exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
-  auto rclerror = py::register_exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);
-  py::register_exception<rclpy::RCLInvalidROSArgsError>(
+  nb::exception<rclpy::RCUtilsError>(m, "RCUtilsError", PyExc_RuntimeError);
+  nb::exception<rclpy::RMWError>(m, "RMWError", PyExc_RuntimeError);
+  auto rclerror = nb::exception<rclpy::RCLError>(m, "RCLError", PyExc_RuntimeError);
+  nb::exception<rclpy::RCLInvalidROSArgsError>(
     m, "RCLInvalidROSArgsError", rclerror.ptr());
-  py::register_exception<rclpy::UnknownROSArgsError>(m, "UnknownROSArgsError", PyExc_RuntimeError);
-  py::register_exception<rclpy::NodeNameNonExistentError>(
+  nb::exception<rclpy::UnknownROSArgsError>(m, "UnknownROSArgsError", PyExc_RuntimeError);
+  nb::exception<rclpy::NodeNameNonExistentError>(
     m, "NodeNameNonExistentError", rclerror.ptr());
-  py::register_exception<rclpy::UnsupportedEventTypeError>(
+  nb::exception<rclpy::UnsupportedEventTypeError>(
     m, "UnsupportedEventTypeError", rclerror.ptr());
-  py::register_exception<rclpy::TimerCancelledError>(
+  nb::exception<rclpy::TimerCancelledError>(
     m, "TimerCancelledError", rclerror.ptr());
-  py::register_exception<rclpy::NotImplementedError>(
+  nb::exception<rclpy::NotImplementedError>(
     m, "NotImplementedError", PyExc_NotImplementedError);
-  py::register_exception<rclpy::InvalidHandle>(
+  nb::exception<rclpy::InvalidHandle>(
     m, "InvalidHandle", PyExc_RuntimeError);
 
   rclpy::define_service_introspection(m);

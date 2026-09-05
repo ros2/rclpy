@@ -15,13 +15,14 @@
 #ifndef RCLPY__NAMES_HPP_
 #define RCLPY__NAMES_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <string>
 
 #include "node.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -37,7 +38,7 @@ namespace rclpy
  * \return tuple of error message and invalid index if invalid, or
  * \return None if valid
  */
-py::object
+nb::object
 get_validation_error_for_topic_name(const char * topic_name);
 
 /// Validate a full topic name and return error message and index of invalidation.
@@ -51,7 +52,7 @@ get_validation_error_for_topic_name(const char * topic_name);
  * \return tuple of error message and invalid index if invalid, or
  * \return None if valid
  */
-py::object
+nb::object
 get_validation_error_for_full_topic_name(const char * topic_name);
 
 /// Validate a namespace and return error message and index of invalidation.
@@ -63,7 +64,7 @@ get_validation_error_for_full_topic_name(const char * topic_name);
  * \return tuple of error message and invalid index if invalid, or
  * \return None if valid
  */
-py::object
+nb::object
 get_validation_error_for_namespace(const char * namespace_);
 
 /// Validate a node name and return error message and index of invalidation.
@@ -75,7 +76,7 @@ get_validation_error_for_namespace(const char * namespace_);
  * \return tuple of error message and invalid index if invalid, or
  * \return None if valid
  */
-py::object
+nb::object
 get_validation_error_for_node_name(const char * node_name);
 
 /// Expand a topic name

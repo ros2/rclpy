@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
-#include <pybind11/stl.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/timer.h>
@@ -30,6 +32,8 @@
 #include "timer.hpp"
 #include "utils.hpp"
 #include "events_executor/rcl_support.hpp"
+
+using nb::literals::operator""_a;
 
 namespace rclpy
 {
@@ -102,10 +106,10 @@ void Timer::call_timer()
   }
 }
 
-py::object
+nb::object
 Timer::call_timer_with_info()
 {
-  py::dict timer_info;
+  nb::dict timer_info;
   rcl_timer_call_info_t call_info;
   rcl_ret_t ret = rcl_timer_call_with_info(rcl_timer_.get(), &call_info);
   if (ret != RCL_RET_OK) {
@@ -219,11 +223,11 @@ Timer::clear_on_reset_callback()
 }
 
 void
-define_timer(py::object module)
+define_timer(nb::object module)
 {
-  py::class_<Timer, Destroyable, std::shared_ptr<Timer>>(module, "Timer")
-  .def(py::init<Clock &, Context &, int64_t, bool>())
-  .def_property_readonly(
+  nb::class_<Timer, Destroyable>(module, "Timer")
+  .def(nb::init<Clock &, Context &, int64_t, bool>())
+  .def_prop_ro(
     "pointer", [](const Timer & timer) {
       return reinterpret_cast<size_t>(timer.rcl_ptr());
     },
@@ -258,7 +262,7 @@ define_timer(py::object module)
     "Check if a timer is canceled.")
   .def(
     "set_on_reset_callback", &Timer::set_on_reset_callback,
-    py::arg("callback"))
+    "callback"_a)
   .def("clear_on_reset_callback", &Timer::clear_on_reset_callback);
 }
 
