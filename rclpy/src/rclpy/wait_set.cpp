@@ -74,6 +74,7 @@ WaitSet::WaitSet(
 void
 WaitSet::destroy()
 {
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_wait_set_.reset();
   context_.destroy();
 }
@@ -81,6 +82,7 @@ WaitSet::destroy()
 void
 WaitSet::clear_entities()
 {
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_ret_t ret = rcl_wait_set_clear(rcl_wait_set_.get());
   if (ret != RCL_RET_OK) {
     throw RCLError("failed to clear wait set");
@@ -91,6 +93,7 @@ size_t
 WaitSet::add_service(const Service & service)
 {
   size_t index;
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_ret_t ret = rcl_wait_set_add_service(rcl_wait_set_.get(), service.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to add service to wait set");
@@ -102,6 +105,7 @@ size_t
 WaitSet::add_subscription(const Subscription & subscription)
 {
   size_t index;
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_ret_t ret = rcl_wait_set_add_subscription(
     rcl_wait_set_.get(), subscription.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
@@ -114,6 +118,7 @@ size_t
 WaitSet::add_timer(const Timer & timer)
 {
   size_t index;
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_ret_t ret = rcl_wait_set_add_timer(rcl_wait_set_.get(), timer.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to add client to wait set");
@@ -125,6 +130,7 @@ size_t
 WaitSet::add_guard_condition(const GuardCondition & gc)
 {
   size_t index;
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_ret_t ret = rcl_wait_set_add_guard_condition(rcl_wait_set_.get(), gc.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to add guard condition to wait set");
@@ -136,6 +142,7 @@ size_t
 WaitSet::add_client(const Client & client)
 {
   size_t index;
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_ret_t ret = rcl_wait_set_add_client(rcl_wait_set_.get(), client.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to add client to wait set");
@@ -147,6 +154,7 @@ size_t
 WaitSet::add_event(const EventHandle & event)
 {
   size_t index;
+  std::lock_guard<std::mutex> lock(lock_);
   rcl_ret_t ret = rcl_wait_set_add_event(rcl_wait_set_.get(), event.rcl_ptr(), &index);
   if (RCL_RET_OK != ret) {
     throw RCLError("failed to add event to wait set");
@@ -159,6 +167,7 @@ WaitSet::is_ready(const std::string & entity_type, size_t index)
 {
   const void ** entities = NULL;
   size_t num_entities = 0;
+  std::lock_guard<std::mutex> lock(lock_);
   if ("subscription" == entity_type) {
     entities = reinterpret_cast<const void **>(rcl_wait_set_->subscriptions);
     num_entities = rcl_wait_set_->size_of_subscriptions;
@@ -213,6 +222,7 @@ _get_ready_entities(const EntityArray ** entities, const size_t num_entities)
 py::list
 WaitSet::get_ready_entities(const std::string & entity_type)
 {
+  std::lock_guard<std::mutex> lock(lock_);
   if ("subscription" == entity_type) {
     return _get_ready_entities(
       rcl_wait_set_->subscriptions, rcl_wait_set_->size_of_subscriptions);

@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <string>
+#include <mutex>
 
 #include "client.hpp"
 #include "context.hpp"
@@ -38,6 +39,7 @@ namespace rclpy
 class WaitSet : public Destroyable, public std::enable_shared_from_this<WaitSet>
 {
 public:
+  std::mutex lock_;
   /// Initialize a wait set
   WaitSet();
 
