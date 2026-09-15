@@ -39,15 +39,23 @@ cmake_policy(SET CMP0094 NEW)
 set(Python3_FIND_UNVERSIONED_NAMES FIRST)
 
 # Find python before nanobind
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-
-# nanobind's CMake config requires the new-style FindPython module with the
-# Python::Module target defined. Reuse the interpreter found above so both
-# find_package calls agree on the same Python installation.
-set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
-find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-
-find_package(nanobind REQUIRED)
+find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development.Module)
+# Try standard system path lookup first (Ubuntu / Debian / system install)
+find_package(nanobind CONFIG QUIET)
+# If not found in standard system path, fallback to querying Python.
+if(NOT nanobind_FOUND)
+    execute_process(
+        COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        OUTPUT_VARIABLE nanobind_ROOT
+        RESULT_VARIABLE nanobind_PROC_RESULT
+    )
+    if(nanobind_PROC_RESULT EQUAL 0)
+        find_package(nanobind CONFIG REQUIRED)
+    else()
+        message(FATAL_ERROR "nanobind CMake files could not be located via system path or Python module.")
+    endif()
+endif()
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
