@@ -8,7 +8,7 @@
   <maintainer email="sloretz@openrobotics.org">Shane Loretz</maintainer>
   <maintainer email="aditya.pande@openrobotics.org">Aditya Pande</maintainer>
 
-  <license>Apache License 2.0</license>
+  <license>Apache-2.0</license>
 
   <author email="esteve@osrfoundation.org">Esteve Fernandez</author>
   <author email="ivanpauno@ekumenlabs.com">Ivan Paunovic</author>
