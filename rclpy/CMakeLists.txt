@@ -23,20 +23,20 @@ find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 find_package(rosidl_runtime_c REQUIRED)
 
-# By default, without the settings below, find_package(Python3) will attempt
+# By default, without the settings below, find_package(Python) will attempt
 # to find the newest python version it can, and additionally will find the
 # most specific version.  For instance, on a system that has
 # /usr/bin/python3.10, /usr/bin/python3.11, and /usr/bin/python3, it will find
 # /usr/bin/python3.11, even if /usr/bin/python3 points to /usr/bin/python3.10.
 # The behavior we want is to prefer the "system" installed version unless the
-# user specifically tells us otherwise through the Python3_EXECUTABLE hint.
+# user specifically tells us otherwise through the Python_EXECUTABLE hint.
 # Setting CMP0094 to NEW means that the search will stop after the first
-# python version is found.  Setting Python3_FIND_UNVERSIONED_NAMES means that
+# python version is found.  Setting Python_FIND_UNVERSIONED_NAMES means that
 # the search will prefer /usr/bin/python3 over /usr/bin/python3.11.  And that
 # latter functionality is only available in CMake 3.20 or later, so we need
 # at least that version.
 cmake_policy(SET CMP0094 NEW)
-set(Python3_FIND_UNVERSIONED_NAMES FIRST)
+set(Python_FIND_UNVERSIONED_NAMES FIRST)
 
 # Find python before nanobind
 find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -174,7 +174,7 @@ if(BUILD_TESTING)
   get_target_property(ament_cmake_cppcheck_ADDITIONAL_INCLUDE_DIRS rcutils::rcutils INTERFACE_INCLUDE_DIRECTORIES)
   list(APPEND AMENT_LINT_AUTO_EXCLUDE "ament_cmake_cppcheck")
 
-  if(Python3_VERSION VERSION_LESS 3.12)
+  if(Python_VERSION VERSION_LESS 3.12)
     file(GLOB AMENT_LINT_AUTO_FILE_EXCLUDE
       "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/experimental/async_*.py"
       "${CMAKE_CURRENT_SOURCE_DIR}/test/test_async_*.py"
@@ -204,12 +204,16 @@ if(BUILD_TESTING)
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
 
+  # The allocator gtest embeds the interpreter, so it needs the full Python
+  # library rather than the Development.Module component used for the extension.
+  find_package(Python 3.8 REQUIRED COMPONENTS Development.Embed)
+
   ament_add_gtest(test_python_allocator
     test/test_python_allocator.cpp)
   target_include_directories(test_python_allocator PRIVATE src/rclpy)
   target_link_libraries(test_python_allocator
     ament_cmake_ros_core::ament_ros_cxx_standard
-    Python3::Python)
+    Python::Python)
 
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
@@ -267,7 +271,7 @@ if(BUILD_TESTING)
       test/test_wait_for_message.py
     )
 
-    if(Python3_VERSION VERSION_GREATER_EQUAL 3.12)
+    if(Python_VERSION VERSION_GREATER_EQUAL 3.12)
       list(APPEND _rclpy_pytest_tests
         test/test_async_node.py
         test/test_async_publisher.py
