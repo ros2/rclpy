@@ -64,9 +64,9 @@ def _service_node(test_node: Node) -> Generator[Node, None, None]:
 
 
 @pytest.fixture
-def executor(service_node: Node) -> Generator[SingleThreadedExecutor, None, None]:
+def executor(_service_node: Node) -> Generator[SingleThreadedExecutor, None, None]:
     executor = SingleThreadedExecutor()
-    executor.add_node(service_node)
+    executor.add_node(_service_node)
     yield executor
     executor.shutdown()
 

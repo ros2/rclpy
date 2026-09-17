@@ -28,12 +28,12 @@ class _WakeProtocol(asyncio.Protocol):
 class WakeupSocket:
 
     def __init__(
-            self,
-            loop: asyncio.AbstractEventLoop,
-            transport: asyncio.BaseTransport,
-            rsock: socket.socket,
-            wsock: socket.socket
-        ) -> None:
+        self,
+        loop: asyncio.AbstractEventLoop,
+        transport: asyncio.BaseTransport,
+        rsock: socket.socket,
+        wsock: socket.socket
+    ) -> None:
         self._loop = loop
         self._transport = transport
         self._rsock = rsock
