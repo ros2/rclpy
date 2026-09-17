@@ -115,10 +115,15 @@ pybind11_add_module(_rclpy_pybind11
   src/rclpy/type_description_service.cpp
   src/rclpy/utils.cpp
   src/rclpy/wait_set.cpp
+  src/rclpy/wakeup_socket.cpp
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT APPLE)
   target_link_libraries(_rclpy_pybind11 PRIVATE atomic)
+endif()
+
+if(WIN32)
+  target_link_libraries(_rclpy_pybind11 PRIVATE ws2_32)
 endif()
 
 target_include_directories(_rclpy_pybind11 PRIVATE

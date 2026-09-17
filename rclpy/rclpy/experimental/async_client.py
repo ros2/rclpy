@@ -19,6 +19,7 @@ from typing import cast
 
 from rclpy.client import BaseClient
 from rclpy.context import Context
+from rclpy.experimental._wakeup_socket import WakeupSocket
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
@@ -47,14 +48,10 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
                          on_destroy=on_destroy)
         self._pending_requests: Dict[int, asyncio.Future[SrvResponseT]] = {}
         self._task: Optional[asyncio.Task[None]] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._read_event = asyncio.Event()
+        self._wakeup: Optional[WakeupSocket] = None
         if tg is not None:
             self._task = tg.create_task(self._run())
-
-    def _on_new_response(self, _num_waiting: int) -> None:
-        assert self._loop is not None
-        self._loop.call_soon_threadsafe(self._read_event.set)
 
     async def wait_for_service(self, *, check_interval: float = 0.1) -> None:
         """
@@ -71,6 +68,9 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
         if self._task is not None:
             self._task.cancel()
         self.handle.clear_on_new_response_callback()
+        if self._wakeup is not None:
+            self._wakeup.close()
+            self._wakeup = None
         for future in self._pending_requests.values():
             future.cancel()
         super()._destroy()
@@ -91,7 +91,8 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
     async def _responses(self) -> AsyncGenerator[tuple[_rclpy.rmw_service_info_t,
                                                        SrvResponseT], None]:
         """Async generator yielding (header, response) from DDS."""
-        self.handle.set_on_new_response_callback(self._on_new_response)
+        self._wakeup = await WakeupSocket.create(self._read_event)
+        self.handle.set_on_new_response_wakeup(self._wakeup.fileno())
         while not self._destroyed:
             header_and_response = self.handle.take_response(
                 self.srv_type.Response)
@@ -104,7 +105,6 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
 
     async def _run(self) -> None:
         """DDS bridge response loop for clients."""
-        self._loop = asyncio.get_running_loop()
         try:
             async for header, response in self._responses():
                 future = self._pending_requests.get(

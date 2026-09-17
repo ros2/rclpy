@@ -31,6 +31,7 @@
 #include "node.hpp"
 #include "python_allocator.hpp"
 #include "utils.hpp"
+#include "wakeup_socket.hpp"
 #include "events_executor/rcl_support.hpp"
 
 namespace rclpy
@@ -218,6 +219,12 @@ Client::clear_on_new_response_callback()
 }
 
 void
+Client::set_on_new_response_wakeup(std::uintptr_t handle)
+{
+  set_on_new_response_callback([handle](size_t /*number_of_events*/) {send_wakeup_byte(handle);});
+}
+
+void
 define_client(py::object module)
 {
   py::class_<Client, Destroyable, std::shared_ptr<Client>>(module, "Client")
@@ -248,6 +255,9 @@ define_client(py::object module)
   .def(
     "set_on_new_response_callback", &Client::set_on_new_response_callback,
     py::arg("callback"))
+  .def(
+    "set_on_new_response_wakeup", &Client::set_on_new_response_wakeup,
+    py::arg("handle"))
   .def("clear_on_new_response_callback", &Client::clear_on_new_response_callback);
 }
 }  // namespace rclpy
