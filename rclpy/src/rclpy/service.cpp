@@ -257,9 +257,6 @@ define_service(py::object module)
     "get_logger_name", &Service::get_logger_name,
     "Get the name of the logger associated with the node of the service.")
   .def(
-    "set_on_new_request_callback", &Service::set_on_new_request_callback,
-    py::arg("callback"))
-  .def(
     "set_on_new_request_wakeup", &Service::set_on_new_request_wakeup,
     py::arg("handle"))
   .def("clear_on_new_request_callback", &Service::clear_on_new_request_callback);

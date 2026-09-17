@@ -406,9 +406,6 @@ define_subscription(py::object module)
     "get_publisher_count", &Subscription::get_publisher_count,
     "Count the publishers from a subscription.")
   .def(
-    "set_on_new_message_callback", &Subscription::set_on_new_message_callback,
-    py::arg("callback"))
-  .def(
     "set_on_new_message_wakeup", &Subscription::set_on_new_message_wakeup,
     py::arg("handle"))
   .def("clear_on_new_message_callback", &Subscription::clear_on_new_message_callback)

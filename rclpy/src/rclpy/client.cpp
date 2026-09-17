@@ -253,9 +253,6 @@ define_client(py::object module)
     "get_logger_name", &Client::get_logger_name,
     "Get the name of the logger associated with the node of the client.")
   .def(
-    "set_on_new_response_callback", &Client::set_on_new_response_callback,
-    py::arg("callback"))
-  .def(
     "set_on_new_response_wakeup", &Client::set_on_new_response_wakeup,
     py::arg("handle"))
   .def("clear_on_new_response_callback", &Client::clear_on_new_response_callback);

@@ -206,14 +206,11 @@ class Client(Destroyable, Generic[SrvRequestT, SrvResponseT]):
     def get_logger_name(self) -> str:
         """Get the name of the logger associated with the node of the client."""
 
-    def set_on_new_response_callback(self, callback: Callable[[int], None]) -> None:
-        """Set the on new response callback function for the client."""
+    def set_on_new_response_wakeup(self, handle: int) -> None:
+        """Write one byte to socket handle on each new response."""
 
     def clear_on_new_response_callback(self) -> None:
         """Clear the on new response callback function for the client."""
-
-    def set_on_new_response_wakeup(self, handle: int) -> None:
-        """Write one byte to non-blocking socket handle on each new response."""
 
 
 class Context(Destroyable):
@@ -306,14 +303,11 @@ class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
     def get_logger_name(self) -> str:
         """Get the name of the logger associated with the node of the service."""
 
-    def set_on_new_request_callback(self, callback: Callable[[int], None]) -> None:
-        """Set the on new request callback function for the service."""
+    def set_on_new_request_wakeup(self, handle: int) -> None:
+        """Write one byte to socket handle on each new response."""
 
     def clear_on_new_request_callback(self) -> None:
         """Clear the on new request callback function for the service."""
-
-    def set_on_new_request_wakeup(self, handle: int) -> None:
-        """Write one byte to non-blocking socket handle on each new response."""
 
 
 class TypeDescriptionService(Destroyable):
@@ -649,14 +643,11 @@ class Subscription(Destroyable, Generic[MsgT]):
     def get_publisher_count(self) -> int:
         """Count the publishers from a subscription."""
 
-    def set_on_new_message_callback(self, callback: Callable[[int], None]) -> None:
-        """Set the on new message callback function for the subscription."""
+    def set_on_new_message_wakeup(self, handle: int) -> None:
+        """Write one byte to socket handle on each new response."""
 
     def clear_on_new_message_callback(self) -> None:
         """Clear the on new message callback function for the subscription."""
-
-    def set_on_new_message_wakeup(self, handle: int) -> None:
-        """Write one byte to non-blocking socket handle on each new response."""
 
     def is_cft_supported(self) -> bool:
         """Check if content filtering is supported for this subscription."""
