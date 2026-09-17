@@ -239,6 +239,7 @@ if(BUILD_TESTING)
       test/test_validate_topic_name.py
       test/test_waitable.py
       test/test_wait_for_message.py
+      test/test_wakeup_socket.py
     )
 
     if(Python3_VERSION VERSION_GREATER_EQUAL 3.12)
