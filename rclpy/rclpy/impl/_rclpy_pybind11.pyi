@@ -304,7 +304,7 @@ class Service(Destroyable, Generic[SrvRequestT, SrvResponseT]):
         """Get the name of the logger associated with the node of the service."""
 
     def set_on_new_request_wakeup(self, handle: int) -> None:
-        """Write one byte to socket handle on each new response."""
+        """Write one byte to socket handle on each new request."""
 
     def clear_on_new_request_callback(self) -> None:
         """Clear the on new request callback function for the service."""
@@ -644,7 +644,7 @@ class Subscription(Destroyable, Generic[MsgT]):
         """Count the publishers from a subscription."""
 
     def set_on_new_message_wakeup(self, handle: int) -> None:
-        """Write one byte to socket handle on each new response."""
+        """Write one byte to socket handle on each new message."""
 
     def clear_on_new_message_callback(self) -> None:
         """Clear the on new message callback function for the subscription."""
