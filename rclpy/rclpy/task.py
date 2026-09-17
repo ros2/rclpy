@@ -140,7 +140,7 @@ class Future(Generic[T]):
         """
         Set the exception raised by the task.
 
-        :param result: The output of a long running task.
+        :param exception: The exception raised by the task.
         """
         with self._lock:
             self._exception = exception

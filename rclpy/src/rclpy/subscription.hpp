@@ -16,12 +16,12 @@
 #define RCLPY__SUBSCRIPTION_HPP_
 
 #include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
 
 #include <rcl/subscription.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
