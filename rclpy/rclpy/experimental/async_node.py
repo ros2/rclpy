@@ -140,7 +140,7 @@ class AsyncNode(BaseNode):
         self._tg = await tg.__aenter__()
         for entity in self._entities:
             if hasattr(entity, '_run'):
-                entity._task = self._tg.create_task(entity._run())
+                entity._task = self._tg.create_task(entity._run())  # type: ignore[union-attr]
         return self
 
     async def __aexit__(
@@ -221,16 +221,16 @@ class AsyncNode(BaseNode):
         """
         if self._destroyed.is_set():
             raise RuntimeError('Cannot create publisher on a destroyed node')
-        qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
+        qos_profile_validated = self._validate_qos_or_depth_parameter(qos_profile)
 
         publisher_handle = self._create_publisher_handle(
-            msg_type, topic, qos_profile)
+            msg_type, topic, qos_profile_validated)
 
         pub = AsyncPublisher(
             publisher_handle,
             msg_type,
             topic,
-            qos_profile,
+            qos_profile_validated,
             on_destroy=self._entities.discard,
         )
         self._entities.add(pub)

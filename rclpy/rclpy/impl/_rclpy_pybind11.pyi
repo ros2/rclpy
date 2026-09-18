@@ -618,7 +618,8 @@ class Subscription(Destroyable, Generic[MsgT]):
 
     def __init__(self, node: Node, pymsg_type: type[MsgT], topic: str,
                  pyqos_profile: rmw_qos_profile_t,
-                 content_filter_options: Optional[ContentFilterOptions] = None) -> None: ...
+                 content_filter_options: Optional[ContentFilterOptions] = None,
+                 acceptable_buffer_backends: str | None = None) -> None: ...
 
     @property
     def pointer(self) -> int:
@@ -814,6 +815,14 @@ class _ServiceEndpointInfoDict(TypedDict):
     endpoint_count: int
 
 
+class _ActionEndpointInfoDict(TypedDict):
+    goal_service_info: Optional[_ServiceEndpointInfoDict]
+    cancel_service_info: Optional[_ServiceEndpointInfoDict]
+    result_service_info: Optional[_ServiceEndpointInfoDict]
+    feedback_topic_info: Optional[_TopicEndpointInfoDict]
+    status_topic_info: Optional[_TopicEndpointInfoDict]
+
+
 def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: bool
                                        ) -> list[_TopicEndpointInfoDict]:
     """Get publishers info for a topic."""
@@ -864,6 +873,16 @@ def rclpy_get_action_names_and_types(node: Node) -> list[tuple[str, list[str]]]:
     """Get all action names and types in the ROS graph."""
 
 
+def rclpy_get_action_clients_info_by_action(node: Node, action_name: str
+                                            ) -> list[_ActionEndpointInfoDict]:
+    """Get action clients info for an action."""
+
+
+def rclpy_get_action_servers_info_by_action(node: Node, action_name: str
+                                            ) -> list[_ActionEndpointInfoDict]:
+    """Get action servers info for an action."""
+
+
 def rclpy_serialize(pymsg: MsgT, py_msg_type: type[MsgT]) -> bytes:
     """Serialize a ROS message."""
 
@@ -905,6 +924,12 @@ class Node(Destroyable):
 
     def get_count_services(self, service_name: str) -> int:
         """Return the count of all the servers known for that service in the entire ROS graph."""
+
+    def get_count_action_clients(self, action_name: str) -> int:
+        """Return the count of the action clients known for that action in the entire ROS graph."""
+
+    def get_count_action_servers(self, action_name: str) -> int:
+        """Return the count of the action servers known for that action in the entire ROS graph."""
 
     def get_node_names_and_namespaces(self) -> list[tuple[str, str]]:
         """Get the list of nodes discovered by the provided node."""
@@ -1075,6 +1100,13 @@ class rmw_incompatible_type_status_t:
 
     @property
     def total_count_change(self) -> int: ...
+
+
+def publisher_event_type_is_supported(event_type: rcl_publisher_event_type_t) -> bool:
+    """Check if a publisher event type is supported by the active RMW implementation."""
+
+def subscription_event_type_is_supported(event_type: rcl_subscription_event_type_t) -> bool:
+    """Check if a subscription event type is supported by the active RMW implementation."""
 
 
 def rclpy_get_rmw_implementation_identifier() -> str:

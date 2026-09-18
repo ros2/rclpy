@@ -132,6 +132,26 @@ public:
   size_t
   get_count_services(const char * service_name);
 
+  /// Returns the count of all the action clients known for that action in the entire ROS graph
+  /**
+   * Raises RCLError if an error occurs in rcl
+   *
+   * \param[in] action_name Name of the action to count the number of action clients
+   * \return the count of all the action clients known for that action in the entire ROS graph
+   */
+  size_t
+  get_count_action_clients(const char * action_name);
+
+  /// Returns the count of all the action servers known for that action in the entire ROS graph
+  /**
+   * Raises RCLError if an error occurs in rcl
+   *
+   * \param[in] action_name Name of the action to count the number of action servers
+   * \return the count of all the action servers known for that action in the entire ROS graph
+   */
+  size_t
+  get_count_action_servers(const char * action_name);
+
   /// Get the list of nodes discovered by the provided node
   /**
    * Raises RCLError if the names are unavailable.

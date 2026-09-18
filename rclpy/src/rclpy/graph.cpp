@@ -434,4 +434,68 @@ graph_get_action_names_and_types(Node & node)
   return convert_to_py_names_and_types(&action_names_and_types);
 }
 
+typedef rcl_ret_t (* rcl_action_get_info_by_action_func_t)(
+  const rcl_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * action_name,
+  rcl_action_endpoint_info_array_t * info_array);
+
+
+py::list
+_get_info_by_action(
+  Node & node,
+  const char * action_name,
+  const char * type,
+  rcl_action_get_info_by_action_func_t rcl_action_get_info_by_action)
+{
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  rcl_action_endpoint_info_array_t info_array =
+    rcl_action_get_zero_initialized_endpoint_info_array();
+
+  RCPPUTILS_SCOPE_EXIT(
+    {
+      rcl_ret_t fini_ret = rcl_action_endpoint_info_array_fini(&info_array, &allocator);
+      if (RCL_RET_OK != fini_ret) {
+        RCUTILS_SAFE_FWRITE_TO_STDERR(
+          "[rclpy|" RCUTILS_STRINGIFY(__FILE__) ":" RCUTILS_STRINGIFY(__LINE__) "]: "
+          "rcl_action_endpoint_info_array_fini failed: ");
+        RCUTILS_SAFE_FWRITE_TO_STDERR(rcl_get_error_string().str);
+        RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
+        rcl_reset_error();
+      }
+    });
+
+  rcl_ret_t ret = rcl_action_get_info_by_action(
+    node.rcl_ptr(), &allocator, action_name, &info_array);
+  if (RCL_RET_OK != ret) {
+    if (RCL_RET_UNSUPPORTED == ret) {
+      throw NotImplementedError(
+              std::string("Failed to get information by action for ") +
+              type + ": function not supported by RMW_IMPLEMENTATION");
+    }
+    throw RCLError(
+            std::string("Failed to get information by action for ") + type);
+  }
+
+  return convert_to_py_action_endpoint_info_list(&info_array);
+}
+
+py::list
+graph_get_action_clients_info_by_action(
+  Node & node, const char * action_name)
+{
+  return _get_info_by_action(
+    node, action_name, "action clients",
+    rcl_action_get_clients_info_by_action);
+}
+
+py::list
+graph_get_action_servers_info_by_action(
+  Node & node, const char * action_name)
+{
+  return _get_info_by_action(
+    node, action_name, "action servers",
+    rcl_action_get_servers_info_by_action);
+}
+
 }  // namespace rclpy

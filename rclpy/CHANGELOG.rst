@@ -2,6 +2,22 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+11.0.3 (2026-09-01)
+-------------------
+* Add ament_mypy (`#1680 <https://github.com/ros2/rclpy/issues/1680>`_)
+* Fix future-wait callback accumulation on every spin path (`#1702 <https://github.com/ros2/rclpy/issues/1702>`_)
+* Use perf_counter() rather than monotonic() for consistency. (`#1712 <https://github.com/ros2/rclpy/issues/1712>`_)
+* fix: node lingering after destroy (`#1711 <https://github.com/ros2/rclpy/issues/1711>`_)
+* address unsafe list mutation during iteration and bypasses exception … (`#1669 <https://github.com/ros2/rclpy/issues/1669>`_)
+* introduce ActionEndpointInfo to support "ros2 action info (-v)". (`#1697 <https://github.com/ros2/rclpy/issues/1697>`_)
+* Include what you use (`#1706 <https://github.com/ros2/rclpy/issues/1706>`_)
+* Handle exceptions in lifecycle transition callbacks (`#1696 <https://github.com/ros2/rclpy/issues/1696>`_)
+* Fix incorrect parameter names in docstrings (`#1685 <https://github.com/ros2/rclpy/issues/1685>`_)
+* use C++ 20 in default. (`#1690 <https://github.com/ros2/rclpy/issues/1690>`_)
+* Fix Exception subclass initialization in InvalidQoSProfileException (`#1684 <https://github.com/ros2/rclpy/issues/1684>`_)
+* Fix incorrect parameter names in docstrings (`#1683 <https://github.com/ros2/rclpy/issues/1683>`_)
+* Contributors: Alejandro Hernández Cordero, Emerson Knapp, Michael Carlstrom, Sai Kishor Kothakota, Tomoya Fujita, eeshsaxena, hugogo1998, longway
+
 11.0.2 (2026-07-02)
 -------------------
 * Fix async type bugs (`#1679 <https://github.com/ros2/rclpy/issues/1679>`_)

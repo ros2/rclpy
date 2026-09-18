@@ -390,6 +390,53 @@ convert_to_py_service_endpoint_info_list(const rmw_service_endpoint_info_array_t
   return py_info_array;
 }
 
+py::object
+_convert_to_py_action_endpoint_info(const rcl_action_endpoint_info_t * action_endpoint_info)
+{
+  // Create dictionary that represents the aggregated endpoint information of
+  // all the underlying entities of one action client or one action server.
+  // Sub-entities that have not been discovered are represented as None.
+  py::dict py_endpoint_info_dict;
+  py_endpoint_info_dict["goal_service_info"] =
+    action_endpoint_info->goal_service_info.node_name ?
+    py::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->goal_service_info)) :
+    py::object(py::none());
+  py_endpoint_info_dict["cancel_service_info"] =
+    action_endpoint_info->cancel_service_info.node_name ?
+    py::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->cancel_service_info)) :
+    py::object(py::none());
+  py_endpoint_info_dict["result_service_info"] =
+    action_endpoint_info->result_service_info.node_name ?
+    py::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->result_service_info)) :
+    py::object(py::none());
+  py_endpoint_info_dict["feedback_topic_info"] =
+    action_endpoint_info->feedback_topic_info.node_name ?
+    py::object(_convert_to_py_topic_endpoint_info(&action_endpoint_info->feedback_topic_info)) :
+    py::object(py::none());
+  py_endpoint_info_dict["status_topic_info"] =
+    action_endpoint_info->status_topic_info.node_name ?
+    py::object(_convert_to_py_topic_endpoint_info(&action_endpoint_info->status_topic_info)) :
+    py::object(py::none());
+
+  return py_endpoint_info_dict;
+}
+
+py::list
+convert_to_py_action_endpoint_info_list(const rcl_action_endpoint_info_array_t * info_array)
+{
+  if (!info_array) {
+    throw std::runtime_error("rcl_action_endpoint_info_array_t pointer is empty");
+  }
+
+  py::list py_info_array(info_array->size);
+
+  for (size_t i = 0; i < info_array->size; ++i) {
+    // add this dict to the list
+    py_info_array[i] = _convert_to_py_action_endpoint_info(&info_array->info_array[i]);
+  }
+  return py_info_array;
+}
+
 static
 py::object
 _convert_rmw_time_to_py_duration(const rmw_time_t * duration)

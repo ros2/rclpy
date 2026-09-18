@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from enum import IntEnum
 from typing import Annotated
 from typing import Any
+from typing import Optional
 from typing import Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -234,7 +235,7 @@ class ServiceEndpointInfo:
         node_namespace: str = '',
         service_type: str = '',
         service_type_hash: Union[TypeHash, TypeHashDictionary] = TypeHash(),
-        qos_profiles: Sequence[Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']] = [],
+        qos_profiles: list[QoSProfile] | list['_rclpy._rmw_qos_profile_dict'] = [],
         endpoint_gids: list[list[int]] = [],
         endpoint_type: Union[EndpointTypeEnum, int] = EndpointTypeEnum.INVALID,
         endpoint_count: int = 0
@@ -368,8 +369,8 @@ class ServiceEndpointInfo:
         return self._qos_profiles
 
     @qos_profiles.setter
-    def qos_profiles(self, value: list[Union[QoSProfile, '_rclpy._rmw_qos_profile_dict']]) -> None:
-        assert isinstance(value, list)
+    def qos_profiles(self, value: Sequence[Union[QoSProfile,
+                                                 '_rclpy._rmw_qos_profile_dict']]) -> None:
         self._qos_profiles = [v if isinstance(v, QoSProfile) else QoSProfile(**v) for v in value]
 
     def __eq__(self, other: object) -> bool:
@@ -430,5 +431,245 @@ class ServiceEndpointInfo:
                 ' - Response Writer :',
                 format_qos(self.qos_profiles[1], indent='      '),
             ]
+
+        return '\n'.join(info_lines)
+
+
+class ActionEndpointInfo:
+    """
+    Information on an action endpoint (an action client or an action server).
+
+    An action is built on top of three services and two topics, so this class
+    aggregates the endpoint information of all the underlying entities of one
+    action client or one action server:
+
+    * the goal service (``<action_name>/_action/send_goal``)
+    * the cancel service (``<action_name>/_action/cancel_goal``)
+    * the result service (``<action_name>/_action/get_result``)
+    * the feedback topic (``<action_name>/_action/feedback``)
+    * the status topic (``<action_name>/_action/status``)
+
+    The goal service endpoint is the canonical identity of the action
+    endpoint, so ``goal_service_info`` is always populated.
+    The remaining endpoint information is correlated to the goal service
+    endpoint by the node name and node namespace, and is left default
+    initialized (i.e. with an empty node name) if the underlying entity has
+    not been discovered.
+    """
+
+    __slots__ = [
+        '_goal_service_info',
+        '_cancel_service_info',
+        '_result_service_info',
+        '_feedback_topic_info',
+        '_status_topic_info'
+    ]
+
+    def __init__(
+        self,
+        goal_service_info: Optional[Union[ServiceEndpointInfo,
+                                          '_rclpy._ServiceEndpointInfoDict']] = None,
+        cancel_service_info: Optional[Union[ServiceEndpointInfo,
+                                            '_rclpy._ServiceEndpointInfoDict']] = None,
+        result_service_info: Optional[Union[ServiceEndpointInfo,
+                                            '_rclpy._ServiceEndpointInfoDict']] = None,
+        feedback_topic_info: Optional[Union[TopicEndpointInfo,
+                                            '_rclpy._TopicEndpointInfoDict']] = None,
+        status_topic_info: Optional[Union[TopicEndpointInfo,
+                                          '_rclpy._TopicEndpointInfoDict']] = None
+    ):
+        self.goal_service_info = goal_service_info
+        self.cancel_service_info = cancel_service_info
+        self.result_service_info = result_service_info
+        self.feedback_topic_info = feedback_topic_info
+        self.status_topic_info = status_topic_info
+
+    @staticmethod
+    def _to_service_endpoint_info(
+        value: Optional[Union[ServiceEndpointInfo, '_rclpy._ServiceEndpointInfoDict']]
+    ) -> ServiceEndpointInfo:
+        if value is None:
+            return ServiceEndpointInfo()
+        if isinstance(value, ServiceEndpointInfo):
+            return value
+        if isinstance(value, dict):
+            return ServiceEndpointInfo(**value)
+        raise TypeError(
+            'expected ServiceEndpointInfo, dict, or None, '
+            f'got {type(value).__name__}')
+
+    @staticmethod
+    def _to_topic_endpoint_info(
+        value: Optional[Union[TopicEndpointInfo, '_rclpy._TopicEndpointInfoDict']]
+    ) -> TopicEndpointInfo:
+        if value is None:
+            return TopicEndpointInfo()
+        if isinstance(value, TopicEndpointInfo):
+            return value
+        if isinstance(value, dict):
+            return TopicEndpointInfo(**value)
+        raise TypeError(
+            'expected TopicEndpointInfo, dict, or None, '
+            f'got {type(value).__name__}')
+
+    # Has to be marked Any due to mypy#3004. Return type is actually ServiceEndpointInfo
+    @property
+    def goal_service_info(self) -> Annotated[Any, ServiceEndpointInfo]:
+        """
+        Get field 'goal_service_info'.
+
+        :returns: goal_service_info attribute
+        """
+        return self._goal_service_info
+
+    @goal_service_info.setter
+    def goal_service_info(
+        self,
+        value: Optional[Union[ServiceEndpointInfo, '_rclpy._ServiceEndpointInfoDict']]
+    ) -> None:
+        self._goal_service_info = self._to_service_endpoint_info(value)
+
+    # Has to be marked Any due to mypy#3004. Return type is actually ServiceEndpointInfo
+    @property
+    def cancel_service_info(self) -> Annotated[Any, ServiceEndpointInfo]:
+        """
+        Get field 'cancel_service_info'.
+
+        :returns: cancel_service_info attribute
+        """
+        return self._cancel_service_info
+
+    @cancel_service_info.setter
+    def cancel_service_info(
+        self,
+        value: Optional[Union[ServiceEndpointInfo, '_rclpy._ServiceEndpointInfoDict']]
+    ) -> None:
+        self._cancel_service_info = self._to_service_endpoint_info(value)
+
+    # Has to be marked Any due to mypy#3004. Return type is actually ServiceEndpointInfo
+    @property
+    def result_service_info(self) -> Annotated[Any, ServiceEndpointInfo]:
+        """
+        Get field 'result_service_info'.
+
+        :returns: result_service_info attribute
+        """
+        return self._result_service_info
+
+    @result_service_info.setter
+    def result_service_info(
+        self,
+        value: Optional[Union[ServiceEndpointInfo, '_rclpy._ServiceEndpointInfoDict']]
+    ) -> None:
+        self._result_service_info = self._to_service_endpoint_info(value)
+
+    # Has to be marked Any due to mypy#3004. Return type is actually TopicEndpointInfo
+    @property
+    def feedback_topic_info(self) -> Annotated[Any, TopicEndpointInfo]:
+        """
+        Get field 'feedback_topic_info'.
+
+        :returns: feedback_topic_info attribute
+        """
+        return self._feedback_topic_info
+
+    @feedback_topic_info.setter
+    def feedback_topic_info(
+        self,
+        value: Optional[Union[TopicEndpointInfo, '_rclpy._TopicEndpointInfoDict']]
+    ) -> None:
+        self._feedback_topic_info = self._to_topic_endpoint_info(value)
+
+    # Has to be marked Any due to mypy#3004. Return type is actually TopicEndpointInfo
+    @property
+    def status_topic_info(self) -> Annotated[Any, TopicEndpointInfo]:
+        """
+        Get field 'status_topic_info'.
+
+        :returns: status_topic_info attribute
+        """
+        return self._status_topic_info
+
+    @status_topic_info.setter
+    def status_topic_info(
+        self,
+        value: Optional[Union[TopicEndpointInfo, '_rclpy._TopicEndpointInfoDict']]
+    ) -> None:
+        self._status_topic_info = self._to_topic_endpoint_info(value)
+
+    @property
+    def node_name(self) -> str:
+        """
+        Get the node name of the action endpoint, from the goal service endpoint.
+
+        :returns: node name of the action endpoint
+        """
+        return self._goal_service_info.node_name
+
+    @property
+    def node_namespace(self) -> str:
+        """
+        Get the node namespace of the action endpoint, from the goal service endpoint.
+
+        :returns: node namespace of the action endpoint
+        """
+        return self._goal_service_info.node_namespace
+
+    @property
+    def action_type(self) -> str:
+        """
+        Get the action type, derived from the goal service type.
+
+        :returns: action type of the action endpoint
+        """
+        goal_service_type = self._goal_service_info.service_type
+        suffix = '_SendGoal'
+        if goal_service_type.endswith(suffix):
+            return goal_service_type[:-len(suffix)]
+        return goal_service_type
+
+    # Has to be marked Any due to mypy#3004. Return type is actually EndpointTypeEnum
+    @property
+    def endpoint_type(self) -> Annotated[Any, EndpointTypeEnum]:
+        """
+        Get the endpoint type of the action endpoint, from the goal service endpoint.
+
+        :returns: endpoint type of the action endpoint
+        """
+        return self._goal_service_info.endpoint_type
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ActionEndpointInfo):
+            return False
+        return all(
+            self.__getattribute__(slot) == other.__getattribute__(slot)
+            for slot in self.__slots__)
+
+    def __str__(self) -> str:
+        def sub_info_lines(title: str, info: Union[ServiceEndpointInfo,
+                                                   TopicEndpointInfo]) -> list[str]:
+            if not info.node_name:
+                return [f'{title}: not available']
+            # The node name, node namespace and endpoint type of the
+            # underlying entities are implied by the action endpoint.
+            skipped_prefixes = ('Node name:', 'Node namespace:', 'Endpoint type:')
+            lines = [f'{title}:']
+            for line in str(info).splitlines():
+                if line.startswith(skipped_prefixes):
+                    continue
+                lines.append(f'  {line}')
+            return lines
+
+        info_lines = [
+            f'Node name: {self.node_name}',
+            f'Node namespace: {self.node_namespace}',
+            f'Action type: {self.action_type}',
+            f'Endpoint type: {self.endpoint_type.name}',
+        ]
+        info_lines += sub_info_lines('Goal service', self.goal_service_info)
+        info_lines += sub_info_lines('Cancel service', self.cancel_service_info)
+        info_lines += sub_info_lines('Result service', self.result_service_info)
+        info_lines += sub_info_lines('Feedback topic', self.feedback_topic_info)
+        info_lines += sub_info_lines('Status topic', self.status_topic_info)
 
         return '\n'.join(info_lines)

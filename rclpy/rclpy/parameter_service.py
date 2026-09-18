@@ -97,7 +97,7 @@ class ParameterService:
                 param = node.get_parameter(name)
             except (ParameterNotDeclaredException, ParameterUninitializedException) as ex:
                 node.get_logger().warning(f'Failed to get parameters: {ex}')
-                response.values = node.get_parameters([])
+                response.values = []
                 return response
             response.values.append(param.get_parameter_value())
         return response

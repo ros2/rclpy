@@ -37,7 +37,8 @@ class TestTypeDescriptionService(unittest.TestCase):
             BasicTypes, self.test_topic, 10)
 
         self.get_type_description_client = self.test_node.create_client(
-            GetTypeDescription, '/rclpy/test_parameter_service/get_type_description',
+            GetTypeDescription,
+            f'{self.test_node.get_fully_qualified_name()}/get_type_description',
             qos_profile=qos_profile_services_default)
 
         self.executor = SingleThreadedExecutor(context=self.context)
@@ -51,14 +52,18 @@ class TestTypeDescriptionService(unittest.TestCase):
     def test_get_type_description(self) -> None:
         pub_infos = self.test_node.get_publishers_info_by_topic(self.test_topic)
         assert len(pub_infos)
-        type_hash = pub_infos[0].topic_type_hash
+        type_hash = str(pub_infos[0].topic_type_hash)
 
         request = GetTypeDescription.Request(
             type_name='test_msgs/msg/BasicTypes',
             type_hash=type_hash,
             include_type_sources=True)
+        assert self.get_type_description_client.wait_for_service(timeout_sec=5.0), \
+            'type description service was never advertised'
+
         future = self.get_type_description_client.call_async(request)
-        self.executor.spin_until_future_complete(future)
+        # Bounded so a regression fails the test rather than hanging the job.
+        self.executor.spin_until_future_complete(future, timeout_sec=10.0)
         response = future.result()
         assert response is not None
         assert response.successful

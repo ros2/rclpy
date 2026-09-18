@@ -234,6 +234,14 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     &rclpy::graph_get_action_names_and_types,
     "Get all action names and types in the ROS graph.");
   m.def(
+    "rclpy_get_action_clients_info_by_action",
+    &rclpy::graph_get_action_clients_info_by_action,
+    "Get action clients info for an action.");
+  m.def(
+    "rclpy_get_action_servers_info_by_action",
+    &rclpy::graph_get_action_servers_info_by_action,
+    "Get action servers info for an action.");
+  m.def(
     "rclpy_serialize", &rclpy::serialize,
     "Serialize a ROS message.");
   m.def(

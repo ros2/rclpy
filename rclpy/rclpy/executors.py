@@ -211,6 +211,9 @@ class Executor(ContextManager['Executor']):
     def __init__(self, *, context: Optional[Context] = None) -> None:
         super().__init__()
         self._context = get_default_context() if context is None else context
+        # A single stable wake-on-done callback, registered at most once per future (see
+        # _add_wake_on_done), so repeated spins on the same future never accumulate callbacks.
+        self._wake_on_done_cb: Callable[[Future[Any]], None] = lambda future: self.wake()
         self._nodes: Set[Node] = set()
         self._nodes_lock = RLock()
         # all tasks that are not complete or canceled
@@ -401,6 +404,10 @@ class Executor(ContextManager['Executor']):
         finally:
             self._exit_spin()
 
+    def _add_wake_on_done(self, future: Future[Any]) -> None:
+        """Register the wake-on-done callback at most once per future."""
+        future.add_done_callback(self._wake_on_done_cb, unique=True)
+
     def spin_until_future_complete(
         self,
         future: Future[Any],
@@ -410,7 +417,7 @@ class Executor(ContextManager['Executor']):
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
         # Make sure the future wakes this executor when it is done
-        future.add_done_callback(lambda x: self.wake())
+        self._add_wake_on_done(future)
         try:
             if timeout_sec is None or timeout_sec < 0:
                 while (
@@ -421,7 +428,13 @@ class Executor(ContextManager['Executor']):
                 ):
                     self._spin_once_until_future_complete(future, timeout_sec)
             else:
-                start = time.monotonic()
+                # Use perf_counter() rather than monotonic(): on Windows with
+                # CPython < 3.13, monotonic() is based on GetTickCount64() with
+                # ~15.6ms resolution, which can quantize the start time such
+                # that this loop exits up to one tick earlier than timeout_sec
+                # in real time. perf_counter() is monotonic on all supported
+                # platforms and has sub-microsecond resolution.
+                start = time.perf_counter()
                 end = start + timeout_sec
                 timeout_left = TimeoutObject(timeout_sec)
 
@@ -432,11 +445,10 @@ class Executor(ContextManager['Executor']):
                     and not self._is_shutdown
                 ):
                     self._spin_once_until_future_complete(future, timeout_left)
-                    now = time.monotonic()
+                    now = time.perf_counter()
 
                     if now >= end:
-                        self._exit_spin()
-                        return
+                        break
 
                     timeout_left.timeout = end - now
         finally:
@@ -560,7 +572,7 @@ class Executor(ContextManager['Executor']):
                     msg_tuple = msg_info
 
                 async def _execute() -> None:
-                    await await_or_execute(sub.callback, *msg_tuple)
+                    await await_or_execute(sub.callback, *msg_tuple)  # type: ignore [arg-type]
 
                 return _execute
         except InvalidHandle:
@@ -1047,7 +1059,7 @@ class SingleThreadedExecutor(Executor):
     ) -> None:
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
-        future.add_done_callback(lambda x: self.wake())
+        self._add_wake_on_done(future)
         try:
             self._spin_once_until_future_complete(future, timeout_sec)
         finally:
@@ -1109,10 +1121,10 @@ class MultiThreadedExecutor(Executor):
             self._executor.submit(handler)
             self._futures.append(handler)
             with self._futures_lock:
-                for future in self._futures:
-                    if future.done():
-                        self._futures.remove(future)
-                        future.result()  # raise any exceptions
+                done_futures = [f for f in self._futures if f.done() or f.cancelled()]
+                for future in done_futures:
+                    self._futures.remove(future)
+                    future.result()  # raise any exceptions
 
             # Yield GIL so executor threads have a chance to run.
             os.sched_yield() if hasattr(os, 'sched_yield') else time.sleep(0)
@@ -1139,7 +1151,7 @@ class MultiThreadedExecutor(Executor):
     ) -> None:
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
-        future.add_done_callback(lambda x: self.wake())
+        self._add_wake_on_done(future)
         try:
             self._spin_once_until_future_complete(future, timeout_sec)
         finally:
