@@ -17,15 +17,33 @@
 
 #include <pybind11/pybind11.h>
 
+#include <functional>
+#include <memory>
+
 namespace py = pybind11;
 
 namespace rclpy
 {
+
+/// Register a C++ callback to be invoked when a signal is caught.  These callbacks will be invoked
+/// on an arbitrary thread.  The callback will be automatically unregistered if the object goes out
+/// of scope.
+class ScopedSignalCallback {
+public:
+  explicit ScopedSignalCallback(std::function<void()>);
+  ~ScopedSignalCallback();
+
+private:
+  class Impl;
+  std::shared_ptr<Impl> impl_;
+};
+
 /// Define methods on a module for working with signal handlers
 /**
  * \param[in] module a pybind11 module to add the definition to
  */
 void
 define_signal_handler_api(py::module module);
+
 }  // namespace rclpy
 #endif  // RCLPY__SIGNAL_HANDLER_HPP_

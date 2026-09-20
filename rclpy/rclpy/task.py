@@ -16,7 +16,7 @@ from enum import Enum
 import inspect
 import sys
 import threading
-from typing import Any, Coroutine, Generator, Optional
+from typing import Any, Callable, Coroutine, Generator, Optional
 import warnings
 import weakref
 
