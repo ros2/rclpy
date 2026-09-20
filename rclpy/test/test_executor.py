@@ -366,15 +366,8 @@ class TestExecutor(unittest.TestCase):
                 async def coro2():
                     return 'Sentinel Result 2'
 
-                # We need to swap the order of the coroutines depending on the executor type
-                # This is nessessary because https://github.com/ros2/rclpy/pull/1304
-                # won't be backported to humble
-                if cls is SingleThreadedExecutor:
-                    future2 = executor.create_task(coro2)
-                    future1 = executor.create_task(coro1)
-                else:
-                    future1 = executor.create_task(coro1)
-                    future2 = executor.create_task(coro2)
+                future1 = executor.create_task(coro1)
+                future2 = executor.create_task(coro2)
 
                 # Coro1 is the 1st task, so it gets to await future2 in this spin
                 executor.spin_once(timeout_sec=0)
@@ -567,7 +560,7 @@ class TestExecutor(unittest.TestCase):
                 timer = self.node.create_timer(0.003, timer_callback)
 
                 # Timeout
-                future = Future[None]()
+                future = Future()
                 self.assertFalse(future.done())
                 start = time.perf_counter()
                 executor.spin_until_future_complete(future=future, timeout_sec=0.1)
@@ -594,7 +587,7 @@ class TestExecutor(unittest.TestCase):
                     future.set_result('finished')
 
                 # Future complete timeout_sec > 0
-                future = Future[str]()
+                future = Future()
                 self.assertFalse(future.done())
                 t = threading.Thread(target=lambda: set_future_result(future))
                 t.start()
@@ -634,7 +627,7 @@ class TestExecutor(unittest.TestCase):
                 timer = self.node.create_timer(0.003, timer_callback)
 
                 # Do not wait timeout_sec = 0
-                future = Future[None]()
+                future = Future()
                 self.assertFalse(future.done())
                 executor.spin_until_future_complete(future=future, timeout_sec=0)
                 self.assertFalse(future.done())
@@ -677,7 +670,10 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
 
-                future = Future[bool](executor=executor)
+                future = Future(executor=executor)
+
+                # Make sure the future wakes this executor when it is done
+                future.add_done_callback(lambda x: executor.wake())
 
                 # Setup a thread to spin_once_until_future_complete, which will spin
                 # for a maximum of 10 seconds.
@@ -705,7 +701,10 @@ class TestExecutor(unittest.TestCase):
         self.assertIsNotNone(self.node.handle)
         executor = MultiThreadedExecutor(context=self.context)
 
-        future: Future[bool] = Future(executor=executor)
+        future = Future(executor=executor)
+
+        # Make sure the future wakes this executor when it is done
+        future.add_done_callback(lambda x: executor.wake())
 
         # Setup a thread to spin_once_until_future_complete, which will spin
         # for a maximum of 10 seconds.
@@ -754,12 +753,12 @@ class TestExecutor(unittest.TestCase):
                 timer2 = self.node.create_timer(1.5, timer2_callback, callback_group)
 
                 executor.add_node(self.node)
-                future = Future[None](executor=executor)
+                future = Future(executor=executor)
                 executor.spin_until_future_complete(future, 4)
 
                 assert count == 2
 
-                executor.shutdown()
+                executor.shutdown(1)
                 self.node.destroy_timer(timer2)
                 self.node.destroy_timer(timer1)
                 self.node.destroy_client(cli)

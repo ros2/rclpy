@@ -108,7 +108,7 @@ private:
 
   void HandleAddedTimer(pybind11::handle);
   void HandleRemovedTimer(pybind11::handle);
-  void HandleTimerReady(pybind11::handle, const rcl_timer_call_info_t &);
+  void HandleTimerReady(pybind11::handle);
 
   void HandleAddedClient(pybind11::handle);
   void HandleRemovedClient(pybind11::handle);
@@ -167,7 +167,6 @@ private:
   const pybind11::object inspect_iscoroutine_;
   const pybind11::object inspect_signature_;
   const pybind11::object rclpy_task_;
-  const pybind11::object rclpy_timer_timer_info_;
 
   EventsQueue events_queue_;
   ScopedSignalCallback signal_callback_;

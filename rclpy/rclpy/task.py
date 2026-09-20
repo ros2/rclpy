@@ -16,7 +16,7 @@ from enum import Enum
 import inspect
 import sys
 import threading
-from typing import Any, Callable, Coroutine, Generator, Optional
+from typing import Any, Coroutine, Generator, Optional
 import warnings
 import weakref
 
@@ -224,7 +224,7 @@ class Future:
             else:
                 self._callbacks.append(task)
 
-    def remove_done_callback(self, callback):
+    def remove_done_callback(self, callback) -> bool:
         """
         Remove a previously-added done callback.
 
