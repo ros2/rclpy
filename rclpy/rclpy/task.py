@@ -224,7 +224,7 @@ class Future:
             else:
                 self._callbacks.append(task)
 
-    def remove_done_callback(self, callback):
+    def remove_done_callback(self, callback) -> bool:
         """
         Remove a previously-added done callback.
 
