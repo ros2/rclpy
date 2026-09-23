@@ -22,6 +22,7 @@ from typing import Optional
 from typing import Protocol
 from typing import Set
 import unittest
+from unittest.mock import patch
 import warnings
 
 import rclpy
@@ -833,6 +834,87 @@ class TestExecutor(unittest.TestCase):
             callback_should_finish.set()
             spin_thread.join(timeout=5)
             self.node.destroy_timer(tmr)
+
+    def test_multi_threaded_shutdown_timeout_before_submit(self) -> None:
+        for wait_for_threads in (True, False):
+            with self.subTest(wait_for_threads=wait_for_threads):
+                executor = MultiThreadedExecutor(num_threads=2, context=self.context)
+                selected = threading.Event()
+                release = threading.Event()
+                executed = threading.Event()
+                calls = []
+                spin_errors: List[BaseException] = []
+                shutdown_errors: List[BaseException] = []
+                shutdown_results = []
+
+                def callback() -> None:
+                    calls.append(True)
+                    executed.set()
+
+                task = executor.create_task(callback)
+                submit = executor._executor.submit
+
+                def submit_selected(handler):
+                    # The real spin has selected our task, but the pool has not accepted it.
+                    self.assertIs(handler, task)
+                    selected.set()
+                    self.assertTrue(release.wait(timeout=10), 'submission was not released')
+                    return submit(handler)
+
+                def spin() -> None:
+                    try:
+                        executor.spin()
+                    except BaseException as exc:
+                        spin_errors.append(exc)
+
+                def shutdown() -> None:
+                    try:
+                        for _ in range(2):
+                            shutdown_results.append(executor.shutdown(
+                                timeout_sec=0.01, wait_for_threads=wait_for_threads))
+                    except BaseException as exc:
+                        shutdown_errors.append(exc)
+
+                spin_thread = threading.Thread(target=spin)
+                shutdown_thread = threading.Thread(target=shutdown)
+                with patch.object(executor._executor, 'submit', new=submit_selected):
+                    try:
+                        spin_thread.start()
+                        self.assertTrue(selected.wait(timeout=10), 'no task was selected')
+                        shutdown_thread.start()
+                        shutdown_thread.join(timeout=10)
+                        self.assertFalse(shutdown_thread.is_alive(), 'shutdown did not time out')
+                        self.assertFalse(shutdown_errors, f'shutdown raised: {shutdown_errors!r}')
+                        self.assertEqual(shutdown_results, [False, False])
+                        self.assertTrue(executor.is_spinning)
+
+                        release.set()
+                        spin_thread.join(timeout=10)
+                        self.assertFalse(spin_thread.is_alive(), 'spin did not exit')
+                        self.assertFalse(
+                            spin_errors, f'spin raised: {spin_errors!r}; calls: {calls!r}')
+                        self.assertTrue(executed.wait(timeout=10), 'selected task did not execute')
+                        self.assertTrue(executor.shutdown(
+                            timeout_sec=10, wait_for_threads=wait_for_threads))
+                        with self.assertRaisesRegex(
+                                RuntimeError, 'cannot schedule new futures after shutdown'):
+                            submit(task)
+                    finally:
+                        release.set()
+                        for thread in (spin_thread, shutdown_thread):
+                            if thread.ident is not None:
+                                thread.join(timeout=10)
+                        executor.shutdown(timeout_sec=10, wait_for_threads=False)
+                        task.cancel()
+                        for worker in executor._executor._threads:
+                            worker.join(timeout=10)
+                            self.assertFalse(worker.is_alive(), 'worker thread leaked')
+                        self.assertFalse(spin_thread.is_alive(), 'spin thread leaked')
+                        self.assertFalse(shutdown_thread.is_alive(), 'shutdown thread leaked')
+
+                self.assertTrue(task.done(), 'selected task did not complete')
+                self.assertIsNone(task.result())
+                self.assertEqual(calls, [True])
 
     def test_work_tracker_coroutine_closed_on_different_thread(self) -> None:
         class YieldOnce:
