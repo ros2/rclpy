@@ -26,8 +26,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+import importlib.util
 import os
+import pathlib
 import sys
+import types
 from typing import Dict
 from typing import List
 sys.path.insert(0, os.path.abspath('.'))
@@ -202,3 +205,96 @@ autodoc_default_options = {
     'members': True,  # document members
     'undoc-members': True,  # also document members without documentation
 }
+
+
+# -- C extension stand-in ----------------------------------------------------
+# The docs job can run without rclpy's C extension. rclpy evaluates a few of its
+# values at import time (Duration.Infinite, the QoS profiles), which a plain
+# autodoc mock can't provide, so give it a minimal stand-in.
+
+
+def _has_c_extension():
+    spec = importlib.util.find_spec('rclpy')
+    if spec is None:
+        return False
+    return any(
+        next(pathlib.Path(p).glob('_rclpy_pybind11*'), None) is not None
+        for p in (spec.submodule_search_locations or []))
+
+
+class _StubMeta(type):
+    """Any attribute is another stub class, and stub classes support `|` and `[]`."""
+
+    def __getattr__(cls, name):
+        if name.startswith('__'):
+            raise AttributeError(name)
+        if name.isupper():
+            return cls()
+        return _StubMeta(name, (_StubBase,), {})
+
+    def __or__(cls, other):
+        return cls
+
+    __ror__ = __or__
+
+    def __getitem__(cls, key):
+        return cls
+
+    def __int__(cls):
+        return 0
+
+    __index__ = __int__
+
+    def __iter__(cls):
+        return iter(())
+
+
+class _StubBase(metaclass=_StubMeta):
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getattr__(self, name):
+        if name.startswith('__'):
+            raise AttributeError(name)
+        return _StubMeta(name, (_StubBase,), {})
+
+    def __int__(self):
+        return 0
+
+    __index__ = __int__
+
+
+def _predefined_qos_profile(name):
+    from rclpy.duration import Duration
+    return {
+        'history': 1, 'depth': 10, 'reliability': 1, 'durability': 2,
+        'lifespan': Duration(), 'deadline': Duration(), 'liveliness': 0,
+        'liveliness_lease_duration': Duration(), 'avoid_ros_namespace_conventions': False}
+
+
+class _RmwQosProfile(_StubBase):
+
+    @staticmethod
+    def predefined(name):
+        return types.SimpleNamespace(to_dict=lambda: _predefined_qos_profile(name))
+
+
+class _RclpyStub:
+    RMW_DURATION_INFINITE = 2**63 - 1
+    RMW_QOS_DEADLINE_BEST_AVAILABLE = 2**63 - 2
+    RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE = 2**63 - 2
+    rmw_qos_profile_t = _RmwQosProfile
+    rclpy_action_get_rmw_qos_profile = staticmethod(_predefined_qos_profile)
+
+    def __getattr__(self, name):
+        if name.startswith('__'):
+            raise AttributeError(name)
+        return _StubMeta(name, (_StubBase,), {})
+
+
+if not _has_c_extension():
+    _rpyutils = types.ModuleType('rpyutils')
+    _rpyutils.import_c_library = lambda name, package=None: _RclpyStub()
+    _rpyutils.add_dll_directories_from_env = lambda *args, **kwargs: None
+    sys.modules['rpyutils'] = _rpyutils
