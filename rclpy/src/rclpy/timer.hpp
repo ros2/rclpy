@@ -15,7 +15,10 @@
 #ifndef RCLPY__TIMER_HPP_
 #define RCLPY__TIMER_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/timer.h>
 
@@ -27,7 +30,7 @@
 #include "context.hpp"
 #include "destroyable.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -80,7 +83,7 @@ public:
    *
    * \return the actual and expected call time.
    */
-  py::object
+  nb::object
   call_timer_with_info();
 
   /// Update the timer period
@@ -161,12 +164,12 @@ private:
   set_callback(rcl_event_callback_t callback, const void * user_data);
 };
 
-/// Define a pybind11 wrapper for an rcl_timer_t
+/// Define a nanobind wrapper for an rcl_timer_t
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
 void
-define_timer(py::object module);
+define_timer(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__TIMER_HPP_

@@ -15,7 +15,11 @@
 #ifndef RCLPY__SERVICE_HPP_
 #define RCLPY__SERVICE_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/service.h>
 #include <rcl/service_introspection.h>
@@ -23,6 +27,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "clock.hpp"
@@ -30,7 +35,7 @@
 #include "node.hpp"
 #include "utils.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -53,8 +58,8 @@ public:
    * \param[in] pyqos_profile QoSProfile Python object for this service
    */
   Service(
-    Node & node, py::object pysrv_type, const std::string & service_name,
-    py::object pyqos_profile);
+    Node & node, nb::object pysrv_type, const std::string & service_name,
+    std::optional<rmw_qos_profile_t> pyqos_profile);
 
   Service(
     Node & node, std::shared_ptr<rcl_service_t> rcl_service);
@@ -70,7 +75,7 @@ public:
    * \param[in] header Capsule pointing to the rmw_request_id_t header of the request we respond to
    */
   void
-  service_send_response(py::object pyresponse, rmw_request_id_t * header);
+  service_send_response(nb::object pyresponse, rmw_request_id_t * header);
 
   /// Take a request from a given service
   /**
@@ -82,8 +87,8 @@ public:
    *            first element: a Python request message with all fields populated with received request
    *            second element: a Capsule pointing to the header (rmw_request_id) of the processed request
    */
-  py::tuple
-  service_take_request(py::object pyrequest_type);
+  nb::tuple
+  service_take_request(nb::object pyrequest_type);
 
   /// Get rcl_service_t pointer
   rcl_service_t *
@@ -106,7 +111,7 @@ public:
   get_logger_name() const;
 
   /// Get the QoS profile for this service.
-  py::dict
+  nb::dict
   get_qos_profile();
 
   /// Configure introspection.
@@ -119,7 +124,7 @@ public:
    */
   void
   configure_introspection(
-    Clock & clock, py::object pyqos_service_event_pub,
+    Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
   /// Force an early destruction of this object
@@ -142,9 +147,9 @@ private:
   set_callback(rcl_event_callback_t callback, const void * user_data);
 };
 
-/// Define a pybind11 wrapper for an rclpy::Service
+/// Define a nanobind wrapper for an rclpy::Service
 void
-define_service(py::object module);
+define_service(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__SERVICE_HPP_

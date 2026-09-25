@@ -15,9 +15,9 @@
 #ifndef RCLPY__DESTROYABLE_HPP_
 #define RCLPY__DESTROYABLE_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -37,7 +37,7 @@ public:
 
   /// Context manager __exit__ - unblock destruction
   void
-  exit(py::object pytype, py::object pyvalue, py::object pytraceback);
+  exit(nb::object pytype, nb::object pyvalue, nb::object pytraceback);
 
   /// Signal that the object should be destroyed as soon as it's not in use
   void
@@ -56,11 +56,11 @@ private:
   bool please_destroy_ = false;
 };
 
-/// Define a pybind11 wrapper for an rclpy::Destroyable
+/// Define a nanobind wrapper for an rclpy::Destroyable
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
-void define_destroyable(py::object module);
+void define_destroyable(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__DESTROYABLE_HPP_

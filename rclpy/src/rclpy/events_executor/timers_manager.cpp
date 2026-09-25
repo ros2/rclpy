@@ -28,7 +28,7 @@
 #include "timer.hpp"
 
 namespace pl = std::placeholders;
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -129,9 +129,10 @@ public:
   ~ClockManager()
   {
     if (RCL_RET_OK != rcl_clock_remove_jump_callback(clock_, RclClockJumpTrampoline, &jump_cb_)) {
-      py::gil_scoped_acquire gil_acquire;
-      py::print(
-        std::string("Failed to remove RCL clock jump callback: ") + rcl_get_error_string().str);
+      nb::gil_scoped_acquire gil_acquire;
+      nb::print(
+        (std::string("Failed to remove RCL clock jump callback: ") +
+        rcl_get_error_string().str).c_str());
     }
     while (!timers_.empty()) {
       RemoveTimer(timers_.begin()->first);
@@ -152,8 +153,8 @@ public:
     }
     timers_[timer] = ready_callback;
     if (timers_.size() >= WARN_TIMERS_COUNT) {
-      py::print("Warning, the number of timers associated with this clock is large.");
-      py::print("Management of this number of timers may be inefficient.");
+      nb::print("Warning, the number of timers associated with this clock is large.");
+      nb::print("Management of this number of timers may be inefficient.");
     }
     UpdateTimers();
   }
@@ -162,7 +163,7 @@ public:
   {
     auto it = timers_.find(timer);
     if (it == timers_.end()) {
-      throw py::key_error("Attempt to remove unmanaged timer");
+      throw nb::key_error("Attempt to remove unmanaged timer");
     }
 
     if (RCL_RET_OK != rcl_timer_set_on_reset_callback(timer, nullptr, nullptr)) {
@@ -334,7 +335,7 @@ void RclTimersManager::RemoveTimer(rcl_timer_t * timer)
   const rcl_clock_t * clock = GetTimerClock(timer);
   auto it = clock_managers_.find(clock);
   if (it == clock_managers_.end()) {
-    throw py::key_error("Attempt to remove timer from unmanaged clock");
+    throw nb::key_error("Attempt to remove timer from unmanaged clock");
   }
   it->second->RemoveTimer(timer);
   if (it->second->empty()) {
@@ -344,28 +345,28 @@ void RclTimersManager::RemoveTimer(rcl_timer_t * timer)
 
 TimersManager::TimersManager(
   EventsQueue * events_queue,
-  std::function<void(py::handle, const rcl_timer_call_info_t &)> timer_ready_callback)
+  std::function<void(nb::handle, const rcl_timer_call_info_t &)> timer_ready_callback)
 : rcl_manager_(events_queue), ready_callback_(timer_ready_callback)
 {
 }
 
 TimersManager::~TimersManager() {}
 
-void TimersManager::AddTimer(py::handle timer)
+void TimersManager::AddTimer(nb::handle timer)
 {
   PyRclMapping mapping;
-  py::handle handle = timer.attr("handle");
+  nb::handle handle = timer.attr("handle");
   mapping.with = std::make_unique<ScopedWith>(handle);
-  mapping.rcl_ptr = py::cast<const Timer &>(handle).rcl_ptr();
+  mapping.rcl_ptr = nb::cast<const Timer &>(handle).rcl_ptr();
   rcl_manager_.AddTimer(mapping.rcl_ptr, std::bind(ready_callback_, timer, pl::_1));
   timer_mappings_[timer] = std::move(mapping);
 }
 
-void TimersManager::RemoveTimer(py::handle timer)
+void TimersManager::RemoveTimer(nb::handle timer)
 {
   const auto it = timer_mappings_.find(timer);
   if (it == timer_mappings_.end()) {
-    throw py::key_error("Attempt to remove unmanaged timer");
+    throw nb::key_error("Attempt to remove unmanaged timer");
   }
   rcl_manager_.RemoveTimer(it->second.rcl_ptr);
   timer_mappings_.erase(it);

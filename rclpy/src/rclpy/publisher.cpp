@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/publisher.h>
@@ -30,20 +32,20 @@
 namespace rclpy
 {
 Publisher::Publisher(
-  Node & node, py::object pymsg_type, std::string topic,
-  py::object pyqos_profile)
+  Node & node, nb::object pymsg_type, std::string topic,
+  std::optional<rmw_qos_profile_t> pyqos_profile)
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
     common_get_type_support(pymsg_type));
   if (!msg_type) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
 
-  if (!pyqos_profile.is_none()) {
-    publisher_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
+  if (pyqos_profile) {
+    publisher_ops.qos = *pyqos_profile;
   }
 
   rcl_publisher_ = std::shared_ptr<rcl_publisher_t>(
@@ -68,7 +70,7 @@ Publisher::Publisher(
       std::string error_text{"Failed to create publisher due to invalid topic name '"};
       error_text += topic;
       error_text += "'";
-      throw py::value_error(error_text);
+      throw nb::value_error(error_text.c_str());
     }
     throw RCLError("Failed to create publisher");
   }
@@ -115,11 +117,11 @@ Publisher::get_topic_name()
 }
 
 void
-Publisher::publish(py::object pymsg)
+Publisher::publish(nb::object pymsg)
 {
   auto raw_ros_message = convert_from_py(pymsg);
   if (!raw_ros_message) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   rcl_ret_t ret = rcl_publish(rcl_publisher_.get(), raw_ros_message.get(), NULL);
@@ -129,7 +131,7 @@ Publisher::publish(py::object pymsg)
 }
 
 void
-Publisher::publish_raw(std::string msg)
+Publisher::publish_raw(nb::bytes msg)
 {
   rcl_serialized_message_t serialized_msg = rmw_get_zero_initialized_serialized_message();
   serialized_msg.buffer_capacity = msg.size();
@@ -155,11 +157,17 @@ Publisher::wait_for_all_acked(rcl_duration_t pytimeout)
 }
 
 void
-define_publisher(py::object module)
+define_publisher(nb::object module)
 {
-  py::class_<Publisher, Destroyable, std::shared_ptr<Publisher>>(module, "Publisher")
-  .def(py::init<Node &, py::object, std::string, py::object>())
-  .def_property_readonly(
+  nb::class_<Publisher, Destroyable>(
+    module, "Publisher", nb::is_generic(),
+    nb::sig("class Publisher(Destroyable, typing.Generic[MsgT])"))
+  .def(
+    nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>>(),
+    nb::sig(
+      "def __init__(self, node: Node, msg_type: type[MsgT], "
+      "topic: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None"))
+  .def_prop_ro(
     "pointer", [](const Publisher & publisher) {
       return reinterpret_cast<size_t>(publisher.rcl_ptr());
     },
@@ -175,7 +183,8 @@ define_publisher(py::object module)
     "Retrieve the topic name from a Publisher.")
   .def(
     "publish", &Publisher::publish,
-    "Publish a message")
+    "Publish a message",
+    nb::sig("def publish(self, msg: MsgT, /) -> None"))
   .def(
     "publish_raw", &Publisher::publish_raw,
     "Publish a serialized message.")

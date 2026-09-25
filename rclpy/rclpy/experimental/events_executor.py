@@ -29,15 +29,6 @@ def EventsExecutor(*, context: typing.Optional[rclpy.Context] = None) -> rclpy.e
     # Python backtrace dumped with the crash.
     faulthandler.enable()
 
-    ex = typing.cast(rclpy.executors.Executor, _rclpy.EventsExecutor(context))
-
-    # rclpy.Executor does this too.  Note, the context itself is smart enough to check
-    # for bound methods, and check whether the instances they're bound to still exist at
-    # callback time, so we don't have to worry about tearing down this stale callback at
-    # destruction time.
-    # TODO(bmartin427) This should really be done inside of the EventsExecutor
-    # implementation itself, but I'm unable to figure out a pybind11 incantation that
-    # allows me to pass this bound method call from C++.
-    context.on_shutdown(ex.wake)
-
-    return ex
+    # Note the EventsExecutor implementation takes care of registering a wake-on-shutdown
+    # callback with the context.
+    return typing.cast(rclpy.executors.Executor, _rclpy.EventsExecutor(context))

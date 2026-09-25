@@ -15,18 +15,22 @@
 #ifndef RCLPY__PUBLISHER_HPP_
 #define RCLPY__PUBLISHER_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/publisher.h>
 #include <rcl/time.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "destroyable.hpp"
 #include "node.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -50,8 +54,8 @@ public:
    * \param[in] pyqos_profile rmw_qos_profile_t object for this publisher.
    */
   Publisher(
-    Node & node, py::object pymsg_type, std::string topic,
-    py::object pyqos_profile);
+    Node & node, nb::object pymsg_type, std::string topic,
+    std::optional<rmw_qos_profile_t> pyqos_profile);
 
   /// Get the name of the logger associated with the node of the publisher.
   /**
@@ -87,7 +91,7 @@ public:
    * \param[in] pymsg Message to send.
    */
   void
-  publish(py::object pymsg);
+  publish(nb::object pymsg);
 
   /// Publish a serialized message
   /**
@@ -96,7 +100,7 @@ public:
    * \param[in] msg The serialized message to send.
    */
   void
-  publish_raw(std::string msg);
+  publish_raw(nb::bytes msg);
 
   /// Get rcl_publisher_t pointer
   rcl_publisher_t *
@@ -131,8 +135,8 @@ private:
   Node node_;
   std::shared_ptr<rcl_publisher_t> rcl_publisher_;
 };
-/// Define a pybind11 wrapper for an rclpy::Publisher
-void define_publisher(py::object module);
+/// Define a nanobind wrapper for an rclpy::Publisher
+void define_publisher(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__PUBLISHER_HPP_

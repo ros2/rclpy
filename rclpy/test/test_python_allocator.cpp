@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/embed.h>
+#include <Python.h>
 
 #include <gtest/gtest.h>
 
@@ -20,10 +20,24 @@
 
 #include "python_allocator.hpp"
 
-namespace py = pybind11;
+// nanobind does not provide an embedding API like pybind11's scoped_interpreter,
+// so use the plain CPython one.
+class ScopedInterpreter
+{
+public:
+  ScopedInterpreter()
+  {
+    Py_Initialize();
+  }
+
+  ~ScopedInterpreter()
+  {
+    Py_Finalize();
+  }
+};
 
 TEST(test_allocator, vector) {
-  py::scoped_interpreter guard{};  // Start a Python interpreter
+  ScopedInterpreter guard;  // Start a Python interpreter
 
   std::vector<int, rclpy::PythonAllocator<int>> container(42);
 
@@ -36,7 +50,7 @@ TEST(test_allocator, vector) {
 }
 
 TEST(test_allocator, equality) {
-  py::scoped_interpreter guard{};  // Start a Python interpreter
+  ScopedInterpreter guard;  // Start a Python interpreter
 
   rclpy::PythonAllocator<int> int_alloc;
   rclpy::PythonAllocator<float> float_alloc;
@@ -46,7 +60,7 @@ TEST(test_allocator, equality) {
 }
 
 TEST(test_allocator, make_1) {
-  py::scoped_interpreter guard{};  // Start a Python interpreter
+  ScopedInterpreter guard;  // Start a Python interpreter
 
   rclpy::PythonAllocator<int> int_alloc;
 
@@ -58,7 +72,7 @@ TEST(test_allocator, make_1) {
 }
 
 TEST(test_allocator, copy_construct_make_1) {
-  py::scoped_interpreter guard{};  // Start a Python interpreter
+  ScopedInterpreter guard;  // Start a Python interpreter
 
   rclpy::PythonAllocator<float> float_alloc;
   rclpy::PythonAllocator<int> int_alloc(float_alloc);

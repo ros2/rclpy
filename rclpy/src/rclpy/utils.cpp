@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <rcl/allocator.h>
 #include <rcl/arguments.h>
@@ -39,55 +41,55 @@
 namespace rclpy
 {
 
-py::list
+nb::list
 convert_to_py_names_and_types(const rcl_names_and_types_t * names_and_types)
 {
   assert(names_and_types);
 
-  py::list py_names_and_types(names_and_types->names.size);
+  nb::list py_names_and_types = create_sized_list(names_and_types->names.size);
   for (size_t i = 0u; i < names_and_types->names.size; ++i) {
-    py::list py_types(names_and_types->types[i].size);
+    nb::list py_types = create_sized_list(names_and_types->types[i].size);
     for (size_t j = 0u; j < names_and_types->types[i].size; ++j) {
-      py_types[j] = py::str(names_and_types->types[i].data[j]);
+      py_types[j] = names_and_types->types[i].data[j];
     }
-    py_names_and_types[i] = py::make_tuple(
-      py::str(names_and_types->names.data[i]), py_types);
+    py_names_and_types[i] = nb::make_tuple(
+      names_and_types->names.data[i], py_types);
   }
   return py_names_and_types;
 }
 
 void *
-common_get_type_support(py::object pymessage)
+common_get_type_support(nb::object pymessage)
 {
-  py::object pymetaclass = pymessage.attr("__class__");
+  nb::object pymetaclass = pymessage.attr("__class__");
 
-  py::object value = pymetaclass.attr("_TYPE_SUPPORT");
-  auto capsule_ptr = static_cast<void *>(value.cast<py::capsule>());
+  nb::object value = pymetaclass.attr("_TYPE_SUPPORT");
+  void * capsule_ptr = nb::cast<nb::capsule>(value).data();
 
   return capsule_ptr;
 }
 
 std::unique_ptr<void, destroy_ros_message_function *>
-create_from_py(py::object pymessage)
+create_from_py(nb::object pymessage)
 {
   typedef void * create_ros_message_function (void);
 
-  py::object pymetaclass = pymessage.attr("__class__");
+  nb::object pymetaclass = pymessage.attr("__class__");
 
-  py::object value = pymetaclass.attr("_CREATE_ROS_MESSAGE");
-  auto capsule_ptr = static_cast<void *>(value.cast<py::capsule>());
+  nb::object value = pymetaclass.attr("_CREATE_ROS_MESSAGE");
+  void * capsule_ptr = nb::cast<nb::capsule>(value).data();
   auto create_ros_message =
     reinterpret_cast<create_ros_message_function *>(capsule_ptr);
   if (!create_ros_message) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   value = pymetaclass.attr("_DESTROY_ROS_MESSAGE");
-  capsule_ptr = static_cast<void *>(value.cast<py::capsule>());
+  capsule_ptr = nb::cast<nb::capsule>(value).data();
   auto destroy_ros_message =
     reinterpret_cast<destroy_ros_message_function *>(capsule_ptr);
   if (!destroy_ros_message) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   void * message = create_ros_message();
@@ -99,44 +101,44 @@ create_from_py(py::object pymessage)
 }
 
 std::unique_ptr<void, destroy_ros_message_function *>
-convert_from_py(py::object pymessage)
+convert_from_py(nb::object pymessage)
 {
   typedef bool convert_from_py_signature (PyObject *, void *);
 
   std::unique_ptr<void, destroy_ros_message_function *> message =
     create_from_py(pymessage);
 
-  py::object pymetaclass = pymessage.attr("__class__");
+  nb::object pymetaclass = pymessage.attr("__class__");
 
-  auto capsule_ptr = static_cast<void *>(
-    pymetaclass.attr("_CONVERT_FROM_PY").cast<py::capsule>());
+  void * capsule_ptr =
+    nb::cast<nb::capsule>(pymetaclass.attr("_CONVERT_FROM_PY")).data();
   auto convert =
     reinterpret_cast<convert_from_py_signature *>(capsule_ptr);
   if (!convert) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   if (!convert(pymessage.ptr(), message.get())) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   return message;
 }
 
-py::object
-convert_to_py(void * message, py::object pyclass)
+nb::object
+convert_to_py(void * message, nb::object pyclass)
 {
-  py::object pymetaclass = pyclass.attr("__class__");
+  nb::object pymetaclass = pyclass.attr("__class__");
 
-  auto capsule_ptr = static_cast<void *>(
-    pymetaclass.attr("_CONVERT_TO_PY").cast<py::capsule>());
+  void * capsule_ptr =
+    nb::cast<nb::capsule>(pymetaclass.attr("_CONVERT_TO_PY")).data();
 
   typedef PyObject * convert_to_py_function (void *);
   auto convert = reinterpret_cast<convert_to_py_function *>(capsule_ptr);
   if (!convert) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
-  return py::reinterpret_steal<py::object>(convert(message));
+  return nb::steal(convert(message));
 }
 
 const char *
@@ -153,8 +155,8 @@ assert_liveliness(rclpy::Publisher * publisher)
   }
 }
 
-py::list
-remove_ros_args(py::object pycli_args)
+nb::list
+remove_ros_args(std::optional<nb::list> pycli_args)
 {
   rcl_ret_t ret;
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -162,16 +164,16 @@ remove_ros_args(py::object pycli_args)
 
   std::vector<const char *> arg_values;
   const char ** const_arg_values = NULL;
-  py::list pyargs;
-  if (!pycli_args.is_none()) {
-    pyargs = pycli_args;
+  nb::list pyargs;
+  if (pycli_args) {
+    pyargs = *pycli_args;
     if (!pyargs.empty()) {
       arg_values.resize(pyargs.size());
       for (size_t i = 0; i < pyargs.size(); ++i) {
         // CPython owns const char * memory - no need to free it
         arg_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
         if (!arg_values[i]) {
-          throw py::error_already_set();
+          throw nb::python_error();
         }
       }
       const_arg_values = &(arg_values[0]);
@@ -179,7 +181,7 @@ remove_ros_args(py::object pycli_args)
   }
 
   if (arg_values.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
-    throw py::value_error("too many cli arguments");
+    throw nb::value_error("too many cli arguments");
   }
 
   int num_args = static_cast<int>(arg_values.size());
@@ -235,7 +237,7 @@ remove_ros_args(py::object pycli_args)
 #pragma warning(pop)
 #endif
 
-  py::list result_args(nonros_argc);
+  nb::list result_args = create_sized_list(nonros_argc);
   for (int i = 0; i < nonros_argc; ++i) {
     result_args[i] = nonros_argv[i];
   }
@@ -244,7 +246,7 @@ remove_ros_args(py::object pycli_args)
 }
 
 void
-throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
+throw_if_unparsed_ros_args(nb::list pyargs, const rcl_arguments_t & rcl_args)
 {
   int unparsed_ros_args_count = rcl_arguments_get_count_unparsed_ros(&rcl_args);
 
@@ -265,7 +267,7 @@ throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
 
   RCPPUTILS_SCOPE_EXIT(allocator.deallocate(unparsed_indices_c, allocator.state));
 
-  py::list unparsed_args;
+  nb::list unparsed_args;
   for (int i = 0; i < unparsed_ros_args_count; ++i) {
     int index = unparsed_indices_c[i];
     if (index < 0 || static_cast<size_t>(index) >= pyargs.size()) {
@@ -274,13 +276,13 @@ throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args)
     unparsed_args.append(pyargs[index]);
   }
 
-  throw UnknownROSArgsError(static_cast<std::string>(py::repr(unparsed_args)));
+  throw UnknownROSArgsError(nb::repr(unparsed_args).c_str());
 }
 
-py::dict
+nb::dict
 rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
 {
-  py::dict pyqos_profile;
+  nb::dict pyqos_profile;
   if (0 == strcmp(rmw_profile, "rcl_action_qos_profile_status_default")) {
     pyqos_profile = convert_to_qos_dict(&rcl_action_qos_profile_status_default);
   } else {
@@ -291,25 +293,25 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile)
   return pyqos_profile;
 }
 
-py::dict
+nb::dict
 _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpoint_info)
 {
-  py::list py_endpoint_gid = py::list(RMW_GID_STORAGE_SIZE);
+  nb::list py_endpoint_gid = create_sized_list(RMW_GID_STORAGE_SIZE);
   for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
-    py_endpoint_gid[i] = py::int_(topic_endpoint_info->endpoint_gid[i]);
+    py_endpoint_gid[i] = topic_endpoint_info->endpoint_gid[i];
   }
 
   // Create dictionary that represents rmw_topic_endpoint_info_t
-  py::dict py_endpoint_info_dict;
+  nb::dict py_endpoint_info_dict;
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
-  py_endpoint_info_dict["node_name"] = py::str(topic_endpoint_info->node_name);
-  py_endpoint_info_dict["node_namespace"] = py::str(topic_endpoint_info->node_namespace);
-  py_endpoint_info_dict["topic_type"] = py::str(topic_endpoint_info->topic_type);
+  py_endpoint_info_dict["node_name"] = topic_endpoint_info->node_name;
+  py_endpoint_info_dict["node_namespace"] = topic_endpoint_info->node_namespace;
+  py_endpoint_info_dict["topic_type"] = topic_endpoint_info->topic_type;
   py_endpoint_info_dict["topic_type_hash"] =
     convert_to_type_hash_dict(&topic_endpoint_info->topic_type_hash);
   py_endpoint_info_dict["endpoint_type"] =
-    py::int_(static_cast<int>(topic_endpoint_info->endpoint_type));
+    static_cast<int>(topic_endpoint_info->endpoint_type);
   py_endpoint_info_dict["endpoint_gid"] = py_endpoint_gid;
   py_endpoint_info_dict["qos_profile"] =
     convert_to_qos_dict(&topic_endpoint_info->qos_profile);
@@ -317,14 +319,14 @@ _convert_to_py_topic_endpoint_info(const rmw_topic_endpoint_info_t * topic_endpo
   return py_endpoint_info_dict;
 }
 
-py::list
+nb::list
 convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array)
 {
   if (!info_array) {
     throw std::runtime_error("rmw_topic_endpoint_info_array_t pointer is empty");
   }
 
-  py::list py_info_array(info_array->size);
+  nb::list py_info_array = create_sized_list(info_array->size);
 
   for (size_t i = 0; i < info_array->size; ++i) {
     rmw_topic_endpoint_info_t topic_endpoint_info = info_array->info_array[i];
@@ -334,30 +336,30 @@ convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * i
   return py_info_array;
 }
 
-py::dict
+nb::dict
 _convert_to_py_service_endpoint_info(const rmw_service_endpoint_info_t * service_endpoint_info)
 {
-  py::list py_endpoint_gids;
+  nb::list py_endpoint_gids;
   for(size_t c = 0; c < service_endpoint_info->endpoint_count; c++) {
-    py::list py_endpoint_gid = py::list(RMW_GID_STORAGE_SIZE);
+    nb::list py_endpoint_gid = create_sized_list(RMW_GID_STORAGE_SIZE);
     for (size_t i = 0; i < RMW_GID_STORAGE_SIZE; i++) {
-      py_endpoint_gid[i] = py::int_(service_endpoint_info->endpoint_gids[c][i]);
+      py_endpoint_gid[i] = service_endpoint_info->endpoint_gids[c][i];
     }
     py_endpoint_gids.append(py_endpoint_gid);
   }
   // Create dictionary that represents rmw_service_endpoint_info_t
-  py::dict py_endpoint_info_dict;
+  nb::dict py_endpoint_info_dict;
   // Populate keyword arguments
   // A success returns 0, and a failure returns -1
-  py_endpoint_info_dict["node_name"] = py::str(service_endpoint_info->node_name);
-  py_endpoint_info_dict["node_namespace"] = py::str(service_endpoint_info->node_namespace);
-  py_endpoint_info_dict["service_type"] = py::str(service_endpoint_info->service_type);
+  py_endpoint_info_dict["node_name"] = service_endpoint_info->node_name;
+  py_endpoint_info_dict["node_namespace"] = service_endpoint_info->node_namespace;
+  py_endpoint_info_dict["service_type"] = service_endpoint_info->service_type;
   py_endpoint_info_dict["service_type_hash"] =
     convert_to_type_hash_dict(&service_endpoint_info->service_type_hash);
-  py_endpoint_info_dict["qos_profiles"] = py::list();
-  py_endpoint_info_dict["endpoint_gids"] = py::list();
+  py_endpoint_info_dict["qos_profiles"] = nb::list();
+  py_endpoint_info_dict["endpoint_gids"] = nb::list();
 
-  py::list qos_profiles_list;
+  nb::list qos_profiles_list;
   // Append values to the lists
   for (size_t i = 0; i < service_endpoint_info->endpoint_count; i++) {
     qos_profiles_list.append(
@@ -367,20 +369,20 @@ _convert_to_py_service_endpoint_info(const rmw_service_endpoint_info_t * service
   py_endpoint_info_dict["qos_profiles"] = qos_profiles_list;
   py_endpoint_info_dict["endpoint_gids"] = py_endpoint_gids;
   py_endpoint_info_dict["endpoint_type"] =
-    py::int_(static_cast<int>(service_endpoint_info->endpoint_type));
-  py_endpoint_info_dict["endpoint_count"] = py::int_(service_endpoint_info->endpoint_count);
+    static_cast<int>(service_endpoint_info->endpoint_type);
+  py_endpoint_info_dict["endpoint_count"] = service_endpoint_info->endpoint_count;
 
   return py_endpoint_info_dict;
 }
 
-py::list
+nb::list
 convert_to_py_service_endpoint_info_list(const rmw_service_endpoint_info_array_t * info_array)
 {
   if (!info_array) {
     throw std::runtime_error("rmw_service_endpoint_info_array_t pointer is empty");
   }
 
-  py::list py_info_array(info_array->size);
+  nb::list py_info_array = create_sized_list(info_array->size);
 
   for (size_t i = 0; i < info_array->size; ++i) {
     rmw_service_endpoint_info_t service_endpoint_info = info_array->info_array[i];
@@ -390,45 +392,45 @@ convert_to_py_service_endpoint_info_list(const rmw_service_endpoint_info_array_t
   return py_info_array;
 }
 
-py::object
+nb::object
 _convert_to_py_action_endpoint_info(const rcl_action_endpoint_info_t * action_endpoint_info)
 {
   // Create dictionary that represents the aggregated endpoint information of
   // all the underlying entities of one action client or one action server.
   // Sub-entities that have not been discovered are represented as None.
-  py::dict py_endpoint_info_dict;
+  nb::dict py_endpoint_info_dict;
   py_endpoint_info_dict["goal_service_info"] =
     action_endpoint_info->goal_service_info.node_name ?
-    py::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->goal_service_info)) :
-    py::object(py::none());
+    nb::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->goal_service_info)) :
+    nb::object(nb::none());
   py_endpoint_info_dict["cancel_service_info"] =
     action_endpoint_info->cancel_service_info.node_name ?
-    py::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->cancel_service_info)) :
-    py::object(py::none());
+    nb::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->cancel_service_info)) :
+    nb::object(nb::none());
   py_endpoint_info_dict["result_service_info"] =
     action_endpoint_info->result_service_info.node_name ?
-    py::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->result_service_info)) :
-    py::object(py::none());
+    nb::object(_convert_to_py_service_endpoint_info(&action_endpoint_info->result_service_info)) :
+    nb::object(nb::none());
   py_endpoint_info_dict["feedback_topic_info"] =
     action_endpoint_info->feedback_topic_info.node_name ?
-    py::object(_convert_to_py_topic_endpoint_info(&action_endpoint_info->feedback_topic_info)) :
-    py::object(py::none());
+    nb::object(_convert_to_py_topic_endpoint_info(&action_endpoint_info->feedback_topic_info)) :
+    nb::object(nb::none());
   py_endpoint_info_dict["status_topic_info"] =
     action_endpoint_info->status_topic_info.node_name ?
-    py::object(_convert_to_py_topic_endpoint_info(&action_endpoint_info->status_topic_info)) :
-    py::object(py::none());
+    nb::object(_convert_to_py_topic_endpoint_info(&action_endpoint_info->status_topic_info)) :
+    nb::object(nb::none());
 
   return py_endpoint_info_dict;
 }
 
-py::list
+nb::list
 convert_to_py_action_endpoint_info_list(const rcl_action_endpoint_info_array_t * info_array)
 {
   if (!info_array) {
     throw std::runtime_error("rcl_action_endpoint_info_array_t pointer is empty");
   }
 
-  py::list py_info_array(info_array->size);
+  nb::list py_info_array = create_sized_list(info_array->size);
 
   for (size_t i = 0; i < info_array->size; ++i) {
     // add this dict to the list
@@ -438,45 +440,45 @@ convert_to_py_action_endpoint_info_list(const rcl_action_endpoint_info_array_t *
 }
 
 static
-py::object
+nb::object
 _convert_rmw_time_to_py_duration(const rmw_time_t * duration)
 {
-  auto pyduration_module = py::module::import("rclpy.duration");
-  py::object pymetaclass = pyduration_module.attr("Duration");
+  auto pyduration_module = nb::module_::import_("rclpy.duration");
+  nb::object pymetaclass = pyduration_module.attr("Duration");
   // to bring in the `_a` literal
-  using namespace pybind11::literals;  // NOLINT
+  using nb::literals::operator""_a;
   return pymetaclass("seconds"_a = duration->sec, "nanoseconds"_a = duration->nsec);
 }
 
-py::dict
+nb::dict
 convert_to_qos_dict(const rmw_qos_profile_t * qos_profile)
 {
   // Create dictionary and populate arguments with QoSProfile object
-  py::dict pyqos_kwargs;
+  nb::dict pyqos_kwargs;
 
-  pyqos_kwargs["depth"] = py::int_(qos_profile->depth);
-  pyqos_kwargs["history"] = py::int_(static_cast<int>(qos_profile->history));
-  pyqos_kwargs["reliability"] = py::int_(static_cast<int>(qos_profile->reliability));
-  pyqos_kwargs["durability"] = py::int_(static_cast<int>(qos_profile->durability));
+  pyqos_kwargs["depth"] = qos_profile->depth;
+  pyqos_kwargs["history"] = static_cast<int>(qos_profile->history);
+  pyqos_kwargs["reliability"] = static_cast<int>(qos_profile->reliability);
+  pyqos_kwargs["durability"] = static_cast<int>(qos_profile->durability);
   pyqos_kwargs["lifespan"] = _convert_rmw_time_to_py_duration(&qos_profile->lifespan);
   pyqos_kwargs["deadline"] = _convert_rmw_time_to_py_duration(&qos_profile->deadline);
-  pyqos_kwargs["liveliness"] = py::int_(static_cast<int>(qos_profile->liveliness));
+  pyqos_kwargs["liveliness"] = static_cast<int>(qos_profile->liveliness);
   pyqos_kwargs["liveliness_lease_duration"] = _convert_rmw_time_to_py_duration(
     &qos_profile->liveliness_lease_duration);
   pyqos_kwargs["avoid_ros_namespace_conventions"] =
-    py::bool_(qos_profile->avoid_ros_namespace_conventions);
+    qos_profile->avoid_ros_namespace_conventions;
 
   return pyqos_kwargs;
 }
 
-py::dict
+nb::dict
 convert_to_type_hash_dict(const rosidl_type_hash_t * type_hash)
 {
   // Create dictionary and populate arguments with type hash object
-  py::dict type_hash_kwargs;
+  nb::dict type_hash_kwargs;
 
-  type_hash_kwargs["version"] = py::int_(type_hash->version);
-  type_hash_kwargs["value"] = py::bytes(
+  type_hash_kwargs["version"] = type_hash->version;
+  type_hash_kwargs["value"] = nb::bytes(
     reinterpret_cast<const char *>(type_hash->value),
     ROSIDL_TYPE_HASH_SIZE);
 

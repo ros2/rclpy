@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/allocator.h>
 #include <rcl/error_handling.h>
@@ -23,7 +24,7 @@
 
 #include "clock.hpp"
 
-using pybind11::literals::operator""_a;
+using nb::literals::operator""_a;
 
 namespace rclpy
 {
@@ -91,7 +92,7 @@ void Clock::set_ros_time_override_is_enabled(bool enabled)
   }
   if (PyErr_Occurred()) {
     // Time jump callbacks raised
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 }
 
@@ -104,7 +105,7 @@ void Clock::set_ros_time_override(rcl_time_point_t time_point)
 
   if (PyErr_Occurred()) {
     // Time jump callbacks raised
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 }
 
@@ -120,29 +121,30 @@ _rclpy_on_time_jump(
     return;
   }
   auto pyjump_handle_c = static_cast<PyObject *>(user_data);
-  auto pyjump_handle = py::reinterpret_borrow<py::object>(pyjump_handle_c);
+  auto pyjump_handle = nb::borrow<nb::object>(pyjump_handle_c);
 
   if (before_jump) {
     // Call pre jump callback with no arguments
-    py::object pre_callback = pyjump_handle.attr("_pre_callback");
+    nb::object pre_callback = pyjump_handle.attr("_pre_callback");
     if (pre_callback.is_none()) {
       return;
     }
     pre_callback();
   } else {
     // Call post jump callback with JumpInfo as an argument
-    py::object post_callback = pyjump_handle.attr("_post_callback");
+    nb::object post_callback = pyjump_handle.attr("_post_callback");
     if (post_callback.is_none()) {
       return;
     }
-    py::object clock_change = py::cast(time_jump->clock_change);
+    nb::object clock_change = nb::cast(time_jump->clock_change);
+    nb::object pydict = nb::module_::import_("builtins").attr("dict");
     post_callback(
-      py::dict("clock_change"_a = clock_change, "delta"_a = time_jump->delta.nanoseconds));
+      pydict("clock_change"_a = clock_change, "delta"_a = time_jump->delta.nanoseconds));
   }
 }
 
 void Clock::add_clock_callback(
-  py::object pyjump_handle,
+  nb::object pyjump_handle,
   bool on_clock_change,
   int64_t min_forward,
   int64_t min_backward)
@@ -159,7 +161,7 @@ void Clock::add_clock_callback(
   }
 }
 
-void Clock::remove_clock_callback(py::object pyjump_handle)
+void Clock::remove_clock_callback(nb::object pyjump_handle)
 {
   rcl_ret_t ret = rcl_clock_remove_jump_callback(
     rcl_clock_.get(), _rclpy_on_time_jump, pyjump_handle.ptr());
@@ -168,11 +170,11 @@ void Clock::remove_clock_callback(py::object pyjump_handle)
   }
 }
 
-void define_clock(py::object module)
+void define_clock(nb::object module)
 {
-  py::class_<Clock, Destroyable, std::shared_ptr<Clock>>(module, "Clock")
-  .def(py::init<int>())
-  .def_property_readonly(
+  nb::class_<Clock, Destroyable>(module, "Clock")
+  .def(nb::init<int>())
+  .def_prop_ro(
     "pointer", [](const Clock & clock) {
       return reinterpret_cast<size_t>(clock.rcl_ptr());
     },

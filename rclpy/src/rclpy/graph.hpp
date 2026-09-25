@@ -15,13 +15,14 @@
 #ifndef RCLPY__GRAPH_HPP_
 #define RCLPY__GRAPH_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <string>
 
 #include "node.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -41,7 +42,7 @@ namespace rclpy
  *   strings).
  * \see rcl_get_publisher_names_and_types_by_node
  */
-py::list
+nb::list
 graph_get_publisher_names_and_types_by_node(
   Node & node, bool no_demangle,
   std::string node_name, std::string node_namespace);
@@ -61,7 +62,7 @@ graph_get_publisher_names_and_types_by_node(
  *   strings).
  * \see rcl_get_subscriber_names_and_types_by_node
  */
-py::list
+nb::list
 graph_get_subscriber_names_and_types_by_node(
   Node & node, bool no_demangle,
   std::string node_name, std::string node_namespace);
@@ -79,7 +80,7 @@ graph_get_subscriber_names_and_types_by_node(
  *   strings).
  * \see rcl_get_service_names_and_types_by_node
  */
-py::list
+nb::list
 graph_get_service_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace);
 
@@ -96,7 +97,7 @@ graph_get_service_names_and_types_by_node(
  *   strings).
  * \see rcl_get_client_names_and_types_by_node
  */
-py::list
+nb::list
 graph_get_client_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace);
 
@@ -112,7 +113,7 @@ graph_get_client_names_and_types_by_node(
  *   strings).
  * \see rcl_get_topic_names_and_types
  */
-py::list
+nb::list
 graph_get_topic_names_and_types(Node & node, bool no_demangle);
 
 /// Get all service names and types in the ROS graph.
@@ -125,7 +126,7 @@ graph_get_topic_names_and_types(Node & node, bool no_demangle);
  *   strings).
  * \see rcl_get_service_names_and_types
  */
-py::list
+nb::list
 graph_get_service_names_and_types(Node & node);
 
 /// Return a list of publishers on a given topic.
@@ -142,7 +143,7 @@ graph_get_service_names_and_types(Node & node);
  *     otherwise it should be a valid ROS topic name.
  * \return list of publishers
  */
-py::list
+nb::list
 graph_get_publishers_info_by_topic(
   Node & node, const char * topic_name, bool no_mangle);
 
@@ -160,7 +161,7 @@ graph_get_publishers_info_by_topic(
  *     otherwise it should be a valid ROS topic name.
  * \return list of subscriptions.
  */
-py::list
+nb::list
 graph_get_subscriptions_info_by_topic(
   Node & node, const char * topic_name, bool no_mangle);
 
@@ -178,7 +179,7 @@ graph_get_subscriptions_info_by_topic(
  *     otherwise it should be a valid ROS service name.
  * \return list of clients.
  */
-py::list
+nb::list
 graph_get_clients_info_by_service(
   Node & node, const char * service_name, bool no_mangle);
 
@@ -196,7 +197,7 @@ graph_get_clients_info_by_service(
  *     otherwise it should be a valid ROS service name.
  * \return list of servers.
  */
-py::list
+nb::list
 graph_get_servers_info_by_service(
   Node & node, const char * service_name, bool no_mangle);
 
@@ -213,7 +214,7 @@ graph_get_servers_info_by_service(
  *   strings).
  * \see rcl_action_get_client_names_and_types_by_node
  */
-py::list
+nb::list
 graph_get_action_client_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace);
 
@@ -230,7 +231,7 @@ graph_get_action_client_names_and_types_by_node(
  *   strings).
  * \see rcl_action_get_server_names_and_types_by_node
  */
-py::list
+nb::list
 graph_get_action_server_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace);
 
@@ -244,7 +245,7 @@ graph_get_action_server_names_and_types_by_node(
  *   strings).
  * \see rcl_action_get_names_and_types
  */
-py::list
+nb::list
 graph_get_action_names_and_types(Node & node);
 
 /// Return a list of action clients on a given action.
@@ -262,7 +263,7 @@ graph_get_action_names_and_types(Node & node);
  * \return list of action clients.
  * \see rcl_action_get_clients_info_by_action
  */
-py::list
+nb::list
 graph_get_action_clients_info_by_action(
   Node & node, const char * action_name);
 
@@ -281,7 +282,7 @@ graph_get_action_clients_info_by_action(
  * \return list of action servers.
  * \see rcl_action_get_servers_info_by_action
  */
-py::list
+nb::list
 graph_get_action_servers_info_by_action(
   Node & node, const char * action_name);
 

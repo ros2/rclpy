@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/vector.h>
 
 #include <rcl/allocator.h>
 #include <rcl/context.h>
@@ -52,7 +54,7 @@ void shutdown_contexts()
   g_contexts.clear();
 }
 
-Context::Context(py::list pyargs, size_t domain_id)
+Context::Context(nb::list pyargs, size_t domain_id)
 {
   rcl_context_ = std::shared_ptr<rcl_context_t>(
     new rcl_context_t,
@@ -94,7 +96,7 @@ Context::Context(py::list pyargs, size_t domain_id)
     // CPython owns const char * memory - no need to free it
     arg_c_values[i] = PyUnicode_AsUTF8(pyargs[i].ptr());
     if (!arg_c_values[i]) {
-      throw py::error_already_set();
+      throw nb::python_error();
     }
   }
 
@@ -165,11 +167,11 @@ Context::shutdown()
   }
 }
 
-void define_context(py::object module)
+void define_context(nb::object module)
 {
-  py::class_<Context, Destroyable, std::shared_ptr<Context>>(module, "Context")
-  .def(py::init<py::list, size_t>())
-  .def_property_readonly(
+  nb::class_<Context, Destroyable>(module, "Context")
+  .def(nb::init<nb::list, size_t>())
+  .def_prop_ro(
     "pointer", [](const Context & context) {
       return reinterpret_cast<size_t>(context.rcl_ptr());
     },

@@ -15,7 +15,11 @@
 #ifndef RCLPY__CLIENT_HPP_
 #define RCLPY__CLIENT_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/client.h>
 #include <rcl/service_introspection.h>
@@ -23,13 +27,14 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "clock.hpp"
 #include "destroyable.hpp"
 #include "node.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -50,7 +55,9 @@ public:
    * \param[in] service_name The service name
    * \param[in] pyqos QoSProfile python object for this client
    */
-  Client(Node & node, py::object pysrv_type, const std::string & service_name, py::object pyqos);
+  Client(
+    Node & node, nb::object pysrv_type, const std::string & service_name,
+    std::optional<rmw_qos_profile_t> pyqos);
 
   ~Client() = default;
 
@@ -63,7 +70,7 @@ public:
    * \return sequence_number Index of the sent request
    */
   int64_t
-  send_request(py::object pyrequest);
+  send_request(nb::object pyrequest);
 
   /// Check if a service server is available
   /**
@@ -81,8 +88,8 @@ public:
    * \param[in] pyresponse_type Instance of the message type to take
    * \return 2-tuple sequence number and received response, or None if there is no response
    */
-  py::tuple
-  take_response(py::object pyresponse_type);
+  nb::tuple
+  take_response(nb::object pyresponse_type);
 
   /// Get rcl_client_t pointer
   rcl_client_t *
@@ -101,7 +108,7 @@ public:
    */
   void
   configure_introspection(
-    Clock & clock, py::object pyqos_service_event_pub,
+    Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
   /// Force an early destruction of this object
@@ -137,12 +144,12 @@ private:
   set_callback(rcl_event_callback_t callback, const void * user_data);
 };
 
-/// Define a pybind11 wrapper for an rclpy::Client
+/// Define a nanobind wrapper for an rclpy::Client
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
 void
-define_client(py::object module);
+define_client(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__CLIENT_HPP_

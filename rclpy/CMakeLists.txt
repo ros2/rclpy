@@ -23,25 +23,39 @@ find_package(rmw REQUIRED)
 find_package(rmw_implementation_cmake REQUIRED)
 find_package(rosidl_runtime_c REQUIRED)
 
-# By default, without the settings below, find_package(Python3) will attempt
+# By default, without the settings below, find_package(Python) will attempt
 # to find the newest python version it can, and additionally will find the
 # most specific version.  For instance, on a system that has
 # /usr/bin/python3.10, /usr/bin/python3.11, and /usr/bin/python3, it will find
 # /usr/bin/python3.11, even if /usr/bin/python3 points to /usr/bin/python3.10.
 # The behavior we want is to prefer the "system" installed version unless the
-# user specifically tells us otherwise through the Python3_EXECUTABLE hint.
+# user specifically tells us otherwise through the Python_EXECUTABLE hint.
 # Setting CMP0094 to NEW means that the search will stop after the first
-# python version is found.  Setting Python3_FIND_UNVERSIONED_NAMES means that
+# python version is found.  Setting Python_FIND_UNVERSIONED_NAMES means that
 # the search will prefer /usr/bin/python3 over /usr/bin/python3.11.  And that
 # latter functionality is only available in CMake 3.20 or later, so we need
 # at least that version.
 cmake_policy(SET CMP0094 NEW)
-set(Python3_FIND_UNVERSIONED_NAMES FIRST)
+set(Python_FIND_UNVERSIONED_NAMES FIRST)
 
-# Find python before pybind11
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-
-find_package(pybind11 REQUIRED)
+# Find python before nanobind
+find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development.Module)
+# Try standard system path lookup first (Ubuntu / Debian / system install)
+find_package(nanobind CONFIG QUIET)
+# If not found in standard system path, fallback to querying Python.
+if(NOT nanobind_FOUND)
+    execute_process(
+        COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        OUTPUT_VARIABLE nanobind_ROOT
+        RESULT_VARIABLE nanobind_PROC_RESULT
+    )
+    if(nanobind_PROC_RESULT EQUAL 0)
+        find_package(nanobind CONFIG REQUIRED)
+    else()
+        message(FATAL_ERROR "nanobind CMake files could not be located via system path or Python module.")
+    endif()
+endif()
 
 # enables using the Python extensions from the build space for testing
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy/__init__.py" "")
@@ -69,10 +83,10 @@ function(configure_build_install_location _library_name)
   )
 endfunction()
 
-# Split from main extension and converted to pybind11
-pybind11_add_module(_rclpy_pybind11
+# Split from main extension and converted to nanobind
+nanobind_add_module(_rclpy_nanobind
   src/rclpy/_rclpy_logging.cpp
-  src/rclpy/_rclpy_pybind11.cpp
+  src/rclpy/_rclpy_nanobind.cpp
   src/rclpy/action_client.cpp
   src/rclpy/action_goal_handle.cpp
   src/rclpy/action_server.cpp
@@ -111,13 +125,13 @@ pybind11_add_module(_rclpy_pybind11
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT APPLE)
-  target_link_libraries(_rclpy_pybind11 PRIVATE atomic)
+  target_link_libraries(_rclpy_nanobind PRIVATE atomic)
 endif()
 
-target_include_directories(_rclpy_pybind11 PRIVATE
+target_include_directories(_rclpy_nanobind PRIVATE
   src/rclpy/
 )
-target_link_libraries(_rclpy_pybind11 PRIVATE
+target_link_libraries(_rclpy_nanobind PRIVATE
   ament_cmake_ros_core::ament_ros_cxx_standard
   lifecycle_msgs::lifecycle_msgs__rosidl_generator_c
   lifecycle_msgs::lifecycle_msgs__rosidl_typesupport_c
@@ -130,7 +144,23 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rcutils::rcutils
   rosidl_runtime_c::rosidl_runtime_c
 )
-configure_build_install_location(_rclpy_pybind11)
+configure_build_install_location(_rclpy_nanobind)
+
+# Generate the type stubs for the extension module into the source tree,
+# so that they stay committed alongside the bindings.
+nanobind_add_stub(_rclpy_nanobind_stub
+  MODULE _rclpy_nanobind
+  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/_rclpy_nanobind.pyi"
+  PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
+  PATTERN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
+  DEPENDS _rclpy_nanobind "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
+)
+nanobind_add_stub(_rclpy_nanobind_service_introspection_stub
+  MODULE _rclpy_nanobind.service_introspection
+  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/service_introspection.pyi"
+  PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
+  DEPENDS _rclpy_nanobind
+)
 
 if(NOT WIN32)
   ament_environment_hooks(
@@ -144,7 +174,7 @@ if(BUILD_TESTING)
   get_target_property(ament_cmake_cppcheck_ADDITIONAL_INCLUDE_DIRS rcutils::rcutils INTERFACE_INCLUDE_DIRECTORIES)
   list(APPEND AMENT_LINT_AUTO_EXCLUDE "ament_cmake_cppcheck")
 
-  if(Python3_VERSION VERSION_LESS 3.12)
+  if(Python_VERSION VERSION_LESS 3.12)
     file(GLOB AMENT_LINT_AUTO_FILE_EXCLUDE
       "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/experimental/async_*.py"
       "${CMAKE_CURRENT_SOURCE_DIR}/test/test_async_*.py"
@@ -174,12 +204,16 @@ if(BUILD_TESTING)
     string(REPLACE "\\" "/" ament_index_build_path "${ament_index_build_path}")
   endif()
 
+  # The allocator gtest embeds the interpreter, so it needs the full Python
+  # library rather than the Development.Module component used for the extension.
+  find_package(Python 3.8 REQUIRED COMPONENTS Development.Embed)
+
   ament_add_gtest(test_python_allocator
     test/test_python_allocator.cpp)
   target_include_directories(test_python_allocator PRIVATE src/rclpy)
   target_link_libraries(test_python_allocator
     ament_cmake_ros_core::ament_ros_cxx_standard
-    pybind11::embed)
+    Python::Python)
 
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
@@ -237,7 +271,7 @@ if(BUILD_TESTING)
       test/test_wait_for_message.py
     )
 
-    if(Python3_VERSION VERSION_GREATER_EQUAL 3.12)
+    if(Python_VERSION VERSION_GREATER_EQUAL 3.12)
       list(APPEND _rclpy_pytest_tests
         test/test_async_node.py
         test/test_async_publisher.py
