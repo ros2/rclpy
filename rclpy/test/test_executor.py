@@ -27,6 +27,7 @@ import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.context import Context
 from rclpy.executors import Executor
+from rclpy.executors import ExternalShutdownException
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ShutdownException
 from rclpy.executors import SingleThreadedExecutor
@@ -130,6 +131,32 @@ class TestExecutor(unittest.TestCase):
                 executor.shutdown()
                 with self.assertRaises(ShutdownException):
                     next(cb_generator)
+
+    def test_spin_once_after_context_shutdown_between_calls(self) -> None:
+        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
+                                                 MultiThreadedExecutor,
+                                                 EventsExecutor]
+        for cls in executor_types:
+            for timeout_sec in [None, 0.0, 0.05]:
+                with self.subTest(cls=cls, timeout_sec=timeout_sec):
+                    context = rclpy.context.Context()
+                    rclpy.init(context=context)
+                    node = rclpy.create_node('spin_once_after_shutdown', context=context)
+                    node.create_timer(0.01, lambda: None)
+                    executor = cls(context=context)
+                    try:
+                        executor.add_node(node)
+                        executor.spin_once(timeout_sec=0.05)
+                        rclpy.shutdown(context=context)
+                        if cls is MultiThreadedExecutor:
+                            executor.spin_once(timeout_sec=timeout_sec)
+                        else:
+                            with self.assertRaises(ExternalShutdownException):
+                                executor.spin_once(timeout_sec=timeout_sec)
+                    finally:
+                        executor.shutdown()
+                        node.destroy_node()
+                        context.destroy()
 
     def test_remove_node(self) -> None:
         self.assertIsNotNone(self.node.handle)
