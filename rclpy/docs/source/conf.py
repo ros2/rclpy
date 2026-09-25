@@ -282,8 +282,8 @@ class _RmwQosProfile(_StubBase):
 
 class _RclpyStub:
     RMW_DURATION_INFINITE = 2**63 - 1
-    RMW_QOS_DEADLINE_BEST_AVAILABLE = 0
-    RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE = 0
+    RMW_QOS_DEADLINE_BEST_AVAILABLE = 2**63 - 2
+    RMW_QOS_LIVELINESS_LEASE_DURATION_BEST_AVAILABLE = 2**63 - 2
     rmw_qos_profile_t = _RmwQosProfile
     rclpy_action_get_rmw_qos_profile = staticmethod(_predefined_qos_profile)
 
