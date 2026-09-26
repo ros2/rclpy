@@ -108,10 +108,15 @@ pybind11_add_module(_rclpy_pybind11
   src/rclpy/type_description_service.cpp
   src/rclpy/utils.cpp
   src/rclpy/wait_set.cpp
+  src/rclpy/wakeup_socket.cpp
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT APPLE)
   target_link_libraries(_rclpy_pybind11 PRIVATE atomic)
+endif()
+
+if(WIN32)
+  target_link_libraries(_rclpy_pybind11 PRIVATE ws2_32)
 endif()
 
 target_include_directories(_rclpy_pybind11 PRIVATE
@@ -235,6 +240,7 @@ if(BUILD_TESTING)
       test/test_validate_topic_name.py
       test/test_waitable.py
       test/test_wait_for_message.py
+      test/test_wakeup_socket.py
     )
 
     if(Python3_VERSION VERSION_GREATER_EQUAL 3.12)

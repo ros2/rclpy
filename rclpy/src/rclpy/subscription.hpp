@@ -20,6 +20,7 @@
 #include <rcl/subscription.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -115,6 +116,13 @@ public:
 
   void
   clear_on_new_message_callback();
+
+  /// Write one byte to handle for each new message.
+  /**
+    * \param[in] handle POSIX file descriptor or windows SOCKET.
+   */
+  void
+  set_on_new_message_wakeup(std::uintptr_t handle);
 
   /// Check if subscription instance supports content filter.
   bool is_cft_supported() const;
