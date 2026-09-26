@@ -345,7 +345,11 @@ class Executor(ContextManager['Executor']):
 
     def __del__(self) -> None:
         if self._sigint_gc is not None:
-            self._sigint_gc.destroy()
+            try:
+                self._sigint_gc.destroy()
+            except InvalidHandle:
+                # already destroyed
+                pass
 
     def add_node(self, node: 'Node') -> bool:
         """
