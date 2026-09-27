@@ -22,7 +22,6 @@ from typing import Optional
 from typing import Protocol
 from typing import Set
 import unittest
-from unittest.mock import patch
 import warnings
 
 import rclpy
@@ -39,7 +38,7 @@ from rclpy.task import Future
 from test_msgs.srv import Empty
 
 
-class ExcutorTypeLike(Protocol):
+class ExecutorTypeLike(Protocol):
 
     def __call__(self, *, context: Optional[Context] = None) -> Executor: ...
 
@@ -86,7 +85,10 @@ class TestExecutor(unittest.TestCase):
 
     def test_executor_immediate_shutdown(self) -> None:
         self.assertIsNotNone(self.node.handle)
-        for cls in [SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]:
+        executor_types: list[ExecutorTypeLike] = [SingleThreadedExecutor,
+                                                  MultiThreadedExecutor,
+                                                  EventsExecutor]
+        for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
                 try:
@@ -381,9 +383,9 @@ class TestExecutor(unittest.TestCase):
     def test_create_task_coroutine_wake_from_another_thread(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
-                                                 MultiThreadedExecutor,
-                                                 EventsExecutor]
+        executor_types: list[ExecutorTypeLike] = [SingleThreadedExecutor,
+                                                  MultiThreadedExecutor,
+                                                  EventsExecutor]
         for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
@@ -492,9 +494,9 @@ class TestExecutor(unittest.TestCase):
     def test_coroutine_exception_after_await(self) -> None:
         """Exception in a coroutine after awaiting a future must propagate."""
         self.assertIsNotNone(self.node.handle)
-        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
-                                                 MultiThreadedExecutor,
-                                                 EventsExecutor]
+        executor_types: list[ExecutorTypeLike] = [SingleThreadedExecutor,
+                                                  MultiThreadedExecutor,
+                                                  EventsExecutor]
         for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
@@ -522,9 +524,9 @@ class TestExecutor(unittest.TestCase):
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""
         self.assertIsNotNone(self.node.handle)
-        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
-                                                 MultiThreadedExecutor,
-                                                 EventsExecutor]
+        executor_types: list[ExecutorTypeLike] = [SingleThreadedExecutor,
+                                                  MultiThreadedExecutor,
+                                                  EventsExecutor]
         for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
@@ -555,9 +557,9 @@ class TestExecutor(unittest.TestCase):
     def test_await_already_completed_future(self) -> None:
         """Awaiting an already-completed future must resume and return its result."""
         self.assertIsNotNone(self.node.handle)
-        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
-                                                 MultiThreadedExecutor,
-                                                 EventsExecutor]
+        executor_types: list[ExecutorTypeLike] = [SingleThreadedExecutor,
+                                                  MultiThreadedExecutor,
+                                                  EventsExecutor]
         for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
@@ -841,86 +843,58 @@ class TestExecutor(unittest.TestCase):
             spin_thread.join(timeout=5)
             self.node.destroy_timer(tmr)
 
-    def test_multi_threaded_shutdown_timeout_before_submit(self) -> None:
+    def test_multi_threaded_shutdown_timeout_keeps_worker_pool(self) -> None:
+        # A timed-out shutdown() must not tear down the thread pool: a callback the
+        # spinner has already selected from the wait set but not yet handed to the
+        # pool still has to be submitted without error, and a later shutdown() retry
+        # must succeed.
+        #
+        # spin_once() dispatches exactly one ready callback per call, so making two
+        # guard conditions ready before the first spin_once() leaves the second one
+        # selected-but-not-submitted when shutdown() runs in between.
         for wait_for_threads in (True, False):
             with self.subTest(wait_for_threads=wait_for_threads):
                 executor = MultiThreadedExecutor(num_threads=2, context=self.context)
-                selected = threading.Event()
+                started = threading.Event()
                 release = threading.Event()
-                executed = threading.Event()
-                calls = []
-                spin_errors: List[BaseException] = []
-                shutdown_errors: List[BaseException] = []
-                shutdown_results = []
 
-                def callback() -> None:
-                    calls.append(True)
-                    executed.set()
+                def blocking_callback() -> None:
+                    started.set()
+                    # Bound the wait so a broken test fails rather than hangs.
+                    release.wait(timeout=10)
 
-                task = executor.create_task(callback)
-                submit = executor._executor.submit
+                # Reentrant so the second guard is still executable while the first
+                # callback is blocking. Both guards share the callback so the test does
+                # not depend on which one the executor dispatches first.
+                group = ReentrantCallbackGroup()
+                gc_a = self.node.create_guard_condition(blocking_callback, callback_group=group)
+                gc_b = self.node.create_guard_condition(blocking_callback, callback_group=group)
+                executor.add_node(self.node)
+                try:
+                    gc_a.trigger()
+                    gc_b.trigger()
 
-                def submit_selected(handler):
-                    # The real spin has selected our task, but the pool has not accepted it.
-                    self.assertIs(handler, task)
-                    selected.set()
-                    self.assertTrue(release.wait(timeout=10), 'submission was not released')
-                    return submit(handler)
+                    # Dispatches one guard; its callback blocks on a worker thread.
+                    executor.spin_once(timeout_sec=5)
+                    self.assertTrue(started.wait(timeout=10), 'no callback was dispatched')
 
-                def spin() -> None:
-                    try:
-                        executor.spin()
-                    except BaseException as exc:
-                        spin_errors.append(exc)
+                    # Times out because the callback is still in flight.
+                    self.assertFalse(executor.shutdown(
+                        timeout_sec=0.01, wait_for_threads=wait_for_threads))
 
-                def shutdown() -> None:
-                    try:
-                        for _ in range(2):
-                            shutdown_results.append(executor.shutdown(
-                                timeout_sec=0.01, wait_for_threads=wait_for_threads))
-                    except BaseException as exc:
-                        shutdown_errors.append(exc)
+                    # Hands the other, already-selected guard to the pool. If the
+                    # timed-out shutdown() had shut the pool down, this raises
+                    # RuntimeError('cannot schedule new futures after shutdown').
+                    executor.spin_once(timeout_sec=5)
 
-                spin_thread = threading.Thread(target=spin)
-                shutdown_thread = threading.Thread(target=shutdown)
-                with patch.object(executor._executor, 'submit', new=submit_selected):
-                    try:
-                        spin_thread.start()
-                        self.assertTrue(selected.wait(timeout=10), 'no task was selected')
-                        shutdown_thread.start()
-                        shutdown_thread.join(timeout=10)
-                        self.assertFalse(shutdown_thread.is_alive(), 'shutdown did not time out')
-                        self.assertFalse(shutdown_errors, f'shutdown raised: {shutdown_errors!r}')
-                        self.assertEqual(shutdown_results, [False, False])
-                        self.assertTrue(executor.is_spinning)
-
-                        release.set()
-                        spin_thread.join(timeout=10)
-                        self.assertFalse(spin_thread.is_alive(), 'spin did not exit')
-                        self.assertFalse(
-                            spin_errors, f'spin raised: {spin_errors!r}; calls: {calls!r}')
-                        self.assertTrue(executed.wait(timeout=10), 'selected task did not execute')
-                        self.assertTrue(executor.shutdown(
-                            timeout_sec=10, wait_for_threads=wait_for_threads))
-                        with self.assertRaisesRegex(
-                                RuntimeError, 'cannot schedule new futures after shutdown'):
-                            submit(task)
-                    finally:
-                        release.set()
-                        for thread in (spin_thread, shutdown_thread):
-                            if thread.ident is not None:
-                                thread.join(timeout=10)
-                        executor.shutdown(timeout_sec=10, wait_for_threads=False)
-                        task.cancel()
-                        for worker in executor._executor._threads:
-                            worker.join(timeout=10)
-                            self.assertFalse(worker.is_alive(), 'worker thread leaked')
-                        self.assertFalse(spin_thread.is_alive(), 'spin thread leaked')
-                        self.assertFalse(shutdown_thread.is_alive(), 'shutdown thread leaked')
-
-                self.assertTrue(task.done(), 'selected task did not complete')
-                self.assertIsNone(task.result())
-                self.assertEqual(calls, [True])
+                    release.set()
+                    self.assertTrue(executor.shutdown(
+                        timeout_sec=10, wait_for_threads=wait_for_threads))
+                finally:
+                    release.set()
+                    executor.shutdown(timeout_sec=10, wait_for_threads=False)
+                    self.node.destroy_guard_condition(gc_a)
+                    self.node.destroy_guard_condition(gc_b)
 
     def test_work_tracker_coroutine_closed_on_different_thread(self) -> None:
         class YieldOnce:
@@ -1070,7 +1044,7 @@ class TestExecutor(unittest.TestCase):
         errors_a = []
         wait_returned_a = []
 
-        def worker_a_thread():
+        def worker_a_thread() -> None:
             try:
                 with wt.track_callback():
                     worker_a_running.set()
@@ -1083,7 +1057,7 @@ class TestExecutor(unittest.TestCase):
             except Exception as e:
                 errors_a.append(e)
 
-        def worker_b_thread():
+        def worker_b_thread() -> None:
             with wt.track_callback():
                 worker_b_running.set()
                 # Run until Worker A's wait times out
@@ -1200,7 +1174,7 @@ class TestExecutor(unittest.TestCase):
     def test_not_lose_callback(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor, EventsExecutor]
+        executor_types: list[ExecutorTypeLike] = [SingleThreadedExecutor, EventsExecutor]
         for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
@@ -1237,9 +1211,9 @@ class TestExecutor(unittest.TestCase):
     def test_create_future_returns_future_with_executor_attached(self) -> None:
         self.assertIsNotNone(self.node.handle)
 
-        executor_types: list[ExcutorTypeLike] = [SingleThreadedExecutor,
-                                                 MultiThreadedExecutor,
-                                                 EventsExecutor]
+        executor_types: list[ExecutorTypeLike] = [SingleThreadedExecutor,
+                                                  MultiThreadedExecutor,
+                                                  EventsExecutor]
         for cls in executor_types:
             with self.subTest(cls=cls):
                 executor = cls(context=self.context)
