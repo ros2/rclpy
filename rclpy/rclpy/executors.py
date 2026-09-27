@@ -1288,6 +1288,8 @@ class MultiThreadedExecutor(Executor):
             timeout expires before all outstanding work is done.
         """
         success: bool = super().shutdown(timeout_sec)
+        if not success:
+            return False
         # Always tell the pool to shut down without waiting: if shutdown()
         # was called from inside a callback running on one of these
         # workers, letting ThreadPoolExecutor.shutdown(wait=True) join the
