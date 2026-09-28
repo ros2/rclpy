@@ -74,30 +74,30 @@ class SimpleManagedEntity(ManagedEntity):
     @staticmethod
     @overload
     def when_enabled(wrapped: None, *,
-                     when_not_enabled: Optional[Callable[..., None]] = None
-                     ) -> Callable[[Callable[..., None]], Callable[..., None]]: ...
+                     when_not_enabled: Optional[Callable[..., Any]] = None
+                     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
     @staticmethod
     @overload
-    def when_enabled(wrapped: Callable[..., None], *,
-                     when_not_enabled: Optional[Callable[..., None]] = None
-                     ) -> Callable[..., None]: ...
+    def when_enabled(wrapped: Callable[..., Any], *,
+                     when_not_enabled: Optional[Callable[..., Any]] = None
+                     ) -> Callable[..., Any]: ...
 
     @staticmethod
-    def when_enabled(wrapped: Optional[Callable[..., None]] = None, *,
-                     when_not_enabled: Optional[Callable[..., None]] = None) -> Union[
-                         Callable[..., None],
-                         Callable[[Callable[..., None]], Callable[..., None]]
+    def when_enabled(wrapped: Optional[Callable[..., Any]] = None, *,
+                     when_not_enabled: Optional[Callable[..., Any]] = None) -> Union[
+                         Callable[..., Any],
+                         Callable[[Callable[..., Any]], Callable[..., Any]]
                         ]:
-        def decorator(wrapped: Callable[..., None]) -> Callable[..., None]:
+        def decorator(wrapped: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(wrapped)
             def only_when_enabled_wrapper(self: SimpleManagedEntity, *args: List[Any],
-                                          **kwargs: Dict[str, Any]) -> None:
+                                          **kwargs: Dict[str, Any]) -> Any:
                 if not self._enabled:
                     if when_not_enabled is not None:
-                        when_not_enabled()
+                        return when_not_enabled()
                     return
-                wrapped(self, *args, **kwargs)
+                return wrapped(self, *args, **kwargs)
             return only_when_enabled_wrapper
         if wrapped is None:
             return decorator

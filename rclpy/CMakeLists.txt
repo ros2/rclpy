@@ -200,6 +200,7 @@ if(BUILD_TESTING)
       test/test_guard_condition.py
       test/test_init_shutdown.py
       test/test_lifecycle.py
+      test/test_managed_entity.py
       test/test_logging.py
       test/test_logging_rosout.py
       test/test_logging_service.py
