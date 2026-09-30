@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from rclpy.lifecycle.managed_entity import SimpleManagedEntity
+from rclpy.lifecycle.node import LifecycleState
 
 
 def test_when_enabled_returns_wrapped_and_fallback_results() -> None:
@@ -25,5 +26,5 @@ def test_when_enabled_returns_wrapped_and_fallback_results() -> None:
     entity = Entity()
     assert entity.state() == 'inactive'
 
-    entity.on_activate(None)
+    entity.on_activate(LifecycleState(state_id=2, label='inactive'))
     assert entity.state() == 'active'

@@ -73,7 +73,7 @@ class SimpleManagedEntity(ManagedEntity):
 
     @staticmethod
     @overload
-    def when_enabled(wrapped: None, *,
+    def when_enabled(wrapped: None = None, *,
                      when_not_enabled: Optional[Callable[..., Any]] = None
                      ) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
