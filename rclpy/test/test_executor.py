@@ -120,6 +120,16 @@ class TestExecutor(unittest.TestCase):
                 with self.assertRaises(ShutdownException):
                     executor.wait_for_ready_callbacks()
 
+    def test_del_after_sigint_guard_condition_finalized(self) -> None:
+        # A reference cycle can finalize the executor's sigint guard condition first
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+                assert executor._sigint_gc is not None
+                executor._sigint_gc.__del__()
+                executor.__del__()
+
     def test_shutdown_exception_from_callback_generator(self) -> None:
         self.assertIsNotNone(self.node.handle)
         # This test touches the Executor private API and is not compatible with EventsExecutor
