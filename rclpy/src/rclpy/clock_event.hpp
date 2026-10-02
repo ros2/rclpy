@@ -15,7 +15,8 @@
 #ifndef RCLPY__CLOCK_EVENT_HPP_
 #define RCLPY__CLOCK_EVENT_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/time.h>
 
@@ -25,7 +26,7 @@
 
 #include "clock.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -62,8 +63,8 @@ private:
   std::condition_variable cv_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::ClockEvent
-void define_clock_event(py::object module);
+/// Define a nanobind wrapper for an rclpy::ClockEvent
+void define_clock_event(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__CLOCK_EVENT_HPP_

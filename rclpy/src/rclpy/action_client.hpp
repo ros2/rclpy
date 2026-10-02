@@ -15,20 +15,23 @@
 #ifndef RCLPY__ACTION_CLIENT_HPP_
 #define RCLPY__ACTION_CLIENT_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl_action/action_client.h>
 #include <rmw/types.h>
 
 #include <atomic>
 #include <memory>
+#include <optional>
 #include <mutex>
 
 #include "destroyable.hpp"
 #include "node.hpp"
 #include "wait_set.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -70,7 +73,7 @@ public:
    */
   ActionClient(
     Node & node,
-    py::object pyaction_type,
+    nb::object pyaction_type,
     const char * action_name,
     const rmw_qos_profile_t & goal_service_qos,
     const rmw_qos_profile_t & result_service_qos,
@@ -90,8 +93,8 @@ public:
    * \return 2-tuple (None, None) if there is no response, or
    * \return (None, None) if there is a failure in the rcl API call.
    */
-  py::tuple
-  take_goal_response(py::object pymsg_type);
+  nb::tuple
+  take_goal_response(nb::object pymsg_type);
 
   /// Send an action result request.
   /**
@@ -103,7 +106,7 @@ public:
    * \return sequence_number the index of the sent request
    */
   int64_t
-  send_result_request(py::object pyrequest);
+  send_result_request(nb::object pyrequest);
 
   /// Take an action cancel response.
   /**
@@ -116,8 +119,8 @@ public:
    * \return 2-tuple (None, None) if there is no response, or
    * \return (None, None) if there is a failure in the rcl API call.
    */
-  py::tuple
-  take_cancel_response(py::object pymsg_type);
+  nb::tuple
+  take_cancel_response(nb::object pymsg_type);
 
   /// Send an action cancel request.
   /**
@@ -129,7 +132,7 @@ public:
    * \return The index of the sent request.
    */
   int64_t
-  send_cancel_request(py::object pyrequest);
+  send_cancel_request(nb::object pyrequest);
 
   /// Take a feedback message from a given action client.
   /**
@@ -143,8 +146,8 @@ public:
    * \return None if there is nothing to take, or
    * \return None if there is a failure in the rcl API call.
    */
-  py::object
-  take_feedback(py::object pymsg_type);
+  nb::object
+  take_feedback(nb::object pymsg_type);
 
   /// Take a status message from a given action client.
   /**
@@ -158,8 +161,8 @@ public:
    * \return None if there is nothing to take, or
    * \return None if there is a failure in the rcl API call.
    */
-  py::object
-  take_status(py::object pymsg_type);
+  nb::object
+  take_status(nb::object pymsg_type);
 
   /// Send an action goal request.
   /**
@@ -171,7 +174,7 @@ public:
    * \return The index of the sent request
    */
   int64_t
-  send_goal_request(py::object pyrequest);
+  send_goal_request(nb::object pyrequest);
 
   /// Take an action result response.
   /**
@@ -184,8 +187,8 @@ public:
    * \return 2-tuple (None, None) if there is no response, or
    * \return (None, None) if there is a failure in the rcl API call.
    */
-  py::tuple
-  take_result_response(py::object pymsg_type);
+  nb::tuple
+  take_result_response(nb::object pymsg_type);
 
   /// Configure action client introspection
   /**
@@ -197,7 +200,7 @@ public:
    */
   void
   configure_introspection(
-    Clock & clock, py::object pyqos_service_event_pub,
+    Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
   /// Configure content filter for feedback subscription with the given goal ID.
@@ -209,7 +212,7 @@ public:
     *   doesn't support Content Filtering. Feedback message optimization is automatically disabled.
     */
   bool
-  configure_feedback_subscription_filter_add_goal_id(py::bytes goal_id);
+  configure_feedback_subscription_filter_add_goal_id(nb::bytes goal_id);
 
   /// Configure content filter for feedback subscription for removing the given goal ID.
   /**
@@ -221,7 +224,7 @@ public:
     *   doesn't support Content Filtering. Feedback message optimization is automatically disabled.
     */
   bool
-  configure_feedback_subscription_filter_remove_goal_id(py::bytes goal_id);
+  configure_feedback_subscription_filter_remove_goal_id(nb::bytes goal_id);
 
   /// Get the number of wait set entities that make up an action entity.
   /**
@@ -232,7 +235,7 @@ public:
    *    num_clients,
    *    num_services)
    */
-  py::tuple
+  nb::tuple
   get_num_entities();
 
   /// Check if an action server is available for the given action client.
@@ -257,7 +260,7 @@ public:
    *        is_cancel_response_ready,
    *        is_result_response_ready)
    */
-  py::tuple
+  nb::tuple
   is_ready(WaitSet & wait_set);
 
   /// Add an action entity to a wait set.
@@ -293,11 +296,11 @@ private:
   // function is not thread-safe.
   std::mutex configure_feedback_sub_content_filter_mutex_;
 };
-/// Define a pybind11 wrapper for an rclpy::ActionClient
+/// Define a nanobind wrapper for an rclpy::ActionClient
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
-void define_action_client(py::object module);
+void define_action_client(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__ACTION_CLIENT_HPP_

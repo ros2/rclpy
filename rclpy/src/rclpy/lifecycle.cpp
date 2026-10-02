@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/vector.h>
 
 #include <lifecycle_msgs/msg/transition_event.h>
 #include <lifecycle_msgs/srv/change_state.h>
@@ -41,7 +44,7 @@
 #include "node.hpp"
 #include "service.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace
 {
@@ -166,10 +169,10 @@ public:
     return std::string{};
   }
 
-  py::tuple
+  nb::tuple
   get_current_state()
   {
-    return py::make_tuple(
+    return nb::make_tuple(
       state_machine_->current_state->id,
       state_machine_->current_state->label);
   }
@@ -301,24 +304,24 @@ convert_callback_ret_code_to_label(TransitionCallbackReturnType cb_ret)
 namespace rclpy
 {
 void
-define_lifecycle_api(py::module m)
+define_lifecycle_api(nb::module_ m)
 {
-  py::class_<LifecycleStateMachine, Destroyable, std::shared_ptr<LifecycleStateMachine>>(
+  nb::class_<LifecycleStateMachine, Destroyable>(
     m, "LifecycleStateMachine")
-  .def(py::init<Node &, Clock &, bool>())
-  .def_property_readonly(
+  .def(nb::init<Node &, Clock &, bool>())
+  .def_prop_ro(
     "initialized", &LifecycleStateMachine::is_initialized,
     "Check if state machine is initialized.")
-  .def_property_readonly(
+  .def_prop_ro(
     "current_state", &LifecycleStateMachine::get_current_state,
     "Get the current state machine state.")
-  .def_property_readonly(
+  .def_prop_ro(
     "available_states", &LifecycleStateMachine::get_available_states,
     "Get the available states.")
-  .def_property_readonly(
+  .def_prop_ro(
     "available_transitions", &LifecycleStateMachine::get_available_transitions,
     "Get the available transitions.")
-  .def_property_readonly(
+  .def_prop_ro(
     "transition_graph", &LifecycleStateMachine::get_transition_graph,
     "Get the transition graph.")
   .def(
@@ -330,22 +333,22 @@ define_lifecycle_api(py::module m)
   .def(
     "trigger_transition_by_label", &LifecycleStateMachine::trigger_transition_by_label,
     "Trigger a transition by label.")
-  .def_property_readonly(
+  .def_prop_ro(
     "service_change_state", &LifecycleStateMachine::get_srv_change_state,
     "Get the change state service.")
-  .def_property_readonly(
+  .def_prop_ro(
     "service_get_state", &LifecycleStateMachine::get_srv_get_state,
     "Get the get state service.")
-  .def_property_readonly(
+  .def_prop_ro(
     "service_get_available_states", &LifecycleStateMachine::get_srv_get_available_states,
     "Get the get available states service.")
-  .def_property_readonly(
+  .def_prop_ro(
     "service_get_available_transitions", &LifecycleStateMachine::get_srv_get_available_transitions,
     "Get the get available transitions service.")
-  .def_property_readonly(
+  .def_prop_ro(
     "service_get_transition_graph", &LifecycleStateMachine::get_srv_get_transition_graph,
     "Get the get transition graph service.");
-  py::enum_<TransitionCallbackReturnType>(m, "TransitionCallbackReturnType")
+  nb::enum_<TransitionCallbackReturnType>(m, "TransitionCallbackReturnType", nb::is_arithmetic())
   .value(
     "SUCCESS", TransitionCallbackReturnType::Success,
     "Callback succeeded.")

@@ -15,15 +15,15 @@
 #ifndef RCLPY__SERVICE_INTROSPECTION_HPP_
 #define RCLPY__SERVICE_INTROSPECTION_HPP_
 
-#include "pybind11/pybind11.h"
+#include "nanobind/nanobind.h"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
 
 void
-define_service_introspection(py::module module);
+define_service_introspection(nb::module_ module);
 
 }  // namespace rclpy
 

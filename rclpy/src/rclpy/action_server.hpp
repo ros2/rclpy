@@ -15,19 +15,22 @@
 #ifndef RCLPY__ACTION_SERVER_HPP_
 #define RCLPY__ACTION_SERVER_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl_action/action_server.h>
 #include <rmw/types.h>
 
 #include <memory>
+#include <optional>
 
 #include "clock.hpp"
 #include "destroyable.hpp"
 #include "node.hpp"
 #include "wait_set.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -59,7 +62,7 @@ public:
   ActionServer(
     Node & node,
     const rclpy::Clock & rclpy_clock,
-    py::object pyaction_type,
+    nb::object pyaction_type,
     const char * action_name,
     const rmw_qos_profile_t & goal_service_qos,
     const rmw_qos_profile_t & result_service_qos,
@@ -78,8 +81,8 @@ public:
    *   "rclpy.rmw_request_id_t" type, or
    * \return 2-tuple (None, None) if there as no message to take
    */
-  py::tuple
-  take_goal_request(py::object pymsg_type);
+  nb::tuple
+  take_goal_request(nb::object pymsg_type);
 
   /// Send an action goal response.
   /**
@@ -91,7 +94,7 @@ public:
    */
   void
   send_goal_response(
-    rmw_request_id_t * header, py::object pyresponse);
+    rmw_request_id_t * header, nb::object pyresponse);
 
   /// Send an action result response.
   /**
@@ -103,7 +106,7 @@ public:
    */
   void
   send_result_response(
-    rmw_request_id_t * header, py::object pyresponse);
+    rmw_request_id_t * header, nb::object pyresponse);
 
   /// Take an action cancel request.
   /**
@@ -115,8 +118,8 @@ public:
    *   "rmw_request_id_t" type, or
    * \return 2-tuple (None, None) if there as no message to take
    */
-  py::tuple
-  take_cancel_request(py::object pymsg_type);
+  nb::tuple
+  take_cancel_request(nb::object pymsg_type);
 
   /// Take an action result request.
   /**
@@ -128,8 +131,8 @@ public:
    *   "rclpy.rmw_request_id_t" type, or
    * \return 2-tuple (None, None) if there as no message to take
    */
-  py::tuple
-  take_result_request(py::object pymsg_type);
+  nb::tuple
+  take_result_request(nb::object pymsg_type);
 
   /// Send an action cancel response.
   /**
@@ -141,7 +144,7 @@ public:
    */
   void
   send_cancel_response(
-    rmw_request_id_t * header, py::object pyresponse);
+    rmw_request_id_t * header, nb::object pyresponse);
 
   /// Publish a feedback message from a given action server.
   /**
@@ -151,7 +154,7 @@ public:
    * \param[in] pymsg The feedback message to publish.
    */
   void
-  publish_feedback(py::object pymsg);
+  publish_feedback(nb::object pymsg);
 
   /// Publish a status message from a given action server.
   /**
@@ -176,7 +179,7 @@ public:
    * \return True if the goal exists, false otherwise.
    */
   bool
-  goal_exists(py::object pygoal_info);
+  goal_exists(nb::object pygoal_info);
 
   /// Process a cancel request using an action server.
   /**
@@ -189,16 +192,16 @@ public:
    * \param[in] pycancel_response_type The cancel response type.
    * \return The cancel response message.
    */
-  py::object
+  nb::object
   process_cancel_request(
-    py::object pycancel_request, py::object pycancel_response_type);
+    nb::object pycancel_request, nb::object pycancel_response_type);
 
   /// Expires goals associated with an action server.
   /**
    * \param[in] max_num_goals The maximum number of goals to expire.
    * \return A tuple of GoalInfos corresponding to the canceled goals.
    */
-  py::tuple
+  nb::tuple
   expire_goals(int64_t max_num_goals);
 
   /// Get the number of wait set entities that make up an action entity.
@@ -212,7 +215,7 @@ public:
    *    num_clients,
    *    num_services)
    */
-  py::tuple
+  nb::tuple
   get_num_entities();
 
   /// Check if an action entity has any ready wait set entities.
@@ -228,7 +231,7 @@ public:
    *        is_result_request_ready,
    *        is_goal_expired)
    */
-  py::tuple
+  nb::tuple
   is_ready(WaitSet & wait_set);
 
   /// Add an action entity to a wait set.
@@ -258,7 +261,7 @@ public:
    */
   void
   configure_introspection(
-    Clock & clock, py::object pyqos_service_event_pub,
+    Clock & clock, std::optional<rmw_qos_profile_t> pyqos_service_event_pub,
     rcl_service_introspection_state_t introspection_state);
 
   /// Force an early destruction of this object
@@ -270,11 +273,11 @@ private:
   std::shared_ptr<rcl_action_server_t> rcl_action_server_;
   const rosidl_action_type_support_t * action_type_support_;
 };
-/// Define a pybind11 wrapper for an rclpy::ActionServer
+/// Define a nanobind wrapper for an rclpy::ActionServer
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
-void define_action_server(py::object module);
+void define_action_server(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__ACTION_SERVER_HPP_

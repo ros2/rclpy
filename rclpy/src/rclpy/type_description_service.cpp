@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/node.h>
 #include <rcl/service.h>
@@ -42,9 +43,9 @@ std::shared_ptr<Service> TypeDescriptionService::get_impl()
   return service_;
 }
 
-py::object TypeDescriptionService::handle_request(
-  py::object pyrequest,
-  py::object pyresponse_type,
+nb::object TypeDescriptionService::handle_request(
+  nb::object pyrequest,
+  nb::object pyresponse_type,
   Node & node)
 {
   // Header not used by handler, just needed as part of signature.
@@ -65,12 +66,11 @@ void TypeDescriptionService::destroy()
 }
 
 void
-define_type_description_service(py::object module)
+define_type_description_service(nb::object module)
 {
-  py::class_<TypeDescriptionService, Destroyable, std::shared_ptr<TypeDescriptionService>
-  >(module, "TypeDescriptionService")
-  .def(py::init<Node &>())
-  .def_property_readonly(
+  nb::class_<TypeDescriptionService, Destroyable>(module, "TypeDescriptionService")
+  .def(nb::init<Node &>())
+  .def_prop_ro(
     "impl", &TypeDescriptionService::get_impl, "Get the rcl service wrapper capsule.")
   .def(
     "handle_request", &TypeDescriptionService::handle_request,

@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
-#include <pybind11/stl.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/node.h>
@@ -39,7 +41,8 @@
 #include "utils.hpp"
 #include "events_executor/rcl_support.hpp"
 
-using pybind11::literals::operator""_a;
+using nb::literals::operator""_a;
+
 
 namespace rclpy
 {
@@ -62,27 +65,26 @@ get_c_vector_string(const std::vector<std::string> & strings_in)
 }  // namespace
 
 Subscription::Subscription(
-  Node & node, py::object pymsg_type, std::string topic,
-  py::object pyqos_profile, py::object content_filter_options,
-  py::object acceptable_buffer_backends)
+  Node & node, nb::object pymsg_type, std::string topic,
+  std::optional<rmw_qos_profile_t> pyqos_profile, nb::object content_filter_options,
+  std::optional<std::string> acceptable_buffer_backends)
 : node_(node)
 {
   auto msg_type = static_cast<rosidl_message_type_support_t *>(
     common_get_type_support(pymsg_type));
   if (!msg_type) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   rcl_subscription_options_t subscription_ops = rcl_subscription_get_default_options();
 
-  if (!pyqos_profile.is_none()) {
-    subscription_ops.qos = pyqos_profile.cast<rmw_qos_profile_t>();
+  if (pyqos_profile) {
+    subscription_ops.qos = *pyqos_profile;
   }
 
-  if (!acceptable_buffer_backends.is_none()) {
-    std::string acceptable_backends_str = acceptable_buffer_backends.cast<std::string>();
+  if (acceptable_buffer_backends) {
     rcl_ret_t ret = rcl_subscription_options_set_acceptable_buffer_backends(
-      acceptable_backends_str.c_str(),
+      acceptable_buffer_backends->c_str(),
       &subscription_ops);
     if (RCL_RET_OK != ret) {
       throw rclpy::RCLError("Failed to set acceptable_buffer_backends");
@@ -106,9 +108,9 @@ Subscription::Subscription(
   std::string filter_expression;
   std::vector<std::string> expression_parameters;
   if (!content_filter_options.is_none()) {
-    filter_expression = content_filter_options.attr("filter_expression").cast<std::string>();
+    filter_expression = nb::cast<std::string>(content_filter_options.attr("filter_expression"));
     expression_parameters =
-      content_filter_options.attr("expression_parameters").cast<std::vector<std::string>>();
+      nb::cast<std::vector<std::string>>(content_filter_options.attr("expression_parameters"));
     std::vector<const char *> cstrings =
       get_c_vector_string(expression_parameters);
     rcl_ret_t ret = rcl_subscription_options_set_content_filter_options(
@@ -129,7 +131,7 @@ Subscription::Subscription(
       std::string error_text{"Failed to create subscription due to invalid topic name '"};
       error_text += topic;
       error_text += "'";
-      throw py::value_error(error_text);
+      throw nb::value_error(error_text.c_str());
     }
     throw rclpy::RCLError("Failed to create subscription");
   }
@@ -145,10 +147,10 @@ void Subscription::destroy()
   node_.destroy();
 }
 
-py::object
-Subscription::take_message(py::object pymsg_type, bool raw)
+nb::object
+Subscription::take_message(nb::object pymsg_type, bool raw)
 {
-  py::object pytaken_msg;
+  nb::object pytaken_msg;
   rmw_message_info_t message_info;
   if (raw) {
     SerializedMessage taken{rcutils_get_default_allocator()};
@@ -160,11 +162,11 @@ Subscription::take_message(py::object pymsg_type, bool raw)
         throw std::bad_alloc();
       }
       if (RCL_RET_SUBSCRIPTION_TAKE_FAILED == ret) {
-        return py::none();
+        return nb::none();
       }
       throw RCLError("failed to take raw message from subscription");
     }
-    pytaken_msg = py::bytes(
+    pytaken_msg = nb::bytes(
       reinterpret_cast<const char *>(taken.rcl_msg.buffer),
       taken.rcl_msg.buffer_length);
   } else {
@@ -178,35 +180,40 @@ Subscription::take_message(py::object pymsg_type, bool raw)
         throw std::bad_alloc();
       }
       if (RCL_RET_SUBSCRIPTION_TAKE_FAILED == ret) {
-        return py::none();
+        return nb::none();
       }
       throw RCLError("failed to take message from subscription");
     }
 
     pytaken_msg = convert_to_py(taken_msg.get(), pymsg_type);
   }
-  py::object pub_seq_number = py::none();
+  nb::object pub_seq_number = nb::none();
   if (message_info.publication_sequence_number != RMW_MESSAGE_INFO_SEQUENCE_NUMBER_UNSUPPORTED) {
-    pub_seq_number = py::int_(message_info.publication_sequence_number);
+    pub_seq_number = nb::int_(message_info.publication_sequence_number);
   }
-  py::object rec_seq_number = py::none();
+  nb::object rec_seq_number = nb::none();
   if (message_info.reception_sequence_number != RMW_MESSAGE_INFO_SEQUENCE_NUMBER_UNSUPPORTED) {
-    rec_seq_number = py::int_(message_info.reception_sequence_number);
+    rec_seq_number = nb::int_(message_info.reception_sequence_number);
   }
 
+  // nanobind's dict has no keyword-argument constructor like pybind11's, but the
+  // Python dict builtin called with keyword arguments gets the same result
+  nb::object pydict = nb::module_::import_("builtins").attr("dict");
+
   // Convert publisher_gid to Python dict with implementation_identifier and data
-  py::object publisher_gid = py::none();
+  nb::object publisher_gid = nb::none();
   if (message_info.publisher_gid.implementation_identifier != nullptr) {
-    publisher_gid = py::dict(
-      "implementation_identifier"_a = py::str(message_info.publisher_gid.implementation_identifier),
-      "data"_a = py::bytes(
+    publisher_gid = pydict(
+      "implementation_identifier"_a =
+      nb::str(message_info.publisher_gid.implementation_identifier),
+      "data"_a = nb::bytes(
         reinterpret_cast<const char *>(message_info.publisher_gid.data),
         RMW_GID_STORAGE_SIZE)
     );
   }
 
-  return py::make_tuple(
-    pytaken_msg, py::dict(
+  return nb::make_tuple(
+    pytaken_msg, pydict(
       "source_timestamp"_a = message_info.source_timestamp,
       "received_timestamp"_a = message_info.received_timestamp,
       "publication_sequence_number"_a = pub_seq_number,
@@ -332,7 +339,7 @@ Subscription::set_content_filter(
   }
 }
 
-py::object
+nb::object
 Subscription::get_content_filter() const
 {
   rcl_subscription_content_filter_options_t options =
@@ -363,8 +370,8 @@ Subscription::get_content_filter() const
     expression_parameters.push_back(content_filter_options.expression_parameters.data[i]);
   }
 
-  py::object content_filter_options_class =
-    py::module_::import("rclpy.subscription_content_filter_options").attr("ContentFilterOptions");
+  nb::object content_filter_options_class =
+    nb::module_::import_("rclpy.subscription_content_filter_options").attr("ContentFilterOptions");
 
   return content_filter_options_class(
     std::string(content_filter_options.filter_expression),
@@ -372,24 +379,35 @@ Subscription::get_content_filter() const
 }
 
 void
-define_subscription(py::object module)
+define_subscription(nb::object module)
 {
-  py::class_<Subscription, Destroyable, std::shared_ptr<Subscription>>(module, "Subscription")
-  .def(py::init<Node &, py::object, std::string, py::object, py::object, py::object>(),
-    py::arg("node"),
-    py::arg("msg_type"),
-    py::arg("topic"),
-    py::arg("qos_profile"),
-    py::arg("content_filter_options") = py::none(),
-    py::arg("acceptable_buffer_backends") = py::none())
-  .def_property_readonly(
+  nb::class_<Subscription, Destroyable>(
+    module, "Subscription", nb::is_generic(),
+    nb::sig("class Subscription(Destroyable, typing.Generic[MsgT])"))
+  .def(nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>,
+    nb::object, std::optional<std::string>>(),
+    "node"_a,
+    "msg_type"_a,
+    "topic"_a,
+    "qos_profile"_a,
+    "content_filter_options"_a = nb::none(),
+    "acceptable_buffer_backends"_a = nb::none(),
+    nb::sig(
+      "def __init__(self, node: Node, msg_type: type[MsgT], topic: str, "
+      "qos_profile: rmw_qos_profile_t | None, "
+      "content_filter_options: ContentFilterOptions | None = None, "
+      "acceptable_buffer_backends: str | None = None) -> None"))
+  .def_prop_ro(
     "pointer", [](const Subscription & subscription) {
       return reinterpret_cast<size_t>(subscription.rcl_ptr());
     },
     "Get the address of the entity as an integer")
   .def(
     "take_message", &Subscription::take_message,
-    "Take a message and its metadata from a subscription")
+    "Take a message and its metadata from a subscription",
+    nb::sig(
+      "def take_message(self, pymsg_type: type[MsgT], raw: bool, /)"
+      " -> tuple[MsgT | bytes, MessageInfo] | None"))
   .def(
     "get_logger_name", &Subscription::get_logger_name,
     "Get the name of the logger associated with the node of the subscription.")
@@ -401,7 +419,7 @@ define_subscription(py::object module)
     "Count the publishers from a subscription.")
   .def(
     "set_on_new_message_callback", &Subscription::set_on_new_message_callback,
-    py::arg("callback"))
+    "callback"_a)
   .def("clear_on_new_message_callback", &Subscription::clear_on_new_message_callback)
   .def("is_cft_supported", &Subscription::is_cft_supported,
     "Check if subscription instance supports content filtering.")
@@ -412,6 +430,7 @@ define_subscription(py::object module)
     "Set the filter expression and expression parameters for the subscription.")
   .def(
     "get_content_filter", &Subscription::get_content_filter,
-    "Get the filter expression and expression parameters for the subscription.");
+    "Get the filter expression and expression parameters for the subscription.",
+    nb::sig("def get_content_filter(self) -> ContentFilterOptions"));
 }
 }  // namespace rclpy
