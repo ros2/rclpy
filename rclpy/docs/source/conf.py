@@ -202,3 +202,6 @@ autodoc_default_options = {
     'members': True,  # document members
     'undoc-members': True,  # also document members without documentation
 }
+
+# rclpy.node imports rcl_interfaces.msg
+autodoc_mock_imports = ['rcl_interfaces']
