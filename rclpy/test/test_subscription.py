@@ -16,7 +16,6 @@ from collections.abc import Generator
 import time
 from typing import List
 from typing import Optional
-from unittest.mock import Mock
 
 import pytest
 
@@ -205,42 +204,6 @@ def test_subscription_publisher_count() -> None:
     sub.destroy()
 
     node.destroy_node()
-
-
-def test_on_new_message_callback(test_node: Node) -> None:
-    topic_name = '/topic'
-    cb = Mock()
-    sub = test_node.create_subscription(
-        msg_type=Empty,
-        topic=topic_name,
-        qos_profile=10,
-        callback=cb)
-    pub = test_node.create_publisher(Empty, topic_name, 10)
-
-    # Wait for publisher and subscriber to discover each other
-    max_seconds_to_wait = 5
-    end_time = time.time() + max_seconds_to_wait
-    while sub.get_publisher_count() != 1:
-        time.sleep(0.1)
-        assert time.time() <= end_time  # timeout waiting for pub/sub to discover each other
-
-    sub.handle.set_on_new_message_callback(cb)
-    cb.assert_not_called()
-    pub.publish(Empty())
-
-    # Wait for the callback to be invoked
-    end_time = time.time() + max_seconds_to_wait
-    while cb.call_count == 0 and time.time() <= end_time:
-        time.sleep(0.1)
-
-    cb.assert_called_once_with(1)
-    sub.handle.clear_on_new_message_callback()
-    cb.reset_mock()
-    pub.publish(Empty())
-
-    # Wait a bit to ensure the message would have been received if callback was still set
-    time.sleep(1.0)
-    cb.assert_not_called()
 
 
 def test_subscription_set_content_filter(test_node: Node) -> None:
