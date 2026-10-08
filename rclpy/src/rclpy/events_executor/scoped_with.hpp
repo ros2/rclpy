@@ -26,6 +26,15 @@ namespace rclpy
 namespace events_executor
 {
 
+inline bool interpreter_is_finalizing()
+{
+#if PY_VERSION_HEX >= 0x030D0000
+  return Py_IsFinalizing() != 0;
+#else
+  return _Py_IsFinalizing() != 0;   // private but present on 3.7–3.12
+#endif
+}
+
 /// Enters a python context manager for the scope of this object instance.
 class ScopedWith
 {
@@ -45,7 +54,7 @@ public:
       return;
     }
 
-    if (Py_IsFinalizing()) {
+    if (interpreter_is_finalizing()) {
       // During interpreter shutdown, reacquiring thread state from
       // arbitrary threads is forbidden.  Leak the handle rather
       // than crash.  __exit__ is skipped — acceptable because the
