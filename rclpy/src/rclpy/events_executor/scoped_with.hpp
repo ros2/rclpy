@@ -17,11 +17,23 @@
 #define RCLPY__EVENTS_EXECUTOR__SCOPED_WITH_HPP_
 
 #include <pybind11/pybind11.h>
+#include <Python.h>
+
+#include <utility>
 
 namespace rclpy
 {
 namespace events_executor
 {
+
+inline bool interpreter_is_finalizing()
+{
+#if PY_VERSION_HEX >= 0x030D0000
+  return Py_IsFinalizing() != 0;
+#else
+  return _Py_IsFinalizing() != 0;   // private but present on 3.7–3.12
+#endif
+}
 
 /// Enters a python context manager for the scope of this object instance.
 class ScopedWith
@@ -33,7 +45,36 @@ public:
     object_.attr("__enter__")();
   }
 
-  ~ScopedWith() {object_.attr("__exit__")(pybind11::none(), pybind11::none(), pybind11::none());}
+  ~ScopedWith() noexcept
+  {
+    // Move object_ out so the member destructor (~py::object) is a
+    // no-op after this body completes.
+    pybind11::object object = std::move(object_);
+    if (!object) {
+      return;
+    }
+
+    if (interpreter_is_finalizing()) {
+      // During interpreter shutdown, reacquiring thread state from
+      // arbitrary threads is forbidden.  Leak the handle rather
+      // than crash.  __exit__ is skipped — acceptable because the
+      // process is terminating.
+      object.release();
+      return;
+    }
+
+    // Acquire the GIL.  owned_object is declared *after* gil so that
+    // it is destroyed (Py_DECREF) *before* the GIL is released — C++
+    // destroys locals in reverse declaration order.
+    pybind11::gil_scoped_acquire gil;
+    pybind11::object owned_object = std::move(object);
+    try {
+      owned_object.attr("__exit__")(
+        pybind11::none(), pybind11::none(), pybind11::none());
+    } catch (pybind11::error_already_set & e) {
+      e.discard_as_unraisable("ScopedWith::~ScopedWith");
+    }
+  }
 
 private:
   pybind11::object object_;
