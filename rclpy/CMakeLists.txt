@@ -148,19 +148,31 @@ configure_build_install_location(_rclpy_nanobind)
 
 # Generate the type stubs for the extension module into the source tree,
 # so that they stay committed alongside the bindings.
-nanobind_add_stub(_rclpy_nanobind_stub
-  MODULE _rclpy_nanobind
-  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/_rclpy_nanobind.pyi"
-  PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
-  PATTERN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
-  DEPENDS _rclpy_nanobind "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
-)
-nanobind_add_stub(_rclpy_nanobind_service_introspection_stub
-  MODULE _rclpy_nanobind.service_introspection
-  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/service_introspection.pyi"
-  PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
-  DEPENDS _rclpy_nanobind
-)
+# Default OFF on Windows: stub generation imports the extension from the build
+# tree, where the DLLs it depends on are not yet on the loader search path.
+# The committed stubs are generated on Unix.
+if(WIN32)
+  set(_generate_stubs_default OFF)
+else()
+  set(_generate_stubs_default ON)
+endif()
+option(GENERATE_PYTHON_STUBS "Generate .pyi stubs for the Python bindings"
+  ${_generate_stubs_default})
+if(GENERATE_PYTHON_STUBS)
+  nanobind_add_stub(_rclpy_nanobind_stub
+    MODULE _rclpy_nanobind
+    OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/_rclpy_nanobind.pyi"
+    PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
+    PATTERN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
+    DEPENDS _rclpy_nanobind "${CMAKE_CURRENT_SOURCE_DIR}/stubgen_pattern.pat"
+  )
+  nanobind_add_stub(_rclpy_nanobind_service_introspection_stub
+    MODULE _rclpy_nanobind.service_introspection
+    OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/rclpy/impl/service_introspection.pyi"
+    PYTHON_PATH "${CMAKE_CURRENT_BINARY_DIR}/test_rclpy"
+    DEPENDS _rclpy_nanobind
+  )
+endif()
 
 if(NOT WIN32)
   ament_environment_hooks(
