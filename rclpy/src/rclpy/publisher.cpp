@@ -164,6 +164,7 @@ define_publisher(nb::object module)
     nb::sig("class Publisher(Destroyable, typing.Generic[MsgT])"))
   .def(
     nb::init<Node &, nb::object, std::string, std::optional<rmw_qos_profile_t>>(),
+    nb::arg(), nb::arg(), nb::arg(), nb::arg().none(),
     nb::sig(
       "def __init__(self, node: Node, msg_type: type[MsgT], "
       "topic: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None"))

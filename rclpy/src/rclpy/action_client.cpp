@@ -429,6 +429,7 @@ define_action_client(nb::object module)
       "def take_status(self, pymsg_type: type[GoalStatusArray], /) -> GoalStatusArray | None"))
   .def(
     "configure_introspection", &ActionClient::configure_introspection,
+    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether internal client introspection is enabled")
   .def(
     "configure_feedback_subscription_filter_add_goal_id",

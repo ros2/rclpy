@@ -605,7 +605,9 @@ define_node(nb::object module)
   .def(
     nb::init<
       const char *, const char *, Context &, std::optional<nb::list>, bool, bool,
-      std::optional<rmw_qos_profile_t>>())
+      std::optional<rmw_qos_profile_t>>(),
+    nb::arg(), nb::arg(), nb::arg(), nb::arg().none(), nb::arg(), nb::arg(),
+    nb::arg().none())
   .def_prop_ro(
     "pointer", [](const Node & node) {
       return reinterpret_cast<size_t>(node.rcl_ptr());
