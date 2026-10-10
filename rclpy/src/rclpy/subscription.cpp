@@ -389,7 +389,7 @@ define_subscription(nb::object module)
     "node"_a,
     "msg_type"_a,
     "topic"_a,
-    "qos_profile"_a,
+    "qos_profile"_a.none(),
     "content_filter_options"_a = nb::none(),
     "acceptable_buffer_backends"_a = nb::none(),
     nb::sig(

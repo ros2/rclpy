@@ -225,6 +225,7 @@ define_client(nb::object module)
     nb::sig("class Client(Destroyable, typing.Generic[SrvRequestT, SrvResponseT])"))
   .def(
     nb::init<Node &, nb::object, const std::string &, std::optional<rmw_qos_profile_t>>(),
+    nb::arg(), nb::arg(), nb::arg(), nb::arg().none(),
     nb::sig(
       "def __init__(self, node: Node, srv_type: type[Srv[SrvRequestT, SrvResponseT]], "
       "srv_name: str, pyqos_profile: rmw_qos_profile_t | None, /) -> None"))
@@ -251,6 +252,7 @@ define_client(nb::object module)
       " -> tuple[rmw_service_info_t, SrvResponseT] | tuple[None, None]"))
   .def(
     "configure_introspection", &Client::configure_introspection,
+    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether introspection is enabled")
   .def(
     "get_logger_name", &Client::get_logger_name,

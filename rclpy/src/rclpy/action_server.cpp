@@ -475,6 +475,7 @@ define_action_server(nb::object module)
     "Add an action entity to a wait set.")
   .def(
     "configure_introspection", &ActionServer::configure_introspection,
+    nb::arg(), nb::arg().none(), nb::arg(),
     "Configure whether internal service introspection is enabled");
 }
 

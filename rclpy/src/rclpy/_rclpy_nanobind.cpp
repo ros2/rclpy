@@ -273,7 +273,7 @@ NB_MODULE(_rclpy_nanobind, m) {
     "Assert the liveliness of an entity.");
 
   m.def(
-    "rclpy_remove_ros_args", &rclpy::remove_ros_args,
+    "rclpy_remove_ros_args", &rclpy::remove_ros_args, nb::arg().none(),
     "Remove ROS-specific arguments from argument vector.");
 
   rclpy::define_rmw_qos_profile(m);
