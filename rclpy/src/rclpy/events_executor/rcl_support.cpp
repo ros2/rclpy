@@ -16,7 +16,7 @@
 
 #include <utility>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -43,8 +43,8 @@ RclCallbackManager::~RclCallbackManager()
   // Should not still have any callbacks registered when we exit, because otherwise RCL can call
   // pointers that will no longer be valid.  We can't throw an exception here, but we can explode.
   if (!owned_cbs_.empty()) {
-    py::gil_scoped_acquire gil_acquire;
-    py::print("Destroying callback manager with callbacks remaining");
+    nb::gil_scoped_acquire gil_acquire;
+    nb::print("Destroying callback manager with callbacks remaining");
     ::abort();
   }
 }
@@ -55,7 +55,7 @@ const void * RclCallbackManager::MakeCallback(
   // We don't support replacing an existing callback with a new one, because it gets tricky making
   // sure we don't delete an old callback while the middleware still holds a pointer to it.
   if (owned_cbs_.count(key) != 0) {
-    throw py::key_error("Attempt to replace existing callback");
+    throw nb::key_error("Attempt to replace existing callback");
   }
   CbEntry new_entry;
   new_entry.cb =
@@ -78,7 +78,7 @@ const void * RclCallbackManager::MakeCallback(
 void RclCallbackManager::RemoveCallback(const void * key)
 {
   if (!owned_cbs_.erase(key)) {
-    throw py::key_error("Attempt to remove nonexistent callback");
+    throw nb::key_error("Attempt to remove nonexistent callback");
   }
 }
 

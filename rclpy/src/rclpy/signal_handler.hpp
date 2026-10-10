@@ -15,12 +15,14 @@
 #ifndef RCLPY__SIGNAL_HANDLER_HPP_
 #define RCLPY__SIGNAL_HANDLER_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <functional>
 #include <memory>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -40,10 +42,10 @@ private:
 
 /// Define methods on a module for working with signal handlers
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
 void
-define_signal_handler_api(py::module module);
+define_signal_handler_api(nb::module_ module);
 
 }  // namespace rclpy
 #endif  // RCLPY__SIGNAL_HANDLER_HPP_

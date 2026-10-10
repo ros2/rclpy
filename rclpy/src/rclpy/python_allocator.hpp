@@ -15,7 +15,7 @@
 #ifndef RCLPY__PYTHON_ALLOCATOR_HPP_
 #define RCLPY__PYTHON_ALLOCATOR_HPP_
 
-#include <pybind11/pybind11.h>
+#include <Python.h>
 
 #include <stdexcept>
 

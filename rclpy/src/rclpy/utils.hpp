@@ -15,7 +15,8 @@
 #ifndef RCLPY__UTILS_HPP_
 #define RCLPY__UTILS_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 
 #include <rcl/arguments.h>
 #include <rcl/graph.h>  // rcl_names_and_types_t
@@ -24,15 +25,38 @@
 #include <rmw/types.h>
 
 #include <memory>
+#include <optional>
 
 #include "publisher.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
 
 typedef void destroy_ros_message_function (void *);
+
+/// Create a Python list of a fixed size, with every item set to None.
+/**
+ * nanobind's nb::list lacks pybind11's presized list constructor, but the same
+ * thing can be done with the C API. The items are initialized to None rather
+ * than left NULL, because nanobind's item assignment is not NULL-safe.
+ *
+ * \param[in] size The number of items the list will hold.
+ * \return A list of the requested size.
+ */
+inline nb::list
+create_sized_list(size_t size)
+{
+  PyObject * list = PyList_New(static_cast<Py_ssize_t>(size));
+  if (!list) {
+    throw nb::python_error();
+  }
+  for (size_t i = 0; i < size; ++i) {
+    PyList_SET_ITEM(list, static_cast<Py_ssize_t>(i), Py_NewRef(Py_None));
+  }
+  return nb::steal<nb::list>(list);
+}
 
 /// Convert a C rcl_names_and_types_t into a Python list.
 /**
@@ -40,7 +64,7 @@ typedef void destroy_ros_message_function (void *);
  * \return List of tuples, where the first element of each tuple is a string
  *   for the name and the second element is a list of strings for the types.
  */
-py::list
+nb::list
 convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_types);
 
 /// Get the type support structure for a Python ROS message type.
@@ -49,7 +73,7 @@ convert_to_py_names_and_types(const rcl_names_and_types_t * topic_names_and_type
  * \return The type support structure or NULL if an error occurred.
  */
 void *
-common_get_type_support(py::object pymessage);
+common_get_type_support(nb::object pymessage);
 
 /// Create the equivalent ROS message C type instance for a given Python type.
 /**
@@ -59,7 +83,7 @@ common_get_type_support(py::object pymessage);
 * \return a ROS message C type instance.
 */
 std::unique_ptr<void, destroy_ros_message_function *>
-create_from_py(py::object pyclass);
+create_from_py(nb::object pyclass);
 
 /// Convert a ROS message from a Python type to a C type.
 /**
@@ -69,7 +93,7 @@ create_from_py(py::object pyclass);
  * \return unique pointer with the C version of the input ROS message.
  */
 std::unique_ptr<void, destroy_ros_message_function *>
-convert_from_py(py::object pyclass);
+convert_from_py(nb::object pyclass);
 
 /// Convert a ROS message from a C type to a Python type.
 /**
@@ -79,8 +103,8 @@ convert_from_py(py::object pyclass);
  * \param[in] pyclass ROS message Python type to convert to.
  * \return an instance of \p pyclass.
  */
-py::object
-convert_to_py(void * message, py::object pyclass);
+nb::object
+convert_to_py(void * message, nb::object pyclass);
 
 /// Return the identifier of the current rmw_implementation
 /**
@@ -114,12 +138,12 @@ assert_liveliness(rclpy::Publisher * publisher);
  * \param[in] pycli_args A list of strings
  * \return Parsed list of strings
  */
-py::list
-remove_ros_args(py::object pycli_args);
+nb::list
+remove_ros_args(std::optional<nb::list> pycli_args);
 
 /// Throw UnparsedROSArgsError with a message saying which args are unparsed.
 void
-throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args);
+throw_if_unparsed_ros_args(nb::list pyargs, const rcl_arguments_t & rcl_args);
 
 /// Fetch a predefined qos_profile from rcl_action and convert it to a Python QoSProfile object.
 /**
@@ -130,7 +154,7 @@ throw_if_unparsed_ros_args(py::list pyargs, const rcl_arguments_t & rcl_args);
  * \param[in] rmw_profile String with the name of the profile to load.
  * \return QoSProfile object.
  */
-py::dict
+nb::dict
 rclpy_action_get_rmw_qos_profile(const char * rmw_profile);
 
 /// Convert a C rmw_topic_endpoint_info_array_t into a Python list.
@@ -140,7 +164,7 @@ rclpy_action_get_rmw_qos_profile(const char * rmw_profile);
  * \param[in] info_array a pointer to a rmw_topic_endpoint_info_array_t
  * \return Python list
  */
-py::list
+nb::list
 convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * info_array);
 
 /// Convert a C rmw_service_endpoint_info_array_t into a Python list.
@@ -150,7 +174,7 @@ convert_to_py_topic_endpoint_info_list(const rmw_topic_endpoint_info_array_t * i
  * \param[in] info_array a pointer to a rmw_service_endpoint_info_array_t
  * \return Python list
  */
-py::list
+nb::list
 convert_to_py_service_endpoint_info_list(const rmw_service_endpoint_info_array_t * info_array);
 
 /// Convert a C rcl_action_endpoint_info_array_t into a Python list.
@@ -166,7 +190,7 @@ convert_to_py_service_endpoint_info_list(const rmw_service_endpoint_info_array_t
  * \param[in] info_array a pointer to a rcl_action_endpoint_info_array_t
  * \return Python list
  */
-py::list
+nb::list
 convert_to_py_action_endpoint_info_list(const rcl_action_endpoint_info_array_t * info_array);
 
 /// Convert a C rmw_qos_profile_t into a Python dictionary with qos profile args.
@@ -174,7 +198,7 @@ convert_to_py_action_endpoint_info_list(const rcl_action_endpoint_info_array_t *
  * \param[in] qos_profile Pointer to a rmw_qos_profile_t to convert
  * \return Python dictionary
  */
-py::dict
+nb::dict
 convert_to_qos_dict(const rmw_qos_profile_t * qos_profile);
 
 /// Convert a C rosidl_type_hash_t into a Python dictionary.
@@ -182,7 +206,7 @@ convert_to_qos_dict(const rmw_qos_profile_t * qos_profile);
  * \param[in] type_hash Pointer to a rosidl_type_hash_t to convert
  * \return Python dictionary
  */
-py::dict
+nb::dict
 convert_to_type_hash_dict(const rosidl_type_hash_t * type_hash);
 
 /// Issue a Python RuntimeWarning for an rcl fini failure and reset the rcl error.

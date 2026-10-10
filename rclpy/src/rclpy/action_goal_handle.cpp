@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/error_handling.h>
 #include <rcl_action/action_server.h>
@@ -26,12 +27,12 @@
 #include "exceptions.hpp"
 #include "utils.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
 ActionGoalHandle::ActionGoalHandle(
-  rclpy::ActionServer & action_server, py::object pygoal_info_msg)
+  rclpy::ActionServer & action_server, nb::object pygoal_info_msg)
 : action_server_(action_server)
 {
   auto goal_info_msg = convert_from_py(pygoal_info_msg);
@@ -39,7 +40,7 @@ ActionGoalHandle::ActionGoalHandle(
     static_cast<rcl_action_goal_info_t *>(goal_info_msg.get());
 
   if (!goal_info_msg) {
-    throw py::error_already_set();
+    throw nb::python_error();
   }
 
   auto rcl_handle = rcl_action_accept_new_goal(
@@ -96,12 +97,12 @@ ActionGoalHandle::update_goal_state(rcl_action_goal_event_t event)
 }
 
 void
-define_action_goal_handle(py::module module)
+define_action_goal_handle(nb::module_ module)
 {
-  py::class_<ActionGoalHandle, Destroyable, std::shared_ptr<ActionGoalHandle>>(
+  nb::class_<ActionGoalHandle, Destroyable>(
     module, "ActionGoalHandle")
-  .def(py::init<rclpy::ActionServer &, py::object>())
-  .def_property_readonly(
+  .def(nb::init<rclpy::ActionServer &, nb::object>())
+  .def_prop_ro(
     "pointer", [](const ActionGoalHandle & handle) {
       return reinterpret_cast<size_t>(handle.rcl_ptr());
     },
