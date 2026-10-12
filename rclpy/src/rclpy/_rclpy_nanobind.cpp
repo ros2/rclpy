@@ -162,7 +162,8 @@ NB_MODULE(_rclpy_nanobind, m) {
   rclpy::define_action_server(m);
   m.def(
     "rclpy_action_get_rmw_qos_profile", &rclpy::rclpy_action_get_rmw_qos_profile,
-    "Get an action RMW QoS profile.");
+    "Get an action RMW QoS profile.",
+    nb::sig("def rclpy_action_get_rmw_qos_profile(rmw_profile: str, /) -> _rmw_qos_profile_dict"));
   rclpy::define_guard_condition(m);
   rclpy::define_timer(m);
   rclpy::define_subscription(m);
@@ -178,17 +179,29 @@ NB_MODULE(_rclpy_nanobind, m) {
     "Remap a topic name.");
   m.def(
     "rclpy_get_validation_error_for_topic_name", &rclpy::get_validation_error_for_topic_name,
-    "Get the error message and invalid index of a topic name or None if valid.");
+    "Get the error message and invalid index of a topic name or None if valid.",
+    nb::sig(
+      "def rclpy_get_validation_error_for_topic_name(topic_name: str, /)"
+      " -> tuple[str, int] | None"));
   m.def(
     "rclpy_get_validation_error_for_full_topic_name",
     &rclpy::get_validation_error_for_full_topic_name,
-    "Get the error message and invalid index of a full topic name or None if valid.");
+    "Get the error message and invalid index of a full topic name or None if valid.",
+    nb::sig(
+      "def rclpy_get_validation_error_for_full_topic_name(topic_name: str, /)"
+      " -> tuple[str, int] | None"));
   m.def(
     "rclpy_get_validation_error_for_namespace", &rclpy::get_validation_error_for_namespace,
-    "Get the error message and invalid index of a namespace or None if valid.");
+    "Get the error message and invalid index of a namespace or None if valid.",
+    nb::sig(
+      "def rclpy_get_validation_error_for_namespace(namespace_: str, /)"
+      " -> tuple[str, int] | None"));
   m.def(
     "rclpy_get_validation_error_for_node_name", &rclpy::get_validation_error_for_node_name,
-    "Get the error message and invalid index of a node name or None if valid.");
+    "Get the error message and invalid index of a node name or None if valid.",
+    nb::sig(
+      "def rclpy_get_validation_error_for_node_name(node_name: str, /)"
+      " -> tuple[str, int] | None"));
   m.def(
     "rclpy_resolve_name", &rclpy::resolve_name,
     "Expand and remap a topic or service name.");
@@ -196,69 +209,122 @@ NB_MODULE(_rclpy_nanobind, m) {
   m.def(
     "rclpy_get_topic_names_and_types",
     &rclpy::graph_get_topic_names_and_types,
-    "Get all topic names and types in the ROS graph.");
+    "Get all topic names and types in the ROS graph.",
+    nb::sig(
+      "def rclpy_get_topic_names_and_types(node: Node, no_demangle: bool)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_publisher_names_and_types_by_node",
     &rclpy::graph_get_publisher_names_and_types_by_node,
-    "Get topic names and types for which a remote node has publishers.");
+    "Get topic names and types for which a remote node has publishers.",
+    nb::sig(
+      "def rclpy_get_publisher_names_and_types_by_node(node: Node, no_demangle: bool,"
+      " node_name: str, node_namespace: str)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_subscriber_names_and_types_by_node",
     &rclpy::graph_get_subscriber_names_and_types_by_node,
-    "Get topic names and types for which a remote node has subscribers.");
+    "Get topic names and types for which a remote node has subscribers.",
+    nb::sig(
+      "def rclpy_get_subscriber_names_and_types_by_node(node: Node, no_demangle: bool,"
+      " node_name: str, node_namespace: str)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_publishers_info_by_topic",
     &rclpy::graph_get_publishers_info_by_topic,
-    "Get publishers info for a topic.");
+    "Get publishers info for a topic.",
+    nb::sig(
+      "def rclpy_get_publishers_info_by_topic(node: Node, topic_name: str, no_mangle: bool)"
+      " -> list[_TopicEndpointInfoDict]"));
   m.def(
     "rclpy_get_subscriptions_info_by_topic",
     &rclpy::graph_get_subscriptions_info_by_topic,
-    "Get subscriptions info for a topic.");
+    "Get subscriptions info for a topic.",
+    nb::sig(
+      "def rclpy_get_subscriptions_info_by_topic(node: Node, topic_name: str, no_mangle: bool)"
+      " -> list[_TopicEndpointInfoDict]"));
   m.def(
     "rclpy_get_clients_info_by_service",
     &rclpy::graph_get_clients_info_by_service,
-    "Get clients info for a service.");
+    "Get clients info for a service.",
+    nb::sig(
+      "def rclpy_get_clients_info_by_service(node: Node, service_name: str, no_mangle: bool)"
+      " -> list[_ServiceEndpointInfoDict]"));
   m.def(
     "rclpy_get_servers_info_by_service",
     &rclpy::graph_get_servers_info_by_service,
-    "Get servers info for a service.");
+    "Get servers info for a service.",
+    nb::sig(
+      "def rclpy_get_servers_info_by_service(node: Node, service_name: str, no_mangle: bool)"
+      " -> list[_ServiceEndpointInfoDict]"));
   m.def(
     "rclpy_get_service_names_and_types",
     &rclpy::graph_get_service_names_and_types,
-    "Get all service names and types in the ROS graph.");
+    "Get all service names and types in the ROS graph.",
+    nb::sig(
+      "def rclpy_get_service_names_and_types(node: Node)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_service_names_and_types_by_node",
     &rclpy::graph_get_service_names_and_types_by_node,
-    "Get service names and types for which a remote node has servers.");
+    "Get service names and types for which a remote node has servers.",
+    nb::sig(
+      "def rclpy_get_service_names_and_types_by_node(node: Node, node_name: str,"
+      " node_namespace: str)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_client_names_and_types_by_node",
     &rclpy::graph_get_client_names_and_types_by_node,
-    "Get service names and types for which a remote node has clients.");
+    "Get service names and types for which a remote node has clients.",
+    nb::sig(
+      "def rclpy_get_client_names_and_types_by_node(node: Node, node_name: str,"
+      " node_namespace: str)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_action_client_names_and_types_by_node",
     &rclpy::graph_get_action_client_names_and_types_by_node,
-    "Get action client names and types by node.");
+    "Get action client names and types by node.",
+    nb::sig(
+      "def rclpy_get_action_client_names_and_types_by_node(node: Node, node_name: str,"
+      " node_namespace: str)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_action_server_names_and_types_by_node",
     &rclpy::graph_get_action_server_names_and_types_by_node,
-    "Get action server names and types by node.");
+    "Get action server names and types by node.",
+    nb::sig(
+      "def rclpy_get_action_server_names_and_types_by_node(node: Node, node_name: str,"
+      " node_namespace: str)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_action_names_and_types",
     &rclpy::graph_get_action_names_and_types,
-    "Get all action names and types in the ROS graph.");
+    "Get all action names and types in the ROS graph.",
+    nb::sig(
+      "def rclpy_get_action_names_and_types(node: Node)"
+      " -> list[tuple[str, list[str]]]"));
   m.def(
     "rclpy_get_action_clients_info_by_action",
     &rclpy::graph_get_action_clients_info_by_action,
-    "Get action clients info for an action.");
+    "Get action clients info for an action.",
+    nb::sig(
+      "def rclpy_get_action_clients_info_by_action(node: Node, action_name: str)"
+      " -> list[_ActionEndpointInfoDict]"));
   m.def(
     "rclpy_get_action_servers_info_by_action",
     &rclpy::graph_get_action_servers_info_by_action,
-    "Get action servers info for an action.");
+    "Get action servers info for an action.",
+    nb::sig(
+      "def rclpy_get_action_servers_info_by_action(node: Node, action_name: str)"
+      " -> list[_ActionEndpointInfoDict]"));
   m.def(
     "rclpy_serialize", &rclpy::serialize,
-    "Serialize a ROS message.");
+    "Serialize a ROS message.",
+    nb::sig("def rclpy_serialize(pymsg: MsgT, pymsg_type: type[MsgT], /) -> bytes"));
   m.def(
     "rclpy_deserialize", &rclpy::deserialize,
-    "Deserialize a ROS message.");
+    "Deserialize a ROS message.",
+    nb::sig("def rclpy_deserialize(pybuffer: bytes, pymsg_type: type[MsgT], /) -> MsgT"));
 
   rclpy::define_node(m);
   rclpy::define_event_handle(m);
@@ -270,11 +336,13 @@ NB_MODULE(_rclpy_nanobind, m) {
 
   m.def(
     "rclpy_assert_liveliness", &rclpy::assert_liveliness,
-    "Assert the liveliness of an entity.");
+    "Assert the liveliness of an entity.",
+    nb::sig("def rclpy_assert_liveliness(publisher: Publisher[Any], /) -> None"));
 
   m.def(
     "rclpy_remove_ros_args", &rclpy::remove_ros_args, nb::arg().none(),
-    "Remove ROS-specific arguments from argument vector.");
+    "Remove ROS-specific arguments from argument vector.",
+    nb::sig("def rclpy_remove_ros_args(pycli_args: Sequence[str] | None, /) -> list[str]"));
 
   rclpy::define_rmw_qos_profile(m);
 

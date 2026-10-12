@@ -466,10 +466,12 @@ define_action_server(nb::object module)
     nb::sig("def expire_goals(self, max_num_goals: int, /) -> tuple[GoalInfo, ...]"))
   .def(
     "get_num_entities", &ActionServer::get_num_entities,
-    "Get the number of wait set entities that make up an action entity.")
+    "Get the number of wait set entities that make up an action entity.",
+    nb::sig("def get_num_entities(self) -> tuple[int, int, int, int, int]"))
   .def(
     "is_ready", &ActionServer::is_ready,
-    "Check if an action entity has any ready wait set entities.")
+    "Check if an action entity has any ready wait set entities.",
+    nb::sig("def is_ready(self, wait_set: WaitSet, /) -> tuple[bool, bool, bool, bool]"))
   .def(
     "add_to_waitset", &ActionServer::add_to_waitset,
     "Add an action entity to a wait set.")

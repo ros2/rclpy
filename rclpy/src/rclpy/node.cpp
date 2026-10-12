@@ -607,7 +607,11 @@ define_node(nb::object module)
       const char *, const char *, Context &, std::optional<nb::list>, bool, bool,
       std::optional<rmw_qos_profile_t>>(),
     nb::arg(), nb::arg(), nb::arg(), nb::arg().none(), nb::arg(), nb::arg(),
-    nb::arg().none())
+    nb::arg().none(),
+    nb::sig(
+      "def __init__(self, node_name: str, namespace_: str, context: Context,"
+      " pycli_args: list[str] | None, use_global_arguments: bool, enable: bool,"
+      " rosout_qos_profile: rmw_qos_profile_t | None, /) -> None"))
   .def_prop_ro(
     "pointer", [](const Node & node) {
       return reinterpret_cast<size_t>(node.rcl_ptr());
@@ -645,24 +649,37 @@ define_node(nb::object module)
     "Returns the count of all the action servers known for that action in the entire ROS graph.")
   .def(
     "get_node_names_and_namespaces", &Node::get_node_names_and_namespaces,
-    "Get the list of nodes discovered by the provided node")
+    "Get the list of nodes discovered by the provided node",
+    nb::sig("def get_node_names_and_namespaces(self) -> list[tuple[str, str]]"))
   .def(
     "get_node_names_and_namespaces_with_enclaves",
     &Node::get_node_names_and_namespaces_with_enclaves,
-    "Get the list of nodes discovered by the provided node, with their respective enclaves.")
+    "Get the list of nodes discovered by the provided node, with their respective enclaves.",
+    nb::sig(
+      "def get_node_names_and_namespaces_with_enclaves(self) -> list[tuple[str, str, str]]"))
   .def(
     "get_action_client_names_and_types_by_node",
     &Node::get_action_client_names_and_types_by_node,
-    "Get action client names and types by node.")
+    "Get action client names and types by node.",
+    nb::sig(
+      "def get_action_client_names_and_types_by_node(self, remote_node_name: str,"
+      " remote_node_namespace: str, /) -> list[tuple[str, list[str]]]"))
   .def(
     "get_action_server_names_and_types_by_node",
     &Node::get_action_server_names_and_types_by_node,
-    "Get action server names and types by node.")
+    "Get action server names and types by node.",
+    nb::sig(
+      "def get_action_server_names_and_types_by_node(self, remote_node_name: str,"
+      " remote_node_namespace: str, /) -> list[tuple[str, list[str]]]"))
   .def(
     "get_action_names_and_types", &Node::get_action_names_and_types,
-    "Get action names and types.")
+    "Get action names and types.",
+    nb::sig("def get_action_names_and_types(self) -> list[tuple[str, list[str]]]"))
   .def(
     "get_parameters", &Node::get_parameters,
-    "Get a list of parameters for the current node");
+    "Get a list of parameters for the current node",
+    nb::sig(
+      "def get_parameters(self, pyparameter_cls: type[Parameter[Any]], /)"
+      " -> dict[str, Parameter[Any]]"));
 }
 }  // namespace rclpy

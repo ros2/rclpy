@@ -241,7 +241,8 @@ define_timer(nb::object module)
     "Call a timer and starts counting again.")
   .def(
     "call_timer_with_info", &Timer::call_timer_with_info,
-    "Call a timer and starts counting again, retrieves actual and expected call time.")
+    "Call a timer and starts counting again, retrieves actual and expected call time.",
+    nb::sig("def call_timer_with_info(self) -> _TimeInfoDict"))
   .def(
     "change_timer_period", &Timer::change_timer_period,
     "Set the period of a timer.")

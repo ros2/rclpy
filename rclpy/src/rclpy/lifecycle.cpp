@@ -314,7 +314,8 @@ define_lifecycle_api(nb::module_ m)
     "Check if state machine is initialized.")
   .def_prop_ro(
     "current_state", &LifecycleStateMachine::get_current_state,
-    "Get the current state machine state.")
+    "Get the current state machine state.",
+    nb::sig("def current_state(self) -> tuple[int, str]"))
   .def_prop_ro(
     "available_states", &LifecycleStateMachine::get_available_states,
     "Get the available states.")
@@ -335,19 +336,24 @@ define_lifecycle_api(nb::module_ m)
     "Trigger a transition by label.")
   .def_prop_ro(
     "service_change_state", &LifecycleStateMachine::get_srv_change_state,
-    "Get the change state service.")
+    "Get the change state service.",
+    nb::sig("def service_change_state(self) -> Service[Any, Any]"))
   .def_prop_ro(
     "service_get_state", &LifecycleStateMachine::get_srv_get_state,
-    "Get the get state service.")
+    "Get the get state service.",
+    nb::sig("def service_get_state(self) -> Service[Any, Any]"))
   .def_prop_ro(
     "service_get_available_states", &LifecycleStateMachine::get_srv_get_available_states,
-    "Get the get available states service.")
+    "Get the get available states service.",
+    nb::sig("def service_get_available_states(self) -> Service[Any, Any]"))
   .def_prop_ro(
     "service_get_available_transitions", &LifecycleStateMachine::get_srv_get_available_transitions,
-    "Get the get available transitions service.")
+    "Get the get available transitions service.",
+    nb::sig("def service_get_available_transitions(self) -> Service[Any, Any]"))
   .def_prop_ro(
     "service_get_transition_graph", &LifecycleStateMachine::get_srv_get_transition_graph,
-    "Get the get transition graph service.");
+    "Get the get transition graph service.",
+    nb::sig("def service_get_transition_graph(self) -> Service[Any, Any]"));
   nb::enum_<TransitionCallbackReturnType>(m, "TransitionCallbackReturnType", nb::is_arithmetic())
   .value(
     "SUCCESS", TransitionCallbackReturnType::Success,

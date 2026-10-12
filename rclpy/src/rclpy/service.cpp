@@ -242,7 +242,8 @@ define_service(nb::object module)
     "Get the name of the service")
   .def_prop_ro(
     "qos", &Service::get_qos_profile,
-    "Get the qos profile of the service")
+    "Get the qos profile of the service",
+    nb::sig("def qos(self) -> _rmw_qos_profile_dict"))
   .def(
     "service_send_response", &Service::service_send_response,
     "Send a response",

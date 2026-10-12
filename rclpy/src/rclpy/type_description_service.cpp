@@ -71,9 +71,16 @@ define_type_description_service(nb::object module)
   nb::class_<TypeDescriptionService, Destroyable>(module, "TypeDescriptionService")
   .def(nb::init<Node &>())
   .def_prop_ro(
-    "impl", &TypeDescriptionService::get_impl, "Get the rcl service wrapper capsule.")
+    "impl", &TypeDescriptionService::get_impl, "Get the rcl service wrapper capsule.",
+    nb::sig(
+      "def impl(self)"
+      " -> Service[GetTypeDescription_Request, GetTypeDescription_Response]"))
   .def(
     "handle_request", &TypeDescriptionService::handle_request,
-    "Handle an incoming request by calling RCL implementation");
+    "Handle an incoming request by calling RCL implementation",
+    nb::sig(
+      "def handle_request(self, pyrequest: GetTypeDescription_Request,"
+      " pyresponse_type: type[GetTypeDescription_Response], node: Node, /)"
+      " -> GetTypeDescription_Response"));
 }
 }  // namespace rclpy

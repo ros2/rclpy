@@ -170,7 +170,9 @@ Context::shutdown()
 void define_context(nb::object module)
 {
   nb::class_<Context, Destroyable>(module, "Context")
-  .def(nb::init<nb::list, size_t>())
+  .def(
+    nb::init<nb::list, size_t>(),
+    nb::sig("def __init__(self, pyargs: list[str], domain_id: int, /) -> None"))
   .def_prop_ro(
     "pointer", [](const Context & context) {
       return reinterpret_cast<size_t>(context.rcl_ptr());
