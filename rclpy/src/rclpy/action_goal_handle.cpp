@@ -101,7 +101,11 @@ define_action_goal_handle(nb::module_ module)
 {
   nb::class_<ActionGoalHandle, Destroyable>(
     module, "ActionGoalHandle")
-  .def(nb::init<rclpy::ActionServer &, nb::object>())
+  .def(
+    nb::init<rclpy::ActionServer &, nb::object>(),
+    nb::sig(
+      "def __init__(self, action_server: ActionServer[Any, Any, Any, Any],"
+      " pygoal_info_msg: GoalInfo, /) -> None"))
   .def_prop_ro(
     "pointer", [](const ActionGoalHandle & handle) {
       return reinterpret_cast<size_t>(handle.rcl_ptr());

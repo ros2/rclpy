@@ -156,7 +156,7 @@ assert_liveliness(rclpy::Publisher * publisher)
 }
 
 nb::list
-remove_ros_args(std::optional<nb::list> pycli_args)
+remove_ros_args(std::optional<nb::sequence> pycli_args)
 {
   rcl_ret_t ret;
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -166,7 +166,7 @@ remove_ros_args(std::optional<nb::list> pycli_args)
   const char ** const_arg_values = NULL;
   nb::list pyargs;
   if (pycli_args) {
-    pyargs = *pycli_args;
+    pyargs = nb::list(*pycli_args);
     if (!pyargs.empty()) {
       arg_values.resize(pyargs.size());
       for (size_t i = 0; i < pyargs.size(); ++i) {

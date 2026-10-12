@@ -412,7 +412,8 @@ define_action_client(nb::object module)
       " -> tuple[int, GetResultServiceResponse[ResultT]] | tuple[None, None]"))
   .def(
     "get_num_entities", &ActionClient::get_num_entities,
-    "Get the number of wait set entities that make up an action entity.")
+    "Get the number of wait set entities that make up an action entity.",
+    nb::sig("def get_num_entities(self) -> tuple[int, int, int, int, int]"))
   .def(
     "is_action_server_available", &ActionClient::is_action_server_available,
     "Check if an action server is available for the given action client.")
@@ -421,7 +422,8 @@ define_action_client(nb::object module)
     "Add an action entity to a wait set.")
   .def(
     "is_ready", &ActionClient::is_ready,
-    "Check if an action entity has any ready wait set entities.")
+    "Check if an action entity has any ready wait set entities.",
+    nb::sig("def is_ready(self, wait_set: WaitSet, /) -> tuple[bool, bool, bool, bool, bool]"))
   .def(
     "take_status", &ActionClient::take_status,
     "Take an action status response.",

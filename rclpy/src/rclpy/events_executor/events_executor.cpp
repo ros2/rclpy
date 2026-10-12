@@ -905,14 +905,18 @@ void define_events_executor(nb::object module)
     },
     "context"_a)
   .def_prop_ro("context", &EventsExecutor::get_context)
-  .def("create_task", &EventsExecutor::create_task, "callback"_a, "args"_a, "kwargs"_a)
+  .def(
+    "create_task", &EventsExecutor::create_task, "callback"_a, "args"_a, "kwargs"_a,
+    nb::sig(
+      "def create_task(self, callback: Callable[..., T], *args: Any, **kwargs: Any)"
+      " -> Task[T]"))
   .def("_call_task_in_next_spin", &EventsExecutor::call_task_in_next_spin, "task"_a)
   .def("create_future", &EventsExecutor::create_future)
   .def("shutdown", &EventsExecutor::shutdown, "timeout_sec"_a = nb::none())
   .def("add_node", &EventsExecutor::add_node, "node"_a)
   .def("remove_node", &EventsExecutor::remove_node, "node"_a)
   .def("wake", &EventsExecutor::wake)
-  .def("get_nodes", &EventsExecutor::get_nodes)
+  .def("get_nodes", &EventsExecutor::get_nodes, nb::sig("def get_nodes(self) -> list[RCLPyNode]"))
   .def("spin", [](EventsExecutor & exec) {exec.spin();})
   .def(
       "spin_once",

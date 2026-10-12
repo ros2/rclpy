@@ -139,7 +139,7 @@ assert_liveliness(rclpy::Publisher * publisher);
  * \return Parsed list of strings
  */
 nb::list
-remove_ros_args(std::optional<nb::list> pycli_args);
+remove_ros_args(std::optional<nb::sequence> pycli_args);
 
 /// Throw UnparsedROSArgsError with a message saying which args are unparsed.
 void

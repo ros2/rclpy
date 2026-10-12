@@ -169,7 +169,7 @@ define_rmw_qos_profile(nb::object module)
 {
   nb::class_<rmw_qos_profile_t>(module, "rmw_qos_profile_t")
   .def(nb::new_(&create_qos_profile))
-  .def("to_dict", &convert_to_qos_dict)
+  .def("to_dict", &convert_to_qos_dict, nb::sig("def to_dict(self) -> _rmw_qos_profile_dict"))
   .def_static("predefined", &predefined_qos_profile_from_name);
 }
 

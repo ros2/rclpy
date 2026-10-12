@@ -253,7 +253,12 @@ WaitSet::wait(int64_t timeout)
 void define_waitset(nb::object module)
 {
   nb::class_<WaitSet, Destroyable>(module, "WaitSet")
-  .def(nb::init<size_t, size_t, size_t, size_t, size_t, size_t, Context &>())
+  .def(
+    nb::init<size_t, size_t, size_t, size_t, size_t, size_t, Context &>(),
+    nb::sig(
+      "def __init__(self, number_of_subscriptions: int, number_of_guard_conditions: int,"
+      " number_of_timers: int, number_of_clients: int, number_of_services: int,"
+      " number_of_events: int, context: Context, /) -> None"))
   .def_prop_ro(
     "pointer", [](const WaitSet & waitset) {
       return reinterpret_cast<size_t>(waitset.rcl_ptr());
@@ -264,13 +269,16 @@ void define_waitset(nb::object module)
     "Clear all the pointers in the wait set")
   .def(
     "add_service", &WaitSet::add_service,
-    "Add a service to the wait set structure")
+    "Add a service to the wait set structure",
+    nb::sig("def add_service(self, service: Service[Any, Any], /) -> int"))
   .def(
     "add_subscription", &WaitSet::add_subscription,
-    "Add a subscription to the wait set structure")
+    "Add a subscription to the wait set structure",
+    nb::sig("def add_subscription(self, subscription: Subscription[Any], /) -> int"))
   .def(
     "add_client", &WaitSet::add_client,
-    "Add a client to the wait set structure")
+    "Add a client to the wait set structure",
+    nb::sig("def add_client(self, client: Client[Any, Any], /) -> int"))
   .def(
     "add_guard_condition", &WaitSet::add_guard_condition,
     "Add a guard condition to the wait set structure")
@@ -279,13 +287,15 @@ void define_waitset(nb::object module)
     "Add a timer to the wait set structure")
   .def(
     "add_event", &WaitSet::add_event,
-    "Add an event to the wait set structure")
+    "Add an event to the wait set structure",
+    nb::sig("def add_event(self, event: EventHandle[Any], /) -> int"))
   .def(
     "is_ready", &WaitSet::is_ready,
     "Check if an entity in the wait set is ready by its index")
   .def(
     "get_ready_entities", &WaitSet::get_ready_entities,
-    "Get list of entities ready by entity type")
+    "Get list of entities ready by entity type",
+    nb::sig("def get_ready_entities(self, entity_type: str, /) -> list[int]"))
   .def(
     "wait", &WaitSet::wait,
     "Wait until timeout is reached or event happened");
