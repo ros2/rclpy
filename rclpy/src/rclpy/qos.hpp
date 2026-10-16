@@ -15,11 +15,11 @@
 #ifndef RCLPY__QOS_HPP_
 #define RCLPY__QOS_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <rmw/qos_profiles.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -67,12 +67,12 @@ qos_check_compatible(
   const rmw_qos_profile_t & subscription_qos_profile
 );
 
-/// Define a pybind11 wrapper for an rmw_qos_profile_t
+/// Define a nanobind wrapper for an rmw_qos_profile_t
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
 void
-define_rmw_qos_profile(py::object module);
+define_rmw_qos_profile(nb::object module);
 
 }  // namespace rclpy
 

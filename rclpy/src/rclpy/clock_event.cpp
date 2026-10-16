@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/error_handling.h>
 #include <rcl/time.h>
@@ -24,7 +25,7 @@
 
 #include "clock_event.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -48,7 +49,7 @@ void ClockEvent::wait_until(std::shared_ptr<Clock> clock, rcl_time_point_t until
     std::chrono::nanoseconds(delta_t.nanoseconds));
 
   // Could be a long wait, release the gil
-  py::gil_scoped_release release;
+  nb::gil_scoped_release release;
   std::unique_lock<std::mutex> lock(mutex_);
   cv_.wait_until(lock, chrono_until, [this]() {return state_;});
 }
@@ -58,7 +59,7 @@ void ClockEvent::wait_until_ros(std::shared_ptr<Clock> clock, rcl_time_point_t u
   // Check if ROS time is enabled in C++ to avoid TOCTTOU with TimeSource by holding GIL
   if (clock->get_ros_time_override_is_enabled()) {
     // Could be a long wait, release the gil
-    py::gil_scoped_release release;
+    nb::gil_scoped_release release;
     std::unique_lock<std::mutex> lock(mutex_);
     // Caller must have setup a time jump callback to wake this event
     cv_.wait(lock, [this]() {return state_;});
@@ -92,10 +93,10 @@ void ClockEvent::clear()
   cv_.notify_all();
 }
 
-void define_clock_event(py::object module)
+void define_clock_event(nb::object module)
 {
-  py::class_<ClockEvent>(module, "ClockEvent")
-  .def(py::init())
+  nb::class_<ClockEvent>(module, "ClockEvent")
+  .def(nb::init<>())
   .def(
     "wait_until_steady", &ClockEvent::wait_until<std::chrono::steady_clock>,
     "Wait for the event to be set (monotonic wait)")

@@ -15,7 +15,8 @@
 #ifndef RCLPY__CONTEXT_HPP_
 #define RCLPY__CONTEXT_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/context.h>
 #include <rcl/error_handling.h>
@@ -26,7 +27,7 @@
 #include "destroyable.hpp"
 #include "exceptions.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -70,7 +71,7 @@ public:
    * \param[in] pyargs List of command line arguments
    * \param[in] domain_id domain id to be set in this context
    */
-  Context(py::list pyargs, size_t domain_id);
+  Context(nb::list pyargs, size_t domain_id);
 
   /// Retrieves domain id from init_options of context
   /**
@@ -104,8 +105,8 @@ private:
   bool already_shutdown_{false};
 };
 
-/// Define a pybind11 wrapper for an rclpy::Context
-void define_context(py::object module);
+/// Define a nanobind wrapper for an rclpy::Context
+void define_context(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__CONTEXT_HPP_
