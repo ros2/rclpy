@@ -181,6 +181,15 @@ if(BUILD_TESTING)
     ament_cmake_ros_core::ament_ros_cxx_standard
     pybind11::embed)
 
+  ament_add_gtest(test_rcl_callback_manager
+    test/test_rcl_callback_manager.cpp
+    src/rclpy/events_executor/events_queue.cpp
+    src/rclpy/events_executor/rcl_support.cpp)
+  target_include_directories(test_rcl_callback_manager PRIVATE src/rclpy)
+  target_link_libraries(test_rcl_callback_manager
+    ament_cmake_ros_core::ament_ros_cxx_standard
+    pybind11::embed)
+
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
     set(_rclpy_pytest_tests
