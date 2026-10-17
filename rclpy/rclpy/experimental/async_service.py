@@ -18,6 +18,7 @@ from typing import Callable, Optional, Type
 from typing import cast
 
 from rclpy.executors import await_or_execute
+from rclpy.experimental._wakeup_socket import WakeupSocket
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service import BaseService, ServiceCallbackUnion
@@ -48,19 +49,18 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
                          on_destroy=on_destroy)
         self._concurrent = concurrent
         self._task: Optional[asyncio.Task[None]] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._read_event = asyncio.Event()
+        self._wakeup: Optional[WakeupSocket] = None
         if tg is not None:
             self._task = tg.create_task(self._run())
-
-    def _on_new_request(self, _num_waiting: int) -> None:
-        assert self._loop is not None
-        self._loop.call_soon_threadsafe(self._read_event.set)
 
     def _destroy(self) -> None:
         if self._task is not None:
             self._task.cancel()
         self.handle.clear_on_new_request_callback()
+        if self._wakeup is not None:
+            self._wakeup.close()
+            self._wakeup = None
         super()._destroy()
 
     async def _handle_request(
@@ -75,7 +75,8 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
     async def _requests(self) -> AsyncGenerator[tuple[SrvRequestT,
                                                       _rclpy.rmw_service_info_t], None]:
         """Async generator yielding (request, header) from DDS."""
-        self.handle.set_on_new_request_callback(self._on_new_request)
+        self._wakeup = await WakeupSocket.create(self._read_event)
+        self.handle.set_on_new_request_wakeup(self._wakeup.fileno())
         while not self._destroyed:
             request_and_header = self.handle.service_take_request(
                 self.srv_type.Request)
@@ -88,7 +89,6 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
 
     async def _run(self) -> None:
         """DDS bridge read loop for services."""
-        self._loop = asyncio.get_running_loop()
         try:
             if self._concurrent:
                 async with asyncio.TaskGroup() as tg:
