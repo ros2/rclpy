@@ -191,7 +191,7 @@ class Timer(BaseTimer):
         Create a Timer.
 
         If autostart is ``True`` (the default), the timer will be started and every
-        ``timer_period_sec`` number of seconds the provided callback function will be called.
+        ``timer_period_ns`` number of nanoseconds the provided callback function will be called.
         If autostart is ``False``, the timer will be created but not started; it can then be
         started by calling ``reset()`` on the timer object.
 

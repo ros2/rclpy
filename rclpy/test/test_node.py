@@ -39,6 +39,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import GetParameters
 import rclpy
 from rclpy.action import ActionClient, ActionServer
+from rclpy.client import Client
 from rclpy.clock_type import ClockType
 import rclpy.context
 from rclpy.duration import Duration
@@ -53,15 +54,20 @@ from rclpy.exceptions import ParameterImmutableException
 from rclpy.exceptions import ParameterNotDeclaredException
 from rclpy.exceptions import ParameterUninitializedException
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.guard_condition import GuardCondition
 from rclpy.impl.logging_severity import LoggingSeverity
 from rclpy.parameter import Parameter
+from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSLivelinessPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
+from rclpy.service import Service
+from rclpy.subscription import Subscription
 from rclpy.time_source import USE_SIM_TIME_NAME
+from rclpy.timer import Timer
 from rclpy.type_description_service import START_TYPE_DESCRIPTION_SERVICE_PARAM
 from rclpy.utilities import get_rmw_implementation_identifier
 from test_msgs.action import Fibonacci
@@ -127,6 +133,61 @@ class TestNodeAllowUndeclaredParameters(unittest.TestCase):
             self.node.create_publisher(BasicTypes, 'chatter', -1)
         with self.assertRaisesRegex(TypeError, 'Expected QoSProfile or int'):
             self.node.create_publisher(BasicTypes, 'chatter', 'foo')  # type: ignore[arg-type]
+
+    def test_create_entities_with_custom_class(self) -> None:
+        class MyPublisher(Publisher[BasicTypes]):
+            pass
+
+        class MySubscription(Subscription[BasicTypes]):
+            pass
+
+        class MyClient(Client[GetParameters.Request, GetParameters.Response]):
+            pass
+
+        class MyService(Service[GetParameters.Request, GetParameters.Response]):
+            pass
+
+        class MyTimer(Timer):
+            pass
+
+        class MyGuardCondition(GuardCondition):
+            pass
+
+        pub = self.node.create_publisher(
+            BasicTypes, 'chatter', 1, publisher_class=MyPublisher)
+        self.assertIsInstance(pub, MyPublisher)
+        self.assertIn(pub, self.node.publishers)
+
+        sub = self.node.create_subscription(
+            BasicTypes, 'chatter', lambda msg: None, 1, subscription_class=MySubscription)
+        self.assertIsInstance(sub, MySubscription)
+        self.assertIn(sub, self.node.subscriptions)
+
+        client = self.node.create_client(
+            GetParameters, 'get/parameters', client_class=MyClient)
+        self.assertIsInstance(client, MyClient)
+        self.assertIn(client, self.node.clients)
+
+        service = self.node.create_service(
+            GetParameters, 'get/parameters', lambda req, res: res, service_class=MyService)
+        self.assertIsInstance(service, MyService)
+        self.assertIn(service, self.node.services)
+
+        timer = self.node.create_timer(1.0, lambda: None, timer_class=MyTimer)
+        self.assertIsInstance(timer, MyTimer)
+        self.assertIn(timer, self.node.timers)
+
+        guard = self.node.create_guard_condition(
+            lambda: None, guard_condition_class=MyGuardCondition)
+        self.assertIsInstance(guard, MyGuardCondition)
+        self.assertIn(guard, self.node.guards)
+
+        self.assertTrue(self.node.destroy_publisher(pub))
+        self.assertTrue(self.node.destroy_subscription(sub))
+        self.assertTrue(self.node.destroy_client(client))
+        self.assertTrue(self.node.destroy_service(service))
+        self.assertTrue(self.node.destroy_timer(timer))
+        self.assertTrue(self.node.destroy_guard_condition(guard))
 
     def test_create_subscription(self) -> None:
         self.node.create_subscription(BasicTypes, 'chatter', lambda msg: print(msg), 1)

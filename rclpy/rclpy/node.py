@@ -2349,6 +2349,9 @@ class Node(BaseNode):
         :param callback_group: The callback group for the publisher's event handlers.
             If ``None``, then the default callback group for the node is used.
         :param event_callbacks: User-defined callbacks for middleware events.
+        :param qos_overriding_options: Options to customize QoS parameter overrides.
+        :param publisher_class: The class used to construct the publisher. It must be
+            :class:`.Publisher` or a subclass of it.
         :return: The new publisher.
         """
         qos_profile_validated = self._validate_qos_or_depth_parameter(qos_profile)
@@ -2392,7 +2395,8 @@ class Node(BaseNode):
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: Literal[True],
         content_filter_options: Optional[ContentFilterOptions] = None,
-        acceptable_buffer_backends: Optional[str] = None
+        acceptable_buffer_backends: Optional[str] = None,
+        subscription_class: Type[Subscription[MsgT]] = Subscription
     ) -> Subscription[MsgT]: ...
 
     @overload
@@ -2407,7 +2411,8 @@ class Node(BaseNode):
         event_callbacks: Optional[SubscriptionEventCallbacks] = None,
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: Literal[False],
-        content_filter_options: Optional[ContentFilterOptions] = None
+        content_filter_options: Optional[ContentFilterOptions] = None,
+        subscription_class: Type[Subscription[MsgT]] = Subscription
     ) -> Subscription[MsgT]: ...
 
     @overload
@@ -2423,7 +2428,8 @@ class Node(BaseNode):
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False,
         content_filter_options: Optional[ContentFilterOptions] = None,
-        acceptable_buffer_backends: Optional[str] = None
+        acceptable_buffer_backends: Optional[str] = None,
+        subscription_class: Type[Subscription[MsgT]] = Subscription
     ) -> Subscription[MsgT]: ...
 
     def create_subscription(
@@ -2438,7 +2444,8 @@ class Node(BaseNode):
         qos_overriding_options: Optional[QoSOverridingOptions] = None,
         raw: bool = False,
         content_filter_options: Optional[ContentFilterOptions] = None,
-        acceptable_buffer_backends: Optional[str] = None
+        acceptable_buffer_backends: Optional[str] = None,
+        subscription_class: Type[Subscription[MsgT]] = Subscription
     ) -> Subscription[MsgT]:
         """
         Create a new subscription.
@@ -2461,6 +2468,9 @@ class Node(BaseNode):
             names. ``None``, empty, or ``"cpu"`` all mean CPU-only (default for backward
             compatibility). ``"any"`` means all installed backends are acceptable.
             CPU is always implicitly acceptable.
+        :param subscription_class: The class used to construct the subscription. It must be
+            :class:`.Subscription` or a subclass of it.
+        :return: The new subscription.
         """
         qos_profile = self._validate_qos_or_depth_parameter(qos_profile)
 
@@ -2476,7 +2486,7 @@ class Node(BaseNode):
         )
 
         try:
-            subscription = Subscription(
+            subscription = subscription_class(
                 subscription_object, msg_type,
                 topic, callback, qos_profile, raw,
                 on_destroy=self._on_destroy_subscription,
@@ -2500,7 +2510,8 @@ class Node(BaseNode):
         srv_name: str,
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
-        callback_group: Optional[CallbackGroup] = None
+        callback_group: Optional[CallbackGroup] = None,
+        client_class: Type[Client[SrvRequestT, SrvResponseT]] = Client
     ) -> Client[SrvRequestT, SrvResponseT]:
         """
         Create a new service client.
@@ -2510,6 +2521,9 @@ class Node(BaseNode):
         :param qos_profile: The quality of service profile to apply the service client.
         :param callback_group: The callback group for the service client. If ``None``, then the
             default callback group for the node is used.
+        :param client_class: The class used to construct the client. It must be
+            :class:`.Client` or a subclass of it.
+        :return: The new client.
         """
         if callback_group is None:
             callback_group = self.default_callback_group
@@ -2520,7 +2534,7 @@ class Node(BaseNode):
             qos_profile=qos_profile
         )
 
-        client = Client(
+        client = client_class(
             self.context,
             client_impl, srv_type, srv_name, qos_profile,
             on_destroy=self._on_destroy_client,
@@ -2537,7 +2551,8 @@ class Node(BaseNode):
         callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         *,
         qos_profile: QoSProfile = qos_profile_services_default,
-        callback_group: Optional[CallbackGroup] = None
+        callback_group: Optional[CallbackGroup] = None,
+        service_class: Type[Service[SrvRequestT, SrvResponseT]] = Service
     ) -> Service[SrvRequestT, SrvResponseT]:
         """
         Create a new service server.
@@ -2549,6 +2564,9 @@ class Node(BaseNode):
         :param qos_profile: The quality of service profile to apply the service server.
         :param callback_group: The callback group for the service server. If ``None``, then the
             default callback group for the node is used.
+        :param service_class: The class used to construct the service. It must be
+            :class:`.Service` or a subclass of it.
+        :return: The new service.
         """
         service_impl = self._create_service_handle(
             srv_type,
@@ -2562,7 +2580,8 @@ class Node(BaseNode):
             srv_name,
             callback,
             qos_profile,
-            callback_group
+            callback_group,
+            service_class=service_class,
             )
 
     def _create_service(
@@ -2573,10 +2592,11 @@ class Node(BaseNode):
         callback: ServiceCallbackUnion[SrvRequestT, SrvResponseT],
         qos_profile: QoSProfile,
         callback_group: Optional[CallbackGroup] = None,
+        service_class: Type[Service[SrvRequestT, SrvResponseT]] = Service,
     ) -> Service[SrvRequestT, SrvResponseT]:
         if callback_group is None:
             callback_group = self.default_callback_group
-        service = Service(
+        service = service_class(
             service_impl,
             srv_type, srv_name, callback, qos_profile,
             on_destroy=self._on_destroy_service,
@@ -2593,6 +2613,8 @@ class Node(BaseNode):
         callback_group: Optional[CallbackGroup] = None,
         clock: Optional[Clock] = None,
         autostart: bool = True,
+        *,
+        timer_class: Type[Timer] = Timer,
     ) -> Timer:
         """
         Create a new timer.
@@ -2609,13 +2631,16 @@ class Node(BaseNode):
         :param clock: The clock which the timer gets time from.
         :param autostart: Whether to automatically start the timer after creation; defaults to
             ``True``.
+        :param timer_class: The class used to construct the timer. It must be
+            :class:`.Timer` or a subclass of it.
+        :return: The new timer.
         """
         timer_period_nsec = int(float(timer_period_sec) * S_TO_NS)
         if callback_group is None:
             callback_group = self.default_callback_group
         if clock is None:
             clock = self._clock
-        timer = Timer(
+        timer = timer_class(
             callback, timer_period_nsec, clock,
             callback_group=callback_group,
             on_destroy=self._on_destroy_timer,
@@ -2631,17 +2656,27 @@ class Node(BaseNode):
     def create_guard_condition(
         self,
         callback: GuardConditionCallbackType,
-        callback_group: Optional[CallbackGroup] = None
+        callback_group: Optional[CallbackGroup] = None,
+        *,
+        guard_condition_class: Type[GuardCondition] = GuardCondition
     ) -> GuardCondition:
         """
         Create a new guard condition.
 
         .. warning:: Users should call :meth:`.Node.destroy_guard_condition` to destroy
            the GuardCondition object.
+
+        :param callback: A user-defined callback function that is called when the guard
+            condition is triggered.
+        :param callback_group: The callback group for the guard condition. If ``None``, then the
+            default callback group for the node is used.
+        :param guard_condition_class: The class used to construct the guard condition. It must
+            be :class:`.GuardCondition` or a subclass of it.
+        :return: The new guard condition.
         """
         if callback_group is None:
             callback_group = self.default_callback_group
-        guard = GuardCondition(callback, callback_group, context=self.context)
+        guard = guard_condition_class(callback, callback_group, context=self.context)
 
         callback_group.add_entity(guard)
         self._guards.append(guard)
