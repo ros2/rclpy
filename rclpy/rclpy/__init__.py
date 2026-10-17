@@ -318,12 +318,14 @@ def spin(node: 'Node', executor: Optional['Executor'] = None) -> None:
     :param executor: The executor to use, or the global executor if ``None``.
     """
     executor = get_global_executor() if executor is None else executor
+    node_was_added = False
     try:
-        executor.add_node(node)
+        node_was_added = executor.add_node(node)
         while executor.context.ok():
             executor.spin_once()
     finally:
-        executor.remove_node(node)
+        if node_was_added:
+            executor.remove_node(node)
 
 
 def spin_until_future_complete(
