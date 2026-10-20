@@ -706,6 +706,94 @@ class TestActionServer(unittest.TestCase):
         self.assertEqual(0, len(action_server._goal_handles))
         action_server.destroy()
 
+    def test_get_result_request_handles_expired_future(self) -> None:
+        """
+        Regression test for ros2/rclpy#1236.
+
+        ``_execute_get_result_request`` must treat a goal whose result future
+        has been removed (e.g. by ``_execute_expire_goals`` racing on another
+        executor thread) as expired and respond with ``STATUS_UNKNOWN`` rather
+        than raising ``KeyError`` out of the executor. The race is simulated
+        deterministically here by removing the result future directly.
+        """
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=self.execute_goal_callback,
+        )
+
+        goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_msg = Fibonacci.Impl.SendGoalService.Request()
+        goal_msg.goal_id = goal_uuid
+        goal_future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+        goal_handle = goal_future.result()
+        assert goal_handle
+        self.assertTrue(goal_handle.accepted)
+
+        # Let the executor run `_execute_goal` so the goal's result future exists.
+        self.timed_spin(0.5)
+
+        uuid_bytes = bytes(goal_uuid.uuid)
+        self.assertIn(uuid_bytes, action_server._goal_handles)
+        self.assertIn(uuid_bytes, action_server._result_futures)
+
+        # Simulate `_execute_expire_goals` having removed the result future
+        # between the goal-handle check and the future access.
+        del action_server._result_futures[uuid_bytes]
+
+        # Without the fix this raises KeyError out of `spin_once`; with the fix
+        # the server detects the missing future and replies STATUS_UNKNOWN.
+        get_result_future = self.mock_action_client.get_result(goal_uuid)
+        rclpy.spin_until_future_complete(
+            self.node, get_result_future, self.executor, timeout_sec=5)
+        result_response = get_result_future.result()
+        assert result_response
+        self.assertEqual(result_response.status, GoalStatus.STATUS_UNKNOWN)
+        action_server.destroy()
+
+    def test_execute_goal_handles_expired_future(self) -> None:
+        """
+        Regression test for ros2/rclpy#1667.
+
+        If the result future is removed (e.g. by ``_execute_expire_goals`` on
+        another executor thread) while a goal's execute callback is running,
+        ``_execute_goal`` must not raise ``KeyError`` when it publishes the
+        result.
+        """
+        action_server: Optional[ActionServer[Any, Any, Any, Any]] = None
+
+        def execute_callback(goal_handle: ServerGoalHandle[Any, Fibonacci.Result, Any, Any]
+                             ) -> Fibonacci.Result:
+            # Simulate the result future being expired mid-execution.
+            assert action_server is not None
+            del action_server._result_futures[bytes(goal_handle.goal_id.uuid)]
+            goal_handle.succeed()
+            return Fibonacci.Result()
+
+        action_server = ActionServer(
+            self.node,
+            Fibonacci,
+            'fibonacci',
+            execute_callback=execute_callback,
+        )
+
+        goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+        goal_msg = Fibonacci.Impl.SendGoalService.Request()
+        goal_msg.goal_id = goal_uuid
+        goal_future = self.mock_action_client.send_goal(goal_msg)
+        rclpy.spin_until_future_complete(self.node, goal_future, self.executor)
+        accept_response = goal_future.result()
+        assert accept_response
+        self.assertTrue(accept_response.accepted)
+
+        # Drive the executor so `_execute_goal` runs to completion. Without the
+        # fix it raises KeyError out of `spin_once`; with the fix it logs a
+        # warning and the executor stays alive.
+        self.timed_spin(1.0)
+        action_server.destroy()
+
     def test_feedback(self) -> None:
 
         def execute_with_feedback(goal_handle: ServerGoalHandle[Fibonacci.Goal, Fibonacci.Result,
