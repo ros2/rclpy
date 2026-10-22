@@ -29,14 +29,10 @@ class WakeupSocket:
 
     def __init__(
         self,
-        loop: asyncio.AbstractEventLoop,
         transport: asyncio.BaseTransport,
-        rsock: socket.socket,
         wsock: socket.socket
     ) -> None:
-        self._loop = loop
         self._transport = transport
-        self._rsock = rsock
         self._wsock = wsock
 
     @classmethod
@@ -51,7 +47,7 @@ class WakeupSocket:
             rsock.close()
             wsock.close()
             raise
-        return cls(loop, transport, rsock, wsock)
+        return cls(transport, wsock)
 
     def fileno(self) -> int:
         return self._wsock.fileno()
