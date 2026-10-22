@@ -59,17 +59,21 @@ const void * RclCallbackManager::MakeCallback(
   }
   CbEntry new_entry;
   new_entry.cb =
-    std::make_unique<std::function<void(size_t)>>([this, callback, key](size_t number_of_events) {
-        events_queue_->Enqueue([this, callback, key, number_of_events]() {
-          if (!owned_cbs_.count(key)) {
+    std::make_unique<std::function<void(size_t)>>([this, key](size_t number_of_events) {
+        events_queue_->Enqueue([this, key, number_of_events]() {
+          const auto map_it = owned_cbs_.find(key);
+          if (map_it == owned_cbs_.end()) {
             // This callback has been removed, just drop it as the objects it may want to touch may
             // no longer exist.
             return;
           }
-          callback(number_of_events);
+          map_it->second.callback(number_of_events);
       });
     });
   new_entry.with = with;
+  // Queued events must not own the callback's captures: these can include ScopedWith objects
+  // which must be destroyed with the GIL held when RemoveCallback clears the entry.
+  new_entry.callback = std::move(callback);
   const void * ret = new_entry.cb.get();
   owned_cbs_[key] = std::move(new_entry);
   return ret;
