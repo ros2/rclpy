@@ -189,6 +189,12 @@ if(BUILD_TESTING)
   target_link_libraries(test_rcl_callback_manager
     ament_cmake_ros_core::ament_ros_cxx_standard
     pybind11::embed)
+  # These sources hold pybind11 objects, which pybind11 declares with hidden visibility.
+  # pybind11_add_module() builds them with -fvisibility=hidden; do the same here so the
+  # compiler does not warn about the enclosing types having greater visibility.
+  set_target_properties(test_rcl_callback_manager PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON)
 
   if(NOT _typesupport_impls STREQUAL "")
     # Run each test in its own pytest invocation to isolate any global state in rclpy
