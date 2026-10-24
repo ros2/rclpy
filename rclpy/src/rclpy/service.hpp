@@ -21,6 +21,7 @@
 #include <rcl/service_introspection.h>
 #include <rmw/types.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -131,6 +132,13 @@ public:
 
   void
   clear_on_new_request_callback();
+
+  /// Write one byte to handle for each new request.
+  /**
+    * \param[in] handle POSIX file descriptor or windows SOCKET.
+   */
+  void
+  set_on_new_request_wakeup(std::uintptr_t handle);
 
 private:
   Node node_;
