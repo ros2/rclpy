@@ -895,5 +895,73 @@ class TestExecutor(unittest.TestCase):
                     executor.shutdown()
 
 
+class _ParkingExecutor(MultiThreadedExecutor):
+    """Park once between selecting and submitting a handler, to model the shutdown race."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.entered = threading.Event()
+        self.release = threading.Event()
+        self.submit_error = None
+        self._parked = False
+
+    def _spin_once_impl(self, timeout_sec=None, wait_condition=lambda: False):
+        if not self._parked:
+            self._parked = True
+            self.entered.set()
+            self.release.wait(10.0)
+            try:
+                # Models the handler the spin had already selected.
+                self._executor.submit(lambda: None)
+            except RuntimeError as exc:
+                self.submit_error = exc
+        else:
+            time.sleep(0.01)
+
+
+class TestMultiThreadedExecutorShutdownRace(unittest.TestCase):
+
+    def setUp(self):
+        self.context = rclpy.context.Context()
+        rclpy.init(context=self.context)
+
+    def tearDown(self):
+        if self.context.ok():
+            rclpy.shutdown(context=self.context)
+        self.context.destroy()
+
+    def test_shutdown_waits_for_spin_before_closing_pool(self):
+        # Regression test for the race where shutdown() closed the worker
+        # pool while spin() was between selecting a handler and submitting
+        # it, raising "cannot schedule new futures after shutdown".
+        executor = _ParkingExecutor(num_threads=2, context=self.context)
+        spin_thread = threading.Thread(target=executor.spin, daemon=True)
+        spin_thread.start()
+        self.assertTrue(executor.entered.wait(10.0), 'spin never started')
+
+        result = {}
+        shutdown_thread = threading.Thread(
+            target=lambda: result.__setitem__(
+                'ok', executor.shutdown(timeout_sec=10.0)))
+        shutdown_thread.start()
+
+        # shutdown() must not close the pool while the spin is still active;
+        # it blocks until the spin releases.
+        shutdown_thread.join(0.5)
+        self.assertNotIn('ok', result,
+                         'shutdown() closed the pool before the spin exited')
+
+        executor.release.set()
+        shutdown_thread.join(10.0)
+        spin_thread.join(10.0)
+
+        self.assertIn('ok', result)
+        self.assertTrue(result['ok'])
+        self.assertIsNone(
+            executor.submit_error,
+            'spin submitted a handler into a closed pool: %r'
+            % (executor.submit_error,))
+
+
 if __name__ == '__main__':
     unittest.main()
