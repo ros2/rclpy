@@ -14,7 +14,10 @@
 
 #include "signal_handler.hpp"
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/allocator.h>
 #include <rcl/error_handling.h>
@@ -42,7 +45,7 @@
 #endif
 
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 static bool trigger_guard_conditions();
 static void invoke_callbacks();
@@ -445,7 +448,7 @@ check_signal_safety()
       "Global guard condition list access is not lock-free on this platform."
       "The program may deadlock when receiving SIGINT.";
     if (PyErr_WarnEx(PyExc_ResourceWarning, deadlock_msg, 1)) {
-      throw py::error_already_set();
+      throw nb::python_error();
     }
   }
 }
@@ -470,7 +473,7 @@ register_sigint_guard_condition(const GuardCondition & guard_condition)
   if (NULL != guard_conditions) {
     while (NULL != guard_conditions[count_gcs]) {
       if (gc == guard_conditions[count_gcs]) {
-        throw py::value_error("Guard condition was already registered");
+        throw nb::value_error("Guard condition was already registered");
       }
       ++count_gcs;
     }
@@ -526,7 +529,7 @@ unregister_sigint_guard_condition(const GuardCondition & guard_condition)
   }
 
   if (!found_gc) {
-    throw py::value_error("Guard condition was not registered");
+    throw nb::value_error("Guard condition was not registered");
   }
 
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -664,7 +667,7 @@ static void invoke_callbacks()
 namespace rclpy
 {
 void
-define_signal_handler_api(py::module m)
+define_signal_handler_api(nb::module_ m)
 {
   g_original_sigint_handler = NULL_SIGNAL_HANDLER;
   g_original_sigterm_handler = NULL_SIGNAL_HANDLER;
@@ -684,8 +687,9 @@ define_signal_handler_api(py::module m)
   m.def(
     "uninstall_signal_handlers", &rclpy::uninstall_signal_handlers,
     "Uninstall rclpy signal handlers.");
-  py::enum_<SignalHandlerOptions>(
-    m, "SignalHandlerOptions", "Enum with values: `ALL`, `SIGINT`, `SIGTERM`, `NO`.")
+  nb::enum_<SignalHandlerOptions>(
+    m, "SignalHandlerOptions", nb::is_arithmetic(),
+    "Enum with values: `ALL`, `SIGINT`, `SIGTERM`, `NO`.")
   .value("ALL", SignalHandlerOptions::All)
   .value("NO", SignalHandlerOptions::No)
   .value("SIGINT", SignalHandlerOptions::SigInt)

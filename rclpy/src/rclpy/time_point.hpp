@@ -15,17 +15,17 @@
 #ifndef RCLPY__TIME_POINT_HPP_
 #define RCLPY__TIME_POINT_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
-/// Define a pybind11 wrapper for an rcl_time_point_t
+/// Define a nanobind wrapper for an rcl_time_point_t
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
-void define_time_point(py::object module);
+void define_time_point(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__TIME_POINT_HPP_
