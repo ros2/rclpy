@@ -52,7 +52,7 @@ def test_lifecycle_node_init() -> None:
     assert not hasattr(node, '_service_get_available_states')
     assert not hasattr(node, '_service_get_available_transitions')
     assert not hasattr(node, '_service_get_transition_graph')
-    # Make sure also that the services were not created in the pybind11 plugin
+    # Make sure also that the services were not created in the nanobind plugin
     assert not node._state_machine.service_change_state
     assert not node._state_machine.service_get_state
     assert not node._state_machine.service_get_available_states

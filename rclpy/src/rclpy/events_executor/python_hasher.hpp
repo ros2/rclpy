@@ -16,20 +16,26 @@
 #ifndef RCLPY__EVENTS_EXECUTOR__PYTHON_HASHER_HPP_
 #define RCLPY__EVENTS_EXECUTOR__PYTHON_HASHER_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 namespace rclpy
 {
 namespace events_executor
 {
 /// This is intended to be used as the Hash template arg to STL containers using a
-/// pybind11::handle as a Key.  This is the same hash that a native Python dict or set
+/// nb::handle as a Key.  This is the same hash that a native Python dict or set
 /// would use given the same key.
 struct PythonHasher
 {
-  inline auto operator()(const pybind11::handle & handle) const
+  inline auto operator()(const nb::handle & handle) const
   {
-    return pybind11::hash(handle);
+    Py_hash_t hash = PyObject_Hash(handle.ptr());
+    if (-1 == hash) {
+      throw nb::python_error();
+    }
+    return static_cast<size_t>(hash);
   }
 };
 }  // namespace events_executor
