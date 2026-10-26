@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from typing_extensions import TypeAlias
+
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
 ClockType: TypeAlias = _rclpy.ClockType

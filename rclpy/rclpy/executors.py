@@ -42,14 +42,14 @@ from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import TypeVarTuple
 from typing import Union
-
 import warnings
 
 from rclpy.client import Client
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
-from rclpy.exceptions import InvalidHandle, TimerCancelledError
+from rclpy.exceptions import InvalidHandle
+from rclpy.exceptions import TimerCancelledError
 from rclpy.guard_condition import GuardCondition
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.service import Service

@@ -23,6 +23,8 @@ from typing import overload
 from typing import Type
 from typing import Union
 
+from typing_extensions import TypeAlias
+
 import rclpy
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -30,8 +32,6 @@ from rclpy.logging import get_logger
 from rclpy.qos import qos_policy_name_from_kind
 from rclpy.waitable import NumberOfEntities
 from rclpy.waitable import Waitable
-from typing_extensions import TypeAlias
-
 
 QoSPublisherEventType: TypeAlias = _rclpy.rcl_publisher_event_type_t
 QoSSubscriptionEventType: TypeAlias = _rclpy.rcl_subscription_event_type_t

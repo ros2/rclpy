@@ -16,17 +16,22 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from types import TracebackType
-from typing import Generic, List, Optional, Type, TypeVar, Union
-
-from rclpy.callback_groups import CallbackGroup
-from rclpy.duration import Duration
-from rclpy.event_handler import EventHandler, PublisherEventCallbacks
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.qos import QoSProfile
-from rclpy.type_support import MsgT
+from typing import Generic
+from typing import List
+from typing import Optional
+from typing import Type
+from typing import TypeVar
+from typing import Union
 
 from typing_extensions import Self
 
+from rclpy.callback_groups import CallbackGroup
+from rclpy.duration import Duration
+from rclpy.event_handler import EventHandler
+from rclpy.event_handler import PublisherEventCallbacks
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+from rclpy.qos import QoSProfile
+from rclpy.type_support import MsgT
 
 # Left to support Legacy TypeVars.
 MsgType = TypeVar('MsgType')

@@ -13,7 +13,12 @@
 # limitations under the License.
 
 import time
-from typing import Any, Callable, List, Optional, Sequence, Union
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Union
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterEvent
@@ -23,6 +28,7 @@ from rcl_interfaces.srv import GetParameterTypes
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.srv import SetParametersAtomically
+
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.node import Node

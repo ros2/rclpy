@@ -26,7 +26,6 @@ from typing import overload
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
-
 import warnings
 import weakref
 

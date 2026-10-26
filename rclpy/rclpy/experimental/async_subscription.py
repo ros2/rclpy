@@ -15,15 +15,19 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from collections.abc import Coroutine
-from typing import Any, Callable, Optional, Type
+from typing import Any
+from typing import Callable
 from typing import cast
+from typing import Optional
+from typing import Type
 
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.subscription import BaseSubscription, SubscriptionCallbackUnion
+from rclpy.subscription import BaseSubscription
 from rclpy.subscription import MessageAndInfo
 from rclpy.subscription import SubscriptionCallback
+from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription import SubscriptionCallbackWithMessageInfo
 from rclpy.type_support import MsgT
 

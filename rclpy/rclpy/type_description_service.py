@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
+from typing import TYPE_CHECKING
 import weakref
 
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterType
+from type_description_interfaces.srv import GetTypeDescription
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_services_default
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.validate_topic_name import TOPIC_SEPARATOR_STRING
-
-from type_description_interfaces.srv import GetTypeDescription
 
 if TYPE_CHECKING:
     from rclpy.node import BaseNode

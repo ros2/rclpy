@@ -16,11 +16,16 @@ from collections import defaultdict
 from collections.abc import Iterator
 from itertools import chain
 from multiprocessing import Lock
-from typing import Callable, cast, Dict, List, Optional, Tuple
-
+from typing import Callable
+from typing import cast
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterEvent
+
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.node import Node

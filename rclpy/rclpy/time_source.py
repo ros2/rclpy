@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Optional, Set, TYPE_CHECKING
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import TYPE_CHECKING
 import weakref
 
 from rcl_interfaces.msg import SetParametersResult
+import rosgraph_msgs.msg
+
 from rclpy.clock import BaseClock
 from rclpy.clock_type import ClockType
 from rclpy.parameter import Parameter
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from rclpy.time import Time
-import rosgraph_msgs.msg
 
 if TYPE_CHECKING:
     from rclpy.node import BaseNode

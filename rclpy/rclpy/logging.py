@@ -22,7 +22,6 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity as LoggingSeverity
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
-
 _root_logger = RcutilsLogger()
 
 

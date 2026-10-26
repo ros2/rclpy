@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Type
+from typing import Callable
+from typing import Type
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.publisher import BasePublisher

@@ -15,7 +15,8 @@
 from inspect import ismethod
 import sys
 import threading
-from types import MethodType, TracebackType
+from types import MethodType
+from types import TracebackType
 from typing import Callable
 from typing import ContextManager
 from typing import List

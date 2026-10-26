@@ -18,14 +18,26 @@ from enum import Enum
 import functools
 import threading
 import traceback
-
 from types import TracebackType
-from typing import (Any, Callable, Coroutine, Dict, Generic, Literal, Optional, Tuple, Type,
-                    TYPE_CHECKING, TypedDict, TypeVar, Union)
+from typing import Any
+from typing import Callable
+from typing import Coroutine
+from typing import Dict
+from typing import Generic
+from typing import Literal
+from typing import Optional
+from typing import Tuple
+from typing import Type
+from typing import TYPE_CHECKING
+from typing import TypedDict
+from typing import TypeVar
+from typing import Union
 
-
-from action_msgs.msg import GoalInfo, GoalStatus
+from action_msgs.msg import GoalInfo
+from action_msgs.msg import GoalStatus
 from action_msgs.srv._cancel_goal import CancelGoal
+from typing_extensions import TypeAlias
+from unique_identifier_msgs.msg import UUID
 
 from rclpy.clock import Clock
 from rclpy.executors import await_or_execute
@@ -46,9 +58,8 @@ from rclpy.type_support import ImplT
 from rclpy.type_support import Msg
 from rclpy.type_support import ResultT
 from rclpy.type_support import SendGoalServiceRequest
-from rclpy.waitable import NumberOfEntities, Waitable
-from typing_extensions import TypeAlias
-from unique_identifier_msgs.msg import UUID
+from rclpy.waitable import NumberOfEntities
+from rclpy.waitable import Waitable
 
 if TYPE_CHECKING:
     from rclpy.callback_groups import CallbackGroup

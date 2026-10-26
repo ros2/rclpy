@@ -14,10 +14,10 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 import math
 import time
-
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -33,7 +33,6 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 from typing import Union
-
 import warnings
 import weakref
 
@@ -47,16 +46,20 @@ from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import ListParameters
+from typing_extensions import TypeAlias
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import Client
-from rclpy.clock import BaseClock, Clock
+from rclpy.clock import BaseClock
+from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.constants import S_TO_NS
 from rclpy.context import Context
-from rclpy.endpoint_info import ActionEndpointInfo, ServiceEndpointInfo, TopicEndpointInfo
+from rclpy.endpoint_info import ActionEndpointInfo
+from rclpy.endpoint_info import ServiceEndpointInfo
+from rclpy.endpoint_info import TopicEndpointInfo
 from rclpy.event_handler import PublisherEventCallbacks
 from rclpy.event_handler import SubscriptionEventCallbacks
 from rclpy.exceptions import InvalidHandle
@@ -76,10 +79,13 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.logging import get_logger
 from rclpy.logging_service import LoggingService
-from rclpy.parameter import (AllowableParameterValue, AllowableParameterValueT, Parameter,
-                             PARAMETER_SEPARATOR_STRING)
+from rclpy.parameter import AllowableParameterValue
+from rclpy.parameter import AllowableParameterValueT
+from rclpy.parameter import Parameter
+from rclpy.parameter import PARAMETER_SEPARATOR_STRING
 from rclpy.parameter_service import ParameterService
-from rclpy.publisher import BasePublisher, Publisher
+from rclpy.publisher import BasePublisher
+from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_parameter_events
 from rclpy.qos import qos_profile_rosout_default
 from rclpy.qos import qos_profile_services_default
@@ -89,7 +95,8 @@ from rclpy.qos_overriding_options import QoSOverridingOptions
 from rclpy.service import BaseService
 from rclpy.service import Service
 from rclpy.service import ServiceCallbackUnion
-from rclpy.subscription import BaseSubscription, GenericSubscriptionCallbackUnion
+from rclpy.subscription import BaseSubscription
+from rclpy.subscription import GenericSubscriptionCallbackUnion
 from rclpy.subscription import Subscription
 from rclpy.subscription import SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
@@ -111,8 +118,6 @@ from rclpy.validate_node_name import validate_node_name
 from rclpy.validate_parameter_name import validate_parameter_name
 from rclpy.validate_topic_name import validate_topic_name
 from rclpy.waitable import Waitable
-from typing_extensions import TypeAlias
-
 
 HIDDEN_NODE_PREFIX: Final = '_'
 

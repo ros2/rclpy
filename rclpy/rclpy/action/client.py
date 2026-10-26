@@ -29,7 +29,6 @@ from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
 from typing import Union
-
 import uuid
 import weakref
 
@@ -37,6 +36,7 @@ from action_msgs.msg import GoalStatus
 from action_msgs.msg._goal_status_array import GoalStatusArray
 from action_msgs.srv import CancelGoal
 from builtin_interfaces.msg import Time
+from unique_identifier_msgs.msg import UUID
 
 from rclpy.clock import Clock
 from rclpy.executors import await_or_execute
@@ -56,13 +56,15 @@ from rclpy.type_support import ImplT
 from rclpy.type_support import Msg
 from rclpy.type_support import ResultT
 from rclpy.type_support import SendGoalServiceResponse
-from rclpy.waitable import NumberOfEntities, Waitable
-from unique_identifier_msgs.msg import UUID
+from rclpy.waitable import NumberOfEntities
+from rclpy.waitable import Waitable
 
 if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
+    from typing_extensions import Unpack
+
     from rclpy.callback_groups import CallbackGroup
     from rclpy.node import Node
-    from typing_extensions import TypeAlias, Unpack
 
     ClientGoalHandleDictResultT = TypeVar('ClientGoalHandleDictResultT', bound=Msg)
     ClientGoalHandleDictFeedbackT = TypeVar('ClientGoalHandleDictFeedbackT', bound=Msg)

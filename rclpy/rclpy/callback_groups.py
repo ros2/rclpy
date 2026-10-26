@@ -13,7 +13,11 @@
 # limitations under the License.
 
 from threading import Lock
-from typing import Any, Literal, Optional, TYPE_CHECKING, Union
+from typing import Any
+from typing import Literal
+from typing import Optional
+from typing import TYPE_CHECKING
+from typing import Union
 import weakref
 
 if TYPE_CHECKING:

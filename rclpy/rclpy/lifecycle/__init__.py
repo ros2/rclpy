@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 from .managed_entity import ManagedEntity
 from .managed_entity import SimpleManagedEntity
 from .node import LifecycleNode
 from .node import LifecycleNodeMixin
 from .node import LifecycleState
 from .publisher import LifecyclePublisher
-
-from ..impl.implementation_singleton import rclpy_implementation as _rclpy
 
 # reexport LifecycleNode as Node, so it's possible to write:
 # from rclpy.lifecycle import Node

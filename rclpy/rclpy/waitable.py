@@ -13,8 +13,13 @@
 # limitations under the License.
 
 from types import TracebackType
-from typing import Any, Generic, List, Optional, Type, TYPE_CHECKING, TypeVar
-
+from typing import Any
+from typing import Generic
+from typing import List
+from typing import Optional
+from typing import Type
+from typing import TYPE_CHECKING
+from typing import TypeVar
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 

@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Literal, Tuple, Type, Union
+from typing import Literal
+from typing import Tuple
+from typing import Type
+from typing import Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node

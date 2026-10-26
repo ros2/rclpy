@@ -13,10 +13,15 @@
 # limitations under the License.
 
 from types import TracebackType
-from typing import Callable, Optional, Type, TypedDict
+from typing import Callable
+from typing import Optional
+from typing import Type
+from typing import TypedDict
+
+from typing_extensions import deprecated
+from typing_extensions import TypeAlias
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from typing_extensions import deprecated, TypeAlias
 
 from .clock_type import ClockType
 from .context import Context
@@ -24,7 +29,6 @@ from .duration import Duration
 from .exceptions import NotInitializedException
 from .time import Time
 from .utilities import get_default_context
-
 
 ClockChange: TypeAlias = _rclpy.ClockChange
 

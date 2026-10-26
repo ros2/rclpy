@@ -21,8 +21,11 @@ from typing import Optional
 from typing import Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from rclpy.qos import QoSHistoryPolicy, QoSPresetProfiles, QoSProfile
-from rclpy.type_hash import TypeHash, TypeHashDictionary
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSPresetProfiles
+from rclpy.qos import QoSProfile
+from rclpy.type_hash import TypeHash
+from rclpy.type_hash import TypeHashDictionary
 
 
 class EndpointTypeEnum(IntEnum):

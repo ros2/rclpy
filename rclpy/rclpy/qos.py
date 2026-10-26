@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-from enum import Enum, IntEnum
+from enum import Enum
+from enum import IntEnum
 from typing import Annotated
 from typing import Any
 from typing import Optional
@@ -23,9 +24,10 @@ from typing import TypeVar
 from typing import Union
 import warnings
 
+from typing_extensions import TypeAlias
+
 from rclpy.duration import Duration
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from typing_extensions import TypeAlias
 
 
 class QoSPolicyKind(IntEnum):
