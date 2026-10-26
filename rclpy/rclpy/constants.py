@@ -13,4 +13,5 @@
 # limitations under the License.
 from typing import Final
 
+
 S_TO_NS: Final = 1000 * 1000 * 1000

@@ -15,7 +15,6 @@ import math
 from typing import Union
 
 import builtin_interfaces.msg
-
 from rclpy.constants import S_TO_NS
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 

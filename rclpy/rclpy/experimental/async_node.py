@@ -14,12 +14,7 @@
 
 import asyncio
 from types import TracebackType
-from typing import Any
-from typing import Literal
-from typing import Optional
-from typing import overload
-from typing import Type
-from typing import Union
+from typing import Any, Literal, Optional, overload, Type, Union
 
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
@@ -30,14 +25,10 @@ from rclpy.qos import qos_profile_rosout_default
 from rclpy.qos import qos_profile_services_default
 from rclpy.qos import QoSProfile
 from rclpy.service import ServiceCallbackUnion
-from rclpy.subscription import GenericSubscriptionCallbackUnion
-from rclpy.subscription import SubscriptionCallbackUnion
+from rclpy.subscription import GenericSubscriptionCallbackUnion, SubscriptionCallbackUnion
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.timer import TimerCallbackUnion
-from rclpy.type_support import MsgT
-from rclpy.type_support import Srv
-from rclpy.type_support import SrvRequestT
-from rclpy.type_support import SrvResponseT
+from rclpy.type_support import MsgT, Srv, SrvRequestT, SrvResponseT
 
 from .async_client import AsyncClient
 from .async_clock import AsyncClock

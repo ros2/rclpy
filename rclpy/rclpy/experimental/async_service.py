@@ -14,19 +14,14 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import Callable
+from typing import Callable, Optional, Type
 from typing import cast
-from typing import Optional
-from typing import Type
 
 from rclpy.executors import await_or_execute
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
-from rclpy.service import BaseService
-from rclpy.service import ServiceCallbackUnion
-from rclpy.type_support import Srv
-from rclpy.type_support import SrvRequestT
-from rclpy.type_support import SrvResponseT
+from rclpy.service import BaseService, ServiceCallbackUnion
+from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
 
 class AsyncService(BaseService[SrvRequestT, SrvResponseT]):

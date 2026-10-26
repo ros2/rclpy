@@ -24,7 +24,6 @@ from typing import Union
 
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import SetParametersResult
-from typing_extensions import TypeAlias
 
 import rclpy
 from rclpy.duration import Duration
@@ -38,6 +37,7 @@ from rclpy.qos import QoSPolicyKind
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.subscription import Subscription
+from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
     from rclpy.node import BaseNode

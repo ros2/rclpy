@@ -15,16 +15,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Generic
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import TYPE_CHECKING
-from typing import TypedDict
-from typing import Union
-
-from typing_extensions import TypeAlias
-from typing_extensions import Unpack
+from typing import Generic, Optional, Tuple, Type, TYPE_CHECKING, TypedDict, Union
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import PublisherEventCallbacks
@@ -33,6 +24,9 @@ from rclpy.publisher import BasePublisher
 from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
 from rclpy.type_support import MsgT
+
+from typing_extensions import TypeAlias
+from typing_extensions import Unpack
 
 from .managed_entity import SimpleManagedEntity
 

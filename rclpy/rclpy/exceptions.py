@@ -11,11 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import TYPE_CHECKING
-from typing import Union
+from typing import Any, List, Optional, TYPE_CHECKING, Union
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 

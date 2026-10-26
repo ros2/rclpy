@@ -18,6 +18,7 @@ from typing import TypeVar
 from typing import Union
 
 from builtin_interfaces.msg import Time
+from rclpy.exceptions import NoTypeSupportImportedException
 from rosidl_pycommon.interface_base_classes import BaseAction
 from rosidl_pycommon.interface_base_classes import BaseImpl
 from rosidl_pycommon.interface_base_classes import BaseMessage
@@ -26,7 +27,6 @@ from service_msgs.msg import ServiceEventInfo
 from typing_extensions import TypeAlias
 from unique_identifier_msgs.msg import UUID
 
-from rclpy.exceptions import NoTypeSupportImportedException
 
 Msg: TypeAlias = BaseMessage
 MsgT = TypeVar('MsgT', bound=BaseMessage)

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+
 from types import TracebackType
 from typing import Awaitable
 from typing import Callable
@@ -20,19 +21,17 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
-from typing_extensions import Self
-from typing_extensions import TypeAlias
-
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import BaseClock
 from rclpy.clock import Clock
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
-from rclpy.exceptions import InvalidHandle
-from rclpy.exceptions import ROSInterruptException
+from rclpy.exceptions import InvalidHandle, ROSInterruptException
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.time import Time
 from rclpy.utilities import get_default_context
+from typing_extensions import Self
+from typing_extensions import TypeAlias
 
 
 class TimerInfo:

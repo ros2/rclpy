@@ -22,8 +22,6 @@ from typing import Optional
 from typing import Type
 from typing import TypeVar
 
-from typing_extensions import Self
-
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
 from rclpy.context import Context
@@ -31,9 +29,9 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
 from rclpy.task import Future
-from rclpy.type_support import Srv
-from rclpy.type_support import SrvRequestT
-from rclpy.type_support import SrvResponseT
+from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
+
+from typing_extensions import Self
 
 # Left To Support Legacy TypeVars
 SrvType = TypeVar('SrvType')

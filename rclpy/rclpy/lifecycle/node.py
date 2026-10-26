@@ -29,8 +29,6 @@ from typing import Union
 
 import lifecycle_msgs.msg
 import lifecycle_msgs.srv
-from typing_extensions import TypeAlias
-from typing_extensions import Unpack
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -41,6 +39,9 @@ from rclpy.service import Service
 from rclpy.type_support import check_is_valid_srv_type
 from rclpy.type_support import MsgT
 from rclpy.type_support import Srv
+
+from typing_extensions import TypeAlias
+from typing_extensions import Unpack
 
 from .managed_entity import ManagedEntity
 from .publisher import LifecyclePublisher

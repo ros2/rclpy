@@ -1,14 +1,4 @@
 line-length = 99
 target-version = "py312"
-
 [lint]
-select = ["E", "F", "I"]
-
-[lint.isort]
-force-sort-within-sections = true
-force-single-line = true
-order-by-type = false
-section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
-
-[format]
-quote-style = "single"
+select = ["E", "F"]

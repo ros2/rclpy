@@ -14,11 +14,9 @@
 
 from typing import TYPE_CHECKING
 
-from rcl_interfaces.msg import LoggerLevel
-from rcl_interfaces.msg import SetLoggerLevelsResult
+from rcl_interfaces.msg import LoggerLevel, SetLoggerLevelsResult
 from rcl_interfaces.srv import GetLoggerLevels
 from rcl_interfaces.srv import SetLoggerLevels
-
 import rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
 from rclpy.qos import qos_profile_services_default

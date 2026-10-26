@@ -29,8 +29,6 @@ from typing import TypedDict
 from typing import TypeVar
 from typing import Union
 
-from typing_extensions import Self
-from typing_extensions import TypeAlias
 
 from rclpy.callback_groups import CallbackGroup
 from rclpy.event_handler import SubscriptionEventCallbacks
@@ -38,6 +36,8 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.subscription_content_filter_options import ContentFilterOptions
 from rclpy.type_support import MsgT
+from typing_extensions import Self
+from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
     from typing_extensions import TypeIs

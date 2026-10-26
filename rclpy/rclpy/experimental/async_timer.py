@@ -20,17 +20,12 @@ from typing import Callable
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from rclpy.clock import ClockChange
-from rclpy.clock import JumpHandle
-from rclpy.clock import JumpThreshold
-from rclpy.clock import TimeJump
+from rclpy.clock import ClockChange, JumpHandle, JumpThreshold, TimeJump
 from rclpy.context import Context
 from rclpy.duration import Duration
 from rclpy.exceptions import TimeSourceChangedError
 from rclpy.executors import await_or_execute
-from rclpy.timer import BaseTimer
-from rclpy.timer import TimerCallbackUnion
-from rclpy.timer import TimerInfo
+from rclpy.timer import BaseTimer, TimerCallbackUnion, TimerInfo
 from rclpy.timer import TimerInfoCallback
 
 from .async_clock import AsyncClock

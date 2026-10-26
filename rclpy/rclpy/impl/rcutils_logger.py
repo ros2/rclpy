@@ -28,11 +28,11 @@ from typing import Type
 from typing import TypedDict
 from typing import Union
 
-from typing_extensions import Unpack
-
 from rclpy.clock import BaseClock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.impl.logging_severity import LoggingSeverity
+from typing_extensions import Unpack
+
 
 SupportedFiltersKeys = Literal['throttle', 'skip_first', 'once']
 

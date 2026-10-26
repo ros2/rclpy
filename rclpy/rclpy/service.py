@@ -13,25 +13,21 @@
 # limitations under the License.
 
 from types import TracebackType
-from typing import Awaitable
-from typing import Callable
+from typing import Awaitable, Callable
 from typing import Generic
 from typing import Optional
 from typing import Type
 from typing import TypeVar
 from typing import Union
 
-from typing_extensions import Self
-from typing_extensions import TypeAlias
-
 from rclpy.callback_groups import CallbackGroup
 from rclpy.clock import Clock
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.service_introspection import ServiceIntrospectionState
-from rclpy.type_support import Srv
-from rclpy.type_support import SrvRequestT
-from rclpy.type_support import SrvResponseT
+from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
+from typing_extensions import Self
+from typing_extensions import TypeAlias
 
 # Used for documentation purposes only
 SrvType = TypeVar('SrvType')
