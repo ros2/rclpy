@@ -229,15 +229,22 @@ ActionClient::is_action_server_available()
   return is_available;
 }
 
-void
+py::tuple
 ActionClient::add_to_waitset(WaitSet & wait_set)
 {
-  rcl_ret_t ret = rcl_action_wait_set_add_action_client(
-    wait_set.rcl_ptr(), rcl_action_client_.get(), NULL, NULL);
+  std::lock_guard<std::mutex> lock(wait_set.lock_);
+  size_t goal_index, cancel_index, result_index;
+  size_t feedback_index, status_index;
+  rcl_ret_t ret = rcl_action_wait_set_add_action_client_with_indices(
+      wait_set.rcl_ptr(), rcl_action_client_.get(), &goal_index, &cancel_index,
+      &result_index, &feedback_index, &status_index);
   if (RCL_RET_OK != ret) {
     std::string error_text{"Failed to add 'rcl_action_client_t' to wait set"};
     throw rclpy::RCLError(error_text);
   }
+  // Return the indices for this specific wait_set
+  return py::make_tuple(feedback_index, status_index, goal_index, cancel_index,
+                        result_index);
 }
 
 py::tuple
@@ -248,18 +255,52 @@ ActionClient::is_ready(WaitSet & wait_set)
   bool is_goal_response_ready = false;
   bool is_cancel_response_ready = false;
   bool is_result_response_ready = false;
-  rcl_ret_t ret = rcl_action_client_wait_set_get_entities_ready(
-    wait_set.rcl_ptr(),
-    rcl_action_client_.get(),
-    &is_feedback_ready,
-    &is_status_ready,
-    &is_goal_response_ready,
-    &is_cancel_response_ready,
-    &is_result_response_ready);
-  if (RCL_RET_OK != ret) {
-    throw rclpy::RCLError("Failed to get number of ready entities for action client");
+  {
+    std::lock_guard<std::mutex> lock(wait_set.lock_);
+    rcl_ret_t ret = rcl_action_client_wait_set_get_entities_ready(
+        wait_set.rcl_ptr(), rcl_action_client_.get(), &is_feedback_ready,
+        &is_status_ready, &is_goal_response_ready, &is_cancel_response_ready,
+        &is_result_response_ready);
+    if (RCL_RET_OK != ret) {
+      throw rclpy::RCLError(
+          "Failed to get number of ready entities for action client");
+    }
   }
+  py::tuple result_tuple(5);
+  result_tuple[0] = py::bool_(is_feedback_ready);
+  result_tuple[1] = py::bool_(is_status_ready);
+  result_tuple[2] = py::bool_(is_goal_response_ready);
+  result_tuple[3] = py::bool_(is_cancel_response_ready);
+  result_tuple[4] = py::bool_(is_result_response_ready);
+  return result_tuple;
+}
 
+py::tuple
+ActionClient::is_ready_with_indices(
+  WaitSet & wait_set, size_t feedback_index,
+  size_t status_index, size_t goal_index,
+  size_t cancel_index, size_t result_index)
+{
+  // This method uses indices passed in rather than reading from
+  // action_client->impl, which fixes the race condition where indices from a
+  // different wait_set could be used.
+  bool is_feedback_ready = false;
+  bool is_status_ready = false;
+  bool is_goal_response_ready = false;
+  bool is_cancel_response_ready = false;
+  bool is_result_response_ready = false;
+  {
+    std::lock_guard<std::mutex> lock(wait_set.lock_);
+    rcl_ret_t ret = rcl_action_client_wait_set_get_entities_ready_with_indices(
+        wait_set.rcl_ptr(), rcl_action_client_.get(), feedback_index,
+        status_index, goal_index, cancel_index, result_index,
+        &is_feedback_ready, &is_status_ready, &is_goal_response_ready,
+        &is_cancel_response_ready, &is_result_response_ready);
+    if (RCL_RET_OK != ret) {
+      throw rclpy::RCLError(
+          "Failed to get number of ready entities for action client");
+    }
+  }
   py::tuple result_tuple(5);
   result_tuple[0] = py::bool_(is_feedback_ready);
   result_tuple[1] = py::bool_(is_status_ready);
@@ -317,6 +358,10 @@ define_action_client(py::object module)
     "Check if an action entity has any ready wait set entities.")
   .def(
     "take_status", &ActionClient::take_status,
-    "Take an action status response.");
+    "Take an action status response.")
+  .def(
+    "is_ready_with_indices", &ActionClient::is_ready_with_indices,
+    "Check if an action entity has any ready wait set entities using "
+    "explicit indices.");
 }
 }  // namespace rclpy

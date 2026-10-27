@@ -207,12 +207,44 @@ public:
   py::tuple
   is_ready(WaitSet & wait_set);
 
+  /// Check if an action entity has any ready wait set entities using explicit
+  /// indices.
+  /**
+   * This method accepts explicit wait set indices rather than reading them from
+   * the action client's internal state. This is thread-safe when multiple
+   * threads use different wait sets with the same action client.
+   *
+   * \param[in] wait_set Capsule pointing to the wait set structure.
+   * \param[in] feedback_index Index of feedback subscription in wait set.
+   * \param[in] status_index Index of status subscription in wait set.
+   * \param[in] goal_index Index of goal client in wait set.
+   * \param[in] cancel_index Index of cancel client in wait set.
+   * \param[in] result_index Index of result client in wait set.
+   * \return A tuple of booleans representing the sub-entities ready:
+   *       (is_feedback_ready,
+   *        is_status_ready,
+   *        is_goal_response_ready,
+   *        is_cancel_response_ready,
+   *        is_result_response_ready)
+   */
+  py::tuple
+  is_ready_with_indices(
+    WaitSet & wait_set, size_t feedback_index,
+    size_t status_index, size_t goal_index,
+    size_t cancel_index, size_t result_index);
+
   /// Add an action entitiy to a wait set.
   /**
    * Raises RuntimeError on failure.
    * \param[in] wait_set Capsule pointer to an rcl_wait_set_t.
+   * \return A tuple of indices:
+   *       (feedback_subscription_index,
+   *        status_subscription_index,
+   *        goal_client_index,
+   *        cancel_client_index,
+   *        result_client_index)
    */
-  void
+  py::tuple
   add_to_waitset(WaitSet & wait_set);
 
   /// Get rcl_action_client_t pointer

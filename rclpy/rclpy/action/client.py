@@ -163,6 +163,13 @@ class ActionClient(Waitable):
 
         self._is_ready = False
 
+        # key: wait_set pointer (id), value: tuple of indices from add_to_wait_set
+        # This ensures we use the correct indices for each wait_set, fixing the race
+        # condition when multiple threads use different wait_sets with the same action client.
+        self._wait_set_indices = {}
+        # Set of weak references to wait_sets, used for cleanup when wait_sets are garbage collected
+        self._wait_set_weak_refs = set()
+
         # key: UUID in bytes, value: weak reference to ClientGoalHandle
         self._goal_handles = {}
         # key: goal request sequence_number, value: Future for goal response
@@ -231,7 +238,17 @@ class ActionClient(Waitable):
     # Start Waitable API
     def is_ready(self, wait_set):
         """Return True if one or more entities are ready in the wait set."""
-        ready_entities = self._client_handle.is_ready(wait_set)
+        # Use indices stored for this specific wait_set to avoid race condition
+        # where indices from a different wait_set could be used.
+        wait_set_id = id(wait_set)
+        indices = self._wait_set_indices.get(wait_set_id)
+        if indices is not None:
+            ready_entities = self._client_handle.is_ready_with_indices(
+                wait_set, *indices
+            )
+        else:
+            # Fallback to original behavior if indices not found
+            ready_entities = self._client_handle.is_ready(wait_set)
         self._is_feedback_ready = ready_entities[0]
         self._is_status_ready = ready_entities[1]
         self._is_goal_response_ready = ready_entities[2]
@@ -367,8 +384,30 @@ class ActionClient(Waitable):
 
     def add_to_wait_set(self, wait_set):
         """Add entities to wait set."""
+        # Store the indices returned by add_to_waitset for this specific wait_set.
+        # This ensures is_ready() uses the correct indices for this wait_set,
+        # fixing the race condition when multiple threads use different wait_sets.
         with self._lock:
-            self._client_handle.add_to_waitset(wait_set)
+            indices = self._client_handle.add_to_waitset(wait_set)
+        wait_set_id = id(wait_set)
+        self._wait_set_indices[wait_set_id] = indices
+
+        # Set up cleanup callback for when the wait_set is garbage collected.
+        # This prevents _wait_set_indices from growing unboundedly.
+        try:
+            # Create a weak reference with a callback that removes the entry
+            # when the wait_set is garbage collected
+            def cleanup_callback(ref):
+                self._wait_set_indices.pop(wait_set_id, None)
+                self._wait_set_weak_refs.discard(ref)
+
+            weak_ref = weakref.ref(wait_set, cleanup_callback)
+            self._wait_set_weak_refs.add(weak_ref)
+        except TypeError:
+            # wait_set doesn't support weak references (e.g., some C extension types)
+            # In this case, we fall back to periodic cleanup or accept potential memory leak
+            # This is a minor concern since wait_sets are typically short-lived
+            pass
 
     def __enter__(self):
         return self._client_handle.__enter__()
