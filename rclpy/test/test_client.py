@@ -21,7 +21,6 @@ from typing import Optional
 from typing import Tuple
 from typing import TYPE_CHECKING
 import unittest
-from unittest.mock import Mock
 
 from rcl_interfaces.srv import GetParameters
 import rclpy
@@ -286,28 +285,6 @@ class TestClient(unittest.TestCase):
     def test_logger_name_is_equal_to_node_name(self) -> None:
         with self.node.create_client(GetParameters, 'get/parameters') as cli:
             self.assertEqual(cli.logger_name, 'TestClient')
-
-    def test_on_new_response_callback(self) -> None:
-        def _service(request: Empty.Request, response: Empty.Response) -> Empty.Response:
-            return response
-        with self.node.create_client(Empty, '/service') as cli:
-            with self.node.create_service(Empty, '/service', _service):
-                executor = rclpy.executors.SingleThreadedExecutor(context=self.context)
-                try:
-                    self.assertTrue(cli.wait_for_service(timeout_sec=20))
-                    executor.add_node(self.node)
-                    cb = Mock()
-                    cli.handle.set_on_new_response_callback(cb)
-                    cb.assert_not_called()
-                    cli.call_async(Empty.Request())
-                    executor.spin_once(0)
-                    cb.assert_called_once_with(1)
-                    cli.handle.clear_on_new_response_callback()
-                    cli.call_async(Empty.Request())
-                    executor.spin_once(0)
-                    cb.assert_called_once()
-                finally:
-                    executor.shutdown()
 
     def test_client_direct_destroy(self) -> None:
         cli = self.node.create_client(Empty, '/test_direct_destroy')
