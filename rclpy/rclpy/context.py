@@ -148,10 +148,14 @@ class Context(ContextManager['Context']):
         self._callbacks = []
 
     def _cleanup(self) -> None:
-        for weak_node in self.__node_weak_ref_list:
+        # Iterate over a copy of the list, because BaseNode.destroy_node() calls
+        # untrack_node(), which removes the node from __node_weak_ref_list.
+        # Mutating the list while iterating over it would skip every other node.
+        for weak_node in list(self.__node_weak_ref_list):
             node = weak_node()
             if node is not None:
                 node.destroy_node()
+        self.__node_weak_ref_list.clear()
 
         if self.__context:
             self.__context.shutdown()
