@@ -232,6 +232,10 @@ if(BUILD_TESTING)
     ament_cmake_ros_core::ament_ros_cxx_standard
     Python::Python)
 
+  # rcl_support.cpp uses the nanobind runtime (nb::print, nb::key_error), so this gtest
+  # links the static nanobind library that nanobind_add_module() builds for the extension,
+  # plus the full Python library since it is an executable rather than an extension module.
+  nanobind_build_library(nanobind-static)
   ament_add_gtest(test_rcl_callback_manager
     test/test_rcl_callback_manager.cpp
     src/rclpy/events_executor/events_queue.cpp
@@ -239,9 +243,10 @@ if(BUILD_TESTING)
   target_include_directories(test_rcl_callback_manager PRIVATE src/rclpy)
   target_link_libraries(test_rcl_callback_manager
     ament_cmake_ros_core::ament_ros_cxx_standard
-    pybind11::embed)
-  # These sources hold pybind11 objects, which pybind11 declares with hidden visibility.
-  # pybind11_add_module() builds them with -fvisibility=hidden; do the same here so the
+    nanobind-static
+    Python::Python)
+  # These sources hold nanobind objects, which nanobind declares with hidden visibility.
+  # nanobind_add_module() builds them with -fvisibility=hidden; do the same here so the
   # compiler does not warn about the enclosing types having greater visibility.
   set_target_properties(test_rcl_callback_manager PROPERTIES
     CXX_VISIBILITY_PRESET hidden
