@@ -2,6 +2,11 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+9.1.8 (2026-11-03)
+------------------
+* Fix performance bug in MultiThreadedExecutor (hopefully) (`#1547 <https://github.com/ros2/rclpy/issues/1547>`_) (`#1725 <https://github.com/ros2/rclpy/issues/1725>`_)
+* Contributors: mergify[bot]
+
 9.1.7 (2026-09-01)
 ------------------
 * Handle exceptions in lifecycle transition callbacks (`#1696 <https://github.com/ros2/rclpy/issues/1696>`_) (`#1699 <https://github.com/ros2/rclpy/issues/1699>`_)
