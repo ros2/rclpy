@@ -32,7 +32,7 @@ class Duration:
         total_nanoseconds = int(seconds * S_TO_NS)
         total_nanoseconds += int(nanoseconds)
         if total_nanoseconds >= 2**63 or total_nanoseconds < -2**63:
-            # pybind11 would raise TypeError, but we want OverflowError
+            # nanobind would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C duration.')
         self._duration_handle = _rclpy.rcl_duration_t(total_nanoseconds)

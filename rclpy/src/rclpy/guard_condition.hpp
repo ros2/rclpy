@@ -15,7 +15,8 @@
 #ifndef RCLPY__GUARD_CONDITION_HPP_
 #define RCLPY__GUARD_CONDITION_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/guard_condition.h>
 
@@ -25,7 +26,7 @@
 #include "destroyable.hpp"
 #include "utils.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -60,8 +61,8 @@ private:
   std::shared_ptr<rcl_guard_condition_t> rcl_guard_condition_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::GuardCondition
-void define_guard_condition(py::object module);
+/// Define a nanobind wrapper for an rclpy::GuardCondition
+void define_guard_condition(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__GUARD_CONDITION_HPP_

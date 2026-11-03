@@ -15,7 +15,8 @@
 #ifndef RCLPY__CLOCK_HPP_
 #define RCLPY__CLOCK_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/time.h>
 
@@ -25,7 +26,7 @@
 #include "exceptions.hpp"
 #include "utils.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -89,7 +90,7 @@ public:
    */
   void
   add_clock_callback(
-    py::object pyjump_handle,
+    nb::object pyjump_handle,
     bool on_clock_change,
     int64_t min_forward,
     int64_t min_backward);
@@ -101,7 +102,7 @@ public:
    * \param[in] pyjump_handle Instance of rclpy.clock.JumpHandle
    */
   void
-  remove_clock_callback(py::object pyjump_handle);
+  remove_clock_callback(nb::object pyjump_handle);
 
   /// Get rcl_clock_t pointer
   rcl_clock_t * rcl_ptr() const
@@ -116,8 +117,8 @@ private:
   std::shared_ptr<rcl_clock_t> rcl_clock_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::Clock
-void define_clock(py::object module);
+/// Define a nanobind wrapper for an rclpy::Clock
+void define_clock(nb::object module);
 }  // namespace rclpy
 
 #endif  // RCLPY__CLOCK_HPP_
