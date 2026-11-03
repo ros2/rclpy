@@ -1,0 +1,8 @@
+line-length = 99
+target-version = "py312"
+
+[lint]
+select = ["E", "W", "F", "A", "C4", "Q"]
+
+[lint.flake8-quotes]
+inline-quotes = "single"
