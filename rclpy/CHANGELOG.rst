@@ -2,6 +2,12 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+7.1.13 (2026-11-03)
+-------------------
+* Wait for spin to exit before closing the MultiThreadedExecutor pool (`#1749 <https://github.com/ros2/rclpy/issues/1749>`_)
+* Fix performance bug in MultiThreadedExecutor (hopefully) (`#1547 <https://github.com/ros2/rclpy/issues/1547>`_) (`#1726 <https://github.com/ros2/rclpy/issues/1726>`_)
+* Contributors: Rahul Seervi, mergify[bot]
+
 7.1.12 (2026-09-01)
 --------------------
 * Fix incorrect parameter names in docstrings (`#1685 <https://github.com/ros2/rclpy/issues/1685>`_) (`#1693 <https://github.com/ros2/rclpy/issues/1693>`_)
