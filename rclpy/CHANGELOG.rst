@@ -2,6 +2,22 @@
 Changelog for package rclpy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+11.0.4 (2026-11-03)
+-------------------
+* Remove custom ament_cppcheck usage. (`#1757 <https://github.com/ros2/rclpy/issues/1757>`_)
+* Fix Context._cleanup skipping every other tracked node on shutdown. (`#1752 <https://github.com/ros2/rclpy/issues/1752>`_)
+* Notify AsyncNode on new events via socket (`#1723 <https://github.com/ros2/rclpy/issues/1723>`_)
+* Add a test dependency on python3-types-pyyaml. (`#1748 <https://github.com/ros2/rclpy/issues/1748>`_)
+* Fix rclpy build warnings. (`#1747 <https://github.com/ros2/rclpy/issues/1747>`_)
+* Fix ScopedWith destructor segfault: move callback ownership to CbEntry (`#1745 <https://github.com/ros2/rclpy/issues/1745>`_)
+* Fix the flaky immediate shutdown. (`#1666 <https://github.com/ros2/rclpy/issues/1666>`_)
+* Timer Class takes nanoseconds, not seconds. (`#1741 <https://github.com/ros2/rclpy/issues/1741>`_)
+* Allow overriding the entity class in every Node.create\_* method (`#1739 <https://github.com/ros2/rclpy/issues/1739>`_)
+* Tolerate a finalized sigint guard condition in Executor.__del_\_ (`#1734 <https://github.com/ros2/rclpy/issues/1734>`_)
+* Use the SPDX identifier Apache-2.0 in package.xml license tags (`#1727 <https://github.com/ros2/rclpy/issues/1727>`_)
+* Fix EventsExecutor segfault when a task raises an exception (`#1718 <https://github.com/ros2/rclpy/issues/1718>`_)
+* Contributors: Chris Lalancette, Michael Carroll, Nadav Elkabets, Pavel Guzenfeld, Puja Chaudhury, Tomoya Fujita, n8hui
+
 11.0.3 (2026-09-01)
 -------------------
 * Add ament_mypy (`#1680 <https://github.com/ros2/rclpy/issues/1680>`_)
