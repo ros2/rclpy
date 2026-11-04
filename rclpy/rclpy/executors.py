@@ -839,6 +839,16 @@ class Executor(ContextManager['Executor']):
         return not entity._executor_event and entity.callback_group is not None \
             and entity.callback_group.can_execute(entity)
 
+    @contextmanager
+    def _external_shutdown_as_exception(self) -> Generator[None, None, None]:
+        """Translate an RCLError caused by the context being shut down."""
+        try:
+            yield
+        except _rclpy.RCLError:
+            if not self._context.ok():
+                raise ExternalShutdownException()
+            raise
+
     def _wait_for_ready_callbacks(
         self,
         timeout_sec: Optional[Union[float, TimeoutObject]] = None,
@@ -850,6 +860,7 @@ class Executor(ContextManager['Executor']):
 
         :raise TimeoutException: on timeout.
         :raise ShutdownException: on if executor was shut down.
+        :raise ExternalShutdownException: if the context was shut down.
 
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
@@ -861,9 +872,10 @@ class Executor(ContextManager['Executor']):
         timeout_nsec = timeout_sec_to_nsec(
             timeout_sec.timeout if isinstance(timeout_sec, TimeoutObject) else timeout_sec)
         if timeout_nsec > 0:
-            timeout_timer = Timer(
-                None, timeout_nsec, self._clock, context=self._context
-            )
+            with self._external_shutdown_as_exception():
+                timeout_timer = Timer(
+                    None, timeout_nsec, self._clock, context=self._context
+                )
 
         yielded_work = False
         while not yielded_work and not self._is_shutdown and not condition():
@@ -984,14 +996,15 @@ class Executor(ContextManager['Executor']):
 
                 context_stack.enter_context(self._context.handle)
 
-                wait_set = _rclpy.WaitSet(
-                    entity_count.num_subscriptions,
-                    entity_count.num_guard_conditions,
-                    entity_count.num_timers,
-                    entity_count.num_clients,
-                    entity_count.num_services,
-                    entity_count.num_events,
-                    self._context.handle)
+                with self._external_shutdown_as_exception():
+                    wait_set = _rclpy.WaitSet(
+                        entity_count.num_subscriptions,
+                        entity_count.num_guard_conditions,
+                        entity_count.num_timers,
+                        entity_count.num_clients,
+                        entity_count.num_services,
+                        entity_count.num_events,
+                        self._context.handle)
 
                 wait_set.clear_entities()
                 for sub_handle in sub_handles:
