@@ -36,6 +36,7 @@
 #include "serialization.hpp"
 #include "subscription.hpp"
 #include "utils.hpp"
+#include "wakeup_socket.hpp"
 #include "events_executor/rcl_support.hpp"
 
 using pybind11::literals::operator""_a;
@@ -287,6 +288,12 @@ Subscription::clear_on_new_message_callback()
   }
 }
 
+void
+Subscription::set_on_new_message_wakeup(std::uintptr_t handle)
+{
+  set_on_new_message_callback([handle](size_t /*number_of_events*/) {send_wakeup_byte(handle);});
+}
+
 bool
 Subscription::is_cft_supported() const
 {
@@ -404,8 +411,8 @@ define_subscription(py::object module)
     "get_publisher_count", &Subscription::get_publisher_count,
     "Count the publishers from a subscription.")
   .def(
-    "set_on_new_message_callback", &Subscription::set_on_new_message_callback,
-    py::arg("callback"))
+    "set_on_new_message_wakeup", &Subscription::set_on_new_message_wakeup,
+    py::arg("handle"))
   .def("clear_on_new_message_callback", &Subscription::clear_on_new_message_callback)
   .def("is_cft_supported", &Subscription::is_cft_supported,
     "Check if subscription instance supports content filtering.")

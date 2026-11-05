@@ -16,6 +16,11 @@ import asyncio
 from typing import Awaitable, Callable, Optional, Type
 
 from rclpy.executors import await_or_execute
+<<<<<<< HEAD
+=======
+from rclpy.experimental._wakeup_socket import WakeupSocket
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+>>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
 from rclpy.qos import QoSProfile
 from rclpy.subscription import BaseSubscription, SubscriptionCallbackUnion
 from rclpy.type_support import MsgT
@@ -45,25 +50,30 @@ class AsyncSubscription(BaseSubscription[MsgT]):
         super().__init__(subscription_impl, msg_type, topic, callback, qos_profile, raw,
                          on_destroy=on_destroy)
         self._concurrent = concurrent
+<<<<<<< HEAD
         self._task: Optional[asyncio.Task] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
+=======
+        self._task: Optional[asyncio.Task[None]] = None
+>>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
         self._read_event = asyncio.Event()
+        self._wakeup: Optional[WakeupSocket] = None
         if tg is not None:
             self._task = tg.create_task(self._run())
-
-    def _on_new_message(self, _num_waiting: int) -> None:
-        assert self._loop is not None
-        self._loop.call_soon_threadsafe(self._read_event.set)
 
     def _destroy(self) -> None:
         if self._task is not None:
             self._task.cancel()
         self.handle.clear_on_new_message_callback()
+        if self._wakeup is not None:
+            self._wakeup.close()
+            self._wakeup = None
         super()._destroy()
 
     async def _messages(self):
         """Async generator yielding (msg, msg_info) from DDS."""
-        self.handle.set_on_new_message_callback(self._on_new_message)
+        self._wakeup = await WakeupSocket.create(self._read_event)
+        self.handle.set_on_new_message_wakeup(self._wakeup.fileno())
         while not self._destroyed:
             msg_and_info = self.handle.take_message(
                 self.msg_type, self.raw)
@@ -81,7 +91,6 @@ class AsyncSubscription(BaseSubscription[MsgT]):
 
     async def _run(self) -> None:
         """DDS bridge read loop for subscriptions."""
-        self._loop = asyncio.get_running_loop()
         try:
             if self._concurrent:
                 async with asyncio.TaskGroup() as tg:
