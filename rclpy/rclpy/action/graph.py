@@ -28,7 +28,7 @@ def get_action_client_names_and_types_by_node(
 
     :param node: The node used for discovery.
     :param remote_node_name: The name of a remote node to get action clients for.
-    :param node_namespace: Namespace of the remote node.
+    :param remote_node_namespace: Namespace of the remote node.
     :return: List of tuples.
       The first element of each tuple is the action name and the second element is a list of
       action types.
@@ -48,7 +48,7 @@ def get_action_server_names_and_types_by_node(
 
     :param node: The node used for discovery.
     :param remote_node_name: The name of a remote node to get action servers for.
-    :param node_namespace: Namespace of the remote node.
+    :param remote_node_namespace: Namespace of the remote node.
     :return: List of tuples.
       The first element of each tuple is the action name and the second element is a list of
       action types.

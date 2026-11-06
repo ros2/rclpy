@@ -19,6 +19,7 @@ from dataclasses import dataclass
 import inspect
 import os
 from threading import Condition
+from threading import Event
 from threading import Lock
 from threading import RLock
 import time
@@ -214,6 +215,11 @@ class Executor(ContextManager['Executor']):
         self._is_spinning = False
         # Protects access to _is_spinning
         self._is_spinning_lock = Lock()
+        # Set whenever no spin operation is active, cleared while one is.
+        # MultiThreadedExecutor.shutdown() waits on this so the worker pool
+        # is not closed while a spin could still submit a selected handler.
+        self._spin_done = Event()
+        self._spin_done.set()
 
     def _enter_spin(self) -> None:
         """Mark the executor as spinning and prevent concurrent spins."""
@@ -221,11 +227,13 @@ class Executor(ContextManager['Executor']):
             if self._is_spinning:
                 raise RuntimeError('Executor is already spinning')
             self._is_spinning = True
+            self._spin_done.clear()
 
     def _exit_spin(self) -> None:
-        """Clear the spinning flag."""
+        """Clear the spinning flag and notify shutdown waiters."""
         with self._is_spinning_lock:
             self._is_spinning = False
+            self._spin_done.set()
 
     @property
     def is_spinning(self) -> bool:
@@ -274,7 +282,7 @@ class Executor(ContextManager['Executor']):
         :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
             Don't wait if 0.
         :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
-            timeot expires before all outstanding work is done.
+            timeout expires before all outstanding work is done.
         """
         with self._shutdown_lock:
             if not self._is_shutdown:
@@ -1012,6 +1020,9 @@ class MultiThreadedExecutor(Executor):
                     self._futures.remove(future)
                     future.result()  # raise any exceptions
 
+            # Yield GIL so executor threads have a chance to run.
+            os.sched_yield() if hasattr(os, 'sched_yield') else time.sleep(0)
+
     def spin_once(self, timeout_sec: Optional[float] = None) -> None:
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
@@ -1039,3 +1050,38 @@ class MultiThreadedExecutor(Executor):
             self._spin_once_until_future_complete(future, timeout_sec)
         finally:
             self._exit_spin()
+
+    def shutdown(
+        self,
+        timeout_sec: Optional[float] = None,
+        *,
+        wait_for_threads: bool = True
+    ) -> bool:
+        """
+        Stop executing callbacks and wait for their completion.
+
+        :param timeout_sec: Seconds to wait. Block forever if ``None`` or negative.
+            Don't wait if 0.
+        :param wait_for_threads: If true, this function will block until all executor threads
+            have joined.
+        :return: ``True`` if all outstanding callbacks finished executing, or ``False`` if the
+            timeout expires before all outstanding work is done.
+        """
+        start = time.monotonic()
+        success: bool = super().shutdown(timeout_sec)
+        if not success:
+            # Base shutdown timed out; keep the pool so a later retry can
+            # finish cleanup rather than closing it from under a live spin.
+            return False
+        # Wait until the active spin (if any) has exited before closing the
+        # pool, so it cannot submit an already-selected handler after the
+        # pool is gone. Bound the wait by the time the timeout leaves.
+        if timeout_sec is None or timeout_sec < 0:
+            remaining: Optional[float] = None
+        else:
+            remaining = max(0.0, timeout_sec - (time.monotonic() - start))
+        if not self._spin_done.wait(remaining):
+            # A spin may still submit; keep the pool open and report timeout.
+            return False
+        self._executor.shutdown(wait=wait_for_threads)
+        return True
