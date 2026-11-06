@@ -754,14 +754,7 @@ class Executor(ContextManager['Executor']):
                 for waitable in waitables:
                     try:
                         context_stack.enter_context(waitable)
-                        # Avoid temporary NumberOfEntities objects when aggregating waitables.
-                        contribution = waitable.get_num_entities()
-                        entity_count.num_subscriptions += contribution.num_subscriptions
-                        entity_count.num_guard_conditions += contribution.num_guard_conditions
-                        entity_count.num_timers += contribution.num_timers
-                        entity_count.num_clients += contribution.num_clients
-                        entity_count.num_services += contribution.num_services
-                        entity_count.num_events += contribution.num_events
+                        entity_count += waitable.get_num_entities()
                         valid_waitables.append(waitable)
                     except InvalidHandle:
                         pass

@@ -398,10 +398,20 @@ class TestNumberOfEntities(unittest.TestCase):
     def test_add_assign(self):
         n1 = NumberOfEntities(1, 2, 3, 4, 5, 6)
         n2 = NumberOfEntities(10, 20, 30, 40, 50, 60)
+        original = n1
         n1 += n2
+        assert n1 is original
         assert n1.num_subscriptions == 11
         assert n1.num_guard_conditions == 22
         assert n1.num_timers == 33
         assert n1.num_clients == 44
         assert n1.num_services == 55
         assert n1.num_events == 66
+
+    def test_add_unsupported_type(self):
+        """Reject unsupported operands through Python's operator fallback."""
+        n = NumberOfEntities()
+        with self.assertRaises(TypeError):
+            _ = n + object()
+        with self.assertRaises(TypeError):
+            n += object()

@@ -35,12 +35,27 @@ class NumberOfEntities:
         self.num_events = num_events
 
     def __add__(self, other):
+        if not isinstance(other, NumberOfEntities):
+            return NotImplemented
+
         result = self.__class__()
         for attr in result.__slots__:
             left = getattr(self, attr)
             right = getattr(other, attr)
             setattr(result, attr, left + right)
         return result
+
+    def __iadd__(self, other):
+        if not isinstance(other, NumberOfEntities):
+            return NotImplemented
+
+        self.num_subscriptions += other.num_subscriptions
+        self.num_guard_conditions += other.num_guard_conditions
+        self.num_timers += other.num_timers
+        self.num_clients += other.num_clients
+        self.num_services += other.num_services
+        self.num_events += other.num_events
+        return self
 
     def __repr__(self):
         return '<{0}({1}, {2}, {3}, {4}, {5}, {6})>'.format(
