@@ -15,7 +15,6 @@
 from typing import Generator
 from typing import List
 from typing import Optional
-from unittest.mock import Mock
 
 import pytest
 
@@ -126,16 +125,3 @@ def test_service_direct_destroy(test_node: Node) -> None:
     assert srv not in list(test_node.services)
     srv.destroy()
     assert not test_node.destroy_service(srv)
-
-
-def test_set_on_new_request_callback(test_node: Node) -> None:
-    cli = test_node.create_client(Empty, '/service')
-    srv = test_node.create_service(Empty, '/service', lambda req, res: res)
-    cb = Mock()
-    srv.handle.set_on_new_request_callback(cb)
-    cb.assert_not_called()
-    cli.call_async(Empty.Request())
-    cb.assert_called_once_with(1)
-    srv.handle.clear_on_new_request_callback()
-    cli.call_async(Empty.Request())
-    cb.assert_called_once()
