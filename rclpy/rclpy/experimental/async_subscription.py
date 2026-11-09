@@ -16,11 +16,8 @@ import asyncio
 from typing import Awaitable, Callable, Optional, Type
 
 from rclpy.executors import await_or_execute
-<<<<<<< HEAD
-=======
 from rclpy.experimental._wakeup_socket import WakeupSocket
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
 from rclpy.qos import QoSProfile
 from rclpy.subscription import BaseSubscription, SubscriptionCallbackUnion
 from rclpy.type_support import MsgT
@@ -50,12 +47,7 @@ class AsyncSubscription(BaseSubscription[MsgT]):
         super().__init__(subscription_impl, msg_type, topic, callback, qos_profile, raw,
                          on_destroy=on_destroy)
         self._concurrent = concurrent
-<<<<<<< HEAD
         self._task: Optional[asyncio.Task] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-=======
-        self._task: Optional[asyncio.Task[None]] = None
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
         self._read_event = asyncio.Event()
         self._wakeup: Optional[WakeupSocket] = None
         if tg is not None:

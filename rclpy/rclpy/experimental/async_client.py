@@ -17,11 +17,8 @@ from typing import Callable, Dict, Optional, Type
 
 from rclpy.client import BaseClient
 from rclpy.context import Context
-<<<<<<< HEAD
-=======
 from rclpy.experimental._wakeup_socket import WakeupSocket
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
 from rclpy.qos import QoSProfile
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
@@ -47,14 +44,8 @@ class AsyncClient(BaseClient[SrvRequestT, SrvResponseT]):
     ) -> None:
         super().__init__(context, client_impl, srv_type, srv_name, qos_profile,
                          on_destroy=on_destroy)
-<<<<<<< HEAD
         self._pending_requests: Dict[int, asyncio.Future] = {}
         self._task: Optional[asyncio.Task] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-=======
-        self._pending_requests: Dict[int, asyncio.Future[SrvResponseT]] = {}
-        self._task: Optional[asyncio.Task[None]] = None
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
         self._read_event = asyncio.Event()
         self._wakeup: Optional[WakeupSocket] = None
         if tg is not None:

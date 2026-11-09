@@ -16,11 +16,8 @@ import asyncio
 from typing import Any, Callable, Optional, Type
 
 from rclpy.executors import await_or_execute
-<<<<<<< HEAD
-=======
 from rclpy.experimental._wakeup_socket import WakeupSocket
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
 from rclpy.qos import QoSProfile
 from rclpy.service import BaseService, ServiceCallbackUnion
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
@@ -49,12 +46,7 @@ class AsyncService(BaseService[SrvRequestT, SrvResponseT]):
         super().__init__(service_impl, srv_type, srv_name, callback, qos_profile,
                          on_destroy=on_destroy)
         self._concurrent = concurrent
-<<<<<<< HEAD
         self._task: Optional[asyncio.Task] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-=======
-        self._task: Optional[asyncio.Task[None]] = None
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
         self._read_event = asyncio.Event()
         self._wakeup: Optional[WakeupSocket] = None
         if tg is not None:

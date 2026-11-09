@@ -22,11 +22,8 @@
 #include <rcl/service_introspection.h>
 #include <rmw/types.h>
 
-<<<<<<< HEAD
-=======
 #include <cstdint>
 #include <functional>
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
 #include <memory>
 #include <string>
 

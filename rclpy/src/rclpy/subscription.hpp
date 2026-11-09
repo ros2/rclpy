@@ -21,11 +21,8 @@
 #include <rcl/subscription.h>
 
 #include <cstddef>
-<<<<<<< HEAD
-=======
 #include <cstdint>
 #include <functional>
->>>>>>> 2f9adae (Notify AsyncNode on new events via socket (#1723))
 #include <memory>
 #include <string>
 #include <vector>
