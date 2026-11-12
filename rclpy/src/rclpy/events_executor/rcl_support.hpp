@@ -17,6 +17,7 @@
 #define RCLPY__EVENTS_EXECUTOR__RCL_SUPPORT_HPP_
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -67,6 +68,10 @@ private:
     std::unique_ptr<std::function<void(size_t)>> cb;
     std::shared_ptr<ScopedWith> with;
     std::function<void(size_t)> callback;
+    // Monotonically increasing id for this registration.  Queued events carry the
+    // id they were enqueued with, so an event for a removed entity is dropped even
+    // if a new entity reuses the same rcl pointer (and hence the same map key).
+    uint64_t generation = 0;
   };
 
   EventsQueue * const events_queue_;
@@ -74,6 +79,9 @@ private:
   /// The map key is the raw pointer to the RCL entity object (subscription, etc) associated with
   /// the callback.
   std::unordered_map<const void *, CbEntry> owned_cbs_;
+
+  /// Counter for handing out CbEntry generations.  Only needs to be unique within this manager.
+  uint64_t next_generation_ = 0;
 };
 
 }  // namespace events_executor

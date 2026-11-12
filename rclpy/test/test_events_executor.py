@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import threading
+import time
 import typing
 import unittest
 
@@ -565,6 +567,54 @@ class TestEventsExecutor(unittest.TestCase):
         self._expect_future_not_done(new_sub_future)
         self.assertFalse(new_pub_future.done())  # Already waited a bit
         self.assertFalse(received_future.done())  # Already waited a bit
+
+    def test_stale_event_after_destroy(self) -> None:
+        # Regression test for ros2/rclpy#1644: an event queued for an entity that is
+        # destroyed before the event runs must be dropped, not delivered to the
+        # destroyed entity (which raises InvalidHandle out of spin).
+        # Mirrors the issue's repro: a churner repeatedly creates/destroys matching
+        # subscriptions while publishers with event callbacks are created, spun on,
+        # and destroyed in a loop.
+        node = rclpy.create_node('test_stale_event_node')
+        self.executor.add_node(node)
+
+        churner = rclpy.create_node('test_churner_node')
+        stop_churn = threading.Event()
+
+        def churn() -> None:
+            while not stop_churn.is_set():
+                sub = churner.create_subscription(
+                    test_msgs.msg.BasicTypes, 'test_topic', lambda m: None, 10)
+                time.sleep(0.01)
+                churner.destroy_subscription(sub)
+
+        churn_thread = threading.Thread(target=churn)
+        churn_thread.start()
+        try:
+            for _ in range(30):
+                pubs = [
+                    node.create_publisher(
+                        test_msgs.msg.BasicTypes,
+                        'test_topic',
+                        10,
+                        event_callbacks=rclpy.event_handler.PublisherEventCallbacks(
+                            matched=lambda e: None,
+                        ),
+                    )
+                    for _ in range(3)
+                ]
+                time.sleep(0.01)
+                # Spinning must drop events queued for already-destroyed publishers
+                # instead of raising InvalidHandle.
+                self.executor.spin_once(timeout_sec=0)
+                for pub in pubs:
+                    node.destroy_publisher(pub)
+        finally:
+            stop_churn.set()
+            churn_thread.join()
+            churner.destroy_node()
+            self.executor.remove_node(node)
+            node.destroy_node()
 
     def test_async_sub(self) -> None:
         sub_node = SubTestNode(use_async_handler=True)
