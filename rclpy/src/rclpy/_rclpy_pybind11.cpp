@@ -54,6 +54,7 @@
 #include "type_description_service.hpp"
 #include "utils.hpp"
 #include "wait_set.hpp"
+#include "yaml_param_parser.hpp"
 
 namespace py = pybind11;
 
@@ -277,6 +278,7 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
   rclpy::define_signal_handler_api(m);
   rclpy::define_clock_event(m);
   rclpy::define_lifecycle_api(m);
+  rclpy::define_yaml_param_parser(m);
 
   rclpy::events_executor::define_events_executor(m);
 }
