@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import unittest
 import warnings
 
@@ -151,6 +152,99 @@ class TestQosProfile(unittest.TestCase):
             assert len(caught_warnings) == 1
             assert issubclass(caught_warnings[0].category, UserWarning)
             assert "A zero depth with KEEP_LAST doesn't make sense" in str(caught_warnings[0])
+
+    def _assert_independent_copy(self, source: QoSProfile, copied: QoSProfile) -> None:
+        self.assertEqual(source, copied)
+        self.assertIsNot(source, copied)
+        self.assertIsNot(source.lifespan, copied.lifespan)
+        self.assertIsNot(source.deadline, copied.deadline)
+        self.assertIsNot(source.liveliness_lease_duration, copied.liveliness_lease_duration)
+        self.assertEqual(source.get_c_qos_profile().to_dict(),
+                         copied.get_c_qos_profile().to_dict())
+
+    def test_copy_method(self) -> None:
+        source = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_ALL,
+            depth=12,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            lifespan=Duration(seconds=4),
+            deadline=Duration(nanoseconds=1_000_000),
+            liveliness=QoSLivelinessPolicy.MANUAL_BY_TOPIC,
+            liveliness_lease_duration=Duration(nanoseconds=12),
+            avoid_ros_namespace_conventions=True,
+        )
+        copied = source.copy()
+        self._assert_independent_copy(source, copied)
+
+        copied.history = QoSHistoryPolicy.KEEP_LAST
+        copied.depth = 5
+        copied.reliability = QoSReliabilityPolicy.RELIABLE
+        copied.durability = QoSDurabilityPolicy.VOLATILE
+        copied.lifespan = Duration(seconds=9)
+        copied.deadline = Duration(seconds=3)
+        copied.liveliness = QoSLivelinessPolicy.AUTOMATIC
+        copied.liveliness_lease_duration = Duration(seconds=2)
+        copied.avoid_ros_namespace_conventions = False
+
+        self.assertNotEqual(source, copied)
+        self.assertEqual(source.history, QoSHistoryPolicy.KEEP_ALL)
+        self.assertEqual(source.depth, 12)
+        self.assertEqual(source.reliability, QoSReliabilityPolicy.BEST_EFFORT)
+        self.assertEqual(source.durability, QoSDurabilityPolicy.TRANSIENT_LOCAL)
+        self.assertEqual(source.lifespan, Duration(seconds=4))
+        self.assertEqual(source.deadline, Duration(nanoseconds=1_000_000))
+        self.assertEqual(source.liveliness, QoSLivelinessPolicy.MANUAL_BY_TOPIC)
+        self.assertEqual(source.liveliness_lease_duration, Duration(nanoseconds=12))
+        self.assertTrue(source.avoid_ros_namespace_conventions)
+
+    def test_copy_constructor(self) -> None:
+        source = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=7,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            deadline=Duration(seconds=2),
+        )
+        copied = QoSProfile(source)
+        self._assert_independent_copy(source, copied)
+
+        copied.depth = 20
+        self.assertEqual(source.depth, 7)
+        self.assertEqual(copied.depth, 20)
+
+        with self.assertRaises(TypeError):
+            QoSProfile(source, depth=10)  # type: ignore[call-overload]
+
+    def test_stdlib_copy_and_deepcopy(self) -> None:
+        source = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=5,
+            deadline=Duration(seconds=1),
+        )
+        shallow = copy.copy(source)
+        deep = copy.deepcopy(source)
+
+        self._assert_independent_copy(source, shallow)
+        self._assert_independent_copy(source, deep)
+
+    def test_copy_preset_profiles(self) -> None:
+        for preset in QoSPresetProfiles:
+            original_depth = preset.value.depth
+            copied = preset.value.copy()
+            self._assert_independent_copy(preset.value, copied)
+            copied.depth = original_depth + 1
+            self.assertEqual(preset.value.depth, original_depth)
+
+    def test_copy_zero_depth_keep_last_no_extra_warning(self) -> None:
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter('always', category=UserWarning)
+            source = QoSProfile(history=QoSHistoryPolicy.KEEP_LAST, depth=0)
+
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter('always', category=UserWarning)
+            copied = source.copy()
+            self.assertEqual(len(caught_warnings), 0)
+        self._assert_independent_copy(source, copied)
 
 
 class TestCheckQosCompatibility(unittest.TestCase):
