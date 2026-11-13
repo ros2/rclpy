@@ -474,6 +474,175 @@ class TestParameter(unittest.TestCase):
                 os.unlink(f.name)
         self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
 
+    def test_parameter_dict_from_yaml_file_exponent_floats(self) -> None:
+        # Regression test for https://github.com/ros2/rclpy/issues/1672:
+        # values whose str() uses exponent notation loaded as strings.
+        yaml_string = """
+            /parameter_blackboard:
+                ros__parameters:
+                    a_small: 0.00001
+                    b_sci: 5e-06
+                    c_large: 1.0e+20
+                    d_normal: 3.14
+                    e_arr: [1.0e-5, 2.0e-5]
+                    quoted: "5e-06"
+            """
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            result = parameter_dict_from_yaml_file(f.name)
+            assert result['a_small'].value.type == ParameterType.PARAMETER_DOUBLE
+            assert result['a_small'].value.double_value == pytest.approx(0.00001)
+            assert result['b_sci'].value.type == ParameterType.PARAMETER_DOUBLE
+            assert result['b_sci'].value.double_value == pytest.approx(5e-06)
+            assert result['c_large'].value.type == ParameterType.PARAMETER_DOUBLE
+            assert result['c_large'].value.double_value == pytest.approx(1.0e+20)
+            assert result['d_normal'].value.type == ParameterType.PARAMETER_DOUBLE
+            assert result['d_normal'].value.double_value == pytest.approx(3.14)
+            assert result['e_arr'].value.type == ParameterType.PARAMETER_DOUBLE_ARRAY
+            assert list(result['e_arr'].value.double_array_value) == pytest.approx(
+                [1.0e-5, 2.0e-5])
+            # Quoted values stay strings.
+            assert result['quoted'].value.type == ParameterType.PARAMETER_STRING
+            assert result['quoted'].value.string_value == '5e-06'
+        finally:
+            os.unlink(f.name)
+
+    def test_parameter_dict_from_yaml_file_scalar_types(self) -> None:
+        yaml_string = """
+            /node:
+                ros__parameters:
+                    count: 42
+                    ratio: 3.5
+                    label: foo
+                    flag: true
+            """
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            result = parameter_dict_from_yaml_file(f.name)
+            assert result['count'].value.type == ParameterType.PARAMETER_INTEGER
+            assert result['count'].value.integer_value == 42
+            assert result['ratio'].value.type == ParameterType.PARAMETER_DOUBLE
+            assert result['ratio'].value.double_value == 3.5
+            assert result['label'].value.type == ParameterType.PARAMETER_STRING
+            assert result['label'].value.string_value == 'foo'
+            assert result['flag'].value.type == ParameterType.PARAMETER_BOOL
+            assert result['flag'].value.bool_value is True
+        finally:
+            os.unlink(f.name)
+
+    def test_parameter_dict_from_yaml_file_array_types(self) -> None:
+        yaml_string = """
+            /node:
+                ros__parameters:
+                    bools: [true, false, true]
+                    ints: [1, 2, 3]
+                    doubles: [1.0, 2.5, 3.25]
+                    strings: ['a', 'b', 'c']
+            """
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            result = parameter_dict_from_yaml_file(f.name)
+            assert result['bools'].value.type == ParameterType.PARAMETER_BOOL_ARRAY
+            assert list(result['bools'].value.bool_array_value) == [True, False, True]
+            assert result['ints'].value.type == ParameterType.PARAMETER_INTEGER_ARRAY
+            assert list(result['ints'].value.integer_array_value) == [1, 2, 3]
+            assert result['doubles'].value.type == ParameterType.PARAMETER_DOUBLE_ARRAY
+            assert list(result['doubles'].value.double_array_value) == [1.0, 2.5, 3.25]
+            assert result['strings'].value.type == ParameterType.PARAMETER_STRING_ARRAY
+            assert list(result['strings'].value.string_array_value) == ['a', 'b', 'c']
+        finally:
+            os.unlink(f.name)
+
+    def test_parameter_dict_from_yaml_file_namespace_prepends(self) -> None:
+        yaml_string = """
+            /node:
+                ros__parameters:
+                    foo: 1
+                    bar: 2
+            """
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            result = parameter_dict_from_yaml_file(f.name, namespace='my_ns.')
+            assert 'my_ns.foo' in result
+            assert 'my_ns.bar' in result
+            assert result['my_ns.foo'].name == 'my_ns.foo'
+            assert result['my_ns.foo'].value.integer_value == 1
+        finally:
+            os.unlink(f.name)
+
+    def test_parameter_dict_from_yaml_file_nested_keys_flattened(self) -> None:
+        yaml_string = """
+            /node:
+                ros__parameters:
+                    outer:
+                        inner: 7
+                        leaf: hello
+            """
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            result = parameter_dict_from_yaml_file(f.name)
+            assert 'outer.inner' in result
+            assert 'outer.leaf' in result
+            assert result['outer.inner'].value.integer_value == 7
+            assert result['outer.leaf'].value.string_value == 'hello'
+        finally:
+            os.unlink(f.name)
+
+    def test_parameter_dict_from_yaml_file_binary(self) -> None:
+        yaml_string = """
+            /node:
+                ros__parameters:
+                    blob: !!binary aGVsbG8=
+                    empty_list: []
+            """
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            result = parameter_dict_from_yaml_file(f.name)
+            assert result['blob'].value.type == ParameterType.PARAMETER_BYTE_ARRAY
+            assert bytes(result['blob'].value.byte_array_value) == b'hello'
+            # An empty list has no value and is skipped.
+            assert 'empty_list' not in result
+        finally:
+            os.unlink(f.name)
+
+    def test_parameter_dict_from_yaml_file_malformed_raises(self) -> None:
+        yaml_string = '/node:\n    ros__parameters: [unclosed'
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            with pytest.raises(RuntimeError):
+                parameter_dict_from_yaml_file(f.name)
+        finally:
+            os.unlink(f.name)
+
+    def test_parameter_dict_from_yaml_file_empty_params_raises(self) -> None:
+        yaml_string = """
+            /node:
+                ros__parameters: {}
+            """
+        with NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            f.write(yaml_string)
+            f.flush()
+        try:
+            with pytest.raises(RuntimeError,
+                               match='Param file does not contain any valid parameters'):
+                parameter_dict_from_yaml_file(f.name)
+        finally:
+            os.unlink(f.name)
+
 
 if __name__ == '__main__':
     unittest.main()

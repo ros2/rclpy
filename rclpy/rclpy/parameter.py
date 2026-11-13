@@ -31,6 +31,7 @@ from typing import Union
 from rcl_interfaces.msg import Parameter as ParameterMsg
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 import yaml
 
 PARAMETER_SEPARATOR_STRING: Final = '.'
@@ -308,6 +309,61 @@ def get_parameter_value(string_value: str) -> ParameterValue:
     return value
 
 
+def _parameter_value_from_python_value(param_value: AllowableParameterValue) -> ParameterValue:
+    """
+    Build a ParameterValue directly from an already-typed Python value.
+
+    Unlike :func:`get_parameter_value`, this does not round-trip the value
+    through ``str()`` and YAML parsing, so the type resolved by the parser
+    is preserved exactly.
+
+    :param param_value: The already-typed Python value.
+    :return: The ParameterValue.
+    """
+    value = ParameterValue()
+    if isinstance(param_value, bool):
+        value.type = ParameterType.PARAMETER_BOOL
+        value.bool_value = param_value
+    elif isinstance(param_value, int):
+        value.type = ParameterType.PARAMETER_INTEGER
+        value.integer_value = param_value
+    elif isinstance(param_value, float):
+        value.type = ParameterType.PARAMETER_DOUBLE
+        value.double_value = param_value
+    elif isinstance(param_value, str):
+        value.type = ParameterType.PARAMETER_STRING
+        value.string_value = param_value
+    elif isinstance(param_value, bytes):
+        value.type = ParameterType.PARAMETER_BYTE_ARRAY
+        value.byte_array_value = param_value
+    elif isinstance(param_value, list):
+        if not param_value:
+            # An empty list has no element type to infer; keep the historical
+            # behavior of get_parameter_value('[]'), which produced an empty
+            # bool array.
+            value.type = ParameterType.PARAMETER_BOOL_ARRAY
+            value.bool_array_value = param_value
+        elif all((isinstance(v, bool) for v in param_value)):
+            value.type = ParameterType.PARAMETER_BOOL_ARRAY
+            value.bool_array_value = param_value
+        elif all((isinstance(v, int) for v in param_value)):
+            value.type = ParameterType.PARAMETER_INTEGER_ARRAY
+            value.integer_array_value = param_value
+        elif all((isinstance(v, float) for v in param_value)):
+            value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
+            value.double_array_value = param_value
+        elif all((isinstance(v, str) for v in param_value)):
+            value.type = ParameterType.PARAMETER_STRING_ARRAY
+            value.string_array_value = param_value
+        else:
+            value.type = ParameterType.PARAMETER_STRING
+            value.string_value = str(param_value)
+    else:
+        value.type = ParameterType.PARAMETER_STRING
+        value.string_value = str(param_value)
+    return value
+
+
 def parameter_value_to_python(parameter_value: ParameterValue) -> AllowableParameterValue:
     """
     Get the value for the Python builtin type from a rcl_interfaces/msg/ParameterValue object.
@@ -342,6 +398,14 @@ def parameter_value_to_python(parameter_value: ParameterValue) -> AllowableParam
         raise RuntimeError(f'unexpected parameter type {parameter_value.type}')
 
 
+def _is_wildcard_node_name(node_name: str) -> bool:
+    """Check if a node name is a wildcard entry (``/**``, ``/*`` or below one)."""
+    return (
+        node_name == '/**' or node_name == '/*' or
+        node_name.startswith('/**/') or node_name.startswith('/*/')
+    )
+
+
 def parameter_dict_from_yaml_file(
     parameter_file: str,
     use_wildcard: bool = False,
@@ -351,10 +415,17 @@ def parameter_dict_from_yaml_file(
     """
     Build a dict of parameters from a YAML file.
 
+    The file is parsed with ``rcl_parse_yaml_file`` from
+    ``rcl_yaml_param_parser``, the same parser rclcpp uses for
+    ``--params-file``, so parameter types match across client libraries.
+    In particular, numbers in exponent notation (e.g. ``5e-06``,
+    ``1.0e+20``) load as doubles, and quoted values stay strings.
+
     Will load all parameters if ``target_nodes`` is None or empty.
 
+    :raises FileNotFoundError: if the parameter file does not exist
     :raises RuntimeError: if a target node is not in the file
-    :raises RuntimeError: if the is not a valid ROS parameter file
+    :raises RuntimeError: if the file is not a valid ROS parameter file
 
     :param parameter_file: Path to the YAML file to load parameters from.
     :param use_wildcard: Use wildcard matching for the target nodes.
@@ -362,176 +433,100 @@ def parameter_dict_from_yaml_file(
     :param namespace: Namespace to prepend to all parameters.
     :return: A dict of Parameter messages keyed by the parameter names
     """
-    with open(parameter_file, 'r') as f:
-        param_file = yaml.safe_load(f)
-        param_dict = {}
+    # node name -> {parameter name: already-typed Python value}.
+    # Nested parameter groups arrive flattened with '.' separators and
+    # nested node spellings (``/ns: {node: ...}``) arrive as the single
+    # node name ``/ns/node``.
+    node_params = _rclpy.rclpy_parse_yaml_param_file(parameter_file)
+    param_dict: Dict[str, Any] = {}
 
-        # check and add if wildcard is available in 1st keys
-        # wildcard key must go to the front of param_keys so that
-        # node-namespaced parameters will override the wildcard parameters
-        if use_wildcard:
-            if '/**' in param_file:
-                value = param_file['/**']
-                if not isinstance(value, dict) or 'ros__parameters' not in value:
-                    raise RuntimeError(
-                        'YAML file is not a valid ROS parameter file for wildcard(/**)')
-                param_dict.update(value['ros__parameters'])
+    # Wildcard parameters apply to every node, so they go first and
+    # node-specific parameters override them.
+    if use_wildcard and '/**' in node_params:
+        param_dict.update(node_params['/**'])
 
-            # If target_nodes is None or empty, parse '/*' and '/**/node_name' wildcards
-            if not target_nodes:
-                # /*
-                #   node_name:
-                #     ros__parameters:
-                #       ...
-                if '/*' in param_file:
-                    value = param_file['/*']
-                    if not isinstance(value, dict):
-                        raise RuntimeError(
-                            'YAML file is not a valid ROS parameter file for wildcard(/*)')
-                    # add all node_name under wildcard /*
-                    for node_name, node_value in value.items():
-                        if not isinstance(node_value, dict) or 'ros__parameters' not in node_value:
-                            raise RuntimeError(
-                                f'YAML file is not a valid ROS parameter file for wildcard(/*) '
-                                f'node {node_name}')
-                        param_dict.update(node_value['ros__parameters'])
+    if target_nodes:
+        for n in target_nodes:
+            abs_name = _get_absolute_node_name(n)
+            if abs_name is None:
+                continue
 
-                # /**/node_name
+            # target node is '/node_name' without namespace
+            if '/' not in abs_name[1:]:
+                # Match definition in param file
+                # /node_name:
                 #   ros__parameters:
                 #     ...
-                for k, v in param_file.items():
-                    if k.startswith('/**/'):
-                        value = v
-                        if not isinstance(value, dict) or 'ros__parameters' not in value:
-                            raise RuntimeError(
-                                f'YAML file is not a valid ROS parameter file for wildcard {k}')
-                        param_dict.update(value['ros__parameters'])
-
-        # parse parameter yaml file based on target node namespace and name
-        if target_nodes:
-            for n in target_nodes:
-                abs_name = _get_absolute_node_name(n)
-                if abs_name is None:
-                    continue
-
-                # target node is '/node_name' without namespace
-                if '/' not in abs_name[1:]:
-                    # Match definition in param file
-                    # /node_name:
-                    #   ros__parameters:
-                    #     ...
-                    if abs_name in param_file:
-                        value = param_file[abs_name]
-                        if (not isinstance(value, dict) or 'ros__parameters' not in value):
-                            raise RuntimeError(
-                                f'YAML file is not a valid ROS parameter file for node {n}')
-                        param_dict.update(value['ros__parameters'])
-                    # Match definition in param file
-                    # node_name:
-                    #   ros__parameters:
-                    #     ...
-                    if abs_name[1:] in param_file:
-                        value = param_file[abs_name[1:]]
-                        if (not isinstance(value, dict) or 'ros__parameters' not in value):
-                            raise RuntimeError(
-                                f'YAML file is not a valid ROS parameter file for node {n}')
-                        param_dict.update(value['ros__parameters'])
-                    continue
-
-                # target node include namespaces, e.g. /namespace/node_name
-                # Matched definition in param file
-                # /namespace
-                #   node_name:
-                #     ros__parameters:
-                #       ...
                 # or
-                # /namespace/node_name:
+                # node_name:
                 #   ros__parameters:
                 #     ...
-                ns, node_basename = abs_name.rsplit('/', 1)
+                if abs_name in node_params:
+                    param_dict.update(node_params[abs_name])
+                if abs_name[1:] in node_params:
+                    param_dict.update(node_params[abs_name[1:]])
+                continue
 
-                # If ns is single level namespace and wildcard is true
+            # target node includes namespaces, e.g. /namespace/node_name
+            ns, node_basename = abs_name.rsplit('/', 1)
+
+            # Match definition in param file
+            # /namespace
+            #   node_name:
+            #     ros__parameters:
+            #       ...
+            # or
+            # /namespace/node_name:
+            #   ros__parameters:
+            #     ...
+            if abs_name in node_params:
+                param_dict.update(node_params[abs_name])
+
+            if use_wildcard:
                 # Match definition in param file
                 # /*
                 #   node_name:
                 #     ros__parameters:
                 #       ...
-                if use_wildcard and '/' not in ns[1:] and '/*' in param_file:
-                    if not isinstance(param_file['/*'], dict):
-                        raise RuntimeError(
-                            'YAML file is not a valid ROS parameter file for namespace "/*"')
+                # Only for a single-level namespace.
+                if '/' not in ns[1:]:
+                    wildcard_ns_node = '/*/' + node_basename
+                    if wildcard_ns_node in node_params:
+                        param_dict.update(node_params[wildcard_ns_node])
 
-                    if node_basename in param_file['/*']:
-                        value = param_file['/*'][node_basename]
-                        if not isinstance(value, dict) or 'ros__parameters' not in value:
-                            raise RuntimeError(
-                                f'YAML file is not a valid ROS parameter file for node {n}')
-                        param_dict.update(value['ros__parameters'])
-
-                # If 'ns' in target node is single level or multi level namespace and
-                # wildcard is true,
                 # Match definition in param file
                 # /**/node_name:
                 #   ros__parameters:
                 #     ...
-                if use_wildcard and '/**/' + node_basename in param_file:
-                    value = param_file['/**/' + node_basename]
-                    if not isinstance(value, dict) or 'ros__parameters' not in value:
-                        raise RuntimeError(
-                            f'YAML file is not a valid ROS parameter file for node {n}')
-                    param_dict.update(value['ros__parameters'])
+                wildcard_node = '/**/' + node_basename
+                if wildcard_node in node_params:
+                    param_dict.update(node_params[wildcard_node])
+    else:
+        # No target nodes: load every node.
+        if use_wildcard:
+            # /*
+            #   node_name:
+            #     ros__parameters:
+            #       ...
+            for node_name, params in node_params.items():
+                if node_name == '/*' or node_name.startswith('/*/'):
+                    param_dict.update(params)
+            # /**/node_name:
+            #   ros__parameters:
+            #     ...
+            for node_name, params in node_params.items():
+                if node_name.startswith('/**/'):
+                    param_dict.update(params)
+        # Except the wildcard entries, add all other nodes
+        for node_name, params in node_params.items():
+            if _is_wildcard_node_name(node_name):
+                continue
+            param_dict.update(params)
 
-                # If 'ns' in target node is single level or multi level namespace,
-                # Match definition in param file.
-                # /namespace
-                #   node_name:
-                #     ros__parameters:
-                #       ...
-                if ns in param_file and isinstance(param_file[ns], dict):
-                    if node_basename in param_file[ns]:
-                        value = param_file[ns][node_basename]
-                        if not isinstance(value, dict) or 'ros__parameters' not in value:
-                            raise RuntimeError(
-                                f'YAML file is not a valid ROS parameter file for node {n}')
-                        param_dict.update(value['ros__parameters'])
+    if not param_dict:
+        raise RuntimeError('Param file does not contain any valid parameters')
 
-                # If 'ns' in target node is single level or multi level namespace,
-                # Match definition in param file.
-                # /namespace/node_name:
-                #   ros__parameters:
-                #     ...
-                if abs_name in param_file:
-                    value = param_file[abs_name]
-                    if not isinstance(value, dict) or 'ros__parameters' not in value:
-                        raise RuntimeError(
-                            f'YAML file is not a valid ROS parameter file for node {n}')
-                    param_dict.update(value['ros__parameters'])
-        else:
-            # Except the wildcard key, add all other keys
-            for k, v in param_file.items():
-                if k == '/**' or k == '/*' or k.startswith('/**/'):
-                    continue
-                if isinstance(v, dict):
-                    # k is node_name or /node_name or /namespace/node_name
-                    if 'ros__parameters' in v:
-                        param_dict.update(v['ros__parameters'])
-                        continue
-                    # k is namespace
-                    for node_name, node_value in v.items():
-                        if isinstance(node_value, dict) and 'ros__parameters' in node_value:
-                            param_dict.update(node_value['ros__parameters'])
-                        else:
-                            raise RuntimeError(
-                                f'YAML file is not a valid ROS parameter file for node'
-                                f'{k}/{node_name}')
-                else:
-                    raise RuntimeError(
-                        f'YAML file is not a valid ROS parameter file for node {k}')
-
-        if not param_dict:
-            raise RuntimeError('Param file does not contain any valid parameters')
-
-        return _unpack_parameter_dict(namespace, param_dict)
+    return _unpack_parameter_dict(namespace, param_dict)
 
 
 def _get_absolute_node_name(node_name: str) -> Optional[str]:
@@ -543,7 +538,7 @@ def _get_absolute_node_name(node_name: str) -> Optional[str]:
 
 
 def _unpack_parameter_dict(namespace: str,
-                           parameter_dict: Dict[str, ParameterMsg]) -> Dict[str, ParameterMsg]:
+                           parameter_dict: Dict[str, Any]) -> Dict[str, ParameterMsg]:
     """
     Flatten a parameter dictionary recursively.
 
@@ -562,6 +557,6 @@ def _unpack_parameter_dict(namespace: str,
         else:
             parameter = ParameterMsg()
             parameter.name = full_param_name
-            parameter.value = get_parameter_value(str(param_value))
+            parameter.value = _parameter_value_from_python_value(param_value)
             parameters[full_param_name] = parameter
     return parameters
