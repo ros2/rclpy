@@ -17,7 +17,6 @@ from typing import Awaitable, Callable, Optional, Type
 
 from rclpy.executors import await_or_execute
 from rclpy.experimental._wakeup_socket import WakeupSocket
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.subscription import BaseSubscription, SubscriptionCallbackUnion
 from rclpy.type_support import MsgT

@@ -18,7 +18,6 @@ from typing import Callable, Dict, Optional, Type
 from rclpy.client import BaseClient
 from rclpy.context import Context
 from rclpy.experimental._wakeup_socket import WakeupSocket
-from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.qos import QoSProfile
 from rclpy.type_support import Srv, SrvRequestT, SrvResponseT
 
