@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 from rclpy.context import Context
+from rclpy.exceptions import InvalidHandle
+from rclpy.node import Node
 
 
 def test_on_shutdown_method() -> None:
@@ -73,3 +76,20 @@ def test_context_manager() -> None:
 
     # Make sure it does not raise (smoke test)
     context.try_shutdown()
+
+
+def test_shutdown_destroys_all_tracked_nodes() -> None:
+    context = Context()
+    context.init()
+
+    nodes = [Node(f'test_node_{i}', context=context) for i in range(4)]
+    assert all(node.context is context for node in nodes)
+
+    context.shutdown()
+
+    # Every node tracked by the context must be destroyed on shutdown
+    for node in nodes:
+        with pytest.raises(InvalidHandle):
+            # handle invalid because it was destroyed by Context.shutdown()
+            with node.handle:
+                pass
