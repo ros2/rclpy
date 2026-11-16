@@ -66,6 +66,13 @@ class InvalidNodeNameException(NameValidationException):
         NameValidationException.__init__(self, 'node name', name, error_msg, invalid_index)
 
 
+class InvalidEnclaveNameException(NameValidationException):
+    """Raised when an enclave name is invalid."""
+
+    def __init__(self, name: str, error_msg: str, invalid_index: int) -> None:
+        NameValidationException.__init__(self, 'enclave name', name, error_msg, invalid_index)
+
+
 class InvalidTopicNameException(NameValidationException):
     """Raised when a topic name is invalid."""
 

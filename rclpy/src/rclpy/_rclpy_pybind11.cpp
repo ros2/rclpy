@@ -178,6 +178,10 @@ PYBIND11_MODULE(_rclpy_pybind11, m) {
     "rclpy_get_validation_error_for_node_name", &rclpy::get_validation_error_for_node_name,
     "Get the error message and invalid index of a node name or None if valid.");
   m.def(
+    "rclpy_get_validation_error_for_enclave_name",
+    &rclpy::get_validation_error_for_enclave_name,
+    "Get the error message and invalid index of an enclave name or None if valid.");
+  m.def(
     "rclpy_resolve_name", &rclpy::resolve_name,
     "Expand and remap a topic or service name.");
 

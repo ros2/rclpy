@@ -78,6 +78,18 @@ get_validation_error_for_namespace(const char * namespace_);
 py::object
 get_validation_error_for_node_name(const char * node_name);
 
+/// Validate an enclave name and return error message and index of invalidation.
+/**
+ * Raises MemoryError if memory could not be allocated
+ * Raises RCLError if an unexpected error happened while validating the enclave name
+ *
+ * \param[in] enclave_name name of the enclave to be validated
+ * \return tuple of error message and invalid index if invalid, or
+ * \return None if valid
+ */
+py::object
+get_validation_error_for_enclave_name(const char * enclave_name);
+
 /// Expand a topic name
 /**
  * Raises ValueError if the topic name, node name, or namespace are not valid.
