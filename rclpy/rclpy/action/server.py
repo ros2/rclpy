@@ -808,4 +808,6 @@ class ActionServer(Generic[GoalT, ResultT, FeedbackT, ImplT],
             self.remove_future(result_future)
 
         self._handle.destroy_when_not_in_use()
-        self._node.remove_waitable(self)
+        # The node may already have removed this waitable, e.g. in Node.destroy_node()
+        if self in self._node.waitables:
+            self._node.remove_waitable(self)

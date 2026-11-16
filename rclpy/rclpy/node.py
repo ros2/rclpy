@@ -2825,6 +2825,8 @@ class Node(BaseNode):
         * :func:`create_timer`
         * :func:`create_guard_condition`
 
+        Waitables added with :func:`add_waitable`, such as action clients and action servers,
+        are destroyed too.
         """
         self._context.untrack_node(self)
 
@@ -2842,6 +2844,14 @@ class Node(BaseNode):
             self.destroy_timer(self._timers[0])
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
+        while self.__waitables:
+            waitable = self.__waitables[0]
+            destroy = getattr(waitable, 'destroy', None)
+            if callable(destroy):
+                destroy()
+            # A waitable's destroy() is not required to remove it from the node
+            if self.__waitables and self.__waitables[0] is waitable:
+                self.remove_waitable(waitable)
         super().destroy_node()
         self._wake_executor()
 
