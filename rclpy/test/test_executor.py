@@ -531,6 +531,60 @@ class TestExecutor(unittest.TestCase):
                     executor.spin_until_future_complete(task, timeout_sec=5)
                 self.assertIn('Expected error after await', str(cm.exception))
 
+    def test_spin_some_executes_ready_work_only(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        # spin_some() is implemented by the Python executors only
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+                calls: List[str] = []
+                timer_1 = self.node.create_timer(0.1, lambda: calls.append('timer_1'))
+                timer_2 = self.node.create_timer(0.1, lambda: calls.append('timer_2'))
+                try:
+                    # Nothing is ready yet, so spin_some() returns without waiting
+                    start_time = time.monotonic()
+                    executor.spin_some()
+                    self.assertLess(time.monotonic() - start_time, 0.1)
+                    self.assertEqual([], calls)
+
+                    # Once both timers are ready, a single call executes both of them
+                    time.sleep(0.2)
+                    executor.spin_some()
+                    self.assertEqual(['timer_1', 'timer_2'], sorted(calls))
+                finally:
+                    self.node.destroy_timer(timer_1)
+                    self.node.destroy_timer(timer_2)
+                    executor.shutdown()
+
+    def test_spin_some_max_duration(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+                calls = 0
+
+                def slow_callback() -> None:
+                    nonlocal calls
+                    calls += 1
+                    time.sleep(0.2)
+
+                timer_1 = self.node.create_timer(0.1, slow_callback)
+                timer_2 = self.node.create_timer(0.1, slow_callback)
+                try:
+                    time.sleep(0.2)
+                    # The first callback already uses up the time limit
+                    executor.spin_some(max_duration_sec=0.1)
+                    self.assertEqual(1, calls)
+
+                    with self.assertRaises(ValueError):
+                        executor.spin_some(max_duration_sec=-1.0)
+                finally:
+                    self.node.destroy_timer(timer_1)
+                    self.node.destroy_timer(timer_2)
+                    executor.shutdown()
+
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""
         self.assertIsNotNone(self.node.handle)
