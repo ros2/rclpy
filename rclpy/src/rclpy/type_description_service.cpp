@@ -29,7 +29,19 @@ namespace rclpy
 
 TypeDescriptionService::TypeDescriptionService(Node & node)
 {
-  auto srv_ptr = std::make_shared<rcl_service_t>();
+  // rcl_node_type_description_service_init() leaves rcl_service_fini() to the caller.
+  auto srv_ptr = std::shared_ptr<rcl_service_t>(
+    new rcl_service_t,
+    [node](rcl_service_t * service)
+    {
+      // Intentionally capture node by copy so shared_ptr can be transferred to copies
+      rcl_ret_t ret = rcl_service_fini(service, node.rcl_ptr());
+      if (RCL_RET_OK != ret) {
+        warn_fini_failure("type description service");
+      }
+      delete service;
+    });
+  *srv_ptr = rcl_get_zero_initialized_service();
   rcl_ret_t ret = rcl_node_type_description_service_init(srv_ptr.get(), node.rcl_ptr());
   if (RCL_RET_OK != ret) {
     throw RCLError("Failed to initialize type description service");
