@@ -51,7 +51,7 @@ class Time:
         total_nanoseconds = int(seconds * S_TO_NS)
         total_nanoseconds += int(nanoseconds)
         if total_nanoseconds >= 2**63:
-            # pybind11 would raise TypeError, but we want OverflowError
+            # nanobind would raise TypeError, but we want OverflowError
             raise OverflowError(
                 'Total nanoseconds value is too large to store in C time point.')
         self._time_handle = _rclpy.rcl_time_point_t(total_nanoseconds, clock_type)

@@ -16,7 +16,9 @@
 #ifndef RCLPY__EVENTS_EXECUTOR__SCOPED_WITH_HPP_
 #define RCLPY__EVENTS_EXECUTOR__SCOPED_WITH_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -27,16 +29,16 @@ namespace events_executor
 class ScopedWith
 {
 public:
-  explicit ScopedWith(pybind11::handle object)
-  : object_(pybind11::cast<pybind11::object>(object))
+  explicit ScopedWith(nb::handle object)
+  : object_(nb::cast<nb::object>(object))
   {
     object_.attr("__enter__")();
   }
 
-  ~ScopedWith() {object_.attr("__exit__")(pybind11::none(), pybind11::none(), pybind11::none());}
+  ~ScopedWith() {object_.attr("__exit__")(nb::none(), nb::none(), nb::none());}
 
 private:
-  pybind11::object object_;
+  nb::object object_;
 };
 
 }  // namespace events_executor

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <rcl/allocator.h>
 #include <rcl/error_handling.h>
@@ -32,7 +33,7 @@
 namespace rclpy
 {
 
-py::list
+nb::list
 graph_get_publisher_names_and_types_by_node(
   Node & node, bool no_demangle,
   std::string node_name, std::string node_namespace)
@@ -65,7 +66,7 @@ graph_get_publisher_names_and_types_by_node(
   return convert_to_py_names_and_types(&publisher_names_and_types);
 }
 
-py::list
+nb::list
 graph_get_subscriber_names_and_types_by_node(
   Node & node, bool no_demangle,
   std::string node_name, std::string node_namespace)
@@ -98,7 +99,7 @@ graph_get_subscriber_names_and_types_by_node(
   return convert_to_py_names_and_types(&subscriber_names_and_types);
 }
 
-py::list
+nb::list
 graph_get_service_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace)
 {
@@ -130,7 +131,7 @@ graph_get_service_names_and_types_by_node(
   return convert_to_py_names_and_types(&service_names_and_types);
 }
 
-py::list
+nb::list
 graph_get_client_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace)
 {
@@ -161,7 +162,7 @@ graph_get_client_names_and_types_by_node(
   return convert_to_py_names_and_types(&client_names_and_types);
 }
 
-py::list
+nb::list
 graph_get_topic_names_and_types(Node & node, bool no_demangle)
 {
   rcl_names_and_types_t topic_names_and_types = rcl_get_zero_initialized_names_and_types();
@@ -188,7 +189,7 @@ graph_get_topic_names_and_types(Node & node, bool no_demangle)
   return convert_to_py_names_and_types(&topic_names_and_types);
 }
 
-py::list
+nb::list
 graph_get_service_names_and_types(Node & node)
 {
   rcl_names_and_types_t service_names_and_types = rcl_get_zero_initialized_names_and_types();
@@ -221,7 +222,7 @@ typedef rcl_ret_t (* rcl_get_info_by_topic_func_t)(
   bool no_mangle,
   rcl_topic_endpoint_info_array_t * info_array);
 
-py::list
+nb::list
 _get_info_by_topic(
   Node & node,
   const char * topic_name,
@@ -260,7 +261,7 @@ _get_info_by_topic(
   return convert_to_py_topic_endpoint_info_list(&info_array);
 }
 
-py::list
+nb::list
 graph_get_publishers_info_by_topic(
   Node & node, const char * topic_name, bool no_mangle)
 {
@@ -269,7 +270,7 @@ graph_get_publishers_info_by_topic(
     rcl_get_publishers_info_by_topic);
 }
 
-py::list
+nb::list
 graph_get_subscriptions_info_by_topic(
   Node & node, const char * topic_name, bool no_mangle)
 {
@@ -286,7 +287,7 @@ typedef rcl_ret_t (* rcl_get_info_by_service_func_t)(
   rcl_service_endpoint_info_array_t * info_array);
 
 
-py::list
+nb::list
 _get_info_by_service(
   Node & node,
   const char * service_name,
@@ -326,7 +327,7 @@ _get_info_by_service(
   return convert_to_py_service_endpoint_info_list(&info_array);
 }
 
-py::list
+nb::list
 graph_get_clients_info_by_service(
   Node & node, const char * service_name, bool no_mangle)
 {
@@ -335,7 +336,7 @@ graph_get_clients_info_by_service(
     rcl_get_clients_info_by_service);
 }
 
-py::list
+nb::list
 graph_get_servers_info_by_service(
   Node & node, const char * service_name, bool no_mangle)
 {
@@ -344,7 +345,7 @@ graph_get_servers_info_by_service(
     rcl_get_servers_info_by_service);
 }
 
-py::list
+nb::list
 graph_get_action_client_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace)
 {
@@ -376,7 +377,7 @@ graph_get_action_client_names_and_types_by_node(
   return convert_to_py_names_and_types(&action_names_and_types);
 }
 
-py::list
+nb::list
 graph_get_action_server_names_and_types_by_node(
   Node & node, std::string node_name, std::string node_namespace)
 {
@@ -408,7 +409,7 @@ graph_get_action_server_names_and_types_by_node(
   return convert_to_py_names_and_types(&action_names_and_types);
 }
 
-py::list
+nb::list
 graph_get_action_names_and_types(Node & node)
 {
   rcl_names_and_types_t action_names_and_types = rcl_get_zero_initialized_names_and_types();
@@ -441,7 +442,7 @@ typedef rcl_ret_t (* rcl_action_get_info_by_action_func_t)(
   rcl_action_endpoint_info_array_t * info_array);
 
 
-py::list
+nb::list
 _get_info_by_action(
   Node & node,
   const char * action_name,
@@ -480,7 +481,7 @@ _get_info_by_action(
   return convert_to_py_action_endpoint_info_list(&info_array);
 }
 
-py::list
+nb::list
 graph_get_action_clients_info_by_action(
   Node & node, const char * action_name)
 {
@@ -489,7 +490,7 @@ graph_get_action_clients_info_by_action(
     rcl_action_get_clients_info_by_action);
 }
 
-py::list
+nb::list
 graph_get_action_servers_info_by_action(
   Node & node, const char * action_name)
 {

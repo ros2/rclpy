@@ -15,12 +15,12 @@
 #ifndef RCLPY__SERIALIZATION_HPP_
 #define RCLPY__SERIALIZATION_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <rcl/types.h>
 #include <rcutils/allocator.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -43,8 +43,8 @@ struct SerializedMessage
  * \param[in] pymsg_type the type of the ROS message
  * \return serialized bytes
  */
-py::bytes
-serialize(py::object pymsg, py::object pymsg_type);
+nb::bytes
+serialize(nb::object pymsg, nb::object pymsg_type);
 
 /// Deserialize a ROS message
 /**
@@ -54,8 +54,8 @@ serialize(py::object pymsg, py::object pymsg_type);
  * \param[in] pymsg_type the type of the ROS message to deserialize
  * \return an instance of a ROS message
  */
-py::object
-deserialize(py::bytes pybuffer, py::object pymsg_type);
+nb::object
+deserialize(nb::bytes pybuffer, nb::object pymsg_type);
 }  // namespace rclpy
 
 #endif  // RCLPY__SERIALIZATION_HPP_
