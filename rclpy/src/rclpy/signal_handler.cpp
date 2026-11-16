@@ -140,8 +140,12 @@ setup_deferred_signal_handler()
       while (g_signal_handler_installed.load()) {
         wait_for_signal();
         if (g_signal_handler_installed.load()) {
-          trigger_guard_conditions();
           rclpy::shutdown_contexts();
+<<<<<<< HEAD
+=======
+          trigger_guard_conditions();
+          invoke_callbacks();
+>>>>>>> 12735a2 (Shut down contexts before waking executors on SIGINT/SIGTERM (#1764))
         }
       }
     });
