@@ -426,6 +426,9 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                                 .configure_feedback_subscription_filter_add_goal_id(goal_uuid)
                         except RCLError as e:
                             self._logger.warning(f'{e}')
+                else:
+                    # A rejected goal never receives feedback, so drop its callback
+                    self._feedback_callbacks.pop(bytes(goal_handle.goal_id.uuid), None)
 
                 self._pending_goal_requests[sequence_number].set_result(goal_handle)
             else:
@@ -476,6 +479,8 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
                                 GoalStatus.STATUS_CANCELED == status or
                                 GoalStatus.STATUS_ABORTED == status):
                             del self._goal_handles[goal_uuid]
+                            # No more feedback is expected for a goal in a terminal state
+                            self._feedback_callbacks.pop(goal_uuid, None)
                             if self._enable_feedback_msg_optimization:
                                 try:
                                     _ = self._client_handle \
@@ -598,10 +603,12 @@ class ActionClient(Generic[GoalT, ResultT, FeedbackT, ImplT],
             # Add future so executor is aware
             self.add_future(future)
 
-        if feedback_callback is not None:
-            # TODO(jacobperron): Move conversion function to a general-use package
-            goal_uuid_bytes = bytes(request.goal_id.uuid)
-            self._feedback_callbacks[goal_uuid_bytes] = feedback_callback
+            # Register the feedback callback while holding the lock, so it is in place before
+            # the goal response can be taken and processed (e.g. removed on rejection).
+            if feedback_callback is not None:
+                # TODO(jacobperron): Move conversion function to a general-use package
+                goal_uuid_bytes = bytes(request.goal_id.uuid)
+                self._feedback_callbacks[goal_uuid_bytes] = feedback_callback
 
         return future
 
