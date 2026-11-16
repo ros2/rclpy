@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import unittest
 
 import rclpy
@@ -69,3 +70,19 @@ class TestTypeDescriptionService(unittest.TestCase):
         assert response.successful
         assert response.type_description.type_description.type_name == 'test_msgs/msg/BasicTypes'
         assert len(response.type_sources)
+
+    def test_destroy_node_removes_the_service(self) -> None:
+        node = rclpy.create_node('destroyed_node', namespace='/rclpy', context=self.context)
+        service_name = f'{node.get_fully_qualified_name()}/get_type_description'
+        assert self._wait_until_listed(service_name, listed=True)
+        node.destroy_node()
+        assert self._wait_until_listed(service_name, listed=False)
+
+    def _wait_until_listed(self, service_name: str, *, listed: bool) -> bool:
+        deadline = time.monotonic() + 5.0
+        while time.monotonic() < deadline:
+            names = {name for name, _ in self.test_node.get_service_names_and_types()}
+            if (service_name in names) == listed:
+                return True
+            time.sleep(0.1)
+        return False
