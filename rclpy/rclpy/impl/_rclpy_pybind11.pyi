@@ -769,6 +769,10 @@ def rclpy_get_validation_error_for_node_name(namespace_: str) -> tuple[str, int]
     """Get the error message and invalid index of a node name or None if valid."""
 
 
+def rclpy_get_validation_error_for_enclave_name(enclave_name: str) -> tuple[str, int] | None:
+    """Get the error message and invalid index of an enclave name or None if valid."""
+
+
 def rclpy_resolve_name(node: Node, topic_name: str, only_expand: bool, is_service: bool) -> str:
     """Expand and remap a topic or service name."""
 
