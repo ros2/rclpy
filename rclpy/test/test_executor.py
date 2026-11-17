@@ -22,6 +22,7 @@ from typing import Optional
 from typing import Protocol
 from typing import Set
 import unittest
+from unittest import mock
 import warnings
 
 import rclpy
@@ -530,6 +531,36 @@ class TestExecutor(unittest.TestCase):
                 with self.assertRaises(RuntimeError) as cm:
                     executor.spin_until_future_complete(task, timeout_sec=5)
                 self.assertIn('Expected error after await', str(cm.exception))
+
+    def test_callback_exception_is_logged(self) -> None:
+        """An exception raised by a user callback is logged with the node's logger."""
+        self.assertIsNotNone(self.node.handle)
+        # The EventsExecutor runs callbacks from C++ and does not use this code path
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+
+                def timer_callback() -> None:
+                    raise RuntimeError('Expected error from timer callback')
+
+                tmr = self.node.create_timer(0.1, timer_callback)
+                try:
+                    with mock.patch.object(self.node.get_logger(), 'error') as mock_error:
+                        # The SingleThreadedExecutor raises from the spin_once() call that ran
+                        # the callback, the MultiThreadedExecutor from a later spin call.
+                        with self.assertRaises(RuntimeError):
+                            for _ in range(50):
+                                executor.spin_once(timeout_sec=0.1)
+                    mock_error.assert_called()
+                    message = mock_error.call_args.args[0]
+                    self.assertIn('Timer', message)
+                    self.assertIn('Expected error from timer callback', message)
+                    self.assertIn('Traceback', message)
+                finally:
+                    # Stop the worker threads before the timer they may still be running is gone
+                    executor.shutdown()
+                    self.node.destroy_timer(tmr)
 
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""

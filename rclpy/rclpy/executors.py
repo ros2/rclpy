@@ -23,6 +23,7 @@ import inspect
 import os
 import threading
 import time
+import traceback
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -807,6 +808,11 @@ class Executor(ContextManager['Executor']):
                 try:
                     if call_coroutine is not None:
                         await call_coroutine()
+                except Exception:
+                    # Log the traceback with the node's logger, so it is also published to
+                    # /rosout, then let the exception propagate as before.
+                    self._log_callback_exception(entity, node)
+                    raise
                 finally:
                     if entity.callback_group:
                         entity.callback_group.ending_execution(entity)
@@ -828,6 +834,17 @@ class Executor(ContextManager['Executor']):
                 source_node=node
             )
         return task
+
+    @staticmethod
+    def _log_callback_exception(entity: 'Entity', node: 'Node') -> None:
+        """Log the exception currently being handled as raised by the callback of an entity."""
+        try:
+            node.get_logger().error(
+                f'Exception in the callback of {type(entity).__name__}:\n'
+                f'{traceback.format_exc()}')
+        except Exception:
+            # Never let a logging failure hide the original exception
+            pass
 
     def can_execute(self, entity: 'Entity') -> bool:
         """
