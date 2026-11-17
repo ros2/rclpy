@@ -58,16 +58,21 @@ const void * RclCallbackManager::MakeCallback(
     throw py::key_error("Attempt to replace existing callback");
   }
   CbEntry new_entry;
-  new_entry.cb =
-    std::make_unique<std::function<void(size_t)>>([this, key](size_t number_of_events) {
-        events_queue_->Enqueue([this, key, number_of_events]() {
-          const auto map_it = owned_cbs_.find(key);
-          if (map_it == owned_cbs_.end()) {
-            // This callback has been removed, just drop it as the objects it may want to touch may
-            // no longer exist.
-            return;
-          }
-          map_it->second.callback(number_of_events);
+  // Each registration gets a unique generation so that queued events can tell a
+  // removed entity apart from a new entity reusing the same rcl pointer.
+  const uint64_t generation = ++next_generation_;
+  new_entry.generation = generation;
+  new_entry.cb = std::make_unique<std::function<void(size_t)>>(
+    [this, key, generation](size_t number_of_events) {
+      events_queue_->Enqueue([this, key, generation, number_of_events]() {
+        const auto map_it = owned_cbs_.find(key);
+        if (map_it == owned_cbs_.end() || map_it->second.generation != generation) {
+            // This callback has been removed, or replaced by a callback for a
+            // different entity reusing the same rcl pointer, just drop it as the
+            // objects it may want to touch may no longer exist.
+          return;
+        }
+        map_it->second.callback(number_of_events);
       });
     });
   new_entry.with = with;
