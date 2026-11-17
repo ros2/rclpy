@@ -140,8 +140,8 @@ setup_deferred_signal_handler()
       while (g_signal_handler_installed.load()) {
         wait_for_signal();
         if (g_signal_handler_installed.load()) {
-          trigger_guard_conditions();
           rclpy::shutdown_contexts();
+          trigger_guard_conditions();
         }
       }
     });
