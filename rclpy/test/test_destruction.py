@@ -17,7 +17,10 @@ import time
 
 import pytest
 import rclpy
+from rclpy.action import ActionClient
+from rclpy.action import ActionServer
 from rclpy.exceptions import InvalidHandle
+from test_msgs.action import Fibonacci
 from test_msgs.msg import BasicTypes
 from test_msgs.srv import BasicTypes as BasicTypesSrv
 
@@ -269,5 +272,35 @@ def test_destroy_timer_asap() -> None:
                     pass
         finally:
             node.destroy_node()
+    finally:
+        rclpy.shutdown(context=context)
+
+
+def test_destroy_node_destroys_action_client_and_server() -> None:
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node(
+            'test_destroy_node_destroys_action_client_and_server', context=context)
+        action_client = ActionClient(node, Fibonacci, 'fibonacci')
+        action_server = ActionServer(
+            node, Fibonacci, 'fibonacci', lambda goal_handle: Fibonacci.Result())
+        assert action_client in node.waitables
+        assert action_server in node.waitables
+
+        node.destroy_node()
+
+        assert 0 == len(tuple(node.waitables))
+        with pytest.raises(InvalidHandle):
+            with action_client._client_handle:
+                pass
+        with pytest.raises(InvalidHandle):
+            with action_server._handle:
+                pass
+
+        # Destroying them again after the node is gone is harmless
+        action_client.destroy()
+        action_server.destroy()
     finally:
         rclpy.shutdown(context=context)
