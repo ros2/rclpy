@@ -109,6 +109,7 @@ pybind11_add_module(_rclpy_pybind11
   src/rclpy/utils.cpp
   src/rclpy/wait_set.cpp
   src/rclpy/wakeup_socket.cpp
+  src/rclpy/yaml_param_parser.cpp
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT APPLE)
@@ -131,6 +132,7 @@ target_link_libraries(_rclpy_pybind11 PRIVATE
   rcl_interfaces::rcl_interfaces
   rcl_lifecycle::rcl_lifecycle
   rcl_logging_interface::rcl_logging_interface
+  rcl_yaml_param_parser::rcl_yaml_param_parser
   rcpputils::rcpputils
   rcutils::rcutils
   rosidl_runtime_c::rosidl_runtime_c
