@@ -1334,6 +1334,10 @@ class TransitionCallbackReturnType(IntEnum):
         """Convert the transition callback return code to a transition label."""
 
 
+def rclpy_parse_yaml_param_file(parameter_file: str) -> dict[str, dict[str, Any]]:
+    """Parse a YAML parameter file into typed values per node, using rcl_yaml_param_parser."""
+
+
 class EventsExecutor:
 
     def __init__(self, context: RCLPyContext): ...
