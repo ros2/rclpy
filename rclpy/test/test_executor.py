@@ -558,8 +558,9 @@ class TestExecutor(unittest.TestCase):
                     self.assertIn('Expected error from timer callback', message)
                     self.assertIn('Traceback', message)
                 finally:
-                    self.node.destroy_timer(tmr)
+                    # Stop the worker threads before the timer they may still be running is gone
                     executor.shutdown()
+                    self.node.destroy_timer(tmr)
 
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""
