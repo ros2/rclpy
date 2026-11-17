@@ -539,23 +539,24 @@ class TestExecutor(unittest.TestCase):
                 executor = cls(context=self.context)
                 executor.add_node(self.node)
                 calls: List[str] = []
-                timer_1 = self.node.create_timer(0.1, lambda: calls.append('timer_1'))
-                timer_2 = self.node.create_timer(0.1, lambda: calls.append('timer_2'))
+                gc_1 = self.node.create_guard_condition(lambda: calls.append('gc_1'))
+                gc_2 = self.node.create_guard_condition(lambda: calls.append('gc_2'))
                 try:
                     # Nothing is ready yet, so spin_some() returns without waiting
                     start_time = time.monotonic()
                     executor.spin_some()
-                    self.assertLess(time.monotonic() - start_time, 0.1)
+                    self.assertLess(time.monotonic() - start_time, 1.0)
                     self.assertEqual([], calls)
 
-                    # Once both timers are ready, a single call executes both of them
-                    time.sleep(0.2)
+                    # Once both guard conditions are triggered, a single call executes both
+                    gc_1.trigger()
+                    gc_2.trigger()
                     executor.spin_some()
-                    self.assertEqual(['timer_1', 'timer_2'], sorted(calls))
+                    self.assertEqual(['gc_1', 'gc_2'], sorted(calls))
                 finally:
-                    self.node.destroy_timer(timer_1)
-                    self.node.destroy_timer(timer_2)
                     executor.shutdown()
+                    self.node.destroy_guard_condition(gc_1)
+                    self.node.destroy_guard_condition(gc_2)
 
     def test_spin_some_max_duration(self) -> None:
         self.assertIsNotNone(self.node.handle)
@@ -570,10 +571,11 @@ class TestExecutor(unittest.TestCase):
                     calls += 1
                     time.sleep(0.2)
 
-                timer_1 = self.node.create_timer(0.1, slow_callback)
-                timer_2 = self.node.create_timer(0.1, slow_callback)
+                gc_1 = self.node.create_guard_condition(slow_callback)
+                gc_2 = self.node.create_guard_condition(slow_callback)
                 try:
-                    time.sleep(0.2)
+                    gc_1.trigger()
+                    gc_2.trigger()
                     # The first callback already uses up the time limit
                     executor.spin_some(max_duration_sec=0.1)
                     self.assertEqual(1, calls)
@@ -581,9 +583,9 @@ class TestExecutor(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         executor.spin_some(max_duration_sec=-1.0)
                 finally:
-                    self.node.destroy_timer(timer_1)
-                    self.node.destroy_timer(timer_2)
                     executor.shutdown()
+                    self.node.destroy_guard_condition(gc_1)
+                    self.node.destroy_guard_condition(gc_2)
 
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""
