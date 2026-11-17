@@ -379,7 +379,9 @@ class ActionClientTestNode(rclpy.node.Node):
             None
         )
 
-    def send_goal(self, order: int) -> rclpy.Future[FibonacciClientGoalHandle]:
+    def send_goal(
+        self, order: int, wait_for_server: bool = True
+    ) -> rclpy.Future[FibonacciClientGoalHandle]:
         """
         Send a new goal.
 
@@ -387,7 +389,8 @@ class ActionClientTestNode(rclpy.node.Node):
         been received.
 
         """
-        self._client.wait_for_server()
+        if wait_for_server:
+            self._client.wait_for_server()
         goal_ack_future = self._client.send_goal_async(
             test_msgs.action.Fibonacci.Goal(order=order),
             feedback_callback=self._handle_feedback,
@@ -771,7 +774,9 @@ class TestEventsExecutor(unittest.TestCase):
         self.executor.remove_node(server_node)
         server_node.destroy_node()
         self._expect_future_not_done(got_goal_future)
-        goal_acknowledged_future = client_node.send_goal(5)
+        # Destroying the node also destroyed its action server
+        self.assertFalse(client_node._client.wait_for_server(timeout_sec=0.5))
+        goal_acknowledged_future = client_node.send_goal(5, wait_for_server=False)
         self._expect_future_not_done(got_goal_future)
         self.assertFalse(goal_acknowledged_future.done())  # Already waited a bit
 
