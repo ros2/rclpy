@@ -82,7 +82,7 @@ class _WorkTracker:
             self._num_work_executing -= 1
             self._work_condition.notify_all()
 
-    def wait(self, timeout_sec=None):
+    def wait(self, timeout_sec: Optional[float] = None):
         """
         Wait until all work completes.
 
@@ -90,7 +90,7 @@ class _WorkTracker:
         :type timeout_sec: float or None
         :rtype: bool True if all work completed
         """
-        if timeout_sec is not None and timeout_sec < 0:
+        if timeout_sec is not None and timeout_sec < 0.0:
             timeout_sec = None
         # Wait for all work to complete
         with self._work_condition:
@@ -240,17 +240,13 @@ class Executor:
             timeot expires before all outstanding work is done.
         """
         with self._shutdown_lock:
-            if self._is_shutdown:
-                return True
-            self._is_shutdown = True
-            # Tell executor it's been shut down
-            try:
+            if not self._is_shutdown:
+                self._is_shutdown = True
+                # Tell executor it's been shut down
                 self._guard.trigger()
-            except InvalidHandle:
-                pass
-
-        if not self._work_tracker.wait(timeout_sec):
-            return False
+        if not self._is_shutdown:
+            if not self._work_tracker.wait(timeout_sec):
+                return False
 
         # Clean up stuff that won't be used anymore
         with self._nodes_lock:
@@ -469,20 +465,14 @@ class Executor:
             if is_shutdown or not entity.callback_group.beginning_execution(entity):
                 # Didn't get the callback, or the executor has been ordered to stop
                 entity._executor_event = False
-                try:
-                    gc.trigger()
-                except InvalidHandle:
-                    pass
+                gc.trigger()
                 return
             with work_tracker:
                 arg = take_from_wait_list(entity)
 
                 # Signal that this has been 'taken' and can be added back to the wait list
                 entity._executor_event = False
-                try:
-                    gc.trigger()
-                except InvalidHandle:
-                    pass
+                gc.trigger()
 
                 try:
                     await call_coroutine(entity, arg)
@@ -490,6 +480,9 @@ class Executor:
                     entity.callback_group.ending_execution(entity)
                     # Signal that work has been done so the next callback in a mutually exclusive
                     # callback group can get executed
+
+                    # Catch expected error where calling executor.shutdown()
+                    # from callback causes the GuardCondition to be destroyed
                     try:
                         gc.trigger()
                     except InvalidHandle:
@@ -585,10 +578,7 @@ class Executor:
                 # retrigger a guard condition that was triggered but not handled
                 for gc in node_guards:
                     if gc._executor_triggered:
-                        try:
-                            gc.trigger()
-                        except InvalidHandle:
-                            pass
+                        gc.trigger()
                     guards.append(gc)
             if timeout_timer is not None:
                 timers.append(timeout_timer)
