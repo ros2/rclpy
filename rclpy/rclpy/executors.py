@@ -606,7 +606,9 @@ class Executor(ContextManager['Executor']):
 
         :param max_duration_sec: Maximum number of seconds to spend executing callbacks. If
             the limit is reached, the remaining collected work is left for the next spin call.
-            ``0`` means there is no limit, all of the collected work is executed.
+            ``0`` means there is no limit, all of the collected work is executed. The time is
+            measured with a steady clock, like ``rclcpp``, so it is not affected by
+            ``use_sim_time``. A paused simulation clock cannot make the limit unreachable.
         :raises ValueError: if ``max_duration_sec`` is negative.
         """
         if max_duration_sec < 0:
@@ -615,9 +617,13 @@ class Executor(ContextManager['Executor']):
         # Mark executor as spinning to prevent concurrent spins
         self._enter_spin()
         try:
+            # Steady time on purpose, see the docstring
             start_time = time.monotonic()
             # A timeout of zero makes the generator yield only the work that is ready now and
             # then raise TimeoutException, instead of waiting for more work.
+            # This call only creates the generator and runs none of its code. The
+            # TimeoutException, ShutdownException and ConditionReachedException it can raise
+            # all come from the first iteration of the loop below, inside the try block.
             callbacks = self._wait_for_ready_callbacks(timeout_sec=0)
             try:
                 for handler, _, _ in callbacks:
