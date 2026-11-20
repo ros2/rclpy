@@ -594,6 +594,55 @@ class Executor(ContextManager['Executor']):
         """
         raise NotImplementedError()
 
+    def spin_some(self, max_duration_sec: float = 0.0) -> None:
+        """
+        Execute the callbacks that are ready now, without waiting for new work.
+
+        This is the equivalent of ``rclcpp::Executor::spin_some()``. The work that is ready is
+        collected once, and then executed in the calling thread. Work that becomes ready while
+        these callbacks run is not collected, it is left for the next spin call.
+
+        This method should not be called from multiple threads.
+
+        :param max_duration_sec: Maximum number of seconds to spend executing callbacks. If
+            the limit is reached, the remaining collected work is left for the next spin call.
+            ``0`` means there is no limit, all of the collected work is executed. The time is
+            measured with a steady clock, like ``rclcpp``, so it is not affected by
+            ``use_sim_time``. A paused simulation clock cannot make the limit unreachable.
+        :raises ValueError: if ``max_duration_sec`` is negative.
+        """
+        if max_duration_sec < 0:
+            raise ValueError('max_duration_sec must be greater than or equal to zero')
+
+        # Mark executor as spinning to prevent concurrent spins
+        self._enter_spin()
+        try:
+            # Steady time on purpose, see the docstring
+            start_time = time.monotonic()
+            # A timeout of zero makes the generator yield only the work that is ready now and
+            # then raise TimeoutException, instead of waiting for more work.
+            # This call only creates the generator and runs none of its code. The
+            # TimeoutException, ShutdownException and ConditionReachedException it can raise
+            # all come from the first iteration of the loop below, inside the try block.
+            callbacks = self._wait_for_ready_callbacks(timeout_sec=0)
+            try:
+                for handler, _, _ in callbacks:
+                    handler()
+                    exception = handler.exception()
+                    if exception is not None:
+                        raise exception
+                    if (
+                        max_duration_sec > 0 and
+                        time.monotonic() - start_time >= max_duration_sec
+                    ):
+                        break
+            except (ShutdownException, TimeoutException, ConditionReachedException):
+                pass
+            finally:
+                callbacks.close()
+        finally:
+            self._exit_spin()
+
     def _spin_once_impl(
         self,
         timeout_sec: Optional[Union[float, TimeoutObject]] = None,
