@@ -923,6 +923,16 @@ void define_events_executor(py::object module)
       exec.spin_until_future_complete(future, timeout_sec, true);
       },
       py::arg("future"), py::arg("timeout_sec") = py::none())
+  .def(
+      "spin_some",
+    [](EventsExecutor &, double) {
+      // Defined so that calls get a clear error instead of an AttributeError, since the
+      // Python wrapper presents this class as an rclpy.executors.Executor.
+      PyErr_SetString(
+        PyExc_NotImplementedError, "spin_some() is not supported by the EventsExecutor yet");
+      throw py::error_already_set();
+      },
+      py::arg("max_duration_sec") = 0.0)
   .def("__enter__", &EventsExecutor::enter)
   .def("__exit__", &EventsExecutor::exit);
 }
