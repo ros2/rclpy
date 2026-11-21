@@ -27,6 +27,7 @@ import rclpy.experimental
 import rclpy.node
 import rclpy.parameter
 import rclpy.qos
+from rclpy.subscription import MessageInfo
 import rclpy.time
 import rclpy.timer
 from rclpy.type_support import FeedbackMessage
@@ -65,18 +66,31 @@ def _get_pub_sub_qos(transient_local: bool) -> rclpy.qos.QoSProfile:
 class SubTestNode(rclpy.node.Node):
     """Node to test subscriptions and subscription-related events."""
 
-    def __init__(self, *, transient_local: bool = False, use_async_handler: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        transient_local: bool = False,
+        use_async_handler: bool = False,
+        use_message_info: bool = False,
+    ) -> None:
         super().__init__('test_sub_node')
         self._new_pub_future: typing.Optional[
             rclpy.Future[rclpy.event_handler.QoSSubscriptionMatchedInfo]
         ] = None
         self._received_future: typing.Optional[rclpy.Future[test_msgs.msg.BasicTypes]] = None
+        self.last_message_info: typing.Optional[MessageInfo] = None
+        if use_message_info:
+            handler: typing.Callable[..., typing.Any] = self._handle_sub_with_info
+        elif use_async_handler:
+            handler = self._async_handle_sub
+        else:
+            handler = self._handle_sub
         self._sub = self.create_subscription(
             test_msgs.msg.BasicTypes,
             # This node seems to get stale discovery data and then complain about QoS
             # changes if we reuse the same topic name.
             'test_topic' + ('_transient_local' if transient_local else ''),
-            self._async_handle_sub if use_async_handler else self._handle_sub,
+            handler,
             _get_pub_sub_qos(transient_local),
             event_callbacks=rclpy.event_handler.SubscriptionEventCallbacks(
                 matched=self._handle_matched_sub
@@ -105,6 +119,10 @@ class SubTestNode(rclpy.node.Node):
     async def _async_handle_sub(self, msg: test_msgs.msg.BasicTypes) -> None:
         # Don't bother to actually delay at all for this test
         return self._handle_sub(msg)
+
+    def _handle_sub_with_info(self, msg: test_msgs.msg.BasicTypes, info: MessageInfo) -> None:
+        self.last_message_info = info
+        self._handle_sub(msg)
 
     def _handle_matched_sub(self, info: rclpy.event_handler.QoSSubscriptionMatchedInfo) -> None:
         """Handle a new publisher being matched to our subscription."""
@@ -576,6 +594,22 @@ class TestEventsExecutor(unittest.TestCase):
         self.executor.add_node(pub_node)
         pub_node.publish(0.0)
         self._check_message_future(received_future, 0.0)
+
+    def test_sub_with_message_info(self) -> None:
+        sub_node = SubTestNode(use_message_info=True)
+        received_future = sub_node.expect_message()
+        self.executor.add_node(sub_node)
+        self._expect_future_not_done(received_future)
+
+        pub_node = PubTestNode()
+        self.executor.add_node(pub_node)
+        pub_node.publish(1.5)
+        self._check_message_future(received_future, 1.5)
+        info = sub_node.last_message_info
+        assert info is not None
+        self.assertIn('source_timestamp', info)
+        self.assertIn('received_timestamp', info)
+        self.assertNotEqual(0, info['source_timestamp'])
 
     def test_pub_sub_multi_message(self) -> None:
         # Creates a transient local publisher and queues multiple messages on it.  Then
