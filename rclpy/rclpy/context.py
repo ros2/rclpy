@@ -159,6 +159,10 @@ class Context(ContextManager['Context']):
 
         if self.__context:
             self.__context.shutdown()
+
+    def _after_cleanup(self) -> None:
+        # Must run without holding self._lock: the shutdown callbacks (e.g. shutting down the
+        # global executor) wait for spinning threads, and spinning calls ok(), which takes it.
         self._call_on_shutdown_callbacks()
         self._logging_fini()
 
@@ -166,16 +170,21 @@ class Context(ContextManager['Context']):
         """Shutdown this context."""
         if self.__context is None:
             raise RuntimeError('Context must be initialized before it can be shutdown')
-        with self.__context, self._lock:
-            self._cleanup()
+        with self.__context:
+            with self._lock:
+                self._cleanup()
+            self._after_cleanup()
 
     def try_shutdown(self) -> None:
         """Shutdown this context, if not already shutdown."""
         if self.__context is None:
             return
-        with self.__context, self._lock:
-            if self.__context.ok():
+        with self.__context:
+            with self._lock:
+                if not self.__context.ok():
+                    return
                 self._cleanup()
+            self._after_cleanup()
 
     def _remove_callback(self, weak_method: 'weakref.WeakMethod[MethodType]') -> None:
         self._callbacks.remove(weak_method)
