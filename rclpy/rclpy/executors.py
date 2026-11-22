@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from functools import partial
 import inspect
 import os
+import sys
 import threading
 import time
 import traceback
@@ -835,13 +836,26 @@ class Executor(ContextManager['Executor']):
             )
         return task
 
-    @staticmethod
-    def _log_callback_exception(entity: 'Entity', node: 'Node') -> None:
-        """Log the exception currently being handled as raised by the callback of an entity."""
+    def _log_callback_exception(self, entity: 'Entity', node: 'Node') -> None:
+        """
+        Log the exception currently being handled as raised by the callback of an entity.
+
+        The severities match the EventsExecutor: the exception at FATAL, then the traceback at
+        WARN. Nothing is logged while the context or this executor is shutting down (e.g. on
+        Ctrl-C), since callbacks are expected to fail then and the exception still propagates.
+        """
         try:
-            node.get_logger().error(
-                f'Exception in the callback of {type(entity).__name__}:\n'
-                f'{traceback.format_exc()}')
+            exc = sys.exc_info()[1]
+            if (
+                isinstance(exc, (ShutdownException, ExternalShutdownException)) or
+                self._is_shutdown or
+                not self._context.ok()
+            ):
+                return
+            logger = node.get_logger()
+            logger.fatal(f"Exception in '{type(entity).__name__}' callback: {exc}")
+            trace = ''.join(traceback.format_tb(exc.__traceback__ if exc else None))
+            logger.warning(f'Error occurred at:\n{trace}')
         except Exception:
             # Never let a logging failure hide the original exception
             pass
