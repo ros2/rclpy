@@ -14,12 +14,16 @@
 
 import threading
 import time
+from unittest import mock
 
 import pytest
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.action import ActionServer
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.exceptions import InvalidHandle
+from rclpy.node import Node
+from rclpy.waitable import Waitable
 from test_msgs.action import Fibonacci
 from test_msgs.msg import BasicTypes
 from test_msgs.srv import BasicTypes as BasicTypesSrv
@@ -302,5 +306,68 @@ def test_destroy_node_destroys_action_client_and_server() -> None:
         # Destroying them again after the node is gone is harmless
         action_client.destroy()
         action_server.destroy()
+    finally:
+        rclpy.shutdown(context=context)
+
+
+class UserWaitable(Waitable[None]):
+    """A user Waitable whose destroy() removes it from the node, like many applications do."""
+
+    def __init__(self, node: Node) -> None:
+        super().__init__(ReentrantCallbackGroup())
+        self.node = node
+        self.destroyed = False
+
+    def destroy(self) -> None:
+        self.destroyed = True
+        self.node.remove_waitable(self)
+
+
+def test_destroy_node_leaves_user_waitables_alone() -> None:
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node('test_destroy_node_leaves_user_waitables_alone', context=context)
+        waitable = UserWaitable(node)
+        node.add_waitable(waitable)
+
+        node.destroy_node()
+
+        # Not destroyed or removed by destroy_node(), so the application can still do it
+        assert not waitable.destroyed
+        assert waitable in node.waitables
+        waitable.destroy()
+        assert waitable not in node.waitables
+    finally:
+        rclpy.shutdown(context=context)
+
+
+def test_destroy_node_continues_when_action_destroy_fails() -> None:
+    context = rclpy.context.Context()
+    rclpy.init(context=context)
+
+    try:
+        node = rclpy.create_node(
+            'test_destroy_node_continues_when_action_destroy_fails', context=context)
+        action_client = ActionClient(node, Fibonacci, 'fibonacci')
+        action_server = ActionServer(
+            node, Fibonacci, 'fibonacci', lambda goal_handle: Fibonacci.Result())
+
+        with mock.patch.object(
+            action_client, 'destroy', side_effect=RuntimeError('Expected destroy error')
+        ):
+            # The error is logged, and does not stop the rest of the node from being destroyed
+            node.destroy_node()
+
+        with pytest.raises(InvalidHandle):
+            with action_server._handle:
+                pass
+        with pytest.raises(InvalidHandle):
+            with node.handle:
+                pass
+
+        # Clean up the action client that failed to be destroyed
+        action_client.destroy()
     finally:
         rclpy.shutdown(context=context)
