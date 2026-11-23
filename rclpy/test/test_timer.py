@@ -372,3 +372,33 @@ def test_timer_direct_destroy(test_node: Node) -> None:
     assert tmr not in list(test_node.timers)
     tmr.destroy()
     assert not test_node.destroy_timer(tmr)
+
+
+def test_create_wall_timer(test_node: Node) -> None:
+    # Regression test for ros2/rclpy#1490: rclpy had no equivalent of
+    # rclcpp::Node::create_wall_timer, so periodic work could not opt out of
+    # ROS/system time and stalled on backward clock jumps.
+    callbacks: List[int] = []
+    timer = test_node.create_wall_timer(0.05, lambda: callbacks.append(len(callbacks)))
+    try:
+        assert timer.clock.clock_type == ClockType.STEADY_TIME
+        assert timer in list(test_node.timers)
+
+        executor = SingleThreadedExecutor(context=test_node.context)
+        try:
+            executor.add_node(test_node)
+            begin_time = time.time()
+            while time.time() - begin_time < 1.0 and len(callbacks) < 2:
+                executor.spin_once(timeout_sec=0.05)
+            assert len(callbacks) >= 2
+        finally:
+            executor.shutdown()
+    finally:
+        test_node.destroy_timer(timer)
+
+    # A plain create_timer still follows the node's ROS_TIME clock.
+    ros_timer = test_node.create_timer(1, lambda: None)
+    try:
+        assert ros_timer.clock.clock_type == ClockType.ROS_TIME
+    finally:
+        test_node.destroy_timer(ros_timer)

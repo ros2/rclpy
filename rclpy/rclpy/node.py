@@ -2628,7 +2628,11 @@ class Node(BaseNode):
         :param callback: A user-defined callback function that is called when the timer expires.
         :param callback_group: The callback group for the timer. If ``None``, then the
             default callback group for the node is used.
-        :param clock: The clock which the timer gets time from.
+        :param clock: The clock which the timer gets time from. Defaults to the node's
+            ``ROS_TIME`` clock, which falls back to system time when no ``/clock``
+            override is active. A backward jump in system time (``date -s``, NTP step)
+            delays the next tick by the jump amount. For periodic work that must keep
+            ticking through such jumps, use :meth:`create_wall_timer` instead.
         :param autostart: Whether to automatically start the timer after creation; defaults to
             ``True``.
         :param timer_class: The class used to construct the timer. It must be
@@ -2652,6 +2656,48 @@ class Node(BaseNode):
         self._timers.append(timer)
         self._wake_executor()
         return timer
+
+    def create_wall_timer(
+        self,
+        timer_period_sec: float,
+        callback: TimerCallbackUnion | None,
+        callback_group: Optional[CallbackGroup] = None,
+        autostart: bool = True,
+        *,
+        timer_class: Type[Timer] = Timer,
+    ) -> Timer:
+        """
+        Create a new timer driven by the steady clock.
+
+        Equivalent to ``rclcpp::Node::create_wall_timer``: the period is measured
+        against ``ClockType.STEADY_TIME``, so the timer is unaffected by changes to
+        the system or ROS clock (e.g. ``date -s``, NTP steps, ``/clock`` jumps).
+        Use this for periodic work that must keep ticking through clock jumps;
+        use :meth:`create_timer` when the timer should follow ROS/sim time.
+
+        If autostart is ``True`` (the default), the timer will be started and every
+        ``timer_period_sec`` number of seconds the provided callback function will be called.
+        If autostart is ``False``, the timer will be created but not started; it can then be
+        started by calling ``reset()`` on the timer object.
+
+        :param timer_period_sec: The period (in seconds) of the timer.
+        :param callback: A user-defined callback function that is called when the timer expires.
+        :param callback_group: The callback group for the timer. If ``None``, then the
+            default callback group for the node is used.
+        :param autostart: Whether to automatically start the timer after creation; defaults to
+            ``True``.
+        :param timer_class: The class used to construct the timer. It must be
+            :class:`.Timer` or a subclass of it.
+        :return: The new timer.
+        """
+        return self.create_timer(
+            timer_period_sec,
+            callback,
+            callback_group=callback_group,
+            clock=Clock(clock_type=ClockType.STEADY_TIME),
+            autostart=autostart,
+            timer_class=timer_class,
+        )
 
     def create_guard_condition(
         self,
