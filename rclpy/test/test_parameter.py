@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from array import array
+import math
 import os
 from tempfile import NamedTemporaryFile
 import unittest
@@ -473,6 +474,62 @@ class TestParameter(unittest.TestCase):
             if os.path.exists(f.name):
                 os.unlink(f.name)
         self.assertRaises(FileNotFoundError, parameter_dict_from_yaml_file, 'unknown_file')
+
+
+    def test_parameter_dict_from_yaml_file_nan_inf(self) -> None:
+        # Regression test for ros2/rclpy#1769: `.nan`/`.inf` doubles (and
+        # doubles in scientific notation) must stay doubles when loaded
+        # from a parameter file instead of coming back as strings.
+        yaml_string = """
+            /param_test_target:
+                ros__parameters:
+                    a_nan_param: .nan
+                    a_inf_param: .inf
+                    a_neg_inf_param: -.inf
+                    a_finite_param: 3.14
+                    a_sci_param: 1.0e-06
+                    a_nan_array: [.nan, 1.5]
+                    a_string_param: hello
+                    a_quoted_number: '3.14'
+            """
+        try:
+            with NamedTemporaryFile(mode='w', delete=False) as f:
+                f.write(yaml_string)
+                f.flush()
+                f.close()
+                parameter_dict = parameter_dict_from_yaml_file(f.name, False)
+        finally:
+            if os.path.exists(f.name):
+                os.unlink(f.name)
+
+        nan_param = parameter_dict['a_nan_param'].value
+        self.assertEqual(nan_param.type, ParameterType.PARAMETER_DOUBLE)
+        self.assertTrue(math.isnan(nan_param.double_value))
+        inf_param = parameter_dict['a_inf_param'].value
+        self.assertEqual(inf_param.type, ParameterType.PARAMETER_DOUBLE)
+        self.assertTrue(math.isinf(inf_param.double_value))
+        self.assertGreater(inf_param.double_value, 0)
+        neg_inf_param = parameter_dict['a_neg_inf_param'].value
+        self.assertEqual(neg_inf_param.type, ParameterType.PARAMETER_DOUBLE)
+        self.assertTrue(math.isinf(neg_inf_param.double_value))
+        self.assertLess(neg_inf_param.double_value, 0)
+        self.assertEqual(
+            parameter_dict['a_finite_param'],
+            Parameter('a_finite_param', Parameter.Type.DOUBLE, 3.14).to_parameter_msg())
+        self.assertEqual(
+            parameter_dict['a_sci_param'],
+            Parameter('a_sci_param', Parameter.Type.DOUBLE, 1e-06).to_parameter_msg())
+        nan_array_param = parameter_dict['a_nan_array'].value
+        self.assertEqual(nan_array_param.type, ParameterType.PARAMETER_DOUBLE_ARRAY)
+        self.assertTrue(math.isnan(nan_array_param.double_array_value[0]))
+        self.assertEqual(nan_array_param.double_array_value[1], 1.5)
+        self.assertEqual(
+            parameter_dict['a_string_param'],
+            Parameter('a_string_param', Parameter.Type.STRING, 'hello').to_parameter_msg())
+        # A quoted number keeps its current typing (parsed as a double).
+        self.assertEqual(
+            parameter_dict['a_quoted_number'],
+            Parameter('a_quoted_number', Parameter.Type.DOUBLE, 3.14).to_parameter_msg())
 
 
 if __name__ == '__main__':
