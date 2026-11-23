@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
+
 import pytest
 import rclpy
 from rclpy import signals
 from rclpy.exceptions import NotInitializedException
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
 from rclpy.signals import SignalHandlerOptions
 
 
@@ -115,3 +119,26 @@ def test_managed_init() -> None:
     with rclpy.init(domain_id=123) as init:
         assert init.context.get_domain_id() == 123
         assert init.context.ok()
+
+
+def test_shutdown_while_spinning_in_another_thread() -> None:
+    # Shutting down shuts down the global executor, which waits for the spinning thread to exit.
+    # That thread keeps calling Context.ok(), so shutdown must not hold the context lock meanwhile.
+    def spin(node: Node) -> None:
+        try:
+            rclpy.spin(node)
+        except ExternalShutdownException:
+            pass  # Raised by spin() once the context is shut down.
+
+    for _ in range(10):
+        rclpy.init()
+        node = rclpy.create_node('shutdown_while_spinning')
+        spin_thread = threading.Thread(target=spin, args=(node,), daemon=True)
+        spin_thread.start()
+        # Daemon threads so a deadlock fails the test instead of hanging it.
+        shutdown_thread = threading.Thread(target=rclpy.shutdown, daemon=True)
+        shutdown_thread.start()
+        shutdown_thread.join(timeout=10.0)
+        assert not shutdown_thread.is_alive(), 'rclpy.shutdown() deadlocked'
+        spin_thread.join(timeout=10.0)
+        assert not spin_thread.is_alive()
