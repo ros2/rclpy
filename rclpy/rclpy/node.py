@@ -346,8 +346,10 @@ class BaseNode(ABC):
         :func:`add_on_set_parameters_callback` and :func:`add_post_set_parameters_callback`
         to be called.
 
-        The name and type in the given descriptor is ignored, and should be specified using
-        the name argument to this function and the default value's type instead.
+        The name and type in the given descriptor are ignored when a default value is
+        given, and should be specified using the name argument to this function and the
+        default value's type instead. When no default value is given, the type in the
+        descriptor is used, so the parameter can be supplied by a runtime override.
 
         :param name: Fully-qualified name of the parameter, including its namespace.
         :param value: Value of the parameter to declare.
@@ -380,8 +382,10 @@ class BaseNode(ABC):
 
         The tuples in the given parameter list shall contain the name for each parameter,
         optionally providing a value and a descriptor.
-        The name and type in the given descriptors are ignored, and should be specified using
-        the name argument to this function and the default value's type instead.
+        The name and type in the given descriptors are ignored when a default value is
+        given, and should be specified using the name argument to this function and the
+        default value's type instead. When no default value is given, the type in the
+        descriptor is used, so the parameter can be supplied by a runtime override.
         For each entry in the list, a parameter with a name of "namespace.name"
         will be declared.
         The resulting value for each declared parameter will be returned, considering
@@ -475,11 +479,18 @@ class BaseNode(ABC):
             else:
                 value = second_arg
                 if not descriptor.dynamic_typing:
-                    # infer type from default value
-                    if isinstance(value, ParameterValue):
-                        descriptor.type = value.type
-                    else:
-                        descriptor.type = Parameter.Type.from_parameter_value(value).value
+                    # Infer the type from the default value, unless the descriptor
+                    # already carries an explicit static type and no default value
+                    # was given. In that case keep the descriptor type so a runtime
+                    # override can supply the value, matching rclcpp; without an
+                    # override the parameter stays uninitialized and get_parameter()
+                    # raises ParameterUninitializedException.
+                    if value is not None or descriptor.type == ParameterType.PARAMETER_NOT_SET:
+                        # infer type from default value
+                        if isinstance(value, ParameterValue):
+                            descriptor.type = value.type
+                        else:
+                            descriptor.type = Parameter.Type.from_parameter_value(value).value
                     if descriptor.type == ParameterType.PARAMETER_NOT_SET:
                         raise ValueError(
                             'Cannot declare a statically typed parameter with default value '
