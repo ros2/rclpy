@@ -1087,14 +1087,36 @@ class TestNode(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.node.declare_parameter(
-                'static_typing_wo_default_value',
-                descriptor=ParameterDescriptor(type=ParameterType.PARAMETER_STRING))
-
-        with self.assertRaises(ValueError):
-            self.node.declare_parameter(
                 'dynamic_typing_and_static_type',
                 Parameter.Type.DOUBLE,
                 descriptor=ParameterDescriptor(dynamic_typing=True))
+
+    def test_declare_parameter_static_type_without_default(self) -> None:
+        # Regression test for ros2/rclpy#1460: declaring a statically typed
+        # parameter without a default value must not raise. A runtime override
+        # supplies the value, matching rclcpp.
+        result = self.node.declare_parameter(
+            'initial_bar',
+            descriptor=ParameterDescriptor(type=ParameterType.PARAMETER_STRING))
+        self.assertEqual(result.value, 'init_param')
+        self.assertEqual(result.type_, Parameter.Type.STRING)
+        self.assertEqual(self.node.get_parameter('initial_bar').value, 'init_param')
+
+        # Without an override the parameter stays uninitialized: declaring
+        # succeeds, but reading it raises, matching rclcpp.
+        result = self.node.declare_parameter(
+            'uninit_string',
+            descriptor=ParameterDescriptor(type=ParameterType.PARAMETER_STRING))
+        self.assertEqual(result.type_, Parameter.Type.NOT_SET)
+        self.assertEqual(
+            self.node.describe_parameter('uninit_string').type,
+            ParameterType.PARAMETER_STRING)
+        with pytest.raises(ParameterUninitializedException):
+            self.node.get_parameter('uninit_string')
+        self.assertTrue(
+            self.node.set_parameters(
+                [Parameter('uninit_string', value='now set')])[0].successful)
+        self.assertEqual(self.node.get_parameter('uninit_string').value, 'now set')
 
     def test_declare_parameters(self) -> None:
         parameters: List[
