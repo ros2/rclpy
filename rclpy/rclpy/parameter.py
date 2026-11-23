@@ -542,6 +542,33 @@ def _get_absolute_node_name(node_name: str) -> Optional[str]:
     return node_name
 
 
+def _get_parameter_value_from_yaml_value(param_value: Any) -> ParameterValue:
+    """
+    Build a ParameterValue from a value already parsed from YAML.
+
+    Most values keep the existing ``get_parameter_value(str(...))`` path so
+    their current typing is unchanged. Floats do not survive a ``str()``
+    round-trip: ``str(float('nan'))`` is ``'nan'`` and ``str(1e-06)`` is
+    ``'1e-06'``, and YAML reads both back as strings, so a ``.nan`` double
+    loaded from a parameter file came back as a string. Floats (and
+    all-float arrays, which may contain NaN/Inf) are converted directly.
+    """
+    if isinstance(param_value, float):
+        value = ParameterValue()
+        value.type = ParameterType.PARAMETER_DOUBLE
+        value.double_value = param_value
+        return value
+    if (
+        isinstance(param_value, list) and param_value and
+        all(isinstance(v, float) for v in param_value)
+    ):
+        value = ParameterValue()
+        value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
+        value.double_array_value = param_value
+        return value
+    return get_parameter_value(str(param_value))
+
+
 def _unpack_parameter_dict(namespace: str,
                            parameter_dict: Dict[str, ParameterMsg]) -> Dict[str, ParameterMsg]:
     """
@@ -562,6 +589,6 @@ def _unpack_parameter_dict(namespace: str,
         else:
             parameter = ParameterMsg()
             parameter.name = full_param_name
-            parameter.value = get_parameter_value(str(param_value))
+            parameter.value = _get_parameter_value_from_yaml_value(param_value)
             parameters[full_param_name] = parameter
     return parameters
