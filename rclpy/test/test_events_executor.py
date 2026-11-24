@@ -25,7 +25,6 @@ import rclpy.executors
 import rclpy.experimental
 import rclpy.node
 import rclpy.qos
-from rclpy.subscription import MessageInfo
 import rclpy.time
 import rclpy.timer
 import rosgraph_msgs.msg
@@ -56,22 +55,15 @@ class SubTestNode(rclpy.node.Node):
         use_message_info: bool = False,
     ) -> None:
         super().__init__('test_sub_node')
-<<<<<<< HEAD
         self._new_pub_future: typing.Optional[rclpy.Future] = None
         self._received_future: typing.Optional[rclpy.Future] = None
-=======
-        self._new_pub_future: typing.Optional[
-            rclpy.Future[rclpy.event_handler.QoSSubscriptionMatchedInfo]
-        ] = None
-        self._received_future: typing.Optional[rclpy.Future[test_msgs.msg.BasicTypes]] = None
-        self.last_message_info: typing.Optional[MessageInfo] = None
+        self.last_message_info: typing.Optional[typing.Dict[str, typing.Any]] = None
         if use_message_info:
             handler: typing.Callable[..., typing.Any] = self._handle_sub_with_info
         elif use_async_handler:
             handler = self._async_handle_sub
         else:
             handler = self._handle_sub
->>>>>>> 70f8721 (Fix EventsExecutor dispatch of subscription callbacks that take MessageInfo (#1777))
         self._sub = self.create_subscription(
             test_msgs.msg.BasicTypes,
             # This node seems to get stale discovery data and then complain about QoS
@@ -107,7 +99,9 @@ class SubTestNode(rclpy.node.Node):
         # Don't bother to actually delay at all for this test
         return self._handle_sub(msg)
 
-    def _handle_sub_with_info(self, msg: test_msgs.msg.BasicTypes, info: MessageInfo) -> None:
+    def _handle_sub_with_info(
+        self, msg: test_msgs.msg.BasicTypes, info: typing.Dict[str, typing.Any]
+    ) -> None:
         self.last_message_info = info
         self._handle_sub(msg)
 
