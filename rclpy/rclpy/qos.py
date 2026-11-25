@@ -81,7 +81,7 @@ class QoSProfile:
     ]
 
     @overload
-    def __init__(self, history: 'QoSProfile') -> None: ...
+    def __init__(self, other: 'QoSProfile', /) -> None: ...
 
     @overload
     def __init__(
