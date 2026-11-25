@@ -338,7 +338,7 @@ void EventsExecutor::HandleSubscriptionReady(py::handle subscription, size_t num
         if (callback_type == message_only) {
           result = callback(py::cast<py::tuple>(msg_info)[0]);
         } else {
-          result = callback(msg_info);
+          result = callback(*msg_info);
         }
       } catch (const py::error_already_set & e) {
         HandleCallbackExceptionInNodeEntity(e, subscription, "subscriptions");
