@@ -42,6 +42,15 @@ class NumberOfEntities:
             setattr(result, attr, left + right)
         return result
 
+    def __iadd__(self, other):
+        self.num_subscriptions += other.num_subscriptions
+        self.num_guard_conditions += other.num_guard_conditions
+        self.num_timers += other.num_timers
+        self.num_clients += other.num_clients
+        self.num_services += other.num_services
+        self.num_events += other.num_events
+        return self
+
     def __repr__(self):
         return '<{0}({1}, {2}, {3}, {4}, {5}, {6})>'.format(
             self.__class__.__name__, self.num_subscriptions,
