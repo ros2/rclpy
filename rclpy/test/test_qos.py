@@ -198,23 +198,6 @@ class TestQosProfile(unittest.TestCase):
         self.assertEqual(source.liveliness_lease_duration, Duration(nanoseconds=12))
         self.assertTrue(source.avoid_ros_namespace_conventions)
 
-    def test_copy_constructor(self) -> None:
-        source = QoSProfile(
-            history=QoSHistoryPolicy.KEEP_LAST,
-            depth=7,
-            reliability=QoSReliabilityPolicy.BEST_EFFORT,
-            deadline=Duration(seconds=2),
-        )
-        copied = QoSProfile(source)
-        self._assert_independent_copy(source, copied)
-
-        copied.depth = 20
-        self.assertEqual(source.depth, 7)
-        self.assertEqual(copied.depth, 20)
-
-        with self.assertRaises(TypeError):
-            QoSProfile(source, depth=10)  # type: ignore[call-overload]
-
     def test_stdlib_copy_and_deepcopy(self) -> None:
         source = QoSProfile(
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -226,6 +209,10 @@ class TestQosProfile(unittest.TestCase):
 
         self._assert_independent_copy(source, shallow)
         self._assert_independent_copy(source, deep)
+
+        copied_pair = copy.deepcopy([source, source])
+        self.assertIs(copied_pair[0], copied_pair[1])
+        self.assertIsNot(copied_pair[0], source)
 
     def test_copy_preset_profiles(self) -> None:
         for preset in QoSPresetProfiles:

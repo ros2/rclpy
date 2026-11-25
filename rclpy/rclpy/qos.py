@@ -14,11 +14,11 @@
 
 from __future__ import annotations
 
+import copy
 from enum import Enum, IntEnum
 from typing import Annotated
 from typing import Any
 from typing import Optional
-from typing import overload
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
@@ -62,7 +62,12 @@ class InvalidQoSProfileException(Exception):
 
 
 class QoSProfile:
-    """Define Quality of Service policies."""
+    """
+    Define Quality of Service policies.
+
+    Instances can be copied using :meth:`copy`, ``copy.copy(profile)``, or
+    ``copy.deepcopy(profile)``.
+    """
 
     # default QoS profile not exposed to the user to encourage them to think about QoS settings
     __qos_profile_default_dict = \
@@ -80,54 +85,16 @@ class QoSProfile:
         '_avoid_ros_namespace_conventions',
     ]
 
-    @overload
-    def __init__(self, other: 'QoSProfile', /) -> None: ...
-
-    @overload
-    def __init__(
-        self,
-        history: Union['QoSHistoryPolicy', int, None] = None,
-        depth: Optional[int] = None,
-        reliability: Union['QoSReliabilityPolicy', int, None] = None,
-        durability: Union['QoSDurabilityPolicy', int, None] = None,
-        lifespan: Optional[Duration] = None,
-        deadline: Optional[Duration] = None,
-        liveliness: Union['QoSLivelinessPolicy', int, None] = None,
-        liveliness_lease_duration: Optional[Duration] = None,
-        avoid_ros_namespace_conventions: Optional[bool] = None,
-    ) -> None: ...
-
-    def __init__(
-        self,
-        history: Union['QoSHistoryPolicy', 'QoSProfile', int, None] = None,
-        depth: Optional[int] = None,
-        reliability: Union['QoSReliabilityPolicy', int, None] = None,
-        durability: Union['QoSDurabilityPolicy', int, None] = None,
-        lifespan: Optional[Duration] = None,
-        deadline: Optional[Duration] = None,
-        liveliness: Union['QoSLivelinessPolicy', int, None] = None,
-        liveliness_lease_duration: Optional[Duration] = None,
-        avoid_ros_namespace_conventions: Optional[bool] = None,
-    ) -> None:
-        if isinstance(history, QoSProfile):
-            if any(
-                arg is not None
-                for arg in (
-                    depth,
-                    reliability,
-                    durability,
-                    lifespan,
-                    deadline,
-                    liveliness,
-                    liveliness_lease_duration,
-                    avoid_ros_namespace_conventions,
-                )
-            ):
-                raise TypeError(
-                    'Cannot specify additional QoS arguments when copying an existing QoSProfile.'
-                )
-            self._copy_from(history)
-            return
+    def __init__(self,
+                 history: Union['QoSHistoryPolicy', int, None] = None,
+                 depth: Optional[int] = None,
+                 reliability: Union['QoSReliabilityPolicy', int, None] = None,
+                 durability: Union['QoSDurabilityPolicy', int, None] = None,
+                 lifespan: Optional[Duration] = None,
+                 deadline: Optional[Duration] = None,
+                 liveliness: Union['QoSLivelinessPolicy', int, None] = None,
+                 liveliness_lease_duration: Optional[Duration] = None,
+                 avoid_ros_namespace_conventions: Optional[bool] = None) -> None:
 
         if history is None:
             if depth is None:
@@ -302,36 +269,39 @@ class QoSProfile:
         assert isinstance(value, bool)
         self._avoid_ros_namespace_conventions = value
 
-    def _copy_from(self, other: 'QoSProfile') -> None:
-        """Copy all policy fields from another QoSProfile instance."""
-        self._history = other._history
-        self._depth = other._depth
-        self._reliability = other._reliability
-        self._durability = other._durability
-        # Allocate fresh Duration objects because _duration_handle is a C++ pybind11 wrapper.
-        self._lifespan = Duration(nanoseconds=other._lifespan.nanoseconds)
-        self._deadline = Duration(nanoseconds=other._deadline.nanoseconds)
-        self._liveliness = other._liveliness
-        self._liveliness_lease_duration = Duration(
-            nanoseconds=other._liveliness_lease_duration.nanoseconds
-        )
-        self._avoid_ros_namespace_conventions = other._avoid_ros_namespace_conventions
-
     def copy(self) -> 'QoSProfile':
         """
         Return a copy of this QoSProfile.
 
+        Equivalent to ``copy.copy(self)``. ``copy.deepcopy(self)`` is also supported.
+
         :returns: A new QoSProfile instance with the same policy values.
         """
-        return QoSProfile(self)
+        return copy.copy(self)
 
     def __copy__(self) -> 'QoSProfile':
-        """Return a shallow copy of this QoSProfile."""
-        return self.copy()
+        """Return a copy of this QoSProfile."""
+        copied = type(self).__new__(type(self))
+        copied._history = self._history
+        copied._depth = self._depth
+        copied._reliability = self._reliability
+        copied._durability = self._durability
+        # Allocate fresh Duration objects because _duration_handle is a C++ pybind11 wrapper.
+        copied._lifespan = Duration(nanoseconds=self._lifespan.nanoseconds)
+        copied._deadline = Duration(nanoseconds=self._deadline.nanoseconds)
+        copied._liveliness = self._liveliness
+        copied._liveliness_lease_duration = Duration(
+            nanoseconds=self._liveliness_lease_duration.nanoseconds
+        )
+        copied._avoid_ros_namespace_conventions = self._avoid_ros_namespace_conventions
+        return copied
 
     def __deepcopy__(self, memo: Any) -> 'QoSProfile':
         """Return a deep copy of this QoSProfile."""
-        return self.copy()
+        copied = self.__copy__()
+        if memo is not None:
+            memo[id(self)] = copied
+        return copied
 
     def get_c_qos_profile(self) -> _rclpy.rmw_qos_profile_t:
         return _rclpy.rmw_qos_profile_t(
