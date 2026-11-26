@@ -937,19 +937,6 @@ class Node(Destroyable):
     def get_node_names_and_namespaces_with_enclaves(self) -> list[tuple[str, str, str]]:
         """Get the list of nodes discovered by the provided node, with their enclaves."""
 
-    def get_action_client_names_and_types_by_node(self, remote_node_name: str,
-                                                  remote_node_namespace: str) -> list[tuple[str,
-                                                                                      list[str]]]:
-        """Get action client names and types by node."""
-
-    def get_action_server_names_and_types_by_node(self, remote_node_name: str,
-                                                  remote_node_namespace: str) -> list[tuple[str,
-                                                                                      list[str]]]:
-        """Get action server names and types by node."""
-
-    def get_action_names_and_types(self) -> list[tuple[str, list[str]]]:
-        """Get action names and types."""
-
     def get_parameters(self, pyparamter_cls: type[Parameter[Any]]) -> dict[str, Parameter[Any]]:
         """Get a list of parameters for the current node."""
 
