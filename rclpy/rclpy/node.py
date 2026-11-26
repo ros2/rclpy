@@ -359,7 +359,7 @@ class BaseNode(ABC):
         :raises: InvalidParameterValueException if the registered callback rejects the parameter.
         """
         if value is None and descriptor is None:
-            # Temporal patch so we get deprecation warning if only a name is provided.
+            # declare_parameters() raises an error if only a name is provided.
             args: Union[Tuple[str], Tuple[str, ParameterInput, ParameterDescriptor]] = (name, )
         else:
             descriptor = ParameterDescriptor() if descriptor is None else descriptor
