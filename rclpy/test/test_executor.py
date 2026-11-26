@@ -1366,6 +1366,64 @@ class TestExecutor(unittest.TestCase):
                 finally:
                     executor.shutdown()
 
+    def test_spin_preserves_node_membership_on_exit(self) -> None:
+        class StopSpinning(Exception):
+            pass
+
+        executor_types: list[ExecutorTypeLike] = [
+            SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]
+        for cls in executor_types:
+            for node_added_by_caller in (False, True):
+                with self.subTest(cls=cls, node_added_by_caller=node_added_by_caller):
+                    callback_raised = False
+
+                    def stop_spinning() -> None:
+                        nonlocal callback_raised
+                        # Later ticks let MultiThreadedExecutor collect the worker's exception.
+                        if not callback_raised:
+                            callback_raised = True
+                            raise StopSpinning()
+
+                    executor = cls(context=self.context)
+                    timer = self.node.create_timer(0.01, stop_spinning)
+                    try:
+                        if node_added_by_caller:
+                            self.assertTrue(executor.add_node(self.node))
+
+                        with self.assertRaises(StopSpinning):
+                            rclpy.spin(self.node, executor)
+
+                        self.assertEqual(node_added_by_caller, self.node in executor.get_nodes())
+                    finally:
+                        timer.cancel()
+                        if isinstance(executor, MultiThreadedExecutor):
+                            # A follow-up tick may still be queued when spin() raises.
+                            # Drain it before executor.shutdown() destroys the wait guard.
+                            executor._executor.shutdown()
+                        executor.shutdown()
+                        self.node.destroy_timer(timer)
+
+    def test_spin_once_and_spin_until_future_complete_preserve_node_membership(self) -> None:
+        executor_types: list[ExecutorTypeLike] = [
+            SingleThreadedExecutor, MultiThreadedExecutor, EventsExecutor]
+        for cls in executor_types:
+            for node_added_by_caller in (False, True):
+                with self.subTest(cls=cls, node_added_by_caller=node_added_by_caller):
+                    executor = cls(context=self.context)
+                    try:
+                        if node_added_by_caller:
+                            self.assertTrue(executor.add_node(self.node))
+
+                        rclpy.spin_once(self.node, executor=executor, timeout_sec=0)
+                        self.assertEqual(node_added_by_caller, self.node in executor.get_nodes())
+
+                        future: Future[None] = executor.create_future()
+                        rclpy.spin_until_future_complete(
+                            self.node, future, executor, timeout_sec=0.01)
+                        self.assertEqual(node_added_by_caller, self.node in executor.get_nodes())
+                    finally:
+                        executor.shutdown()
+
 
 if __name__ == '__main__':
     unittest.main()
