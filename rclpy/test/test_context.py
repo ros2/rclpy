@@ -78,6 +78,16 @@ def test_context_manager() -> None:
     context.try_shutdown()
 
 
+def test_context_manager_requires_init() -> None:
+    context = Context()
+
+    with pytest.raises(RuntimeError):
+        with context:
+            pass
+
+    assert not context.ok(), 'the context should not have been initialized'
+
+
 def test_shutdown_destroys_all_tracked_nodes() -> None:
     context = Context()
     context.init()
