@@ -23,7 +23,6 @@ import rclpy
 from rclpy.clock import BaseClock, Clock
 from rclpy.clock import JumpHandle
 from rclpy.clock import JumpThreshold
-from rclpy.clock import ROSClock
 from rclpy.clock_type import ClockType
 from rclpy.context import Context
 from rclpy.duration import Duration
@@ -80,11 +79,6 @@ class TestClock(unittest.TestCase):
                 assert clock.clock_type == ClockType.SYSTEM_TIME
                 clock = cls(clock_type=ClockType.ROS_TIME)
                 assert clock.clock_type == ClockType.ROS_TIME
-
-    def test_ros_clock_deprecation(self) -> None:
-        with self.assertWarns(DeprecationWarning):
-            clock = ROSClock()
-        assert clock.clock_type == ClockType.ROS_TIME
 
     def test_clock_now(self) -> None:
         # System time should be roughly equal to time.time()
