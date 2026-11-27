@@ -20,6 +20,7 @@
 #include <rcl/rcl.h>
 #include <rcl/remap.h>
 #include <rcl/types.h>
+#include <rcl/validate_enclave_name.h>
 #include <rcl/validate_topic_name.h>
 #include <rcutils/error_handling.h>
 #include <rmw/error_handling.h>
@@ -120,6 +121,28 @@ get_validation_error_for_node_name(const char * node_name)
   }
 
   const char * validation_message = rmw_node_name_validation_result_string(validation_result);
+
+  return py::make_tuple(validation_message, invalid_index);
+}
+
+py::object
+get_validation_error_for_enclave_name(const char * enclave_name)
+{
+  int validation_result;
+  size_t invalid_index;
+  rcl_ret_t ret = rcl_validate_enclave_name(enclave_name, &validation_result, &invalid_index);
+  if (RCL_RET_BAD_ALLOC == ret) {
+    rcl_reset_error();
+    throw std::bad_alloc();
+  } else if (RCL_RET_OK != ret) {
+    throw RCLError("failed to validate enclave name");
+  }
+
+  if (RCL_ENCLAVE_NAME_VALID == validation_result) {
+    return py::none();
+  }
+
+  const char * validation_message = rcl_enclave_name_validation_result_string(validation_result);
 
   return py::make_tuple(validation_message, invalid_index);
 }
