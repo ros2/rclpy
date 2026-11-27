@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 import unittest
 import uuid
 
+from action_msgs.msg import GoalInfo, GoalStatus
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -45,6 +46,7 @@ TIME_FUDGE = 0.3
 class MockActionServer:
 
     def __init__(self, node: rclpy.node.Node):
+        self.accept_goals = True
         self.goal_srv = node.create_service(
             Fibonacci.Impl.SendGoalService, '/fibonacci/_action/send_goal',
             self.goal_callback)
@@ -64,7 +66,7 @@ class MockActionServer:
     def goal_callback(self, request: Fibonacci.Impl.SendGoalService.Request,
                       response: Fibonacci.Impl.SendGoalService.Response
                       ) -> Fibonacci.Impl.SendGoalService.Response:
-        response.accepted = True
+        response.accepted = self.accept_goals
         return response
 
     def cancel_callback(self, request: Fibonacci.Impl.CancelGoalService.Request,
@@ -82,6 +84,12 @@ class MockActionServer:
         feedback_message = Fibonacci.Impl.FeedbackMessage()
         feedback_message.goal_id = goal_id
         self.feedback_pub.publish(feedback_message)
+
+    def publish_status(self, goal_id: UUID, status: int) -> None:
+        status_message = Fibonacci.Impl.GoalStatusMessage()
+        status_message.status_list.append(
+            GoalStatus(goal_info=GoalInfo(goal_id=goal_id), status=status))
+        self.status_pub.publish(status_message)
 
 
 class TestActionClient(unittest.TestCase):
@@ -114,6 +122,7 @@ class TestActionClient(unittest.TestCase):
 
     def setUp(self) -> None:
         self.feedback = None
+        self.mock_action_server.accept_goals = True
 
     def feedback_callback(self, feedback: FeedbackMessage[Fibonacci.Feedback]) -> None:
         self.feedback = feedback
@@ -313,6 +322,56 @@ class TestActionClient(unittest.TestCase):
 
             # Publish feedback for a non-existent goal ID
             self.mock_action_server.publish_feedback(UUID(uuid=list(uuid.uuid4().bytes)))
+            self.timed_spin(1.0)
+            self.assertEqual(self.feedback, None)
+        finally:
+            ac.destroy()
+
+    def test_send_goal_async_rejected_removes_feedback_callback(self) -> None:
+        ac = ActionClient(self.node, Fibonacci, 'fibonacci')
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+            self.mock_action_server.accept_goals = False
+
+            goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+            future = ac.send_goal_async(
+                Fibonacci.Goal(),
+                feedback_callback=self.feedback_callback,
+                goal_uuid=goal_uuid)
+            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            goal_handle = future.result()
+            assert goal_handle
+            self.assertFalse(goal_handle.accepted)
+
+            # The feedback callback of a rejected goal must not be kept around
+            self.assertNotIn(bytes(goal_uuid.uuid), ac._feedback_callbacks)
+        finally:
+            ac.destroy()
+
+    def test_send_goal_async_terminal_status_removes_feedback_callback(self) -> None:
+        ac = ActionClient(self.node, Fibonacci, 'fibonacci')
+        try:
+            self.assertTrue(ac.wait_for_server(timeout_sec=2.0))
+
+            goal_uuid = UUID(uuid=list(uuid.uuid4().bytes))
+            future = ac.send_goal_async(
+                Fibonacci.Goal(),
+                feedback_callback=self.feedback_callback,
+                goal_uuid=goal_uuid)
+            rclpy.spin_until_future_complete(self.node, future, self.executor)
+            goal_handle = future.result()
+            assert goal_handle
+            self.assertTrue(goal_handle.accepted)
+            self.assertIn(bytes(goal_uuid.uuid), ac._feedback_callbacks)
+
+            # The result is never requested, but the goal reaches a terminal state
+            self.mock_action_server.publish_status(goal_uuid, GoalStatus.STATUS_SUCCEEDED)
+            self.timed_spin(1.0)
+            self.assertEqual(goal_handle.status, GoalStatus.STATUS_SUCCEEDED)
+            self.assertNotIn(bytes(goal_uuid.uuid), ac._feedback_callbacks)
+
+            # Feedback published afterwards is not delivered
+            self.mock_action_server.publish_feedback(goal_uuid)
             self.timed_spin(1.0)
             self.assertEqual(self.feedback, None)
         finally:
