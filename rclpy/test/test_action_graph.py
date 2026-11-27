@@ -19,17 +19,11 @@ from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 import unittest
-import warnings
 
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.action import ActionServer
-# NOTE: The following functions are deprecated in favor of node methods.
-# These tests use the deprecated API to ensure backward compatibility.
-# Deprecation warnings are expected.
-from rclpy.action import get_action_client_names_and_types_by_node
-from rclpy.action import get_action_names_and_types
-from rclpy.action import get_action_server_names_and_types_by_node
+from rclpy.node import Node
 
 from test_msgs.action import Fibonacci
 from typing_extensions import TypeAlias
@@ -116,10 +110,7 @@ class TestActionGraph(unittest.TestCase):
         start = time.monotonic()
         end = start
         while (end - start) < timeout:
-            # Suppress deprecation warnings for deprecated API tests
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore', DeprecationWarning)
-                nat = get_names_and_types_func(*args)
+            nat = get_names_and_types_func(*args)
             if len(nat) == expected_num_names:
                 return nat
             end = time.monotonic()
@@ -128,14 +119,14 @@ class TestActionGraph(unittest.TestCase):
 
     def test_get_action_client_names_and_types_by_node(self) -> None:
         self.get_names_and_types(
-            get_action_client_names_and_types_by_node,
+            Node.get_action_client_names_and_types_by_node,
             self.node1,
             TEST_NODE0,
             TEST_NAMESPACE0,
             expected_num_names=0)
 
         names_and_types1 = self.get_names_and_types(
-            get_action_client_names_and_types_by_node,
+            Node.get_action_client_names_and_types_by_node,
             self.node0,
             TEST_NODE1,
             TEST_NAMESPACE1,
@@ -149,7 +140,7 @@ class TestActionGraph(unittest.TestCase):
         assert types1[0] == 'test_msgs/action/Fibonacci'
 
         names_and_types2 = self.get_names_and_types(
-            get_action_client_names_and_types_by_node,
+            Node.get_action_client_names_and_types_by_node,
             self.node0,
             TEST_NODE2,
             TEST_NAMESPACE2,
@@ -171,14 +162,14 @@ class TestActionGraph(unittest.TestCase):
 
     def test_get_action_server_names_and_types_by_node(self) -> None:
         self.get_names_and_types(
-            get_action_server_names_and_types_by_node,
+            Node.get_action_server_names_and_types_by_node,
             self.node1,
             TEST_NODE0,
             TEST_NAMESPACE0,
             expected_num_names=0)
 
         names_and_types1 = self.get_names_and_types(
-            get_action_server_names_and_types_by_node,
+            Node.get_action_server_names_and_types_by_node,
             self.node0,
             TEST_NODE1,
             TEST_NAMESPACE1,
@@ -192,7 +183,7 @@ class TestActionGraph(unittest.TestCase):
         assert types1[0] == 'test_msgs/action/Fibonacci'
 
         names_and_types2 = self.get_names_and_types(
-            get_action_server_names_and_types_by_node,
+            Node.get_action_server_names_and_types_by_node,
             self.node0,
             TEST_NODE2,
             TEST_NAMESPACE2,
@@ -215,7 +206,7 @@ class TestActionGraph(unittest.TestCase):
 
     def test_get_action_names_and_types(self) -> None:
         names_and_types = self.get_names_and_types(
-            get_action_names_and_types,
+            Node.get_action_names_and_types,
             self.node0,
             expected_num_names=3)
         assert names_and_types

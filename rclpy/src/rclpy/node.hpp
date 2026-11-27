@@ -184,33 +184,6 @@ public:
   py::dict
   get_parameters(py::object pyparameter_cls);
 
-  /// Get action client names and types by node.
-  /**
-   * \param[in] remote_node_name the node name of the actions to return
-   * \param[in] remote_node_namespace the node namespace of the actions to return
-   * \return list of action client names and their types
-   */
-  py::list
-  get_action_client_names_and_types_by_node(
-    const char * remote_node_name, const char * remote_node_namespace);
-
-  /// Get action server names and types by node.
-  /**
-   * \param[in] remote_node_name the node name of the actions to return
-   * \param[in] remote_node_namespace the node namespace of the actions to return
-   * \return list of action server names and their types
-   */
-  py::list
-  get_action_server_names_and_types_by_node(
-    const char * remote_node_name, const char * remote_node_namespace);
-
-  /// Get action names and types.
-  /**
-   * \return list of action names and types
-   */
-  py::list
-  get_action_names_and_types();
-
   /// Get rcl_node_t pointer
   rcl_node_t *
   rcl_ptr() const
