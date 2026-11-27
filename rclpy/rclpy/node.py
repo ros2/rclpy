@@ -17,6 +17,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import math
 import time
+import traceback
 
 from types import TracebackType
 from typing import Any
@@ -2825,6 +2826,8 @@ class Node(BaseNode):
         * :func:`create_timer`
         * :func:`create_guard_condition`
 
+        Action clients and action servers created with this node are destroyed too. Other
+        waitables added with :func:`add_waitable` are not.
         """
         self._context.untrack_node(self)
 
@@ -2842,6 +2845,22 @@ class Node(BaseNode):
             self.destroy_timer(self._timers[0])
         while self._guards:
             self.destroy_guard_condition(self._guards[0])
+        # Imported here, so that importing this module does not load the action modules
+        from rclpy.action.client import ActionClient
+        from rclpy.action.server import ActionServer
+        # Only the action clients and servers are destroyed here. Other waitables are left to
+        # the application as before, since their destroy() may not expect to be called here.
+        for waitable in list(self.__waitables):
+            if not isinstance(waitable, (ActionClient, ActionServer)):
+                continue
+            try:
+                # This also removes the waitable from this node
+                waitable.destroy()
+            except Exception:
+                # Keep destroying the rest of the node
+                self.get_logger().error(
+                    f'Failed to destroy {type(waitable).__name__} in destroy_node(): '
+                    f'{traceback.format_exc()}')
         super().destroy_node()
         self._wake_executor()
 
