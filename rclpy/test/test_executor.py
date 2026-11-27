@@ -531,6 +531,101 @@ class TestExecutor(unittest.TestCase):
                     executor.spin_until_future_complete(task, timeout_sec=5)
                 self.assertIn('Expected error after await', str(cm.exception))
 
+    def test_spin_some_executes_ready_work_only(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        # spin_some() is implemented by the Python executors only
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+                calls: List[str] = []
+                gc_1 = self.node.create_guard_condition(lambda: calls.append('gc_1'))
+                gc_2 = self.node.create_guard_condition(lambda: calls.append('gc_2'))
+                try:
+                    # Nothing is ready yet, so spin_some() returns without waiting
+                    start_time = time.monotonic()
+                    executor.spin_some()
+                    self.assertLess(time.monotonic() - start_time, 1.0)
+                    self.assertEqual([], calls)
+
+                    # Once both guard conditions are triggered, a single call executes both
+                    gc_1.trigger()
+                    gc_2.trigger()
+                    executor.spin_some()
+                    self.assertEqual(['gc_1', 'gc_2'], sorted(calls))
+                finally:
+                    executor.shutdown()
+                    self.node.destroy_guard_condition(gc_1)
+                    self.node.destroy_guard_condition(gc_2)
+
+    def test_spin_some_leaves_new_work_for_next_call(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+                calls: List[str] = []
+                callback_threads: Set[int] = set()
+
+                def gc_2_callback() -> None:
+                    callback_threads.add(threading.get_ident())
+                    calls.append('gc_2')
+
+                gc_2 = self.node.create_guard_condition(gc_2_callback)
+
+                def gc_1_callback() -> None:
+                    callback_threads.add(threading.get_ident())
+                    calls.append('gc_1')
+                    # This work becomes ready while spin_some() is running
+                    gc_2.trigger()
+
+                gc_1 = self.node.create_guard_condition(gc_1_callback)
+                try:
+                    gc_1.trigger()
+                    executor.spin_some()
+                    # Only the work that was ready when spin_some() started is executed
+                    self.assertEqual(['gc_1'], calls)
+
+                    # The work that became ready during the first call is left for the next one
+                    executor.spin_some()
+                    self.assertEqual(['gc_1', 'gc_2'], calls)
+
+                    # Callbacks run in the calling thread, even for the MultiThreadedExecutor
+                    self.assertEqual({threading.get_ident()}, callback_threads)
+                finally:
+                    executor.shutdown()
+                    self.node.destroy_guard_condition(gc_1)
+                    self.node.destroy_guard_condition(gc_2)
+
+    def test_spin_some_max_duration(self) -> None:
+        self.assertIsNotNone(self.node.handle)
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+                calls = 0
+
+                def slow_callback() -> None:
+                    nonlocal calls
+                    calls += 1
+                    time.sleep(0.2)
+
+                gc_1 = self.node.create_guard_condition(slow_callback)
+                gc_2 = self.node.create_guard_condition(slow_callback)
+                try:
+                    gc_1.trigger()
+                    gc_2.trigger()
+                    # The first callback already uses up the time limit
+                    executor.spin_some(max_duration_sec=0.1)
+                    self.assertEqual(1, calls)
+
+                    with self.assertRaises(ValueError):
+                        executor.spin_some(max_duration_sec=-1.0)
+                finally:
+                    executor.shutdown()
+                    self.node.destroy_guard_condition(gc_1)
+                    self.node.destroy_guard_condition(gc_2)
+
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""
         self.assertIsNotNone(self.node.handle)

@@ -538,6 +538,12 @@ class TestEventsExecutor(unittest.TestCase):
         self.assertEqual(res.bool_value, success)
         self.assertEqual(res.string_value, error_msg)
 
+    def test_spin_some_not_implemented(self) -> None:
+        with self.assertRaisesRegex(NotImplementedError, 'EventsExecutor'):
+            self.executor.spin_some()
+        with self.assertRaisesRegex(NotImplementedError, 'EventsExecutor'):
+            self.executor.spin_some(max_duration_sec=0.1)
+
     def test_pub_sub(self) -> None:
         sub_node = SubTestNode()
         new_pub_future = sub_node.expect_pub_info()
