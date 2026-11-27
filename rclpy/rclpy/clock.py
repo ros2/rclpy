@@ -16,7 +16,7 @@ from types import TracebackType
 from typing import Callable, Optional, Type, TypedDict
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-from typing_extensions import deprecated, TypeAlias
+from typing_extensions import TypeAlias
 
 from .clock_type import ClockType
 from .context import Context
@@ -322,10 +322,3 @@ class Clock(BaseClock):
         :raises NotInitializedException: context has not been initialized or is shutdown.
         """
         return self.sleep_until(self.now() + rel_time, context)
-
-
-@deprecated('Use Clock(clock_type=ClockType.ROS_TIME) instead')
-class ROSClock(Clock):
-
-    def __init__(self) -> None:
-        super().__init__(clock_type=ClockType.ROS_TIME)
