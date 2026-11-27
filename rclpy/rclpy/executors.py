@@ -21,8 +21,10 @@ from dataclasses import dataclass
 from functools import partial
 import inspect
 import os
+import sys
 import threading
 import time
+import traceback
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -807,6 +809,11 @@ class Executor(ContextManager['Executor']):
                 try:
                     if call_coroutine is not None:
                         await call_coroutine()
+                except Exception:
+                    # Log the traceback with the node's logger, so it is also published to
+                    # /rosout, then let the exception propagate as before.
+                    self._log_callback_exception(entity, node)
+                    raise
                 finally:
                     if entity.callback_group:
                         entity.callback_group.ending_execution(entity)
@@ -828,6 +835,30 @@ class Executor(ContextManager['Executor']):
                 source_node=node
             )
         return task
+
+    def _log_callback_exception(self, entity: 'Entity', node: 'Node') -> None:
+        """
+        Log the exception currently being handled as raised by the callback of an entity.
+
+        The severities match the EventsExecutor: the exception at FATAL, then the traceback at
+        WARN. Nothing is logged while the context or this executor is shutting down (e.g. on
+        Ctrl-C), since callbacks are expected to fail then and the exception still propagates.
+        """
+        try:
+            exc = sys.exc_info()[1]
+            if (
+                isinstance(exc, (ShutdownException, ExternalShutdownException)) or
+                self._is_shutdown or
+                not self._context.ok()
+            ):
+                return
+            logger = node.get_logger()
+            logger.fatal(f"Exception in '{type(entity).__name__}' callback: {exc}")
+            trace = ''.join(traceback.format_tb(exc.__traceback__ if exc else None))
+            logger.warning(f'Error occurred at:\n{trace}')
+        except Exception:
+            # Never let a logging failure hide the original exception
+            pass
 
     def can_execute(self, entity: 'Entity') -> bool:
         """

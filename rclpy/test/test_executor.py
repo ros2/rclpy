@@ -22,6 +22,7 @@ from typing import Optional
 from typing import Protocol
 from typing import Set
 import unittest
+from unittest import mock
 import warnings
 
 import rclpy
@@ -530,6 +531,89 @@ class TestExecutor(unittest.TestCase):
                 with self.assertRaises(RuntimeError) as cm:
                     executor.spin_until_future_complete(task, timeout_sec=5)
                 self.assertIn('Expected error after await', str(cm.exception))
+
+    def test_callback_exception_is_logged(self) -> None:
+        """An exception raised by a user callback is logged with the node's logger."""
+        self.assertIsNotNone(self.node.handle)
+        # The EventsExecutor runs callbacks from C++ and does not use this code path
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                executor = cls(context=self.context)
+                executor.add_node(self.node)
+
+                def timer_callback() -> None:
+                    raise RuntimeError('Expected error from timer callback')
+
+                tmr = self.node.create_timer(0.1, timer_callback)
+                try:
+                    logger = self.node.get_logger()
+                    with (
+                        mock.patch.object(logger, 'fatal') as mock_fatal,
+                        mock.patch.object(logger, 'warning') as mock_warning,
+                    ):
+                        # The SingleThreadedExecutor raises from the spin_once() call that ran
+                        # the callback, the MultiThreadedExecutor from a later spin call.
+                        with self.assertRaises(RuntimeError):
+                            for _ in range(50):
+                                executor.spin_once(timeout_sec=0.1)
+                    # Same severities as the EventsExecutor: the exception at FATAL, then the
+                    # traceback at WARN
+                    mock_fatal.assert_called()
+                    message = mock_fatal.call_args.args[0]
+                    self.assertIn('Timer', message)
+                    self.assertIn('Expected error from timer callback', message)
+                    mock_warning.assert_called()
+                    self.assertIn('timer_callback', mock_warning.call_args.args[0])
+                finally:
+                    # Stop the worker threads before the timer they may still be running is gone
+                    executor.shutdown()
+                    self.node.destroy_timer(tmr)
+
+    def test_callback_exception_not_logged_during_shutdown(self) -> None:
+        """Callbacks that fail because the context is shutting down, e.g. on Ctrl-C, are quiet."""
+        for cls in [SingleThreadedExecutor, MultiThreadedExecutor]:
+            with self.subTest(cls=cls):
+                # A separate context, since this test shuts it down
+                context = rclpy.context.Context()
+                rclpy.init(context=context)
+                node = rclpy.create_node('TestExecutorShutdown', context=context)
+                executor = cls(context=context)
+                executor.add_node(node)
+                callback_ran = threading.Event()
+
+                def timer_callback() -> None:
+                    # Like a SIGINT, shut down the context while the callback runs
+                    context.try_shutdown()
+                    callback_ran.set()
+                    raise RuntimeError('Expected error during shutdown')
+
+                tmr = node.create_timer(0.1, timer_callback)
+                logger = node.get_logger()
+                try:
+                    with (
+                        mock.patch.object(logger, 'fatal') as mock_fatal,
+                        mock.patch.object(logger, 'warning') as mock_warning,
+                    ):
+                        try:
+                            for _ in range(50):
+                                executor.spin_once(timeout_sec=0.1)
+                                if callback_ran.is_set():
+                                    break
+                        except Exception:
+                            # The exception still propagates, it is only not logged
+                            pass
+                        # Wait for the worker threads, which may still be running the callback
+                        executor.shutdown()
+                    self.assertTrue(callback_ran.is_set())
+                    mock_fatal.assert_not_called()
+                    for call in mock_warning.call_args_list:
+                        self.assertNotIn('Error occurred at', str(call))
+                finally:
+                    executor.shutdown()
+                    node.destroy_timer(tmr)
+                    node.destroy_node()
+                    context.try_shutdown()
+                    context.destroy()
 
     def test_cancel_task_while_awaiting_future(self) -> None:
         """Cancelling a task parked on a future must not crash the dispatch loop."""
