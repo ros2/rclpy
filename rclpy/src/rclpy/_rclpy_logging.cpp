@@ -162,7 +162,9 @@ rclpy_logging_rcutils_log(
   uint64_t line_number)
 {
   RCUTILS_LOGGING_AUTOINIT;
-  rcutils_log_location_t logging_location = {function_name, file_name, line_number};
+  // rcutils_log_location_t::line_number is size_t, narrower than uint64_t on 32-bit targets
+  const size_t line = static_cast<size_t>(line_number);
+  rcutils_log_location_t logging_location = {function_name, file_name, line};
   rcutils_log(&logging_location, severity, name, "%s", message);
 }
 
