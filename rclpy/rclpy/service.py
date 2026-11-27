@@ -45,7 +45,7 @@ ServiceCallbackUnion: TypeAlias = Union[
 ]
 
 
-ServiceHeader: TypeAlias = _rclpy.rmw_service_info_t | _rclpy.rmw_request_id_t
+ServiceHeader: TypeAlias = Union[_rclpy.rmw_service_info_t, _rclpy.rmw_request_id_t]
 
 
 class BaseService(Generic[SrvRequestT, SrvResponseT]):
