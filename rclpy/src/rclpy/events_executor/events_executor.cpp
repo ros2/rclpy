@@ -796,15 +796,26 @@ void EventsExecutor::HandleWaitableReady(
   for (auto & future : futures) {
     future.attr("_set_executor")(py::cast(this));
   }
-  for (size_t i = 0; i < number_of_events; ++i) {
-    // This method can have side effects, so it needs to be called even though it looks like just
-    // an accessor.
-    if (!is_ready(wait_set)) {
-      throw std::runtime_error("Failed to make Waitable ready");
+  try {
+    for (size_t i = 0; i < number_of_events; ++i) {
+      // This method can have side effects, so it needs to be called even though it looks like just
+      // an accessor.
+      if (!is_ready(wait_set)) {
+        throw std::runtime_error("Failed to make Waitable ready");
+      }
+      py::object data = take_data();
+      // execute() is an async method, we need a Task to run it
+      create_task(execute(data));
     }
-    py::object data = take_data();
-    // execute() is an async method, we need a Task to run it
-    create_task(execute(data));
+  } catch (py::error_already_set & e) {
+    // The waitable was destroyed after this event was queued (e.g. a publisher or
+    // subscription with event callbacks destroyed while its matched event was still
+    // queued), so taking its data raises InvalidHandle.  The event is stale; drop
+    // it instead of raising out of spin.  See https://github.com/ros2/rclpy/issues/1644.
+    if (e.matches(py::module_::import("rclpy.exceptions").attr("InvalidHandle"))) {
+      return;
+    }
+    throw;
   }
 }
 

@@ -73,3 +73,37 @@ TEST(RclCallbackManager, RemovalReleasesCapturesBeforeQueueDestruction)
   manager.RemoveCallback(&key);
   EXPECT_TRUE(weak_capture.expired());
 }
+
+TEST(RclCallbackManager, StaleEventDroppedAfterKeyReuse)
+{
+  // Regression test for https://github.com/ros2/rclpy/issues/1644: an event queued for a
+  // removed entity must be dropped even when a new entity reuses the same rcl pointer (and
+  // hence the same key). The queued event carries the generation of the removed registration,
+  // which no longer matches the new one, so it is dropped instead of being delivered to the
+  // new entity. Without the generation check the stale event would invoke the new callback.
+  EventsQueue queue;
+  RclCallbackManager manager(&queue);
+  int key;
+  bool first_called = false;
+  int second_invocations = 0;
+  size_t second_events = 0;
+  std::function<void(size_t)> second_callback =
+    [&second_invocations, &second_events](size_t count) {
+      ++second_invocations;
+      second_events += count;
+    };
+  const auto user_data = manager.MakeCallback(
+    &key, [&first_called](size_t) {first_called = true;}, nullptr);
+  RclEventCallbackTrampoline(user_data, 1);
+  manager.RemoveCallback(&key);
+  const auto new_user_data = manager.MakeCallback(&key, second_callback, nullptr);
+  RclEventCallbackTrampoline(new_user_data, 2);
+  queue.Enqueue([&queue]() {queue.Stop();});
+  queue.Run();
+  EXPECT_FALSE(first_called);
+  // Only the new registration's own event is delivered; the stale event queued before the
+  // removal is dropped.
+  EXPECT_EQ(second_invocations, 1);
+  EXPECT_EQ(second_events, 2u);
+  manager.RemoveCallback(&key);
+}
