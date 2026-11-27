@@ -148,12 +148,27 @@ class ServerGoalHandle:
 
     def succeed(self):
         self._update_state(_rclpy.GoalEvent.SUCCEED)
+<<<<<<< HEAD
+=======
+        if response is not None:
+            self._set_result(response)
+>>>>>>> a348801 (Prevents the Future result from being set twice. (#1599))
 
     def abort(self):
         self._update_state(_rclpy.GoalEvent.ABORT)
+<<<<<<< HEAD
+=======
+        if response is not None:
+            self._set_result(response)
+>>>>>>> a348801 (Prevents the Future result from being set twice. (#1599))
 
     def canceled(self):
         self._update_state(_rclpy.GoalEvent.CANCELED)
+<<<<<<< HEAD
+=======
+        if response is not None:
+            self._set_result(response)
+>>>>>>> a348801 (Prevents the Future result from being set twice. (#1599))
 
     def destroy(self):
         with self._lock:
