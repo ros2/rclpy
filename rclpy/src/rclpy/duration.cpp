@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <rcl/time.h>
 
@@ -28,10 +28,10 @@ create_duration(int64_t nanoseconds)
   return duration;
 }
 void
-define_duration(py::object module)
+define_duration(nb::object module)
 {
-  py::class_<rcl_duration_t>(module, "rcl_duration_t")
-  .def(py::init<>(&create_duration))
-  .def_readonly("nanoseconds", &rcl_duration_t::nanoseconds);
+  nb::class_<rcl_duration_t>(module, "rcl_duration_t")
+  .def(nb::new_(&create_duration))
+  .def_ro("nanoseconds", &rcl_duration_t::nanoseconds);
 }
 }  // namespace rclpy

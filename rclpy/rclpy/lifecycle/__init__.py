@@ -30,7 +30,7 @@ NodeMixin = LifecycleNodeMixin
 State = LifecycleState
 Publisher = LifecyclePublisher
 
-# enum defined in pybind11 plugin
+# enum defined in nanobind plugin
 TransitionCallbackReturn = _rclpy.TransitionCallbackReturnType
 
 

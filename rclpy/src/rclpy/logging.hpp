@@ -15,13 +15,13 @@
 #ifndef RCLPY__LOGGING_HPP_
 #define RCLPY__LOGGING_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <mutex>
 
 #include "context.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {

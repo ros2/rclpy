@@ -15,7 +15,8 @@
 #ifndef RCLPY__ACTION_GOAL_HANDLE_HPP_
 #define RCLPY__ACTION_GOAL_HANDLE_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl_action/goal_handle.h>
 #include <rcl_action/types.h>
@@ -25,7 +26,7 @@
 #include "action_server.hpp"
 #include "destroyable.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -44,7 +45,7 @@ public:
    * \param[in] pyaction_server handle to the action server that is accepting the goal
    * \param[in] pygoal_info_msg a message containing info about the goal being accepted
    */
-  ActionGoalHandle(rclpy::ActionServer & action_server, py::object pygoal_info_msg);
+  ActionGoalHandle(rclpy::ActionServer & action_server, nb::object pygoal_info_msg);
 
   ~ActionGoalHandle() = default;
 
@@ -77,12 +78,12 @@ private:
   std::shared_ptr<rcl_action_goal_handle_t> rcl_action_goal_handle_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::ActionGoalHandle
+/// Define a nanobind wrapper for an rclpy::ActionGoalHandle
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
 void
-define_action_goal_handle(py::module module);
+define_action_goal_handle(nb::module_ module);
 }  // namespace rclpy
 
 #endif  // RCLPY__ACTION_GOAL_HANDLE_HPP_

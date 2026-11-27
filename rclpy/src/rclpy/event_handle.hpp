@@ -15,7 +15,8 @@
 #ifndef RCLPY__EVENT_HANDLE_HPP_
 #define RCLPY__EVENT_HANDLE_HPP_
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <rcl/event.h>
 
@@ -26,7 +27,7 @@
 #include "publisher.hpp"
 #include "subscription.hpp"
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace rclpy
 {
@@ -75,7 +76,7 @@ public:
    * \return Event data as an instance of a suitable rclpy.event_handle type, or None
    *   if no event was taken.
    */
-  py::object
+  nb::object
   take_event();
 
   /// Get rcl_event_t pointer
@@ -95,12 +96,12 @@ private:
   std::shared_ptr<rcl_event_t> rcl_event_;
 };
 
-/// Define a pybind11 wrapper for an rclpy::EventHandle
+/// Define a nanobind wrapper for an rclpy::EventHandle
 /**
- * \param[in] module a pybind11 module to add the definition to
+ * \param[in] module a nanobind module to add the definition to
  */
 void
-define_event_handle(py::module module);
+define_event_handle(nb::module_ module);
 }  // namespace rclpy
 
 #endif  // RCLPY__EVENT_HANDLE_HPP_

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <memory>
 #include <stdexcept>
@@ -40,7 +41,7 @@ Destroyable::enter()
 }
 
 void
-Destroyable::exit(py::object, py::object, py::object)
+Destroyable::exit(nb::object, nb::object, nb::object)
 {
   if (0u == use_count) {
     throw std::runtime_error("Internal error: Destroyable use_count would be negative");
@@ -55,7 +56,7 @@ Destroyable::exit(py::object, py::object, py::object)
 void
 Destroyable::destroy()
 {
-  // Normally would be pure virtual, but then pybind11 can't create bindings for this class
+  // Normally would be pure virtual, but then nanobind can't create bindings for this class
   throw NotImplementedError("Internal error: Destroyable subclass didn't override destroy()");
 }
 
@@ -73,11 +74,11 @@ Destroyable::destroy_when_not_in_use()
 }
 
 void
-define_destroyable(py::object module)
+define_destroyable(nb::object module)
 {
-  py::class_<Destroyable, std::shared_ptr<Destroyable>>(module, "Destroyable")
+  nb::class_<Destroyable>(module, "Destroyable")
   .def("__enter__", &Destroyable::enter)
-  .def("__exit__", &Destroyable::exit)
+  .def("__exit__", &Destroyable::exit, nb::arg().none(), nb::arg().none(), nb::arg().none())
   .def(
     "destroy_when_not_in_use", &Destroyable::destroy_when_not_in_use,
     "Forcefully destroy the rcl object as soon as it's not actively being used");
