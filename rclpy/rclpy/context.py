@@ -23,7 +23,6 @@ from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 import weakref
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
@@ -44,7 +43,9 @@ class Context(ContextManager['Context']):
 
     :Example:
         >>> from rclpy.context import Context
-        >>> with Context() as context:
+        >>> context = Context()
+        >>> context.init()
+        >>> with context:
         >>>     context.ok()
         True
 
@@ -234,11 +235,8 @@ class Context(ContextManager['Context']):
 
     def __enter__(self) -> 'Context':
         if self.__context is None:
-            # init() hasn't been called yet; for backwards compatibility, initialize and warn
-            warnings.warn('init() must be called on a Context before using it in a Python context '
-                          'manager. Calling init() with no arguments, this usage is deprecated')
-            self.init()
-
+            raise RuntimeError(
+                'init() must be called on a Context before using it in a Python context manager')
         return self
 
     def __exit__(
